@@ -1,22 +1,23 @@
 <template>
   <div
     class="mango-pytest-result-detail"
-    :class="{ 'has-context': errorMessage || sourceSnapshot }"
+    :class="{ 'has-context': errorMessage || sourceSnapshot || detailState.malformed }"
   >
-    <div v-if="errorMessage || sourceSnapshot" class="mango-pytest-result-detail__context">
+    <div v-if="errorMessage || sourceSnapshot || detailState.malformed" class="mango-pytest-result-detail__context">
       <a-alert v-if="errorMessage" type="error" class="mango-pytest-result-detail__alert">
         {{ errorMessage }}
       </a-alert>
+      <a-alert v-if="detailState.malformed" type="warning">部分结果格式异常，无法展示对应 Case，请重新加载执行记录。</a-alert>
       <div v-if="sourceSnapshot" class="mango-pytest-result-detail__source">
-        <strong>{{ sourceSnapshot.repository_name || '默认 Pytest 仓库' }}</strong>
+        <strong>{{ sourceSnapshot.repositoryName }}</strong>
         <span>/</span>
         <span>{{
-          sourceSnapshot.pytest_project_name || `项目 ${sourceSnapshot.pytest_project_id}`
+          sourceSnapshot.projectName
         }}</span>
-        <a-tag size="small">{{ sourceSnapshot.branch || '-' }}</a-tag>
-        <a-tag size="small" color="arcoblue">{{ shortCommit }}</a-tag>
-        <span class="mango-pytest-result-detail__source-path" :title="sourceSnapshot.file_path">
-          {{ sourceSnapshot.file_path }}
+        <a-tag size="small">{{ sourceSnapshot.branch }}</a-tag>
+        <a-tag size="small" color="arcoblue">{{ sourceSnapshot.commit }}</a-tag>
+        <span class="mango-pytest-result-detail__source-path" :title="sourceSnapshot.filePath">
+          {{ sourceSnapshot.filePath }}
         </span>
       </div>
     </div>
@@ -28,31 +29,24 @@
       </div>
       <div class="mango-pytest-result-detail__case-list mango-native-scrollbar">
         <button
-          v-for="(item, index) in executionCases"
-          :key="caseKey(item, index)"
-          v-memo="[
-            caseKey(item, index),
-            caseName(item, index),
-            caseDescription(item),
-            item?.status,
-            selectedCaseKey,
-          ]"
+          v-for="item in executionCases"
+          :key="item.key"
           type="button"
           class="mango-pytest-result-detail__case"
           :class="[
-            `mango-pytest-result-detail__case--${statusTone(item?.status)}`,
-            { active: caseKey(item, index) === selectedCaseKey },
+            `mango-pytest-result-detail__case--${resultStatus(item.status).tone}`,
+            { active: item.key === selectedCaseKey },
           ]"
-          @click="selectedCaseKey = caseKey(item, index)"
+          @click="selectedCaseKey = item.key"
         >
           <span class="mango-pytest-result-detail__case-title">
-            <strong :title="caseName(item, index)">{{ caseName(item, index) }}</strong>
-            <a-tag :color="statusColor(item?.status)" size="small">
-              {{ statusText(item?.status) }}
+            <strong :title="item.name">{{ item.name }}</strong>
+            <a-tag :color="resultStatus(item.status).color" size="small">
+              {{ resultStatus(item.status).text }}
             </a-tag>
           </span>
-          <small v-if="caseDescription(item)" :title="caseDescription(item)">
-            {{ caseDescription(item) }}
+          <small v-if="item.description" :title="item.description">
+            {{ item.description }}
           </small>
         </button>
         <div v-if="!executionCases.length" class="mango-empty-state">
@@ -64,7 +58,7 @@
     <PytestTestReport
       v-if="selectedCase"
       class="mango-pytest-result-detail__content mango-native-scrollbar"
-      :result-data="selectedCase"
+      :result-data="selectedCase.payload"
     />
     <div v-else class="mango-pytest-result-detail__content mango-empty-state">
       请选择本次执行中的 Case 查看结果
@@ -75,10 +69,11 @@
 <script lang="ts" setup>
   import { computed, ref, watch } from 'vue'
   import PytestTestReport from '@/components/reports/PytestTestReport.vue'
+  import { executionDetail, resultStatus } from '../execution-result'
 
   const props = withDefaults(
     defineProps<{
-      detail?: any
+      detail?: unknown
       errorMessage?: string
     }>(),
     {
@@ -88,83 +83,31 @@
   )
 
   const selectedCaseKey = ref('')
-  const sourceSnapshot = computed(() => props.detail?.source_snapshot || null)
-  const shortCommit = computed(() => String(sourceSnapshot.value?.commit_hash || '-').slice(0, 10))
-  const executionCases = computed<any[]>(() => {
-    const resultData = props.detail?.result_data
-    if (Array.isArray(resultData)) return resultData.filter(Boolean)
-    if (Array.isArray(resultData?.children)) return resultData.children.filter(Boolean)
-    if (Array.isArray(resultData?.cases)) return resultData.cases.filter(Boolean)
-    if (Array.isArray(resultData?.results)) return resultData.results.filter(Boolean)
-    return resultData && typeof resultData === 'object' ? [resultData] : []
-  })
+  const detailState = computed(() => executionDetail(props.detail))
+  const sourceSnapshot = computed(() => detailState.value.source)
+  const executionCases = computed(() => detailState.value.cases)
   const selectedCase = computed(
     () =>
-      executionCases.value.find((item, index) => caseKey(item, index) === selectedCaseKey.value) ||
+      executionCases.value.find((item) => item.key === selectedCaseKey.value) ||
       null
   )
   const emptyDescription = computed(() => {
-    if (!props.detail) return '请选择左侧执行记录'
-    if (props.detail.result_cleaned) return '结果明细已按保留策略清理，执行记录仍然保留'
+    if (!detailState.value.present) return '请选择左侧执行记录'
+    if (detailState.value.cleaned) return '结果明细已按保留策略清理，执行记录仍然保留'
+    if (detailState.value.malformed) return '结果格式异常'
     return '本次执行没有生成 Case 结果'
   })
 
-  function caseKey(item: any, index: number) {
-    const identity = item?.uuid || item?.nodeid || item?.fullName || item?.name || 'case'
-    return `${identity}:${index}`
-  }
-
-  function caseName(item: any, index: number) {
-    return item?.name || item?.title || item?.method_name || `Case ${index + 1}`
-  }
-
-  function caseDescription(item: any) {
-    return item?.fullName || item?.description || item?.nodeid || ''
-  }
-
-  function normalizedStatus(status: unknown) {
-    return String(status ?? '').toLocaleLowerCase()
-  }
-
-  function statusText(status: unknown) {
-    const value = normalizedStatus(status)
-    if (status === 1 || value === 'passed' || value === 'success') return '通过'
-    if (status === 0 || value === 'failed' || value === 'broken') return '失败'
-    if (value === 'skipped') return '跳过'
-    if (status === 3 || value === 'running') return '进行中'
-    return '未知'
-  }
-
-  function statusColor(status: unknown) {
-    const value = normalizedStatus(status)
-    if (status === 1 || value === 'passed' || value === 'success') return 'green'
-    if (status === 0 || value === 'failed' || value === 'broken') return 'red'
-    if (value === 'skipped') return 'orange'
-    if (status === 3 || value === 'running') return 'arcoblue'
-    return 'gray'
-  }
-
-  function statusTone(status: unknown) {
-    const value = normalizedStatus(status)
-    if (status === 1 || value === 'passed' || value === 'success') return 'success'
-    if (status === 0 || value === 'failed' || value === 'broken') return 'danger'
-    if (value === 'skipped') return 'warning'
-    if (status === 3 || value === 'running') return 'running'
-    return 'neutral'
-  }
-
   watch(
-    [() => props.detail?.id, executionCases],
-    () => {
-      const failedIndex = executionCases.value.findIndex((item) => {
-        const status = normalizedStatus(item?.status)
-        return item?.status === 0 || status === 'failed' || status === 'broken'
-      })
+    detailState,
+    (next, previous) => {
+      if (next.id === previous?.id && next.cases.some(item => item.key === selectedCaseKey.value)) return
+      const failedIndex = executionCases.value.findIndex(item => resultStatus(item.status).tone === 'danger')
       const preferredIndex = failedIndex >= 0 ? failedIndex : 0
       const preferred = executionCases.value[preferredIndex]
-      selectedCaseKey.value = preferred ? caseKey(preferred, preferredIndex) : ''
+      selectedCaseKey.value = preferred?.key || ''
     },
-    { immediate: true }
+    { immediate: true, flush: 'sync' }
   )
 </script>
 

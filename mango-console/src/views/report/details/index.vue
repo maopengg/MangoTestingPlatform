@@ -1,6 +1,8 @@
 <template>
   <div class="report-lab mango-report-detail-page" :class="{ 'standalone-report-container': isShareReportRoute }">
-    <a-alert v-if="reportInfo.retained_summary" type="info">本次执行成功，已按保留策略清理完整报告，仅保留执行质量摘要。</a-alert>
+    <a-alert v-if="reportInfo?.retained_summary" type="info">本次执行成功，已按保留策略清理完整报告，仅保留执行质量摘要。</a-alert>
+
+    <mango-panel-spin :loading="reportInfoLoading" class="mango-report-head-spin">
     <section class="report-head">
       <div class="head-main">
         <div class="report-title">
@@ -14,7 +16,7 @@
             <span>通过率 {{ passRate }}%</span>
           </p>
           <a-button
-            v-if="reportInfo.diagnostic_file_path"
+            v-if="reportInfo?.diagnostic_file_path"
             class="mango-report-diagnostic-button"
             size="small"
             @click="diagnosticDrawer.visible = true"
@@ -25,8 +27,8 @@
           <div class="status-line">
             <span>报告状态</span>
             <a-tag v-if="summary.excluded_count" size="small" color="orange">已排除 {{ summary.excluded_count }} 个用例</a-tag>
-            <a-tag :color="statusColor(reportInfo.report_conclusion ?? reportInfo.status)" size="small">
-              {{ statusText(reportInfo.report_conclusion ?? reportInfo.status) }}
+            <a-tag :color="statusColor(reportInfo?.report_conclusion ?? reportInfo?.status)" size="small">
+              {{ statusText(reportInfo?.report_conclusion ?? reportInfo?.status) }}
             </a-tag>
           </div>
           <div class="success-rate">
@@ -50,34 +52,36 @@
         </div>
         <div class="report-meta-item mango-report-meta-id">
           <dt>报告ID</dt>
-          <dd>{{ reportInfo.id || reportId }}</dd>
+          <dd>{{ reportInfo?.id || reportId }}</dd>
         </div>
         <div class="report-meta-item">
           <dt>被测环境</dt>
-          <dd>{{ envText(reportInfo.test_env) }}</dd>
+          <dd>{{ envText(reportInfo?.test_env) }}</dd>
         </div>
         <div v-if="summary.api_count" class="report-meta-item">
           <dt>API 执行并发</dt>
-          <dd>{{ reportInfo.api_concurrency_limit || '平台默认' }}</dd>
+          <dd>{{ reportInfo?.api_concurrency_limit || '平台默认' }}</dd>
         </div>
         <div class="report-meta-item">
           <dt>执行人</dt>
-          <dd>{{ reportInfo.user?.name || '-' }}</dd>
+          <dd>{{ reportInfo?.user?.name || '-' }}</dd>
         </div>
         <div class="report-meta-item">
           <dt>通知状态</dt>
           <dd>
-            <a-tag :color="noticeColor(reportInfo.is_notice)" size="small">
-              {{ noticeText(reportInfo.is_notice) }}
+            <a-tag :color="noticeColor(reportInfo?.is_notice)" size="small">
+              {{ noticeText(reportInfo?.is_notice) }}
             </a-tag>
           </dd>
         </div>
         <div class="report-meta-item mango-report-meta-time">
           <dt>执行时间</dt>
-          <dd>{{ reportInfo.create_time || '-' }}</dd>
+          <dd>{{ reportInfo?.create_time || '-' }}</dd>
         </div>
       </dl>
     </section>
+    </mango-panel-spin>
+
 
     <div class="mango-workbench-scroll-x report-overview-scroll">
       <section class="overview-grid">
@@ -133,7 +137,8 @@
             <em>{{ failureReasonSummary.category_count }} 类</em>
           </div>
           <mango-panel-spin :loading="failureReasonLoading" class="mango-failure-reason-spin">
-            <div v-if="failureReasons.length === 0" class="reason-empty">
+            <template v-if="failureReasonError"></template>
+            <div v-else-if="failureReasons.length === 0" class="reason-empty">
               整份报告中暂无失败原因
             </div>
             <div v-else class="reason-list">
@@ -253,7 +258,7 @@
                 v-if="activeType === '1'"
                 type="primary"
                 size="small"
-                :loading="apiExport.loading"
+                :loading="apiExportLoading"
                 @click="startApiExport"
                 data-testid="qa-views-report-details-button-导出-excel"
               >
@@ -263,15 +268,24 @@
           </div>
         </div>
 
+        <a-alert v-if="apiExportError" type="error">
+          {{ apiExportError }}
+          <a-button size="small" :loading="apiExportLoading" @click="startApiExport">重试导出</a-button>
+          <a-button v-if="apiExportCanRestart" size="small" :loading="apiExportLoading" @click="restartApiExport">重新导出</a-button>
+        </a-alert>
+
         <mango-panel-spin :loading="caseLoading" class="case-spin">
-          <div v-if="cases.length === 0" class="empty-state">
+          <template v-if="caseError"></template>
+          <div v-else-if="cases.length === 0" class="empty-state">
             {{ caseLoading ? '正在加载用例结果' : '暂无用例结果' }}
           </div>
           <UiCaseTable
             v-else-if="activeType === '0'"
             :cases="cases"
-            :enum-store="enumStore"
+            :status-options="enumStore.task_status"
+            :status-colors="enumStore.status_colors"
             :can-retry="canRetry"
+            :retrying-ids="retryingIds"
             @open-case-detail="openCaseDetail"
             @show-details="showDetails"
             @retry="onRetry"
@@ -280,8 +294,11 @@
           <ApiCaseTable
             v-else-if="activeType === '1'"
             :cases="cases"
-            :enum-store="enumStore"
+            :status-options="enumStore.task_status"
+            :status-colors="enumStore.status_colors"
+            :phase-options="enumStore.report_execution_phase"
             :can-retry="canRetry"
+            :retrying-ids="retryingIds"
             @open-case-detail="openCaseDetail"
             @show-details="showDetails"
             @show-history="showCaseHistory"
@@ -291,13 +308,16 @@
           <PytestCaseTable
             v-else-if="activeType === '2'"
             :cases="cases"
-            :enum-store="enumStore"
+            :status-options="enumStore.task_status"
+            :status-colors="enumStore.status_colors"
             :can-retry="canRetry"
+            :retrying-ids="retryingIds"
             @show-details="showDetails"
             @disposition-saved="refreshDisposition"
             @retry="onRetry"
           />
-          <EvaluationCaseTable v-else-if="activeType === '4'" :cases="cases" :enum-store="enumStore" />
+          <EvaluationCaseTable v-else-if="activeType === '4'" :cases="cases"
+            :status-options="enumStore.task_status" :status-colors="enumStore.colors" />
         </mango-panel-spin>
 
         <div class="case-pagination">
@@ -316,48 +336,7 @@
       </div>
     </section>
 
-    <a-drawer
-      v-model:visible="drawerVisible"
-      :width="'min(1280px, 80vw)'"
-      :footer="false"
-      title="测试用例详情"
-      class="mango-report-result-drawer"
-      unmount-on-close
-    >
-      <div class="mango-report-result-history">
-        <ExecutionHistoryList
-          :items="detailHistoryItems"
-          :selected-id="selectedResultId"
-          :loading="detailHistoryLoading"
-          @select="changeDetailResult"
-        />
-        <mango-panel-spin
-          :loading="detailLoading"
-          class="report-detail-spin"
-          :class="{ 'report-detail-spin--api': selectedCase.case_type === 1 }"
-        >
-          <div v-if="!selectedCaseHasDetail" class="report-detail-empty">
-            <a-alert
-              v-if="selectedCase?.error_message"
-              type="error"
-              class="report-detail-empty__alert"
-            >
-              {{ selectedCase.error_message }}
-            </a-alert>
-            <span>本次执行没有生成测试结果</span>
-          </div>
-          <template v-else-if="selectedCase.case_type === 0">
-            <ElementTestReport :resultData="selectedCase" />
-          </template>
-          <template v-else-if="selectedCase.case_type === 1">
-            <ApiTestReport :resultData="selectedCase" contained />
-          </template>
-          <template v-else-if="selectedCase.case_type === 2">
-            <PytestTestReport :resultData="selectedCase" />
-          </template>
-        </mango-panel-spin>
-      </div>
-    </a-drawer>
+    <ReportExecutionResultDrawer ref="executionResultDrawer" :report-id="reportId" />
 
     <ExecutionResultHistoryDrawer
       v-model:visible="apiHistoryDrawer.visible"
@@ -370,100 +349,7 @@
       @show-trace="showExecutionTrace"
     />
 
-    <a-drawer v-model:visible="traceDrawer.visible" :width="860" title="API 执行链路">
-      <mango-panel-spin :loading="traceDrawer.loading" class="mango-trace-drawer-spin">
-        <div v-if="!traceDrawer.trace" class="mango-trace-empty">
-          本次执行没有链路记录，请重试该 API 用例后再查看
-        </div>
-        <div v-else class="mango-trace-panel">
-          <div class="mango-trace-summary">
-            <div>
-              <span>Trace ID</span>
-              <strong>{{ traceDrawer.trace.trace_id }}</strong>
-            </div>
-            <div>
-              <span>状态</span>
-              <a-tag :color="traceStatusColor(traceDrawer.trace.status)" size="small">
-                {{ traceStatusText(traceDrawer.trace.status) }}
-              </a-tag>
-            </div>
-            <div>
-              <span>耗时</span>
-              <strong>{{ traceDrawer.trace.duration_ms || 0 }} ms</strong>
-            </div>
-            <div>
-              <span>触发时间</span>
-              <strong>{{ traceDrawer.trace.started_at || '-' }}</strong>
-            </div>
-            <div>
-              <span>完成时间</span>
-              <strong>{{ traceDrawer.trace.finished_at || '-' }}</strong>
-            </div>
-            <div>
-              <span>执行来源</span>
-              <strong>{{ traceSourceText(traceDrawer.trace.source_type) }}</strong>
-            </div>
-            <div>
-              <span>执行节点</span>
-              <strong>{{ traceDrawer.trace.worker_name || '-' }}</strong>
-            </div>
-          </div>
-          <div class="mango-trace-flow-layout">
-            <div class="mango-trace-flow">
-              <button
-                v-for="node in visibleTraceNodes"
-                :key="node.id"
-                type="button"
-                class="mango-trace-node"
-                :class="[
-                  traceNodeClass(node.status),
-                  { 'is-active': traceDrawer.selectedNode?.id === node.id },
-                ]"
-                :style="{ marginLeft: `${scaleDensityPixels(traceNodeDepth(node) * 18)}px` }"
-                @click="selectTraceNode(node)"
-              >
-                <span
-                  class="mango-trace-node__toggle"
-                  :class="{
-                    'is-visible': traceNodeHasChildren(node),
-                    'is-expanded': traceNodeExpanded(node),
-                  }"
-                  @click.stop="toggleTraceNode(node)"
-                ></span>
-                <span class="mango-trace-node__dot"></span>
-                <span class="mango-trace-node__body">
-                  <strong>{{ node.label }}</strong>
-                  <span>{{ node.step_type }} / {{ node.duration_ms || 0 }} ms</span>
-                </span>
-              </button>
-            </div>
-            <div class="mango-trace-node-detail">
-              <template v-if="traceDrawer.selectedNode">
-                <div class="mango-trace-node-detail__title">
-                  <strong>{{ traceDrawer.selectedNode.label }}</strong>
-                  <a-tag :color="traceStatusColor(traceDrawer.selectedNode.status)" size="small">
-                    {{ traceStatusText(traceDrawer.selectedNode.status) }}
-                  </a-tag>
-                </div>
-                <div v-if="traceDrawer.selectedNode.error_message" class="mango-trace-step__error">
-                  {{ traceDrawer.selectedNode.error_message }}
-                </div>
-                <div class="mango-trace-node-detail__meta">
-                  <span
-                    >引用：{{ traceDrawer.selectedNode.detail_ref_type || '-' }} /
-                    {{ traceDrawer.selectedNode.detail_ref_id || '-' }}</span
-                  >
-                </div>
-                <pre class="mango-trace-json">{{
-                  formatTraceSummary(traceDrawer.selectedNode.summary)
-                }}</pre>
-              </template>
-              <div v-else class="mango-trace-empty">选择节点查看摘要</div>
-            </div>
-          </div>
-        </div>
-      </mango-panel-spin>
-    </a-drawer>
+    <ReportExecutionTraceDrawer ref="executionTraceDrawer" :report-id="reportId" />
 
     <BaseSidePanel
       :visible="caseDetailDrawer.visible"
@@ -501,14 +387,21 @@
     <DiagnosticMarkdownDrawer
       v-model:visible="diagnosticDrawer.visible"
       target-type="test_report"
-      :target-id="reportInfo.id || reportId"
+      :target-id="reportInfo?.id || reportId"
       :title="`${reportTitle} · 排查结果`"
     />
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { usePagePolling, type PollingContext } from '@/hooks/use-page-polling'
+import { runLoadRequest } from '@/utils/load-error'
+
+  import { usePagePolling, isPendingExecution, type PollingContext } from '@/hooks/use-page-polling'
+  import { createReportReadSession } from './report-read-session'
+  import { caseStatusOptions } from './config'
+  import { reportResultTarget, type ReportResultTarget } from './report-result'
+  import ReportExecutionResultDrawer from './components/ReportExecutionResultDrawer.vue'
+  import { emptyReportSummary, emptyReportFailureReasons, parseReportOverview, parseReportSummary, parseReportFailureReasons, parseReportCasePage, reportIdentifier, reportObject, type ReportOverview } from './report-overview'
   import {
     computed,
     onActivated,
@@ -517,31 +410,21 @@
     onUnmounted,
     reactive,
     ref,
+    watch,
   } from 'vue'
   import { useRoute } from 'vue-router'
-  import { Message, Modal } from '@arco-design/web-vue'
+  import { Message } from '@arco-design/web-vue'
+  import { useReportApiExport } from './composables/useReportApiExport'
+  import { useReportCaseRetry } from './composables/useReportCaseRetry'
   import {
-    downloadSystemTestSuiteDetailsApiExport,
-    getSystemTestSuiteDetailsApiExportStatus,
-    getSystemTestSuiteDetailsExecutionTrace,
     getSystemTestSuiteDetailsFailureReasonsShare,
-    getSystemTestSuiteDetailsResultOptionsShare,
-    getSystemTestSuiteDetailsResultShare,
-    getSystemTestSuiteDetailsRetry,
     getSystemTestSuiteDetailsShare,
     getSystemTestSuiteDetailsSummaryShare,
-    postSystemTestSuiteDetailsApiExport,
   } from '@/api/system/test_sute_details'
   import { getSystemTestSuiteShare } from '@/api/system/test_suite'
   import { useEnum } from '@/store/modules/get-enum'
   import { usePageData } from '@/store/page-data'
   import { useUserStoreContext } from '@/store/modules/user'
-  import { scaleDensityPixels } from '@/hooks/useDisplayDensity'
-  import ElementTestReport from '@/components/reports/ElementTestReport.vue'
-  import ApiTestReport from '@/components/reports/ApiTestReport.vue'
-  import PytestTestReport from '@/components/reports/PytestTestReport.vue'
-  import ExecutionHistoryList from '@/components/business/ExecutionHistoryList.vue'
-  import type { ExecutionHistoryItem } from '@/components/business/execution-history'
   import ExecutionResultHistoryDrawer from '@/components/business/ExecutionResultHistoryDrawer.vue'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import ApiCaseDetails from '@/views/apitest/case/details/index.vue'
@@ -550,39 +433,35 @@
   import ApiCaseTable from './ApiCaseTable.vue'
   import PytestCaseTable from './PytestCaseTable.vue'
   import EvaluationCaseTable from './EvaluationCaseTable.vue'
+  import ReportExecutionTraceDrawer from './components/ReportExecutionTraceDrawer.vue'
+  import type { ReportTraceQuery } from './execution-trace'
   import StatusChart from '@/components/chart/StatusChart.vue'
   import DiagnosticMarkdownDrawer from '@/components/reports/DiagnosticMarkdownDrawer.vue'
 
   const route = useRoute()
   const enumStore = useEnum()
-  const pageData: any = usePageData()
+  const pageData = usePageData()
   const userStore = useUserStoreContext()
   const isShareReportRoute = computed(() => route.path === '/report/details')
 
-  if (!pageData.record) {
-    pageData.setRecord({})
-  }
-
-  const reportInfo = ref<any>({})
-  const canRetry = computed(() => !!userStore.token && !reportInfo.value.retained_summary && !summary.value.evaluation_count)
+  const reportInfo = ref<ReportOverview | null>(null)
+  const canRetry = computed(() => !reportInfo.value?.retained_summary && !summary.value.evaluation_count)
   const diagnosticDrawer = reactive({ visible: false })
-  const summary = ref<any>({})
-  const cases = ref<any[]>([])
+  const summary = ref(emptyReportSummary())
+  const cases = ref<unknown[]>([])
   const activeType = ref('0')
   const caseStatus = ref<number | 'all'>('all')
   const caseKeyword = ref('')
   const lastSearchedCaseKeyword = ref('')
   const summaryLoading = ref(false)
   const failureReasonLoading = ref(false)
-  const failureReasonSummary = ref<any>({
-    items: [],
-    category_count: 0,
-    failure_count: 0,
-  })
+  const failureReasonSummary = ref(emptyReportFailureReasons())
+  const reportInfoLoading = ref(false)
+  const reportInfoError = ref('')
+  const summaryError = ref('')
+  const failureReasonError = ref('')
+  const caseError = ref('')
   const caseLoading = ref(false)
-  const detailLoading = ref(false)
-  const detailHistoryLoading = ref(false)
-  const drawerVisible = ref(false)
   const apiHistoryDrawer = reactive<{
     visible: boolean
     title: string
@@ -595,81 +474,31 @@
     caseId: '',
     testSuiteDetailId: '',
   })
-  const selectedCase = ref<any>({})
-  const selectedCaseSourceRecord = ref<any>({})
-  const detailResultOptions = ref<any[]>([])
-  const selectedResultId = ref<any>('')
-  const detailHistoryItems = computed<ExecutionHistoryItem[]>(() =>
-    detailResultOptions.value.map((item) => ({
-      id: item.id,
-      title: detailAttemptTitle(item),
-      statusText: item.status_text || '未知',
-      statusColor: detailResultStatusColor(item.status_text),
-      time: item.update_time || item.create_time || '-',
-      actor: item.trigger_user_name || '',
-      latest: Boolean(item.is_case_latest),
-      sourceText: item.source_scope_name || 'Case执行',
-      sourceColor: detailHistorySourceColor(item.source_scope),
-    }))
-  )
   const caseDetailDrawer = reactive({
     visible: false,
     caseId: '',
     caseType: -1,
   })
-  const apiExport = reactive({
-    loading: false,
-    taskId: '',
-  })
   const isPolling = ref(false)
   const pagePolling = usePagePolling(async context => {
     if (!reportPageActive.value || !reportId.value) return
     const id = reportId.value
-    await loadSummary(true, context)
-    if (!context.isCurrent() || reportId.value !== id) return
-    await refreshLoadedCases(true, context)
-    if (!context.isCurrent() || reportId.value !== id) return
-    if (!(summary.value.stay_begin_count || summary.value.proceed_count)) {
-      await loadFailureReasons(true, context)
-      if (context.isCurrent()) stopPolling()
+    const currentVersion = pageVersion
+    const currentContext = { isCurrent: () => context.isCurrent() && currentVersion === pageVersion && reportId.value === id }
+    await Promise.all([loadSummary(true, currentContext), loadReportInfo(true, currentContext)])
+    if (!currentContext.isCurrent()) return
+    await refreshLoadedCases(true, currentContext)
+    if (!currentContext.isCurrent()) return
+    if (!hasPendingReport()) {
+      await loadFailureReasons(true, currentContext)
+      if (currentContext.isCurrent()) stopPolling()
     }
   }, () => {
-    if (summaryLoading.value || caseLoading.value) startPolling()
-    summaryLoading.value = false
-    caseLoading.value = false
+    invalidateReportReads()
   })
   const reportPageActive = ref(true)
-  const apiExportTimer = ref<ReturnType<typeof setTimeout> | null>(null)
-  const traceDrawer = reactive({
-    visible: false,
-    loading: false,
-    trace: null as any,
-    steps: [] as any[],
-    nodes: [] as any[],
-    edges: [] as any[],
-    selectedNode: null as any,
-    expandedNodeIds: [] as string[],
-  })
-  const traceNodeMap = computed(
-    () => new Map(traceDrawer.nodes.map((node: any) => [String(node.id), node]))
-  )
-  const visibleTraceNodes = computed(() =>
-    traceDrawer.nodes.filter((node: any) => {
-      let parent = node.parent_step_id ? traceNodeMap.value.get(String(node.parent_step_id)) : null
-      while (parent) {
-        if (
-          parent.step_type === 'retry_round' &&
-          !traceDrawer.expandedNodeIds.includes(String(parent.id))
-        ) {
-          return false
-        }
-        parent = parent.parent_step_id
-          ? traceNodeMap.value.get(String(parent.parent_step_id))
-          : null
-      }
-      return true
-    })
-  )
+  const executionResultDrawer = ref<{ open(target: ReportResultTarget): Promise<void>; close(): void } | null>(null)
+  const executionTraceDrawer = ref<{ open(query: ReportTraceQuery): Promise<void>; close(): void } | null>(null)
 
   const pagination = reactive({
     page: 1,
@@ -678,13 +507,29 @@
   })
 
   // 报告页可能被 keep-alive 缓存，不能让其他页面的 route.query.id 覆盖当前报告 ID。
-  const reportId = ref(String(route.query.id || pageData.record?.id || ''))
+  const reportId = ref(reportIdentifier(route.query.id) ?? reportIdentifier(reportObject(pageData.record)?.id) ?? '')
+  const reportPaths = ['/report/details', '/report/system/details']
+  let disposed = false, mounted = false, pageVersion = 0
+  let reportEntryFullPath = route.fullPath
+  const reportAvailable = () => !disposed && reportPageActive.value && reportPaths.includes(route.path) && document.visibilityState === 'visible' && reportId.value !== ''
+  const infoReads = createReportReadSession(reportAvailable)
+  const summaryReads = createReportReadSession(reportAvailable)
+  const failureReads = createReportReadSession(reportAvailable)
+  const caseReads = createReportReadSession(reportAvailable)
+  let searchBlurTimer: ReturnType<typeof setTimeout> | undefined
   const totalCount = computed(() => summary.value.count || 0)
   const excludedFilter = ref('all')
+  const { loading: apiExportLoading, error: apiExportError, canRestart: apiExportCanRestart, start: startApiExport, restart: restartApiExport } = useReportApiExport({
+    reportId: () => reportId.value, status: () => caseStatus.value, available: reportAvailable,
+  })
+  const { busyIds: retryingIds, confirm: onRetry } = useReportCaseRetry({
+    reportId: () => reportId.value, available: reportAvailable,
+    onSuccess: async () => { await Promise.allSettled([loadSummary(), loadReportInfo(), loadCases(true)]) },
+  })
   const failRatio = computed(() => ratio(summary.value.fail_count, totalCount.value))
   const passRate = computed(() => !totalCount.value && summary.value.excluded_count ? 100 : ratio(summary.value.success_count, totalCount.value))
   const reportExecutionName = computed(
-    () => reportInfo.value.tasks?.name || reportInfo.value.execution_name || ''
+    () => reportInfo.value?.tasks?.name || reportInfo.value?.execution_name || ''
   )
   const reportTitle = computed(() => reportExecutionName.value || `测试报告 #${reportId.value}`)
   const hasTaskName = computed(() => !!reportExecutionName.value)
@@ -752,17 +597,10 @@
       selectType(nextType)
     },
   })
-  const caseStatusOptions: Array<{ label: string; value: number | 'all' }> = [
-    { label: '全部', value: 'all' },
-    { label: '失败', value: 0 },
-    { label: '成功', value: 1 },
-    { label: '警告', value: 4 },
-    { label: '进行中', value: 3 },
-    { label: '待开始', value: 2 },
-  ]
   const currentTypeLabel = computed(() => {
     if (activeType.value === '1') return 'API 自动化'
     if (activeType.value === '2') return 'Pytest'
+    if (activeType.value === '4') return '效果测试'
     return 'UI 自动化'
   })
   const currentStatusLabel = computed(() => {
@@ -785,129 +623,58 @@
     return ratioValue(value, total).toFixed(2)
   }
 
-  function statusColor(status: number) {
-    return enumStore.status_colors?.[status] || 'gray'
+  function statusColor(status: number | null | undefined) {
+    return status == null ? 'gray' : enumStore.status_colors?.[status] || 'gray'
   }
 
-  function statusText(status: number) {
-    return enumStore.task_status?.[status]?.title || '未知'
+  function statusText(status: number | null | undefined) {
+    return status == null ? '未知' : enumStore.task_status.find(item => Number(item.key) === status)?.title || '未知'
   }
 
-  function detailAttemptTitle(item: any) {
-    const attemptNo = Number(item?.attempt_no || 0)
-    if (attemptNo <= 1) return '首次执行'
-    return `第${attemptNo - 1}次重试`
-  }
 
-  function detailResultStatusColor(statusTextValue: unknown) {
-    const value = String(statusTextValue || '')
-    if (value.includes('成功') || value.includes('通过')) return 'green'
-    if (value.includes('失败')) return 'red'
-    if (value.includes('警告')) return 'orange'
-    if (value.includes('执行中') || value.includes('进行中')) return 'arcoblue'
-    return 'gray'
-  }
-
-  function detailHistorySourceColor(sourceScope: unknown) {
-    if (sourceScope === 'current_report') return 'arcoblue'
-    if (sourceScope === 'other_report') return 'purple'
-    return 'gray'
-  }
-
-  function envText(env: number) {
+  function envText(env: number | null | undefined) {
     return enumStore.environment_type.find((item) => String(item.key) === String(env))?.title || '-'
   }
 
-  function noticeText(status: number) {
-    return enumStore.test_suite_notice?.[status]?.title || '-'
+  function noticeText(status: number | null | undefined) {
+    return status == null ? '-' : enumStore.test_suite_notice.find(item => Number(item.key) === status)?.title || '-'
   }
 
-  function noticeColor(status: number) {
-    return enumStore.colors?.[status] || 'gray'
+  function noticeColor(status: number | null | undefined) {
+    return status == null ? 'gray' : enumStore.colors?.[status] || 'gray'
   }
 
-  function getTotal(res: any) {
-    return Number(res?.totalSize || res?.total || res?.count || 0)
-  }
 
-  const selectedCaseHasDetail = computed(() => {
-    const record = selectedCase.value || {}
-    const caseType = Number(record?.case_type ?? activeType.value)
-    if (caseType === 0) {
-      return (
-        (Array.isArray(record?.element_result_list) && record.element_result_list.length > 0) ||
-        (Array.isArray(record?.children) && record.children.length > 0)
-      )
-    }
-    if (caseType === 1) {
-      return !!(
-        record?.request ||
-        record?.response ||
-        record?.ass ||
-        record?.error_message ||
-        record?.name
-      )
-    }
-    if (caseType === 2) {
-      return !!(
-        record?.attachments ||
-        record?.statusDetails ||
-        record?.fullName ||
-        record?.description ||
-        record?.name
-      )
-    }
-    return false
-  })
-
-  async function showDetails(record: any) {
+  async function showDetails(value: unknown) {
+    if (!reportAvailable()) return
+    const record = reportObject(value)
+    if (!record) return
     if (record?.__isWarningRow) {
       Message.warning('该用例前置步骤失败，未被执行')
       return
     }
-    const detailId = record?.test_suite_detail_id || record?.__caseSourceId
-    if (!detailId) return
+    const detailId = reportIdentifier(record.test_suite_detail_id ?? record.__caseSourceId)
+    if (detailId === null) return
     if (Number(record?.case_type ?? activeType.value) === 1) {
-      const caseId = record?.__caseId || record?.case_id
+      const caseId = reportIdentifier(record.__caseId ?? record.case_id)
       const historyTargetName =
-        record?.__caseName || record?.name || (caseId ? `Case ${caseId}` : `明细 ${detailId}`)
+        record?.__caseName || record?.name || (caseId !== null ? `Case ${caseId}` : `明细 ${detailId}`)
       apiHistoryDrawer.title = `用例执行历史：${historyTargetName}`
       apiHistoryDrawer.caseId = ''
       apiHistoryDrawer.testSuiteDetailId = detailId
-      apiHistoryDrawer.preferredParameterId = record?.parameter_id
+      apiHistoryDrawer.preferredParameterId = typeof record.parameter_id === 'string' || typeof record.parameter_id === 'number' ? record.parameter_id : undefined
       apiHistoryDrawer.visible = true
       return
     }
-    selectedCaseSourceRecord.value = record
-    detailResultOptions.value = []
-    selectedResultId.value = ''
-    selectedCase.value = {
-      ...record,
-      case_type: record?.case_type ?? Number(activeType.value),
-    }
-    drawerVisible.value = true
-    detailLoading.value = true
-    detailHistoryLoading.value = true
-    try {
-      const [optionsRes, detailRes] = await Promise.all([
-        getSystemTestSuiteDetailsResultOptionsShare(detailId),
-        getSystemTestSuiteDetailsResultShare(detailId),
-      ])
-      detailResultOptions.value = optionsRes.data || []
-      selectedResultId.value = detailResultOptions.value[0]?.id || ''
-      const res = detailRes
-      selectedCase.value = buildFullDetailRecord(record, res.data || {})
-    } catch (error: any) {
-      Message.error(error?.msg || error?.message || '加载详细报告失败')
-    } finally {
-      detailLoading.value = false
-      detailHistoryLoading.value = false
-    }
+    const target = reportResultTarget(record, activeType.value)
+    if (target) await executionResultDrawer.value?.open(target)
   }
 
-  function showCaseHistory(record: any) {
-    const caseId = record?.__caseId || record?.case_id
-    if (!caseId || caseId === '-') {
+  function showCaseHistory(value: unknown) {
+    if (!reportAvailable()) return
+    const record = reportObject(value)
+    const caseId = reportIdentifier(record?.__caseId ?? record?.case_id)
+    if (caseId === null) {
       Message.error('当前报告明细缺少 API Case ID，无法查询历史报告')
       return
     }
@@ -918,192 +685,16 @@
     apiHistoryDrawer.visible = true
   }
 
-  async function changeDetailResult(resultId: any) {
-    const record = selectedCaseSourceRecord.value || {}
-    const detailId = record?.test_suite_detail_id || record?.__caseSourceId
-    if (!detailId || !resultId) return
-    selectedResultId.value = resultId
-    detailLoading.value = true
-    try {
-      const res = await getSystemTestSuiteDetailsResultShare(detailId, resultId)
-      selectedCase.value = buildFullDetailRecord(record, res.data || {})
-    } catch (error: any) {
-      Message.error(error?.msg || error?.message || '切换执行记录失败')
-    } finally {
-      detailLoading.value = false
-    }
+
+  function showExecutionTrace(query: ReportTraceQuery) {
+    return executionTraceDrawer.value?.open(query)
   }
 
-  function buildFullDetailRecord(sourceRecord: any, detailRecord: any) {
-    const caseType = Number(sourceRecord?.case_type ?? detailRecord?.type ?? activeType.value)
-    const children = Array.isArray(detailRecord?.children) ? detailRecord.children : []
-    const matched = findMatchedDetailChild(sourceRecord, children) || children[0] || detailRecord
-    const baseRecord = {
-      ...matched,
-      case_type: caseType,
-      name: matched?.name || sourceRecord?.name || detailRecord?.case_name || detailRecord?.name,
-      status: matched?.status ?? sourceRecord?.status ?? detailRecord?.status,
-      error_message:
-        matched?.error_message ||
-        matched?.statusDetails?.message ||
-        sourceRecord?.error_message ||
-        detailRecord?.error_message,
-      test_suite_detail_id: detailRecord?.id || sourceRecord?.test_suite_detail_id,
-      __caseSourceId: detailRecord?.id || sourceRecord?.__caseSourceId,
-    }
-    if (caseType === 0) {
-      return {
-        ...baseRecord,
-        test_time: baseRecord?.test_time || detailRecord?.test_time,
-        test_object: baseRecord?.test_object || detailRecord?.test_object,
-        video_path: baseRecord?.video_path || detailRecord?.video_path,
-        cache_data: baseRecord?.cache_data || detailRecord?.cache_data,
-        data_factory_cache_data:
-          baseRecord?.data_factory_cache_data || detailRecord?.data_factory_cache_data,
-        element_result_list: [baseRecord],
-        children: [baseRecord],
-      }
-    }
-    return baseRecord
-  }
-
-  function findMatchedDetailChild(sourceRecord: any, children: any[]) {
-    if (!children.length) return null
-    const parameterId = sourceRecord?.parameter_id
-    if (parameterId !== undefined && parameterId !== null) {
-      const item = children.find((child) => String(child?.parameter_id) === String(parameterId))
-      if (item) return item
-    }
-    const id = sourceRecord?.id
-    if (id !== undefined && id !== null) {
-      const item = children.find((child) => String(child?.id) === String(id))
-      if (item) return item
-    }
-    const name = sourceRecord?.name
-    if (name) {
-      const item = children.find((child) => String(child?.name || '') === String(name))
-      if (item) return item
-    }
-    return null
-  }
-
-  async function showExecutionTrace(query: {
-    result_id?: number | string
-    trace_id?: string
-    test_suite_detail_id?: number | string
-    case_id?: number | string
-  }) {
-    if (!query.result_id && !query.trace_id && !query.test_suite_detail_id && !query.case_id) return
-    traceDrawer.visible = true
-    traceDrawer.loading = true
-    traceDrawer.trace = null
-    traceDrawer.steps = []
-    traceDrawer.nodes = []
-    traceDrawer.edges = []
-    traceDrawer.selectedNode = null
-    traceDrawer.expandedNodeIds = []
-    try {
-      const res = await getSystemTestSuiteDetailsExecutionTrace({
-        ...query,
-        include_list: true,
-      })
-      traceDrawer.trace = res.data?.trace || null
-      traceDrawer.steps = res.data?.steps || []
-      traceDrawer.nodes = res.data?.nodes || []
-      traceDrawer.edges = res.data?.edges || []
-      traceDrawer.selectedNode =
-        traceDrawer.nodes.find((node: any) => Number(node.status) === 0) ||
-        traceDrawer.nodes[0] ||
-        null
-      if (!traceDrawer.trace) {
-        Message.warning('本次执行没有链路记录，请重试该 API 用例后再查看')
-      }
-    } catch (error: any) {
-      Message.error(error?.msg || error?.message || '执行链路查询失败')
-    } finally {
-      traceDrawer.loading = false
-    }
-  }
-
-  function traceStatusText(status: number) {
-    if (Number(status) === 1) return '通过'
-    if (Number(status) === 0) return '失败'
-    if (Number(status) === 3) return '进行中'
-    if (Number(status) === 5) return '跳过'
-    if (Number(status) === 4) return '清理失败'
-    return '待开始'
-  }
-
-  function traceStatusColor(status: number) {
-    return enumStore.status_colors?.[Number(status)] || 'gray'
-  }
-
-  function selectTraceNode(node: any) {
-    traceDrawer.selectedNode = node
-  }
-
-  function traceNodeHasChildren(node: any) {
-    return (
-      node.step_type === 'retry_round' &&
-      traceDrawer.nodes.some((item: any) => String(item.parent_step_id || '') === String(node.id))
-    )
-  }
-
-  function traceNodeExpanded(node: any) {
-    return traceDrawer.expandedNodeIds.includes(String(node.id))
-  }
-
-  function toggleTraceNode(node: any) {
-    if (!traceNodeHasChildren(node)) return
-    const id = String(node.id)
-    if (traceNodeExpanded(node)) {
-      traceDrawer.expandedNodeIds = traceDrawer.expandedNodeIds.filter((item) => item !== id)
-      if (String(traceDrawer.selectedNode?.parent_step_id || '') === id) {
-        traceDrawer.selectedNode = node
-      }
-    } else {
-      traceDrawer.expandedNodeIds = [...traceDrawer.expandedNodeIds, id]
-    }
-  }
-
-  function traceNodeDepth(node: any) {
-    let depth = 0
-    let parent = node.parent_step_id ? traceNodeMap.value.get(String(node.parent_step_id)) : null
-    while (parent && depth < 3) {
-      depth += 1
-      parent = parent.parent_step_id ? traceNodeMap.value.get(String(parent.parent_step_id)) : null
-    }
-    return depth
-  }
-
-  function traceSourceText(sourceType: number) {
-    const sourceMap: Record<number, string> = {
-      1: '测试报告',
-      2: '定时任务',
-      3: 'MCP',
-      4: '单 Case 执行',
-      5: '调试执行',
-      6: '其他',
-    }
-    return sourceMap[Number(sourceType)] || '未知'
-  }
-
-  function traceNodeClass(status: number) {
-    if (Number(status) === 1) return 'is-success'
-    if (Number(status) === 0) return 'is-fail'
-    if (Number(status) === 3) return 'is-running'
-    if (Number(status) === 5) return 'is-skip'
-    if (Number(status) === 4) return 'is-warning'
-    return 'is-pending'
-  }
-
-  function formatTraceSummary(value: any) {
-    return JSON.stringify(value || {}, null, 2)
-  }
-
-  function openCaseDetail(record: any) {
-    const caseId = record?.__caseId || record?.case_id || record?.id
-    if (!caseId || caseId === '-') {
+  function openCaseDetail(value: unknown) {
+    if (!reportAvailable()) return
+    const record = reportObject(value)
+    const caseId = reportIdentifier(record?.__caseId ?? record?.case_id ?? record?.id)
+    if (caseId === null) {
       Message.error('未找到用例ID')
       return
     }
@@ -1118,7 +709,7 @@
   }
 
   function buildCaseQuery() {
-    const data: any = {
+    const data: Record<string, string | number> = {
       test_suite_id: reportId.value,
       type: activeType.value,
       page: pagination.page,
@@ -1135,94 +726,75 @@
     return data
   }
 
-  async function loadReportInfo() {
-    if (!reportId.value) return
-    if (pageData.record?.id?.toString() === reportId.value) {
-      reportInfo.value = pageData.record || {}
-      return
-    }
-    const res = await getSystemTestSuiteShare(reportId.value)
-    reportInfo.value = res.data || {}
-    pageData.setRecord(reportInfo.value)
+  function loadReportInfo(silent = false, context?: PollingContext) {
+    const id = reportId.value
+    return infoReads.run({ key: id, silent, loading: reportInfoLoading, error: reportInfoError,
+      message: '报告信息加载失败，请重试',
+      isCurrent: context?.isCurrent,
+      read: async () => parseReportOverview(await runLoadRequest(silent, () => getSystemTestSuiteShare(id, silent)), id),
+      apply: value => { reportInfo.value = value; if (!silent) handlePolling() },
+    })
   }
 
-  async function loadSummary(silent = false, context?: PollingContext) {
-    if (!reportId.value) return
-    if (!silent) summaryLoading.value = true
-    try {
-      const res = await getSystemTestSuiteDetailsSummaryShare(reportId.value)
-      if (context && !context.isCurrent()) return
-      summary.value = res.data || {}
-      const [firstVisibleType] = visibleTypeTabs.value
-      if (
-        firstVisibleType &&
-        !visibleTypeTabs.value.some((item) => item.key === activeType.value)
-      ) {
-        activeType.value = firstVisibleType.key
-      }
-      if (!silent) handlePolling()
-    } finally {
-      if (!silent) summaryLoading.value = false
-    }
+  function loadSummary(silent = false, context?: PollingContext) {
+    const id = reportId.value
+    return summaryReads.run({ key: id, silent, loading: summaryLoading, error: summaryError,
+      message: '报告统计加载失败，请重试', isCurrent: context?.isCurrent,
+      read: async () => parseReportSummary(await runLoadRequest(silent, () => getSystemTestSuiteDetailsSummaryShare(id, silent))),
+      apply: value => {
+        summary.value = value
+        const firstVisibleType = visibleTypeTabs.value[0]
+        if (firstVisibleType && !visibleTypeTabs.value.some(item => item.key === activeType.value)) {
+          activeType.value = firstVisibleType.key
+          pagination.page = 1
+          cases.value = []
+          void refreshLoadedCases(silent, context).catch(() => {})
+        }
+        if (!silent) handlePolling()
+      },
+    })
   }
 
   async function refreshDisposition() {
-    await Promise.all([loadSummary(), loadReportInfo(), refreshLoadedCases()])
+    await Promise.allSettled([loadSummary(), loadReportInfo(), refreshLoadedCases()])
   }
 
-  async function loadFailureReasons(silent = false, context?: PollingContext) {
-    if (!reportId.value || failureReasonLoading.value) return
-    if (!silent) failureReasonLoading.value = true
-    try {
-      const res = await getSystemTestSuiteDetailsFailureReasonsShare(reportId.value)
-      if (context && !context.isCurrent()) return
-      failureReasonSummary.value = {
-        items: res.data?.items || [],
-        category_count: Number(res.data?.category_count || 0),
-        failure_count: Number(res.data?.failure_count || 0),
-      }
-    } catch (error: any) {
-      if (silent) throw error
-      if (!silent) Message.error(error?.msg || error?.message || '加载失败原因统计失败')
-    } finally {
-      if (!silent) failureReasonLoading.value = false
-    }
+  function loadFailureReasons(silent = false, context?: PollingContext) {
+    const id = reportId.value
+    return failureReads.run({ key: id, silent, loading: failureReasonLoading, error: failureReasonError,
+      message: '失败原因加载失败，请重试', isCurrent: context?.isCurrent,
+      read: async () => parseReportFailureReasons(await runLoadRequest(silent, () => getSystemTestSuiteDetailsFailureReasonsShare(id, silent))),
+      apply: value => { failureReasonSummary.value = value },
+    })
   }
 
-  async function loadCases(reset = false) {
-    if (!reportId.value || caseLoading.value) return
+  function loadCases(reset = false) {
     if (reset) {
       cases.value = []
       pagination.page = 1
       pagination.total = 0
     }
-
-    caseLoading.value = true
-    try {
-      const res = await getSystemTestSuiteDetailsShare(buildCaseQuery())
-      const list = Array.isArray(res.data) ? res.data : []
-      cases.value = list
-      pagination.total = getTotal(res)
-    } catch (error: any) {
-      Message.error(error?.msg || '加载报告失败')
-    } finally {
-      caseLoading.value = false
-    }
+    return refreshLoadedCases()
   }
 
   function reloadCases() {
-    loadCases(true)
+    return loadCases(true)
   }
 
   function searchCases() {
     const normalizedKeyword = caseKeyword.value.trim()
-    if (normalizedKeyword === lastSearchedCaseKeyword.value) return
+    if (normalizedKeyword === lastSearchedCaseKeyword.value && !caseError.value) return
     lastSearchedCaseKeyword.value = normalizedKeyword
     reloadCases()
   }
 
   function searchCasesOnBlur() {
-    window.setTimeout(searchCases, 0)
+    if (searchBlurTimer !== undefined) clearTimeout(searchBlurTimer)
+    const currentVersion = pageVersion
+    searchBlurTimer = setTimeout(() => {
+      searchBlurTimer = undefined
+      if (pageVersion === currentVersion && reportAvailable()) searchCases()
+    }, 0)
   }
 
   function clearCaseKeyword() {
@@ -1251,23 +823,14 @@
     reloadCases()
   }
 
-  async function refreshLoadedCases(silent = false, context?: PollingContext) {
-    if (!reportId.value || caseLoading.value) return
-    const currentPage = pagination.page
-    if (!silent) caseLoading.value = true
-    try {
-      const query = buildCaseQuery()
-      const res = await getSystemTestSuiteDetailsShare(query)
-      if (context && !context.isCurrent()) return
-      const list = Array.isArray(res.data) ? res.data : []
-      cases.value = list
-      pagination.total = getTotal(res)
-    } catch (error) {
-      pagination.page = currentPage
-      throw error
-    } finally {
-      if (!silent) caseLoading.value = false
-    }
+  function refreshLoadedCases(silent = false, context?: PollingContext) {
+    const query = buildCaseQuery(), key = JSON.stringify(query)
+    return caseReads.run({ key, silent, loading: caseLoading, error: caseError,
+      message: '用例结果加载失败，请重试',
+      isCurrent: () => key === JSON.stringify(buildCaseQuery()) && (context?.isCurrent() ?? true),
+      read: async () => parseReportCasePage(await runLoadRequest(silent, () => getSystemTestSuiteDetailsShare(query, silent))),
+      apply: value => { cases.value = value.rows; pagination.total = value.total },
+    })
   }
 
   function handlePolling() {
@@ -1275,13 +838,16 @@
       stopPolling()
       return
     }
-    const hasInProgress =
-      (summary.value.stay_begin_count || 0) > 0 || (summary.value.proceed_count || 0) > 0
+    const hasInProgress = hasPendingReport()
     if (hasInProgress && !isPolling.value) {
       startPolling()
     } else if (!hasInProgress && isPolling.value) {
       stopPolling()
     }
+  }
+
+  function hasPendingReport() {
+    return summary.value.stay_begin_count > 0 || summary.value.proceed_count > 0 || isPendingExecution(reportInfo.value)
   }
 
   function startPolling() {
@@ -1295,117 +861,85 @@
     isPolling.value = false
   }
 
-  function onRetry(id: any) {
-    Modal.confirm({
-      title: '提示',
-      content: '是否要重试这个测试任务？',
-      cancelText: '取消',
-      okText: '重试',
-      onBeforeOk: () => {
-        return getSystemTestSuiteDetailsRetry(id)
-          .then((res) => {
-            Message.success(res.msg)
-            loadSummary()
-            reloadCases()
-          })
-          .catch(console.log)
-      },
-    })
-  }
-
-  async function startApiExport() {
-    if (!reportId.value || apiExport.loading) return
-    apiExport.loading = true
-    try {
-      const res = await postSystemTestSuiteDetailsApiExport({
-        test_suite_id: reportId.value,
-        status: caseStatus.value,
-      })
-      apiExport.taskId = res.data?.task_id
-      if (!apiExport.taskId) {
-        throw new Error('导出任务创建失败')
-      }
-      Message.success('导出任务已创建，完成后将自动下载')
-      pollApiExport()
-    } catch (error: any) {
-      apiExport.loading = false
-      Message.error(error?.message || '导出任务创建失败')
+  function invalidateReportReads(clear = false) {
+    pageVersion += 1
+    infoReads.invalidate(); summaryReads.invalidate(); failureReads.invalidate(); caseReads.invalidate()
+    if (searchBlurTimer !== undefined) clearTimeout(searchBlurTimer)
+    searchBlurTimer = undefined
+    apiHistoryDrawer.visible = false
+    caseDetailDrawer.visible = false
+    diagnosticDrawer.visible = false
+    executionTraceDrawer.value?.close()
+    executionResultDrawer.value?.close()
+    if (clear) {
+      reportInfo.value = null
+      summary.value = emptyReportSummary()
+      failureReasonSummary.value = emptyReportFailureReasons()
+      cases.value = []
+      pagination.total = 0
+      reportInfoError.value = ''; summaryError.value = ''; failureReasonError.value = ''; caseError.value = ''
     }
   }
 
-  async function pollApiExport() {
-    if (!apiExport.taskId) {
-      apiExport.loading = false
-      return
-    }
-    try {
-      const res = await getSystemTestSuiteDetailsApiExportStatus(apiExport.taskId)
-      const task = res.data || {}
-      if (task.status === 'success') {
-        await downloadApiExport(task.file_name)
-        Message.success('API报告导出完成')
-        apiExport.loading = false
-        apiExport.taskId = ''
-        return
-      }
-      if (task.status === 'fail') {
-        Message.error(task.message || 'API报告导出失败')
-        apiExport.loading = false
-        apiExport.taskId = ''
-        return
-      }
-      apiExportTimer.value = setTimeout(pollApiExport, 1500)
-    } catch (error: any) {
-      apiExport.loading = false
-      Message.error(error?.message || '查询导出任务失败')
-    }
-  }
-
-  async function downloadApiExport(fileName?: string) {
-    const res: any = await downloadSystemTestSuiteDetailsApiExport(apiExport.taskId)
-    const blob = new Blob([res.data], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = fileName || `API测试报告_${reportId.value}_${Date.now()}.xlsx`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-  }
-
-  onMounted(async () => {
-    if (!enumStore.task_status?.length) {
-      enumStore.getEnumShare()
-    }
-    await loadReportInfo()
-    await loadSummary()
+  async function initializeReport() {
+    if (!reportAvailable()) return
+    const currentVersion = pageVersion
+    void loadReportInfo()
     void loadFailureReasons()
-    const [firstVisibleType] = visibleTypeTabs.value
-    if (firstVisibleType) {
-      activeType.value = firstVisibleType.key
-    }
-    await loadCases(true)
+    await loadSummary()
+    if (pageVersion !== currentVersion || !reportAvailable()) return
+    if (summaryError.value) startPolling()
+    await loadCases()
+  }
+
+  function onReportVisibilityChange() {
+    if (document.visibilityState === 'visible') {
+      if (reportPageActive.value) void initializeReport()
+    } else invalidateReportReads()
+  }
+
+  watch(() => JSON.stringify(buildCaseQuery()), () => caseReads.invalidate(), { flush: 'sync' })
+  watch(() => [route.fullPath, userStore.userId, userStore.roleId, userStore.token, userStore.selected_environment], () => {
+    stopPolling()
+    invalidateReportReads(true)
+    if (!reportPaths.includes(route.path)) return
+    const sameEntry = route.fullPath === reportEntryFullPath
+    reportEntryFullPath = route.fullPath
+    reportId.value = reportIdentifier(route.query.id) ?? (sameEntry && route.query.id === undefined ? reportId.value : '')
+    pagination.page = 1
+    activeType.value = '0'
+    caseStatus.value = 'all'
+    excludedFilter.value = 'all'
+    caseKeyword.value = ''
+    lastSearchedCaseKeyword.value = ''
+    if (mounted) void initializeReport()
+  }, { flush: 'sync' })
+
+  onMounted(() => {
+    mounted = true
+    document.addEventListener('visibilitychange', onReportVisibilityChange)
+    if (!enumStore.task_status?.length) void enumStore.getEnumShare()
+    void initializeReport()
   })
 
   onActivated(() => {
+    const resume = !reportPageActive.value
     reportPageActive.value = true
-    handlePolling()
+    if (resume) void initializeReport()
   })
 
   onDeactivated(() => {
     reportPageActive.value = false
+    stopPolling()
+    invalidateReportReads(true)
   })
 
   onUnmounted(() => {
+    disposed = true
     reportPageActive.value = false
     stopPolling()
-    if (apiExportTimer.value) {
-      clearTimeout(apiExportTimer.value)
-      apiExportTimer.value = null
-    }
+    invalidateReportReads(true)
+    document.removeEventListener('visibilitychange', onReportVisibilityChange)
   })
 </script>
 
@@ -1424,6 +958,12 @@
     container: mango-report-detail / inline-size;
   }
 
+  .mango-report-head-spin {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
   .standalone-report-container {
     height: 100vh;
     padding: var(--m-space-lg);
@@ -1440,77 +980,6 @@
     box-shadow: var(--m-shadow);
   }
 
-  .report-detail-empty {
-    min-height: 180px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    color: var(--m-muted);
-    font-size: 14px;
-  }
-
-  .report-detail-empty__alert {
-    width: min(720px, calc(100% - 32px));
-  }
-
-  .report-detail-spin {
-    display: block;
-    min-width: 0;
-    min-height: 0;
-    border: 1px solid var(--m-border);
-    border-radius: var(--m-radius-lg);
-    background: var(--m-surface);
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-
-  .report-detail-spin :deep(> .mango-panel-spin__content) {
-    box-sizing: border-box;
-    min-height: 100%;
-    padding: var(--m-card-padding);
-    overflow: visible;
-  }
-
-  .report-detail-spin--api {
-    height: 100%;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .report-detail-spin--api :deep(> .mango-panel-spin__content) {
-    height: 100%;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .mango-report-result-history {
-    display: grid;
-    height: 100%;
-    min-width: 0;
-    min-height: 0;
-    grid-template-columns: 300px minmax(0, 1fr);
-    gap: 12px;
-  }
-
-  :deep(.mango-report-result-drawer .arco-drawer-body) {
-    padding: var(--m-page-gap);
-    overflow: hidden;
-    background: var(--m-bg);
-  }
-
-  @media (max-width: 900px) {
-    :deep(.mango-report-result-drawer .arco-drawer) {
-      width: 92vw !important;
-    }
-
-    .mango-report-result-history {
-      grid-template-columns: 1fr;
-      grid-template-rows: minmax(180px, 28%) minmax(0, 1fr);
-    }
-  }
 
   .report-head {
     display: grid;

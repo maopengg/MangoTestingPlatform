@@ -1,5 +1,8 @@
-export const requestColumns = [
-  { title: '请求', key: 'request', dataIndex: 'request_name', width: 280 },
+import type { TableColumnData } from '@arco-design/web-vue'
+import type { RequestColumnKey } from './types'
+
+export const requestColumns: Array<TableColumnData & { key: RequestColumnKey }> = [
+  { title: '请求', key: 'request', dataIndex: 'request_name', width: 280, ellipsis: true, tooltip: true },
   { title: '请求数', key: 'request_count', dataIndex: 'request_count', width: 100, align: 'center' },
   { title: '失败数', key: 'failure_count', dataIndex: 'failure_count', width: 100, align: 'center' },
   { title: '错误率', key: 'error_rate', width: 100, align: 'center' },
@@ -9,17 +12,17 @@ export const requestColumns = [
   { title: 'P99(ms)', key: 'p99_ms', dataIndex: 'p99_ms', width: 110, align: 'center' },
   { title: '平均/峰值 RPS', key: 'rps', dataIndex: 'rps', width: 140, align: 'center' },
 ]
-export const nodeColumns = [
+export const nodeColumns: Array<TableColumnData & { key: string }> = [
   { title: '分片', key: 'shard_index', dataIndex: 'shard_index', width: 80, align: 'center' },
-  { title: '执行器', key: 'executor_fingerprint', dataIndex: 'executor_fingerprint', width: 180 },
+  { title: '执行器', key: 'executor_fingerprint', dataIndex: 'executor_fingerprint', width: 180, ellipsis: true, tooltip: true },
   { title: '状态', key: 'status', dataIndex: 'status', width: 110, align: 'center' },
-  { title: '引擎版本', key: 'engine_version', dataIndex: 'engine_version', width: 120 },
-  { title: '最后指标', key: 'last_metric_at', dataIndex: 'last_metric_at', width: 180 },
+  { title: '引擎版本', key: 'engine_version', dataIndex: 'engine_version', width: 120, ellipsis: true, tooltip: true },
+  { title: '最后指标', key: 'last_metric_at', dataIndex: 'last_metric_at', width: 180, align: 'center' },
   { title: '请求记录', key: 'capture', width: 190 },
   { title: '错误', key: 'error_message', dataIndex: 'error_message', width: 260, ellipsis: true, tooltip: true },
 ]
-export const comparisonColumns = [
-  { title: '指标', key: 'metric', dataIndex: 'metric', width: 170 },
+export const comparisonColumns: Array<TableColumnData & { key: 'metric' | 'current' | 'baseline' | 'delta' | 'delta_percent' }> = [
+  { title: '指标', key: 'metric', dataIndex: 'metric', width: 170, ellipsis: true, tooltip: true },
   { title: '当前值', key: 'current', dataIndex: 'current', width: 140, align: 'center' },
   { title: '基线值', key: 'baseline', dataIndex: 'baseline', width: 140, align: 'center' },
   { title: '变化量', key: 'delta', dataIndex: 'delta', width: 140, align: 'center' },
@@ -29,3 +32,9 @@ export const comparisonColumns = [
 export const REQUEST_TABLE_SCROLL_X = 1250
 export const NODE_TABLE_SCROLL_X = 1290
 export const COMPARISON_TABLE_SCROLL_X = 760
+
+export const comparisonMetricLabels: Readonly<Record<string, string>> = {
+  request_count: '请求总数', failure_count: '失败数', avg_ms: '平均响应时间',
+  p95_ms: 'P95 响应时间', p99_ms: 'P99 响应时间', rps: '平均 RPS',
+}
+export const validityStatusLabels: Readonly<Record<string, string>> = { passed: '通过', failed: '失败', warning: '警告' }

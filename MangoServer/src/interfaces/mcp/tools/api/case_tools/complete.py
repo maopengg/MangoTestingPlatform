@@ -73,6 +73,7 @@ def register_case_complete_tools(mcp):
         import_mcp_tool_to_api_info / import_grpc_method_to_api_info。接口调试成功后显式调用
         create_api_info_revision_from_current 和 publish_api_info_revision，最后再调用本工具创建 Case。
         接口协议和请求体类型取已发布 ApiInfo；场景请求数据使用 scenarios[].body_config/sse_config。
+        简单/嵌套 JSON 直接填 body_config，变量、提取和常规断言用平台配置；仅无法表达的计算/解码才用场景函数，遵循 get_api_case_schema.execution_rules.function_usage，不用函数兜底失败清理。
         sse_config 暂时保留，后续会并入 body_config；MCP/gRPC 执行配置请放入 body_config.mcp_config/body_config.grpc_config。
         scenarios[] 可以直接传断言字段 ass_jsonpath、ass_general、ass_json_all、ass_text_all、ass_schema。
         scenarios[].allow_failure=true 时，该场景全部重试后仍失败会记为警告，并继续执行后续步骤；默认 false。

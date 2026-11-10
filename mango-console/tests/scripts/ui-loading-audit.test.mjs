@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { auditLoading, findNestedLoading } from '../../scripts/ui-loading-audit.mjs'
+import { auditLoading, findNestedLoading, findInvalidSpinSizes } from '../../scripts/ui-loading-audit.mjs'
+
+test('Spin accepts numeric size bindings rather than button-style size names', () => {
+  assert.equal(findInvalidSpinSizes(`<template><a-spin size="small"/><mango-panel-spin size="16"/><a-spin :size="'mini'"/></template>`).length, 3)
+  assert.deepEqual(findInvalidSpinSizes(`<template><a-spin :size="scaleDensityPixels(16)"/><mango-panel-spin :size="12"/><a-button size="small"/><a-spin/></template>`), [])
+})
 
 test('detects nested table and panel masks but preserves button feedback', () => {
   const issues = findNestedLoading(`<template><a-spin :loading="busy">

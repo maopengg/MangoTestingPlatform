@@ -45,6 +45,8 @@ class EsCleanupSnapshot(StrictSchema):
     row_primary_value: str | None = Field(default=None, min_length=1, max_length=256)
     tenant: str = Field(min_length=1, max_length=128)
     baseline_absent: bool
+    requested_index: str | None = Field(default=None, max_length=255, pattern=r'^[a-z0-9][a-z0-9_-]*$')
+    index_uuid: str | None = Field(default=None, min_length=1, max_length=128)
 
 
 class EsCleanupCheckResult(StrictSchema):
@@ -78,6 +80,12 @@ class EsUnknownPermit(StrictSchema):
     document_id: str
 
 
+class EsUncertainRequest(StrictSchema):
+    request_id: str = Field(min_length=1, max_length=128)
+    index: str
+    document_id: str
+
+
 class CleanupResourceState(StrictSchema):
     version: int = Field(default=1, ge=1, le=1)
     snapshots: list[EsCleanupSnapshot] = Field(default_factory=list, max_length=5)
@@ -85,6 +93,7 @@ class CleanupResourceState(StrictSchema):
     results: list[EsCleanupCheckResult] = Field(default_factory=list, max_length=5)
     checkpoints: list[EsCleanupCheckpoint] = Field(default_factory=list, max_length=5)
     unknown_permits: list[EsUnknownPermit] = Field(default_factory=list, max_length=64)
+    uncertain_requests: list[EsUncertainRequest] = Field(default_factory=list, max_length=64)
 
 
 class CleanupTaskPayload(StrictSchema):

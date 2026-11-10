@@ -2,12 +2,24 @@ import { FormItem } from '@/types/components'
 import { enableMultiSelectSearch } from '@/utils/search-condition'
 import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
-import { Message } from '@arco-design/web-vue'
-import { useTable, useTableColumn } from '@/hooks/table'
+import { useTableIndexColumn, useTableColumn } from '@/hooks/table'
 import { updateTimeColumn, updateUserColumn } from '@/utils/update-user'
 
-const table = useTable()
-export const conditionItems: Array<FormItem> = reactive([
+type TaskField = Omit<FormItem, 'key'> & { key: string }
+export const binaryStatusOptions = [{ label: '已开启', value: 1 }, { label: '已关闭', value: 0 }]
+export const noticeStatusOptions = [{ label: '通知', value: 1 }, { label: '不通知', value: 0 }]
+export const taskGroupSyncStatusOptions = [{ label: '已同步', value: 'synced' }, { label: '待同步', value: 'pending' }, { label: '同步失败', value: 'failed' }]
+export function taskStatusOptions(notice = false) {
+  return [
+    { key: 1, title: notice ? '通知' : '已开启', value: 1, label: notice ? '通知' : '已开启' },
+    { key: 0, title: notice ? '不通知' : '已关闭', value: 0, label: notice ? '不通知' : '已关闭' },
+  ]
+}
+export function taskGroupFilterOption(id: string | number, name: string) {
+  return { key: id, title: name, value: id, label: name }
+}
+export function createConditionItems(): TaskField[] {
+const fields: Array<Omit<TaskField, 'disabled'>> = [
   {
     key: 'id',
     label: 'ID',
@@ -105,10 +117,7 @@ export const conditionItems: Array<FormItem> = reactive([
     value: ref(''),
     type: 'select',
     placeholder: '请选择是否开启',
-    optionItems: [
-      { key: 1, title: '已开启' },
-      { key: 0, title: '已关闭' },
-    ],
+    optionItems: taskStatusOptions(),
     reset: function () {
       this.value = ''
     },
@@ -119,10 +128,7 @@ export const conditionItems: Array<FormItem> = reactive([
     value: ref(''),
     type: 'select',
     placeholder: '请选择是否通知',
-    optionItems: [
-      { key: 1, title: '通知' },
-      { key: 0, title: '不通知' },
-    ],
+    optionItems: taskStatusOptions(true),
     reset: function () {
       this.value = ''
     },
@@ -138,186 +144,14 @@ export const conditionItems: Array<FormItem> = reactive([
     optionItems: [],
     reset: function () {},
   },
-])
-enableMultiSelectSearch(conditionItems)
-export const formItems: FormItem[] = reactive([
-  {
-    label: '报告保留策略', key: 'report_retention_policy', value: ref('all'), type: 'select',
-    placeholder: '请选择报告保留策略', required: true,
-    reset: function () { this.value = 'all' },
-  },
-  {
-    label: '项目/产品',
-    key: 'project_product',
-    value: ref(''),
-    placeholder: '请选择项目名称',
-    required: true,
-    type: 'cascader',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '模块名称',
-    key: 'module',
-    value: ref(''),
-    placeholder: '请选择模块名称，留空则为全部模块名称',
-    required: false,
-    type: 'select',
-    validator: function () {
-      return true
-    },
-  },
-  {
-    label: '任务名称',
-    key: 'name',
-    value: ref(''),
-    placeholder: '请输入任务名称',
-    required: true,
-    type: 'input',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '定时策略',
-    key: 'timing_strategies',
-    value: ref([]),
-    placeholder: '请输入选择定时器策略',
-    required: true,
-    type: 'select',
-    multiple: true,
-    validator: function () {
-      if (!Array.isArray(this.value) || this.value.length === 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-    reset: function () {
-      this.value = []
-    },
-  },
-  {
-    label: '测试环境',
-    key: 'test_envs',
-    value: ref([]),
-    placeholder: '请选择执行环境',
-    required: true,
-    type: 'select',
-    multiple: true,
-    validator: function () {
-      if (!Array.isArray(this.value) || this.value.length === 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-    reset: function () {
-      this.value = []
-    },
-  },
-  {
-    label: '用例类型',
-    key: 'case_types',
-    value: ref([]),
-    placeholder: '留空表示全部类型',
-    required: false,
-    type: 'select',
-    multiple: true,
-    validator: function () {
-      return true
-    },
-    reset: function () {
-      this.value = []
-    },
-  },
-  {
-    label: '执行场景',
-    key: 'execution_scenes',
-    value: ref([]),
-    placeholder: '请选择执行场景',
-    required: true,
-    type: 'select',
-    multiple: true,
-    validator: function () {
-      if (!Array.isArray(this.value) || this.value.length === 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-    reset: function () {
-      this.value = []
-    },
-  },
-  {
-    label: '执行范围',
-    key: 'execution_scope',
-    value: ref(''),
-    placeholder: '请选择执行范围',
-    required: true,
-    type: 'select',
-    validator: function () {
-      if (!this.value || this.value === 'unclassified') {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '负责人',
-    key: 'case_people',
-    value: ref(''),
-    placeholder: '请选择定时任务负责人',
-    required: true,
-    type: 'select',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: 'API 并发',
-    key: 'api_concurrency_limit',
-    value: ref(null),
-    placeholder: '留空则使用平台最大执行容量',
-    required: false,
-    type: 'number',
-    validator: function () {
-      return true
-    },
-    reset: function () {
-      this.value = null
-    },
-  },
-  {
-    label: '通知组',
-    key: 'notice_group',
-    value: ref(''),
-    placeholder: '请选择通知组',
-    required: false,
-    type: 'select',
-    validator: function () {
-      return true
-    },
-  },
-])
-
+]
+const items = reactive(fields)
+enableMultiSelectSearch(items)
+for (const item of items) item.reset = function () { this.value = this.multiple ? [] : '' }
+return items
+}
 export const tableColumns = useTableColumn([
-  table.indexColumn,
+  { ...useTableIndexColumn(), align: 'center' },
   {
     title: '任务名称',
     key: 'name',
@@ -400,8 +234,8 @@ export const tableColumns = useTableColumn([
     ellipsis: true,
     tooltip: true,
   },
-  updateUserColumn(),
-  updateTimeColumn(),
+  { ...updateUserColumn(), key: 'update_user' },
+  { ...updateTimeColumn(), key: 'update_time' },
   {
     title: '来源任务组',
     key: 'task_group_name',

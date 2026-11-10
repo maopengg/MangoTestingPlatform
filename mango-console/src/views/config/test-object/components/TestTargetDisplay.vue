@@ -42,7 +42,7 @@
 <script setup lang="ts">
   import { computed } from 'vue'
   import type { TestTargetConfig } from '../target-config'
-  const props = defineProps<{ value?: string; config?: TestTargetConfig }>()
+  const props = defineProps<{ value?: string | null; config?: TestTargetConfig | null }>()
   const defaultAddress = computed(() => props.value || props.config?.default || '未设置')
   const entries = computed(() => Object.entries(props.config?.mapping || {}))
 </script>
@@ -75,7 +75,9 @@
   }
   .mango-target-preview-default {
     color: var(--m-text);
-    overflow-wrap: anywhere;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .mango-target-preview-line {
     overflow: hidden;

@@ -67,3 +67,17 @@ class ApiCaseConfigurationDetailQuery(serializers.Serializer):
     id = serializers.IntegerField(min_value=1)
     page = serializers.IntegerField(min_value=1, default=1)
     pageSize = serializers.IntegerField(min_value=1, max_value=100, default=20)
+
+
+class ApiResourceResultsQuery(serializers.Serializer):
+    case_id = serializers.IntegerField(min_value=1)
+    trace_id = serializers.CharField(max_length=64, required=False)
+    resource_id = serializers.IntegerField(min_value=1, required=False)
+    page = serializers.IntegerField(min_value=1, default=1)
+    page_size = serializers.IntegerField(min_value=1, max_value=100, default=10)
+
+
+class ApiResourceCleanupCommand(serializers.Serializer):
+    case_id = serializers.IntegerField(min_value=1)
+    resource_id = serializers.IntegerField(min_value=1)
+    preview = serializers.BooleanField(default=True)

@@ -1,58 +1,50 @@
 <template>
-  <ModalDialog
-    ref="dialog"
-    title="测试服务器连通性"
-    width="min(560px, calc(100vw - 32px))"
-    @confirm="runTest"
-    @cancel="reset"
-  >
-    <template #content>
-      <div class="mango-target-probe">
-        <p class="mango-target-probe__hint"
-          >从平台服务器检测 DNS 与 TCP 端口，不发送业务请求或验证登录态。</p
-        >
-        <a-form
-          :model="{ address }"
-          layout="horizontal"
-          size="small"
-          class="mango-target-probe__form"
-        >
-          <a-form-item label="被测地址">
-            <a-select
-              v-model="address"
-              :disabled="loading"
-              placeholder="请选择被测地址"
-              @change="clearResult"
-            >
-              <a-option
-                v-for="option in options"
-                :key="option.value"
-                :value="option.value"
-                :label="option.label"
-              >
-                {{ option.label }} · {{ option.value }}
-              </a-option>
-            </a-select>
-          </a-form-item>
-        </a-form>
-        <p v-if="address" class="mango-target-probe__address">{{ address }}</p>
-        <div v-if="result" class="mango-target-probe__result" role="status">
-          <a-alert
-            :type="result.connected ? 'success' : 'error'"
-            :title="result.connected ? '连接成功' : '连接失败'"
-            class="mango-target-probe__summary"
+  <a-modal modal-class="mango-simple-form-modal" v-model:visible="visible" title="测试服务器连通性" :width="560" @cancel="close">
+    <div class="mango-target-probe">
+      <p class="mango-target-probe__hint"
+        >从平台服务器检测 DNS 与 TCP 端口，不发送业务请求或验证登录态。</p
+      >
+      <a-form auto-label-width
+        :model="{ address }"
+        layout="horizontal"
+        size="small"
+        class="mango-target-probe__form mango-simple-form"
+      >
+        <a-form-item class="mango-simple-form-item" label="被测地址">
+          <a-select
+            v-model="address"
+            :disabled="loading"
+            placeholder="请选择被测地址"
+            @change="clearResult"
           >
-            {{ result.message }}
-          </a-alert>
-          <dl class="mango-target-probe__details">
-            <dt>检测目标</dt><dd>{{ result.host }}:{{ result.port }}</dd> <dt>解析地址</dt
-            ><dd>{{ result.resolved_ips.join('、') || '—' }}</dd> <dt>检测耗时</dt
-            ><dd>{{ result.elapsed_ms }} ms</dd>
-          </dl>
-        </div>
-        <a-alert v-if="error" type="error" role="alert">{{ error }}</a-alert>
+            <a-option
+              v-for="option in options"
+              :key="option.value"
+              :value="option.value"
+              :label="option.label"
+            >
+              {{ option.label }} · {{ option.value }}
+            </a-option>
+          </a-select>
+        </a-form-item>
+      </a-form>
+      <p v-if="address" class="mango-target-probe__address">{{ address }}</p>
+      <div v-if="result" class="mango-target-probe__result" role="status">
+        <a-alert
+          :type="result.connected ? 'success' : 'error'"
+          :title="result.connected ? '连接成功' : '连接失败'"
+          class="mango-target-probe__summary"
+        >
+          {{ result.message }}
+        </a-alert>
+        <dl class="mango-target-probe__details">
+          <dt>检测目标</dt><dd>{{ result.host }}:{{ result.port }}</dd> <dt>解析地址</dt
+          ><dd>{{ result.resolved_ips.join('、') || '—' }}</dd> <dt>检测耗时</dt
+          ><dd>{{ result.elapsed_ms }} ms</dd>
+        </dl>
       </div>
-    </template>
+      <a-alert v-if="error" type="error" role="alert">{{ error }}</a-alert>
+    </div>
     <template #footer>
       <a-space class="mango-modal-dialog-footer-actions">
         <a-button size="small" @click="close">关闭</a-button>
@@ -66,73 +58,77 @@
         >
       </a-space>
     </template>
-  </ModalDialog>
+  </a-modal>
 </template>
 
 <script setup lang="ts">
-  import { onBeforeUnmount, ref } from 'vue'
-  import ModalDialog from '@/components/overlays/ModalDialog.vue'
+  import { ref } from 'vue'
   import { testObjectConnection, type TestObjectProbeResult } from '@/api/system/test_object'
-  import type { ModalDialogType } from '@/types/components'
-
-  const dialog = ref<ModalDialogType | null>(null)
-  const options = ref<Array<{ label: string; value: string }>>([])
+  import { useTestObjectScope } from '../composables/useTestObjectScope'
+  import type { ProbeAddress, TestObjectRecord } from '../types'
+  const emit = defineEmits<{ (event: 'testing-change', id: number, pending: boolean): void }>()
+  const visible = ref(false)
+  const options = ref<ProbeAddress[]>([])
   const address = ref('')
-  const objectId = ref(0)
+  const objectId = ref<number | null>(null)
   const loading = ref(false)
   const result = ref<TestObjectProbeResult | null>(null)
   const error = ref('')
   let requestVersion = 0
-
+  const scope = useTestObjectScope(close)
   function clearResult() {
+    ++requestVersion
     result.value = null
     error.value = ''
   }
-
-  function reset() {
-    requestVersion += 1
-    loading.value = false
-    result.value = null
-    error.value = ''
-  }
-
-  function open(record: {
-    id: number
-    network_test_addresses: Array<{ label: string; value: string }>
-  }) {
-    reset()
+  function open(record: TestObjectRecord) {
+    if (loading.value || !scope.isActive()) return
+    close()
     objectId.value = record.id
-    options.value = record.network_test_addresses || []
+    options.value = (record.network_test_addresses || []).map((option) => ({
+      label: option.label,
+      value: option.value,
+    }))
     address.value = options.value[0]?.value || ''
-    dialog.value?.show()
+    visible.value = true
   }
-
   function close() {
-    reset()
-    dialog.value?.close()
+    clearResult()
+    visible.value = false
+    objectId.value = null
+    address.value = ''
+    options.value = []
   }
-
   async function runTest() {
-    if (loading.value || !address.value) return
-    const version = ++requestVersion
+    if (
+      !visible.value ||
+      loading.value ||
+      objectId.value === null ||
+      !address.value ||
+      !scope.isActive()
+    )
+      return
+    const id = objectId.value,
+      selectedAddress = address.value,
+      version = ++requestVersion,
+      context = scope.snapshot()
     loading.value = true
     result.value = null
     error.value = ''
+    emit('testing-change', id, true)
     try {
-      const response = await testObjectConnection(objectId.value, address.value)
-      if (version === requestVersion) result.value = response.data as TestObjectProbeResult
+      const response = await testObjectConnection(id, selectedAddress)
+      if (version === requestVersion && scope.current(context) && address.value === selectedAddress)
+        result.value = response.data
     } catch {
-      if (version === requestVersion) error.value = '检测请求失败，请检查操作权限或稍后重试。'
+      if (version === requestVersion && scope.current(context))
+        error.value = '检测请求失败，请检查操作权限或稍后重试。'
     } finally {
-      if (version === requestVersion) {
-        loading.value = false
-        dialog.value?.setConfirmLoading(false)
-      }
+      loading.value = false
+      emit('testing-change', id, false)
     }
   }
-
-  onBeforeUnmount(reset)
-  defineExpose({ open })
+  defineExpose({ open, close })
 </script>
 
 <style scoped>

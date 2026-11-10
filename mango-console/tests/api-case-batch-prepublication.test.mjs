@@ -21,8 +21,8 @@ test('page submits prepublished and blocks missing candidates without a fallback
   const fn = ast.statements.find(n => ts.isFunctionDeclaration(n) && n.name.text === 'onConfirmCaseBatchRun')
   const js = ts.transpileModule(fn.getText(ast), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
   const writes = [], warnings = [], rows = [{ id: 1, name: '待审核', prepublished_revision_id: 101 }]
-  const run = new Function('pendingBatchRunCaseIds', 'table', 'Message', 'batchRunModalRef', 'caseRunning', 'postApiCaseBatchRun', 'doRefresh', 'hasPublishedCaseVersion', js + ';return onConfirmCaseBatchRun')(
-    { value: [1] }, { dataList: rows }, { warning: s => warnings.push(s), error: () => {}, success: () => {} },
+  const run = new Function('pendingBatchRunCaseIds', 'pendingBatchRows', 'pageVersion', 'pageActive', 'Message', 'batchRunModalRef', 'caseRunning', 'postApiCaseBatchRun', 'doRefresh', 'hasPublishedCaseVersion', js + ';return onConfirmCaseBatchRun')(
+    { value: [1] }, {value: rows}, 1, {value:true}, { warning: s => warnings.push(s), error: () => {}, success: () => {} },
     { value: { setConfirmLoading: () => {}, close: () => {} } }, { value: false },
     async (...args) => { writes.push(args); return { data: {} } }, () => {}, () => false)
   rows[0].prepublished_revision_id = null

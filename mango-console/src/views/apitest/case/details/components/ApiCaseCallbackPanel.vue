@@ -11,7 +11,6 @@
     <template v-if="view !== 'results'">
       <a-button
         v-if="!editLocked"
-
         size="small"
         type="primary"
         :disabled="!canConfigure || rules.length >= 5 || savePending"
@@ -33,20 +32,20 @@
         <template #actions="{ record }">
           <MangoTableActions
             :actions="[
-    {
-        label: canConfigure ? '编辑' : '查看',
-        disabled: saving || savePending,
-        onClick: () => editRule(record),
-    },
-    {
-        label: '删除',
-        danger: true,
-        hidden: editLocked,
-        loading: saving,
-        disabled: savePending,
-        onClick: () => removeRule(record.key),
-    },
-]"
+              {
+                label: canConfigure ? '编辑' : '查看',
+                disabled: saving || savePending,
+                onClick: () => editRule(record),
+              },
+              {
+                label: '删除',
+                danger: true,
+                hidden: editLocked,
+                loading: saving,
+                disabled: savePending,
+                onClick: () => removeRule(record.key),
+              },
+            ]"
           />
         </template>
         <template #empty>
@@ -54,7 +53,12 @@
         </template>
       </a-table>
     </template>
-    <ApiCaseCallbackAssertions v-else :case-id="caseId" :runs="archivedResults || []" @evidence="openDeliveries" />
+    <ApiCaseCallbackAssertions
+      v-else
+      :case-id="caseId"
+      :runs="archivedResults || []"
+      @evidence="openDeliveries"
+    />
 
     <BaseSidePanel
       v-model:visible="editorVisible"
@@ -128,7 +132,6 @@
             <h2>断言内容（{{ form.checks.length }} 项）</h2>
             <a-button
               v-if="canConfigure"
-
               size="small"
               :disabled="saving || savePending || form.checks.length >= 30"
               @click="addCheck"
@@ -190,23 +193,23 @@
               <template #actions="{ record: check }">
                 <MangoTableActions
                   :actions="[
-    {
-        label: expandedCheckKeys.includes(check.key)
-            ? '收起'
-            : check.type === 'field'
-                ? '配置断言'
-                : '说明',
-        disabled: saving || savePending,
-        onClick: () => toggleCheck(check.key),
-    },
-    {
-        label: '移除',
-        danger: true,
-        hidden: !canConfigure,
-        disabled: saving || savePending,
-        onClick: () => removeCheck(check.key),
-    },
-]"
+                    {
+                      label: expandedCheckKeys.includes(check.key)
+                        ? '收起'
+                        : check.type === 'field'
+                        ? '配置断言'
+                        : '说明',
+                      disabled: saving || savePending,
+                      onClick: () => toggleCheck(check.key),
+                    },
+                    {
+                      label: '移除',
+                      danger: true,
+                      hidden: !canConfigure,
+                      disabled: saving || savePending,
+                      onClick: () => removeCheck(check.key),
+                    },
+                  ]"
                 />
               </template>
               <template #expand-row="{ record: check }">
@@ -327,7 +330,6 @@
         ><a-button size="small" :disabled="saving" @click="editorVisible = false">取消</a-button
         ><a-button
           v-if="canConfigure"
-
           size="small"
           type="primary"
           :loading="saving"
@@ -362,17 +364,16 @@
         <template #actions="{ record }"
           ><MangoTableActions
             :actions="[
-    {
-        label: '查看内容',
-        onClick: () => showEvidence(record.id),
-    },
-]"
+              {
+                label: '查看内容',
+                onClick: () => showEvidence(record.id),
+              },
+            ]"
         /></template>
       </a-table>
       <mango-panel-spin :loading="detailLoading">
         <template v-if="evidence">
           <a-button
-
             size="small"
             :loading="downloading"
             :disabled="!evidence.evidence_complete || evidence.evidence_expired"
@@ -425,7 +426,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref, watch } from 'vue'
+  import { computed, ref, watch, onBeforeUnmount, onDeactivated } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import MangoTableActions from '@/components/table/MangoTableActions.vue'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
@@ -435,7 +436,9 @@
   import { getCallbackDeliveries, downloadCallbackEvidence } from '@/api/apitest/callback'
 
   import { useEnum } from '@/store/modules/get-enum'
+  import type { CallbackRuleDraft, CallbackDelivery } from '../types'
   import {
+    createCallbackRuleDraft,
     ruleColumns,
     deliveryColumns,
     callbackRulesForStep,
@@ -450,13 +453,13 @@
   const props = defineProps<{
     caseId: number | string
     productId: number | string
-    rules: any[]
+    rules: CallbackRuleDraft[]
     triggerStep: any
     scenarioCount: number
     scenarioRetry?: number
     active: boolean
     savePending: boolean
-    persistRules: (rules: any[]) => Promise<boolean>
+    persistRules: (rules: CallbackRuleDraft[]) => Promise<boolean>
     editLocked: boolean
     traceId?: string
     generalMethods?: any[]
@@ -494,26 +497,37 @@
   const editorVisible = ref(false)
   const saving = ref(false)
   const mockLoading = ref(false)
-  const mockOptions = ref<any[]>([])
+  const mockOptions = ref<Array<{ value: number; label: string }>>([])
   let mockRequest = 0
-  const form = ref<any>({})
+  const form = ref<CallbackRuleDraft>(createCallbackRuleDraft('', '', ''))
   const advancedKeys = ref<string[]>([])
   const expandedCheckKeys = ref<string[]>([])
   const hasCustomSettings = computed(() => hasCustomCallbackSettings(form.value))
   const evidenceVisible = ref(false)
   const evidenceLoading = ref(false)
   const detailLoading = ref(false)
-  const deliveries = ref<any[]>([])
+  const deliveries = ref<CallbackDelivery[]>([])
   const deliveryPage = ref(1)
   const deliveryTotal = ref(0)
   const runId = ref(0)
-  const evidence = ref<any>(null)
+  const evidence = ref<CallbackDelivery | null>(null)
   const downloading = ref(false)
   let deliveryRequest = 0
   let detailRequest = 0
+  let editorSession = 0
+  let downloadSession = 0
   watch(
-    () => [props.caseId, props.traceId, stepKey.value, props.editLocked, true],
+    () => [
+      props.caseId,
+      props.productId,
+      props.traceId,
+      stepKey.value,
+      props.editLocked,
+      props.active,
+    ],
     () => {
+      editorSession++
+      downloadSession++
       deliveryRequest++
       detailRequest++
       mockRequest++
@@ -528,45 +542,18 @@
   )
   const newKey = () => globalThis.crypto.randomUUID().replaceAll('-', '')
 
-  function editRule(rule?: any) {
+  function editRule(rule?: CallbackRuleDraft) {
     if (saving.value || props.savePending || (!rule && !canConfigure.value)) return
     if (rule && rule.trigger_step_key !== stepKey.value) return
+    editorSession++
     form.value = rule
       ? JSON.parse(JSON.stringify(rule))
-      : {
-          key: newKey(),
-          name: callbackRuleName(triggerLabel.value, scopedRules.value),
-          enabled: true,
-          trigger_step_key: stepKey.value,
-          mock_config_id: undefined,
-          correlation: {
-            source: 'business_json',
-            field: '$.header.event_id',
-            expected: { cache_key: 'callback_run_id' },
-          },
-          timeout_seconds: 30,
-          observation_seconds: 0,
-          max_deliveries: 100,
-          min_deliveries: 1,
-          min_retry_interval_ms: 0,
-          max_retry_interval_ms: null,
-          events: { mode: 'at_least', count: 1 },
-          event_id_source: 'business_json',
-          event_id_field: '$.header.event_id',
-          delivery_policy: 'all_observed_pass',
-          response_mode: 'observe',
-          failure_status: 400,
-          checks: [
-            {
-              key: newKey(),
-              type: 'json_compact',
-              source: 'raw_body',
-              field: '',
-              operator: 'equals',
-              expected: null,
-            },
-          ],
-        }
+      : createCallbackRuleDraft(
+          newKey(),
+          stepKey.value,
+          callbackRuleName(triggerLabel.value, scopedRules.value),
+          newKey
+        )
     form.value.checks.forEach((check: any) => {
       check.expected_text = JSON.stringify(check.expected ?? '')
       check.general_editor = Boolean(check.assertions?.length)
@@ -632,11 +619,8 @@
     check.general_editor = false
     if (check.type === 'field') useGeneralAssertions(check)
   }
-  async function persist(rules: any[]) {
-    if (saving.value ||
-    props.savePending ||
-    props.editLocked)
-    return false;
+  async function persist(rules: CallbackRuleDraft[]) {
+    if (saving.value || props.savePending || props.editLocked) return false
     saving.value = true
     try {
       if (!(await props.persistRules(rules))) return false
@@ -689,10 +673,11 @@
       Message.warning('期望值需要是有效 JSON，字符串请加双引号')
       return
     }
+    const session = editorSession
     const rules = props.rules.some((item) => item.key === rule.key)
       ? props.rules.map((item) => (item.key === rule.key ? rule : item))
       : [...props.rules, rule]
-    if (await persist(rules)) editorVisible.value = false
+    if ((await persist(rules)) && session === editorSession) editorVisible.value = false
   }
   async function removeRule(key: string) {
     if (!scopedRules.value.some((rule) => rule.key === key)) return
@@ -706,7 +691,6 @@
     await loadDeliveries()
   }
   async function loadDeliveries(current = 1) {
-
     const request = ++deliveryRequest
     detailRequest++
     evidence.value = null
@@ -730,7 +714,6 @@
     }
   }
   async function showEvidence(id: number) {
-
     const request = ++detailRequest
     detailLoading.value = true
     try {
@@ -747,16 +730,17 @@
     }
   }
   async function downloadEvidence() {
-    if (!evidence.value || downloading.value)
-    return;
+    if (!evidence.value || downloading.value) return
     downloading.value = true
-    const deliveryId = evidence.value.id
+    const deliveryId = evidence.value.id,
+      token = ++downloadSession
     try {
       const response = await downloadCallbackEvidence({
         case_id: props.caseId,
         run_id: runId.value,
         delivery_id: deliveryId,
       })
+      if (token !== downloadSession || !evidenceVisible.value) return
       if (!(response.data instanceof Blob) || response.data.type.includes('json')) {
         Message.error('原始证据下载失败，请检查权限或保留期')
         return
@@ -772,9 +756,35 @@
     } catch {
       Message.error('原始证据下载失败')
     } finally {
-      downloading.value = false
+      if (token === downloadSession) downloading.value = false
     }
   }
+  function closePanels() {
+    editorSession++
+    deliveryRequest++
+    detailRequest++
+    mockRequest++
+    downloadSession++
+    editorVisible.value = evidenceVisible.value = false
+    mockLoading.value = evidenceLoading.value = detailLoading.value = downloading.value = false
+  }
+  watch(editorVisible, (visible) => {
+    if (!visible) {
+      editorSession++
+      mockRequest++
+      mockLoading.value = false
+    }
+  })
+  watch(evidenceVisible, (visible) => {
+    if (!visible) {
+      deliveryRequest++
+      detailRequest++
+      downloadSession++
+      evidenceLoading.value = detailLoading.value = downloading.value = false
+    }
+  })
+  onBeforeUnmount(closePanels)
+  onDeactivated(closePanels)
 </script>
 
 <style scoped>

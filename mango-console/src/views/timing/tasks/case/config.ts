@@ -1,9 +1,4 @@
-import { FormItem } from '@/types/components'
-import { reactive, ref } from 'vue'
-import { Message } from '@arco-design/web-vue'
-import { useTable, useTableColumn } from '@/hooks/table'
-
-const table = useTable()
+import { useTableColumn, useTableIndexColumn } from '@/hooks/table'
 
 export type CandidateExecutionVersion = 'published' | 'unpublished'
 
@@ -12,8 +7,14 @@ export const candidateExecutionVersionOptions = [
   { value: 'unpublished', label: '暂无已发布版本' },
 ]
 
+export const candidateColumns = [
+  { title: '', dataIndex: 'selected', width: 54 },
+  { title: '用例名称', dataIndex: 'title' },
+  { title: '状态', dataIndex: 'status', width: 86 },
+]
+
 export const tableColumns = useTableColumn([
-  table.indexColumn,
+  { ...useTableIndexColumn(), align: 'center' },
   {
     title: '项目/产品',
     key: 'project_product',
@@ -97,68 +98,5 @@ export const tableColumns = useTableColumn([
     dataIndex: 'actions',
     fixed: 'right',
     width: 160,
-  },
-])
-
-export const formItems: FormItem[] = reactive([
-  {
-    label: '测试类型',
-    key: 'type',
-    value: 0,
-    placeholder: '请选择自动化类型',
-    required: true,
-    type: 'select',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '项目/产品',
-    key: 'project_product',
-    value: ref(''),
-    placeholder: '请选择项目名称',
-    required: true,
-    type: 'cascader',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '模块名称',
-    key: 'module',
-    value: ref(''),
-    placeholder: '请选择测试模块名称',
-    required: true,
-    type: 'select',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '用例名称',
-    key: 'case_id',
-    value: ref(''),
-    placeholder: '请选择用例名称',
-    required: true,
-    type: 'select',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
   },
 ])

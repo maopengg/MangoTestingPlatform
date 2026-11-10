@@ -1,9 +1,10 @@
 import { AxiosResponse } from 'axios'
 import type { App } from 'vue'
 import request from './axios.config'
-import { Message } from '@arco-design/web-vue'
 import { handleAuthExpired, isAuthExpiredResponse } from './auth-expired'
 import { ApiBusinessError } from './errors'
+import { isErrorReported, isSilentLoadRequest, markErrorReported, reportLoadError } from '@/utils/load-error'
+import { normalizeEmptyListTotal } from '@/utils/api-response'
 import {
   containsLosslessJsonNumber,
   parseApiConfigLosslessJson,
@@ -43,22 +44,29 @@ export function http<T = any>({
   beforeRequest,
   afterRequest,
 }: HttpOption) {
+  silentError = silentError ?? isSilentLoadRequest()
   const successHandler = (res: AxiosResponse<Response<T>>) => {
     if (res.data.code === 200) {
-      return res.data
+      return normalizeEmptyListTotal(res.data)
     } else if (!res.data.msg) {
       return res.data
     }
+    const error = new ApiBusinessError(res.data.msg || '请求失败，未知异常', res.data.code)
     if (isAuthExpiredResponse(res.status, res.data.code, res.data.msg)) {
       handleAuthExpired(res.data.msg)
+      markErrorReported(error)
     } else if (!silentError) {
-      Message.error(res.data.msg)
+      reportLoadError(error, res.data.msg)
+    } else {
+      markErrorReported(error)
     }
-    throw new ApiBusinessError(res.data.msg || '请求失败，未知异常', res.data.code)
+    throw error
   }
   const failHandler = (error: Response<Error>) => {
     afterRequest && afterRequest()
-    throw new Error(error.msg || '请求失败，未知异常')
+    const failure = new Error(error.msg || '请求失败，未知异常')
+    if (isErrorReported(error)) markErrorReported(failure)
+    throw failure
   }
   method = method || 'GET'
   const params = Object.assign(typeof data === 'function' ? data() : data || {}, {})
@@ -66,6 +74,7 @@ export function http<T = any>({
   const requestData = containsLosslessJsonNumber(params) ? stringifyLosslessJson(params) : params
   const requestConfig = {
     headers,
+    silentError,
     ...(timeout === undefined ? {} : { timeout }),
     ...(losslessJson
       ? {

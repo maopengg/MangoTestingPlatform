@@ -1,4 +1,5 @@
 <template>
+  <div class="mango-workbench-scroll-x mango-ui-live-workbench-scroll">
   <div class="mango-ui-live-workbench-panel">
     <section class="mango-ui-live-workbench-panel__stage">
       <div class="mango-ui-live-workbench-panel__viewer-card">
@@ -64,7 +65,7 @@
               v-model="scanMode"
               size="small"
               class="mango-ui-live-workbench-panel__scan-mode"
-              :disabled="scanLoading"
+              :disabled="scanLoading || scanSubmitting"
             >
               <a-option value="quick" data-testid="qa-components-business-uiliveworkbenchpanel-option-快速扫描">快速扫描</a-option>
               <a-option value="deep" data-testid="qa-components-business-uiliveworkbenchpanel-option-深度扫描">深度扫描</a-option>
@@ -73,7 +74,7 @@
             <a-button
               type="primary"
               size="small"
-              :loading="scanLoading"
+              :loading="scanLoading || scanSubmitting"
               :disabled="!workspace.workspaceId"
               @click="scanPageElements"
             >
@@ -83,10 +84,11 @@
         </div>
         <div v-if="scannedElements.length" class="mango-ui-live-workbench-panel__scan-table">
           <a-table
+            class="mango-native-scroll-table"
             :data="scannedElements"
             :pagination="false"
             :bordered="false"
-            :scroll="{ x: 1660 }"
+            :scroll="{ x: 1670, y: '100%' }"
             size="small"
             row-key="_rowKey"
           >
@@ -175,7 +177,7 @@
                   <span v-else>-</span>
                 </template>
               </a-table-column>
-              <a-table-column title="操作" :width="140" fixed="right" align="center">
+              <a-table-column title="操作" :width="160" fixed="right" align="center">
                 <template #cell="{ record }">
                   <MangoTableActions
                     :actions="[
@@ -204,11 +206,7 @@
             </template>
           </a-table>
         </div>
-        <a-empty
-          v-else
-          class="mango-ui-live-workbench-panel__scan-empty"
-          description="暂无扫描结果"
-        />
+        <div v-else class="mango-empty-state mango-ui-live-workbench-panel__scan-empty">暂无扫描结果</div>
       </section>
     </section>
     <aside class="mango-ui-live-workbench-panel__tools">
@@ -218,10 +216,13 @@
         :page-id="pageId || ''"
         :paused="recordingPaused"
         :element-options="elementOptions"
+        :elements-loading="elementsLoading"
+        :elements-error="elementsError"
         :page-type="pageType"
         :project-product-id="projectProductId"
         :test-env="testEnv"
         :check-loading="elementCheckLoading"
+        :recording-settings="recorderSettings"
         @reorder="reorderRecordedAction"
         @remove="removeRecordedAction"
         @clear="clearRecordedActions"
@@ -231,6 +232,7 @@
         @toggle-pause="recordingPaused = !recordingPaused"
         @saved="handleRecordingSaved"
         @settings-change="handleRecorderSettingsChange"
+        @retry-elements="loadElements"
       />
       <template v-else>
         <section class="mango-soft-panel mango-ui-live-workbench-panel__summary-card">
@@ -265,10 +267,10 @@
                 <span>{{ actuatorHintText }}</span>
               </div>
               <a-select
-                v-model="selectedActuatorUsername"
+                :model-value="selectedActuatorUsername"
                 allow-clear
                 placeholder="选择执行器"
-                :loading="workspaceOpening"
+                :loading="workspaceOpening || workspaceCloseCount > 0"
                 @change="handleActuatorChange" data-testid="qa-components-business-uiliveworkbenchpanel-select-选择执行器"
               >
                 <a-option
@@ -323,6 +325,8 @@
           </div>
         </section>
 
+        <div v-if="elementsLoading" class="mango-soft-panel" role="status">正在加载页面元素…</div>
+
         <section v-if="supportsElementTools && pickedElement" class="mango-soft-panel">
           <div class="mango-ui-live-workbench-panel__section-head">
             <strong>采集元素</strong>
@@ -373,7 +377,6 @@
               <a-button
                 type="primary"
                 size="small"
-                :loading="savingPicked"
                 @click="savePickedElement" data-testid="qa-components-business-uiliveworkbenchpanel-button-保存为页面元素"
               >
                 保存为页面元素
@@ -397,6 +400,7 @@
       </template>
     </aside>
     <UiElementEditPanel
+      :key="`editor:${contextVersion}`"
       ref="elementEditPanelRef"
       :operation-options="operationOptions"
       :checkable="supportsElementTools"
@@ -405,7 +409,7 @@
       @saved="handleElementSaved"
       @check="checkEditedElement"
     />
-    <UiElementDeepCheckVariablesDialog ref="deepCheckVariablesDialogRef" />
+    <UiElementDeepCheckVariablesDialog :key="`variables:${contextVersion}`" ref="deepCheckVariablesDialogRef" />
     <UiAiLocatorRecommendationPanel
       v-model:visible="aiLocator.visible"
       :loading="aiLocator.loading"
@@ -427,10 +431,13 @@
       @apply="applyDeepCheckUpdates"
     />
   </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { reportLoadError, runLoadRequest } from '@/utils/load-error'
+
+  import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import UiLiveStreamPanel from '@/components/business/UiLiveStreamPanel.vue'
   import UiElementEditPanel from '@/components/business/UiElementEditPanel.vue'
@@ -466,6 +473,10 @@
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
   import { fieldNames } from '@/setting'
+  import { useLiveWorkbenchScope } from '@/hooks/use-live-workbench-scope'
+  import { cloneLosslessJson, parseLosslessJson, stringifyLosslessJson } from '@/utils/lossless-json'
+  import { liveId, liveError, liveObject, readLiveActuators, readLiveElement, readLiveLocator, readLiveResult, readRecordedAction, recordingSnapshot } from './ui-live-workbench'
+  import type { LiveId, LiveLocator, LiveElement, RecordedAction, RecorderSettings, LiveActuator, ScanStats, LiveResult, LiveCommandData } from './ui-live-workbench'
 
   const props = defineProps<{
     mode: 'element' | 'step'
@@ -474,7 +485,7 @@
     pageStepId?: string | number
     testEnv?: string | number
     category?: string
-    operationOptions?: any[]
+    operationOptions?: unknown[]
     inlineElementResult?: boolean
     stepControl?: UiStepControl
     pageType?: string | number
@@ -483,11 +494,12 @@
   }>()
   const emit = defineEmits<{
     (event: 'stream-ready'): void
-    (event: 'element-check-started', value: any): void
-    (event: 'element-check-result', value: any): void
+    (event: 'element-check-started', value: unknown): void
+    (event: 'element-check-result', value: LiveResult): void
     (event: 'element-check-finished'): void
-    (event: 'element-saved', value: any): void
-    (event: 'page-step-saved', value: any): void
+    (event: 'element-saved', value: LiveElement): void
+    (event: 'page-step-saved', value: unknown): void
+    (event: 'step-debug-started', value: { page_step_id: LiveId; test_env: LiveId | null; task_id: unknown; slot_id: unknown }): void
   }>()
 
   const userStore = useUserStore()
@@ -498,53 +510,56 @@
     typeof UiElementDeepCheckVariablesDialog
   > | null>(null)
   const liveVisible = ref(false)
-  const elementOptions = ref<any[]>([])
-  const selectedElementId = ref<number | string | Array<number | string>>('')
+  const contextVersion = ref(0)
+  const elementOptions = ref<LiveElement[]>([])
+  const selectedElementId = ref<LiveId | LiveId[] | null>(null)
   const liveActionsTargetId = `mango-live-actions-${Math.random().toString(36).slice(2)}`
   const liveActionsTarget = `#${liveActionsTargetId}`
   const elementChecking = ref(false)
+  const checkSubmitting = ref(false)
+  const scanSubmitting = ref(false)
   const elementCheckLoading = computed(
     () =>
       Boolean(props.checkLoading) ||
+      checkSubmitting.value ||
       elementChecking.value ||
-      scannedElements.value.some((item: any) => item._checking) ||
-      recordedActions.value.some((item: any) => item._checking)
+      scannedElements.value.some((item) => item._checking) ||
+      recordedActions.value.some((item) => item._checking)
   )
   const stepDebugging = ref(false)
   const recordingTrialRunning = ref(false)
   const scanLoading = ref(false)
   const scanTaskId = ref('')
   const scanMode = ref<'quick' | 'deep' | 'region'>('quick')
-  const scanStats = ref<any>(null)
-  const savingPicked = ref(false)
+  const scanStats = ref<ScanStats | null>(null)
   const workspaceOpening = ref(false)
-  const actuatorOptions = ref<any[]>([])
+  const actuatorOptions = ref<LiveActuator[]>([])
   const selectedActuatorUsername = ref('')
   const liveConnected = ref(false)
   const idleNow = ref(Date.now())
-  const pickedElement = ref<any>(null)
-  const scannedElements = ref<any[]>([])
-  const latestElementResult = ref<any>(null)
+  const pickedElement = ref<LiveElement | null>(null)
+  const scannedElements = ref<LiveElement[]>([])
+  const latestElementResult = ref<LiveResult | null>(null)
   const deepCheckApplyLoading = ref(false)
   const deepCheckApplied = ref(false)
   const elementCheckDetail = reactive({
     visible: false,
     title: '元素检测结果',
-    data: null as any,
+    data: null as LiveResult | null,
   })
-  const pendingBaselineSnapshot = ref<any>(null)
-  const pendingSavedScannedRecord = ref<any>(null)
+  const pendingBaselineSnapshot = ref<Record<string, unknown> | null>(null)
+  const pendingSavedScannedRecord = ref<LiveElement | null>(null)
   const pendingCapturedElementSave = ref(false)
   const interactionMode = ref<'select' | 'operate' | 'record'>('select')
   const recordingPaused = ref(false)
   let recordingPausedByDisconnect = false
-  const recordedActions = ref<any[]>([])
-  const recorderSettings = reactive({
+  const recordedActions = ref<RecordedAction[]>([])
+  const recorderSettings: RecorderSettings = reactive({
     mergeInput: true,
     recordScroll: false,
     recordNavigation: true,
   })
-  const pendingRecordedElementAction = ref<any>(null)
+  const pendingRecordedElementAction = ref<RecordedAction | null>(null)
   const pickedForm = reactive({
     name: '',
     category: '',
@@ -555,8 +570,8 @@
     validating: false,
     snapshotId: '',
     batch: 0,
-    candidates: [] as any[],
-    target: null as any,
+    candidates: [] as LiveLocator[],
+    target: null as LiveElement | null,
     targetType: '' as 'picked' | 'scan' | '',
     targetName: '',
     emptyReason: '',
@@ -595,9 +610,10 @@
   let workspaceRequestSeq = 0
   let streamReadyEmitted = false
   const testEnvValue = computed(() => props.testEnv ?? userStore.selected_environment)
-  const supportsElementTools = computed(() => Boolean(props.pageId))
+  const supportsElementTools = computed(() => liveId(props.pageId) !== null)
   const inlineElementResult = computed(() => props.inlineElementResult !== false)
-  const recordingStorageKey = computed(() => `mango-ui-recorder:${props.pageId || 'unknown'}`)
+  const recordingStorageKey = computed(() => `mango-ui-recorder:${userStore.userId}:${userStore.roleId}:${testEnvValue.value}:${props.pageId ?? 'unknown'}`)
+  const scanObservationScope = computed(() => `page-scan:workbench:${userStore.userId}:${userStore.roleId}:${testEnvValue.value}`)
   const titleText = computed(() =>
     props.mode === 'step' ? '页面步骤实时工作台' : '页面元素实时工作台'
   )
@@ -619,10 +635,85 @@
     const seconds = String(remaining % 60).padStart(2, '0')
     return `${minutes}:${seconds}`
   })
+  const workspaceCloseCount = ref(0)
+  let resumeAfterCleanup = true
+  let locatorCheckSequence = 0
+  let debugSubmitting = false
+  let reconnecting = false
+  let elementsRequest = 0
+  let aiRequest = 0
+  const rowCheckTimers = new Set<number>()
+  const scope = useLiveWorkbenchScope(
+    () => [props.mode, props.pageId, props.pageStepId, props.testEnv, props.projectProductId],
+    { invalidate: invalidateWorkbench, resume: resumeWorkbench }
+  )
+  function invalidateWorkbench() {
+    resumeAfterCleanup = true
+    contextVersion.value++
+    if (idleClockTimer) window.clearInterval(idleClockTimer)
+    if (recordingPollTimer) window.clearInterval(recordingPollTimer)
+    idleClockTimer = null
+    recordingPollTimer = null
+    clearWorkspaceRetryTimer()
+    clearElementCheckTimer()
+    clearElementCheckTaskPoll()
+    clearScanTimer()
+    clearAiLocatorValidationTimer()
+    rowCheckTimers.forEach(timer => window.clearTimeout(timer))
+    rowCheckTimers.clear()
+    elementCheckSession.cancel()
+    elementsRequest++
+    elementsLoading.value = false
+    elementsError.value = ''
+    aiRequest++
+    aiLocator.visible = false
+    aiLocator.requestKey = ''
+    aiLocator.candidates = []
+    aiLocator.validating = false
+    elementCheckDetail.visible = false
+    elementCheckDetail.data = null
+    elementOptions.value = []
+    selectedElementId.value = null
+    pickedElement.value = null
+    scannedElements.value = []
+    scanStats.value = null
+    latestElementResult.value = null
+    aiLocator.target = null
+    scanTaskId.value = ''
+    // HTTP submit locks are released by their physical request, not by navigation.
+    scanLoading.value = false
+    elementChecking.value = false
+    pendingBaselineSnapshot.value = null
+    pendingSavedScannedRecord.value = null
+    pendingRecordedElementAction.value = null
+    pendingCapturedElementSave.value = false
+    recordedActions.value = []
+    recordingPaused.value = true
+    stepDebugging.value = false
+    recordingTrialRunning.value = false
+    workspaceRequestSeq++
+    actuatorOptions.value = []
+    selectedActuatorUsername.value = ''
+    readyWorkspaceIds.clear()
+    failedWorkspaceMessages.clear()
+    void resetWorkspace(true, true)
+  }
+  function resumeWorkbench() {
+    restoreRecordedActions()
+    restorePageScanTask()
+    startLocalLoops()
+    if (!workspaceOpening.value && !workspaceCloseCount.value) void openWorkspace()
+  }
+  function rowCheckTimeout(callback: () => void) {
+    const current = scope.capture()
+    const timer = window.setTimeout(() => { rowCheckTimers.delete(timer); if (current()) callback() }, 30000)
+    rowCheckTimers.add(timer)
+  }
   async function openWorkspace(actuatorUsername = '', silent = false) {
-    if (!workspaceMounted || workspace.workspaceId || workspaceOpening.value) return
+    if (!scope.available() || !workspaceMounted || workspaceCloseCount.value || workspace.workspaceId || workspaceOpening.value) return
+    const current = scope.capture()
     const requestSeq = ++workspaceRequestSeq
-    const resourceId = String(props.mode === 'step' ? props.pageStepId || '' : props.pageId || '')
+    const resourceId = String(props.mode === 'step' ? props.pageStepId ?? '' : props.pageId ?? '')
     if (!resourceId || testEnvValue.value == null) {
       if (!silent) Message.error('缺少页面/步骤ID或测试环境')
       return
@@ -630,16 +721,20 @@
     workspace.executionType = props.mode === 'step' ? 'page_step_workspace' : 'element_workspace'
     workspace.resourceId = resourceId
     workspaceOpening.value = true
+    let allocatedWorkspaceId = ''
     try {
-      const res = await createUiLiveWorkspace({
+      const res = await runLoadRequest(silent, () => createUiLiveWorkspace({
         workspace_type: workspace.executionType,
         resource_id: resourceId,
-        test_env: testEnvValue.value as any,
+        test_env: testEnvValue.value!,
         actuator_username: actuatorUsername || undefined,
-      })
-      if (!workspaceMounted || requestSeq !== workspaceRequestSeq) return
+      }))
+      if (!current() || requestSeq !== workspaceRequestSeq) {
+        if (res.data?.workspace_id) await releaseWorkspace(String(res.data.workspace_id), true)
+        return
+      }
       if (res.data?.status === 'select_actuator') {
-        actuatorOptions.value = res.data?.actuators || []
+        actuatorOptions.value = readLiveActuators(res.data?.actuators)
         if (
           selectedActuatorUsername.value &&
           !actuatorOptions.value.some((item) => item.username === selectedActuatorUsername.value)
@@ -648,11 +743,19 @@
         }
         return
       }
-      actuatorOptions.value = res.data?.actuators || actuatorOptions.value
+      const responseId = liveId(res.data?.workspace_id)
+      if (responseId === null) throw Error('实时工作区返回格式不正确，请重试')
+      allocatedWorkspaceId = String(responseId)
+      if (res.data?.execution_type != null && res.data.execution_type !== workspace.executionType) {
+        throw Error('实时工作区类型不匹配，请重试')
+      }
+      if (res.data?.resource_id != null && String(res.data.resource_id) !== resourceId) {
+        throw Error('实时工作区资源不匹配，请重试')
+      }
+      actuatorOptions.value = res.data?.actuators ? readLiveActuators(res.data.actuators) : actuatorOptions.value
       selectedActuatorUsername.value = res.data?.executor_username || actuatorUsername || ''
-      workspace.workspaceId = res.data?.workspace_id || ''
-      workspace.executionType = res.data?.execution_type || workspace.executionType
-      workspace.resourceId = String(res.data?.resource_id || resourceId)
+      workspace.workspaceId = String(responseId)
+      workspace.resourceId = String(res.data?.resource_id ?? resourceId)
       workspace.ready = readyWorkspaceIds.delete(workspace.workspaceId)
       workspace.error = failedWorkspaceMessages.get(workspace.workspaceId) || ''
       workspace.activeUserCount = Number(res.data?.active_user_count || 0)
@@ -664,24 +767,27 @@
       liveVisible.value = false
       streamReadyEmitted = false
       const ready = workspace.ready || (await waitForWorkspaceReady())
-      if (!workspaceMounted || requestSeq !== workspaceRequestSeq) return
+      if (!current() || requestSeq !== workspaceRequestSeq) return
       if (!ready) {
         if (!silent) Message.error(workspace.error || '执行器初始化实时工作区失败，请重新连接')
         return
       }
       await nextTick()
+      if (!current() || requestSeq !== workspaceRequestSeq) return
       liveVisible.value = true
       if (res.data?.reused) Message.success('已复用当前执行器实时工作区')
       if (supportsElementTools.value) await loadElements()
-    } catch (error: any) {
-      if (!workspaceMounted || requestSeq !== workspaceRequestSeq) return
-      const errorMessage = error?.message || error?.msg || '打开实时工作台失败'
+    } catch (error) {
+      if (allocatedWorkspaceId && workspace.workspaceId !== allocatedWorkspaceId) await releaseWorkspace(allocatedWorkspaceId, true)
+      if (!current() || requestSeq !== workspaceRequestSeq) return
+      const errorMessage = liveError(error, '打开实时工作台失败')
       if (/UI授权.*缓存已过期|缓存已过期或为空/.test(errorMessage)) {
         workspaceAutoRetryBlocked = true
       }
       if (!silent) Message.error(errorMessage)
     } finally {
-      if (workspaceMounted && requestSeq === workspaceRequestSeq) workspaceOpening.value = false
+      workspaceOpening.value = false
+      if (scope.available() && resumeAfterCleanup && !workspace.workspaceId && requestSeq !== workspaceRequestSeq) void openWorkspace()
     }
   }
 
@@ -709,10 +815,12 @@
     workspaceReadyPromise = new Promise<boolean>((resolve) => {
       workspaceReadyResolver = resolve
       const workspaceId = workspace.workspaceId
+      const current = scope.capture()
       const pollStatus = async () => {
-        if (!workspaceMounted || workspaceId !== workspace.workspaceId || workspace.ready) return
+        if (!current() || workspaceId !== workspace.workspaceId || workspace.ready) return
         try {
           const response = await getUiLiveWorkspaceStatus(workspaceId)
+          if (!current() || workspaceId !== workspace.workspaceId) return
           const status = response.data?.status
           if (status === 'ready') {
             workspace.ready = true
@@ -733,10 +841,11 @@
         } catch (error) {
           // WebSocket 仍可能先返回；短暂查询失败不应提前终止初始化。
         }
-        workspaceStatusPollTimer = window.setTimeout(pollStatus, 1000)
+        if (current() && workspaceId === workspace.workspaceId) workspaceStatusPollTimer = window.setTimeout(pollStatus, 1000)
       }
       workspaceStatusPollTimer = window.setTimeout(pollStatus, 500)
       workspaceReadyTimer = window.setTimeout(() => {
+        if (!current() || workspaceId !== workspace.workspaceId) return
         workspace.error = '执行器初始化实时工作区超时，请重新连接'
         finishWorkspaceReadyWait(false)
       }, timeout)
@@ -745,16 +854,20 @@
   }
 
   async function ensureWorkspaceReady() {
+    const current = scope.capture()
+    if (!current()) return false
     if (!workspace.workspaceId && !workspaceOpening.value) {
       clearWorkspaceRetryTimer()
       await openWorkspace(selectedActuatorUsername.value || '')
     }
+    if (!current()) return false
     if (!workspace.workspaceId && workspaceOpening.value) {
       const startedAt = Date.now()
-      while (workspaceOpening.value && !workspace.workspaceId && Date.now() - startedAt < 15000) {
+      while (current() && workspaceOpening.value && !workspace.workspaceId && Date.now() - startedAt < 15000) {
         await new Promise((resolve) => window.setTimeout(resolve, 100))
       }
     }
+    if (!current()) return false
     if (!workspace.workspaceId) {
       if (actuatorOptions.value.length && !selectedActuatorUsername.value) {
         Message.warning('请先选择执行器并等待工作区连接完成')
@@ -765,6 +878,7 @@
     }
     if (workspace.ready) return true
     const ready = await waitForWorkspaceReady()
+    if (!current()) return false
     if (!ready) {
       Message.error(workspace.error || '实时工作区初始化失败，请重新连接')
     }
@@ -773,6 +887,7 @@
 
   function scheduleWorkspaceRetry(delay = 3000) {
     if (
+      !scope.available() ||
       !workspaceMounted ||
       workspaceAutoRetryBlocked ||
       workspace.workspaceId ||
@@ -787,6 +902,16 @@
     }, delay)
   }
 
+  async function releaseWorkspace(id: string, force: boolean) {
+    workspaceCloseCount.value++
+    try { await closeUiLiveWorkspace(id, force) }
+    catch (_) { /* Best effort remote cleanup; backend idle expiry remains the fallback. */ }
+    finally {
+      workspaceCloseCount.value--
+      if (scope.available() && resumeAfterCleanup && !workspaceCloseCount.value && !workspaceOpening.value && !workspace.workspaceId) void openWorkspace()
+    }
+  }
+
   async function resetWorkspace(closeRemote = true, force = false) {
     workspaceRequestSeq += 1
     const workspaceId = workspace.workspaceId
@@ -797,17 +922,20 @@
     workspace.error = ''
     finishWorkspaceReadyWait(false)
     liveVisible.value = false
-    if (closeRemote && workspaceId) {
-      await closeUiLiveWorkspace(workspaceId, force).catch(() => {})
-    }
+    if (closeRemote && workspaceId) await releaseWorkspace(workspaceId, force)
   }
 
   async function reopenWorkspace() {
-    if (workspaceOpening.value) return
+    if (!scope.available() || workspaceOpening.value || reconnecting) return
+    const current = scope.capture()
+    reconnecting = true
+    resumeAfterCleanup = true
+    try {
     workspaceAutoRetryBlocked = false
     clearWorkspaceRetryTimer()
     await resetWorkspace(true, true)
-    await openWorkspace(selectedActuatorUsername.value || '')
+    if (current()) await openWorkspace(selectedActuatorUsername.value || '')
+    } finally { reconnecting = false }
   }
 
   async function recoverExpiredWorkspace(expiredWorkspaceId?: string | number): Promise<boolean> {
@@ -824,33 +952,32 @@
     // 平台连接恢复不代表执行器工作区已丢失，禁止在这里创建新的浏览器上下文。
   }
 
-  function actuatorLabel(item: any) {
+  function actuatorLabel(item: LiveActuator) {
     const name = item?.name || item?.username || '未知执行器'
     const tag = item?.is_owner ? '我的执行器' : 'OPEN'
     const count = `${Number(item?.active_user_count || 0)}/${Number(item?.max_user_count || 5)} 人`
     return `${name}（${item?.username || '-'} · ${tag} · ${count}）`
   }
 
-  function actuatorFullForCurrentUser(item: any) {
+  function actuatorFullForCurrentUser(item: LiveActuator) {
     if (!item?.is_full) return false
-    return !(item?.users || []).some((user: any) => user?.username === userStore.userName)
+    return !(item?.users || []).some((user) => user?.username === userStore.userName)
   }
 
-  async function handleActuatorChange(value: any) {
-    selectedActuatorUsername.value = String(value || '')
-    if (!selectedActuatorUsername.value || workspaceOpening.value) return
-    workspaceAutoRetryBlocked = false
-    clearWorkspaceRetryTimer()
-    await resetWorkspace(true, true)
-    await openWorkspace(selectedActuatorUsername.value)
+  async function handleActuatorChange(value: unknown) {
+    if (!scope.available() || workspaceOpening.value || reconnecting) return
+    const username = typeof value === 'string' ? value : ''
+    if (!username) return
+    selectedActuatorUsername.value = username
+    await reopenWorkspace()
   }
 
-  function switchLivePage(value: any) {
+  function switchLivePage(value: LiveId) {
     if (!value) return
     livePanelRef.value?.switchPage?.(value)
     if (interactionMode.value === 'record' && !recordingPaused.value) {
       const page = (livePanelRef.value?.browserPagesValue || []).find(
-        (item: any) => String(item.page_id) === String(value)
+        (item: { page_id: LiveId }) => String(item.page_id) === String(value)
       )
       appendRecordedAction({
         action: 'navigation',
@@ -870,10 +997,21 @@
     livePanelRef.value?.closeActivePage?.()
   }
 
+  const elementsLoading = ref(false)
+  const elementsError = ref('')
   async function loadElements() {
-    if (!props.pageId) return
-    const res = await getUiUiElementName(props.pageId)
-    elementOptions.value = res.data || []
+    const pageId = liveId(props.pageId), current = scope.capture(), request = ++elementsRequest
+    if (pageId === null || !current()) return
+    elementsLoading.value = true
+    elementsError.value = ''
+    try {
+      const res = await getUiUiElementName(pageId)
+      if (!current() || request !== elementsRequest) return
+      if (!Array.isArray(res.data)) throw Error('元素选项返回格式不正确')
+      elementOptions.value = res.data.map(readLiveElement)
+    } catch (error) {
+      if (current() && request === elementsRequest) (reportLoadError(error, "元素选项加载失败", false), elementsError.value = liveError(error, '元素选项加载失败'))
+    } finally { if (current() && request === elementsRequest) elementsLoading.value = false }
   }
 
   function handleInteractionMode(value: 'select' | 'operate' | 'record') {
@@ -883,10 +1021,8 @@
 
   function persistRecordedActions() {
     try {
-      const draft = recordedActions.value.map(
-        ({ _checking, _checkStatus, _checkDuration, ...action }: any) => action
-      )
-      sessionStorage.setItem(recordingStorageKey.value, JSON.stringify(draft))
+      const draft = recordingSnapshot(recordedActions.value)
+      sessionStorage.setItem(recordingStorageKey.value, stringifyLosslessJson(draft))
     } catch (_) {
       // 浏览器禁用会话存储时仍允许继续在内存中录制。
     }
@@ -895,16 +1031,18 @@
   function restoreRecordedActions() {
     if (recordedActions.value.length) return
     try {
-      const data = JSON.parse(sessionStorage.getItem(recordingStorageKey.value) || '[]')
-      if (Array.isArray(data)) recordedActions.value = data
+      const data: unknown = parseLosslessJson(sessionStorage.getItem(recordingStorageKey.value) || '[]')
+      if (Array.isArray(data)) recordedActions.value = data.map(value => normalizeRecordedAction(readRecordedAction(value)))
     } catch (_) {
       recordedActions.value = []
     }
   }
 
-  function normalizeRecordedAction(data: any) {
+  function normalizeRecordedAction(data: Partial<RecordedAction>): RecordedAction {
     const element = data?.element || null
-    const normalized: any = {
+    const normalized: RecordedAction = {
+      action: data.action || 'manual',
+      detail: null,
       ...data,
       client_id: data?.client_id || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       name: data?.name || (element ? getElementDisplayName(element) : ''),
@@ -919,10 +1057,10 @@
     return normalized
   }
 
-  function buildRecordedNodeDetail(action: any) {
+  function buildRecordedNodeDetail(action: Partial<RecordedAction>) {
     if (action?.detail) return action.detail
-    const value = (f: string, v: any) => ({ f, v })
-    const operationMap: Record<string, { ope_key: string; ope_value?: any[] }> = {
+    const value = (f: string, v: unknown) => ({ f, v })
+    const operationMap: Record<string, { ope_key: string; ope_value?: Array<{ f: string; v: unknown }> }> = {
       click: { ope_key: 'w_click' },
       double_click: { ope_key: 'w_dblclick' },
       right_click: { ope_key: 'w_right_click' },
@@ -957,7 +1095,7 @@
           ? 'w_drag_down_pixel'
           : 'w_drag_up_pixel',
         ope_value: [value('n', Math.max(1, Math.round(Math.abs(horizontal ? deltaX : deltaY))))],
-        ele_name: action.element_id || null,
+        ele_name: action.element_id ?? null,
       }
     }
     if (action.action === 'wait')
@@ -976,17 +1114,17 @@
       }
     if (action.action === 'custom_variable')
       return { type: 3, custom: [{ key: action.key || '', value: action.value || '' }] }
-    const operation = operationMap[action.action]
+    const operation = operationMap[action.action || '']
     if (!operation) return action.detail || null
     return {
       type: 0,
       ope_key: operation.ope_key,
       ope_value: operation.ope_value || [],
-      ele_name: action.element_id || null,
+      ele_name: action.element_id ?? null,
     }
   }
 
-  function appendRecordedAction(data: any) {
+  function appendRecordedAction(data: Partial<RecordedAction>) {
     if (recordingPaused.value) return
     const action = normalizeRecordedAction(data)
     if (action.action === 'scroll' && !recorderSettings.recordScroll) return
@@ -1011,8 +1149,10 @@
     persistRecordedActions()
   }
 
-  function handleRecorderSettingsChange(value: Record<string, any>) {
-    Object.assign(recorderSettings, value)
+  function handleRecorderSettingsChange(value: RecorderSettings) {
+    recorderSettings.mergeInput = value.mergeInput
+    recorderSettings.recordScroll = value.recordScroll
+    recorderSettings.recordNavigation = value.recordNavigation
   }
 
   function reorderRecordedAction(from: number, to: number) {
@@ -1035,7 +1175,7 @@
     }
   }
 
-  function updateRecordedAction(value: any) {
+  function updateRecordedAction(value: Partial<RecordedAction>) {
     const index = recordedActions.value.findIndex((item) => item.client_id === value.client_id)
     if (index >= 0) {
       const current = recordedActions.value[index]
@@ -1044,11 +1184,13 @@
     persistRecordedActions()
   }
 
-  function editRecordedElement(action: any) {
+  function editRecordedElement(action: RecordedAction) {
+    pendingBaselineSnapshot.value = null
+    pendingSavedScannedRecord.value = null
     pendingRecordedElementAction.value = action
-    if (action.element_id) {
+    if (liveId(action.element_id) !== null) {
       pendingCapturedElementSave.value = false
-      elementEditPanelRef.value?.openEditById(action.element_id)
+      elementEditPanelRef.value?.openEditById(action.element_id!)
       return
     }
     const element = action.element || {}
@@ -1059,7 +1201,7 @@
     }
     pendingCapturedElementSave.value = true
     elementEditPanelRef.value?.openCreate(
-      props.pageId || '',
+      props.pageId ?? '',
       action.category || props.category || '录制元素',
       {
         name: action.name || getElementDisplayName(element),
@@ -1077,8 +1219,13 @@
     )
   }
 
-  function handleRecordingSaved(result: any) {
-    clearRecordedActions()
+  function handleRecordingSaved(result: unknown, savedClientIds?: string[]) {
+    if (!scope.available()) return
+    if (savedClientIds) {
+      const saved = new Set(savedClientIds)
+      recordedActions.value = recordedActions.value.filter(action => !saved.has(action.client_id))
+      persistRecordedActions()
+    } else clearRecordedActions()
     interactionMode.value = 'operate'
     livePanelRef.value?.setInteractionMode?.('operate')
     void loadElements()
@@ -1089,20 +1236,22 @@
     checkMode: 'normal' | 'deep' = 'normal',
     runtimeVariables: Record<string, string> = {}
   ) {
-    if (elementCheckLoading.value) return false
+    if (!scope.available() || checkSubmitting.value || elementCheckLoading.value) return false
+    const current = scope.capture()
     const elementId = getSelectedElementId()
-    if (!elementId || !workspace.workspaceId) return false
+    if (liveId(elementId) === null || !workspace.workspaceId) return false
     if (String(elementId).startsWith('category:')) {
       Message.warning('请选择具体元素')
       return false
     }
+    checkSubmitting.value = true
     elementChecking.value = true
     const requestToken = elementCheckSession.start(elementId, workspace.workspaceId)
     elementCheckRequestId = ''
     elementCheckTaskId = ''
     clearElementCheckTimer()
     latestElementResult.value = {
-      ...buildElementCheckPendingResult(elementId),
+      ...buildElementCheckPendingResult(elementId!),
       check_mode: checkMode,
       ope_key: checkMode === 'deep' ? '元素深度检测' : '元素检测',
     }
@@ -1139,6 +1288,7 @@
         check_mode: checkMode,
         runtime_variables: runtimeVariables,
       })
+      if (!current() || !elementCheckSession.isActive(requestToken)) return false
       if (elementCheckSession.bindCheckId(requestToken, res.data?.check_id || '')) {
         elementCheckRequestId = String(res.data?.check_id || '')
       }
@@ -1158,6 +1308,7 @@
       Message.success(res.msg)
       return elementCheckRequestId || true
     } catch (error) {
+      if (!current() || !elementCheckSession.isActive(requestToken)) return false
       elementCheckSession.cancel(requestToken)
       elementChecking.value = false
       elementCheckRequestId = ''
@@ -1167,37 +1318,39 @@
       latestElementResult.value = {
         ...latestElementResult.value,
         status: 0,
-        error_message: (error as any)?.msg || '元素检测触发失败',
+        error_message: liveError(error, '元素检测触发失败'),
       }
       emit('element-check-finished')
       return false
-    }
+    } finally { checkSubmitting.value = false }
   }
 
   async function checkElementInWorkspace(
-    record: any,
+    record: LiveElement,
     checkMode: 'normal' | 'deep' = 'deep',
     runtimeVariables?: Record<string, string>
   ) {
-    if (!record?.id) return false
+    if (liveId(record?.id) === null || !scope.available()) return false
+    const current = scope.capture()
     const variables =
       checkMode === 'deep' && runtimeVariables === undefined
         ? await deepCheckVariablesDialogRef.value?.open({ ...record, page_url: props.pageUrl })
         : runtimeVariables || {}
-    if (variables === null) return false
-    if (!(await ensureWorkspaceReady())) return false
-    selectedElementId.value = record.id
+    if (!current() || variables == null) return false
+    if (!(await ensureWorkspaceReady()) || !current()) return false
+    selectedElementId.value = liveId(record.id)
     return checkSelectedElement(checkMode, variables)
   }
 
-  async function checkEditedElement(record: any, checkMode: 'normal' | 'deep' = 'deep') {
-    if (!record?.id) return
-    selectedElementId.value = record.id
+  async function checkEditedElement(record: LiveElement, checkMode: 'normal' | 'deep' = 'deep') {
+    if (liveId(record?.id) === null || !scope.available()) return
+    const current = scope.capture()
+    selectedElementId.value = liveId(record.id)
     const variables =
       checkMode === 'deep'
         ? await deepCheckVariablesDialogRef.value?.open({ ...record, page_url: props.pageUrl })
         : {}
-    if (variables === null) return
+    if (!current() || variables == null) return
     void checkSelectedElement(checkMode, variables)
   }
 
@@ -1226,9 +1379,11 @@
   }
 
   async function pollElementCheckTask() {
-    if (!elementChecking.value || !elementCheckTaskId) return
+    if (!scope.available() || !elementChecking.value || !elementCheckTaskId) return
+    const current = scope.capture(), taskId = elementCheckTaskId
     try {
-      const res = await getExecutorTask(elementCheckTaskId)
+      const res = await getExecutorTask(taskId, true)
+      if (!current() || taskId !== elementCheckTaskId) return
       const task = res.data || {}
       if (!task.terminal) {
         scheduleElementCheckTaskPoll()
@@ -1255,12 +1410,13 @@
       emit('element-check-result', taskResult)
       emit('element-check-finished')
     } catch (error) {
-      console.log(error)
-      scheduleElementCheckTaskPoll(1500)
+      if (current() && taskId === elementCheckTaskId) scheduleElementCheckTaskPoll(1500)
     }
   }
 
-  function acceptElementCheckResult(result: any) {
+  function acceptElementCheckResult(input: unknown) {
+    const result = readLiveResult(input)
+    if (!scope.available()) return false
     if (!elementCheckSession.accept(result)) return false
     const completedTaskId = elementCheckTaskId
     const completedElementId = getSelectedElementId()
@@ -1270,17 +1426,17 @@
     clearElementCheckTimer()
     clearElementCheckTaskPoll()
     latestElementResult.value = resolveRuntimeResult(result)
-    if (completedTaskId && completedElementId) {
+    if (completedTaskId && liveId(completedElementId) !== null) {
       clearExecutorTaskObservation('element-check', completedElementId, completedTaskId)
     }
     return true
   }
 
-  function selectedElementRecord(elementId: any) {
+  function selectedElementRecord(elementId: unknown) {
     return elementOptions.value.find((item) => String(item?.id) === String(elementId))
   }
 
-  function buildElementCheckPendingResult(elementId: any) {
+  function buildElementCheckPendingResult(elementId: LiveId): LiveResult {
     const element = selectedElementRecord(elementId)
     return {
       id: elementId,
@@ -1312,39 +1468,43 @@
   }
 
   async function scanPageElements() {
+    if (!scope.available() || scanSubmitting.value || scanLoading.value || !workspace.workspaceId) return
+    const current = scope.capture(), pageId = props.pageId ?? '', workspaceId = workspace.workspaceId, mode = scanMode.value
     if (scanMode.value === 'region' && !pickedElement.value) {
       interactionMode.value = 'select'
       livePanelRef.value?.setInteractionMode?.('select')
       Message.warning('请先通过实时浏览器的“选择元素”选中一个扫描区域，再开始区域扫描')
       return
     }
+    scanSubmitting.value = true
     scanLoading.value = true
     scannedElements.value = []
     scanStats.value = null
     clearScanTimer()
     try {
       const res = await postUiElementScan({
-        page_id: props.pageId || '',
-        workspace_id: workspace.workspaceId,
-        mode: scanMode.value,
+        page_id: pageId, workspace_id: workspaceId, mode,
       })
+      if (!current()) return
       scanTaskId.value = String(res.data?.task_id || '')
       if (!scanTaskId.value) throw new Error('页面元素扫描任务未返回任务ID')
-      saveExecutorTaskObservation('page-scan', props.pageId || '', {
+      saveExecutorTaskObservation(scanObservationScope.value, props.pageId ?? '', {
         taskId: scanTaskId.value,
         businessType: 'u_page_scan',
         meta: { workspaceId: workspace.workspaceId, scanMode: scanMode.value },
       })
       scheduleScanTaskPoll(0)
-    } catch (error: any) {
+    } catch (error) {
+      if (!current()) return
       scanLoading.value = false
       scanTaskId.value = ''
-      Message.error(error?.msg || error?.message || '页面元素扫描任务创建失败')
-    }
+      Message.error(liveError(error, '页面元素扫描任务创建失败'))
+    } finally { scanSubmitting.value = false }
   }
 
   function restorePageScanTask() {
-    const observation = loadExecutorTaskObservation('page-scan', props.pageId || '')
+    if (!scope.available()) return
+    const observation = loadExecutorTaskObservation(scanObservationScope.value, props.pageId ?? '')
     if (!observation?.taskId) return
     scanTaskId.value = String(observation.taskId)
     scanMode.value = ['quick', 'deep', 'region'].includes(observation.meta?.scanMode)
@@ -1366,9 +1526,11 @@
   }
 
   async function pollScanTask() {
-    if (!scanLoading.value || !scanTaskId.value) return
+    if (!scope.available() || !scanLoading.value || !scanTaskId.value) return
+    const current = scope.capture(), taskId = scanTaskId.value, pageId = props.pageId ?? ''
     try {
-      const res = await getExecutorTask(scanTaskId.value)
+      const res = await getExecutorTask(taskId, true)
+      if (!current() || taskId !== scanTaskId.value) return
       const task = res.data || {}
       if (!task.terminal) {
         scheduleScanTaskPoll()
@@ -1380,20 +1542,19 @@
       if (task.status !== 'success') {
         scanLoading.value = false
         Message.error(task.error_message || '页面元素扫描执行失败')
-        clearExecutorTaskObservation('page-scan', props.pageId || '', completedTaskId)
+        clearExecutorTaskObservation(scanObservationScope.value, props.pageId ?? '', completedTaskId)
         return
       }
       applyPageScanResult(task.result || {})
-      clearExecutorTaskObservation('page-scan', props.pageId || '', completedTaskId)
+      clearExecutorTaskObservation(scanObservationScope.value, props.pageId ?? '', completedTaskId)
     } catch (error) {
-      console.log(error)
-      scheduleScanTaskPoll(1500)
+      if (current() && taskId === scanTaskId.value) scheduleScanTaskPoll(1500)
     }
   }
 
-  function applyPageScanResult(data: any) {
-    scannedElements.value = (data.elements || []).map((item: any, index: number) =>
-      normalizeScannedElement(item, index)
+  function applyPageScanResult(data: { elements?: unknown[]; scan_stats?: Partial<ScanStats>; scan_mode?: ScanStats['scan_mode'] }) {
+    scannedElements.value = (data.elements || []).map((item: unknown, index: number) =>
+      normalizeScannedElement(readLiveElement(item), index)
     )
     scanStats.value = { ...(data.scan_stats || {}), scan_mode: data.scan_mode || scanMode.value }
     scanLoading.value = false
@@ -1405,7 +1566,7 @@
     return '快速扫描'
   }
 
-  function getElementDisplayName(item: any) {
+  function getElementDisplayName(item: LiveElement) {
     const text =
       item?.accessible_name ||
       item?.text ||
@@ -1419,9 +1580,9 @@
     return name.slice(0, 60) || '新采集元素'
   }
 
-  function normalizeScannedElement(item: any, index: number) {
+  function normalizeScannedElement(item: LiveElement, index: number) {
     const locators = Array.isArray(item?.locators)
-      ? item.locators.filter((locator: any) => locator?.loc).slice(0, 3)
+      ? item.locators.filter((locator: LiveLocator) => locator?.loc).slice(0, 3)
       : []
     return {
       ...item,
@@ -1436,8 +1597,8 @@
     }
   }
 
-  async function openAiLocatorRecommendation(record: any, targetType: 'picked' | 'scan') {
-    if (!record || !workspace.workspaceId) return
+  async function openAiLocatorRecommendation(record: LiveElement, targetType: 'picked' | 'scan') {
+    if (!scope.available() || !record || !workspace.workspaceId || aiLocator.loading) return
     clearAiLocatorValidationTimer()
     aiLocator.visible = true
     aiLocator.snapshotId = ''
@@ -1453,14 +1614,16 @@
   }
 
   async function loadAiLocatorBatch(refresh = false) {
-    if (!aiLocator.target || aiLocator.loading) return
+    if (!scope.available() || !aiLocator.visible || !aiLocator.target || aiLocator.loading) return
+    const current = scope.capture(), request = ++aiRequest, target = aiLocator.target
+    const valid = () => current() && aiLocator.visible && request === aiRequest && aiLocator.target === target
     aiLocator.loading = true
     aiLocator.validating = false
     aiLocator.target._aiLoading = true
     clearAiLocatorValidationTimer()
     try {
-      const locators = (aiLocator.target.locators || []).filter((item: any) => item?.loc)
-      const response = await postUiElementAiLocatorRecommend(
+      const locators = (aiLocator.target.locators || []).filter((item: LiveLocator) => item?.loc)
+      const response = await postUiElementAiLocatorRecommend(cloneLosslessJson(
         refresh && aiLocator.snapshotId
           ? {
               snapshot_id: aiLocator.snapshotId,
@@ -1475,12 +1638,13 @@
               location_description: aiLocator.locationDescription,
               surrounding_text: aiLocator.surroundingText,
             }
-      )
+      ))
+      if (!valid()) return
       const data = response.data || {}
       aiLocator.snapshotId = String(data.snapshot_id || aiLocator.snapshotId)
       aiLocator.batch = Number(data.batch || 0)
-      aiLocator.candidates = (data.candidates || []).map((item: any) => ({
-        ...item,
+      aiLocator.candidates = (data.candidates || []).map((item: unknown) => ({
+        ...readLiveLocator(item),
         validation_done: false,
       }))
       aiLocator.emptyReason = String(data.diagnostics?.message || '')
@@ -1490,14 +1654,23 @@
       }
       await validateAiLocatorCandidates()
     } catch (error) {
+      if (!valid()) return
       aiLocator.candidates = []
       aiLocator.emptyReason =
-        (error as any)?.msg || (error as any)?.message || 'AI 定位器候选请求失败，请稍后重试'
+        liveError(error, 'AI 定位器候选请求失败，请稍后重试')
     } finally {
       aiLocator.loading = false
-      if (aiLocator.target) aiLocator.target._aiLoading = false
+      target._aiLoading = false
     }
   }
+
+  watch(() => aiLocator.visible, visible => {
+    if (visible) return
+    aiRequest++
+    aiLocator.requestKey = ''
+    aiLocator.validating = false
+    clearAiLocatorValidationTimer()
+  }, { flush: 'sync' })
 
   function handleAiLocatorRefresh(guidance: {
     location_description?: string
@@ -1508,7 +1681,7 @@
     void loadAiLocatorBatch(true)
   }
 
-  function aiLocatorContext(record: any) {
+  function aiLocatorContext(record: LiveElement) {
     return {
       tag: record.tag,
       role: record.role,
@@ -1524,24 +1697,28 @@
   }
 
   async function validateAiLocatorCandidates() {
+    const current = scope.capture(), request = aiRequest
+    const valid = () => current() && aiLocator.visible && request === aiRequest
+    if (!valid()) return
     const locators = aiLocator.candidates.slice(0, 5)
     if (!locators.length) return
     aiLocator.validating = true
-    aiLocator.requestKey = `ai-recommend:${Date.now()}`
-    const sent = await livePanelRef.value?.sendWorkspaceCommand('check_locator', {
+    aiLocator.requestKey = `ai-recommend:${++locatorCheckSequence}:${Date.now()}`
+    const sent = await sendLocatorCheck({
       row_key: aiLocator.requestKey,
       name: aiLocator.targetName,
       locators,
     })
+    if (!valid()) return
     if (!sent) {
       aiLocator.validating = false
       return
     }
     aiLocatorValidationTimer = window.setTimeout(() => {
       aiLocatorValidationTimer = null
-      if (!aiLocator.validating) return
+      if (!valid() || !aiLocator.validating) return
       aiLocator.validating = false
-      aiLocator.candidates = aiLocator.candidates.map((item: any) => ({
+      aiLocator.candidates = aiLocator.candidates.map((item) => ({
         ...item,
         validation_done: true,
         verified: false,
@@ -1550,12 +1727,12 @@
     }, 30000)
   }
 
-  function applyAiLocatorValidation(data: any) {
-    if (data.row_key !== aiLocator.requestKey) return false
+  function applyAiLocatorValidation(data: LiveCommandData) {
+    if (!scope.available() || !aiLocator.visible || !aiLocator.requestKey || data.row_key !== aiLocator.requestKey) return false
     clearAiLocatorValidationTimer()
     aiLocator.validating = false
     const groups = data.scan_check_result?.locator_groups || []
-    aiLocator.candidates = aiLocator.candidates.map((item: any, index: number) => {
+    aiLocator.candidates = aiLocator.candidates.map((item, index: number) => {
       const group = groups[index] || {}
       const count = Number(group.count || 0)
       return {
@@ -1569,15 +1746,15 @@
         error_message: group.error_message || '',
       }
     })
-    const passedCount = aiLocator.candidates.filter((item: any) => item.verified).length
+    const passedCount = aiLocator.candidates.filter((item) => item.verified).length
     aiLocator.emptyReason = passedCount
       ? ''
       : `AI 已生成 ${aiLocator.candidates.length} 个候选，但浏览器校验全部失败`
     return true
   }
 
-  function useAiLocatorCandidates(candidates: any[]) {
-    if (!aiLocator.target) return
+  function useAiLocatorCandidates(candidates: LiveLocator[]) {
+    if (!scope.available() || !aiLocator.visible || !aiLocator.target || aiLocator.loading || aiLocator.validating) return
     const selected = candidates.filter((candidate) => candidate?.verified).slice(0, 3)
     if (!selected.length) return
     const locators = normalizePickedLocators(aiLocator.target.locators)
@@ -1596,9 +1773,9 @@
     Message.success(`已替换前 ${selected.length} 组定位器，请确认后保存元素`)
   }
 
-  function normalizePickedLocators(value: any) {
+  function normalizePickedLocators(value: unknown): LiveLocator[] {
     const locators = Array.isArray(value)
-      ? value.slice(0, 3).map((item: any) => ({
+      ? value.slice(0, 3).map((item: LiveLocator) => ({
           exp: item?.exp ?? null,
           loc: item?.loc || '',
           sub: item?.sub ?? '',
@@ -1612,12 +1789,17 @@
     if (aiLocatorValidationTimer) window.clearTimeout(aiLocatorValidationTimer)
     aiLocatorValidationTimer = null
   }
+  async function sendLocatorCheck(data: { row_key: string; name: string; locators: LiveLocator[] }): Promise<boolean> {
+    const current = scope.capture()
+    try { return Boolean(await livePanelRef.value?.sendWorkspaceCommand('check_locator', data)) && current() }
+    catch (error) { if (current()) Message.error(liveError(error, '浏览器检测失败，请重试')); return false }
+  }
 
-  function getScannedLocatorGroup(record: any, group: number) {
+  function getScannedLocatorGroup(record: LiveElement, group: number) {
     return record?.locators?.[group - 1]
   }
 
-  function getScannedElementText(record: any) {
+  function getScannedElementText(record: LiveElement) {
     return String(
       record?.text || record?.accessible_name || record?.label || record?.placeholder || ''
     )
@@ -1625,7 +1807,7 @@
       .trim()
   }
 
-  function locatorExpName(value: any) {
+  function locatorExpName(value: unknown) {
     const map: Record<number, string> = {
       0: 'XPATH',
       1: 'ID',
@@ -1642,7 +1824,7 @@
     return map[key] || `类型 ${value ?? '-'}`
   }
 
-  function locatorSourceName(value: any) {
+  function locatorSourceName(value: unknown) {
     const source = String(value || '').replace(/_frame$/, '')
     const map: Record<string, string> = {
       testid: '测试属性',
@@ -1661,7 +1843,8 @@
     }`
   }
 
-  function saveScannedElement(record: any) {
+  function saveScannedElement(record: LiveElement) {
+    pendingRecordedElementAction.value = null
     const locator = getScannedLocatorGroup(record, 1)
     if (!locator?.loc) {
       Message.error('没有可保存的定位器')
@@ -1670,11 +1853,11 @@
     const elementName = String(record._name || getElementDisplayName(record)).trim()
     const locator2 = getScannedLocatorGroup(record, 2)
     const locator3 = getScannedLocatorGroup(record, 3)
-    pendingBaselineSnapshot.value = record.baseline_snapshot
+    pendingBaselineSnapshot.value = record.baseline_snapshot ?? null
     pendingSavedScannedRecord.value = record
     pendingCapturedElementSave.value = true
     elementEditPanelRef.value?.openCreate(
-      props.pageId || '',
+      props.pageId ?? '',
       String(record._category || props.category || '未分类').trim(),
       {
         name: elementName,
@@ -1692,14 +1875,17 @@
     )
   }
 
-  async function checkScannedElement(record: any) {
-    if (elementCheckLoading.value) return
-    const locators = (record?.locators || []).filter((item: any) => item?.loc).slice(0, 3)
+  async function checkScannedElement(record: LiveElement) {
+    if (!scope.available() || elementCheckLoading.value) return
+    const current = scope.capture()
+    const locators = (record?.locators || []).filter((item: LiveLocator) => item?.loc).slice(0, 3)
     if (!locators.length) {
       Message.error('没有可检测的定位器')
       return
     }
     record._checking = true
+    const rowKey = `scan:${++locatorCheckSequence}:${record._rowKey}`
+    record._checkKey = rowKey
     latestElementResult.value = {
       id: 0,
       name: record._name || getElementDisplayName(record),
@@ -1733,18 +1919,19 @@
       element_name: record._name || getElementDisplayName(record),
       result: latestElementResult.value,
     })
-    const sent = await livePanelRef.value?.sendWorkspaceCommand('check_locator', {
-      row_key: record._rowKey,
+    const sent = await sendLocatorCheck({
+      row_key: rowKey,
       name: record._name || getElementDisplayName(record),
       locators,
     })
+    if (!current()) return
     if (!sent) {
       record._checking = false
       emit('element-check-finished')
       return
     }
-    window.setTimeout(() => {
-      if (!record._checking) return
+    rowCheckTimeout(() => {
+      if (!record._checking || record._checkKey !== rowKey) return
       record._checking = false
       latestElementResult.value = {
         ...latestElementResult.value,
@@ -1752,28 +1939,30 @@
         error_message: '扫描元素检测等待回传超时，请确认执行器连接正常或查看执行器日志',
       }
       emit('element-check-result', buildScannedCheckDetail(record, latestElementResult.value))
-    }, 30000)
+    })
   }
 
-  function recordedElementLocators(action: any) {
+  function recordedElementLocators(action: RecordedAction) {
     const element = action?.element || selectedElementRecord(action?.element_id) || {}
-    if (Array.isArray(element.locators))
-      return element.locators.filter((item: any) => item?.loc).slice(0, 3)
+    if (Array.isArray(element.locators) && element.locators.length)
+      return element.locators.filter((item: LiveLocator) => item?.loc).slice(0, 3)
     return [
       { exp: element.exp, loc: element.loc, sub: element.sub },
       { exp: element.exp2, loc: element.loc2, sub: element.sub2 },
       { exp: element.exp3, loc: element.loc3, sub: element.sub3 },
-    ].filter((item) => item.loc && item.exp !== undefined && item.exp !== null)
+    ].filter((item) => item.loc && item.exp !== undefined && item.exp !== null).map(readLiveLocator)
   }
 
-  async function checkRecordedElement(action: any) {
-    if (elementCheckLoading.value) return
+  async function checkRecordedElement(action: RecordedAction) {
+    if (!scope.available() || elementCheckLoading.value) return
+    const current = scope.capture()
     const locators = recordedElementLocators(action)
     if (!locators.length) {
       Message.error('当前录制节点没有可检测的定位器')
       return
     }
-    const rowKey = `recording:${action.client_id}`
+    const rowKey = `recording:${++locatorCheckSequence}:${action.client_id}`
+    action._checkKey = rowKey
     action._checking = true
     action._checkStatus = ''
     emit('element-check-started', {
@@ -1782,26 +1971,27 @@
       element_name: action.name || getElementDisplayName(action.element || {}),
       check_mode: 'normal',
     })
-    const sent = await livePanelRef.value?.sendWorkspaceCommand('check_locator', {
+    const sent = await sendLocatorCheck({
       row_key: rowKey,
       name: action.name || getElementDisplayName(action.element || {}),
       locators,
     })
+    if (!current()) return
     if (!sent) {
       action._checking = false
       emit('element-check-finished')
       return
     }
-    window.setTimeout(() => {
-      if (!action._checking) return
+    rowCheckTimeout(() => {
+      if (!action._checking || action._checkKey !== rowKey) return
       action._checking = false
       action._checkStatus = 'failed'
       emit('element-check-finished')
       Message.error('录制元素检测等待回传超时，请确认执行器连接正常')
-    }, 30000)
+    })
   }
 
-  function buildScannedCheckDetail(record: any, result: any, baselineSnapshot?: any) {
+  function buildScannedCheckDetail(record: LiveElement, result: LiveResult | null, baselineSnapshot?: Record<string, unknown>): LiveResult {
     const status = Number(result?.status) === 1 ? 'valid' : 'invalid'
     return {
       check_id: `scan:${record?._rowKey || Date.now()}`,
@@ -1821,24 +2011,27 @@
       },
       baseline:
         baselineSnapshot && Object.keys(baselineSnapshot).length ? { after: 'created' } : {},
-      selected_result: result,
+      selected_result: result ?? undefined,
     }
   }
 
-  function resolveRuntimeResult(result: any) {
-    if (!result) return null
+  function resolveRuntimeResult(input: unknown): LiveResult | null {
+    if (!input) return null
+    const result = readLiveResult(input)
     const directList = Array.isArray(result.element_result_list) ? result.element_result_list : []
     if (directList.length) return directList[directList.length - 1]
     const resultDataList = Array.isArray(result.result_data?.element_result_list)
-      ? result.result_data.element_result_list
+      ? result.result_data?.element_result_list || []
       : []
     if (resultDataList.length) return resultDataList[resultDataList.length - 1]
     const elementResult = Array.isArray(result.element_result) ? result.element_result : []
     if (elementResult.length) return elementResult[elementResult.length - 1]
-    return result.selected_result || result.element_result || result
+    return result.selected_result || (Array.isArray(result.element_result) ? null : result.element_result) || result
   }
 
   function savePickedElement() {
+    if (!scope.available() || !pickedElement.value) return
+    pendingRecordedElementAction.value = null
     const [locator, locator2, locator3] = normalizePickedLocators(pickedElement.value?.locators)
     if (locator.exp === null || !String(locator.loc || '').trim()) {
       Message.error('请完善第一组主定位的定位类型和定位表达式')
@@ -1853,10 +2046,10 @@
     }
     const elementName =
       pickedForm.name || pickedElement.value.text || pickedElement.value.label || '新采集元素'
-    pendingBaselineSnapshot.value = pickedElement.value?.baseline_snapshot
+    pendingBaselineSnapshot.value = pickedElement.value?.baseline_snapshot ?? null
     pendingSavedScannedRecord.value = null
     pendingCapturedElementSave.value = true
-    elementEditPanelRef.value?.openCreate(props.pageId || '', pickedForm.category || '未分类', {
+    elementEditPanelRef.value?.openCreate(props.pageId ?? '', pickedForm.category || '未分类', {
       name: elementName,
       exp: locator.exp,
       loc: locator.loc,
@@ -1871,8 +2064,10 @@
     })
   }
 
-  async function handleElementSaved(record: any) {
-    const snapshot = pendingBaselineSnapshot.value
+  async function handleElementSaved(record: LiveElement) {
+    if (!scope.available()) return
+    const current = scope.capture()
+    const snapshot = cloneLosslessJson(pendingBaselineSnapshot.value)
     const scannedRecord = pendingSavedScannedRecord.value
     const capturedElementSave = pendingCapturedElementSave.value
     pendingBaselineSnapshot.value = null
@@ -1893,16 +2088,17 @@
       pendingRecordedElementAction.value = null
     }
     await saveElementBaselineSnapshot(record?.id, snapshot)
+    if (!current()) return
     const hasCapturedBaseline = Boolean(snapshot && Object.keys(snapshot).length)
     const lacksStoredBaseline = Number(record?.ai_heal_status || 0) === 0
     if (capturedElementSave && !hasCapturedBaseline && lacksStoredBaseline) {
       void triggerElementBaselineCheck(record?.id)
     }
     await loadElements()
-    emit('element-saved', record)
+    if (current()) emit('element-saved', record)
   }
 
-  function showElementCheckDetail(result: any) {
+  function showElementCheckDetail(result: LiveResult | null) {
     if (!result) return
     elementCheckDetail.data = result
     elementCheckDetail.title = `${
@@ -1914,23 +2110,28 @@
 
   async function applyDeepCheckUpdates() {
     if (deepCheckApplyLoading.value || deepCheckApplied.value) return
-    const elementId = elementCheckDetail.data?.element_id
-    const checkId = String(elementCheckDetail.data?.check_id || '')
-    if (!elementId || !checkId) return
+    const current = scope.capture(), detail = elementCheckDetail.data
+    const elementId = detail?.element_id
+    const taskId = liveId(detail?.executor_task_id)
+    if (!current() || !elementCheckDetail.visible || elementId == null || taskId === null) return
     deepCheckApplyLoading.value = true
     try {
-      const res = await putUiElementDeepCheckApply({ element_id: elementId, check_id: checkId })
+      const res = await putUiElementDeepCheckApply({ element_id: elementId, task_id: taskId })
+      if (!current() || !elementCheckDetail.visible || elementCheckDetail.data !== detail) return
       deepCheckApplied.value = true
       const slots = res.data?.applied_slots || []
       Message.success(slots.length ? `已写入第 ${slots.join('、')} 组定位` : res.msg)
       await loadElements()
+    } catch (error) {
+      if (current() && elementCheckDetail.data === detail) Message.error(liveError(error, '写入定位组失败，请重试'))
     } finally {
       deepCheckApplyLoading.value = false
     }
   }
 
-  async function saveElementBaselineSnapshot(elementId: any, snapshot: any) {
-    if (!elementId || !snapshot || !Object.keys(snapshot).length) return
+  async function saveElementBaselineSnapshot(elementId: LiveId | undefined, snapshot: Record<string, unknown> | null) {
+    if (liveId(elementId) === null || !snapshot || !Object.keys(snapshot).length) return
+    const current = scope.capture()
     try {
       await postUiElementAiSnapshot({
         ...snapshot,
@@ -1938,12 +2139,12 @@
         test_env: testEnvValue.value,
       })
     } catch (_) {
-      Message.warning('元素已保存，基线采集写入失败')
+      if (current()) Message.warning('元素已保存，基线采集写入失败')
     }
   }
 
-  async function triggerElementBaselineCheck(elementId: any) {
-    if (!elementId || !workspace.workspaceId) return
+  async function triggerElementBaselineCheck(elementId: LiveId | undefined) {
+    if (elementId == null || !scope.available() || !workspace.workspaceId) return
     try {
       await postUiElementCheck({
         element_id: elementId,
@@ -1959,27 +2160,31 @@
     pageStepDetailId?: number | string,
     overridePageStepId?: number | string
   ) {
-    const targetPageStepId = overridePageStepId || props.pageStepId
-    if (!targetPageStepId) {
+    const targetPageStepId = overridePageStepId ?? props.pageStepId
+    if (liveId(targetPageStepId) === null) {
       Message.error('缺少页面步骤ID')
       return false
     }
-    if (stepDebugging.value) return false
+    if (!scope.available() || debugSubmitting || stepDebugging.value) return false
+    const current = scope.capture()
+    const environment = testEnvValue.value, control = cloneLosslessJson(props.stepControl)
+    debugSubmitting = true
     stepDebugging.value = true
-    recordingTrialRunning.value = Boolean(overridePageStepId)
+    recordingTrialRunning.value = liveId(overridePageStepId) !== null
     let dispatched = false
     try {
-      if (!(await ensureWorkspaceReady())) return false
+      if (!(await ensureWorkspaceReady()) || !current()) return false
       const executeStep = () =>
         getUiStepsTest(
           targetPageStepId,
-          testEnvValue.value as any,
+          environment!,
           workspace.workspaceId,
-          props.stepControl,
+          control,
           pageStepDetailId,
           true
         )
       const controlReleased = await livePanelRef.value?.suspendControlForAutomation()
+      if (!current()) return false
       if (!controlReleased) {
         throw new Error('直播控制权释放超时，请稍后重试')
       }
@@ -1987,7 +2192,8 @@
       const requestWorkspaceId = workspace.workspaceId
       try {
         res = await executeStep()
-      } catch (error: any) {
+      } catch (error) {
+        if (!current()) return false
         if (!isWorkspaceExpiredError(error)) throw error
         const recovered = await recoverExpiredWorkspace(requestWorkspaceId)
         if (!recovered || !workspace.workspaceId) {
@@ -1995,14 +2201,17 @@
         }
         res = await executeStep()
       }
+      if (!current()) return false
       Message.success(res.msg)
       dispatched = true
+      emit('step-debug-started', { page_step_id: targetPageStepId!, test_env: environment, task_id: res.data?.task_id, slot_id: res.data?.slot_id })
       return true
-    } catch (error: any) {
-      Message.error(error?.message || error?.msg || '页面步骤调试失败')
+    } catch (error) {
+      if (current()) Message.error(liveError(error, '页面步骤调试失败'))
       return false
     } finally {
-      if (!dispatched) {
+      debugSubmitting = false
+      if (current() && !dispatched) {
         stepDebugging.value = false
         recordingTrialRunning.value = false
         livePanelRef.value?.resumeControlAfterAutomation()
@@ -2010,8 +2219,8 @@
     }
   }
 
-  function isWorkspaceExpiredError(error: any) {
-    const message = String(error?.message || error?.msg || '')
+  function isWorkspaceExpiredError(error: unknown) {
+    const message = liveError(error, '')
     return /实时工作区不存在|实时工作区.*过期|实时工作区与当前页面步骤不匹配/.test(message)
   }
 
@@ -2044,40 +2253,40 @@
     recordingPausedByDisconnect = false
   }
 
-  function handleLiveCommandResult(message: any) {
+  function handleLiveCommandResult(message: { success?: boolean; message?: string; data?: LiveCommandData }) {
+    if (!scope.available() || !workspace.workspaceId) return
     const data = message?.data || {}
     if (message?.success === false) {
-      if (aiLocator.validating) {
+      if (aiLocator.validating && data.row_key === aiLocator.requestKey) {
         clearAiLocatorValidationTimer()
         aiLocator.validating = false
-        aiLocator.candidates = aiLocator.candidates.map((item: any) => ({
+        aiLocator.candidates = aiLocator.candidates.map((item) => ({
           ...item,
           validation_done: true,
           verified: false,
           error_message: message?.message || '浏览器验证失败',
         }))
       }
-      clearScanTimer()
-      scanLoading.value = false
-      scannedElements.value.forEach((item: any) => {
-        item._checking = false
-      })
+      const checkingRows = [...scannedElements.value, ...recordedActions.value]
+        .filter(item => item._checking && item._checkKey === data.row_key)
+      checkingRows.forEach(item => { item._checking = false; item._checkStatus = 'failed' })
+      if (checkingRows.length) emit('element-check-finished')
       return
     }
     if (data.element) {
       data.element.locators = normalizePickedLocators(data.element.locators)
-      pickedElement.value = data.element
+      pickedElement.value = readLiveElement(data.element)
       pickedForm.name = data.element.text || data.element.label || data.element.placeholder || ''
       pickedForm.category = String(props.category || '未分类')
     }
-    if (data.recorded_action) appendRecordedAction(data.recorded_action)
+    if (data.recorded_action) appendRecordedAction(readRecordedAction(data.recorded_action))
     if (Array.isArray(data.passive_actions)) {
-      data.passive_actions.forEach((item: any) => {
+      data.passive_actions.forEach((item) => {
         const previous = recordedActions.value[recordedActions.value.length - 1]
         const passiveLoc = item?.element?.locators?.[0]?.loc || ''
         const previousLoc = previous?.element?.locators?.[0]?.loc || ''
         if (
-          ['select', 'check', 'uncheck'].includes(item.action) &&
+          ['select', 'check', 'uncheck'].includes(item.action || '') &&
           previous?.action === 'click' &&
           passiveLoc &&
           passiveLoc === previousLoc
@@ -2100,24 +2309,25 @@
     }
     if (data.scan_check_result) {
       if (applyAiLocatorValidation(data)) return
-      latestElementResult.value = data.scan_check_result
       const recordedAction = recordedActions.value.find(
-        (item: any) => `recording:${item.client_id}` === data.row_key
+        (item) => item._checking && item._checkKey === data.row_key
       )
+      const row = scannedElements.value.find((item) => item._checking && item._checkKey === data.row_key)
+      if (!recordedAction && !row) return
+      latestElementResult.value = data.scan_check_result
       if (recordedAction) {
         recordedAction._checking = false
         recordedAction._checkStatus =
           Number(data.scan_check_result?.status) === 1 ? 'passed' : 'failed'
-        recordedAction._checkDuration = data.scan_check_result?.duration_ms
+        recordedAction._checkDuration = data.scan_check_result?.duration_ms ?? undefined
         if (recordedAction._checkStatus === 'passed') Message.success('录制元素检测通过')
         else Message.error(data.scan_check_result?.error_message || '录制元素检测失败')
         emit('element-check-finished')
       }
-      const row = scannedElements.value.find((item: any) => item._rowKey === data.row_key)
       if (row) {
         row._checking = false
         row._checkStatus = Number(data.scan_check_result?.status) === 1 ? 'passed' : 'failed'
-        row._checkDuration = data.scan_check_result?.duration_ms
+        row._checkDuration = data.scan_check_result?.duration_ms ?? undefined
         if (data.baseline_snapshot) row.baseline_snapshot = data.baseline_snapshot
         const checkDetail = buildScannedCheckDetail(
           row,
@@ -2125,15 +2335,18 @@
           data.baseline_snapshot
         )
         emit('element-check-result', checkDetail)
+        emit('element-check-finished')
         showElementCheckDetail(checkDetail)
       }
     }
   }
 
   function handleWebsocketMessage(event: Event) {
-    const message = (event as CustomEvent).detail
-    const funcName = message?.data?.func_name
-    const result = message?.data?.func_args
+    if (!scope.available()) return
+    const message = liveObject((event as CustomEvent<unknown>).detail)
+    const data = liveObject(message.data)
+    const funcName = data.func_name
+    const result = liveObject(data.func_args)
     const msg = String(message?.msg || '')
     if (
       !workspace.workspaceId &&
@@ -2146,11 +2359,12 @@
       const statusWorkspaceId = String(result?.workspace_id || '')
       if (!statusWorkspaceId) return
       if (statusWorkspaceId !== workspace.workspaceId) {
+        if (!workspaceOpening.value) return
         if (result?.status === 'ready') readyWorkspaceIds.add(statusWorkspaceId)
         else if (result?.status === 'failed') {
           failedWorkspaceMessages.set(
             statusWorkspaceId,
-            result?.message || '执行器初始化实时工作区失败'
+            String(result?.message || '执行器初始化实时工作区失败')
           )
         }
         return
@@ -2161,14 +2375,14 @@
         finishWorkspaceReadyWait(true)
       } else if (result?.status === 'failed') {
         workspace.ready = false
-        workspace.error = result?.message || '执行器初始化实时工作区失败'
+        workspace.error = String(result?.message || '执行器初始化实时工作区失败')
         finishWorkspaceReadyWait(false)
       } else if (result?.status === 'closed') {
-        clearWorkspaceRetryTimer()
-        workspaceRequestSeq += 1
+        invalidateWorkbench()
+        resumeAfterCleanup = false
         workspace.ready = false
         workspace.workspaceId = ''
-        workspace.error = result?.message || '实时工作区已关闭'
+        workspace.error = String(result?.message || '实时工作区已关闭')
         liveVisible.value = false
         Message.info(workspace.error)
       }
@@ -2187,18 +2401,14 @@
     }
   }
 
-  onMounted(() => {
-    workspaceMounted = true
-    window.addEventListener('mango:websocket-message', handleWebsocketMessage)
-    window.addEventListener('mango:websocket-open', handlePlatformWebsocketOpen)
-    openWorkspace()
-    restoreRecordedActions()
-    restorePageScanTask()
+  function startLocalLoops() {
+    if (!scope.available() || idleClockTimer || recordingPollTimer) return
     idleClockTimer = window.setInterval(() => {
       idleNow.value = Date.now()
     }, 1000)
     recordingPollTimer = window.setInterval(() => {
       if (
+        scope.available() &&
         interactionMode.value === 'record' &&
         !recordingPaused.value &&
         workspace.ready &&
@@ -2207,6 +2417,16 @@
         void livePanelRef.value.sendWorkspaceCommand?.('record_poll')
       }
     }, 1500)
+  }
+
+  onMounted(() => {
+    workspaceMounted = true
+    window.addEventListener('mango:websocket-message', handleWebsocketMessage)
+    window.addEventListener('mango:websocket-open', handlePlatformWebsocketOpen)
+    if (scope.available()) void openWorkspace()
+    restoreRecordedActions()
+    restorePageScanTask()
+    startLocalLoops()
   })
 
   onBeforeUnmount(() => {
@@ -2223,11 +2443,14 @@
     finishWorkspaceReadyWait(false)
     if (idleClockTimer) window.clearInterval(idleClockTimer)
     if (recordingPollTimer) window.clearInterval(recordingPollTimer)
-    if (workspace.workspaceId) closeUiLiveWorkspace(workspace.workspaceId, true).catch(() => {})
+    if (workspace.workspaceId) void releaseWorkspace(workspace.workspaceId, true)
   })
 </script>
 
 <style scoped>
+  .mango-ui-live-workbench-scroll {
+    --mango-workbench-min-width: 1120px;
+  }
   .mango-ui-live-workbench-panel__scan-mode {
     width: 112px;
   }
@@ -2235,25 +2458,26 @@
   .mango-ui-live-workbench-panel {
     display: grid;
     height: 100%;
-    min-height: min(760px, calc(100vh - 112px));
+    min-height: 0;
     grid-template-columns: minmax(720px, 1fr) clamp(380px, 24vw, 440px);
-    column-gap: 0;
-    overflow: hidden;
-    background: var(--m-bg-soft);
+    gap: var(--m-page-gap);
+    min-width: var(--mango-workbench-min-width);
+    overflow-x: auto;
+    background: var(--m-bg);
   }
   .mango-ui-live-workbench-panel__stage {
     display: flex;
     min-width: 0;
     min-height: 0;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--m-page-gap);
     overflow: hidden;
-    padding: 0 4px 0 0;
+    padding: 0;
   }
   .mango-ui-live-workbench-panel__viewer-card {
     display: flex;
     min-width: 0;
-    min-height: 400px;
+    min-height: 260px;
     flex: 1 1 auto;
     flex-direction: column;
     overflow: hidden;
@@ -2333,7 +2557,7 @@
   .mango-ui-live-workbench-panel__scan-panel {
     display: flex;
     min-height: 0;
-    flex: 0 0 clamp(460px, 46vh, 560px);
+    flex: 0 1 clamp(220px, 46vh, 460px);
     flex-direction: column;
     overflow: hidden;
     border: 1px solid var(--m-border);
@@ -2344,9 +2568,9 @@
     display: flex;
     min-width: 0;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--m-page-gap);
     overflow: auto;
-    padding: 0 0 0 4px;
+    padding: 0;
   }
   .mango-ui-live-workbench-panel__section-head {
     display: flex;
@@ -2457,11 +2681,11 @@
     gap: 8px;
   }
   .mango-ui-live-workbench-panel__scan-table {
+    height: 0;
     min-height: 0;
     flex: 1;
     margin: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: hidden;
     border: 1px solid var(--m-border);
     border-radius: 6px;
     background: var(--m-surface);

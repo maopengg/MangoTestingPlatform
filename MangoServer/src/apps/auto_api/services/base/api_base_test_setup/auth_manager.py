@@ -475,7 +475,8 @@ class ApiAuthManager:
         end_time = time.time() + cls.LOCK_WAIT_SECONDS
         config = ApiAuthConfig.objects.get(id=config_id)
         while time.time() < end_time:
-            time.sleep(0.3)
+            from src.apps.task_center.services.execution.cooperative_executor import cooperative_sleep
+            cooperative_sleep(0.3)
             config.refresh_from_db()
             if not config.refreshing:
                 return config

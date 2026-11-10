@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 import ts from 'typescript'
+import { loadModule } from './helpers/auth-config-harness.mjs'
 
 const read = (path) => fs.readFileSync(new URL(`../src/${path}`, import.meta.url), 'utf8')
 
@@ -19,10 +20,12 @@ function harness(response = { status: 200, data: { code: 200, data: true } }) {
     constructor(message, code) { super(message); this.code = code }
   }
   const exports = {}
+  const feedback = loadModule('src/utils/load-error.ts', { '@arco-design/web-vue': { Message: { error: message => messages.push(message) } } })
+  const normalize = loadModule('src/utils/api-response.ts')
   new Function('exports', 'Message', 'ApiBusinessError', 'containsLosslessJsonNumber',
-    'request', 'isAuthExpiredResponse', 'handleAuthExpired', js)(exports,
+    'request', 'isAuthExpiredResponse', 'handleAuthExpired', ...Object.keys(feedback), 'normalizeEmptyListTotal', js)(exports,
     { error: (message) => messages.push(message) }, ApiBusinessError, () => false,
-    request, (status) => status === 401, (message) => expired.push(message))
+    request, (status) => status === 401, (message) => expired.push(message), ...Object.values(feedback), normalize.normalizeEmptyListTotal)
   return { http: exports.http, calls, messages, expired }
 }
 

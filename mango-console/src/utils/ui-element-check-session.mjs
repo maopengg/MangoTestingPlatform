@@ -5,8 +5,8 @@ export function createUiElementCheckSession() {
   function start(elementId, workspaceId = '') {
     current = {
       token: ++sequence,
-      elementId: String(elementId || ''),
-      workspaceId: String(workspaceId || ''),
+      elementId: String(elementId ?? ''),
+      workspaceId: String(workspaceId ?? ''),
       checkId: '',
     }
     return current.token
@@ -29,7 +29,7 @@ export function createUiElementCheckSession() {
     }
     if (
       current.elementId &&
-      String(result.element_id || '') !== current.elementId
+      String(result.element_id ?? '') !== current.elementId
     ) {
       return false
     }

@@ -18,13 +18,11 @@ const host = 'platform-service-api.long-environment-name.example.com'
 const result = { connected: state === 'success', message: state === 'success' ? '服务器 DNS 解析及 TCP 端口连接正常。' : '域名解析失败，请检查服务器 DNS 或域名配置。', host,
   port: 80, resolved_ips: state === 'success' ? ['192.0.2.10', '2001:db8::10'] : [], elapsed_ms: 705 }
 const noop = () => {}
-const context = { options: [{ label: '默认地址', value: `http://${host}` }], address: Vue.ref(`http://${host}`),
+const context = { visible: Vue.ref(true), options: [{ label: '默认地址', value: `http://${host}` }], address: Vue.ref(`http://${host}`),
   loading: state === 'loading', result: Vue.ref(['empty', 'loading'].includes(state) ? null : result), error: '', runTest: noop, reset: noop, close: noop, clearResult: noop }
 const app = Vue.createApp({ setup: () => context, render: new Function('Vue', compile(template).code)(Vue) })
 app.use(Arco)
-app.component('ModalDialog', Vue.defineComponent({ props: ['title', 'width'], setup(props, { slots }) {
-  return () => Vue.h(Modal, { visible: true, title: props.title, width: scaleDensityLength(props.width), maskClosable: false }, {
-    default: () => slots.content?.(), footer: () => slots.footer?.(),
-  })
+app.component('AModal', Vue.defineComponent({ props: ['title', 'width', 'visible'], setup(props, { slots, attrs }) {
+  return () => Vue.h(Modal, { ...attrs, visible: props.visible, title: props.title, width: scaleDensityLength(props.width), maskClosable: false }, slots)
 } }))
 app.mount('#app')

@@ -12,7 +12,7 @@
           <a-button
             size="small"
             type="primary"
-            :disabled="loading || !projectProductId"
+            :disabled="loading || projectProductId === null"
             @click="openCreate()"
             >新增一级模块</a-button
           >
@@ -30,7 +30,7 @@
         @add="openCreate"
         @edit="openModule"
         @delete="removeModule"
-        @detail="detailRecord = $event"
+        @detail="detailId = $event.id"
       />
     </template>
   </TableBody>
@@ -40,7 +40,7 @@
     title="模块详情"
     :footer="false"
     :width="560"
-    @cancel="detailRecord = null"
+    @cancel="detailId = null"
   >
     <a-descriptions v-if="detailRecord" :column="1" size="small" class="mango-module-description">
       <a-descriptions-item label="模块名称">{{ detailRecord.name }}</a-descriptions-item>
@@ -66,121 +66,111 @@
     </a-descriptions>
   </a-modal>
 
-  <ModalDialog
-    ref="moduleDialogRef"
-    :title="
-      moduleForm.id ? '编辑模块' : `新增${moduleLevelLabels[moduleForm.level - 1] || '一级模块'}`
-    "
-    width="540px"
-    @confirm="saveModule"
-  >
-    <template #content>
-      <a-form :model="moduleForm" class="mango-module-form">
-        <a-form-item label="所属上级"
-          ><span>{{ moduleForm.parentName || '无（一级模块）' }}</span></a-form-item
-        >
-        <a-form-item class="mango-form-item__require" label="模块名称">
-          <a-input v-model="moduleForm.name" :max-length="64" placeholder="请输入模块名称" />
-        </a-form-item>
-      </a-form>
-    </template>
-  </ModalDialog>
+  <ModuleEditor ref="moduleEditorRef" :product-id="projectProductId" @saved="onSaved" />
 </template>
+<script setup lang="ts">
+import { reportLoadError } from '@/utils/load-error'
 
-<script lang="ts" setup>
-  import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+  import { computed, reactive, ref, onMounted, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import { useRoute } from 'vue-router'
-  import ModalDialog from '@/components/overlays/ModalDialog.vue'
-  import ModuleTree from './ModuleTree.vue'
-  import { moduleLevelLabels, moduleCreateDraft } from './config'
   import { useProject } from '@/store/modules/get-project'
   import { formatModulePath } from '@/utils/business-format'
-  import {
-    deleteUserModule,
-    getUserModule,
-    postUserModule,
-    putUserModule,
-  } from '@/api/system/module'
-
-  const route = useRoute()
-  const projectStore = useProject()
-  const loading = ref(false)
-  const loadError = ref('')
-  const moduleDialogRef = ref<InstanceType<typeof ModalDialog> | null>(null)
-  const modules = ref<any[]>([])
-  const moduleForm = reactive<any>({})
-  const detailRecord = ref<any>(null)
-  let requestVersion = 0
-  const projectProductId = computed(() => Number(route.query.id) || undefined)
-  const productModuleDetailTitle = computed(
-    () => `产品模块配置 / ${route.query.id || '-'} / ${route.query.name || '-'}`
+  import { getUserModule, deleteUserModule } from '@/api/system/module'
+  import ModuleTree from './components/ModuleTree.vue'
+  import ModuleEditor from './components/ModuleEditor.vue'
+  import { moduleLevelLabels } from './config'
+  import { useProductPageScope } from '../composables/useProductPageScope'
+  import type { ModuleRecord, ModuleEditorHandle } from './types'
+  const route = useRoute(),
+    projectStore = useProject()
+  const loading = ref(false),
+    loadError = ref(''),
+    modules = ref<ModuleRecord[]>([])
+  const moduleEditorRef = ref<ModuleEditorHandle | null>(null),
+    detailId = ref<number | null>(null)
+  const detailRecord = computed(
+    () => modules.value.find((record) => record.id === detailId.value) ?? null
   )
-  function resetForm() {
-    Object.keys(moduleForm).forEach((key) => delete moduleForm[key])
+  let requestVersion = 0
+  let confirmation: ReturnType<typeof Modal.confirm> | null = null
+  const deleting = reactive(new Set<number>())
+  const projectProductId = computed(() => {
+    const raw = route.query.id
+    if (typeof raw !== 'string' || !/^\d+$/.test(raw)) return null
+    const id = Number(raw)
+    return Number.isSafeInteger(id) && id > 0 ? id : null
+  })
+  const productModuleDetailTitle = computed(
+    () =>
+      `产品模块配置 / ${projectProductId.value ?? '-'} / ${
+        typeof route.query.name === 'string' ? route.query.name : '-'
+      }`
+  )
+  const scope = useProductPageScope(
+    () => [projectProductId.value],
+    reset,
+    () => void loadModules()
+  )
+  function reset() {
+    ++requestVersion
+    modules.value = []
+    loading.value = false
+    loadError.value = ''
+    detailId.value = null
+    moduleEditorRef.value?.close()
+    confirmation?.close()
+    confirmation = null
   }
-  function openCreate(parent?: any) {
-    resetForm()
-    if (Number(parent?.level || 0) >= 3) return
-    Object.assign(moduleForm, moduleCreateDraft(parent))
-    moduleDialogRef.value?.show()
+  function openCreate(parent?: ModuleRecord) {
+    if (scope.isActive() && !loading.value) moduleEditorRef.value?.create(parent)
   }
-  function openModule(record: any) {
-    resetForm()
-    Object.assign(moduleForm, { id: record.id, name: record.name, parentName: record.parent?.name })
-    moduleDialogRef.value?.show()
+  function openModule(record: ModuleRecord) {
+    if (scope.isActive() && !loading.value && !deleting.has(record.id))
+      moduleEditorRef.value?.edit(record)
   }
-
-  async function saveModule() {
-    if (!String(moduleForm.name || '').trim()) {
-      Message.error('请输入模块名称')
-      moduleDialogRef.value?.setConfirmLoading(false)
-      return
-    }
-    try {
-      if (moduleForm.id)
-        await putUserModule({ id: moduleForm.id, name: String(moduleForm.name).trim() })
-      else
-        await postUserModule({
-          project_product: projectProductId.value,
-          parent: moduleForm.parent,
-          name: String(moduleForm.name).trim(),
-        })
-      projectStore.invalidateAllProductModuleTreeCache()
-      Message.success('保存成功')
-      await moduleDialogRef.value?.close()
-      await loadModules()
-    } catch {
-      // 请求层展示具体错误，保留表单供用户修正。
-    } finally {
-      moduleDialogRef.value?.setConfirmLoading(false)
-    }
+  function onSaved() {
+    void loadModules()
   }
-
-  function removeModule(record: any) {
-    Modal.confirm({
+  function removeModule(record: ModuleRecord) {
+    if (!scope.isActive() || confirmation || deleting.has(record.id)) return
+    const id = record.id,
+      version = scope.snapshot()
+    const dialog = Modal.confirm({
       title: '删除模块',
       content: `确认删除模块「${record.name}」吗？存在子模块或业务引用时后端会阻止删除。`,
       okText: '删除',
       cancelText: '取消',
       okButtonProps: { status: 'danger' },
-      onBeforeOk: async () => {
+      async onBeforeOk() {
+        if (!scope.current(version) || deleting.has(id)) return false
+        deleting.add(id)
         try {
-          await deleteUserModule(record.id)
+          await deleteUserModule(id)
           projectStore.invalidateAllProductModuleTreeCache()
-          Message.success('删除成功')
-          await loadModules()
+          if (scope.current(version)) {
+            Message.success('删除成功')
+            await loadModules()
+          }
           return true
         } catch {
           return false
+        } finally {
+          deleting.delete(id)
         }
       },
+      onClose() {
+        if (confirmation === dialog) confirmation = null
+      },
     })
+    confirmation = dialog
   }
-
   async function loadModules() {
-    const version = ++requestVersion
-    if (!projectProductId.value) {
+    if (!scope.isActive()) return
+    const current = ++requestVersion,
+      version = scope.snapshot(),
+      product = projectProductId.value
+    if (product === null) {
       modules.value = []
       loadError.value = '缺少产品 ID，请从产品配置重新进入'
       loading.value = false
@@ -189,33 +179,24 @@
     loading.value = true
     loadError.value = ''
     try {
-      const res = await getUserModule({ project_product: projectProductId.value })
-      if (version === requestVersion) modules.value = res.data || []
-    } catch {
-      if (version === requestVersion) loadError.value = '模块加载失败，请重试'
+      const res = await getUserModule({ project_product: product })
+      if (current === requestVersion && scope.current(version)) modules.value = res.data || []
+    } catch (loadFailure0) {
+      if (current === requestVersion && scope.current(version))
+        void (reportLoadError(loadFailure0, '模块加载失败，请重试'), loadError.value = '')
     } finally {
-      if (version === requestVersion) loading.value = false
+      if (current === requestVersion) loading.value = false
     }
   }
-
+  watch(modules, (records) => {
+    if (detailId.value !== null && !records.some((record) => record.id === detailId.value))
+      detailId.value = null
+  })
   function goBack() {
     window.history.back()
   }
-  watch(
-    projectProductId,
-    () => {
-      modules.value = []
-      detailRecord.value = null
-      moduleDialogRef.value?.close()
-      loadModules()
-    },
-    { immediate: true }
-  )
-  onBeforeUnmount(() => {
-    requestVersion++
-  })
+  onMounted(() => void loadModules())
 </script>
-
 <style scoped>
   .mango-module-page,
   .mango-module-page :deep(.mango-table-body__content) {

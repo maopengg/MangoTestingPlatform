@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 import ts from 'typescript'
+import { loadFeedbackModule } from './helpers/load-feedback-modules.mjs'
 import { parse } from '@vue/compiler-sfc'
 import * as Vue from 'vue'
 import Arco from '@arco-design/web-vue'
@@ -35,31 +36,33 @@ test('shared execution configuration renders named tags and consistent empty sta
 const file = ts.createSourceFile('review.ts', descriptor.scriptSetup.content, ts.ScriptTarget.Latest, true)
 const functions = file.statements.filter(ts.isFunctionDeclaration)
   .map((node) => ts.transpileModule(node.getText(file), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText).join('\n')
-const rulesScript = ts.transpileModule(read('src/utils/case-publication-review.ts').replaceAll('export function', 'function'), {
-  compilerOptions: { target: ts.ScriptTarget.ES2022 },
+const rulesScript = ts.transpileModule(read('src/utils/case-publication-review.ts'), {
+  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
 }).outputText
-const reviewRequirements = new Function(rulesScript + '; return reviewRequirements')()
-const requiresCaseReview = new Function(rulesScript + '; return requiresCaseReview')()
-const reviewRequirementParts = new Function(rulesScript + '; return reviewRequirementParts')()
+const rules = {}
+new Function('exports', rulesScript)(rules)
+const { reviewRequirements, requiresCaseReview, reviewRequirementParts, readPublicationReview, checkPublicationResponse } = rules
+const summary = id => ({ code: 200, data: { id, name: `Case ${id}`, status: 1, sql_count: 0, factory_count: 0, scenario_tags: [], publication_status: 'prepublished', eligibility_reasons: [] } })
 
 function setup() {
   const calls = [], emitted = []
   const state = {
+    ...loadFeedbackModule('@/utils/load-error'),
     loading: { value: false }, publishing: { value: false }, acknowledged: { value: false },
     canPublish: { value: true }, domain: { value: 'api' }, ids: { value: [1, 2, 3] },
     visible: { value: true }, rows: { value: [{ id: 1, reviewConfirmed: true }, { id: 2, reviewConfirmed: true }, { id: 3, reviewConfirmed: true }] },
-    configurationDrawerRef: { value: { openSnapshot: (...args) => calls.push(args) } },
+    configurationDrawerRef: { value: { openSnapshot: (...args) => calls.push(args), close() {} } },
     displayRows: { value: [{ id: 1 }, { id: 2, disabled: true }, { id: 3 }] },
     selectedIds: { value: [] }, permissions: { hasPermission: () => true },
     detailVisible: { value: false }, detailCaseId: { value: null },
-    requiresCaseReview,
-    approveApiCasePrepublication: async (id) => calls.push(id),
-    putUiCasePublication: async (id) => calls.push(id), putPytestCasePublication: async (id) => calls.push(id),
+    requiresCaseReview, readPublicationReview, checkPublicationResponse,
+    approveApiCasePrepublication: async (id) => { calls.push(id); return { code: 200 } },
+    putUiCasePublication: async (id) => { calls.push(id); return { code: 200 } }, putPytestCasePublication: async (id) => { calls.push(id); return { code: 200 } },
     Message: { success: () => {} }, emit: (...args) => emitted.push(args),
-    get: async ({ data }) => ({ data: { id: data().case_id, publication_status: 'prepublished', eligibility_reasons: [] } }),
+    get: async ({ data }) => summary(data().case_id),
   }
   const names = Object.keys(state)
-  const create = () => new Function(...names, `let requestVersion = 0; ${functions}; return { open, selectRows, publishSelected, reload, close, onReviewVisibilityChange, openCaseDetail, openConfiguration, setRowReview }`)(...names.map((key) => state[key]))
+  const create = () => new Function(...names, `let requestVersion = 0; let active = true, disposed = false; ${functions}; return { open, selectRows, publishSelected, reload, close, invalidate, onReviewVisibilityChange, openCaseDetail, openConfiguration, setRowReview }`)(...names.map((key) => state[key]))
   return { state, calls, emitted, create }
 }
 
@@ -100,7 +103,7 @@ test('partial failure preserves unselected rows and reports only successful IDs'
   state.displayRows.value[1].disabled = false
   state.selectedIds.value = [1, 2]
   state.acknowledged.value = true
-  state.approveApiCasePrepublication = async (id) => { if (id === 2) throw new Error('changed'); calls.push(id) }
+  state.approveApiCasePrepublication = async (id) => { if (id === 2) throw new Error('changed'); calls.push(id); return { code: 200 } }
   await create().publishSelected()
   assert.deepEqual(calls, [1])
   assert.deepEqual(emitted, [['published', [1]]])
@@ -113,7 +116,7 @@ test('loading summaries never preselects rows, and failures fail closed', async 
   const { state, create } = setup()
   state.selectedIds.value = [1]
   state.acknowledged.value = true
-  state.get = async ({ data }) => { if (data().case_id === 2) throw new Error('failed'); return { data: { id: data().case_id, eligibility_reasons: [] } } }
+  state.get = async ({ data }) => { if (data().case_id === 2) throw new Error('failed'); return summary(data().case_id) }
   await create().reload()
   assert.deepEqual(state.selectedIds.value, [])
   assert.equal(state.acknowledged.value, false)
@@ -159,9 +162,9 @@ test('publication review fits all fields inside the drawer without a forced wide
   const columns = new Function(code + ';return reviewColumns')()
   assert.deepEqual(columns.filter(column => !column.width).map(column => column.title), ['用例'])
   assert.ok(columns.every(column => column.width == null || typeof column.width === 'number'))
-  assert.deepEqual(columns.slice(1).map(column => column.width), [72, 88, 156, 156, 260, 88, 160])
+  assert.deepEqual(columns.slice(1).map(column => column.width), [72, 88, 156, 156, 260, 88, 120])
   assert.equal(columns.find(column => column.title === '负责人').align, 'center')
-  assert.equal(columns.at(-1).width, 160)
+  assert.equal(columns.at(-1).width, 120)
   assert.match(source, /\.mango-publication-review__muted\s*\{[^}]*white-space: normal/)
 })
 
@@ -216,6 +219,7 @@ test('review configuration opens the drawer without local role filtering', () =>
   const { state, calls, create } = setup()
   const row = { id: 29, name: 'Example', sql_count: 1, factory_count: 7,
     configuration_details: [{ kind: 'sql', location: '用例 / 前置 SQL', enabled: null, configuration: { sql: 'select 1' } }] }
+  state.rows.value = [row]
   create().openConfiguration(row)
   assert.equal(calls.length, 1)
   assert.equal(calls[0][1], undefined)
@@ -224,7 +228,8 @@ test('review configuration opens the drawer without local role filtering', () =>
   create().openConfiguration(row)
   assert.equal(calls.length, 2)
   state.permissions.hasPermission = () => true
-  create().openConfiguration({ ...row, configuration_details: undefined })
+  state.rows.value = [{ ...row, configuration_details: undefined }]
+  create().openConfiguration(row)
   assert.equal(calls.length, 2)
 })
 
@@ -254,6 +259,7 @@ test('details reuse embedded case pages without local role filtering', () => {
   for (const domain of ['api', 'ui', 'pytest']) {
     const { state, calls, create } = setup()
     state.domain.value = domain
+    state.rows.value = [{ id: 29, name: 'Case 29' }, { id: 30, name: 'Case 30' }]
     create().openCaseDetail(29)
     assert.equal(state.detailVisible.value, true)
     assert.equal(state.detailCaseId.value, 29)
@@ -270,8 +276,8 @@ test('details reuse embedded case pages without local role filtering', () => {
   assert.match(source, /mode="page"/)
   assert.match(source, /:visible="detailVisible" title="用例详情" width="calc\(92vw - 150px\)"/)
   assert.match(source, /embedded :case-id="detailCaseId"/)
-  assert.match(read('src/views/pytest/case/index.vue'), /props.caseId \|\| route.query.id/)
-  assert.match(read('src/views/pytest/case/index.vue'), /existingCaseId \|\| linkedCaseId.value/)
+  assert.match(read('src/views/pytest/case/index.vue'), /optionalCaseId\(props.caseId \?\? route.query.id\)/)
+  assert.match(read('src/views/pytest/case/index.vue'), /preferredCaseId \?\? selectedExplorerFileNode.value\?\.case_id \?\? linkedCaseId.value/)
   assert.match(read('src/views/apitest/case/details/components/ApiCaseVersionPanel.vue'), /if \(prepublishedRevision.value\) await selectRevision\(prepublishedRevision.value\)/)
 })
 
@@ -281,19 +287,20 @@ test('every single approval entry and API batch approval opens the same review c
     assert.match(page, /<CasePublicationReviewModal/)
     assert.match(page, /publicationReviewRef.value\?\.open/)
   }
-  assert.match(read('src/views/apitest/case/index.vue'), /open\('api', selectedRows.map/)
+  assert.match(read('src/views/apitest/case/index.vue'), /open\(\s*'api',\s*selectedRows.map/)
   assert.match(read('src/views/apitest/case/index.vue'), /@click="batchUpdatePrepublication\('publish'\)"/)
   assert.match(read('src/views/apitest/case/details/components/ApiCaseVersionPanel.vue'), /publicationReviewRef.value\?\.open/)
   assert.doesNotMatch(source, /v-permission/)
   assert.match(source, /v-model="acknowledged"/)
   assert.match(source, /<a-switch :model-value="record.reviewConfirmed === true"/)
-  assert.doesNotMatch(source, /<a-switch[^>]*size=/)
+  assert.match(source, /<a-switch\s/)
+  assert.doesNotMatch(source, /<a-switch[^>]*\bsize=/)
   assert.match(source, /<a-checkbox v-model="acknowledged"/)
 })
 
 test('production cases start unreviewed, other cases start confirmed, and each selected case must be confirmed', async () => {
   const { state, calls, create } = setup()
-  state.get = async ({ data }) => ({ data: { id: data().case_id, publication_status: 'prepublished', eligibility_reasons: [],
+  state.get = async ({ data }) => ({ ...summary(data().case_id), data: { ...summary(data().case_id).data,
     scenario_tags: data().case_id === 1 ? ['production_inspection'] : data().case_id === 2 ? ['production_regression'] : ['routine_regression'] } })
   const actions = create()
   await actions.reload()
@@ -314,11 +321,25 @@ test('production cases start unreviewed, other cases start confirmed, and each s
   assert.equal(state.rows.value[0].reviewConfirmed, false)
 })
 
-test('review and embedded case tables use the global action column width', () => {
-  assert.match(source, /title: '操作', slotName: 'actions', width: 160/)
+test('review has a compact action column and the Pytest explorer has no unused table configuration', () => {
+  assert.match(source, /title: '操作', slotName: 'actions', width: 120/)
   assert.match(read('src/views/apitest/case/details/config.ts'), /title: '操作',[\s\S]*?width: 160/)
   assert.match(read('src/views/apitest/case/details/components/ApiCaseAssertionPanel.vue'), /title="操作" :width="160"/)
-  assert.match(read('src/views/pytest/case/config.ts'), /title: '操作',[\s\S]*?width: 160/)
+  assert.doesNotMatch(read('src/views/pytest/case/config.ts'), /tableColumns|useTable\(/)
+  assert.match(read('src/views/pytest/case/index.vue'), /data-navigation-layout="explorer"/)
+})
+
+test('context invalidation stops the remaining approval queue and keeps its physical lock until the active request ends', async () => {
+  const { state, calls, emitted, create } = setup()
+  let finish
+  state.selectedIds.value = [1, 3]; state.acknowledged.value = true
+  state.approveApiCasePrepublication = id => { calls.push(id); return new Promise(resolve => { finish = resolve }) }
+  const actions = create(), task = actions.publishSelected()
+  assert.equal(state.publishing.value, true); actions.invalidate()
+  assert.equal(state.visible.value, false); assert.equal(state.publishing.value, true)
+  await actions.open('pytest', [9]); assert.equal(state.visible.value, false)
+  finish(); await task
+  assert.deepEqual(calls, [1]); assert.deepEqual(emitted, []); assert.deepEqual(state.rows.value, []); assert.equal(state.publishing.value, false)
 })
 
 test('drawer close state is synchronized and review can reopen repeatedly for every domain', async () => {
@@ -352,7 +373,7 @@ test('API batch review rejects mixed states before passing IDs into the drawer',
     const dataList = [{ id: 29, name: 'Valid', publication_status: 'prepublished', prepublished_revision_id: 7, is_product_owner: true },
       { id: 30, name: 'Invalid', publication_status: status, prepublished_revision_id: 8, is_product_owner: true }]
     const invoke = new Function('publicationActionCaseId', 'batchPublicationAction', 'selectedRowKeys', 'table', 'Message', 'publicationReviewRef',
-      code + ';return batchUpdatePrepublication')({ value: null }, { value: null }, { value: [29, 30] }, { dataList },
+      'let pageVersion = 0;' + code + ';return batchUpdatePrepublication')({ value: null }, { value: null }, { value: [29, 30] }, { dataList },
       { warning: (message) => warnings.push(message) }, { value: { open: (...args) => opened.push(args) } })
     invoke('publish')
     assert.deepEqual(opened, [])
@@ -365,7 +386,7 @@ test('API batch review rejects mixed states before passing IDs into the drawer',
 
 test('fresh review responses reject cases whose publication status changed', async () => {
   const { state, create } = setup()
-  state.get = async ({ data }) => ({ data: { id: data().case_id, publication_status: 'published', eligibility_reasons: [] } })
+  state.get = async ({ data }) => ({ ...summary(data().case_id), data: { ...summary(data().case_id).data, publication_status: 'published' } })
   await create().reload()
   assert.ok(state.rows.value.every((row) => row.eligibility_reasons.includes('当前不是预发布状态，不能发布')))
 })
@@ -380,4 +401,57 @@ test('API case publication labels never combine published and prepublished state
   assert.equal(exports.getApiCasePublicationMeta('published', 'V3', true).label, '已发布 V3')
   assert.equal(exports.getApiCasePublicationMeta('unpublished', null, false).label, '未发布')
   assert.doesNotMatch(read('src/types/api-test/case-version.ts'), /draft_changed/)
+})
+
+test('review summary boundary validates status/counts/IDs and omits non-display fields', () => {
+  const input = summary(1)
+  input.data.extra = { internal: true }
+  input.data.revision_id = 0
+  input.data.configuration_details = [{ kind: 'sql', location: '前置', enabled: false, configuration: { sql: 'select 1', zero: 0 } }]
+  const parsed = readPublicationReview(input, 1)
+  assert.equal(parsed.revision_id, 0)
+  assert.equal(parsed.sql_count, 0)
+  assert.equal(parsed.extra, undefined)
+  assert.equal(parsed.configuration_details[0].enabled, false)
+  assert.equal(parsed.configuration_details[0].configuration.zero, 0)
+  parsed.scenario_tags.push('routine_regression')
+  assert.deepEqual(input.data.scenario_tags, [])
+  for (const invalid of [
+    { ...summary(1), code: 500 }, { code: 200, data: {} }, summary(2),
+    { code: 200, data: { ...summary(1).data, status: false } },
+    { code: 200, data: { ...summary(1).data, sql_count: false } },
+    { code: 200, data: { ...summary(1).data, eligibility_reasons: [false] } },
+    { code: 200, data: { ...summary(1).data, publication_status: 'unknown' } },
+    { code: 200, data: { ...summary(1).data, configuration_details: [{}] } },
+  ]) assert.throws(() => readPublicationReview(invalid, 1))
+  assert.equal(readPublicationReview(summary(1), 1).configuration_details, undefined)
+  assert.equal(rules.publicationReviewEnumTitle([{ key: 0, title: '失败' }], 0), '失败')
+  assert.equal(rules.publicationReviewEnumTitle({}, {}), '-')
+})
+
+test('publication must receive a successful HTTP envelope before marking rows published', async () => {
+  for (const response of [undefined, false, { code: 500 }, { data: {} }]) {
+    const { state, emitted, create } = setup()
+    state.selectedIds.value = [1]
+    state.acknowledged.value = true
+    state.approveApiCasePrepublication = async () => response
+    await create().publishSelected()
+    assert.equal(state.rows.value[0].published, undefined)
+    assert.match(state.rows.value[0].error, /发布失败/)
+    assert.equal(state.publishing.value, false)
+    assert.deepEqual(emitted, [])
+  }
+})
+
+test('approval selection deduplicates numeric keys and stale configuration events use current row only', async () => {
+  const { state, calls, create } = setup(), actions = create()
+  actions.selectRows([1, '1', 3, '3'])
+  assert.deepEqual(state.selectedIds.value, [1, 3])
+  const current = { id: 1, name: 'current', sql_count: 0, factory_count: 0, configuration_details: [] }
+  state.rows.value = [current]
+  actions.openConfiguration({ ...current, name: 'old', configuration_details: [{ kind: 'sql' }] })
+  assert.equal(calls[0][0].name, 'current')
+  assert.deepEqual(calls[0][0].items, [])
+  actions.openConfiguration({ ...current, id: 99 })
+  assert.equal(calls.length, 1)
 })

@@ -2,18 +2,17 @@ import { FormItem } from '@/types/components'
 import { enableMultiSelectSearch } from '@/utils/search-condition'
 import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
-import { Message } from '@arco-design/web-vue'
-import { useTable, useTableColumn } from '@/hooks/table'
+import { useTableIndexColumn, useTableColumn } from '@/hooks/table'
 import { createUpdateUserCondition, updateTimeColumn, updateUserColumn } from '@/utils/update-user'
 
-const table = useTable()
 export const publicationTabs = [
   { key: 'all', title: '全部' },
   { key: 'published', title: '已发布' },
   { key: 'prepublished', title: '预发布' },
   { key: 'unpublished', title: '未发布' },
 ]
-export const conditionItems: Array<FormItem> = reactive([
+export function createSearchItems() {
+  const items: Omit<FormItem, 'disabled'>[] = [
   {
     key: 'id',
     label: 'ID',
@@ -117,144 +116,12 @@ export const conditionItems: Array<FormItem> = reactive([
     },
   },
   createUpdateUserCondition(),
-])
-enableMultiSelectSearch(conditionItems)
-export const formItems = reactive([
-  {
-    label: '项目/产品',
-    key: 'project_product',
-    value: ref(''),
-    placeholder: '请选择项目名称',
-    required: true,
-    type: 'cascader',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '模块名称',
-    key: 'module',
-    value: ref(''),
-    placeholder: '请选择测试模块名称',
-    required: true,
-    type: 'select',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '用例名称',
-    key: 'name',
-    value: ref(''),
-    type: 'input',
-    required: true,
-    placeholder: '请输入用例名称',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '优先级',
-    key: 'level',
-    value: ref(''),
-    type: 'select',
-    required: true,
-    placeholder: '请设置优先级',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '测试层级',
-    key: 'scenario_layer',
-    value: ref(0),
-    type: 'select',
-    required: true,
-    placeholder: '请选择测试层级',
-    reset: function () {
-      this.value = 0
-    },
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '验证类型',
-    key: 'scenario_type',
-    value: ref(0),
-    type: 'select',
-    required: true,
-    placeholder: '请选择验证类型',
-    reset: function () {
-      this.value = 0
-    },
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '执行场景',
-    key: 'scenario_tags',
-    value: ref([]),
-    type: 'select',
-    placeholder: '请选择执行场景',
-    reset: function () {
-      this.value = []
-    },
-  },
-  {
-    label: '场景描述',
-    key: 'scenario_description',
-    value: ref(''),
-    type: 'textarea',
-    placeholder: 'Given 前置条件\nWhen 用户执行某个行为\nThen 应得到某个结果',
-    reset: function () {
-      this.value = ''
-    },
-  },
-  {
-    label: '用例负责人',
-    key: 'case_people',
-    value: ref(''),
-    type: 'select',
-    required: true,
-    placeholder: '请设置用例负责人',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-])
-
+]
+  enableMultiSelectSearch(items)
+  return reactive(items)
+}
 export const tableColumns = useTableColumn([
-  table.indexColumn,
+  { ...useTableIndexColumn(), align: 'center' as const },
   {
     title: '用例名称',
     key: 'name',
@@ -289,7 +156,7 @@ export const tableColumns = useTableColumn([
     title: '测试层级',
     key: 'scenario_layer',
     dataIndex: 'scenario_layer',
-    align: 'left',
+    align: 'center',
     width: 120,
   },
   {
@@ -303,7 +170,7 @@ export const tableColumns = useTableColumn([
     title: '验证类型',
     key: 'scenario_type',
     dataIndex: 'scenario_type',
-    align: 'left',
+    align: 'center',
     width: 100,
   },
   {
@@ -327,6 +194,8 @@ export const tableColumns = useTableColumn([
     ellipsis: true,
     tooltip: true,
   },
+  { ...updateUserColumn(), key: 'update_user' },
+  { ...updateTimeColumn(), key: 'update_time' },
   {
     title: '项目/产品',
     key: 'project_product',
@@ -345,8 +214,6 @@ export const tableColumns = useTableColumn([
     ellipsis: true,
     tooltip: true,
   },
-  updateUserColumn(),
-  updateTimeColumn(),
   {
     title: '操作',
     key: 'actions',

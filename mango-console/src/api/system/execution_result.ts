@@ -29,9 +29,10 @@ export function getExecutionResultDetail(id: number | string) {
   })
 }
 
-export function getExecutionResultLatest(data: ExecutionResultQuery) {
+export function getExecutionResultLatest(data: ExecutionResultQuery, silentError = false) {
   return get({
     url: 'system/execution/result/latest',
+    silentError,
     data: () => data,
   })
 }
@@ -120,15 +121,20 @@ export function postApiCaseDiagnosis(data: {
 
 export interface ExecutionResultAdminQuery {
   id?: number | string
+  id__in?: string
   source_type?: string
+  source_type__in?: string
   target_type?: string
+  target_type__in?: string
   target_id?: number | string
   status?: number | string
   status__in?: string
   test_env?: number | string
+  test_env__in?: string
   trigger_user_id?: number | string
   trigger_user_id__in?: string
   result_state?: 'available' | 'cleaned' | 'empty' | string
+  result_state__in?: string
   is_latest?: boolean | string
   trace_id?: string
   task_id?: string
@@ -165,17 +171,18 @@ export async function getExecutionResultDetailResolved(id: number | string) {
   return resolveExecutionResultResponse(res)
 }
 
-export async function getExecutionResultLatestResolved(data: ExecutionResultQuery) {
-  const res = await getExecutionResultLatest(data)
-  return resolveExecutionResultResponse(res)
+export async function getExecutionResultLatestResolved(data: ExecutionResultQuery, silentError = false) {
+  const res = await getExecutionResultLatest(data, silentError)
+  return resolveExecutionResultResponse(res, silentError)
 }
 
-async function resolveExecutionResultResponse(res: any) {
+async function resolveExecutionResultResponse(res: any, silentError = false) {
   const detail = res.data || null
   if (detail?.result_too_large && detail?.id) {
     const response = await request.get('system/execution/result/content', {
       params: { id: detail.id },
       responseType: 'json',
+      ...(silentError ? { silentError: true } : {}),
     })
     detail.result_data = response.data
     detail.result_too_large = false

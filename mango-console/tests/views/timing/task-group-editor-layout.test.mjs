@@ -4,7 +4,7 @@ import test from 'node:test'
 import { parse, compileScript, compileTemplate, compileStyle } from '@vue/compiler-sfc'
 import postcss from 'postcss'
 
-const filename = new URL('../../../src/views/timing/tasks/components/TaskGroupManager.vue', import.meta.url).pathname
+const filename = new URL('../../../src/views/timing/tasks/components/TaskGroupEditorDialog.vue', import.meta.url).pathname
 const { descriptor } = parse(readFileSync(filename, 'utf8'), { filename })
 const css = postcss.parse(descriptor.styles[0].content)
 function properties(selector) {
@@ -21,7 +21,7 @@ test('task group create/edit dialog is compact and has a separate footer', () =>
   assert.match(editor, /width="min\(760px, calc\(100vw - 32px\)\)"/)
   assert.match(editor, /class="mango-task-group-editor-modal"/)
   assert.match(editor, /<mango-panel-spin[\s\S]*?<\/a-form>[\s\S]*?<\/mango-panel-spin>[\s\S]*?<template #footer>/)
-  assert.match(editor, /v-permission="'timing.tasks:change'"/)
+  assert.doesNotMatch(editor, /v-permission|hasPermission/)
   assert.doesNotMatch(editor, /:footer="false"/)
 })
 

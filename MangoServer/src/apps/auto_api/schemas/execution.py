@@ -340,6 +340,7 @@ class ApiCaseExecutionResult(StrictSchema):
     infrastructure_blocked: bool = False
     # 仅保留运行／投递摘要；最终回调断言明细归属于触发步骤的 ass。
     callback_results: list[dict[str, Any]] = Field(default_factory=list)
+    resource_cleanup_results: list[dict[str, Any]] = Field(default_factory=list)
     name: str
     project_product_name: str
     status: int

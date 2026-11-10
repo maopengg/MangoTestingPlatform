@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-  import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue'
-  import type { ECharts } from 'echarts'
+  import { computed, ref, onActivated, onDeactivated, onMounted, onBeforeUnmount, watch } from 'vue'
   import useEcharts from '@/hooks/useEcharts'
 
   // 定义 props
@@ -19,9 +18,10 @@
   }>()
 
   const pieChart = ref<HTMLElement | null>(null)
-  let myChart: ECharts | null = null
+  let myChart: ReturnType<typeof useEcharts> | null = null
   let resizeObserver: ResizeObserver | null = null
   let resizeFrame = 0
+  let active = true, mounted = false
 
   const token = (name: string, fallback: string) =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
@@ -68,7 +68,7 @@
 
   // 初始化饼状图
   const initPieChart = () => {
-    if (!pieChart.value) return
+    if (!active || !mounted || !pieChart.value) return
 
     myChart = useEcharts(pieChart.value)
     updateChart()
@@ -87,7 +87,7 @@
 
   // 更新饼状图数据
   const updateChart = () => {
-    if (!myChart) return
+    if (!active || !mounted || !myChart) return
 
     myChart.setOption({
       tooltip: {
@@ -132,10 +132,11 @@
   }
 
   const resizeChart = () => {
-    if (!myChart) return
+    if (!active || !mounted || !myChart) return
     if (resizeFrame) window.cancelAnimationFrame(resizeFrame)
+    const chart = myChart
     resizeFrame = window.requestAnimationFrame(() => {
-      myChart?.resize()
+      if (active && mounted && chart === myChart && !chart.isDisposed()) chart.resize()
       resizeFrame = 0
     })
   }
@@ -157,23 +158,41 @@
     { deep: true }
   )
 
-  onMounted(() => {
+  function stopCanvas() {
+    resizeObserver?.disconnect()
+    resizeObserver = null
+    if (resizeFrame) window.cancelAnimationFrame(resizeFrame)
+    resizeFrame = 0
+    myChart?.dispose()
+    myChart = null
+  }
+  function startCanvas() {
+    stopCanvas()
+    if (!active || !mounted || !pieChart.value) return
+    palette.value = getPalette()
     initPieChart()
-    window.addEventListener('mango-theme-change', updateTheme)
-    window.addEventListener('resize', resizeChart)
-    if (pieChart.value && typeof ResizeObserver !== 'undefined') {
+    if (typeof ResizeObserver !== 'undefined') {
       resizeObserver = new ResizeObserver(resizeChart)
       resizeObserver.observe(pieChart.value)
     }
-  })
+  }
+  function startChart() {
+    if (!active || !mounted) return
+    startCanvas()
+    window.addEventListener('mango-theme-change', updateTheme)
+    window.addEventListener('resize', resizeChart)
+  }
 
-  onBeforeUnmount(() => {
+  function stopChart() {
     window.removeEventListener('mango-theme-change', updateTheme)
     window.removeEventListener('resize', resizeChart)
-    resizeObserver?.disconnect()
-    if (resizeFrame) window.cancelAnimationFrame(resizeFrame)
-    myChart?.dispose()
-  })
+    stopCanvas()
+  }
+  watch(pieChart, startCanvas, { flush: 'post' })
+  onMounted(() => { mounted = true; startChart() })
+  onActivated(() => { if (!active) { active = true; startChart() } })
+  onDeactivated(() => { active = false; stopChart() })
+  onBeforeUnmount(() => { active = false; mounted = false; stopChart() })
 </script>
 
 <template>

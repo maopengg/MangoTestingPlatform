@@ -1,17 +1,17 @@
 <template>
   <TableBody plain class="mango-detail-workbench-page mango-perf-page">
     <template #header>
-      <TableHeader :title="`性能运行 #${id} / ${overview.name || ''}`">
+      <TableHeader :title="`性能运行 / ${id ?? '-'} / ${overview.name || '-'}`">
         <template #header-extra>
           <a-space>
             <a-button class="mango-back-button" size="small" @click="router.back()">返回</a-button>
             <a-button size="small" :loading="refreshing" @click="refreshAll">刷新</a-button>
-            <a-button  size="small" :loading="exporting" @click="exportReport">导出报告</a-button>
-            <a-button  v-if="!activeRunStatuses.has(overview.status)" size="small" @click="rerun"
+            <a-button :disabled="!overviewRecord" size="small" :loading="exporting" @click="exportReport">导出报告</a-button>
+            <a-button  v-if="overviewRecord && !activeRunStatuses.has(overview.status)" size="small" @click="rerun"
               >按当前配置重跑</a-button
             >
             <a-button
-              v-if="activeRunStatuses.has(overview.status)"
+              v-if="overviewRecord && activeRunStatuses.has(overview.status)"
               status="danger"
               size="small"
               :loading="stopping"
@@ -30,6 +30,7 @@
       </TableHeader>
     </template>
     <template #default>
+      <a-alert v-if="!id" type="warning" title="运行 ID 无效，请从运行历史重新打开" />
       <a-alert
         v-if="overview.error_message"
         type="error"
@@ -37,8 +38,9 @@
         :title="overview.error_code ? `运行失败（${overview.error_code}）` : '运行失败'"
         >{{ overview.error_message }}</a-alert
       >
-      <mango-panel-spin :loading="loading" class="mango-perf-detail-spin"
-        ><div class="mango-detail-workbench mango-perf-run-workbench">
+      <div class="mango-detail-workbench mango-perf-run-workbench">
+
+          <mango-panel-spin :loading="overviewLoading" class="mango-perf-overview-spin">
           <section
             class="mango-section-card mango-perf-run-summary"
             :class="`is-${overview.verdict}`"
@@ -69,8 +71,8 @@
               <div
                 ><span>执行节点</span
                 ><strong
-                  >{{ overview.actual_node_count || 0 }} /
-                  {{ overview.requested_node_count || 0 }}</strong
+                  >{{ overview.actual_node_count ?? '-' }} /
+                  {{ overview.requested_node_count ?? '-' }}</strong
                 ></div
               >
               <div
@@ -118,6 +120,7 @@
               </article>
             </div>
           </section>
+          </mango-panel-spin>
           <section class="mango-section-card">
             <div class="mango-section-title mango-perf-chart-title">
               <div
@@ -127,11 +130,14 @@
                 ><i></i
                 >{{
                   activeRunStatuses.has(overview.status)
-                    ? '每 2 秒刷新'
+                    ? '每 5 秒刷新'
                     : `共 ${points.length} 个采样窗口`
                 }}</span
               >
             </div>
+
+
+            <mango-panel-spin :loading="metricsLoading">
             <div v-if="points.length" class="mango-perf-chart-grid">
               <div class="mango-soft-panel mango-perf-chart-panel"
                 ><div><strong>吞吐与响应时间</strong><span>RPS / 平均响应时间</span></div
@@ -152,17 +158,20 @@
               ></div>
             </div>
             <div v-else class="mango-empty-state">尚未收到客户端指标</div>
+            </mango-panel-spin>
           </section>
-          <section v-if="stages.length" class="mango-section-card">
+          <section v-if="stages.length || stagesLoading || stagesError" class="mango-section-card">
             <div class="mango-section-title"
               ><div
                 ><h2>负载阶段</h2><p>按执行顺序查看每个阶段的目标、达成情况和响应表现。</p></div
               ></div
             >
+
+            <mango-panel-spin :loading="stagesLoading">
             <div class="mango-perf-stage-flow">
               <article
                 v-for="(stage, index) in stages"
-                :key="stage.id || stage.stage_key"
+                :key="stage.stage_key"
                 class="mango-soft-panel mango-perf-stage-card"
               >
                 <div class="mango-perf-stage-head"
@@ -185,17 +194,19 @@
                 >
               </article>
             </div>
+            </mango-panel-spin>
           </section>
           <section class="mango-section-card"
-            ><a-tabs v-model:active-key="activeTab" class="mango-tabs-nav-only">
+            ><a-tabs v-model:active-key="activeTab">
               <a-tab-pane key="requests" :title="`请求统计 ${requests.length}`"
-                ><RunRequestTable :rows="requests" :loading="!loading && detailLoading"
+                ><RunRequestTable :rows="requests" :loading="requestsLoading"
               /></a-tab-pane>
               <a-tab-pane key="nodes" :title="`执行节点 ${nodes.length}`"
                 ><a-table
+                  row-key="id"
                   :columns="nodeColumns"
                   :data="nodes"
-                  :loading="!loading && detailLoading"
+                  :loading="nodesLoading"
                   :pagination="false"
                   :scroll="{ x: NODE_TABLE_SCROLL_X }"
                   ><template #columns
@@ -210,6 +221,7 @@
                             size="mini"
                             type="text"
                             :loading="captureDownloadingNodeId === record.id"
+                            :disabled="captureDownloadingNodeId !== null && captureDownloadingNodeId !== record.id"
                             @click="downloadCapture(record.id)"
                           >下载 CSV（{{ formatBytes(record.capture.bytes) }}）</a-button>
                           <span v-else :title="record.capture?.message || ''">{{ captureStatusText(record.capture?.status) }}</span>
@@ -220,10 +232,11 @@
                 ></a-tab-pane
               >
               <a-tab-pane key="validity" :title="`有效性门禁 ${validity.length}`">
-                <RunValidityGrid :rows="validity" />
+
+                <mango-panel-spin :loading="validityLoading"><RunValidityGrid :rows="validity" /></mango-panel-spin>
               </a-tab-pane>
               <a-tab-pane key="thresholds" title="性能目标"
-                ><div v-if="performanceGoalResults.length" class="mango-perf-goal-result"
+                ><mango-panel-spin :loading="thresholdsLoading"><div v-if="performanceGoalResults.length" class="mango-perf-goal-result"
                   ><div class="mango-perf-goal-result-head"
                     ><div
                       ><strong>本次性能目标</strong
@@ -248,7 +261,7 @@
                       }}</a-tag></div
                     ></div
                   ></div
-                ><div v-else class="mango-empty-state">暂无性能目标判定结果</div></a-tab-pane
+                ><div v-else class="mango-empty-state">暂无性能目标判定结果</div></mango-panel-spin></a-tab-pane
               >
               <a-tab-pane key="comparison" title="基线对比"
                 ><a-alert
@@ -259,14 +272,14 @@
                 ><RunComparisonTable
                   v-if="comparison.available"
                   :rows="comparison.metrics || []"
-                  :loading="!loading && detailLoading"
+                  :loading="comparisonLoading"
                 />
-                ><div v-if="!comparison.available" class="mango-empty-state"
-                  >尚未设置可用基线</div
-                ></a-tab-pane
+                <mango-panel-spin v-if="!comparison.available" :loading="comparisonLoading"><div class="mango-empty-state"
+                  >{{ comparisonError ? '基线对比暂不可用' : comparisonRegion.hasLoaded.value ? '尚未设置可用基线' : '尚未读取基线信息' }}</div></mango-panel-spin>
+                </a-tab-pane
               >
               <a-tab-pane key="errors" :title="`错误 ${errors.length}`"
-                ><div v-if="errors.length" class="mango-perf-error-list"
+                ><mango-panel-spin :loading="errorsLoading"><div v-if="errors.length" class="mango-perf-error-list"
                   ><div v-for="item in errors" :key="item.id" class="mango-soft-panel"
                     ><div class="mango-perf-error-head"
                       ><strong>{{ item.error_type }} · {{ item.count }} 次</strong
@@ -275,17 +288,16 @@
                     ><div v-if="item.samples?.length" class="mango-perf-error-sample"
                       ><small>样本响应</small
                       ><code
-                        >{{ item.samples[0].response_status || '-' }} ·
+                        >{{ item.samples[0].response_status ?? '-' }} ·
                         {{ item.samples[0].response_excerpt || '无响应摘要' }}</code
                       ></div
                     ></div
                   ></div
-                ><div v-else class="mango-empty-state">暂无错误</div></a-tab-pane
+                ><div v-else class="mango-empty-state">暂无错误</div></mango-panel-spin></a-tab-pane
               >
             </a-tabs></section
           >
-        </div></mango-panel-spin
-      >
+        </div>
     </template>
   </TableBody>
 </template>
@@ -295,13 +307,12 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import * as echarts from 'echarts'
   import { makeChartDensityAware } from '@/utils/chartDensity'
-  import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-  import { useRoute, useRouter } from 'vue-router'
+  import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+  import { useRouter } from 'vue-router'
   import {
     exportPerfRun,
     getPerfRunComparison,
     getPerfRunErrors,
-    getPerfRunMetrics,
     getPerfRunNodes,
     getPerfRunOverview,
     getPerfRunCaptureDownload,
@@ -311,20 +322,22 @@
     getPerfRunValidity,
     setPerfRunBaseline,
     stopPerfRun,
-    subscribePerfRun,
-    unsubscribePerfRun,
   } from '@/api/perf'
   import { activeRunStatuses } from '../../types'
   import { NODE_TABLE_SCROLL_X, nodeColumns } from './config'
+  import type { RunComparison, RunError, RunNode, RunOverview, RunRequestSummary, RunStage, RunThreshold, RunValidityResult, SummaryKey, TimingKey } from './types'
+  import { readRunOverview, readRunComparison, readRunRequests, readRunStages, readRunNodes, readRunValidity, readRunThresholds, readRunErrors, readRunRouteId, validateRunExport, runData, runObject } from './records'
+  import { finiteRunNumber, formatRunNumber } from './presentation'
+  import { summarizeRunMetrics } from './metrics'
+  import { useRunMetricStream } from './composables/useRunMetricStream'
+  import { useRunResultRegion } from './composables/useRunResultRegion'
+  import { useRunContext } from './composables/useRunContext'
+  import { useRunSubscription } from './composables/useRunSubscription'
   import RunComparisonTable from './components/RunComparisonTable.vue'
   import RunRequestTable from './components/RunRequestTable.vue'
   import RunValidityGrid from './components/RunValidityGrid.vue'
-  const route = useRoute()
   const router = useRouter()
-  const id = String(route.query.id || '')
-  const loading = ref(false)
   const refreshing = ref(false)
-  const detailLoading = ref(false)
   const stopping = ref(false)
   const baselineSaving = ref(false)
   const exporting = ref(false)
@@ -337,44 +350,96 @@
   let loadChart: echarts.ECharts | null = null
   let resourceChart: echarts.ECharts | null = null
   let chartResizeObserver: ResizeObserver | undefined
-  let finalRefreshPending = false
-  const pagePolling = usePagePolling(async context => {
-    if (activeRunStatuses.has(overview.status)) await loadMetrics(true, context)
-    else if (finalRefreshPending) await refreshFinal(true, context)
-    if (context.isCurrent() && !activeRunStatuses.has(overview.status) && !finalRefreshPending) pagePolling.stop()
+  let baselineDialog: ReturnType<typeof Modal.confirm> | null = null
+  let finalRefreshPending = true
+  const runContext = useRunContext({
+    onInvalidate(clear) {
+      ;[overviewRegion, ...resultRegions].forEach(region => clear ? region.reset() : region.invalidate())
+      if (clear) { metricStream.reset(); finalRefreshPending = true; activeTab.value = 'requests' }
+      else metricStream.invalidate()
+      refreshing.value = false
+      baselineDialog?.close()
+      baselineDialog = null
+    },
+    onPause: pauseLiveUpdates,
+    onResume: resumeLiveUpdates,
   })
-  let subscriptionTimer: number | undefined
-  let cursor = ''
+  const { id } = runContext
+  const readRunId = () => runContext.available() ? id.value : null
+  const subscription = useRunSubscription(runContext.identity)
+  const { subscriptionError } = subscription
+  const pagePolling = usePagePolling(async parent => {
+    const context = runContext.capture(parent)
+    if (!context) return
+    await Promise.allSettled([
+      loadOverview(context, true), loadMetrics(true, context),
+      ...resultRegions.filter(region => region.error.value || !region.hasLoaded.value).map(region => region.load(true, context)),
+    ])
+    if (!context.isCurrent()) return
+    if (overviewRecord.value && !activeRunStatuses.has(overview.value.status) && finalRefreshPending && !metricsError.value) await refreshFinal(true, context)
+    if (overviewRecord.value && !activeRunStatuses.has(overview.value.status) && !finalRefreshPending && !metricsError.value && !overviewError.value && resultRegions.every(region => region.hasLoaded.value && !region.error.value)) pagePolling.stop()
+  })
   let websocketTimer: number | undefined
-  const overview = reactive<any>({ status: 'created', verdict: 'not_evaluated', summary: {} })
-  const comparison = reactive<any>({ available: false, metrics: [] })
-  const requests = ref<any[]>([])
-  const stages = ref<any[]>([])
-  const nodes = ref<any[]>([])
-  const validity = ref<any[]>([])
-  const thresholds = ref<any[]>([])
-  const errors = ref<any[]>([])
-  const points = ref<any[]>([])
+  const overviewRegion = useRunResultRegion<RunOverview | null>({
+    runId: readRunId, initial: () => null, request: getPerfRunOverview,
+    read: readRunOverview, failureMessage: '运行概览加载失败，请重试',
+  })
+  const { data: overviewRecord, loading: overviewLoading, error: overviewError } = overviewRegion
+  const emptyOverview: Omit<RunOverview, 'id'> & { id: null } = {
+    id: null, name: '', status: '', verdict: '', scenario_id: null, summary: {}, test_env: null,
+    test_env_title: null, engine: '', engine_version: null, requested_node_count: null,
+    actual_node_count: null, peak_target_users: null, started_at: null, finished_at: null,
+    error_code: null, error_message: null,
+  }
+  const overview = computed(() => overviewRecord.value ?? emptyOverview)
+  const requestRegion = useRunResultRegion<RunRequestSummary[]>({ runId: readRunId, initial: () => [], request: getPerfRunRequests, read: readRunRequests, failureMessage: '请求统计加载失败，请重试' })
+  const stageRegion = useRunResultRegion<RunStage[]>({ runId: readRunId, initial: () => [], request: getPerfRunStages, read: readRunStages, failureMessage: '负载阶段加载失败，请重试' })
+  const nodeRegion = useRunResultRegion<RunNode[]>({ runId: readRunId, initial: () => [], request: getPerfRunNodes, read: readRunNodes, failureMessage: '执行节点加载失败，请重试' })
+  const validityRegion = useRunResultRegion<RunValidityResult[]>({ runId: readRunId, initial: () => [], request: getPerfRunValidity, read: readRunValidity, failureMessage: '有效性门禁加载失败，请重试' })
+  const thresholdRegion = useRunResultRegion<RunThreshold[]>({ runId: readRunId, initial: () => [], request: getPerfRunThresholds, read: readRunThresholds, failureMessage: '性能目标加载失败，请重试' })
+  const errorRegion = useRunResultRegion<RunError[]>({ runId: readRunId, initial: () => [], request: getPerfRunErrors, read: readRunErrors, failureMessage: '错误明细加载失败，请重试' })
+  const comparisonRegion = useRunResultRegion<RunComparison>({ runId: readRunId, initial: () => ({ available: false, same_snapshot: null, metrics: [] }), request: getPerfRunComparison, read: readRunComparison, failureMessage: '基线对比加载失败，请重试' })
+  const resultRegions = [requestRegion, stageRegion, nodeRegion, validityRegion, thresholdRegion, errorRegion, comparisonRegion]
+  const { data: requests, loading: requestsLoading, error: requestsError } = requestRegion
+  const { data: stages, loading: stagesLoading, error: stagesError } = stageRegion
+  const { data: nodes, loading: nodesLoading, error: nodesError } = nodeRegion
+  const { data: validity, loading: validityLoading, error: validityError } = validityRegion
+  const { data: thresholds, loading: thresholdsLoading, error: thresholdsError } = thresholdRegion
+  const { data: errors, loading: errorsLoading, error: errorsError } = errorRegion
+  const { data: comparison, loading: comparisonLoading, error: comparisonError } = comparisonRegion
+  const metricStream = useRunMetricStream({
+    runId: readRunId,
+    onPoints: renderChart,
+    async onDrained(data, context) {
+      if (!data.run_status) return
+      if (overviewRecord.value) overviewRecord.value = { ...overviewRecord.value, status: data.run_status, verdict: data.verdict }
+      if (!activeRunStatuses.has(data.run_status)) {
+        finalRefreshPending = true
+        await refreshFinal(true, context)
+      }
+    },
+  })
+  const { points, metricsLoading, metricsError } = metricStream
   const conclusion = computed(() => {
-    if (activeRunStatuses.has(overview.status))
+    if (activeRunStatuses.has(overview.value.status))
       return {
         mark: 'LIVE',
         title: '测试正在运行',
         description: '客户端指标正在持续汇总，最终结论将在运行结束后生成。',
       }
-    if (overview.verdict === 'passed')
+    if (overview.value.verdict === 'passed')
       return {
         mark: 'PASS',
         title: '性能目标已达成',
         description: '运行有效，且性能目标中的三项客户端指标全部通过。',
       }
-    if (overview.verdict === 'failed')
+    if (overview.value.verdict === 'failed')
       return {
         mark: 'FAIL',
         title: '性能目标未达成',
         description: '运行数据有效，但性能目标中至少一项客户端指标未通过，请查看目标和请求统计。',
       }
-    if (overview.verdict === 'invalid')
+    if (overview.value.verdict === 'invalid')
       return {
         mark: 'INVALID',
         title: '测试结果无效',
@@ -387,112 +452,32 @@
     }
   })
   const environmentTitle = computed(() =>
-    Number(overview.test_env) === 2
+    overviewRecord.value === null ? '-' : Number(overview.value.test_env) === 2
       ? '生产环境'
-      : Number(overview.test_env) === 1
+      : Number(overview.value.test_env) === 1
       ? '测试环境'
       : '开发环境'
   )
   const actualDuration = computed(() => {
-    if (!overview.started_at) return '-'
-    const start = new Date(String(overview.started_at).replace(' ', 'T')).getTime()
-    const end = overview.finished_at
-      ? new Date(String(overview.finished_at).replace(' ', 'T')).getTime()
+    if (!overview.value.started_at) return '-'
+    const start = new Date(String(overview.value.started_at).replace(' ', 'T')).getTime()
+    const end = overview.value.finished_at
+      ? new Date(String(overview.value.finished_at).replace(' ', 'T')).getTime()
       : Date.now()
     if (!Number.isFinite(start) || !Number.isFinite(end)) return '-'
     const seconds = Math.max(0, Math.round((end - start) / 1000))
     return formatDuration(seconds)
   })
-  const sampledSummary = computed(() => {
-    const result = {
-      request_count: 0,
-      failure_count: 0,
-      response_time_sum_ms: 0,
-      iteration_count: 0,
-      dropped_count: 0,
-      bytes_sent: 0,
-      bytes_received: 0,
-      connection_count: 0,
-      connect_error_count: 0,
-      min_ms: undefined as number | undefined,
-      max_ms: undefined as number | undefined,
-      max_rps: 0,
-      actual_peak_concurrency: 0,
-      peak_generator_cpu_percent: undefined as number | undefined,
-      peak_generator_memory_bytes: undefined as number | undefined,
-      peak_event_loop_lag_ms: undefined as number | undefined,
-      timing_weighted_sums: {} as Record<string, number>,
-      timing_weights: {} as Record<string, number>,
-      duration_seconds: 0,
-    }
-    points.value.forEach((item) => {
-      const requests = Number(item.request_count || 0)
-      const windowSeconds = Number(item.window_seconds || 1)
-      result.request_count += requests
-      result.failure_count += Number(item.failure_count || 0)
-      result.response_time_sum_ms += Number(item.response_time_sum_ms || 0)
-      result.iteration_count += Number(item.iteration_count || 0)
-      result.dropped_count += Number(item.dropped_count || 0)
-      result.bytes_sent += Number(item.bytes_sent || 0)
-      result.bytes_received += Number(item.bytes_received || 0)
-      result.connection_count += Number(item.connection_count || 0)
-      result.connect_error_count += Number(item.connect_error_count || 0)
-      Object.entries(item.timing_breakdown || {}).forEach(([field, value]) => {
-        if (value === null || value === undefined || !requests) return
-        result.timing_weighted_sums[field] =
-          Number(result.timing_weighted_sums[field] || 0) + Number(value) * requests
-        result.timing_weights[field] = Number(result.timing_weights[field] || 0) + requests
-      })
-      result.duration_seconds += windowSeconds
-      result.max_rps = Math.max(result.max_rps, requests / windowSeconds)
-      result.actual_peak_concurrency = Math.max(
-        result.actual_peak_concurrency,
-        Number(item.actual_load?.users || 0)
-      )
-      if (item.min_response_time_ms !== null && item.min_response_time_ms !== undefined)
-        result.min_ms =
-          result.min_ms === undefined
-            ? Number(item.min_response_time_ms)
-            : Math.min(result.min_ms, Number(item.min_response_time_ms))
-      if (item.max_response_time_ms !== null && item.max_response_time_ms !== undefined)
-        result.max_ms = Math.max(result.max_ms || 0, Number(item.max_response_time_ms))
-      if (item.generator_metrics?.cpu_percent != null)
-        result.peak_generator_cpu_percent = Math.max(
-          result.peak_generator_cpu_percent || 0,
-          Number(item.generator_metrics.cpu_percent)
-        )
-      if (item.generator_metrics?.memory_bytes != null)
-        result.peak_generator_memory_bytes = Math.max(
-          result.peak_generator_memory_bytes || 0,
-          Number(item.generator_metrics.memory_bytes)
-        )
-      if (item.generator_metrics?.event_loop_lag_ms != null)
-        result.peak_event_loop_lag_ms = Math.max(
-          result.peak_event_loop_lag_ms || 0,
-          Number(item.generator_metrics.event_loop_lag_ms)
-        )
-    })
-    return {
-      ...result,
-      avg_ms: result.request_count ? result.response_time_sum_ms / result.request_count : undefined,
-      rps: result.duration_seconds ? result.request_count / result.duration_seconds : undefined,
-      timing_breakdown: Object.fromEntries(
-        Object.entries(result.timing_weights).map(([field, weight]) => [
-          field,
-          weight ? result.timing_weighted_sums[field] / weight : undefined,
-        ])
-      ),
-    }
-  })
-  function summaryValue(key: string) {
+  const sampledSummary = computed(() => summarizeRunMetrics(points.value))
+  function summaryValue(key: SummaryKey) {
     const globalRequestSummary = requests.value.find((item) => !item.step_key)
     return (
-      overview.summary?.[key] ?? globalRequestSummary?.[key] ?? (sampledSummary.value as any)[key]
+      overview.value.summary?.[key] ?? globalRequestSummary?.[key] ?? sampledSummary.value[key]
     )
   }
-  function timingValue(field: string) {
+  function timingValue(field: TimingKey) {
     return (
-      overview.summary?.timing_breakdown?.[field] ?? sampledSummary.value.timing_breakdown[field]
+      overview.value.summary?.timing_breakdown?.[field] ?? sampledSummary.value.timing_breakdown?.[field]
     )
   }
   const hasGeneratorMetrics = computed(() =>
@@ -502,8 +487,9 @@
     )
   )
   const kpis = computed(() => {
-    const requestCount = Number(summaryValue('request_count') || 0)
-    const failureCount = Number(summaryValue('failure_count') || 0)
+    const requestCount = finiteRunNumber(summaryValue('request_count'))
+    const failureCount = finiteRunNumber(summaryValue('failure_count'))
+    const failureRate = ratio(failureCount, requestCount)
     return [
       {
         label: '请求总数',
@@ -513,11 +499,11 @@
       {
         label: '平均吞吐',
         value: formatRps(summaryValue('rps')),
-        hint: `峰值 ${formatRps(summaryValue('max_rps') ?? overview.summary?.actual_peak_rps)}`,
+        hint: `峰值 ${formatRps(summaryValue('max_rps') ?? overview.value.summary?.actual_peak_rps)}`,
       },
       {
         label: '成功率',
-        value: requestCount ? formatPercent(1 - ratio(failureCount, requestCount)) : '-',
+        value: requestCount && failureRate !== null ? formatPercent(1 - failureRate) : '-',
         hint: `${formatNumber(failureCount)} 次失败`,
       },
       {
@@ -538,7 +524,7 @@
       {
         label: '实际峰值并发',
         value: formatNumber(summaryValue('actual_peak_concurrency')),
-        hint: `目标 ${formatNumber(overview.peak_target_users)} 用户`,
+        hint: `目标 ${formatNumber(overview.value.peak_target_users)} 用户`,
       },
       {
         label: '丢弃迭代',
@@ -550,8 +536,8 @@
     ]
   })
   const clientMetricGroups = computed(() => {
-    const requestCount = Number(summaryValue('request_count') || 0)
-    const failureCount = Number(summaryValue('failure_count') || 0)
+    const requestCount = finiteRunNumber(summaryValue('request_count'))
+    const failureCount = finiteRunNumber(summaryValue('failure_count'))
     return [
       {
         title: '延迟分布',
@@ -567,7 +553,7 @@
         title: '执行可靠性',
         description: '请求、连接和迭代',
         items: [
-          { label: '成功请求', value: formatNumber(Math.max(0, requestCount - failureCount)) },
+          { label: '成功请求', value: formatNumber(requestCount === null || failureCount === null ? null : Math.max(0, requestCount - failureCount)) },
           { label: '失败请求', value: formatNumber(failureCount) },
           {
             label: '错误率',
@@ -604,7 +590,7 @@
           { label: '平均吞吐', value: formatRps(summaryValue('rps')) },
           {
             label: '峰值吞吐',
-            value: formatRps(summaryValue('max_rps') ?? overview.summary?.actual_peak_rps),
+            value: formatRps(summaryValue('max_rps') ?? overview.value.summary?.actual_peak_rps),
           },
         ],
       },
@@ -626,20 +612,22 @@
   const performanceGoalResults = computed(() =>
     ['p95_ms', 'error_rate', 'load_achievement_rate']
       .map((metric) => thresholds.value.find((item) => item.metric === metric))
-      .filter(Boolean)
+      .filter((item): item is RunThreshold => item !== undefined)
   )
   function css(name: string) {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
   }
   function formatNumber(value: unknown, digits = 0) {
-    if (value === null || value === undefined || value === '') return '-'
-    return new Intl.NumberFormat('zh-CN', { maximumFractionDigits: digits }).format(Number(value))
+    return formatRunNumber(value, digits)
   }
   function ratio(numerator: unknown, denominator: unknown) {
-    return Number(denominator || 0) ? Number(numerator || 0) / Number(denominator) : 0
+    const n = finiteRunNumber(numerator), d = finiteRunNumber(denominator)
+    if (n === null || d === null) return null
+    return d ? n / d : n === 0 ? 0 : null
   }
   function formatPercent(value: unknown) {
-    return `${(Number(value || 0) * 100).toFixed(2)}%`
+    const n = finiteRunNumber(value)
+    return n === null ? '-' : `${(n * 100).toFixed(2)}%`
   }
   function formatMs(value: unknown) {
     return value === null || value === undefined || value === ''
@@ -665,25 +653,32 @@
     if (bytes < 1024 ** 3) return `${formatNumber(bytes / 1024 ** 2, 2)} MB`
     return `${formatNumber(bytes / 1024 ** 3, 2)} GB`
   }
-  function captureStatusText(status: string | undefined) {
-    return ({ disabled: '未开启', too_large: '超过 100 MB，未上传', upload_failed: '上传失败', failed: '生成失败', ready: '待上传' } as Record<string, string>)[status || ''] || (activeRunStatuses.has(overview.status) ? '采集中' : '无记录')
+  function captureStatusText(status: string | null | undefined) {
+    return ({ disabled: '未开启', too_large: '超过 100 MB，未上传', upload_failed: '上传失败', failed: '生成失败', ready: '待上传' } as Record<string, string>)[status || ''] || (activeRunStatuses.has(overview.value.status) ? '采集中' : '无记录')
   }
   async function downloadCapture(nodeId: number) {
+    const context = runContext.capture()
+    if (!context || captureDownloadingNodeId.value !== null || !nodes.value.some(node => node.id === nodeId && node.capture.status === 'uploaded')) return
     captureDownloadingNodeId.value = nodeId
+    let anchor: HTMLAnchorElement | null = null
     try {
-      const response: any = await getPerfRunCaptureDownload(id, nodeId)
-      const url = response.data?.url
+      const response = await getPerfRunCaptureDownload(context.id, nodeId)
+      if (!context.isCurrent()) return
+      const data = runObject(runData(response))
+      const url = typeof data.url === 'string' ? data.url : null
       if (!url) throw new Error('下载地址不可用')
-      const anchor = document.createElement('a')
-      anchor.href = url
-      anchor.download = response.data?.name || `perf-run-${id}-node-${nodeId}.csv`
+      const target = new URL(url, window.location.href)
+      if (!['http:', 'https:'].includes(target.protocol)) throw new Error('Invalid capture URL')
+      anchor = document.createElement('a')
+      anchor.href = target.href
+      anchor.download = typeof data.name === 'string' ? data.name : `perf-run-${context.id}-node-${nodeId}.csv`
       anchor.rel = 'noopener noreferrer'
       document.body.appendChild(anchor)
       anchor.click()
-      anchor.remove()
     } catch (_error) {
-      Message.error('请求记录下载失败，请稍后重试')
+      if (context.isCurrent()) Message.error('请求记录下载失败，请稍后重试')
     } finally {
+      anchor?.remove()
       captureDownloadingNodeId.value = null
     }
   }
@@ -727,164 +722,61 @@
       : metric
   }
   function formatGoalValue(metric: string, value: unknown) {
+    if (value === null || value === undefined || value === '') return '-'
     if (metric === 'p95_ms') return `${Number(value || 0)} ms`
     if (metric === 'error_rate' || metric === 'load_achievement_rate')
       return `${Number((Number(value || 0) * 100).toFixed(2))}%`
     return String(value ?? '-')
   }
-  function formatGoalActual(item: any) {
+  function formatGoalActual(item: RunThreshold) {
     return formatGoalValue(item.metric, item.actual_value)
   }
-  function formatGoalExpected(item: any) {
+  function formatGoalExpected(item: RunThreshold) {
     return formatGoalValue(item.metric, item.threshold_value)
   }
-  async function loadOverview(context?: PollingContext) {
-    const response: any = await getPerfRunOverview(id)
-    if (context && !context.isCurrent()) return
-    Object.assign(overview, response.data || {})
+  function loadOverview(context?: PollingContext, silent = false) {
+    const captured = runContext.capture(context)
+    return captured ? overviewRegion.load(silent, captured) : Promise.resolve(false)
   }
-  function mergeMetricPoints(incoming: any[]) {
-    for (const item of incoming) {
-      const key = item.window_start
-      let target = points.value.find((row) => row.window_start === key)
-      if (!target) {
-        target = {
-          ...item,
-          target_load: { ...(item.target_load || {}) },
-          actual_load: { ...(item.actual_load || {}) },
-          generator_metrics: { ...(item.generator_metrics || {}) },
-          _nodes: new Set([item.node_id]),
-        }
-        points.value.push(target)
-        continue
-      }
-      if (target._nodes?.has(item.node_id)) continue
-      target._nodes ||= new Set()
-      target._nodes.add(item.node_id)
-      for (const field of [
-        'request_count',
-        'failure_count',
-        'iteration_count',
-        'dropped_count',
-        'response_time_sum_ms',
-        'bytes_sent',
-        'bytes_received',
-        'connection_count',
-        'connect_error_count',
-      ])
-        target[field] = Number(target[field] || 0) + Number(item[field] || 0)
-      if (item.min_response_time_ms !== null && item.min_response_time_ms !== undefined)
-        target.min_response_time_ms =
-          target.min_response_time_ms === null || target.min_response_time_ms === undefined
-            ? Number(item.min_response_time_ms)
-            : Math.min(Number(target.min_response_time_ms), Number(item.min_response_time_ms))
-      if (item.max_response_time_ms !== null && item.max_response_time_ms !== undefined)
-        target.max_response_time_ms = Math.max(
-          Number(target.max_response_time_ms || 0),
-          Number(item.max_response_time_ms)
-        )
-      target.actual_load.users =
-        Number(target.actual_load.users || 0) + Number(item.actual_load?.users || 0)
-      target.target_load.users =
-        Number(target.target_load.users || 0) + Number(item.target_load?.users || 0)
-      target.generator_metrics.cpu_percent = Math.max(
-        Number(target.generator_metrics.cpu_percent || 0),
-        Number(item.generator_metrics?.cpu_percent || 0)
-      )
-      target.generator_metrics.memory_bytes =
-        Number(target.generator_metrics.memory_bytes || 0) +
-        Number(item.generator_metrics?.memory_bytes || 0)
-      if (
-        target.generator_metrics.event_loop_lag_ms != null ||
-        item.generator_metrics?.event_loop_lag_ms != null
-      )
-        target.generator_metrics.event_loop_lag_ms = Math.max(
-          Number(target.generator_metrics.event_loop_lag_ms || 0),
-          Number(item.generator_metrics?.event_loop_lag_ms || 0)
-        )
-      for (const [field, value] of Object.entries(item.timing_breakdown || {})) {
-        const targetRequests = Number(target.request_count || 0) - Number(item.request_count || 0)
-        const itemRequests = Number(item.request_count || 0)
-        const totalRequests = targetRequests + itemRequests
-        if (value === null || value === undefined || !totalRequests) continue
-        target.timing_breakdown ||= {}
-        target.timing_breakdown[field] =
-          (Number(target.timing_breakdown[field] || 0) * targetRequests +
-            Number(value) * itemRequests) /
-          totalRequests
-      }
-    }
-    points.value.sort((left, right) =>
-      String(left.window_start).localeCompare(String(right.window_start))
-    )
-    if (points.value.length > 600) points.value.splice(0, points.value.length - 600)
+  function loadMetrics(silent = false, context?: PollingContext) {
+    const captured = runContext.capture(context)
+    return captured ? metricStream.load(silent, captured) : Promise.resolve()
   }
-  async function loadMetrics(silent = false, context?: PollingContext) {
-    const response: any = await getPerfRunMetrics(id, {
-      cursor,
-      max_points: 1000,
-      scope_type: 'global',
-    })
-    if (context && !context.isCurrent()) return
-    const data = response.data || {}
-    cursor = data.cursor || cursor
-    if (data.points?.length) {
-      mergeMetricPoints(data.points)
-      renderChart()
-    }
-    if (data.run_status && data.run_status !== overview.status) {
-      overview.status = data.run_status
-      overview.verdict = data.verdict
-      if (!activeRunStatuses.has(data.run_status)) {
-        finalRefreshPending = true
-        await refreshFinal(silent, context)
-      }
-    }
+  async function retryMetrics() {
+    try { await loadMetrics() } catch { /* The region retains its retry prompt. */ }
   }
-  async function refreshFinal(silent = false, context?: PollingContext) {
-    if (!silent) detailLoading.value = true
-    try {
-      const [
-        requestResult,
-        stageResult,
-        nodeResult,
-        gateResult,
-        thresholdResult,
-        errorResult,
-        comparisonResult,
-      ]: any[] = await Promise.all([
-        getPerfRunRequests(id),
-        getPerfRunStages(id),
-        getPerfRunNodes(id),
-        getPerfRunValidity(id),
-        getPerfRunThresholds(id),
-        getPerfRunErrors(id),
-        getPerfRunComparison(id),
-      ])
-      if (context && !context.isCurrent()) return
-      requests.value = requestResult.data || []
-      stages.value = stageResult.data || []
-      nodes.value = nodeResult.data || []
-      validity.value = gateResult.data || []
-      thresholds.value = thresholdResult.data || []
-      errors.value = errorResult.data || []
-      Object.assign(comparison, comparisonResult.data || { available: false, metrics: [] })
-      await loadOverview(context)
-      if (!context || context.isCurrent()) finalRefreshPending = false
-    } finally {
-      if (!silent) detailLoading.value = false
+  async function retryRegion(region: { load: (silent?: boolean, context?: PollingContext) => Promise<boolean> }) {
+    const context = runContext.capture()
+    if (!context) return
+    try { await region.load(false, context) } catch { /* The region retains its retry prompt. */ }
+  }
+  async function refreshFinal(silent = false, parent?: PollingContext) {
+    const context = runContext.capture(parent)
+    if (!context) return
+    const results = await Promise.allSettled([overviewRegion, ...resultRegions].map(region => region.load(silent, context)))
+    if (!context.isCurrent()) return
+    if (results.every(result => result.status === 'fulfilled' && result.value)) finalRefreshPending = false
+    else {
+      finalRefreshPending = true
+      throw new Error('Run result refresh failed')
     }
   }
   async function refreshAll() {
+    const context = runContext.capture()
+    if (!context) return
+    if (refreshing.value) return
     refreshing.value = true
     try {
-      await Promise.all([loadOverview(), loadMetrics(), refreshFinal()])
+      await Promise.allSettled([loadMetrics(false, context), refreshFinal(false, context)])
     } finally {
-      refreshing.value = false
+      if (context.isCurrent()) refreshing.value = false
     }
   }
   function renderChart() {
+    const context = runContext.capture()
+    if (!context) return
     nextTick(() => {
+      if (!context.isCurrent()) return
       if (!chartRef.value || !loadChartRef.value) return
       chart ||= makeChartDensityAware(echarts.init(chartRef.value))
       loadChart ||= makeChartDensityAware(echarts.init(loadChartRef.value))
@@ -953,7 +845,7 @@
                   ? Number(
                       (Number(item.response_time_sum_ms) / Number(item.request_count)).toFixed(2)
                     )
-                  : 0
+                  : null
               ),
             },
           ],
@@ -976,7 +868,7 @@
               step: 'end',
               showSymbol: false,
               lineStyle: { type: 'dashed', width: 1.5 },
-              data: rows.map((item) => Number(item.target_load?.users || 0)),
+              data: rows.map((item) => item.target_load.users),
             },
             {
               name: '活跃用户',
@@ -984,7 +876,7 @@
               smooth: 0.2,
               showSymbol: false,
               areaStyle: { opacity: 0.1 },
-              data: rows.map((item) => Number(item.actual_load?.users || 0)),
+              data: rows.map((item) => item.actual_load.users),
             },
             {
               name: '失败数',
@@ -1015,7 +907,7 @@
                 showSymbol: false,
                 areaStyle: { opacity: 0.08 },
                 tooltip: { valueFormatter: (value: unknown) => `${formatNumber(value, 2)}%` },
-                data: rows.map((item) => Number(item.generator_metrics?.cpu_percent || 0)),
+                data: rows.map((item) => item.generator_metrics.cpu_percent),
               },
               {
                 name: '内存',
@@ -1025,7 +917,7 @@
                 showSymbol: false,
                 tooltip: { valueFormatter: (value: unknown) => `${formatNumber(value, 2)} MB` },
                 data: rows.map(
-                  (item) => Number(item.generator_metrics?.memory_bytes || 0) / 1024 ** 2
+                  (item) => item.generator_metrics.memory_bytes === null ? null : item.generator_metrics.memory_bytes / 1024 ** 2
                 ),
               },
             ],
@@ -1036,103 +928,153 @@
     })
   }
   async function stop() {
+    const context = runContext.capture()
+    if (!context || stopping.value || !overviewRecord.value || !activeRunStatuses.has(overview.value.status)) return
     stopping.value = true
     try {
-      await stopPerfRun(id)
+      runData(await stopPerfRun(context.id))
+      if (!context.isCurrent()) return
       Message.success('停止请求已提交')
-      await loadOverview()
+      pagePolling.start()
+      try { await loadOverview(context) } catch { /* A failed overview refresh does not undo the submitted stop. */ }
+    } catch {
+      if (context.isCurrent()) Message.error('停止请求失败，请重试')
     } finally {
       stopping.value = false
     }
   }
   function baseline() {
-    Modal.confirm({
+    const context = runContext.capture()
+    if (!context || baselineSaving.value || baselineDialog || !overviewRecord.value || overview.value.verdict !== 'passed') return
+    const name = overview.value.name
+    const dialog = Modal.confirm({
       title: '设为性能基线',
       content: '仅有效且通过的运行适合作为基线，确认继续？',
-      async onOk() {
+      async onBeforeOk() {
+        if (!context.isCurrent() || baselineSaving.value) return false
         baselineSaving.value = true
         try {
-          await setPerfRunBaseline(id, overview.name)
-          Message.success('基线已更新')
+          runData(await setPerfRunBaseline(context.id, name))
+          if (context.isCurrent()) Message.success('基线已更新')
+          return true
+        } catch {
+          if (context.isCurrent()) Message.error('基线设置失败，请重试')
+          return false
         } finally {
           baselineSaving.value = false
         }
       },
+      onClose() { if (baselineDialog === dialog) baselineDialog = null },
     })
+    baselineDialog = dialog
   }
   async function exportReport() {
+    const context = runContext.capture()
+    if (!context || exporting.value || !overviewRecord.value) return
     exporting.value = true
+    let url: string | null = null
+    let link: HTMLAnchorElement | null = null
     try {
-      const response: any = await exportPerfRun(id)
-      const url = URL.createObjectURL(
-        new Blob([response.data], { type: 'application/json;charset=utf-8' })
-      )
-      const link = document.createElement('a')
+      const response = await exportPerfRun(context.id)
+      if (!context.isCurrent()) return
+      if (!(response.data instanceof Blob) || !response.data.size) throw new Error('Invalid export response')
+      await validateRunExport(response.data, context.id)
+      if (!context.isCurrent()) return
+      url = URL.createObjectURL(response.data)
+      link = document.createElement('a')
       link.href = url
-      link.download = `perf-run-${id}.json`
+      link.download = `perf-run-${context.id}.json`
+      document.body.appendChild(link)
       link.click()
-      URL.revokeObjectURL(url)
+    } catch {
+      if (context.isCurrent()) Message.error('报告导出失败，请重试')
     } finally {
+      link?.remove()
+      if (url) URL.revokeObjectURL(url)
       exporting.value = false
     }
   }
   function rerun() {
+    if (!runContext.available() || !overviewRecord.value || overview.value.scenario_id === null || activeRunStatuses.has(overview.value.status)) return
     router.push({
       path: '/perf/scenario/details',
-      query: { id: overview.scenario_id, execute: '1' },
+      query: { id: overview.value.scenario_id, execute: '1' },
     })
   }
   function handleWebsocket(event: Event) {
-    const message = (event as CustomEvent).detail
-    if (
-      message?.data?.func_name !== 'perf_run_update' ||
-      String(message?.data?.func_args?.run_id) !== id
-    )
-      return
-    if (websocketTimer) clearTimeout(websocketTimer)
-    if (!pagePolling.isAvailable()) return
+    const context = runContext.capture()
+    if (!context) return
+    try {
+      const message = runObject((event as CustomEvent<unknown>).detail)
+      const payload = runObject(message.data), args = runObject(payload.func_args)
+      const rawId = args.run_id
+      if (payload.func_name !== 'perf_run_update' || !['string', 'number'].includes(typeof rawId) || readRunRouteId(String(rawId)) !== context.id) return
+    } catch { return }
+    if (websocketTimer !== undefined) clearTimeout(websocketTimer)
     websocketTimer = window.setTimeout(() => {
-      if (pagePolling.isAvailable()) void loadMetrics(true).catch(() => undefined)
+      websocketTimer = undefined
+      if (context.isCurrent()) void loadMetrics(true, context).catch(() => undefined)
     }, 150)
   }
   function resizeChart() {
+    if (!runContext.available()) return
     chart?.resize()
     loadChart?.resize()
     resourceChart?.resize()
   }
-  onMounted(async () => {
-    loading.value = true
-    try {
-      await Promise.all([loadOverview(), loadMetrics(), refreshFinal(), subscribePerfRun(id)])
-      if (activeRunStatuses.has(overview.status)) pagePolling.start()
-      subscriptionTimer = window.setInterval(() => subscribePerfRun(id), 30000)
-      window.addEventListener('mango:websocket-message', handleWebsocket)
-      window.addEventListener('resize', resizeChart)
-    } finally {
-      loading.value = false
-    }
+  function disposeCharts() {
+    chartResizeObserver?.disconnect()
+    chartResizeObserver = undefined
+    chart?.dispose(); chart = null
+    loadChart?.dispose(); loadChart = null
+    resourceChart?.dispose(); resourceChart = null
+  }
+  function pauseLiveUpdates() {
+    pagePolling.pause()
+    pagePolling.stop()
+    subscription.pause()
+    if (websocketTimer !== undefined) clearTimeout(websocketTimer)
+    websocketTimer = undefined
+    disposeCharts()
+  }
+  function resumeLiveUpdates(silent: boolean) {
+    const context = runContext.capture()
+    if (!context) return
+    pagePolling.start()
+    pagePolling.resume()
+    subscription.resume(context)
+    renderChart()
+    void Promise.allSettled([loadMetrics(silent, context), refreshFinal(silent, context)])
+  }
+  onMounted(() => {
+    window.addEventListener('mango:websocket-message', handleWebsocket)
+    window.addEventListener('resize', resizeChart)
+    window.addEventListener('mango-theme-change', renderChart)
+    window.addEventListener('mango-density-change', resizeChart)
   })
   onBeforeUnmount(() => {
+    metricStream.dispose()
+    ;[overviewRegion, ...resultRegions].forEach(region => region.dispose())
     pagePolling.stop()
-    if (subscriptionTimer) clearInterval(subscriptionTimer)
-    if (websocketTimer) clearTimeout(websocketTimer)
-    unsubscribePerfRun(id).catch(() => undefined)
+    subscription.dispose()
+    if (websocketTimer !== undefined) clearTimeout(websocketTimer)
     window.removeEventListener('mango:websocket-message', handleWebsocket)
     window.removeEventListener('resize', resizeChart)
-    chartResizeObserver?.disconnect()
-    chart?.dispose()
-    loadChart?.dispose()
-    resourceChart?.dispose()
+    window.removeEventListener('mango-theme-change', renderChart)
+    window.removeEventListener('mango-density-change', resizeChart)
+    disposeCharts()
   })
 </script>
 
 <style scoped lang="less">
-  .mango-perf-detail-spin {
+  .mango-perf-overview-spin {
     display: block;
     width: 100%;
     min-width: 0;
   }
-  .mango-perf-detail-spin :deep(> .mango-panel-spin__content) {
+  .mango-perf-overview-spin :deep(> .mango-panel-spin__content) {
+    display: grid;
+    gap: var(--m-page-gap);
     width: 100%;
     min-width: 0;
   }

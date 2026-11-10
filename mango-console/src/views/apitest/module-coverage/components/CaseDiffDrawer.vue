@@ -7,6 +7,7 @@
     unmount-on-close
   >
     <mango-panel-spin :loading="loading" class="mango-case-diff__spin">
+      <template v-if="failed"><a-button size="small" :loading="loading" @click="loadDiff">重新加载</a-button></template>
       <div class="mango-case-diff__grid">
         <section>
           <h4>上一扫描版本</h4>
@@ -22,27 +23,44 @@
 </template>
 
 <script lang="ts" setup>
-  import { reactive, ref } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { ref } from 'vue'
   import { getCoverageCaseDiff } from '@/api/apitest/module-coverage'
-
-  const visible = ref(false)
-  const loading = ref(false)
-  const diff = reactive<any>({})
-  const pretty = (value: any) => (value ? JSON.stringify(value, null, 2) : '暂无数据')
-
-  async function open(id: number) {
-    visible.value = true
+  import { useCoveragePanelScope } from '../composables/useCoveragePanelScope'
+  import type { CoverageDiff } from '../types'
+  const visible = ref(false),
+    loading = ref(false),
+    failed = ref(false),
+    diff = ref<CoverageDiff>({}),
+    selectedId = ref<number>()
+  const { begin, current, close } = useCoveragePanelScope(visible, () => {
+    loading.value = false
+  })
+  const pretty = (value: unknown) => (value == null ? '暂无数据' : JSON.stringify(value, null, 2))
+  async function loadDiff() {
+    if (!visible.value || !selectedId.value) return
+    const token = begin(),
+      id = selectedId.value
     loading.value = true
+    failed.value = false
     try {
-      Object.assign(diff, (await getCoverageCaseDiff(id)).data || {})
+      const response = await getCoverageCaseDiff(id)
+      if (current(token)) diff.value = response.data || {}
+    } catch (loadFailure0) {
+      if (current(token)) (reportLoadError(loadFailure0, "加载失败，请重试", false), failed.value = true)
     } finally {
-      loading.value = false
+      if (current(token)) loading.value = false
     }
   }
-
-  defineExpose({ open })
+  function open(id: number) {
+    selectedId.value = id
+    diff.value = {}
+    visible.value = true
+    return loadDiff()
+  }
+  defineExpose({ open, close })
 </script>
-
 <style lang="less" scoped>
   :global(.mango-case-diff-drawer .arco-drawer-body) {
     display: flex;

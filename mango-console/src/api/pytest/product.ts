@@ -1,6 +1,6 @@
 import { deleted, get, post, put } from '@/api/http'
 
-export function postPytestProductImport(data: any) {
+export function postPytestProductImport(data: Record<string, unknown>): Promise<unknown> {
   return post({
     url: 'pytest/product/import',
     data: () => {
@@ -20,7 +20,11 @@ export function deletePytestProduct(id: number) {
   })
 }
 
-export function getPytestProduct(data: any) {
+export function getPytestProduct(data: {
+  page: number
+  pageSize: number
+  project_product?: string | number
+}): Promise<unknown> {
   return get({
     url: 'pytest/product',
     data: () => {
@@ -29,7 +33,7 @@ export function getPytestProduct(data: any) {
   })
 }
 
-export function putPytestProduct(data: object) {
+export function putPytestProduct(data: Record<string, unknown>): Promise<unknown> {
   return put({
     url: 'pytest/product',
     data: () => {

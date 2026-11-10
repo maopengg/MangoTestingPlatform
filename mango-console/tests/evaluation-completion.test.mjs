@@ -1,3 +1,4 @@
+import { loadFeedbackModule } from './helpers/load-feedback-modules.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -27,6 +28,7 @@ function scriptModule(file, resolve) {
 async function mount(file, { api = {}, permissions = { hasPermission: () => true }, user = Vue.reactive({ selected_environment: 1 }), router, route = { query: {} }, props = {}, guards = [], modal = { warning() {} } } = {}) {
   const resolve = name => {
     if (name === 'vue') return Vue
+    if (name === '@/hooks/useDisplayDensity') return { scaleDensityPixels: value => value }
     if (name === '@arco-design/web-vue') return { Message: { success() {}, warning() {}, error() {} }, Modal: modal }
     if (name === 'vue-router') return { useRoute: () => route, useRouter: () => router || { push() {}, replace() {} }, onBeforeRouteLeave: guard => guards.push(guard), onBeforeRouteUpdate() {} }
     if (name === '@/api/evaluation' || name === '@/api/data-factory') return new Proxy(api, { get: (object, key) => object[key] || (async () => ({ data: [], totalSize: 0 })) })
@@ -38,9 +40,23 @@ async function mount(file, { api = {}, permissions = { hasPermission: () => true
     if (name.endsWith('/presentation') || name === './presentation') return scriptModule('components/presentation.ts', resolve)
     if (name === './guide') return scriptModule('grader/guide.ts', resolve)
     if (name === '../dataset/workflow') return scriptModule('dataset/workflow.ts', resolve)
+    if (name === '../dataset/configuration') return scriptModule('dataset/configuration.ts', resolve)
+    if (name === 'jsonc-parser') return require('jsonc-parser')
+    if (name === '../case/form') return scriptModule('case/form.ts', resolve)
+    if (name.endsWith('/composables/useEvaluationScope')) return scriptModule('composables/useEvaluationScope.ts', resolve)
+    if (name === './result') return scriptModule('components/result.ts', resolve)
+    if (name === '@/hooks/use-page-polling') return { usePagePolling: () => ({ start() {}, stop() {}, isAvailable: () => true }) }
+    if (name === '@/utils/lossless-json') return scriptModule('../../utils/lossless-json.ts', resolve)
+    if (name === './composables/useCaseConfigCollection') return scriptModule('../../components/DataFactory/composables/useCaseConfigCollection.ts', resolve)
+    if (name === './case-config-record' || name === '../case-config-record') return scriptModule('../../components/DataFactory/case-config-record.ts', resolve)
+    if (name === './case-config-editor') return scriptModule('../../components/DataFactory/case-config-editor.ts', resolve)
     if (name === '../workflow' && file.startsWith('dataset/')) return scriptModule('dataset/workflow.ts', resolve)
     if (name === '../config' && file.startsWith('case/details/')) return scriptModule('case/config.ts', resolve)
     if (name.endsWith('/case/config') || name === './config' && file.startsWith('case/') || name === '../case/config') return scriptModule('case/config.ts', resolve)
+    if (name === '../form' && file.startsWith('dataset/details/')) return scriptModule('dataset/details/form.ts', resolve)
+    if ((name === './form' || name === '../form') && file.startsWith('dataset/')) return scriptModule('dataset/form.ts', resolve)
+    if (name === '../../workflow') return scriptModule('dataset/workflow.ts', resolve)
+    if ((name === './config' || name === '../config') && file.startsWith('dataset/details/')) return scriptModule('dataset/details/config.ts', resolve)
     if (name === './config' && file.startsWith('dataset/')) return scriptModule('dataset/config.ts', resolve)
     if (name === '../config' && file.startsWith('dataset/details/')) return scriptModule('dataset/config.ts', resolve)
     if (name === '@/utils/business-format') {
@@ -51,7 +67,7 @@ async function mount(file, { api = {}, permissions = { hasPermission: () => true
       return module.exports
     }
     if (name.endsWith('.vue')) return {}
-    throw new Error(`Unexpected unit dependency: ${name}`)
+    { if (['@/utils/load-error', '@/utils/api-response'].includes(name)) return loadFeedbackModule(name); throw new Error(`Unexpected unit dependency: ${name}`) }
   }
   const component = scriptModule(file, resolve).default
   component.render = () => null
@@ -216,6 +232,8 @@ test('SQL variable keys are loaded, saved and cleared with the item source', asy
 })
 
 test('shared factory panel saves local selections without writing API case bindings', async () => {
+  const previousDocument = globalThis.document
+  globalThis.document = Object.assign(new EventTarget(), { visibilityState: 'visible' })
   const writes = [], selected = []
   const template = { id: 7, name: '订单模板', project_product: { id: 1 } }
   const view = await mount('../../components/DataFactory/CaseConfigPanel.vue', { props: { local: true, localPermission: 'evaluation.dataset:change', projectProductId: 1, configs: [], 'onUpdate:configs': value => selected.push(value) }, api: {
@@ -230,6 +248,17 @@ test('shared factory panel saves local selections without writing API case bindi
     assert.equal(await view.state.save(), true)
     assert.equal(selected[0][0].template.id, 7)
     assert.deepEqual(writes, [])
+  } finally { view.unmount(); globalThis.document = previousDocument }
+})
+
+test('factory selection adapter validates shared unknown payloads and preserves zero IDs', async () => {
+  const values = [], source = { kind: 'factory', binding: { resource: 'item_source', project_product_id: 1, ref_id: 7 } }
+  const view = await mount('components/ItemDataSourceEditor.vue', { props: { modelValue: source, versionId: 1, 'onUpdate:modelValue': value => values.push(value) } })
+  try {
+    for (const template of [{ id: null }, { id: '90071992547409930000' }, { id: 2, project_product: null }, { id: 2, name: {} }]) view.state.saveFactory([{ template }])
+    assert.equal(values.length, 0)
+    view.state.saveFactory([{ template: { id: 0, name: 'Example template', project_product: { id: 0 } } }])
+    assert.equal(values[0].binding.ref_id, 0); assert.equal(values[0].binding.project_product_id, 0)
   } finally { view.unmount() }
 })
 
@@ -347,7 +376,7 @@ test('published item details retain full context and grading without editing the
     assert.equal(view.state.documentVisible, true)
     assert.equal(view.state.documentData.context.nested.evidence, 'source')
     assert.equal(view.state.documentData.grading_config.mode, 'replace')
-    assert.equal(view.state.documentData.version, 3)
+    assert.match(view.state.documentTitle, /V3/)
   } finally { view.unmount() }
 })
 
@@ -366,11 +395,11 @@ test('structured field display uses configured labels and preserves false, zero 
 
 test('structured field editing preserves nested values, false, zero and null in a saved item', async () => {
   const writes = []
-  const view = await mount('dataset/details/index.vue', { api: { updateEvaluationDatasetItem: async data => { writes.push(data) } } })
+  const view = await mount('dataset/details/components/DatasetItemEditor.vue', { api: { updateEvaluationDatasetItem: async data => { writes.push(data) } } })
   try {
-    view.state.activeVersion = { id: 2, status: 'draft', schema_snapshot: {} }
+    const selected = { id: 2, status: 'draft', schema_snapshot: {} }
     const original = { id: 9, item_id: 101, input_data: { enabled: false, count: 0, optional: null, list: [1, '1'], nested: { answer: '原文' } }, expected_output: { answer: '原文' }, context: {}, metadata: {}, tags: [], weight: 1, enabled: true }
-    view.state.openItem(original)
+    view.state.open(selected, original)
     const edited = view.state.parseFields(view.state.itemForm.input_text)
     edited.nested.answer = '修改后的原文'
     view.state.itemForm.input_text = JSON.stringify(edited)
@@ -383,18 +412,16 @@ test('structured field editing preserves nested values, false, zero and null in 
 test('item drawer keeps its version and source keys while saving and prevents duplicate submissions', async () => {
   let finish
   const writes = []
-  const view = await mount('dataset/details/index.vue', { api: { createEvaluationDatasetItem: async (id, data) => { writes.push({ id, data }); await new Promise(resolve => { finish = resolve }) } } })
+  const view = await mount('dataset/details/components/DatasetItemEditor.vue', { api: { createEvaluationDatasetItem: async (id, data) => { writes.push({ id, data }); await new Promise(resolve => { finish = resolve }) } } })
   try {
-    view.state.activeVersion = { id: 2, status: 'draft', schema_snapshot: { input_schema: { type: 'string' } } }
-    view.state.openItem()
+    view.state.open({ id: 2, status: 'draft', schema_snapshot: { input_schema: { type: 'string' } } })
     assert.equal(view.state.itemEditorVisible, true)
     assert.equal(view.state.itemVersion.id, 2)
     view.state.itemForm.data_source = { kind: 'sql', key: 'contract_id', query: 'SELECT id FROM contracts', binding: { project_product_id: 1, ref_id: 10 } }
-    view.state.activeVersion = { id: 3, status: 'draft', schema_snapshot: {} }
     const pending = view.state.saveItem()
     assert.equal(view.state.itemSaving, true)
     await view.state.saveItem()
-    view.state.openItem()
+    view.state.open({ id: 3, status: 'draft', schema_snapshot: {} })
     assert.equal(writes.length, 1)
     assert.equal(writes[0].id, 2)
     assert.equal(writes[0].data.data_source.key, 'contract_id')
@@ -406,10 +433,9 @@ test('item drawer keeps its version and source keys while saving and prevents du
 })
 
 test('published versions cannot open the item editor', async () => {
-  const view = await mount('dataset/details/index.vue')
+  const view = await mount('dataset/details/components/DatasetItemEditor.vue')
   try {
-    view.state.activeVersion = { id: 2, status: 'published' }
-    view.state.openItem()
+    view.state.open({ id: 2, status: 'published' })
     assert.equal(view.state.itemEditorVisible, false)
   } finally { view.unmount() }
 })
@@ -590,9 +616,9 @@ test('published field rows cannot emit editing mutations', async () => {
 
 test('dataset editing does not submit deleted project and module fields', async () => {
   const writes = []
-  const view = await mount('dataset/index.vue', { api: { updateEvaluationDataset: async data => { writes.push(data); return {} } } })
+  const view = await mount('dataset/components/DatasetEditor.vue', { api: { updateEvaluationDataset: async data => { writes.push(data); return {} } } })
   try {
-    view.state.openEdit({ id: 9, name: 'before', project_product_id: 7, module_id: 4, task_type: ['generation'], version_count: 2, status: 'enabled' })
+    view.state.open({ id: 9, name: 'before', project_product_id: 7, module_id: 4, task_type: ['generation'], version_count: 2, status: 'enabled' })
     view.state.form.name = 'after'
     await view.state.saveDataset()
     assert.deepEqual(writes, [{ id: 9, name: 'after', description: '', task_type: ['generation'], status: 'enabled' }])
@@ -601,49 +627,51 @@ test('dataset editing does not submit deleted project and module fields', async 
 
 test('task types accept free labels, persist JSON arrays, and use JSON membership search', async () => {
   const writes = [], queries = []
-  const view = await mount('dataset/index.vue', { api: {
+  const view = await mount('dataset/components/DatasetEditor.vue', { api: {
     updateEvaluationDataset: async data => { writes.push(data); return {} },
     getEvaluationDatasets: async query => { queries.push(query); return { data: [] } },
   } })
+  const listing = await mount('dataset/index.vue', { api: { getEvaluationDatasets: async query => { queries.push(query); return { data: [] } } } })
   try {
     const record = { id: 9, name: '题库', project_product_id: 7, module_id: 4, task_type: ['记忆'], version_count: 2, status: 'enabled' }
-    view.state.openEdit(record)
+    view.state.open(record)
     view.state.form.task_type.push('记忆，问答', ' 用户自定义类型 ')
     await view.state.saveDataset()
     assert.deepEqual(writes[0].task_type, ['记忆', '问答', '用户自定义类型'])
     assert.deepEqual(record.task_type, ['记忆'])
-    view.state.filters.task_type = ['记忆，问答']
-    await view.state.load()
+    listing.state.filters.task_type = ['记忆，问答']
+    await listing.state.load()
     assert.deepEqual(JSON.parse(queries.at(-1).task_types), ['记忆', '问答'])
     assert.equal('task_type__in' in queries.at(-1), false)
-    view.state.openCreate()
+    view.state.open()
     assert.deepEqual([...view.state.form.task_type], [])
-  } finally { view.unmount() }
+  } finally { view.unmount(); listing.unmount() }
 })
 
 test('legacy scalar task types remain whole labels and can be removed without character ghosts', async () => {
   const writes = []
-  const view = await mount('dataset/index.vue', { api: {
+  const view = await mount('dataset/components/DatasetEditor.vue', { api: {
     getEvaluationDatasets: async () => ({ data: [{ id: 9, name: '题库', task_type: 'retrieval', status: 'enabled' }] }),
     updateEvaluationDataset: async data => { writes.push(data); return {} },
   } })
+  const listing = await mount('dataset/index.vue', { api: { getEvaluationDatasets: async () => ({ data: [{ id: 9, name: '题库', task_type: 'retrieval', status: 'enabled' }] }) } })
   try {
-    assert.deepEqual(view.state.rows[0].task_type, ['retrieval'])
+    assert.deepEqual(listing.state.rows[0].task_type, ['retrieval'])
     const source = { id: 9, name: '题库', task_type: 'retrieval', status: 'enabled' }
-    view.state.openEdit(source)
+    view.state.open(source)
     assert.deepEqual(view.state.form.task_type, ['retrieval'])
     view.state.updateTaskTypes(['retrieval', '记忆'])
     view.state.updateTaskTypes(['记忆'])
     await view.state.saveDataset()
     assert.deepEqual(writes[0].task_type, ['记忆'])
     assert.equal(source.task_type, 'retrieval')
-  } finally { view.unmount() }
+  } finally { view.unmount(); listing.unmount() }
 })
 
 test('duplicate task labels are normalized before rendering and removing the first never reintroduces it', async () => {
-  const view = await mount('dataset/index.vue')
+  const view = await mount('dataset/components/DatasetEditor.vue')
   try {
-    view.state.openEdit({ id: 9, name: '题库', task_type: ['r', 'r', '记忆', ' 记忆 '], status: 'enabled' })
+    view.state.open({ id: 9, name: '题库', task_type: ['r', 'r', '记忆', ' 记忆 '], status: 'enabled' })
     assert.deepEqual(view.state.form.task_type, ['r', '记忆'])
     view.state.updateTaskTypes(['记忆'])
     assert.deepEqual(view.state.form.task_type, ['记忆'])
@@ -654,11 +682,11 @@ test('duplicate task labels are normalized before rendering and removing the fir
 
 test('global dataset save requires task types and never submits project, module or tags', async () => {
   const writes = []
-  const view = await mount('dataset/index.vue', { api: {
+  const view = await mount('dataset/components/DatasetEditor.vue', { api: {
     createEvaluationDataset: async data => { writes.push(data); return {} },
   } })
   try {
-    view.state.openCreate()
+    view.state.open()
     Object.assign(view.state.form, { name: '题库', task_type: [' ', '，'] })
     await view.state.saveDataset()
     assert.equal(writes.length, 0)
@@ -673,17 +701,19 @@ test('global dataset save requires task types and never submits project, module 
   } finally { view.unmount() }
 })
 
-test('dataset status action is permission checked and changes only status', async () => {
+test('dataset status writes defer authorization to the backend and submit only id/status', async () => {
   const writes = []
-  let granted = false
-  const view = await mount('dataset/index.vue', { permissions: { hasPermission: () => granted }, api: { updateEvaluationDataset: async data => { writes.push(data) } } })
+  let rejected = true
+  const view = await mount('dataset/index.vue', { permissions: { hasPermission: () => false }, api: { updateEvaluationDataset: async data => { writes.push(data); if (rejected) throw new Error('Backend rejected change') } } })
   try {
-    await view.state.changeDatasetStatus({ id: 1, status: 'enabled' })
-    assert.equal(writes.length, 0)
-    granted = true
-    await view.state.changeDatasetStatus({ id: 1, status: 'enabled' })
+    const original = { id: 1, status: 'enabled' }
+    assert.equal(await view.state.changeDatasetStatus(original), false)
+    assert.equal(original.status, 'enabled')
+    assert.equal(view.state.statusSaving.size, 0)
+    rejected = false
+    await view.state.changeDatasetStatus(original)
     await view.state.changeDatasetStatus({ id: 1, status: 'archived', current_version: 2 })
-    assert.deepEqual(writes, [{ id: 1, status: 'archived' }, { id: 1, status: 'enabled' }])
+    assert.deepEqual(writes, [{ id: 1, status: 'archived' }, { id: 1, status: 'archived' }, { id: 1, status: 'enabled' }])
   } finally { view.unmount() }
 })
 
@@ -744,7 +774,7 @@ test('publication errors retain the item ID and never publish', async () => {
     publishDatasetVersion: async () => { published = true },
   } })
   try {
-    view.state.qualityDialogRef = { show: () => { opened = true } }
+    view.state.qualityDialogRef = { show: () => { opened = true }, close() {} }
     await view.state.publishVersion({ id: 4, status: 'draft' })
     assert.equal(opened, true)
     assert.equal(view.state.qualityReport.errors[0].item_id, 25)
@@ -765,11 +795,11 @@ test('publication warnings show affected items and require confirmation before w
     await view.state.publishVersion({ id: 4, status: 'draft' })
     assert.match(confirmation.content, /25、26/)
     assert.deepEqual(writes, [])
-    assert.equal(view.state.publishConfirmationOpen, true)
+    assert.equal(view.state.confirmationOpen, true)
     assert.equal(await confirmation.onBeforeOk(), true)
     assert.deepEqual(writes, [['acknowledge', 4], ['publish', 4]])
     confirmation.onClose()
-    assert.equal(view.state.publishConfirmationOpen, false)
+    assert.equal(view.state.confirmationOpen, false)
   } finally { view.unmount() }
 })
 
@@ -787,7 +817,7 @@ test('copying a dataset version requires confirmation and cancelling never creat
     assert.match(confirmation.content, /V2/)
     assert.deepEqual(writes, [])
     confirmation.onClose()
-    assert.equal(view.state.cloneConfirmationOpen, false)
+    assert.equal(view.state.confirmationOpen, false)
     assert.deepEqual(writes, [])
     view.state.cloneVersion(source)
     const pending = confirmation.onBeforeOk()
@@ -815,22 +845,25 @@ test('draft deletion confirms, prevents published deletion and selects a remaini
     assert.equal(confirmation, undefined)
     view.state.removeVersion(draft)
     assert.equal(deleted.length, 0)
-    await confirmation.onOk()
+    await confirmation.onBeforeOk()
     assert.deepEqual(deleted, [25])
     assert.equal(view.state.activeVersion.id, 24)
     assert.equal(view.state.deletingVersionId, undefined)
   } finally { view.unmount() }
 })
 
-test('invalid or unauthorized dataset links never request versions', async () => {
-  for (const [id, permitted] of [['invalid', true], ['12', false]]) {
+test('invalid dataset links skip reads while valid requests defer permission enforcement to the backend', async () => {
+  for (const id of ['invalid', '12']) {
     const reads = []
-    const view = await mount('dataset/details/index.vue', { route: { query: { id } }, permissions: { hasPermission: () => permitted }, api: {
-      getDatasetVersions: async () => { reads.push(true); return {} },
+    const view = await mount('dataset/details/index.vue', { route: { query: { id } }, permissions: { hasPermission: () => false }, api: {
+      getDatasetVersions: async () => { reads.push(true); throw new Error('Backend rejected access') },
     } })
     try {
-      assert.deepEqual(reads, [])
-      assert.equal(view.state.activeDataset, undefined)
+      assert.equal(reads.length, id === 'invalid' ? 0 : 1)
+      assert.equal(view.state.activeDataset?.id ?? null, id === 'invalid' ? null : 12)
+      assert.deepEqual(view.state.versions, [])
+      assert.equal(view.state.versionLoading, false)
+      assert.equal(view.state.versionLoadError, id === '12')
     } finally { view.unmount() }
   }
 })
@@ -924,20 +957,19 @@ test('environment switching clears a previously selected execution in Case detai
   } finally { view.unmount() }
 })
 
-test('Case details loads when permissions finish initializing and clears data after revocation', async () => {
-  const access = Vue.reactive({ granted: false })
+test('Case details delegates authorization to the backend and reloads after identity changes', async () => {
+  const user = Vue.reactive({ userId: 1, roleId: 1, token: 'fixture', selected_environment: 1 })
   let reads = 0
   const view = await mount('case/details/index.vue', { route: Vue.reactive({ query: { id: '1' } }),
-    permissions: { hasPermission: () => access.granted }, api: { getEvaluationCase: async () => { reads += 1; return { data: { id: 1 } } } } })
+    user, permissions: { hasPermission: () => false }, api: { getEvaluationCase: async () => { reads += 1; return { data: { id: 1 } } } } })
   try {
-    assert.equal(reads, 0)
-    access.granted = true
-    await flush()
     assert.equal(reads, 1)
     assert.equal(view.state.record.id, 1)
-    access.granted = false
+    user.roleId = 2
+    assert.equal(view.state.record, null)
     await flush()
-    assert.equal(view.state.record, undefined)
+    assert.equal(reads, 2)
+    assert.equal(view.state.record.id, 1)
   } finally { view.unmount() }
 })
 
@@ -1035,15 +1067,18 @@ test('scenario description edits belong to external case metadata and preserve e
 test('quality gate editor uses structured defaults and protects readonly values', async () => {
   for (const disabled of [false, true]) {
     const values = []
-    const view = await mount('components/QualityGateEditor.vue', { props: { modelValue: [], disabled,
+    const gate = { key: 'valid_rate', threshold: 1 }
+    const view = await mount('components/QualityGateEditor.vue', { props: { modelValue: [gate], disabled,
       'onUpdate:modelValue': value => values.push(value) } })
     try {
       view.state.add()
-      assert.deepEqual(values, disabled ? [] : [[{ key: '', operator: 'gte', threshold: 0, severity: 'critical' }]])
-      const gate = { key: 'valid_rate', threshold: 1 }
-      view.state.choose(gate, 'metric:accuracy')
-      assert.equal(gate.key, disabled ? 'valid_rate' : 'accuracy')
-      assert.equal(gate.metric_key, disabled ? undefined : 'accuracy')
+      assert.deepEqual(values, disabled ? [] : [[gate, { key: '', operator: 'gte', threshold: 0, severity: 'critical' }]])
+      view.state.choose(0, 'metric:accuracy')
+      assert.equal(gate.key, 'valid_rate')
+      if (!disabled) {
+        assert.equal(values[1][0].key, 'accuracy')
+        assert.equal(values[1][0].metric_key, 'accuracy')
+      }
     } finally { view.unmount() }
   }
 })
@@ -1278,11 +1313,12 @@ test('save failures retain the draft and block navigation until an explicit retr
   } finally { view.unmount() }
 })
 
-test('readonly configuration cannot autosave and incomplete target changes are not submitted', async () => {
+test('backend-rejected saves retain the draft and incomplete target changes are not submitted', async () => {
   let writes = 0
-  const readonly = await mount('components/CaseEditor.vue', editorOptions(editorFixture(), async () => { writes++ }, { permissions: { hasPermission: () => false } }))
-  try { readonly.state.config.execution.retry_count = 1; await flush(); assert.equal(await readonly.state.flush(), false); assert.equal(writes, 0); assert.equal(readonly.state.saveStatus, '只读') }
+  const readonly = await mount('components/CaseEditor.vue', editorOptions(editorFixture(), async () => { writes++; throw Error('Forbidden') }, { permissions: { hasPermission: () => false } }))
+  try { readonly.state.config.execution.retry_count = 1; await flush(); assert.equal(await readonly.state.flush(), false); assert.equal(writes, 1); assert.equal(readonly.state.dirty, true); assert.match(readonly.state.saveStatus, /保存失败/) }
   finally { readonly.unmount() }
+  writes = 0
   const editable = await mount('components/CaseEditor.vue', editorOptions(editorFixture(), async () => { writes++ }))
   try {
     editable.state.config.target.type = 'api_info'; editable.state.targetChanged(); await flush()
@@ -1386,8 +1422,10 @@ test('header save button follows editor autosave state, retries failures and gua
     assert.equal(view.state.saveButtonLabel, '已保存')
     permissions.hasPermission = () => false
     editor.dirty = true
-    await view.state.saveConfiguration()
-    assert.equal(writes, 2)
+    const backendChecked = view.state.saveConfiguration()
+    assert.equal(writes, 3)
+    finish(false); await backendChecked
+    assert.equal(view.state.saveButtonLabel, '重试保存')
   } finally { view.unmount() }
 })
 

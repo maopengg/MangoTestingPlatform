@@ -1,70 +1,34 @@
-import { reactive, ref } from 'vue'
-import { FormItem } from '@/types/components'
-import { Message } from '@arco-design/web-vue'
-import { isValidInteger } from '@/utils/form'
+import { fieldNames } from '@/setting'
 
-export const formItems: FormItem[] = reactive([
-  {
-    label: '模块名称',
-    key: 'module',
-    value: ref(''),
-    placeholder: '请选择模块名称',
-    required: true,
-    type: 'cascader',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
+export const UI_CASE_RESULT_SOCKET_EVENTS = [
+  'u_page_steps',
+  'u_page_step_node_progress',
+  'u_test_case',
+  'u_test_suite_details',
+] as const
+
+export function createUiCaseVariableFields(
+  environmentOptions: Array<{ key: string | number; title: string }>,
+  getEnvironment: (item: unknown) => unknown,
+  setEnvironment: (value: unknown, item: unknown) => void
+) {
+  return [
+    {
+      field: 'test_envs', label: '适用环境', type: 'select' as const,
+      placeholder: '请选择被测环境', options: environmentOptions, fieldNames,
+      multiple: true, className: 'mango-env-select',
+      containerClassName: 'mango-case-custom-env-field',
+      getValue: getEnvironment, setValue: setEnvironment,
     },
-  },
-  {
-    label: '选择页面',
-    key: 'page',
-    value: ref(''),
-    placeholder: '请选择测试页面',
-    required: true,
-    type: 'select',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
+    {
+      field: 'key', label: 'Key', type: 'input' as const,
+      placeholder: '请输入缓存key', className: 'mango-case-custom-key-input',
+      containerClassName: 'mango-case-custom-key-field', showTitle: true,
     },
-  },
-  {
-    label: '页面步骤',
-    key: 'page_step',
-    value: ref(''),
-    type: 'select',
-    required: true,
-    placeholder: '请选择页面步骤',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
+    {
+      field: 'value', label: 'Value', type: 'input' as const,
+      placeholder: '请输入value', className: 'mango-case-custom-value-input',
+      containerClassName: 'mango-case-custom-value-field', showTitle: true,
     },
-  },
-  {
-    label: '失败重试',
-    key: 'error_retry',
-    value: ref(''),
-    type: 'input',
-    required: false,
-    placeholder: '请输入重试次数，整数类型',
-    validator: function () {
-      if (!this.value && !this.required) {
-        return true
-      }
-      if (!isValidInteger(this.value)) {
-        Message.error(`${this.label}请输入正整数！`)
-        return false
-      }
-      return true
-    },
-  },
-])
+  ]
+}

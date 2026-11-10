@@ -24,7 +24,7 @@ function loadFunction(name, dependencies, tree = ast) {
   const code = ts.transpileModule(declaration.getText(tree), {
     compilerOptions: { target: ts.ScriptTarget.ES2022 },
   }).outputText
-  const injected = { callbackRequiredConfigError, ...dependencies }
+  const injected = { callbackRequiredConfigError, editorSession: 0, createCallbackRuleDraft: configModule.exports.createCallbackRuleDraft, ...(dependencies.pageData ? { caseRecord: { value: dependencies.pageData.record } } : {}), ...dependencies }
   return new Function(...Object.keys(injected), `${code}; return ${name}`)(...Object.values(injected))
 }
 
@@ -33,14 +33,14 @@ test('callback entry belongs to scenario assertion tabs, without a duplicate Cas
   assert.match(read('components/ApiCaseAssertionPanel.vue'), /name="callback"/)
   assert.match(read('components/ApiCaseAssertionPanel.vue'), /v-if="activeKey !== '36'"/)
   assert.doesNotMatch(read('components/ApiCaseOrchestrationPanel.vue'), /回调验证|name="callbacks"/)
-  assert.match(read('index.vue'), /:trigger-step="data.tabelJson"/)
+  assert.match(read('index.vue'), /:trigger-step="selectedStep"/)
   assert.doesNotMatch(panel, /v-model="form.trigger_step_key"/)
 })
 
 test('callback and normal assertions reuse the same editor and method catalogue', () => {
   assert.match(panel, /import GeneralAssertionEditor/)
   assert.match(read('components/ApiCaseAssertionPanel.vue'), /<GeneralAssertionEditor/)
-  assert.match(read('index.vue'), /<ApiCaseCallbackPanel\s+:general-methods="data.ass"/)
+  assert.match(read('index.vue'), /<ApiCaseCallbackPanel\s+:general-methods="optionLists.ass"/)
   assert.match(panel, /callback-actual/)
 })
 

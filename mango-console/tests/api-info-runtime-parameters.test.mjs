@@ -65,7 +65,7 @@ test('all rows are optional and cancellation does not provide execution paramete
 })
 
 test('runtime values are posted in the request body, not URL parameters', async () => {
-  const source = readFileSync(new URL('../src/api/apitest/info.ts', import.meta.url), 'utf8').replace(/^import .*\n/gm, '').replaceAll('export function', 'function')
+  const source = readFileSync(new URL('../src/api/apitest/info.ts', import.meta.url), 'utf8').replace(/^import .*\n/gm, '').replace(/^export /gm, '')
   const code = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
   const calls = []
   const run = new Function('post', code + ';return getApiCaseInfoRun')(async request => { calls.push(request); return {} })

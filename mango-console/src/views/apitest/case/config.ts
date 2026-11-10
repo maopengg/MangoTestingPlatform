@@ -3,10 +3,8 @@ import { enableMultiSelectSearch } from '@/utils/search-condition'
 import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
-import { useTable, useTableColumn } from '@/hooks/table'
+import { useTableIndexColumn, useTableColumn } from '@/hooks/table'
 import { createUpdateUserCondition, updateUserColumn } from '@/utils/update-user'
-
-const table = useTable()
 
 export const publicationTabs = [
   { key: 'all', title: '全部' },
@@ -15,274 +13,292 @@ export const publicationTabs = [
   { key: 'unpublished', title: '未发布' },
 ]
 
-export const conditionItems: Array<FormItem> = reactive([
-  {
-    key: 'id',
-    label: 'ID',
-    type: 'input',
-    placeholder: '请输入用例ID',
-    value: createIdSearchValue(),
-    reset: function () {
-      this.value = ''
+const bindingSearchOptions = [
+  { key: 'bound', title: '已手动绑定', label: '已手动绑定', value: 'bound' },
+  { key: 'unbound', title: '未手动绑定', label: '未手动绑定', value: 'unbound' },
+]
+
+export function createConditionItems(): FormItem[] {
+  const fields: Array<Omit<FormItem, 'disabled'>> = [
+    {
+      key: 'id',
+      label: 'ID',
+      type: 'input',
+      placeholder: '请输入用例ID',
+      value: createIdSearchValue(),
+      reset: function () {
+        this.value = ''
+      },
     },
-  },
-  {
-    key: 'name',
-    label: '用例名称',
-    type: 'input',
-    placeholder: '请输入用例名称',
-    value: ref(''),
-    reset: function () {
-      this.value = ''
+    {
+      key: 'name',
+      label: '用例名称',
+      type: 'input',
+      placeholder: '请输入用例名称',
+      value: ref(''),
+      reset: function () {
+        this.value = ''
+      },
     },
-  },
-  {
-    key: 'project_product',
-    label: '项目/产品',
-    value: ref(''),
-    type: 'cascader',
-    placeholder: '请选择产品',
-    optionItems: [],
-    reset: function () {},
-  },
-  {
-    key: 'module',
-    label: '模块名称',
-    value: ref(''),
-    type: 'select',
-    placeholder: '请选择模块名称',
-    optionItems: [],
-    reset: function () {},
-  },
-  {
-    key: 'level',
-    label: '优先级',
-    value: ref(''),
-    type: 'select',
-    placeholder: '请选择优先级',
-    optionItems: [],
-    reset: function () {},
-  },
-  {
-    key: 'scenario_layer',
-    label: '测试层级',
-    value: ref(''),
-    type: 'select',
-    placeholder: '请选择测试层级',
-    optionItems: [],
-    reset: function () {},
-  },
-  {
-    key: 'scenario_type',
-    label: '验证类型',
-    value: ref(''),
-    type: 'select',
-    placeholder: '请选择验证类型',
-    optionItems: [],
-    reset: function () {},
-  },
-  {
-    key: 'scenario_tags',
-    label: '执行场景',
-    value: ref([]),
-    type: 'select',
-    placeholder: '请选择执行场景',
-    optionItems: [],
-    reset: function () {
-      this.value = []
+    {
+      key: 'project_product',
+      label: '项目/产品',
+      value: ref(''),
+      type: 'cascader',
+      placeholder: '请选择产品',
+      optionItems: [],
+      reset: function () {},
     },
-  },
-  {
-    key: 'case_people',
-    label: '用例负责人',
-    value: ref([]),
-    type: 'select',
-    multiple: true,
-    searchOperator: 'in',
-    placeholder: '请选择用例负责人',
-    optionItems: [],
-    reset: function () {
-      this.value = []
+    {
+      key: 'module',
+      label: '模块名称',
+      value: ref(''),
+      type: 'select',
+      placeholder: '请选择模块名称',
+      optionItems: [],
+      reset: function () {},
     },
-  },
-  createUpdateUserCondition(),
-  {
-    key: 'execution_configuration',
-    label: '执行配置',
-    value: ref([]),
-    type: 'select',
-    placeholder: '请选择执行配置',
-    optionItems: [],
-    reset: function () { this.value = [] },
-  },
-  {
-    key: 'scheduled_task',
-    label: '手动绑定状态',
-    value: ref(''),
-    type: 'select',
-    placeholder: '请选择手动绑定状态',
-    optionItems: [
-      { key: 'bound', title: '已手动绑定' },
-      { key: 'unbound', title: '未手动绑定' },
-    ],
-    reset: function () {
-      this.value = ''
+    {
+      key: 'level',
+      label: '优先级',
+      value: ref(''),
+      type: 'select',
+      placeholder: '请选择优先级',
+      optionItems: [],
+      reset: function () {},
     },
-  },
-  {
-    key: 'status',
-    label: '测试结果',
-    value: ref([]),
-    type: 'select',
-    multiple: true,
-    searchOperator: 'in',
-    placeholder: '请选择测试结果',
-    optionItems: [],
-    reset: function () {
-      this.value = []
+    {
+      key: 'scenario_layer',
+      label: '测试层级',
+      value: ref(''),
+      type: 'select',
+      placeholder: '请选择测试层级',
+      optionItems: [],
+      reset: function () {},
     },
-  },
-])
-enableMultiSelectSearch(conditionItems)
-export const formItems: FormItem[] = reactive([
-  {
-    label: '项目/产品',
-    key: 'project_product',
-    value: ref(''),
-    placeholder: '请选择项目名称',
-    required: true,
-    type: 'cascader',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
+    {
+      key: 'scenario_type',
+      label: '验证类型',
+      value: ref(''),
+      type: 'select',
+      placeholder: '请选择验证类型',
+      optionItems: [],
+      reset: function () {},
     },
-  },
-  {
-    label: '模块名称',
-    key: 'module',
-    value: ref(''),
-    placeholder: '请选择测试模块名称',
-    required: true,
-    type: 'select',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
+    {
+      key: 'scenario_tags',
+      label: '执行场景',
+      value: ref([]),
+      type: 'select',
+      placeholder: '请选择执行场景',
+      optionItems: [],
+      reset: function () {
+        this.value = []
+      },
     },
-  },
-  {
-    label: '用例名称',
-    key: 'name',
-    value: ref(''),
-    type: 'input',
-    required: true,
-    placeholder: '请输入用例名称',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
+    {
+      key: 'case_people',
+      label: '用例负责人',
+      value: ref([]),
+      type: 'select',
+      multiple: true,
+      searchOperator: 'in',
+      placeholder: '请选择用例负责人',
+      optionItems: [],
+      reset: function () {
+        this.value = []
+      },
     },
-  },
-  {
-    label: '优先级',
-    key: 'level',
-    value: ref(''),
-    type: 'select',
-    required: true,
-    placeholder: '请设置优先级',
-    validator: function () {
-      // @ts-ignore
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
+    createUpdateUserCondition(),
+    {
+      key: 'execution_configuration',
+      label: '执行配置',
+      value: ref([]),
+      type: 'select',
+      placeholder: '请选择执行配置',
+      optionItems: [],
+      reset: function () {
+        this.value = []
+      },
     },
-  },
-  {
-    label: '测试层级',
-    key: 'scenario_layer',
-    value: ref(0),
-    type: 'select',
-    required: true,
-    placeholder: '请选择测试层级',
-    reset: function () {
-      this.value = 0
+    {
+      key: 'scheduled_task',
+      label: '手动绑定状态',
+      value: ref(''),
+      type: 'select',
+      placeholder: '请选择手动绑定状态',
+      optionItems: bindingSearchOptions,
+      reset: function () {
+        this.value = ''
+      },
     },
-    validator: function () {
-      // @ts-ignore
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
+    {
+      key: 'status',
+      label: '测试结果',
+      value: ref([]),
+      type: 'select',
+      multiple: true,
+      searchOperator: 'in',
+      placeholder: '请选择测试结果',
+      optionItems: [],
+      reset: function () {
+        this.value = []
+      },
     },
-  },
-  {
-    label: '验证类型',
-    key: 'scenario_type',
-    value: ref(0),
-    type: 'select',
-    required: true,
-    placeholder: '请选择验证类型',
-    reset: function () {
-      this.value = 0
+  ]
+  const conditionItems = reactive(fields)
+  enableMultiSelectSearch(conditionItems)
+  return conditionItems
+}
+export function createMetadataFormItems(): FormItem[] {
+  return [
+    {
+      label: '项目/产品',
+      key: 'project_product',
+      value: ref(''),
+      placeholder: '请选择项目名称',
+      required: true,
+      type: 'cascader',
+      validator: function () {
+        if (!this.value && this.value !== 0) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
     },
-    validator: function () {
-      // @ts-ignore
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
+    {
+      label: '模块名称',
+      key: 'module',
+      value: ref(''),
+      placeholder: '请选择测试模块名称',
+      required: true,
+      type: 'select',
+      validator: function () {
+        if (!this.value) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
     },
-  },
-  {
-    label: '执行场景',
-    key: 'scenario_tags',
-    value: ref([]),
-    type: 'select',
-    placeholder: '请选择执行场景',
-    reset: function () {
-      this.value = []
+    {
+      label: '用例名称',
+      key: 'name',
+      value: ref(''),
+      type: 'input',
+      required: true,
+      placeholder: '请输入用例名称',
+      validator: function () {
+        if (!this.value) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
     },
-  },
-  {
-    label: '场景描述',
-    key: 'scenario_description',
-    value: ref(''),
-    type: 'textarea',
-    placeholder: 'Given 前置条件\nWhen 用户执行某个行为\nThen 应得到某个结果',
-    reset: function () {
-      this.value = ''
+    {
+      label: '优先级',
+      key: 'level',
+      value: ref(''),
+      type: 'select',
+      required: true,
+      placeholder: '请设置优先级',
+      validator: function () {
+        // @ts-ignore
+        if (!this.value && this.value !== 0) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
     },
-  },
-  {
-    label: '用例负责人',
-    key: 'case_people',
-    value: ref(''),
-    type: 'select',
-    required: true,
-    placeholder: '请设置用例负责人',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
+    {
+      label: '测试层级',
+      key: 'scenario_layer',
+      value: ref(0),
+      type: 'select',
+      required: true,
+      placeholder: '请选择测试层级',
+      reset: function () {
+        this.value = 0
+      },
+      validator: function () {
+        // @ts-ignore
+        if (!this.value && this.value !== 0) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
     },
-  },
-])
+    {
+      label: '验证类型',
+      key: 'scenario_type',
+      value: ref(0),
+      type: 'select',
+      required: true,
+      placeholder: '请选择验证类型',
+      reset: function () {
+        this.value = 0
+      },
+      validator: function () {
+        // @ts-ignore
+        if (!this.value && this.value !== 0) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+    {
+      label: '执行场景',
+      key: 'scenario_tags',
+      value: ref([]),
+      type: 'select',
+      required: true,
+      placeholder: '请选择执行场景',
+      reset: function () {
+        this.value = []
+      },
+      validator: function () {
+        if (!Array.isArray(this.value) || this.value.length === 0) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+    {
+      label: '场景描述',
+      key: 'scenario_description',
+      value: ref(''),
+      type: 'textarea',
+      placeholder: 'Given 前置条件\nWhen 用户执行某个行为\nThen 应得到某个结果',
+      reset: function () {
+        this.value = ''
+      },
+    },
+    {
+      label: '用例负责人',
+      key: 'case_people',
+      value: ref(''),
+      type: 'select',
+      required: true,
+      placeholder: '请设置用例负责人',
+      validator: function () {
+        if (!this.value) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+  ]
+}
 
 export const tableColumns = useTableColumn([
-  table.indexColumn,
+  { ...useTableIndexColumn(), align: 'center' },
   {
     title: '用例名称',
     key: 'name',
@@ -362,7 +378,7 @@ export const tableColumns = useTableColumn([
     ellipsis: true,
     tooltip: true,
   },
-  updateUserColumn(),
+  { ...updateUserColumn(), key: 'update_user' },
   {
     title: '更新时间',
     key: 'update_time',
@@ -395,3 +411,10 @@ export const tableColumns = useTableColumn([
     width: 160,
   },
 ])
+
+export const configurationColumns = [
+  { title: '配置类型', slotName: 'kind', width: 110, align: 'center' as const },
+  { title: '所在位置', dataIndex: 'location', width: 330, ellipsis: true, tooltip: true },
+  { title: '内容（展开查看完整配置）', slotName: 'content', ellipsis: true, tooltip: true },
+  { title: '状态', slotName: 'enabled', width: 80, align: 'center' as const },
+]

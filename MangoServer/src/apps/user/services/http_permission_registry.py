@@ -61,6 +61,8 @@ HTTP_PERMISSION_RULES = {
     ('src.apps.auto_api.api.views.api_case.ApiCaseViews', 'case_name', 'get'): ('api.case:read', 'timing.tasks:read', 'api.module_coverage:read'),
     ('src.apps.auto_api.api.views.api_case.ApiCaseViews', 'configuration_details', 'get'): 'api.case:read',
     ('src.apps.auto_api.api.views.api_case.ApiCaseViews', 'configuration_summary', 'get'): 'api.case:read',
+    ('src.apps.auto_api.api.views.api_case.ApiCaseViews', 'resource_cleanup_results', 'get'): 'api.case:read',
+    ('src.apps.auto_api.api.views.api_case.ApiCaseViews', 'resource_cleanup_retry', 'post'): 'api.case:read',
     ('src.apps.auto_api.api.views.api_case.ApiCaseViews', 'copy_case', 'post'): 'api.case:add',
     ('src.apps.auto_api.api.views.api_case.ApiCaseViews', 'execution_options', 'get'): 'api.case:read',
     ('src.apps.auto_api.api.views.api_case.ApiCaseViews', 'get_bound_tasks', 'get'): 'api.case:read',

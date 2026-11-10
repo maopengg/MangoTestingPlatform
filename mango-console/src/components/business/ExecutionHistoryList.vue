@@ -6,26 +6,18 @@
     </div>
     <mango-panel-spin :loading="loading" class="mango-execution-history-list__spin">
       <div class="mango-execution-history-list__body mango-native-scrollbar">
-        <a-empty
-          v-if="!items.length"
-          :description="emptyText"
-          class="mango-execution-history-list__empty"
-        />
+        <div v-if="errorText" class="mango-execution-history-list__empty mango-empty-state">
+          {{ errorText }}
+          <a-button size="small" :loading="loading" @click="emit('retry')">重试</a-button>
+        </div>
+        <div v-else-if="!items.length" class="mango-execution-history-list__empty mango-empty-state">{{ emptyText }}</div>
         <template v-else>
           <button
             v-for="item in items"
             :key="item.id"
-            v-memo="[
-              item.title,
-              item.statusText,
-              item.time,
-              item.actor,
-              item.latest,
-              item.sourceText,
-              item.statusColor,
-              String(selectedId) === String(item.id),
-            ]"
             type="button"
+            :aria-pressed="selectedId !== null && String(selectedId) === String(item.id)"
+            :disabled="loading"
             class="mango-execution-history-list__item"
             :class="[
               `mango-execution-history-list__item--${statusTone(item.statusColor)}`,
@@ -63,19 +55,22 @@
   withDefaults(
     defineProps<{
       items: ExecutionHistoryItem[]
-      selectedId?: number | string
+      selectedId?: number | string | null
       loading?: boolean
       emptyText?: string
+      errorText?: string
     }>(),
     {
       selectedId: '',
       loading: false,
       emptyText: '暂无执行结果',
+      errorText: '',
     }
   )
 
   const emit = defineEmits<{
     (event: 'select', id: number | string): void
+    (event: 'retry'): void
   }>()
 
   function statusTone(color?: string) {

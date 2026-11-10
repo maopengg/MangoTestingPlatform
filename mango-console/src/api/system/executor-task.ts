@@ -1,18 +1,21 @@
 import { get, post } from '@/api/http'
 
-export function getExecutorTask(taskId: number | string) {
+export function getExecutorTask(taskId: number | string, silentError = false) {
   return get({
     url: '/system/executor/task',
     data: () => ({ task_id: taskId }),
+    silentError,
   })
 }
 
 export function getActiveExecutorTasks(
-  data: { business_type?: string; business_id?: number | string } = {}
+  data: { business_type?: string; business_id?: number | string } = {},
+  silentError = false,
 ) {
   return get({
     url: '/system/executor/task/active',
     data: () => data,
+    silentError,
   })
 }
 

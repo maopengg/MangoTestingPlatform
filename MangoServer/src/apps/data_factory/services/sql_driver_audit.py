@@ -6,6 +6,28 @@ from sqlalchemy import event
 
 from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService
 from src.apps.data_factory.enums.audit import DatasourceAuditSourceEnum, DatasourceAuditStageEnum
+from src.apps.data_factory.enums.performance import DatasourceTimingPhaseEnum as Phase
+from src.apps.data_factory.services.datasource_timing import DatasourceTimingService as Timing
+
+
+class TimedResultCursor:
+    def __init__(self, cursor):
+        self.cursor = cursor
+
+    def __getattr__(self, key):
+        return getattr(self.cursor, key)
+
+    def fetchone(self):
+        with Timing.measure(Phase.FETCH):
+            return self.cursor.fetchone()
+
+    def fetchmany(self, *args, **kwargs):
+        with Timing.measure(Phase.FETCH):
+            return self.cursor.fetchmany(*args, **kwargs)
+
+    def fetchall(self):
+        with Timing.measure(Phase.FETCH):
+            return self.cursor.fetchall()
 
 
 class AuditedResultCursor:
@@ -39,8 +61,9 @@ class AuditedResultCursor:
         record.row_count = self.count
         record.duration_ms = round(self.duration_ms, 2)
         record.is_slow = record.duration_ms > record.slow_threshold_ms
+        record.source_detail = {**record.source_detail, 'timing_ms': Timing.delta(self.handle.timing_started)}
         SqlExecutionAuditService.save_completion(record, update_fields=[
-            'result_preview', 'result_truncated', 'row_count', 'duration_ms', 'is_slow', 'update_time',
+            'result_preview', 'result_truncated', 'row_count', 'duration_ms', 'is_slow', 'source_detail', 'update_time',
         ])
 
     def fetchone(self):
@@ -72,6 +95,7 @@ class SqlDriverAuditService:
     @staticmethod
     def attach(engine, database):
         from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService
+        engine.pool._mango_database_id = database.id
 
         @event.listens_for(engine, 'commit')
         def check_commit_ownership(connection):
@@ -97,11 +121,13 @@ class SqlDriverAuditService:
             from src.apps.data_factory.services.cleanup_persistence import CleanupPersistenceService
             CleanupPersistenceService.check()
             context.mango_audit = None
+            context.mango_timing_started = Timing.snapshot()
             context.mango_permit = DatasourceGovernorService.operation(database, physical=True)
             admission = context.mango_permit.__enter__()
             context.mango_admission_wait_ms = (admission or {}).get('admission_wait_ms', 0)
             try:
                 prepare_audit(statement, parameters, context)
+                context.mango_execute_started = perf_counter()
             except BaseException as error:
                 context.mango_permit.__exit__(type(error), error, error.__traceback__)
                 context.mango_permit = None
@@ -117,11 +143,16 @@ class SqlDriverAuditService:
             context.mango_audit = start(statement, parameters, parent=parent)
             # 此审计在取得名额后才创建；单独补记前置等待，不混入 SQL 执行时长。
             context.mango_audit.admission_wait_ms = context.mango_admission_wait_ms
+            context.mango_audit.timing_started = context.mango_timing_started
             if parent is not None:
                 parent.children.append(context.mango_audit)
 
         @event.listens_for(engine, 'after_cursor_execute')
         def after_execute(connection, cursor, statement, parameters, context, executemany):
+            Timing.add(Phase.EXECUTE, perf_counter() - context.mango_execute_started)
+            context.mango_execute_started = None
+            if cursor.description:
+                context.cursor = TimedResultCursor(cursor)
             permit = getattr(context, 'mango_permit', None)
             if permit is not None:
                 permit.__exit__(None, None, None)
@@ -134,10 +165,14 @@ class SqlDriverAuditService:
                 'columns': [item[0] for item in cursor.description or []],
             }, round((perf_counter() - handle.started_monotonic) * 1000, 2))
             if cursor.description:
-                context.cursor = AuditedResultCursor(cursor, handle)
+                context.cursor = AuditedResultCursor(context.cursor, handle)
 
         @event.listens_for(engine, 'handle_error')
         def failed(error_context):
+            started = getattr(error_context.execution_context, 'mango_execute_started', None)
+            if started is not None:
+                error_context.execution_context.mango_execute_started = None
+                Timing.add(Phase.EXECUTE, perf_counter() - started)
             if error_context.connection is not None and (error_context.is_disconnect
                     or DatasourceGovernorService.outcome_unknown(error_context.original_exception)):
                 error_context.original_exception._datasource_outcome_unknown = True

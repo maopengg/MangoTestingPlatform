@@ -19,14 +19,15 @@ export function postUiPublic(data: object) {
 }
 
 export function putUiPublic(data: object) {
-  return put({ url: '/ui/public',
+  return put({
+    url: '/ui/public',
     data: () => {
       return data
     },
   })
 }
 
-export function deleteUiPublic(id: number | string[] | number[]) {
+export function deleteUiPublic(id: number | string | Array<number | string>) {
   return deleted({
     url: '/ui/public',
     data: () => {
@@ -37,7 +38,7 @@ export function deleteUiPublic(id: number | string[] | number[]) {
   })
 }
 
-export function putUiPublicPutStatus(id: number, status: number) {
+export function putUiPublicPutStatus(id: number | string, status: number) {
   return put({
     url: '/ui/public/status',
     data: () => {

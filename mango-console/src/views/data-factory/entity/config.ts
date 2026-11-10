@@ -1,68 +1,76 @@
-import { useTable, useTableColumn } from '@/hooks/table'
+import { useTableIndexColumn, useTableColumn } from '@/hooks/table'
 import { FormItem } from '@/types/components'
 import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
 import { createUpdateUserCondition, updateTimeColumn, updateUserColumn } from '@/utils/update-user'
 import { enableMultiSelectSearch } from '@/utils/search-condition'
 
-const table = useTable()
+export const entityScrollX = 2340
+export const enumFieldNames = { value: 'key', label: 'title' }
+export const statusOptions = [
+  { key: 1, title: '启用' },
+  { key: 0, title: '禁用' },
+]
+export const sqlOperationOptions = [{ key: 2, title: 'SQL' }]
 
-export const entityConditionItems: Array<FormItem> = reactive([
-  {
-    key: 'id',
-    label: 'ID',
-    type: 'input',
-    placeholder: '请输入ID',
-    value: createIdSearchValue(),
-  },
-  {
-    key: 'project_product',
-    label: '项目/产品',
-    value: ref(''),
-    type: 'cascader',
-    placeholder: '请选择产品',
-  },
-  {
-    key: 'module',
-    label: '模块名称',
-    type: 'select',
-    placeholder: '请选择模块名称',
-    value: ref(''),
-  },
-  {
-    key: 'datasource_alias',
-    label: '逻辑数据库',
-    type: 'select',
-    placeholder: '请选择逻辑源',
-    value: ref(''),
-  },
-  {
-    key: 'name',
-    label: '实体名称',
-    type: 'input',
-    placeholder: '请输入实体名称',
-    value: ref(''),
-  },
-  {
-    key: 'table_name',
-    label: '表名',
-    type: 'input',
-    placeholder: '请输入表名',
-    value: ref(''),
-  },
-  {
-    key: 'status',
-    label: '状态',
-    type: 'select',
-    placeholder: '请选择状态',
-    value: ref(''),
-  },
-  createUpdateUserCondition(),
-])
-enableMultiSelectSearch(entityConditionItems)
+export function createConditionItems() {
+  const fields: Array<Omit<FormItem, 'disabled'>> = [
+    {
+      key: 'id',
+      label: 'ID',
+      type: 'input',
+      placeholder: '请输入ID',
+      value: createIdSearchValue(),
+    },
+    {
+      key: 'project_product',
+      label: '项目/产品',
+      value: ref(''),
+      type: 'cascader',
+      placeholder: '请选择产品',
+    },
+    {
+      key: 'module',
+      label: '模块名称',
+      type: 'select',
+      placeholder: '请选择模块名称',
+      value: ref(''),
+    },
+    {
+      key: 'datasource_alias',
+      label: '逻辑数据库',
+      type: 'select',
+      placeholder: '请选择逻辑源',
+      value: ref(''),
+    },
+    {
+      key: 'name',
+      label: '实体名称',
+      type: 'input',
+      placeholder: '请输入实体名称',
+      value: ref(''),
+    },
+    {
+      key: 'table_name',
+      label: '表名',
+      type: 'input',
+      placeholder: '请输入表名',
+      value: ref(''),
+    },
+    {
+      key: 'status',
+      label: '状态',
+      type: 'select',
+      placeholder: '请选择状态',
+      value: ref(''),
+    },
+    createUpdateUserCondition(),
+  ]
+  return enableMultiSelectSearch(reactive(fields))
+}
 
 export const entityTableColumns = useTableColumn([
-  table.indexColumn,
+  { ...useTableIndexColumn(), align: 'center' },
   {
     title: '逻辑数据库',
     key: 'datasource_alias',
@@ -103,38 +111,46 @@ export const entityTableColumns = useTableColumn([
     title: '主键',
     key: 'primary_key',
     dataIndex: 'primary_key',
+    align: 'center',
     width: 100,
   },
   {
     title: '创建方式',
     key: 'create_type',
     dataIndex: 'create_type',
+    align: 'center',
     width: 110,
   },
   {
     title: '删除方式',
     key: 'delete_type',
     dataIndex: 'delete_type',
+    align: 'center',
     width: 110,
   },
   {
     title: '清理顺序',
     key: 'cleanup_order',
     dataIndex: 'cleanup_order',
+    align: 'center',
     width: 100,
   },
   {
     title: '状态',
     key: 'status',
     dataIndex: 'status',
+    align: 'center',
     width: 100,
   },
   {
     title: '状态变更来源',
     key: 'status_change_source',
     dataIndex: 'status_change_source',
+    align: 'center',
     width: 150,
   },
+  { ...updateUserColumn(), key: 'update_user' },
+  { ...updateTimeColumn(), key: 'update_time' },
   {
     title: '项目/产品',
     key: 'project_product',
@@ -153,14 +169,13 @@ export const entityTableColumns = useTableColumn([
     ellipsis: true,
     tooltip: true,
   },
-  updateUserColumn(),
-  updateTimeColumn(),
   {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 180,
+    width: 160,
+    align: 'center',
   },
 ])
 
@@ -175,12 +190,14 @@ export const entityStatusLogColumns = useTableColumn([
     title: '状态变更',
     key: 'status_change',
     dataIndex: 'status_change',
+    align: 'center',
     width: 150,
   },
   {
     title: '变更来源',
     key: 'source_name',
     dataIndex: 'source_name',
+    align: 'center',
     width: 150,
   },
   {
@@ -244,18 +261,21 @@ export const fieldRuleColumns = useTableColumn([
     title: '可空',
     key: 'nullable',
     dataIndex: 'nullable',
+    align: 'center',
     width: 80,
   },
   {
     title: '主键',
     key: 'primary_key',
     dataIndex: 'primary_key',
+    align: 'center',
     width: 80,
   },
   {
     title: '自增',
     key: 'autoincrement',
     dataIndex: 'autoincrement',
+    align: 'center',
     width: 80,
   },
   {
@@ -274,6 +294,7 @@ export const fieldRuleColumns = useTableColumn([
     title: '排序',
     key: 'sort',
     dataIndex: 'sort',
+    align: 'center',
     width: 100,
   },
 ])
@@ -301,6 +322,7 @@ export const batchEntityTableColumns = useTableColumn([
     title: '状态',
     key: 'status',
     dataIndex: 'status',
+    align: 'center',
     width: 120,
   },
   {

@@ -1,3 +1,4 @@
+import type { CallbackRuleDraft } from '../types'
 export function callbackRulesForStep(rules: any[], stepId: number | string | undefined) {
   if (!stepId) return []
   return rules.filter((rule) => rule.trigger_step_key === `step-${stepId}`)
@@ -120,3 +121,45 @@ export const deliveryColumns = [
   { title: 'HTTP', dataIndex: 'response_status', width: 70, align: 'center' },
   { title: '操作', slotName: 'actions', width: 120, fixed: 'right', align: 'center' },
 ] as any[]
+
+export function createCallbackRuleDraft(
+  key: string,
+  step: string,
+  name: string,
+  newKey: () => string = () => globalThis.crypto.randomUUID()
+): CallbackRuleDraft {
+  return {
+    key,
+    name,
+    enabled: true,
+    trigger_step_key: step,
+    mock_config_id: undefined,
+    correlation: {
+      source: 'business_json',
+      field: '$.header.event_id',
+      expected: { cache_key: 'callback_run_id' },
+    },
+    timeout_seconds: 30,
+    observation_seconds: 0,
+    max_deliveries: 100,
+    min_deliveries: 1,
+    min_retry_interval_ms: 0,
+    max_retry_interval_ms: null,
+    events: { mode: 'at_least', count: 1 },
+    event_id_source: 'business_json',
+    event_id_field: '$.header.event_id',
+    delivery_policy: 'all_observed_pass',
+    response_mode: 'observe',
+    failure_status: 400,
+    checks: [
+      {
+        key: newKey(),
+        type: 'json_compact',
+        source: 'raw_body',
+        field: '',
+        operator: 'equals',
+        expected: null,
+      },
+    ],
+  }
+}

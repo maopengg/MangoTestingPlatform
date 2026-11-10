@@ -1,5 +1,5 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody>
     <template #header></template>
     <template #default>
       <section class="mango-section-card assertion-shell">
@@ -9,151 +9,214 @@
             <p>验证断言函数的入参、预期值和结果反馈</p>
           </div>
         </div>
-        <a-space class="assertion-page" direction="vertical" fill :size="16">
-          <div class="try-card">
-            <AssertionGroupEditor
-              ref="assertionEditorRef"
-              v-model="assertionGroups"
-              :methods="assertionList"
-              :method-scopes="assertionMethodScopes"
-              :disabled="testing"
-              @testability-change="testAvailability = $event"
-            />
-            <div class="try-actions">
-              <a-button @click="assertionEditorRef?.fillExamples()" data-testid="qa-views-help-assertion-button-填入示例">填入示例</a-button>
-              <a-button @click="assertionEditorRef?.clearValues()" data-testid="qa-views-help-assertion-button-清空参数">清空参数</a-button>
-              <a-tooltip :content="testAvailability.reason" :disabled="testAvailability.allowed">
-                <span>
-                  <a-button
-                    type="primary"
-                    :loading="testing"
-                    :disabled="!testAvailability.allowed"
-                    @click="testAssertion" data-testid="qa-views-help-assertion-button-测试全部断言"
-                  >
-                    测试全部断言
-                  </a-button>
-                </span>
-              </a-tooltip>
-            </div>
-            <a-alert
-              v-if="testResult"
-              :type="testResult.status ? 'success' : 'error'"
-              :title="testResult.status ? '断言通过' : '断言失败'"
-            >
-              {{ testResult.message }}
-            </a-alert>
-            <div v-if="testResult?.groups?.length" class="assertion-test-results">
-              <div
-                v-for="group in testResult.groups"
-                :key="`${group.name}-${group.logic}`"
-                class="assertion-test-result-group"
-              >
-                <div class="assertion-test-result-group__header">
-                  <div>
-                    <strong>{{ group.name }}</strong>
-                    <a-tag size="small">{{ group.logic === 'AND' ? '且' : '或' }}</a-tag>
-                  </div>
-                  <a-tag size="small" :color="group.status ? 'green' : 'red'">
-                    {{ group.status ? '通过' : '失败' }}
-                  </a-tag>
-                </div>
-                <div class="assertion-test-result-group__items">
-                  <div
-                    v-for="(item, itemIndex) in group.items"
-                    :key="`${item.method}-${itemIndex}`"
-                    class="assertion-test-result-item"
-                  >
-                    <span>{{ itemIndex + 1 }}. {{ item.label || item.method }}</span>
-                    <span :class="item.status ? 'is-success' : 'is-error'">
-                      {{ item.status ? '通过' : '失败' }}
-                    </span>
-                    <span>{{ item.message }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <a-space direction="vertical" fill :size="12">
-            <div class="section-tip">
-              断言方法用于比较实际值和预期值，测试结果仅用于验证当前输入是否满足断言条件。
-            </div>
-            <div v-if="classGroups.length" class="method-layout">
-              <div class="category-panel">
-                <div class="category-title">方法分类</div>
-                <div class="category-list">
-                  <div
-                    v-for="section of menuSections"
-                    :key="section.value"
-                    class="category-section"
-                  >
-                    <div class="category-section-title">{{ section.title }}</div>
-                    <button
-                      v-for="item of section.children"
-                      :key="item.menuKey"
-                      class="category-item"
-                      :class="{ active: currentClassGroup?.menuKey === item.menuKey }"
-                      type="button"
-                      @click="activeGroupValue = item.menuKey"
+        <MangoPanelSpin
+          class="mango-assertion-panel"
+          :loading="catalogLoading && !assertionList.length"
+        >
+          <a-space class="assertion-page" direction="vertical" fill :size="16">
+            <div ref="tryPanel" class="try-card">
+              <AssertionGroupEditor
+                :key="editorEpoch"
+                ref="assertionEditorRef"
+                v-model="assertionGroups"
+                :methods="assertionList"
+                :method-scopes="assertionMethodScopes"
+                :disabled="editorBlocked"
+                @testability-change="testAvailability = $event"
+              />
+              <div class="try-actions">
+                <a-button
+                  size="small"
+                  :disabled="editorBlocked"
+                  @click="fillExamples"
+                  data-testid="qa-views-help-assertion-button-填入示例"
+                  >填入示例</a-button
+                >
+                <a-button
+                  size="small"
+                  :disabled="editorBlocked"
+                  @click="clearValues"
+                  data-testid="qa-views-help-assertion-button-清空参数"
+                  >清空参数</a-button
+                >
+                <a-tooltip :content="testAvailability.reason" :disabled="testAvailability.allowed">
+                  <span>
+                    <a-button
+                      type="primary"
+                      :loading="testing"
+                      :disabled="editorBlocked || !testAvailability.allowed"
+                      size="small"
+                      status="success"
+                      @click="testAssertion"
+                      data-testid="qa-views-help-assertion-button-测试全部断言"
                     >
-                      <span>{{ item.label }}</span>
-                      <span class="category-count">{{ item.children.length }}</span>
-                    </button>
+                      测试全部断言
+                    </a-button>
+                  </span>
+                </a-tooltip>
+              </div>
+              <a-alert v-if="testError" type="error">{{ testError }}</a-alert>
+              <a-alert
+                v-if="testResult"
+                :type="testResult.status ? 'success' : 'error'"
+                :title="testResult.status ? '断言通过' : '断言失败'"
+              >
+                {{ testResult.message }}
+              </a-alert>
+              <div v-if="testResult?.groups?.length" class="assertion-test-results">
+                <div
+                  v-for="(group, groupIndex) in testResult.groups"
+                  :key="`${groupIndex}-${group.name}-${group.logic}`"
+                  class="assertion-test-result-group"
+                >
+                  <div class="assertion-test-result-group__header">
+                    <div>
+                      <strong>{{ group.name }}</strong>
+                      <a-tag size="small">{{ group.logic === 'AND' ? '且' : '或' }}</a-tag>
+                    </div>
+                    <a-tag size="small" :color="group.status ? 'green' : 'red'">
+                      {{ group.status ? '通过' : '失败' }}
+                    </a-tag>
+                  </div>
+                  <div class="assertion-test-result-group__items">
+                    <div
+                      v-for="(item, itemIndex) in group.items"
+                      :key="`${item.method}-${itemIndex}`"
+                      class="assertion-test-result-item"
+                    >
+                      <span>{{ itemIndex + 1 }}. {{ item.label || item.method }}</span>
+                      <span :class="item.status ? 'is-success' : 'is-error'">
+                        {{ item.status ? '通过' : '失败' }}
+                      </span>
+                      <span>{{ item.message }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div class="method-content">
-                <method-class-card
-                  v-if="currentClassGroup"
-                  :key="currentClassGroup.menuKey"
-                  :group="currentClassGroup"
-                  @test="selectMethodForTest"
-                />
-              </div>
             </div>
-            <div v-if="!classGroups.length" class="mango-empty-state">暂无断言方法</div>
+
+            <a-space direction="vertical" fill :size="12">
+              <div class="section-tip">
+                断言方法用于比较实际值和预期值，测试结果仅用于验证当前输入是否满足断言条件。
+              </div>
+              <div
+                v-if="classGroups.length"
+                class="mango-workbench-scroll-x mango-assertion-catalog"
+              >
+                <div class="method-layout">
+                  <div class="category-panel">
+                    <div class="category-title">方法分类</div>
+                    <div class="category-list">
+                      <div
+                        v-for="section of menuSections"
+                        :key="section.value"
+                        class="category-section"
+                      >
+                        <div class="category-section-title">{{ section.title }}</div>
+                        <button
+                          v-for="item of section.children"
+                          :key="item.menuKey"
+                          class="category-item"
+                          :title="item.label"
+                          :class="{ active: currentClassGroup?.menuKey === item.menuKey }"
+                          type="button"
+                          @click="activeGroupValue = item.menuKey"
+                        >
+                          <span>{{ item.label }}</span>
+                          <span class="category-count">{{ item.children.length }}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="method-content">
+                    <method-class-card
+                      v-if="currentClassGroup"
+                      :key="currentClassGroup.menuKey"
+                      :group="currentClassGroup"
+                      :disabled="editorBlocked"
+                      @test="selectMethodForTest"
+                    />
+                  </div>
+                </div>
+              </div>
+
+            </a-space>
           </a-space>
-        </a-space>
+        </MangoPanelSpin>
       </section>
     </template>
   </TableBody>
 </template>
 
 <script lang="ts" setup>
-  import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'
-  import { Button, Message, Table, Tag } from '@arco-design/web-vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import {
+    computed,
+    nextTick,
+    onActivated,
+    onBeforeUnmount,
+    onDeactivated,
+    onMounted,
+    ref,
+    watch,
+  } from 'vue'
+  import { Message } from '@arco-design/web-vue'
+  import { useRoute } from 'vue-router'
+  import useUserStore from '@/store/modules/user'
+  import TableBody from '@/components/table/TableBody.vue'
+  import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
+  import MethodClassCard from './components/MethodClassCard.vue'
   import { getSystemAssertionList, postSystemAssertionTest } from '@/api/system/system'
   import AssertionGroupEditor from '@/components/forms/AssertionGroupEditor.vue'
+  import { stringifyLosslessJson } from '@/utils/lossless-json'
+  import { assertionMethodScopes } from './config'
+  import {
+    catalog,
+    testPayload,
+    testResult as parseTestResult,
+    type AssertionTestResult,
+  } from './records'
   import type {
     AssertionEditorGroup,
-    AssertionMethodClassGroup,
     AssertionMethodItem,
-    AssertionMethodScope,
     AssertionMethodTypeGroup,
     AssertionTestAvailability,
-    AssertionTestGroupResult,
   } from '@/types/assertion'
 
-  type MethodItem = AssertionMethodItem
-  type MethodClassGroup = AssertionMethodClassGroup & {
-    menuKey?: string
-    typeValue?: string
-    typeLabel?: string
-  }
-  type MethodTypeGroup = AssertionMethodTypeGroup
-
-  const assertionList = ref<MethodTypeGroup[]>([])
-  const assertionMethodScopes: AssertionMethodScope[] = ['public', 'mysql', 'web', 'android']
-  const activeGroupValue = ref('')
+  const assertionList = ref<AssertionMethodTypeGroup[]>([]),
+    activeGroupValue = ref('')
   const assertionEditorRef = ref<InstanceType<typeof AssertionGroupEditor> | null>(null)
-  const assertionGroups = ref<AssertionEditorGroup[]>([])
-  const testing = ref(false)
+  const assertionGroups = ref<AssertionEditorGroup[]>([]),
+    editorEpoch = ref(0),
+    tryPanel = ref<HTMLElement | null>(null)
+  const testing = ref(false),
+    catalogLoading = ref(true),
+    catalogError = ref(''),
+    testError = ref('')
   const testAvailability = ref<AssertionTestAvailability>({ allowed: true, reason: '' })
-  const testResult = ref<{
-    status: boolean
-    message: string
-    groups?: AssertionTestGroupResult[]
-  } | null>(null)
+  const testResult = ref<AssertionTestResult | null>(null)
+  const editorBlocked = computed(
+    () => testing.value || catalogLoading.value || !!catalogError.value
+  )
+  const user = useUserStore(),
+    route = useRoute()
+  const contextKey = computed(() =>
+    JSON.stringify([
+      route.fullPath,
+      user.userId,
+      user.roleId,
+      user.token,
+      user.selected_environment,
+    ])
+  )
+  let active = true,
+    mounted = false,
+    generation = 0,
+    catalogSequence = 0,
+    draftVersion = 0,
+    groupSequence = 0
 
   const classGroups = computed(() =>
     assertionList.value.flatMap((typeGroup) =>
@@ -194,157 +257,160 @@
     )
   )
 
-  onMounted(() => {
-    getSystemAssertionList()
-      .then((res) => {
-        assertionList.value = sortAssertionGroups(res.data)
+  async function loadCatalog(): Promise<boolean> {
+    if (!active) return false
+    const version = generation,
+      sequence = ++catalogSequence,
+      context = contextKey.value
+    const current = () =>
+      active &&
+      version === generation &&
+      sequence === catalogSequence &&
+      context === contextKey.value
+    catalogLoading.value = true
+    catalogError.value = ''
+    try {
+      const methods = catalog(await getSystemAssertionList())
+      if (!current()) return false
+      assertionList.value = methods
+      if (!classGroups.value.some((group) => group.menuKey === activeGroupValue.value))
         activeGroupValue.value = classGroups.value[0]?.menuKey || ''
-        assertionGroups.value = createInitialGroups(flatMethods.value[0]?.value || '')
-        nextTick(() => assertionEditorRef.value?.fillExamples())
-      })
-      .catch(console.log)
-  })
-
-  function sortAssertionGroups(groups: MethodTypeGroup[]) {
-    return [...(groups || [])].sort((left, right) => {
-      if (left.value === '函数断言') {
-        return 1
-      }
-      if (right.value === '函数断言') {
-        return -1
-      }
-      return 0
-    })
+      const initialize = !assertionGroups.value.length
+      if (initialize) assertionGroups.value = createInitialGroups(flatMethods.value[0]?.value || '')
+      ++editorEpoch.value
+      const inputVersion = draftVersion
+      await nextTick()
+      if (!current()) return false
+      if (initialize && inputVersion === draftVersion) assertionEditorRef.value?.fillExamples()
+      return true
+    } catch (loadFailure0) {
+      if (current()) (reportLoadError(loadFailure0, "断言方法加载失败，请重试", false), catalogError.value = '断言方法加载失败，请重试')
+      return false
+    } finally {
+      if (current()) catalogLoading.value = false
+    }
   }
-
-  function selectMethodForTest(record: MethodItem) {
+  function fillExamples() {
+    if (!editorBlocked.value) assertionEditorRef.value?.fillExamples()
+  }
+  function clearValues() {
+    if (!editorBlocked.value) assertionEditorRef.value?.clearValues()
+  }
+  function selectMethodForTest(record: AssertionMethodItem) {
+    if (editorBlocked.value || !flatMethods.value.some((method) => method.value === record.value))
+      return
     assertionEditorRef.value?.setSingleMethod(record.value)
     testResult.value = null
-    document.querySelector('.try-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    tryPanel.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
-
   function createInitialGroups(method: string): AssertionEditorGroup[] {
+    const id = ++groupSequence
     return [
       {
-        id: `group-${Date.now()}`,
+        id: `group-${id}`,
         name: '断言组1',
         logic: 'AND',
-        assertions: [
-          {
-            id: `assertion-${Date.now()}`,
-            method,
-            values: {},
-          },
-        ],
+        assertions: [{ id: `assertion-${id}`, method, values: {} }],
       },
     ]
   }
-
-  function testAssertion() {
+  async function testAssertion() {
+    if (!active || editorBlocked.value) return
     if (!testAvailability.value.allowed) {
       Message.warning(testAvailability.value.reason)
       return
     }
-    const assertions = assertionGroups.value.flatMap((group) => group.assertions)
-    if (!assertions.length || assertions.some((item) => !item.method)) {
+    const items = assertionGroups.value.flatMap((group) => group.assertions)
+    if (!items.length || items.some((item) => !item.method)) {
       Message.warning('请为每条断言选择断言方法')
       return
     }
+    const unavailable = items
+      .map((item) => flatMethods.value.find((method) => method.value === item.method))
+      .find((method) => method?.testable === false)
+    if (unavailable) {
+      Message.warning(unavailable.test_disabled_reason || '当前断言只能在用例运行时验证')
+      return
+    }
+    const version = generation,
+      inputVersion = draftVersion,
+      context = contextKey.value,
+      request = testPayload(assertionGroups.value)
+    const current = () =>
+      active &&
+      version === generation &&
+      inputVersion === draftVersion &&
+      context === contextKey.value
     testing.value = true
     testResult.value = null
-    postSystemAssertionTest({
-      assertions: assertionGroups.value.map((group) => ({
-        name: group.name,
-        logic: group.logic,
-        items: group.assertions.map((item) => ({
-          method: item.method,
-          ...item.values,
-        })),
-      })),
-    })
-      .then((res) => {
-        testResult.value = res.data
-      })
-      .catch(console.log)
-      .finally(() => {
-        testing.value = false
-      })
+    testError.value = ''
+    try {
+      const result = parseTestResult(await postSystemAssertionTest(request), request)
+      if (current()) testResult.value = result
+    } catch {
+      if (current()) testError.value = '断言测试请求失败或结果不匹配，输入已保留，请重试'
+    } finally {
+      testing.value = false
+    }
   }
-
-  const MethodClassCard = defineComponent({
-    name: 'MethodClassCard',
-    props: {
-      group: {
-        type: Object as () => MethodClassGroup,
-        required: true,
-      },
+  function invalidateContext() {
+    ++generation
+    ++catalogSequence
+    ++editorEpoch.value
+    assertionList.value = []
+    assertionGroups.value = []
+    activeGroupValue.value = ''
+    testResult.value = null
+    catalogError.value = ''
+    testError.value = ''
+    catalogLoading.value = false
+    testAvailability.value = { allowed: true, reason: '' }
+  }
+  watch(
+    () => stringifyLosslessJson(assertionGroups.value),
+    () => {
+      ++draftVersion
+      testResult.value = null
+      testError.value = ''
     },
-    emits: ['test'],
-    setup(props, { emit }) {
-      const columns = [
-        {
-          title: '方法',
-          dataIndex: 'value',
-          width: 220,
-          render: ({ record }: { record: MethodItem }) =>
-            h('span', { class: 'method-name' }, record.value),
-        },
-        {
-          title: '说明',
-          dataIndex: 'label',
-          ellipsis: true,
-          tooltip: true,
-        },
-        {
-          title: '参数',
-          dataIndex: 'parameter',
-          width: 260,
-          render: ({ record }: { record: MethodItem }) => {
-            const parameter = record.parameter || []
-            if (!parameter.length) {
-              return h('span', { class: 'empty-text' }, '无')
-            }
-            return h(
-              'div',
-              { class: 'parameter-tags' },
-              parameter.map((item) =>
-                h(Tag, { size: 'small', bordered: true }, () => item.n || item.f)
-              )
-            )
-          },
-        },
-        {
-          title: '操作',
-          width: 110,
-          align: 'center' as const,
-          render: ({ record }: { record: MethodItem }) =>
-            h(
-              Button,
-              {
-                size: 'mini',
-                type: 'text',
-                onClick: () => emit('test', record),
-              },
-              () => (record.testable === false ? '配置' : '测试')
-            ),
-        },
-      ]
-
-      return () =>
-        h('div', { class: 'method-group-card' }, [
-          h(Table, {
-            columns,
-            data: props.group.children,
-            pagination: false,
-            bordered: false,
-            rowKey: 'value',
-          }),
-        ])
+    { flush: 'sync' }
+  )
+  watch(
+    contextKey,
+    () => {
+      invalidateContext()
+      if (active && mounted) void loadCatalog()
     },
+    { flush: 'sync' }
+  )
+  onMounted(() => {
+    mounted = true
+    void loadCatalog()
+  })
+  onDeactivated(() => {
+    active = false
+    ++generation
+    ++catalogSequence
+    catalogLoading.value = false
+  })
+  onActivated(() => {
+    if (!active) {
+      active = true
+      if (mounted) void loadCatalog()
+    }
+  })
+  onBeforeUnmount(() => {
+    active = false
+    invalidateContext()
   })
 </script>
 
 <style lang="less" scoped>
+  .mango-assertion-panel {
+    width: 100%;
+    min-width: 0;
+  }
+
   .assertion-page {
     width: 100%;
   }
@@ -410,6 +476,11 @@
 
   .assertion-test-result-item .is-success {
     color: var(--m-success);
+  }
+
+  .assertion-test-result-item > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .assertion-test-result-item .is-error {
@@ -490,6 +561,13 @@
     color: var(--m-text);
   }
 
+  .category-item > span:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .category-item.active {
     background: var(--m-hover);
     color: var(--m-text);
@@ -526,34 +604,7 @@
     gap: 14px;
   }
 
-  .method-group-card {
-    overflow: hidden;
-    border: 1px solid var(--m-border);
-    border-radius: var(--m-radius-lg);
-    background: var(--m-surface);
-  }
-
-  .method-name {
-    font-family: Consolas, 'Courier New', monospace;
-  }
-
-  .parameter-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .empty-text {
-    color: var(--m-muted);
-  }
-
-  @media (max-width: 1px) {
-    .method-layout {
-      grid-template-columns: 1fr;
-    }
-
-    .category-panel {
-      position: static;
-    }
+  .mango-assertion-catalog {
+    --mango-workbench-min-width: 960px;
   }
 </style>

@@ -36,17 +36,21 @@
               >
             </div>
 
-            <a-spin class="mango-datasource-card-loading mango-native-scrollbar" :loading="table.tableLoading.value">
-              <div v-if="table.dataList.length" class="mango-datasource-card-list">
+            <template v-if="listFailed"><a-button size="small" :loading="listLoading" @click="doRefresh"
+                >重新加载</a-button></template>
+            <MangoPanelSpin
+              class="mango-datasource-card-loading mango-native-scrollbar"
+              :loading="listLoading"
+            >
+              <div v-if="rows.length" class="mango-datasource-card-list">
                 <article
-                  v-for="record in table.dataList"
+                  v-for="record in rows"
                   :key="record.id"
                   class="mango-datasource-card"
                   :class="{
-                    'mango-datasource-card--active':
-                      String(record.id) === String(bindingPanel.datasourceId),
+                    'mango-datasource-card--active': String(record.id) === String(selectedId),
                   }"
-                  :aria-selected="String(record.id) === String(bindingPanel.datasourceId)"
+                  :aria-selected="String(record.id) === String(selectedId)"
                   role="button"
                   tabindex="0"
                   @click="onSelectDatasource(record)"
@@ -68,7 +72,9 @@
                       @keydown.stop
                     >
                       <a-switch
+                        size="small"
                         :before-change="(checked) => onStatusChange(record, checked)"
+                        :loading="aliasUpdating.has(record.id)"
                         :model-value="record.status === 1"
                       />
                     </span>
@@ -92,23 +98,23 @@
                     <MangoTableActions
                       :max-inline="3"
                       :actions="[
-    { label: '编辑', onClick: () => onUpdate(record) },
-    { label: '删除', danger: true, onClick: () => onDelete(record) },
-]"
+                        { label: '编辑', onClick: () => onUpdate(record) },
+                        { label: '删除', danger: true, onClick: () => onDelete(record) },
+                      ]"
                     />
                   </div>
                 </article>
               </div>
-              <a-empty v-else description="暂无逻辑数据库" />
-            </a-spin>
+              <div v-else class="mango-empty-state">暂无逻辑数据库</div>
+            </MangoPanelSpin>
           </section>
 
           <section class="mango-section-card mango-datasource-detail">
             <div class="mango-section-title mango-binding-title">
               <div class="mango-section-title__main">
                 <h2>数据库绑定关系</h2>
-                <p v-if="bindingPanel.datasourceId">
-                  当前逻辑数据库：{{ bindingPanel.datasourceName }}，按测试环境绑定全局数据库配置
+                <p v-if="selectedId">
+                  当前逻辑数据库：{{ selectedDatasource?.name }}，按测试环境绑定全局数据库配置
                 </p>
                 <p v-else>请先选择左侧逻辑数据库</p>
               </div>
@@ -117,11 +123,12 @@
                   size="small"
                   :disabled="!selectedDatasource"
                   @click="onOpenQueryDrawer(selectedDatasource)"
-                >查询</a-button>
+                  >查询</a-button
+                >
                 <a-button
                   size="small"
                   type="primary"
-                  :disabled="!bindingPanel.datasourceId"
+                  :disabled="!selectedId"
                   @click="onAddBinding"
                   data-testid="qa-views-config-product-datasource-button-新增绑定"
                 >
@@ -130,14 +137,16 @@
               </a-space>
             </div>
 
+            <template v-if="bindingsFailed"><a-button size="small" :loading="bindingsLoading" @click="loadDatasourceBindings"
+                >重新加载</a-button></template>
             <a-tabs v-model:active-key="detailTab" class="mango-datasource-detail-tabs">
               <a-tab-pane key="bindings" title="环境绑定">
-                <div v-if="bindingPanel.datasourceId" class="mango-binding-table">
+                <div v-if="selectedId" class="mango-binding-table">
                   <a-table
                     :bordered="false"
                     :columns="bindingColumns"
-                    :data="bindingPanel.bindings"
-                    :loading="bindingPanel.loading"
+                    :data="bindings"
+                    :loading="bindingsLoading"
                     :pagination="false"
                     :scroll="{ x: 1230 }"
                     row-key="id"
@@ -170,13 +179,17 @@
                           {{ bindingDataSource(record)?.host || '-' }}
                         </template>
                         <template v-else-if="item.key === 'database_name'" #cell="{ record }">
-                          {{ record.database_name || (record.redis_db != null ? `DB ${record.redis_db}` : '未选默认库') }}{{ record.schema_name ? ` / ${record.schema_name}` : '' }}
+                          {{
+                            record.database_name ||
+                            (record.redis_db != null ? `DB ${record.redis_db}` : '未选默认库')
+                          }}{{ record.schema_name ? ` / ${record.schema_name}` : '' }}
                         </template>
                         <template v-else-if="item.key === 'db_c_status'" #cell="{ record }">
                           <a-switch
                             :before-change="
                               (checked) => onBindingPermissionChange(record, 'db_c_status', checked)
                             "
+                            :loading="bindingUpdating.has(record.id)"
                             :model-value="record.db_c_status === 1"
                           />
                         </template>
@@ -187,6 +200,7 @@
                                 onBindingPermissionChange(record, 'db_rud_status', checked)
                             "
                             :disabled="record.environment === 2 && record.db_rud_status !== 1"
+                            :loading="bindingUpdating.has(record.id)"
                             :model-value="record.db_rud_status === 1"
                             :title="record.environment === 2 ? '生产环境禁止开启写入权限' : ''"
                           />
@@ -194,28 +208,30 @@
                         <template v-else-if="item.key === 'actions'" #cell="{ record }">
                           <MangoTableActions
                             :actions="[
-    {
-        label: '编辑',
-        onClick: () => onEditBinding(record), },
-    {
-        label: '解绑',
-        danger: true,
-        onClick: () => onUnbindDatasource(record), },
-]"
+                              {
+                                label: '编辑',
+                                onClick: () => onEditBinding(record),
+                              },
+                              {
+                                label: '解绑',
+                                danger: true,
+                                onClick: () => onUnbindDatasource(record),
+                              },
+                            ]"
                           />
                         </template>
                       </a-table-column>
                     </template>
                   </a-table>
                 </div>
-                <a-empty v-else class="mango-binding-empty" description="请选择一个逻辑数据库" />
+                <div v-else class="mango-empty-state mango-binding-empty">请选择一个逻辑数据库</div>
               </a-tab-pane>
               <a-tab-pane v-if="supportsDatasourceTables" key="tables" title="数据表">
                 <ProductDataSourceTables
-                  v-if="bindingPanel.datasourceId"
-                  :alias-id="bindingPanel.datasourceId"
+                  v-if="selectedId"
+                  :alias-id="selectedId"
                   :product-id="String(productId || '')"
-                  :bindings="bindingPanel.bindings"
+                  :bindings="bindings"
                 />
               </a-tab-pane>
             </a-tabs>
@@ -225,820 +241,374 @@
     </template>
   </TableBody>
 
-  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
-    <template #content>
-      <a-form :model="aliasForm">
-        <a-form-item class="mango-form-item__require" label="名称">
-          <a-input
-            v-model="aliasForm.name"
-            placeholder="请输入逻辑数据库名称"
-            data-testid="qa-views-config-product-datasource-input-请输入逻辑数据库名称"
-          />
-        </a-form-item>
-        <a-form-item class="mango-form-item__require" label="数据库分类">
-          <a-select
-            v-model="aliasForm.sourceCategory"
-            :field-names="fieldNames"
-            :options="enumStore.data_source_category"
-            placeholder="请选择数据库分类"
-            value-key="key"
-            @change="onAliasCategoryChange"
-            data-testid="qa-views-config-product-datasource-select-请选择数据库分类"
-          />
-        </a-form-item>
-        <a-form-item class="mango-form-item__require" label="数据库类型">
-          <a-select
-            v-model="aliasForm.dbType"
-            :field-names="fieldNames"
-            :options="aliasSourceTypeOptions"
-            placeholder="请选择数据库类型"
-            allow-clear
-            allow-search
-            value-key="key"
-            data-testid="qa-views-config-product-datasource-select-请选择数据库类型"
-          />
-        </a-form-item>
-        <a-form-item label="描述">
-          <a-textarea
-            v-model="aliasForm.description"
-            :auto-size="{ minRows: 3, maxRows: 5 }"
-            :max-length="50"
-            placeholder="请输入描述"
-            show-word-limit
-            data-testid="qa-views-config-product-datasource-textarea-请输入描述"
-          />
-        </a-form-item>
-      </a-form>
-    </template>
-  </ModalDialog>
-
-  <a-drawer v-model:visible="queryDrawer.visible" :width="'50%'" :footer="false" unmount-on-close>
-    <template #title> {{ queryDrawerTitle }} / {{ queryDrawer.datasourceName || '-' }} </template>
-    <div class="mango-sql-query-drawer">
-      <div class="mango-sql-query-editor">
-        <div v-if="queryDrawer.sourceType === 20" class="mango-sql-query-meta">
-          <span class="mango-sql-query-label">索引名称</span>
-          <a-input
-            v-model="queryDrawer.index"
-            allow-clear
-            placeholder="请输入索引名称，例如：order-*"
-            data-testid="qa-views-config-product-datasource-input-请输入索引名称-例如-order"
-          />
-        </div>
-        <div class="mango-datasource-query-field">
-          <span class="mango-sql-query-label">{{ queryStatementLabel }}</span>
-          <a-textarea
-            v-model="queryDrawer.statement"
-            :auto-size="{ minRows: 6, maxRows: 12 }"
-            :placeholder="queryStatementPlaceholder"
-          />
-        </div>
-        <div class="mango-sql-query-meta">
-          <span class="mango-sql-query-label">测试环境</span>
-          <a-select
-            v-model="queryDrawer.testEnv"
-            :field-names="fieldNames"
-            :options="enumStore.environment_type"
-            allow-clear
-            allow-search
-            placeholder="请选择测试环境"
-            value-key="key"
-            data-testid="qa-views-config-product-datasource-select-请选择测试环境"
-          />
-        </div>
-        <div class="mango-sql-query-actions">
-          <a-button
-            size="small"
-            @click="resetQueryInput"
-            data-testid="qa-views-config-product-datasource-button-清空"
-            >清空</a-button
-          >
-          <a-button
-            size="small"
-            type="primary"
-            :loading="queryDrawer.loading"
-            @click="onQueryDatasource"
-            data-testid="qa-views-config-product-datasource-button-查询"
-          >
-            查询
-          </a-button>
-        </div>
-      </div>
-      <div class="mango-sql-query-result">
-        <div class="mango-sql-query-summary">
-          <span>查询结果</span>
-          <span class="mango-muted-text">结构化 JSON</span>
-        </div>
-        <a-spin class="mango-datasource-query-loading" :loading="queryDrawer.loading">
-          <JsonDisplay
-            v-if="queryDrawer.result !== null"
-            :data="queryDrawer.result"
-            :default-expanded="false"
-            :show-drawer-button="false"
-          />
-          <a-empty v-else description="执行查询后将在这里展示结果" />
-        </a-spin>
-      </div>
-    </div>
-  </a-drawer>
-
-  <ModalDialog
-    ref="bindingEditorDialogRef"
-    :title="bindingEditorTitle"
-    width="560px"
-    @confirm="onSaveBinding"
-  >
-    <template #content>
-      <a-form :model="bindingEditor" class="mango-binding-editor-form">
-        <a-form-item class="mango-form-item__require" label="测试环境">
-          <a-select
-            v-model="bindingEditor.environment"
-            :field-names="fieldNames"
-            :options="bindingEnvironmentOptions"
-            :disabled="bindingEditor.isEdit"
-            placeholder="请选择测试环境"
-            value-key="key"
-            data-testid="qa-views-config-product-datasource-select-请选择测试环境-2"
-          />
-        </a-form-item>
-        <a-form-item class="mango-form-item__require" label="数据库配置">
-          <a-select
-            v-model="bindingEditor.dataSource"
-            :options="dataSourceOptions"
-            :loading="bindingEditor.optionsLoading"
-            allow-search
-            placeholder="请选择全局数据库配置"
-            data-testid="qa-views-config-product-datasource-select-请选择全局数据库配置"
-          />
-        </a-form-item>
-        <DataSourceTargetFields v-model="bindingEditor.target" :source-id="bindingEditor.dataSource"
-          :source-type="dataSourceOptions.find(item => item.value === bindingEditor.dataSource)?.db_type ?? -1" />
-        <a-form-item label="读取权限">
-          <a-switch v-model="bindingEditor.allowQuery" />
-        </a-form-item>
-        <a-form-item label="写入权限">
-          <a-switch
-            v-model="bindingEditor.allowWrite"
-            :disabled="bindingEditor.environment === 2"
-          />
-          <span v-if="bindingEditor.environment === 2" class="mango-muted-text">
-            生产环境禁止开启写入权限
-          </span>
-        </a-form-item>
-      </a-form>
-    </template>
-  </ModalDialog>
+  <LogicalSourceEditor
+    ref="aliasEditorRef"
+    :product-id="productId"
+    :options-loading="optionsLoading"
+    @saved="doRefresh"
+  />
+  <LogicalBindingEditor
+    ref="bindingEditorRef"
+    :alias="selectedDatasource"
+    :product-id="productId"
+    :bindings="bindings"
+    @saved="loadDatasourceBindings"
+  />
+  <LogicalSourceQueryDrawer ref="queryRef" :product-id="productId" :alias-id="selectedId" />
 </template>
+<script setup lang="ts">
+import { reportLoadError } from '@/utils/load-error'
 
-<script lang="ts" setup>
+  import { computed, onMounted, reactive, ref, watch } from 'vue'
+  import { useRoute } from 'vue-router'
+  import { Message, Modal } from '@arco-design/web-vue'
   import {
     deleteDataFactoryDatasourceAlias,
     deleteDataFactoryDatasourceBinding,
     getDataFactoryDatasourceAlias,
     getDataFactoryDatasourceBinding,
-    postDataFactoryDatasourceAlias,
-    postDataFactoryDatasourceBinding,
     putDataFactoryDatasourceAlias,
     putDataFactoryDatasourceBinding,
   } from '@/api/data-factory'
-  import { postDataSourceExecution, queryLogicalDataSource } from '@/api/data-source-execution'
-  import JsonDisplay from '@/components/display/JsonDisplay.vue'
-  import { getSystemDataSource } from '@/api/system/data_source'
-  import { useTable } from '@/hooks/table'
-  import { fieldNames } from '@/setting'
   import { useEnum } from '@/store/modules/get-enum'
-  import useUserStore from '@/store/modules/user'
-  import { ModalDialogType } from '@/types/components'
-  import { Message, Modal } from '@arco-design/web-vue'
-  import { computed, onMounted, reactive, ref, watch } from 'vue'
-  import { useRoute } from 'vue-router'
+  import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
+  import MangoTableActions from '@/components/table/MangoTableActions.vue'
+  import { getOptionId } from '@/utils/business-format'
   import ProductDataSourceTables from './components/ProductDataSourceTables.vue'
-  import DataSourceTargetFields from '@/components/forms/DataSourceTargetFields.vue'
-  import { sortLogicalDatasources } from './config'
-
-  const route = useRoute()
+  import LogicalSourceEditor from './components/LogicalSourceEditor.vue'
+  import LogicalBindingEditor from './components/LogicalBindingEditor.vue'
+  import LogicalSourceQueryDrawer from './components/LogicalSourceQueryDrawer.vue'
+  import { useProductDatasourceScope } from './composables/useProductDatasourceScope'
+  import { sortLogicalDatasources, bindingColumns } from './config'
+  import { bindingDataSource, connectionName, sourceLabel } from './form'
+  import type {
+    EntityId,
+    LogicalSource,
+    LogicalBinding,
+    SourceConnection,
+    AliasEditorHandle,
+    BindingEditorHandle,
+    QueryDrawerHandle,
+  } from './types'
   const props = defineProps<{
     embedded?: boolean
-    projectProductId?: string | number
+    projectProductId?: EntityId
     projectProductName?: string
-    datasourceId?: string | number
+    datasourceId?: EntityId
   }>()
-  const productId = computed(() => props.projectProductId ?? route.query.id)
-  const productName = computed(() => props.projectProductName ?? route.query.name)
-  const enumStore = useEnum()
-  const userStore = useUserStore()
-  const table = useTable()
-  const modalDialogRef = ref<ModalDialogType | null>(null)
-  const bindingEditorDialogRef = ref<any>(null)
-  const data = reactive({
-    actionTitle: '新增',
-    isAdd: true,
-    updateId: 0,
+  const route = useRoute(),
+    enumStore = useEnum()
+  const productId = computed<EntityId | null>(() => {
+    const value: unknown = getOptionId(props.projectProductId ?? route.query.id)
+    return (typeof value === 'string' && value !== '') || typeof value === 'number' ? value : null
   })
-  const aliasForm = reactive({
-    name: '',
-    sourceCategory: 0,
-    dbType: 0 as number | null,
-    description: '',
-    status: 1,
-  })
-  const queryDrawer = reactive({
-    visible: false,
-    loading: false,
-    datasourceId: String(props.datasourceId || ''),
-    datasourceName: '',
-    sourceType: 0,
-    testEnv: null as number | null,
-    index: '',
-    statement: '',
-    result: null as any,
-  })
-  const bindingPanel = reactive({
-    loading: false,
-    datasourceId: '',
-    datasourceName: '',
-    bindings: [] as any[],
-  })
-  let bindingLoadVersion = 0
+  const productName = computed(
+    () =>
+      props.projectProductName ?? (typeof route.query.name === 'string' ? route.query.name : '-')
+  )
+  const datasourceDetailTitle = computed(
+    () => `产品逻辑数据库 / ${productId.value ?? '-'} / ${productName.value}`
+  )
+  const rows = ref<LogicalSource[]>([]),
+    listLoading = ref(false),
+    listFailed = ref(false),
+    optionsLoading = ref(false)
+  const selectedId = ref<number | null>(null)
+  const selectedDatasource = computed(
+    () => rows.value.find((item) => item.id === selectedId.value) ?? null
+  )
+  const bindings = ref<LogicalBinding[]>([]),
+    bindingsLoading = ref(false),
+    bindingsFailed = ref(false)
   const detailTab = ref('bindings')
-  const selectedDatasource = ref<any>(null)
+  const aliasEditorRef = ref<AliasEditorHandle | null>(null),
+    bindingEditorRef = ref<BindingEditorHandle | null>(null),
+    queryRef = ref<QueryDrawerHandle | null>(null)
+  const aliasUpdating = reactive(new Set<number>()),
+    bindingUpdating = reactive(new Set<number>())
+  let listRequest = 0,
+    bindingRequest = 0,
+    enumRequest = 0,
+    selectionVersion = 0
+  let confirmation: ReturnType<typeof Modal.confirm> | null = null
+  const scope = useProductDatasourceScope(() => [productId.value], reset, resume)
   const supportsDatasourceTables = computed(() => {
     const datasource = selectedDatasource.value
     if (datasource?.db_type == null) return false
     return [0, 1, 2, 3, 4, 20].includes(Number(datasource.db_type))
   })
-  watch(supportsDatasourceTables, (supported) => {
-    if (!supported) detailTab.value = 'bindings'
-  }, { flush: 'sync' })
-  const bindingEditor = reactive({
-    isEdit: false,
-    bindingId: null as number | null,
-    optionsLoading: false,
-    environment: null as number | null,
-    dataSource: null as number | null,
-    allowQuery: true,
-    allowWrite: false,
-    target: { database_name: '', schema_name: '', redis_db: null as number | null },
-  })
-  const dataSourceOptions = ref<any[]>([])
-  const aliasCategory = computed(() => Number(aliasForm.sourceCategory))
-  const aliasSourceTypeOptions = computed(() =>
-    (enumStore.data_source_type || []).filter((item: any) => {
-      return enumStore.data_source_type_category[item.key] === aliasCategory.value
-    })
+  watch(
+    supportsDatasourceTables,
+    (supported) => {
+      if (!supported) detailTab.value = 'bindings'
+    },
+    { flush: 'sync' }
   )
-  const bindingEditorTitle = computed(() =>
-    bindingEditor.isEdit ? '编辑环境数据库绑定' : '绑定环境数据库'
+  function closeWindows() {
+    aliasEditorRef.value?.close()
+    bindingEditorRef.value?.close()
+    queryRef.value?.close()
+    confirmation?.close()
+    confirmation = null
+  }
+  function reset() {
+    ++listRequest
+    ++bindingRequest
+    ++enumRequest
+    ++selectionVersion
+    rows.value = []
+    selectedId.value = null
+    bindings.value = []
+    listLoading.value = false
+    bindingsLoading.value = false
+    optionsLoading.value = false
+    listFailed.value = false
+    bindingsFailed.value = false
+    closeWindows()
+  }
+  function resume() {
+    void doRefresh()
+    void loadEnums()
+  }
+  async function loadEnums() {
+    if (!scope.isActive()) return
+    const request = ++enumRequest
+    optionsLoading.value = true
+    try {
+      await enumStore.getEnum()
+    } catch {
+    } finally {
+      if (request === enumRequest) optionsLoading.value = false
+    }
+  }
+  async function doRefresh() {
+    if (!scope.isActive() || productId.value === null) return
+    const current = ++listRequest,
+      version = scope.snapshot(),
+      product = productId.value
+    listLoading.value = true
+    listFailed.value = false
+    try {
+      const response = await getDataFactoryDatasourceAlias({ project_product: product })
+      if (current !== listRequest || !scope.current(version)) return
+      rows.value = sortLogicalDatasources<LogicalSource>(response.data || [])
+      const requested =
+        selectedId.value ?? (props.datasourceId === undefined ? null : Number(props.datasourceId))
+      selectedId.value =
+        rows.value.find((item) => item.id === requested)?.id ?? rows.value[0]?.id ?? null
+    } catch (loadFailure0) {
+      if (current === listRequest && scope.current(version)) (reportLoadError(loadFailure0, "加载失败，请重试", false), listFailed.value = true)
+    } finally {
+      if (current === listRequest) listLoading.value = false
+    }
+  }
+  function onSelectDatasource(record: LogicalSource) {
+    if (scope.isActive()) selectedId.value = record.id
+  }
+  watch(
+    () => props.datasourceId,
+    (value) => {
+      const id = Number(value)
+      if (rows.value.some((item) => item.id === id)) selectedId.value = id
+    }
   )
-  const bindingEnvironmentOptions = computed(() => {
-    const boundEnvironments = new Set(
-      bindingPanel.bindings
-        .map((item: any) => item.environment)
-        .filter((value: any) => value !== null && value !== undefined)
-        .map((value: any) => Number(value))
-    )
-    return (enumStore.environment_type || []).map((item: any) => {
-      const disabled = !bindingEditor.isEdit && boundEnvironments.has(Number(item.key))
-      return {
-        ...item,
-        disabled,
-        title: disabled ? `${item.title}（已绑定）` : item.title,
-      }
-    })
-  })
-
-  const datasourceDetailTitle = computed(() => {
-    const id = productId.value || '-'
-    const name = productName.value || '-'
-    return `产品逻辑数据库 / ${id} / ${name}`
-  })
-  const queryDrawerTitle = computed(() => {
-    if (queryDrawer.sourceType === 10) return 'Redis查询'
-    if (queryDrawer.sourceType === 20) return 'Elasticsearch查询'
-    return 'SQL查询'
-  })
-  const queryStatementLabel = computed(() => {
-    if (queryDrawer.sourceType === 10) return '查询命令'
-    if (queryDrawer.sourceType === 20) return 'Query DSL'
-    return '查询SQL'
-  })
-  const queryStatementPlaceholder = computed(() => {
-    if (queryDrawer.sourceType === 10) return '请输入只读命令，例如：GET user:1 或 HGETALL user:1'
-    if (queryDrawer.sourceType === 20) return '请输入 Elasticsearch Query DSL JSON'
-    return '请输入查询SQL，例如：SELECT * FROM table_name LIMIT 20'
-  })
-  const bindingColumns = [
-    {
-      title: '测试环境',
-      key: 'environment',
-      dataIndex: 'environment',
-      width: 160,
-      ellipsis: true,
-      tooltip: true,
-      align: 'center',
+  watch(
+    selectedDatasource,
+    (value, previous) => {
+      ++selectionVersion
+      ++bindingRequest
+      bindings.value = []
+      bindingsLoading.value = false
+      bindingsFailed.value = false
+      if (value?.id !== previous?.id) closeWindows()
+      if (value) void loadDatasourceBindings()
     },
-    {
-      title: '数据库别名',
-      key: 'database_alias',
-      dataIndex: 'database_alias',
-      width: 160,
-      ellipsis: true,
-      tooltip: true,
-      align: 'left',
-    },
-    {
-      title: '数据库配置',
-      key: 'data_source',
-      dataIndex: 'data_source',
-      width: 180,
-      ellipsis: true,
-      tooltip: true,
-      align: 'left',
-    },
-    {
-      title: '域名',
-      key: 'host',
-      dataIndex: 'host',
-      width: 220,
-      ellipsis: true,
-      tooltip: true,
-      align: 'left',
-    },
-    {
-      title: '主库',
-      key: 'database_name',
-      dataIndex: 'database_name',
-      width: 180,
-      ellipsis: true,
-      tooltip: true,
-      align: 'left',
-    },
-    {
-      title: '读取权限',
-      key: 'db_c_status',
-      dataIndex: 'db_c_status',
-      width: 100,
-      align: 'center',
-    },
-    {
-      title: '写入权限',
-      key: 'db_rud_status',
-      dataIndex: 'db_rud_status',
-      width: 110,
-      align: 'center',
-    },
-    {
-      title: '操作',
-      key: 'actions',
-      dataIndex: 'actions',
-      fixed: 'right',
-      width: 120,
-      align: 'center',
-    },
-  ]
-
+    { flush: 'sync' }
+  )
+  async function loadDatasourceBindings() {
+    if (!scope.isActive() || selectedId.value === null) return
+    const current = ++bindingRequest,
+      version = scope.snapshot(),
+      id = selectedId.value
+    bindingsLoading.value = true
+    bindingsFailed.value = false
+    try {
+      const response = await getDataFactoryDatasourceBinding({
+        datasource_alias: id,
+        page: 1,
+        pageSize: 999,
+      })
+      if (current === bindingRequest && scope.current(version)) bindings.value = response.data || []
+    } catch (loadFailure1) {
+      if (current === bindingRequest && scope.current(version)) (reportLoadError(loadFailure1, "加载失败，请重试", false), bindingsFailed.value = true)
+    } finally {
+      if (current === bindingRequest) bindingsLoading.value = false
+    }
+  }
   function getDatabaseTypeName(value: number) {
-    return enumStore.data_source_type?.find((item) => item.key === value)?.title || value
+    return enumStore.data_source_type?.find((item) => Number(item.key) === value)?.title ?? value
   }
-
   function getDataSourceCategoryName(value: number) {
-    return enumStore.data_source_category?.find((item) => item.key === value)?.title || value
-  }
-
-  function onAliasCategoryChange() {
-    aliasForm.dbType = aliasSourceTypeOptions.value[0]?.key ?? null
-  }
-
-  function getEnvironmentName(record: any) {
     return (
-      enumStore.environment_type?.find((item: any) => item.key === record.environment)?.title ||
+      enumStore.data_source_category?.find((item) => Number(item.key) === value)?.title ?? value
+    )
+  }
+  function getEnvironmentName(record: LogicalBinding) {
+    return (
+      enumStore.environment_type?.find((item) => Number(item.key) === record.environment)?.title ??
       `环境${record.environment}`
     )
   }
-
-  function bindingDataSource(record: any) {
-    return record.data_source || record.database || null
+  function dataSourceConnectionSummary(source: SourceConnection | null) {
+    return source ? `${connectionName(source)} · ${getDatabaseTypeName(source.db_type)}` : '-'
   }
-
-  function dataSourceDisplayLabel(dataSource: any) {
-    return dataSource?.display_name || dataSourceTechnicalName(dataSource)
-  }
-
-  function dataSourceTechnicalName(dataSource: any) {
-    if (!dataSource) return '-'
-    if (dataSource.db_type === 2) return dataSource.file_path || '-'
-    if (dataSource.db_type === 10) {
-      return `${dataSource.host}:${dataSource.port}`
-    }
-    if (dataSource.db_type === 20) {
-      const prefix = String(dataSource.extra_config?.path_prefix || '').replace(/^\/+|\/+$/g, '')
-      return `${dataSource.host}:${dataSource.port}${prefix ? `/${prefix}` : ''}`
-    }
-    return `${dataSource.host}:${dataSource.port}`
-  }
-
-  function dataSourceConnectionSummary(dataSource: any) {
-    if (!dataSource) return '-'
-    return `${dataSourceTechnicalName(dataSource)} · ${getDatabaseTypeName(dataSource.db_type)}`
-  }
-
-  function dataSourceOptionLabel(dataSource: any) {
-    return [
-      dataSourceDisplayLabel(dataSource),
-      dataSourceTechnicalName(dataSource) !== dataSourceDisplayLabel(dataSource)
-        ? dataSourceTechnicalName(dataSource)
-        : null,
-      `${dataSource.host}:${dataSource.port}`,
-    ]
-      .filter(Boolean)
-      .join(' · ')
-  }
-
   function doResetSearch() {
     window.history.back()
   }
-
-  function doRefresh() {
-    table.tableLoading.value = true
-    getDataFactoryDatasourceAlias({
-      project_product: productId.value,
-    })
-      .then((res) => {
-        const sortedRows = sortLogicalDatasources(res.data || [])
-        table.dataList.splice(0, table.dataList.length, ...sortedRows)
-        const selectedRecord =
-          table.dataList.find((record: any) => {
-            return String(record.id) === String(bindingPanel.datasourceId)
-          }) || table.dataList[0]
-        if (selectedRecord) {
-          onSelectDatasource(selectedRecord, true)
-        } else {
-          bindingLoadVersion += 1
-          bindingPanel.datasourceId = ''
-          selectedDatasource.value = null
-          bindingPanel.datasourceName = ''
-          bindingPanel.bindings = []
-          bindingPanel.loading = false
-        }
-      })
-      .finally(() => {
-        table.tableLoading.value = false
-      })
-  }
-
   function onAdd() {
-    data.actionTitle = '新增'
-    data.isAdd = true
-    aliasForm.name = ''
-    aliasForm.sourceCategory = 0
-    aliasForm.dbType = 0
-    aliasForm.description = ''
-    aliasForm.status = 1
-    modalDialogRef.value?.show()
+    aliasEditorRef.value?.open()
   }
-
-  function onUpdate(record: any) {
-    data.actionTitle = '编辑'
-    data.isAdd = false
-    data.updateId = record.id
-    aliasForm.name = record.name || ''
-    aliasForm.sourceCategory = Number(record.source_category ?? 0)
-    aliasForm.dbType = Number(record.db_type ?? 0)
-    aliasForm.description = record.description || ''
-    aliasForm.status = Number(record.status ?? 1)
-    modalDialogRef.value?.show()
+  function onUpdate(record: LogicalSource) {
+    if (!aliasUpdating.has(record.id)) aliasEditorRef.value?.open(record)
   }
-
-  function onDelete(record: any) {
-    Modal.confirm({
-      title: '删除产品逻辑源',
-      content: `确认删除 ${record.name}？删除后会影响引用它的数据实体、API SQL 和 UI SQL 配置。`,
+  function onAddBinding() {
+    bindingEditorRef.value?.open()
+  }
+  function onEditBinding(record: LogicalBinding) {
+    if (!bindingUpdating.has(record.id)) bindingEditorRef.value?.open(record)
+  }
+  function onOpenQueryDrawer(record: LogicalSource | null) {
+    if (record) queryRef.value?.open(record)
+  }
+  function confirmRemoval(
+    id: number,
+    title: string,
+    content: string,
+    pending: Set<number>,
+    remove: () => Promise<unknown>,
+    refresh: () => Promise<void>
+  ) {
+    if (!scope.isActive() || confirmation || pending.has(id)) return
+    const version = scope.snapshot(),
+      selection = selectionVersion
+    const dialog = Modal.confirm({
+      title,
+      content,
       cancelText: '取消',
-      okText: '删除',
-      onBeforeOk: () => {
-        return deleteDataFactoryDatasourceAlias(record.id)
-          .then((res) => {
-            Message.success(res.msg)
-            doRefresh()
-          })
-          .catch(console.log)
+      okText: title === '解绑数据库' ? '解绑' : '删除',
+      okButtonProps: { status: 'danger' },
+      async onBeforeOk() {
+        if (!scope.current(version) || selection !== selectionVersion || pending.has(id))
+          return false
+        pending.add(id)
+        try {
+          await remove()
+          if (scope.current(version)) {
+            Message.success('操作成功')
+            await refresh()
+          }
+          return true
+        } catch {
+          return false
+        } finally {
+          pending.delete(id)
+        }
+      },
+      onClose() {
+        if (confirmation === dialog) confirmation = null
       },
     })
+    confirmation = dialog
   }
-
-  async function onStatusChange(record: any, checked: boolean) {
-    try {
-      const res = await putDataFactoryDatasourceAlias({
-        id: record.id,
-        project_product: record.project_product?.id || record.project_product || productId.value,
+  function onDelete(record: LogicalSource) {
+    const id = record.id
+    confirmRemoval(
+      id,
+      '删除产品逻辑源',
+      `确认删除 ${record.name}？删除后会影响引用它的数据实体、API SQL 和 UI SQL 配置。`,
+      aliasUpdating,
+      () => deleteDataFactoryDatasourceAlias(id),
+      doRefresh
+    )
+  }
+  function onUnbindDatasource(record: LogicalBinding) {
+    const id = record.id
+    confirmRemoval(
+      id,
+      '解绑数据库',
+      `确认解除「${selectedDatasource.value?.name}」在「${getEnvironmentName(
+        record
+      )}」与「${sourceLabel(bindingDataSource(record))}」的绑定关系？`,
+      bindingUpdating,
+      () => deleteDataFactoryDatasourceBinding(id),
+      loadDatasourceBindings
+    )
+  }
+  async function onStatusChange(record: LogicalSource, checked: boolean): Promise<boolean> {
+    if (!scope.isActive() || aliasUpdating.has(record.id) || productId.value === null) return false
+    const id = record.id,
+      version = scope.snapshot(),
+      payload = {
+        project_product:
+          typeof record.project_product === 'object'
+            ? record.project_product.id
+            : record.project_product ?? productId.value,
         name: record.name,
         source_category: record.source_category,
         db_type: record.db_type,
         description: record.description || null,
+        id,
         status: checked ? 1 : 0,
-      })
-      record.status = checked ? 1 : 0
-      Message.success(res.msg)
+      }
+    aliasUpdating.add(id)
+    ++listRequest
+    listLoading.value = false
+    try {
+      await putDataFactoryDatasourceAlias(payload)
+      if (!scope.current(version)) return false
+      const row = rows.value.find((item) => item.id === id)
+      if (row) row.status = payload.status
+      Message.success('操作成功')
       return true
     } catch {
       return false
+    } finally {
+      aliasUpdating.delete(id)
     }
   }
-
-  function onOpenQueryDrawer(record: any) {
-    queryDrawer.visible = true
-    queryDrawer.datasourceId = record.id
-    queryDrawer.datasourceName = record.name
-    queryDrawer.sourceType = Number(record.db_type)
-    queryDrawer.testEnv = userStore.selected_environment ?? null
-    queryDrawer.index = ''
-    queryDrawer.statement =
-      queryDrawer.sourceType === 20
-        ? '{\n  "query": {\n    "match_all": {}\n  },\n  "size": 20\n}'
-        : ''
-    queryDrawer.result = null
-  }
-
-  function resetQueryInput() {
-    queryDrawer.index = ''
-    queryDrawer.statement = ''
-    queryDrawer.result = null
-  }
-
-  function onSelectDatasource(record: any, force = false) {
-    if (!force && String(record.id) === String(bindingPanel.datasourceId)) return
-    selectedDatasource.value = record
-    bindingPanel.datasourceId = record.id
-    bindingPanel.datasourceName = record.name
-    bindingPanel.bindings = []
-    loadDatasourceBindings()
-  }
-
-  function loadDatasourceBindings() {
-    if (!bindingPanel.datasourceId) {
-      return
-    }
-    const datasourceId = bindingPanel.datasourceId
-    const loadVersion = ++bindingLoadVersion
-    bindingPanel.loading = true
-    getDataFactoryDatasourceBinding({
-      datasource_alias: datasourceId,
-      page: 1,
-      pageSize: 999,
-    })
-      .then((res) => {
-        if (loadVersion !== bindingLoadVersion) return
-        bindingPanel.bindings = res.data || []
-      })
-      .finally(() => {
-        if (loadVersion !== bindingLoadVersion) return
-        bindingPanel.loading = false
-      })
-  }
-
-  function onUnbindDatasource(record: any) {
-    Modal.confirm({
-      title: '解绑数据库',
-      content: `确认解除「${bindingPanel.datasourceName}」在「${getEnvironmentName(
-        record
-      )}」与「${dataSourceDisplayLabel(bindingDataSource(record))}」的绑定关系？`,
-      cancelText: '取消',
-      okText: '解绑',
-      onBeforeOk: () => {
-        return deleteDataFactoryDatasourceBinding(record.id)
-          .then((res) => {
-            Message.success(res.msg)
-            loadDatasourceBindings()
-          })
-          .catch(console.log)
-      },
-    })
-  }
-
   async function onBindingPermissionChange(
-    record: any,
+    record: LogicalBinding,
     field: 'db_c_status' | 'db_rud_status',
     checked: boolean
-  ) {
+  ): Promise<boolean> {
+    if (
+      !scope.isActive() ||
+      bindingUpdating.has(record.id) ||
+      (field === 'db_rud_status' && checked && record.environment === 2)
+    )
+      return false
+    const id = record.id,
+      version = scope.snapshot(),
+      selection = selectionVersion,
+      status = checked ? 1 : 0
+    bindingUpdating.add(id)
+    ++bindingRequest
+    bindingsLoading.value = false
     try {
-      const res = await putDataFactoryDatasourceBinding({
-        id: record.id,
-        [field]: checked ? 1 : 0,
-      })
-      record[field] = checked ? 1 : 0
-      Message.success(res.msg)
+      await putDataFactoryDatasourceBinding({ id, [field]: status })
+      if (!scope.current(version) || selection !== selectionVersion) return false
+      const row = bindings.value.find((item) => item.id === id)
+      if (row) row[field] = status
+      Message.success('操作成功')
       return true
     } catch {
       return false
-    }
-  }
-
-  function onAddBinding() {
-    const environmentOptions = bindingEnvironmentOptions.value
-    const availableEnvironment = environmentOptions.some((item: any) => !item.disabled)
-    if (environmentOptions.length && !availableEnvironment) {
-      Message.warning('当前逻辑数据库已绑定全部测试环境，请编辑现有绑定')
-      return
-    }
-    bindingEditor.isEdit = false
-    bindingEditor.bindingId = null
-    bindingEditor.environment = null
-    bindingEditor.dataSource = null
-    bindingEditor.target = { database_name: '', schema_name: '', redis_db: null }
-    bindingEditor.allowQuery = true
-    bindingEditor.allowWrite = false
-    openBindingEditor()
-  }
-
-  function onEditBinding(record: any) {
-    bindingEditor.isEdit = true
-    bindingEditor.bindingId = Number(record.id)
-    bindingEditor.environment = record.environment
-    bindingEditor.dataSource = Number(bindingDataSource(record)?.id || record.database)
-    bindingEditor.target = { database_name: record.database_name || '', schema_name: record.schema_name || '', redis_db: record.redis_db ?? null }
-    bindingEditor.allowQuery = record.db_c_status === 1
-    bindingEditor.allowWrite = record.db_rud_status === 1
-    openBindingEditor()
-  }
-
-  function openBindingEditor() {
-    dataSourceOptions.value = []
-    bindingEditorDialogRef.value?.show()
-    bindingEditor.optionsLoading = true
-    getSystemDataSource({ page: 1, pageSize: 999 })
-      .then((res) => {
-        dataSourceOptions.value = (res.data || [])
-          .filter((item: any) => {
-            const alias = table.dataList.find(
-              (row: any) => String(row.id) === String(bindingPanel.datasourceId)
-            )
-            return (
-              item.source_category === alias?.source_category && item.db_type === alias?.db_type
-            )
-          })
-          .map((item: any) => ({
-            value: item.id,
-            db_type: item.db_type,
-            label: dataSourceOptionLabel(item),
-          }))
-      })
-      .finally(() => {
-        bindingEditor.optionsLoading = false
-      })
-  }
-
-  async function onSaveBinding() {
-    if ((!bindingEditor.isEdit && bindingEditor.environment == null) || !bindingEditor.dataSource) {
-      Message.error('请选择测试环境和数据库配置')
-      bindingEditorDialogRef.value?.setConfirmLoading(false)
-      return
-    }
-    if (
-      !bindingEditor.isEdit &&
-      bindingPanel.bindings.some(
-        (item: any) => Number(item.environment) === Number(bindingEditor.environment)
-      )
-    ) {
-      Message.error('当前逻辑数据库已绑定该测试环境，请编辑现有绑定或先解绑')
-      bindingEditorDialogRef.value?.setConfirmLoading(false)
-      return
-    }
-    if (bindingEditor.environment === 2) bindingEditor.allowWrite = false
-    try {
-      const payload: Record<string, any> = {
-        data_source: bindingEditor.dataSource,
-        ...bindingEditor.target,
-        db_c_status: bindingEditor.allowQuery ? 1 : 0,
-        db_rud_status: bindingEditor.allowWrite ? 1 : 0,
-      }
-      const request = bindingEditor.isEdit
-        ? putDataFactoryDatasourceBinding
-        : postDataFactoryDatasourceBinding
-      if (bindingEditor.isEdit) {
-        payload.id = bindingEditor.bindingId
-      } else {
-        payload.datasource_alias = bindingPanel.datasourceId
-        payload.environment = bindingEditor.environment
-      }
-      const res = await request(payload)
-      Message.success(res.msg)
-      loadDatasourceBindings()
-      bindingEditorDialogRef.value?.close()
-    } catch {
-      return
     } finally {
-      bindingEditorDialogRef.value?.setConfirmLoading(false)
+      bindingUpdating.delete(id)
     }
   }
-
-  function onQueryDatasource() {
-    const statement = queryDrawer.statement.trim()
-    if (!statement) {
-      Message.error(`请输入${queryStatementLabel.value}`)
-      return
-    }
-    if (queryDrawer.testEnv == null) {
-      Message.error('请选择测试环境')
-      return
-    }
-    const requestData: Record<string, any> = {
-      action: 'execute',
-      datasource_alias_id: queryDrawer.datasourceId,
-      project_product_id: productId.value,
-      test_env: queryDrawer.testEnv,
-    }
-    if (queryDrawer.sourceType === 10) {
-      requestData.operation_config = statement
-    } else if (queryDrawer.sourceType === 20) {
-      if (!queryDrawer.index.trim()) {
-        Message.error('请输入索引名称')
-        return
-      }
-      try {
-        requestData.query = JSON.parse(statement)
-      } catch {
-        Message.error('Query DSL 必须是合法的JSON对象')
-        return
-      }
-      if (
-        !requestData.query ||
-        Array.isArray(requestData.query) ||
-        typeof requestData.query !== 'object'
-      ) {
-        Message.error('Query DSL 必须是JSON对象')
-        return
-      }
-      requestData.operation_config = {
-        index: queryDrawer.index.trim(),
-        query: requestData.query,
-      }
-      delete requestData.query
-    } else {
-      requestData.operation_config = statement
-    }
-    const relational = [0, 1, 2].includes(queryDrawer.sourceType)
-    queryDrawer.loading = true
-    const request = relational ? queryLogicalDataSource({
-      datasource_alias_id: queryDrawer.datasourceId,
-      project_product_id: productId.value,
-      test_env: queryDrawer.testEnv,
-      sql: statement,
-    }) : postDataSourceExecution(requestData)
-    request
-      .then((res) => {
-        queryDrawer.result = res.data ?? {}
-        Message.success(res.msg)
-      })
-      .catch(console.log)
-      .finally(() => {
-        queryDrawer.loading = false
-      })
-  }
-
-  function onDataForm() {
-    if (!aliasForm.name.trim()) {
-      Message.error('请输入逻辑数据库名称')
-      modalDialogRef.value?.setConfirmLoading(false)
-      return
-    }
-    if (aliasForm.dbType == null) {
-      Message.error('请选择数据库类型')
-      modalDialogRef.value?.setConfirmLoading(false)
-      return
-    }
-    if (aliasForm.description.length > 50) {
-      Message.error('描述不能超过50字')
-      modalDialogRef.value?.setConfirmLoading(false)
-      return
-    }
-    const value: Record<string, any> = {
-      project_product: productId.value,
-      name: aliasForm.name.trim(),
-      source_category: aliasForm.sourceCategory,
-      db_type: aliasForm.dbType,
-      description: aliasForm.description.trim() || null,
-      status: aliasForm.status,
-    }
-    if (!data.isAdd) value.id = data.updateId
-    const request = data.isAdd ? postDataFactoryDatasourceAlias : putDataFactoryDatasourceAlias
-    request(value)
-      .then((res) => {
-        modalDialogRef.value?.close()
-        Message.success(res.msg)
-        doRefresh()
-      })
-      .catch(console.log)
-      .finally(() => {
-        modalDialogRef.value?.setConfirmLoading(false)
-      })
-  }
-
-  onMounted(() => {
-    enumStore.getEnum()
-    doRefresh()
-  })
+  onMounted(resume)
 </script>
-
 <style scoped>
   .mango-datasource-workbench-scroll {
     height: calc(100% - var(--m-page-gap));
@@ -1204,62 +774,6 @@
     flex: 1;
     align-items: center;
     justify-content: center;
-  }
-
-  .mango-sql-query-drawer {
-    display: flex;
-    flex-direction: column;
-    gap: var(--m-page-gap);
-    height: 100%;
-  }
-
-  .mango-sql-query-editor {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .mango-datasource-query-field {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .mango-sql-query-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-  }
-
-  .mango-sql-query-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .mango-sql-query-label {
-    flex: none;
-    color: var(--m-text);
-    font-size: 13px;
-  }
-
-  .mango-sql-query-result {
-    min-height: 0;
-    flex: 1;
-  }
-
-  .mango-datasource-query-loading {
-    display: block;
-    min-height: 240px;
-  }
-
-  .mango-sql-query-summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
-    color: var(--m-text);
-    font-size: 13px;
   }
 
   @container (max-width: 1099px) {

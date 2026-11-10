@@ -25,7 +25,7 @@ class MockStorageKeyTests(SimpleTestCase):
 
     @override_settings(VERSION="7.3.0", SECRET_KEY="example-legacy-prefix-7.3.0")
     def test_all_released_legacy_versions_remain_readable(self):
-        for version in ("7.1.1", "7.2.0", "7.2.1", "7.2.2"):
+        for version in ("7.1.1", "7.2.0", "7.2.1", "7.2.2", "7.2.3"):
             with self.subTest(version=version):
                 config = self.legacy_config(f"example-legacy-prefix-{version}")
                 self.assertEqual(Service.editable_config(config)["encrypt_key"], "example-encrypt-key")

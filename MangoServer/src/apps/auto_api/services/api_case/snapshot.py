@@ -125,6 +125,8 @@ class ApiExecutableSnapshotService:
     ) -> dict[str, Any]:
         api_case_payload = cls.serialize_model(api_case, cls.CASE_RUNTIME_FIELDS)
         api_case_payload.update(cls.current_case_config(api_case.id, api_case.project_product_id))
+        if not api_case_payload.get('resource_cleanup'):
+            api_case_payload.pop('resource_cleanup', None)
         if not api_case_payload.get('callback_checks'):
             # 未配置的新字段不改变历史修订 checksum。
             api_case_payload.pop('callback_checks', None)

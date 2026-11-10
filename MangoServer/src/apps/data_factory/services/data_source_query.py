@@ -163,10 +163,15 @@ class DataFactoryDatasourceQuery:
                 # 使用维护中的客户端传输，但保留原 RESP 结果形状，不能把 SET 的 OK
                 # 静默改成 True、或将 HSCAN 的数组改成字典而改变 Case 断言。
                 pool = client.connection_pool
-                connection = pool.get_connection()
+                from src.apps.data_factory.services.datasource_timing import DatasourceTimingService as Timing
+                from src.apps.data_factory.enums.performance import DatasourceTimingPhaseEnum as Phase
+                with Timing.measure(Phase.CONNECT):
+                    connection = pool.get_connection()
                 try:
-                    connection.send_command(*parts)
-                    result = connection.read_response()
+                    with Timing.measure(Phase.EXECUTE):
+                        connection.send_command(*parts)
+                    with Timing.measure(Phase.FETCH):
+                        result = connection.read_response()
                 except BaseException:
                     connection.disconnect()
                     raise

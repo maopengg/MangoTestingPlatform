@@ -1,5 +1,5 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody>
     <template #header>
       <TableHeader title="角色管理" />
     </template>
@@ -11,11 +11,11 @@
             <div class="mango-role-list__header">
               <div>
                 <div class="mango-role-list__title">角色</div>
-                <div class="mango-role-list__count">共 {{ table.dataList.length }} 条</div>
+                <div class="mango-role-list__count">共 {{ roles.length }} 条</div>
               </div>
               <a-button
 
-                :disabled="permissionPanel.saving"
+                :disabled="writeBusy"
                 size="small"
                 type="primary"
                 @click="onAdd"
@@ -25,15 +25,19 @@
               </a-button>
             </div>
 
-            <mango-panel-spin :loading="table.tableLoading.value">
-              <div v-if="table.dataList.length" class="mango-role-list__body">
-                <button
-                  v-for="role in table.dataList"
+            <mango-panel-spin :loading="listLoading">
+              <template v-if="listError"></template>
+              <div v-else-if="roles.length" class="mango-role-list__body">
+                <div
+                  v-for="role in roles"
                   :key="role.id"
-                  type="button"
+                  role="button"
+                  tabindex="0"
                   class="mango-role-item"
                   :class="{ 'mango-role-item--active': selectedRole?.id === role.id }"
-                  :disabled="permissionPanel.saving"
+                  :aria-disabled="writeBusy || editorVisible"
+                  @keydown.enter.self.prevent="onSelectRole(role)"
+                  @keydown.space.self.prevent="onSelectRole(role)"
                   @click="onSelectRole(role)"
                 >
                   <span class="mango-role-item__main">
@@ -45,7 +49,7 @@
                   <span class="mango-role-item__ops" @click.stop>
                     <a-button
 
-                      :disabled="isGuestRole(role) || permissionPanel.saving"
+                      :disabled="isGuestRole(role) || writeBusy"
                       size="mini"
                       type="text"
                       @click="onUpdate(role)"
@@ -55,7 +59,7 @@
                     </a-button>
                     <a-button
 
-                      :disabled="isGuestRole(role) || permissionPanel.saving"
+                      :disabled="isGuestRole(role) || writeBusy"
                       size="mini"
                       status="danger"
                       type="text"
@@ -65,7 +69,7 @@
                       删除
                     </a-button>
                   </span>
-                </button>
+                </div>
               </div>
               <div v-else class="mango-empty-state">暂无角色</div>
             </mango-panel-spin>
@@ -97,8 +101,13 @@
               </a-button>
             </div>
 
+            <div v-if="routeRefreshError" class="mango-role-error" role="alert">{{ routeRefreshError }} <a-button size="small" :loading="routeRefreshing" :disabled="writeBusy" @click="refreshOwnRoutes">刷新菜单</a-button></div>
             <mango-panel-spin :loading="permissionPanel.loading">
-              <template v-if="selectedRole">
+              <div v-if="permissionError" :class="{ 'mango-role-error': !permissionLoadFailed }">
+                <span v-if="!permissionLoadFailed" role="alert">{{ permissionError }}</span>
+                <a-button size="small" :loading="permissionPanel.loading" :disabled="writeBusy" @click="retryPermission">重新加载</a-button>
+              </div>
+              <template v-else-if="selectedRole">
                 <div class="mango-permission-summary">
                   <div>
                     <span class="mango-permission-summary__label">已选页面</span>
@@ -181,7 +190,7 @@
                 </div>
               </template>
               <div v-else class="mango-empty-state">
-                {{ selectedRole ? '没有查看角色权限的权限' : '请选择左侧角色' }}
+                请选择左侧角色
               </div>
             </mango-panel-spin>
           </section>
@@ -190,21 +199,21 @@
     </template>
   </TableBody>
 
-  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
+  <ModalDialog modal-class="mango-simple-form-modal" ref="modalDialogRef" :title="actionTitle" :width="560" @confirm="onDataForm" @cancel="closeEditor">
     <template #content>
-      <a-form :model="formModel">
-        <a-form-item
-          v-for="item of formItems"
+      <a-form auto-label-width layout="horizontal" class="mango-simple-form" :model="form" :disabled="saving">
+        <a-form-item class="mango-simple-form-item"
+          v-for="item of roleFormFields"
           :key="item.key"
           :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
           :label="item.label"
         >
           <template v-if="item.type === 'input'">
-            <a-input v-model="item.value" :placeholder="item.placeholder" />
+            <a-input v-model="form[item.key]" :placeholder="item.placeholder" />
           </template>
           <template v-else-if="item.type === 'textarea'">
             <a-textarea
-              v-model="item.value"
+              v-model="form[item.key]"
               :auto-size="{ minRows: 3, maxRows: 5 }"
               :placeholder="item.placeholder"
             />
@@ -216,317 +225,153 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, onMounted, onActivated, onDeactivated, onBeforeUnmount, reactive, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { useTable } from '@/hooks/table'
-  import { ModalDialogType } from '@/types/components'
-  import { getFormItems } from '@/utils/datacleaning'
-  import { formItems } from './config'
+  import type { ModalDialogType } from '@/types/components'
+  import { roleFormFields, roleEditorWidth } from './config'
+  import { collectTreeKeys, collectPageKeys, collectActionKeys, findPermissionNode, findParentKeys, uniqKeys, normalizeKeys, findFirstPageKey, markTreeCheckboxReadonly, homePermissionKey, isGuestRole, createRoleForm, parseRoles, parseRolePermissions, parsePermissionKeys, roleSuccess, roleMessage } from './role-permissions'
+  import type { RoleId, RoleRow, PermissionNode, PageCheckEvent } from './role-permissions'
   import usePermissionStore from '@/store/modules/permission'
   import useUserStore from '@/store/modules/user'
-  import { useRouter } from 'vue-router'
-  import {
-    deleteUserRoleList,
-    getUserRolePermission,
-    getUserAllRole,
-    postUserRoleList,
-    putUserRolePermission,
-    putUserRoleList,
-  } from '@/api/user/role'
+  import { useRoute, useRouter } from 'vue-router'
+  import { deleteUserRoleList, getUserRolePermission, getUserAllRole, postUserRoleList, putUserRolePermission, putUserRoleList } from '@/api/user/role'
 
-  const tableBody = ref()
   const modalDialogRef = ref<ModalDialogType | null>(null)
-  const table = useTable()
-  const formModel = ref({})
-  const selectedRole = ref<any>(null)
-  const homePermissionKey = 'index.home'
-  const guestRoleName = '游客'
-  const permissionStore = usePermissionStore()
-  const userStore = useUserStore()
-  const router = useRouter()
-  const loadedRoleId = ref<number | null>(null)
-  let permissionRequestId = 0
-
-  const data = reactive({
-    isAdd: false,
-    updateId: 0,
-    actionTitle: '新增',
+  const roles = ref<RoleRow[]>([]), listLoading = ref(false), listError = ref(''), permissionError = ref('')
+  const permissionLoadFailed = ref(false)
+  const selectedRole = ref<RoleRow | null>(null), loadedRoleId = ref<RoleId | null>(null)
+  const permissionStore = usePermissionStore(), userStore = useUserStore(), router = useRouter(), route = useRoute()
+  const pagePath = route.path
+  const form = reactive(createRoleForm()), editorId = ref<RoleId | null>(null), editorVisible = ref(false), saving = ref(false), deletingId = ref<RoleId | null>(null)
+  const actionTitle = computed(() => editorId.value === null ? '新增' : '编辑')
+  const permissionPanel = reactive<{ loading: boolean; saving: boolean; checkedKeys: string[]; expandedKeys: string[]; selectedKeys: string[]; treeData: PermissionNode[] }>({
+    loading: false, saving: false, checkedKeys: [], expandedKeys: [], selectedKeys: [], treeData: [],
   })
-
-  const permissionPanel = reactive({
-    loading: false,
-    saving: false,
-    checkedKeys: [] as string[],
-    expandedKeys: [] as string[],
-    selectedKeys: [] as string[],
-    treeData: [] as any[],
-  })
-
-  const selectedPage = computed(() => {
-    const selectedKey = permissionPanel.selectedKeys[0]
-    return selectedKey ? findPermissionNode(permissionPanel.treeData, selectedKey) : null
-  })
-
-  const selectedPageCount = computed(() => {
-    const pageKeys = collectPageKeys(permissionPanel.treeData).filter((key) =>
-      !findPermissionNode(permissionPanel.treeData, key)?.children?.length
-    )
-    return permissionPanel.checkedKeys.filter((key) => pageKeys.includes(key)).length
-  })
-
-  const selectedActionCount = computed(() => {
-    const actionKeys = collectActionKeys(permissionPanel.treeData)
-    return permissionPanel.checkedKeys.filter((key) => actionKeys.includes(key)).length
-  })
-
-  const selectedPageActionCount = computed(() => selectedPage.value?.actions?.length || 0)
-  const pageCheckedKeys = computed(() => {
-    const pageKeys = collectPageKeys(permissionPanel.treeData)
-    return permissionPanel.checkedKeys.filter((key) => pageKeys.includes(key))
-  })
+  const routeRefreshing = ref(false), routeRefreshError = ref('')
+  const writeBusy = computed(() => saving.value || deletingId.value !== null || permissionPanel.saving || routeRefreshing.value)
+  const selectedPage = computed(() => findPermissionNode(permissionPanel.treeData, permissionPanel.selectedKeys[0] || ''))
+  const selectedPageCount = computed(() => permissionPanel.checkedKeys.filter(key => collectPageKeys(permissionPanel.treeData).filter(key => !findPermissionNode(permissionPanel.treeData, key)?.children.length).includes(key)).length)
+  const selectedActionCount = computed(() => permissionPanel.checkedKeys.filter(key => collectActionKeys(permissionPanel.treeData).includes(key)).length)
+  const selectedPageActionCount = computed(() => selectedPage.value?.actions.length || 0)
+  const pageCheckedKeys = computed(() => permissionPanel.checkedKeys.filter(key => collectPageKeys(permissionPanel.treeData).includes(key)))
   const isSelectedGuestRole = computed(() => isGuestRole(selectedRole.value))
-
-  const isPermissionReadonly = computed(() => isSelectedGuestRole.value ||
-    permissionPanel.loading || permissionPanel.saving)
-  const canSavePermission = computed(() =>
-    !isPermissionReadonly.value &&
-    loadedRoleId.value !== null && loadedRoleId.value === selectedRole.value?.id
-  )
-  const readonlyTreeData = computed(() => {
-    if (!isPermissionReadonly.value) return permissionPanel.treeData
-    return markTreeCheckboxReadonly(permissionPanel.treeData)
-  })
-
-  function isGuestRole(role: any) {
-    return role?.name === guestRoleName
+  const isPermissionReadonly = computed(() => isSelectedGuestRole.value || permissionPanel.loading || writeBusy.value || editorVisible.value || loadedRoleId.value === null)
+  const canSavePermission = computed(() => !isPermissionReadonly.value && loadedRoleId.value === selectedRole.value?.id)
+  const readonlyTreeData = computed(() => isPermissionReadonly.value ? markTreeCheckboxReadonly(permissionPanel.treeData) : permissionPanel.treeData)
+  let mounted = false, active = true, disposed = false, needsLoad = true
+  let contextVersion = 0, listVersion = 0, permissionRequestId = 0, editorVersion = 0
+  let routeEpoch = 0, pendingRouteSession: string | null = null
+  let confirmation: ReturnType<typeof Modal.confirm> | null = null
+  let listPending: Promise<void> | null = null
+  const available = () => mounted && active && !disposed && route.path === pagePath && document.visibilityState === 'visible'
+  const sessionKey = () => JSON.stringify([route.fullPath, userStore.userId, userStore.roleId, userStore.token, userStore.selected_environment])
+  const identity = () => JSON.stringify([sessionKey(), permissionStore.permissionKeys])
+  const current = (version: number, key: string) => available() && version === contextVersion && key === identity()
+  function clearPermissions() {
+    permissionRequestId++; loadedRoleId.value = null; permissionError.value = ''
+    permissionLoadFailed.value = false
+    Object.assign(permissionPanel, { loading: false, checkedKeys: [], expandedKeys: [], selectedKeys: [], treeData: [] })
   }
-
-  function markTreeCheckboxReadonly(items: any[]): any[] {
-    return items.map((item) => ({
-      ...item,
-      disableCheckbox: true,
-      children: markTreeCheckboxReadonly(item.children || []),
-    }))
+  function doRefresh(): Promise<void> {
+    if (!available()) { needsLoad = true; return Promise.resolve() }
+    if (listPending) return listPending
+    const version = ++listVersion, context = contextVersion, key = identity()
+    const valid = () => version === listVersion && current(context, key)
+    listLoading.value = true; listError.value = ''; needsLoad = false
+    const pending = (async () => {
+      try {
+        const result = parseRoles(await getUserAllRole())
+        if (!valid()) return
+        roles.value = result
+        const previous = selectedRole.value
+        const next = result.find(role => String(role.id) === String(previous?.id)) || result[0] || null
+        selectedRole.value = next
+        if (!next) clearPermissions()
+        else if (!previous || previous.id !== next.id || loadedRoleId.value === null) { clearPermissions(); void onSelectRole(next) }
+      } catch (error) {
+        if (valid()) { roles.value = []; selectedRole.value = null; clearPermissions(); (reportLoadError(error, "角色加载失败，请重试", false), listError.value = roleMessage(error, '角色加载失败，请重试')) }
+      } finally { if (valid()) listLoading.value = false }
+    })()
+    listPending = pending
+    void pending.finally(() => { if (listPending === pending) listPending = null })
+    return pending
   }
-
-  function doRefresh() {
-    table.tableLoading.value = true
-    getUserAllRole()
-      .then((res) => {
-        table.dataList = (res.data || [])
-          .map((role: any) => ({
-            id: role.key,
-            name: role.title,
-            description: role.description,
-          }))
-          .sort((prev: any, next: any) => Number(isGuestRole(prev)) - Number(isGuestRole(next)))
-        if (!selectedRole.value && table.dataList.length) {
-          onSelectRole(table.dataList[0])
-        } else if (selectedRole.value) {
-          const freshRole = table.dataList.find((role) => role.id === selectedRole.value.id)
-          if (freshRole) {
-            selectedRole.value = freshRole
-          } else {
-            selectedRole.value = table.dataList[0] || null
-            if (selectedRole.value) {
-              onSelectRole(selectedRole.value)
-            }
-          }
-        }
-      })
-      .catch(console.log)
-      .finally(() => {
-        table.tableLoading.value = false
-      })
-  }
-
-  async function onSelectRole(role: any) {
-    if (permissionPanel.saving) return
-    const requestId = ++permissionRequestId
-    selectedRole.value = role
-    loadedRoleId.value = null
-    permissionPanel.treeData = []
-    permissionPanel.checkedKeys = []
-    permissionPanel.selectedKeys = []
-    permissionPanel.loading = false
-
+  async function onSelectRole(role: RoleRow): Promise<void> {
+    if (!available() || writeBusy.value || editorVisible.value) return
+    clearPermissions(); selectedRole.value = role
+    const requestId = permissionRequestId, context = contextVersion, key = identity(), id = role.id
+    const valid = () => requestId === permissionRequestId && current(context, key) && selectedRole.value?.id === id
     permissionPanel.loading = true
     try {
-      const res = await getUserRolePermission(role.id)
-      if (requestId === permissionRequestId && selectedRole.value?.id === role.id) {
-        permissionPanel.treeData = toPermissionTree(res.data?.tree || [])
-        permissionPanel.checkedKeys = res.data?.checked_keys || []
-        permissionPanel.expandedKeys = []
-        permissionPanel.selectedKeys = [findFirstPageKey(permissionPanel.treeData)]
-        loadedRoleId.value = role.id
-      }
+      const result = parseRolePermissions(await getUserRolePermission(id))
+      if (!valid()) return
+      permissionPanel.treeData = result.tree; permissionPanel.checkedKeys = result.checkedKeys
+      permissionPanel.selectedKeys = [findFirstPageKey(result.tree)]; loadedRoleId.value = id
     } catch (error) {
-      console.log(error)
-    } finally {
-      if (requestId === permissionRequestId) permissionPanel.loading = false
-    }
-  }
-
-  function onAdd() {
-    data.actionTitle = '新增'
-    data.isAdd = true
-    modalDialogRef.value?.toggle()
-    formItems.forEach((it) => {
-      if (it.reset) {
-        it.reset()
-      } else {
-        it.value = ''
+      if (valid()) {
+        reportLoadError(error, '权限加载失败，请重试')
+        permissionLoadFailed.value = true
+        permissionError.value = roleMessage(error, '权限加载失败，请重试')
       }
-    })
-  }
-
-  function onUpdate(item: any) {
-    if (isGuestRole(item)) {
-      Message.warning('游客角色为系统内置角色，仅支持查看')
-      return
     }
-    data.actionTitle = '编辑'
-    data.isAdd = false
-    data.updateId = item.id
-    modalDialogRef.value?.toggle()
-    nextTick(() => {
-      formItems.forEach((it) => {
-        const propName = item[it.key]
-        if (typeof propName === 'object' && propName !== null) {
-          it.value = propName.id
-        } else {
-          it.value = propName
-        }
-      })
-    })
+    finally { if (valid()) permissionPanel.loading = false }
   }
-
-  function onDelete(record: any) {
-    if (isGuestRole(record)) {
-      Message.warning('游客角色为系统内置角色，不允许删除')
-      return
+  function retryPermission() { if (selectedRole.value) return onSelectRole(selectedRole.value) }
+  function closeEditor() {
+    editorVersion++; editorVisible.value = false; editorId.value = null
+    Object.assign(form, createRoleForm()); void modalDialogRef.value?.close()
+  }
+  function openEditor(role: RoleRow | null) {
+    if (!available() || writeBusy.value) return
+    if (isGuestRole(role)) { Message.warning('游客角色为系统内置角色，仅支持查看'); return }
+    confirmation?.close(); confirmation = null; editorVersion++
+    editorId.value = role?.id ?? null; Object.assign(form, createRoleForm(role ?? undefined)); editorVisible.value = true
+    void modalDialogRef.value?.show()
+  }
+  function onAdd() { openEditor(null) }
+  function onUpdate(role: RoleRow) { openEditor(role) }
+  async function onDataForm(): Promise<void> {
+    if (!available() || !editorVisible.value || writeBusy.value) { if (!saving.value) modalDialogRef.value?.setConfirmLoading(false); return }
+    if (!form.name.trim()) { Message.error('请输入角色名称'); modalDialogRef.value?.setConfirmLoading(false); return }
+    const draft = createRoleForm(form), id = editorId.value, generation = editorVersion, context = contextVersion, key = identity()
+    const valid = () => current(context, key) && editorVisible.value && generation === editorVersion
+    saving.value = true
+    try {
+      const result = roleSuccess(await (id === null ? postUserRoleList(draft) : putUserRoleList({ ...draft, id })))
+      if (!valid()) return
+      Message.success(roleMessage(result, '保存成功')); closeEditor(); invalidateList(); needsLoad = true
+    } catch (error) { if (valid()) Message.error(roleMessage(error, '保存失败，请重试')) }
+    finally {
+      saving.value = false
+      if (generation === editorVersion) modalDialogRef.value?.setConfirmLoading(false)
+      if (!valid()) { invalidateList(); needsLoad = true }
+      resume()
     }
-    Modal.confirm({
-      title: '提示',
-      content: `是否要删除角色「${record.name}」？`,
-      cancelText: '取消',
-      okText: '删除',
-      onBeforeOk: () => {
-        return deleteUserRoleList(record.id)
-          .then((res) => {
-            Message.success(res.msg)
-          })
-          .catch(console.log)
-          .finally(() => {
-            doRefresh()
-          })
+  }
+  function onDelete(role: RoleRow) {
+    if (!available() || writeBusy.value || editorVisible.value || confirmation) return
+    if (isGuestRole(role)) { Message.warning('游客角色为系统内置角色，不允许删除'); return }
+    const id = role.id, context = contextVersion, key = identity()
+    let closed = false
+    const valid = () => !closed && confirmation === handle && current(context, key)
+    const close = () => { closed = true; if (confirmation === handle) confirmation = null }
+    const handle = Modal.confirm({ title: '提示', content: `是否要删除角色「${role.name}」？`, cancelText: '取消', okText: '删除',
+      onCancel: close,
+      onBeforeOk: async () => {
+        if (!valid() || writeBusy.value) return false
+        deletingId.value = id
+        try {
+          const result = roleSuccess(await deleteUserRoleList(id))
+          if (!valid()) return false
+          Message.success(roleMessage(result, '删除成功')); close(); invalidateList(); needsLoad = true; return true
+        } catch (error) { if (valid()) Message.error(roleMessage(error, '删除失败，请重试')); return false }
+        finally { deletingId.value = null; if (!valid()) { invalidateList(); needsLoad = true }; resume() }
       },
     })
+    confirmation = handle
   }
-
-  function onDataForm() {
-    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      const value = getFormItems(formItems)
-      if (data.isAdd) {
-        postUserRoleList(value)
-          .then((res) => {
-            modalDialogRef.value?.toggle()
-            Message.success(res.msg)
-            doRefresh()
-          })
-          .catch(console.log)
-          .finally(() => {
-            modalDialogRef.value?.setConfirmLoading(false)
-          })
-        return
-      }
-
-      value.id = data.updateId
-      putUserRoleList(value)
-        .then((res) => {
-          modalDialogRef.value?.toggle()
-          Message.success(res.msg)
-          doRefresh()
-        })
-        .catch(console.log)
-        .finally(() => {
-          modalDialogRef.value?.setConfirmLoading(false)
-        })
-    } else {
-      modalDialogRef.value?.setConfirmLoading(false)
-    }
-  }
-
-  function toPermissionTree(items: any[]) {
-    return (items || [])
-      .map((item) => {
-        const key = item.permissionKey || item.menuKey
-        if (!key) return null
-        return {
-          key,
-          title: item.menuName || item.permissionName || key,
-          disabled: key === homePermissionKey,
-          actions: item.actions || [],
-          children: toPermissionTree(item.children || []),
-        }
-      })
-      .filter(Boolean)
-  }
-
-  function collectTreeKeys(items: any[], keys: string[] = []) {
-    items.forEach((item) => {
-      keys.push(item.key)
-      collectTreeKeys(item.children || [], keys)
-    })
-    return keys
-  }
-
-  function collectPageKeys(items: any[], keys: string[] = []) {
-    items.forEach((item) => {
-      keys.push(item.key)
-      collectPageKeys(item.children || [], keys)
-    })
-    return keys
-  }
-
-  function collectActionKeys(items: any[], keys: string[] = []) {
-    items.forEach((item) => {
-      ;(item.actions || []).forEach((action: any) => keys.push(action.permissionKey))
-      collectActionKeys(item.children || [], keys)
-    })
-    return keys
-  }
-
-  function findPermissionNode(items: any[], key: string): any {
-    for (const item of items) {
-      if (item.key === key) return item
-      const child = findPermissionNode(item.children || [], key)
-      if (child) return child
-    }
-    return null
-  }
-
-  function findParentKeys(items: any[], key: string, parents: string[] = []): string[] {
-    for (const item of items) {
-      if (item.key === key) return parents
-      const childParents = findParentKeys(item.children || [], key, [...parents, item.key])
-      if (childParents.length) return childParents
-    }
-    return []
-  }
-
-  function uniqKeys(keys: string[]) {
-    return Array.from(new Set(keys))
-  }
-
-  function findFirstPageKey(items: any[]): string {
-    return items[0]?.children?.[0]?.key || items[0]?.key || ''
-  }
-
-  function normalizeKeys(keys: unknown): string[] {
-    return Array.isArray(keys) ? keys.map((key) => String(key)) : []
-  }
-
   function expandPermissionTree(expanded: boolean) {
     permissionPanel.expandedKeys = expanded ? collectTreeKeys(permissionPanel.treeData) : []
   }
@@ -535,8 +380,8 @@
     permissionPanel.selectedKeys = normalizeKeys(keys)
   }
 
-  function onPageCheck(keys: unknown, event?: any) {
-    if (isSelectedGuestRole.value) return
+  function onPageCheck(keys: unknown, event?: PageCheckEvent) {
+    if (!available() || isPermissionReadonly.value) return
     const checkedPageKeys = normalizeKeys(keys)
     const pageKeys = collectPageKeys(permissionPanel.treeData)
     const actionKeys = collectActionKeys(permissionPanel.treeData)
@@ -555,7 +400,7 @@
       const newlyCheckedPageKeys = checkedPageKeys.filter((key) => !previousPageKeys.includes(key))
       checkedActionKeys = newlyCheckedPageKeys.flatMap((key) => {
         const node = findPermissionNode(permissionPanel.treeData, key)
-        return (node?.actions || []).map((action: any) => action.permissionKey)
+        return (node?.actions || []).map((action) => action.permissionKey)
       })
       uncheckedPageKeys = previousPageKeys.filter((key) => !checkedPageKeys.includes(key))
     }
@@ -573,7 +418,7 @@
   }
 
   function onActionCheck(actionKey: string, checked: boolean | (string | number | boolean)[]) {
-    if (isSelectedGuestRole.value) return
+    if (!available() || isPermissionReadonly.value) return
     const pageKey = actionKey.split(':')[0]
     const parentKeys = findParentKeys(permissionPanel.treeData, pageKey)
     if (checked === true) {
@@ -589,40 +434,76 @@
     permissionPanel.checkedKeys = permissionPanel.checkedKeys.filter((key) => key !== actionKey)
   }
 
-  function onSavePermission() {
-    if (!selectedRole.value || !canSavePermission.value) return
-    if (isSelectedGuestRole.value) {
-      Message.warning('游客角色为系统内置角色，仅支持查看')
-      return
+  async function refreshOwnRoutes(): Promise<void> {
+    if (!available() || routeRefreshing.value) return
+    const key = sessionKey(), epoch = routeEpoch
+    const valid = () => available() && epoch === routeEpoch && key === sessionKey()
+    pendingRouteSession = null
+    routeRefreshing.value = true; routeRefreshError.value = ''
+    try {
+      await permissionStore.initPermissionRoute(true, valid)
+      if (valid() && !permissionStore.hasPermission('system.role')) await router.replace('/index/home')
+    } catch (loadFailure0) { if (valid()) (reportLoadError(loadFailure0, "加载失败，请重试", false), routeRefreshError.value = '权限已保存，但菜单刷新失败，请重试刷新菜单') }
+    finally {
+      if (!valid() && key === sessionKey()) pendingRouteSession = key
+      routeRefreshing.value = false; resume()
     }
-    permissionPanel.saving = true
-    const roleId = selectedRole.value.id
-    putUserRolePermission({
-      role_id: roleId,
-      permission_keys: [...permissionPanel.checkedKeys],
-    })
-      .then(async (res) => {
-        permissionPanel.checkedKeys = res.data || permissionPanel.checkedKeys
-        Message.success(res.msg)
-        if (roleId === userStore.roleId) {
-          await permissionStore.initPermissionRoute(true)
-          if (!permissionStore.hasPermission('system.role')) await router.replace('/index/home')
-        }
-      })
-      .catch(console.log)
-      .finally(() => {
-        permissionPanel.saving = false
-      })
   }
-
-  onMounted(() => {
-    nextTick(() => {
-      doRefresh()
-    })
-  })
+  async function onSavePermission(): Promise<void> {
+    if (!available() || !selectedRole.value || !canSavePermission.value) return
+    const roleId = selectedRole.value.id, keys = [...permissionPanel.checkedKeys]
+    const context = contextVersion, key = identity(), session = sessionKey(), generation = permissionRequestId
+    const valid = () => current(context, key) && generation === permissionRequestId && selectedRole.value?.id === roleId
+    permissionPanel.saving = true
+    let succeeded = false
+    try {
+      const result = roleSuccess(await putUserRolePermission({ role_id: roleId, permission_keys: keys }))
+      if (!valid()) {
+        if (session === sessionKey() && String(roleId) === String(userStore.roleId)) pendingRouteSession = session
+        return
+      }
+      succeeded = true
+      // The write has succeeded even if its receipt or subsequent route refresh cannot be read.
+      try { permissionPanel.checkedKeys = parsePermissionKeys(result.data) }
+      catch { clearPermissions(); permissionError.value = '权限已保存，回执格式异常，请重新读取权限' }
+      Message.success(roleMessage(result, '保存成功'))
+      if (session === sessionKey() && String(roleId) === String(userStore.roleId)) await refreshOwnRoutes()
+    } catch (error) { if (valid()) Message.error(roleMessage(error, '权限保存失败，请重试')) }
+    finally {
+      permissionPanel.saving = false
+      if (!valid() && !succeeded) { invalidateList(); needsLoad = true }
+      resume()
+    }
+  }
+  function invalidateList() { listVersion++; listPending = null; listLoading.value = false }
+  function pause(preserveRouteRefresh = false) {
+    if (!preserveRouteRefresh) routeEpoch++
+    contextVersion++; invalidateList(); clearPermissions(); needsLoad = true
+    closeEditor(); confirmation?.close(); confirmation = null
+  }
+  function resume() {
+    if (!available()) return
+    if (pendingRouteSession === sessionKey() && !writeBusy.value) { void refreshOwnRoutes(); return }
+    if (needsLoad) void doRefresh()
+    else if (selectedRole.value && loadedRoleId.value === null && !permissionPanel.loading && !permissionError.value && !writeBusy.value && !editorVisible.value) void retryPermission()
+  }
+  function onVisibility() { if (document.visibilityState !== 'visible') pause(); else resume() }
+  let previousSession = sessionKey()
+  watch(identity, () => {
+    const sessionChanged = previousSession !== sessionKey()
+    if (sessionChanged) { previousSession = sessionKey(); routeRefreshError.value = ''; pendingRouteSession = null }
+    pause(!sessionChanged); roles.value = []; selectedRole.value = null; resume()
+  }, { flush: 'sync' })
+  onMounted(() => { mounted = true; document.addEventListener('visibilitychange', onVisibility); resume() })
+  onActivated(() => { active = true; resume() })
+  onDeactivated(() => { active = false; pause() })
+  onBeforeUnmount(() => { disposed = true; pause(); document.removeEventListener('visibilitychange', onVisibility) })
 </script>
 
+
 <style scoped>
+  .mango-role-error { padding: var(--m-page-gap); color: var(--m-danger); }
+
   .mango-role-workbench {
     display: grid;
     grid-template-columns: 300px minmax(0, 1fr);
@@ -725,6 +606,11 @@
   .mango-role-item:hover {
     border-color: var(--m-border);
     background: var(--m-surface-soft);
+  }
+
+  .mango-role-item:focus-visible {
+    outline: 2px solid var(--m-primary);
+    outline-offset: 2px;
   }
 
   .mango-role-item--active {

@@ -3,14 +3,32 @@ import fs from 'node:fs'
 import test from 'node:test'
 import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
 import ts from 'typescript'
+import { coveragePage } from '../../helpers/coverage-harness.mjs'
 
 const base = new URL('../../../src/views/apitest/module-coverage/', import.meta.url)
 const source = fs.readFileSync(new URL('components/CoverageOverview.vue', base), 'utf8')
 const index = fs.readFileSync(new URL('index.vue', base), 'utf8')
+const querySource = fs.readFileSync(new URL('query.ts', base), 'utf8')
 const config = fs.readFileSync(new URL('config.ts', base), 'utf8')
 
+test('module search and status filter stay side by side in two fluid columns', () => {
+  const css = source.match(/\.mango-coverage-overview__filters\s*\{([^}]+)\}/)?.[1]
+  assert.match(css, /display:\s*grid/)
+  assert.match(css, /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/)
+  for (const control of ['search', 'filter']) {
+    const rule = source.match(
+      new RegExp(`\\.mango-coverage-overview__${control}\\s*\\{([^}]+)\\}`)
+    )?.[1]
+    assert.match(rule, /width:\s*100%/)
+    assert.match(rule, /min-width:\s*0/)
+  }
+})
+
 test('overview shows scan, interface entry, interface coverage and Case automation charts', () => {
-  assert.match(source, /① 模块接口扫描进度[\s\S]*② 接口分析进度[\s\S]*③ 用例自动化进度[\s\S]*④ 接口覆盖率/)
+  assert.match(
+    source,
+    /① 模块接口扫描进度[\s\S]*② 接口分析进度[\s\S]*③ 用例自动化进度[\s\S]*④ 接口覆盖率/
+  )
   assert.match(source, /用例自动化进度/)
   assert.match(source, /接口覆盖率/)
   assert.doesNotMatch(source, /自动化场景状态/)
@@ -25,28 +43,55 @@ test('overview shows scan, interface entry, interface coverage and Case automati
 test('module scan pie uses project-level scan summary', () => {
   assert.match(source, /props.data\?\.project_inventory_summary/)
   assert.match(source, /value: projectScanSummary.value\?\.inventoried_count/)
-  assert.match(source, /不随左侧模块变化/)
+  assert.match(source, /完整接口清单上传生效即完成<\/p>/)
+  assert.doesNotMatch(source, /不随左侧模块变化|按所选项目、产品或模块范围统计|排除接口不计入，暂缓单列|；暂不处理单列/)
   assert.doesNotMatch(source, /value: props.data.summary.scanned_count/)
 })
 
 test('interface analysis pie partitions analysis states independently of ApiInfo and supports exact drill filters', () => {
-  const code = config.slice(config.indexOf('export function getInterfaceAnalysisData'), config.indexOf('export function getInterfaceCoverageData'))
-  const { outputText } = ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS } })
+  const code = config.slice(
+    config.indexOf('export function getInterfaceAnalysisData'),
+    config.indexOf('export function getInterfaceCoverageData')
+  )
+  const { outputText } = ts.transpileModule(code, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
+  })
   const exports = {}
   new Function('exports', outputText)(exports)
-  const rows = exports.getInterfaceAnalysisData({ analyzed_interface_count: 7, pending_analysis_count: 2, analysis_gap_count: 1, deferred_analysis_count: 3, bound_count: 100 })
-  assert.deepEqual(rows.map(row => row.value), [7, 2, 1, 3])
-  assert.deepEqual(rows.map(row => row.status), ['completed', 'pending', 'gap', 'deferred'])
-  assert.equal(rows.reduce((sum, row) => sum + row.value, 0), 13)
+  const rows = exports.getInterfaceAnalysisData({
+    analyzed_interface_count: 7,
+    pending_analysis_count: 2,
+    analysis_gap_count: 1,
+    analysis_review_count: 4,
+    deferred_analysis_count: 3,
+    bound_count: 100,
+  })
+  assert.deepEqual(
+    rows.map((row) => row.value),
+    [7, 2, 1, 4, 3]
+  )
+  assert.deepEqual(
+    rows.map((row) => row.status),
+    ['completed', 'pending', 'gap', 'review', 'deferred']
+  )
+  assert.equal(
+    rows.reduce((sum, row) => sum + row.value, 0),
+    17
+  )
   assert.match(source, /query.analysis_statuses = \[analysis.status\]/)
-  assert.match(index, /filters.analysis_statuses = query.analysis_statuses/)
-  assert.match(index, /analysis_status__in: 'analysis_statuses'/)
-  assert.match(source, /scanChart\.value, entryChart\.value, coverageChart\.value, statusChart\.value/)
+  assert.match(index, /filters.analysis_statuses = \[...drillQuery.analysis_statuses\]/)
+  assert.match(querySource, /analysis_status__in: 'analysis_statuses'/)
+  assert.match(
+    source,
+    /scanChart\.value,\s*entryChart\.value,\s*coverageChart\.value,\s*statusChart\.value/
+  )
 })
 
 test('interface coverage pie partitions interfaces, independently of Case and ApiInfo counts', () => {
-  const code = config.slice(config.indexOf('export function getInterfaceCoverageData'),
-    config.indexOf('export function getAutomationStatusData'))
+  const code = config.slice(
+    config.indexOf('export function getInterfaceCoverageData'),
+    config.indexOf('export function getAutomationStatusData')
+  )
   const { outputText } = ts.transpileModule(code, {
     compilerOptions: { module: ts.ModuleKind.CommonJS },
   })
@@ -61,10 +106,15 @@ test('interface coverage pie partitions interfaces, independently of Case and Ap
     bound_count: 180,
   })
   assert.deepEqual(rows, [
-    { name: '已覆盖', value: 100 }, { name: '部分覆盖', value: 20 },
-    { name: '未覆盖', value: 50 }, { name: '暂不处理', value: 30 },
+    { name: '已覆盖', value: 100 },
+    { name: '部分覆盖', value: 20 },
+    { name: '未覆盖', value: 50 },
+    { name: '暂不处理', value: 30 },
   ])
-  assert.equal(rows.reduce((sum, row) => sum + row.value, 0), 200)
+  assert.equal(
+    rows.reduce((sum, row) => sum + row.value, 0),
+    200
+  )
   assert.match(source, /rate\(props.data.summary.interface_coverage_rate\)/)
 })
 
@@ -132,8 +182,11 @@ test('overview component and integration compile with the Vue compiler', () => {
 })
 
 test('overview starts with charts instead of duplicate metrics and explanations', () => {
-  assert.match(index, /activeTab = ref\('overview'\)/)
-  assert.doesNotMatch(source, /__summary|__metrics|__metric|__note|const cards|完整模块扫描已校验并生效/)
+  assert.match(index, /activeTab = ref(?:<CoverageTab>)?\('overview'\)/)
+  assert.doesNotMatch(
+    source,
+    /__summary|__metrics|__metric|__note|const cards|完整模块扫描已校验并生效/
+  )
   assert.match(source, /模块接口扫描进度/)
   assert.match(source, /value == null \? '—'/)
   assert.match(source, /尚无自动化场景/)
@@ -156,28 +209,39 @@ test('module progress uses a bounded native-scroll table and global actions', ()
   assert.match(source, /class="mango-native-scroll-table"/)
   assert.match(source, /:scroll="\{ x: overviewModuleScrollX, y: overviewModuleScrollY \}"/)
   assert.match(config, /overviewModuleScrollY = 400/)
-  assert.match(source, /\.mango-coverage-overview__table :deep\(\.arco-table-body\)\s*\{\s*overscroll-behavior-x: contain;\s*overscroll-behavior-y: contain/)
+  assert.match(
+    source,
+    /\.mango-coverage-overview__table :deep\(\.arco-table-body\)\s*\{\s*overscroll-behavior-x: contain;\s*overscroll-behavior-y: contain/
+  )
   assert.match(source, /<StickyHorizontalTable/)
   assert.match(source, /__table\s*\{[^}]*height: 440px/)
   assert.match(source, /<MangoTableActions/)
   assert.doesNotMatch(source, /permission: 'api.module_coverage:read'/)
-  const code = config.slice(config.indexOf('export const overviewModuleColumns'),
-    config.indexOf('export function getInterfaceCoverageData'))
+  const code = config.slice(
+    config.indexOf('export const overviewModuleColumns'),
+    config.indexOf('export function getInterfaceCoverageData')
+  )
   const { outputText } = ts.transpileModule(code, {
     compilerOptions: { module: ts.ModuleKind.CommonJS },
   })
   const exports = {}
   new Function('exports', outputText)(exports)
-  assert.deepEqual(exports.overviewModuleColumns.slice(-3).map((item) => item.title), ['项目/产品', '模块', '操作'])
+  assert.deepEqual(
+    exports.overviewModuleColumns.slice(-3).map((item) => item.title),
+    ['项目/产品', '模块', '操作']
+  )
   assert.equal(exports.overviewModuleColumns.at(-1).fixed, 'right')
-  assert.equal(exports.overviewModuleScrollX,
-    exports.overviewModuleColumns.reduce((sum, column) => sum + column.width, 0))
+  assert.equal(
+    exports.overviewModuleScrollX,
+    exports.overviewModuleColumns.reduce((sum, column) => sum + column.width, 0)
+  )
 })
 
 test('module pagination reuses global footer and page-size state', () => {
   assert.match(source, /<TableFooter/)
   assert.doesNotMatch(source, /<a-pagination|page\.value/)
-  assert.match(source, /usePagination\(\(\) => \{\}\)/)
+  assert.match(source, /usePagination\(/)
+  assert.match(source, /paginationLoading/)
   assert.match(source, /pagination\.page \* pagination\.pageSize/)
   assert.match(source, /pagination\.setTotalSize\(rows\.length\)/)
   assert.match(source, /pagination\.page = 1/)
@@ -192,72 +256,101 @@ test('overview owns a bounded keyboard-accessible vertical scroll region', () =>
 })
 
 test('overview loads individual charts, module table and gap list without a parent mask', () => {
-  assert.equal((source.match(/<MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin"/g) || []).length, 4)
+  assert.equal(
+    (
+      source.match(
+        /<MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin"/g
+      ) || []
+    ).length,
+    4
+  )
   assert.match(source, /:columns="overviewModuleColumns"\s*:loading="loading"/)
-  assert.match(source, /<MangoPanelSpin :loading="loading" class="mango-coverage-overview__gaps-spin"/)
+  assert.match(
+    source,
+    /<MangoPanelSpin :loading="loading" class="mango-coverage-overview__gaps-spin"/
+  )
   assert.match(source, /v-else-if="data \|\| loading"/)
   assert.match(source, /v-if="!loading && !data\?\.modules.length"/)
   assert.match(source, /v-if="error && !data"/)
-  assert.match(source, /覆盖概览刷新失败，当前保留上次结果/)
+  assert.doesNotMatch(source, /覆盖概览刷新失败，当前保留上次结果/)
+  assert.match(source, /<template v-if="error && !data"><\/template>/)
 })
 
 test('same-scope refresh retains results, changed scopes clear them, and stale requests stay ignored', async () => {
-  const start = index.indexOf('  async function loadOverview()')
-  const end = index.indexOf('  function drillOverview(', start)
-  const code = ts.transpileModule(index.slice(start, end), { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText
-  const state = { overview: { value: undefined }, overviewLoading: { value: false }, overviewError: { value: false }, projectProductId: { value: 1 }, filters: {} }
   const pending = []
-  const load = new Function('state', 'getCoverageOverview', `
-    const { overview, overviewLoading, overviewError, projectProductId, filters } = state;
-    let overviewRequest = 0, overviewScope = '';
-    const applyModuleFilter = () => {};
-    ${code}
-    return loadOverview;
-  `)(state, () => new Promise((resolve, reject) => pending.push({ resolve, reject })))
-  const first = load()
-  assert.equal(state.overviewLoading.value, true)
-  const initial = { modules: [{ id: 1 }] }
-  pending[0].resolve({ data: initial })
+  const state = coveragePage({
+    getCoverageOverview: () => new Promise((resolve, reject) => pending.push({ resolve, reject })),
+  })
+  state.projectProductId.value = 1
+  const first = state.loadOverview()
+  pending[0].resolve({ data: { modules: [{ id: 1 }], summary: {} } })
   await first
-  const refresh = load()
-  assert.equal(state.overview.value, initial)
-  pending[1].reject(new Error('temporary'))
+  const refresh = state.loadOverview()
+  assert.equal(state.overview.value.modules[0].id, 1)
+  pending[1].reject(Error('temporary'))
   await refresh
-  assert.equal(state.overview.value, initial)
+  assert.equal(state.overview.value.modules[0].id, 1)
   assert.equal(state.overviewError.value, true)
-  assert.equal(state.overviewLoading.value, false)
-  const stale = load()
+  const stale = state.loadOverview()
   state.projectProductId.value = 2
-  const changed = load()
+  const changed = state.loadOverview()
   assert.equal(state.overview.value, undefined)
-  pending[2].resolve({ data: initial })
+  pending[2].resolve({ data: { modules: [{ id: 1 }], summary: {} } })
   await stale
   assert.equal(state.overview.value, undefined)
   assert.equal(state.overviewLoading.value, true)
-  const next = { modules: [{ id: 2 }] }
-  pending[3].resolve({ data: next })
+  pending[3].resolve({ data: { modules: [{ id: 2 }], summary: {} } })
   await changed
-  assert.equal(state.overview.value, next)
+  assert.equal(state.overview.value.modules[0].id, 2)
   assert.equal(state.overviewLoading.value, false)
+  state.close()
 })
 
 test('global layout leaves nested Arco vertical tables to their own scroll container', () => {
-  const layout = fs.readFileSync(new URL('../../../src/layouts/MainLayout.vue', import.meta.url), 'utf8')
+  const layout = fs.readFileSync(
+    new URL('../../../src/layouts/MainLayout.vue', import.meta.url),
+    'utf8'
+  )
   const start = layout.indexOf('      function handleTableWheel(')
   const end = layout.indexOf('      return {', start)
-  const js = ts.transpileModule(layout.slice(start, end), { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText
+  const js = ts.transpileModule(layout.slice(start, end), {
+    compilerOptions: { target: ts.ScriptTarget.ES2020 },
+  }).outputText
   class Element {
-    constructor(root, nested) { this.root = root; this.nested = nested }
-    closest() { return this }
+    constructor(root, nested) {
+      this.root = root
+      this.nested = nested
+    }
+    closest() {
+      return this
+    }
     classList = { contains: () => this.root }
-    querySelector() { return this.nested ? {} : null }
+    querySelector() {
+      return this.nested ? {} : null
+    }
   }
   const outer = { scrollTop: 100, clientHeight: 400, scrollHeight: 1200 }
-  const handle = new Function('HTMLElement', 'findScrollableParent', `${js}; return handleTableWheel`)(Element, () => outer)
-  for (const [root, nested] of [[true, false], [false, true], [false, false]]) {
+  const handle = new Function(
+    'HTMLElement',
+    'findScrollableParent',
+    `${js}; return handleTableWheel`
+  )(Element, () => outer)
+  for (const [root, nested] of [
+    [true, false],
+    [false, true],
+    [false, false],
+  ]) {
     outer.scrollTop = 100
     let prevented = false
-    handle({ defaultPrevented: false, deltaY: 50, deltaX: 0, target: new Element(root, nested), preventDefault: () => { prevented = true } })
+    handle({
+      defaultPrevented: false,
+      deltaY: 50,
+      deltaX: 0,
+      target: new Element(root, nested),
+      preventDefault: () => {
+        prevented = true
+      },
+    })
     assert.equal(outer.scrollTop, root || nested ? 100 : 150)
     assert.equal(prevented, !(root || nested))
   }
@@ -265,14 +358,29 @@ test('global layout leaves nested Arco vertical tables to their own scroll conta
 
 test('header wheel scrolls the table while horizontal and zoom gestures stay native', () => {
   const start = source.indexOf('  function handleModuleTableWheel(')
-  const end = source.indexOf('  const pagination =', start)
-  const js = ts.transpileModule(source.slice(start, end), { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText
+  const end = source.indexOf('  const paginationLoading =', start)
+  const js = ts.transpileModule(source.slice(start, end), {
+    compilerOptions: { target: ts.ScriptTarget.ES2020 },
+  }).outputText
   const body = { scrollTop: 0, scrollHeight: 1000, clientHeight: 400, contains: () => false }
-  const handler = new Function('moduleTableRegion', 'Node', 'scaleDensityPixels', `${js}; return handleModuleTableWheel`)(
-    { value: { querySelector: () => body } }, class {}, value => value
-  )
+  const handler = new Function(
+    'moduleTableRegion',
+    'Node',
+    'scaleDensityPixels',
+    `${js}; return handleModuleTableWheel`
+  )({ value: { querySelector: () => body } }, class {}, (value) => value)
   let prevented = false
-  const event = overrides => ({ deltaX: 0, deltaY: 50, deltaMode: 0, cancelable: true, ctrlKey: false, preventDefault: () => { prevented = true }, ...overrides })
+  const event = (overrides) => ({
+    deltaX: 0,
+    deltaY: 50,
+    deltaMode: 0,
+    cancelable: true,
+    ctrlKey: false,
+    preventDefault: () => {
+      prevented = true
+    },
+    ...overrides,
+  })
   handler(event())
   assert.equal(body.scrollTop, 50)
   assert.equal(prevented, true)

@@ -2,29 +2,38 @@
   <div class="mango-product-tables">
     <div class="mango-product-tables-toolbar">
       <div class="mango-product-tables-field mango-product-tables-field--binding">
-      <a-select
-        size="small"
-        v-model="bindingId"
-        :options="bindingOptions"
-        :disabled="generating"
-        placeholder="选择读取表结构的环境绑定"
-        class="mango-product-tables-environment"
-        aria-label="环境绑定"
-      />
+        <a-select
+          size="small"
+          v-model="bindingId"
+          :options="bindingOptions"
+          :disabled="generating"
+          placeholder="选择读取表结构的环境绑定"
+          class="mango-product-tables-environment"
+          aria-label="环境绑定"
+        />
       </div>
       <div class="mango-product-tables-field">
-      <a-input
-        size="small"
-        v-model="keyword"
-        placeholder="搜索表名或说明"
-        allow-clear
-        class="mango-product-tables-search"
-        aria-label="搜索表名或说明"
-      />
+        <a-input
+          size="small"
+          v-model="keyword"
+          placeholder="搜索表名或说明"
+          allow-clear
+          class="mango-product-tables-search"
+          aria-label="搜索表名或说明"
+        />
       </div>
       <div v-if="source?.db_type === 1" class="mango-product-tables-field">
-      <a-select v-model="selectedSchema" :options="schemaOptions" :loading="schemasLoading"
-        class="mango-product-tables-environment" size="small" allow-search allow-create allow-clear placeholder="选择 Schema" />
+        <a-select
+          v-model="selectedSchema"
+          :options="schemaOptions"
+          :loading="schemasLoading"
+          class="mango-product-tables-environment"
+          size="small"
+          allow-search
+          allow-create
+          allow-clear
+          placeholder="选择 Schema"
+        />
       </div>
       <a-space v-if="relational" class="mango-product-tables-actions">
         <a-button
@@ -36,34 +45,40 @@
         >
       </a-space>
     </div>
-    <a-alert v-if="error" type="error">{{ error }}</a-alert>
+    <template v-if="error"><a-button size="small" :loading="loading" @click="loadTables">重新加载</a-button></template>
+    <template v-if="schemasError"><a-button size="small" :loading="schemasLoading" @click="loadSchemaOptions"
+        >重新加载</a-button></template>
     <div v-if="!binding" class="mango-empty-state">请先为当前逻辑数据库配置允许读取的环境绑定</div>
     <div v-else-if="!supportsTables" class="mango-empty-state"
       >此类型不提供业务表发现，请使用逻辑数据源的查询能力</div
     >
     <div class="mango-product-tables-grid">
-    <a-table
-      v-if="binding && supportsTables"
-      :columns="visibleColumns"
-      :data="pagedTables"
-      :loading="loading"
-      :pagination="false"
-      :scroll="{ x: 700 }"
-      row-key="key"
-      size="small"
-      :bordered="false"
-      :row-selection="relational ? rowSelection : undefined"
-      @selection-change="selectedKeys = $event"
-    >
-      <template #actions="{ record }"
-        ><MangoTableActions :actions="[{ label: '表结构', onClick: () => viewSchema(record) }]"
-      /></template>
-    </a-table>
-    <TableFooter v-if="binding && supportsTables" :pagination="pagination" :show-refresh="false" />
+      <a-table
+        v-if="binding && supportsTables"
+        :columns="visibleColumns"
+        :data="pagedTables"
+        :loading="loading"
+        :pagination="false"
+        :scroll="{ x: 700 }"
+        row-key="key"
+        size="small"
+        :bordered="false"
+        :row-selection="relational ? rowSelection : undefined"
+        @selection-change="selectedKeys = $event.map(String)"
+      >
+        <template #actions="{ record }"
+          ><MangoTableActions :actions="[{ label: '表结构', onClick: () => viewSchema(record) }]"
+        /></template>
+      </a-table>
+      <TableFooter
+        v-if="binding && supportsTables"
+        :pagination="pagination"
+        :show-refresh="false"
+      />
     </div>
   </div>
   <a-drawer v-model:visible="schemaVisible" :title="schemaTitle" :width="900" :footer="false">
-    <a-alert v-if="schemaError" type="error">{{ schemaError }}</a-alert>
+
     <a-table
       :columns="schemaColumns"
       :data="schema?.columns || []"
@@ -94,19 +109,24 @@
     </div>
   </a-drawer>
   <a-modal
+    modal-class="mango-simple-form-modal"
     v-model:visible="generateVisible"
     title="生成工厂实体"
-    :width="720"
+    :width="560"
     :on-before-ok="generate"
     :ok-loading="generating"
     :closable="!generating"
     :mask-closable="!generating"
     :cancel-button-props="{ disabled: generating }"
+    :esc-to-close="!generating"
     ok-text="生成"
   >
-    <p>所选绑定：{{ environmentName(binding?.environment) }} / {{ binding?.database_name || '未选默认库' }}</p>
-    <a-form :model="generateForm" layout="horizontal">
-      <a-form-item label="所属模块" required
+    <p
+      >所选绑定：{{ environmentName(binding?.environment) }} /
+      {{ binding?.database_name || '未选默认库' }}</p
+    >
+    <a-form auto-label-width class="mango-simple-form" :model="generateForm" layout="horizontal">
+      <a-form-item class="mango-simple-form-item" label="所属模块" required
         ><ProductModuleSelect
           v-model="generateForm.module"
           :project-product-id="productId"
@@ -129,6 +149,8 @@
   </a-modal>
 </template>
 <script setup lang="ts">
+import { reportLoadError } from '@/utils/load-error'
+
   import { computed, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import {
@@ -136,35 +158,36 @@
     postDataFactoryDiscoverTable,
     postDataFactoryEntityBatchGenerate,
   } from '@/api/data-factory'
+  import { getDataSourceSchemas } from '@/api/system/data_source'
   import { useEnum } from '@/store/modules/get-enum'
   import MangoTableActions from '@/components/table/MangoTableActions.vue'
   import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
   import TableFooter from '@/components/table/TableFooter.vue'
   import { usePagination } from '@/hooks/table'
+  import { getOptionId } from '@/utils/business-format'
   import { discoveryColumns, schemaColumns } from '../config'
-  import { getDataSourceSchemas } from '@/api/system/data_source'
+  import { bindingDataSource, requestError } from '../form'
+  import { useProductDatasourceScope } from '../composables/useProductDatasourceScope'
+  import type {
+    EntityId,
+    LogicalBinding,
+    DiscoveredTable,
+    TableSchema,
+    GenerationResult,
+  } from '../types'
   const props = defineProps<{
-    aliasId: string | number
-    productId: string | number
-    bindings: any[]
+    aliasId: EntityId
+    productId: EntityId
+    bindings: LogicalBinding[]
   }>()
   const enums = useEnum()
-  const bindingId = ref<number>()
+  const bindingId = ref<number | null>(null)
   const binding = computed(() => props.bindings.find((item) => item.id === bindingId.value))
-  const source = computed(() => binding.value?.data_source || binding.value?.database)
-  const selectedSchema = ref('')
-  const schemaOptions = ref<string[]>([])
-  const schemasLoading = ref(false)
-  watch(binding, async (value) => {
-    selectedSchema.value = value?.schema_name || ''
-    schemaOptions.value = []
-    if (!value?.database_name || source.value?.db_type !== 1) return
-    schemasLoading.value = true
-    try {
-      const res = await getDataSourceSchemas({ data_source_id: source.value.id, database_name: value.database_name })
-      if (binding.value?.id === value.id) schemaOptions.value = (res.data || []).map((item: any) => item.name)
-    } finally { schemasLoading.value = false }
-  }, { immediate: true })
+  const source = computed(() => (binding.value ? bindingDataSource(binding.value) : null))
+  const selectedSchema = ref(''),
+    schemaOptions = ref<string[]>([]),
+    schemasLoading = ref(false),
+    schemasError = ref('')
   const relational = computed(() => source.value?.source_category === 0)
   const supportsTables = computed(() => relational.value || source.value?.db_type === 20)
   const bindingOptions = computed(() =>
@@ -173,30 +196,29 @@
       label:
         environmentName(item.environment) +
         ' / ' +
-        ((item.data_source || item.database)?.display_name ||
-          (item.data_source || item.database)?.name ||
-          '') +
+        (bindingDataSource(item)?.display_name || bindingDataSource(item)?.name || '') +
         (item.db_c_status === 1 ? '' : '（禁止读取）'),
-      disabled: item.db_c_status !== 1 || item.environment == null,
+      disabled: item.db_c_status !== 1 || item.environment === null,
     }))
   )
-  const keyword = ref('')
-  const tables = ref<any[]>([])
-  const loading = ref(false)
-  const error = ref('')
-  const selectedKeys = ref<any[]>([])
-  const schema = ref<any>()
-  const schemaVisible = ref(false)
-  const schemaTitle = ref('')
-  const schemaLoading = ref(false)
-  const schemaError = ref('')
-  const generateVisible = ref(false)
-  const generating = ref(false)
-  const generateForm = reactive<{ module?: any }>({})
-  const generationResults = ref<any[]>([])
-  const generationTotal = ref(0)
-  let version = 0
-  let schemaVersion = 0
+  const keyword = ref(''),
+    tables = ref<DiscoveredTable[]>([]),
+    loading = ref(false),
+    error = ref(''),
+    selectedKeys = ref<string[]>([])
+  const schema = ref<TableSchema | null>(null),
+    schemaVisible = ref(false),
+    schemaTitle = ref(''),
+    schemaLoading = ref(false),
+    schemaError = ref('')
+  const generateVisible = ref(false),
+    generating = ref(false),
+    generateForm = reactive<{ module: EntityId | EntityId[] | null }>({ module: null })
+  const generationResults = ref<GenerationResult[]>([]),
+    generationTotal = ref(0)
+  let version = 0,
+    schemaVersion = 0,
+    schemaOptionsVersion = 0
   const visibleColumns = computed(() =>
     relational.value ? discoveryColumns : discoveryColumns.filter((item) => !item.slotName)
   )
@@ -206,10 +228,12 @@
     )
   )
   const pagination = usePagination(() => undefined, ref(false))
-  const pagedTables = computed(() => {
-    const start = (pagination.page - 1) * pagination.pageSize
-    return filteredTables.value.slice(start, start + pagination.pageSize)
-  })
+  const pagedTables = computed(() =>
+    filteredTables.value.slice(
+      (pagination.page - 1) * pagination.pageSize,
+      pagination.page * pagination.pageSize
+    )
+  )
   watch(
     () => filteredTables.value.length,
     (total) => {
@@ -230,14 +254,19 @@
     showCheckedAll: true,
     getCheckboxProps: () => ({ disabled: generating.value }),
   }))
-  function environmentName(value: any) {
+  const scope = useProductDatasourceScope(
+    () => [],
+    resetAll,
+    () => {
+      void loadSchemaOptions()
+      void loadTables()
+    }
+  )
+  function environmentName(value: number | null | undefined) {
     return (
-      enums.environment_type?.find((item: any) => item.key === value)?.title ||
+      enums.environment_type?.find((item) => Number(item.key) === value)?.title ||
       String(value ?? '未配置')
     )
-  }
-  function errorText(value: any) {
-    return value?.message || value?.msg || '请求未确认，请刷新后重试'
   }
   function params() {
     return {
@@ -247,135 +276,231 @@
       schema_name: selectedSchema.value,
     }
   }
+  function contextKey() {
+    return JSON.stringify([props.aliasId, props.productId, binding.value, selectedSchema.value])
+  }
+  function resetView() {
+    ++version
+    ++schemaVersion
+    tables.value = []
+    selectedKeys.value = []
+    keyword.value = ''
+    error.value = ''
+    loading.value = false
+    schema.value = null
+    schemaLoading.value = false
+    schemaError.value = ''
+    schemaVisible.value = false
+    generateVisible.value = false
+    generationResults.value = []
+    generateForm.module = null
+    pagination.page = 1
+  }
+  function resetAll() {
+    resetView()
+    ++schemaOptionsVersion
+    schemaOptions.value = []
+    schemasLoading.value = false
+    schemasError.value = ''
+  }
   watch(
-    () => [props.aliasId, ...props.bindings.map((item) => item.id + ':' + item.db_c_status)],
-    () => {
-      if (!props.bindings.some((item) => item.id === bindingId.value && item.db_c_status === 1))
-        bindingId.value = props.bindings.find(
-          (item) => item.db_c_status === 1 && item.environment != null
-        )?.id
-    },
-    { immediate: true }
-  )
-  watch(
-    [
-      () => props.aliasId,
-      bindingId,
-      selectedSchema,
-      () => source.value?.id,
-      () => source.value?.update_time,
-      () => binding.value?.db_c_status,
+    () => [
+      props.aliasId,
+      props.productId,
+      ...props.bindings.map((item) => `${item.id}:${item.db_c_status}:${item.environment}`),
     ],
     () => {
-      version++
-      pagination.page = 1
-      schemaVersion++
-      tables.value = []
-      selectedKeys.value = []
-      keyword.value = ''
-      error.value = ''
-      loading.value = false
-      schemaLoading.value = false
-      schemaVisible.value = false
-      generateVisible.value = false
-      generationResults.value = []
-      generateForm.module = undefined
-      loadTables()
+      if (
+        !props.bindings.some(
+          (item) =>
+            item.id === bindingId.value && item.db_c_status === 1 && item.environment !== null
+        )
+      )
+        bindingId.value =
+          props.bindings.find((item) => item.db_c_status === 1 && item.environment !== null)?.id ??
+          null
+    },
+    { immediate: true, flush: 'sync' }
+  )
+  watch(
+    binding,
+    () => {
+      selectedSchema.value = binding.value?.schema_name || ''
+      void loadSchemaOptions()
     },
     { immediate: true }
   )
+  watch(
+    contextKey,
+    () => {
+      resetView()
+      void loadTables()
+    },
+    { immediate: true }
+  )
+  watch(
+    schemaVisible,
+    (visible) => {
+      if (!visible) {
+        ++schemaVersion
+        schemaLoading.value = false
+        schema.value = null
+      }
+    },
+    { flush: 'sync' }
+  )
+  async function loadSchemaOptions() {
+    const current = ++schemaOptionsVersion,
+      id = source.value?.id,
+      database = binding.value?.database_name,
+      token = scope.snapshot()
+    schemaOptions.value = []
+    schemasLoading.value = false
+    schemasError.value = ''
+    if (!scope.isActive() || id == null || !database || source.value?.db_type !== 1) return
+    schemasLoading.value = true
+    try {
+      const res = await getDataSourceSchemas({ data_source_id: id, database_name: database })
+      if (current === schemaOptionsVersion && scope.current(token))
+        schemaOptions.value = (res.data || []).map((item: { name: string } | string) =>
+          typeof item === 'string' ? item : item.name
+        )
+    } catch (failure: unknown) {
+      if (current === schemaOptionsVersion && scope.current(token))
+        void (reportLoadError(failure, "加载失败，请重试", false), schemasError.value = requestError(failure))
+    } finally {
+      if (current === schemaOptionsVersion) schemasLoading.value = false
+    }
+  }
   async function loadTables() {
-    if (!binding.value || binding.value.db_c_status !== 1 || !supportsTables.value || loading.value)
+    if (
+      !scope.isActive() ||
+      !binding.value ||
+      binding.value.db_c_status !== 1 ||
+      !supportsTables.value ||
+      loading.value
+    )
       return
-    const current = version
+    const current = version,
+      token = scope.snapshot(),
+      key = contextKey(),
+      payload = { ...params(), refresh: false }
     loading.value = true
     error.value = ''
     try {
-      const res = await postDataFactoryDiscoverTables({ ...params(), refresh: false })
-      if (current === version) {
-        tables.value = (res.data || []).map((item: any) => {
+      const res = await postDataFactoryDiscoverTables(payload)
+      if (current === version && scope.current(token) && key === contextKey()) {
+        tables.value = (res.data || []).map((item: Omit<DiscoveredTable, 'key'> | string) => {
           const row = typeof item === 'string' ? { name: item, comment: '' } : item
           return { ...row, key: JSON.stringify([row.schema_name || '', row.name]) }
         })
         selectedKeys.value = []
       }
-    } catch (failure) {
-      if (current === version) error.value = errorText(failure)
+    } catch (failure: unknown) {
+      if (current === version && scope.current(token) && key === contextKey())
+        void (reportLoadError(failure, "加载失败，请重试", false), error.value = requestError(failure))
     } finally {
       if (current === version) loading.value = false
     }
   }
-  async function viewSchema(row: any) {
-    const current = version
-    const currentSchema = ++schemaVersion
+  async function viewSchema(row: DiscoveredTable) {
+    if (!scope.isActive() || !binding.value) return
+    const current = version,
+      currentSchema = ++schemaVersion,
+      token = scope.snapshot(),
+      key = contextKey(),
+      payload = { ...params(), table_name: row.name }
     schemaVisible.value = true
     schemaTitle.value = row.name + ' · 表结构'
     schemaLoading.value = true
-    schema.value = undefined
+    schema.value = null
     schemaError.value = ''
     try {
-      const res = await postDataFactoryDiscoverTable({ ...params(), table_name: row.name })
-      if (current === version && currentSchema === schemaVersion) schema.value = res.data
-    } catch (failure) {
-      if (current === version && currentSchema === schemaVersion)
-        schemaError.value = errorText(failure)
+      const res = await postDataFactoryDiscoverTable(payload)
+      if (
+        current === version &&
+        currentSchema === schemaVersion &&
+        scope.current(token) &&
+        key === contextKey()
+      )
+        schema.value = res.data
+    } catch (failure: unknown) {
+      if (
+        current === version &&
+        currentSchema === schemaVersion &&
+        scope.current(token) &&
+        key === contextKey()
+      )
+        void (reportLoadError(failure, "加载失败，请重试", false), schemaError.value = requestError(failure))
     } finally {
       if (current === version && currentSchema === schemaVersion) schemaLoading.value = false
     }
   }
   function openGenerate() {
+    if (!scope.isActive() || generating.value) return
     generateVisible.value = true
     generationResults.value = []
-    generateForm.module = undefined
+    generateForm.module = null
   }
-  async function generate() {
-    if (!generateForm.module || !binding.value || !selectedKeys.value.length) {
+  async function generate(): Promise<boolean> {
+    if (generating.value || !scope.isActive() || !generateVisible.value) return false
+    const moduleId: unknown = getOptionId(generateForm.module)
+    if (
+      (typeof moduleId !== 'number' && typeof moduleId !== 'string') ||
+      moduleId === '' ||
+      !binding.value ||
+      !selectedKeys.value.length
+    ) {
       Message.warning('请选择模块和数据表')
       return false
     }
-    const current = version
-    const requested = tables.value.filter((item) => selectedKeys.value.includes(item.key))
+    const current = version,
+      token = scope.snapshot(),
+      key = contextKey(),
+      schemaName = selectedSchema.value
+    const requested = tables.value
+      .filter((item) => selectedKeys.value.includes(item.key))
+      .map((item) => ({
+        table_name: item.name,
+        schema_name: item.schema_name || schemaName,
+        name: String(item.comment || item.name).slice(0, 64),
+      }))
     const payload = {
       project_product: Number(props.productId),
       datasource_alias: Number(props.aliasId),
       test_env: binding.value.environment,
-      module: Array.isArray(generateForm.module)
-        ? generateForm.module[generateForm.module.length - 1]
-        : generateForm.module,
+      module: moduleId,
       sync_fields: true,
       skip_exists: true,
     }
     generating.value = true
     generationTotal.value = requested.length
     generationResults.value = []
+    const valid = () => current === version && scope.current(token) && key === contextKey()
     try {
-      for (let offset = 0; offset < requested.length && current === version; offset += 5) {
+      for (let offset = 0; offset < requested.length && valid(); offset += 5) {
         const batch = requested.slice(offset, offset + 5)
         try {
-          const res = await postDataFactoryEntityBatchGenerate({
-            ...payload,
-            tables: batch.map((item) => ({
-              table_name: item.name,
-              schema_name: item.schema_name || selectedSchema.value,
-              name: String(item.comment || item.name).slice(0, 64),
-            })),
-          })
-          if (current === version) generationResults.value.push(...(res.data?.items || []))
-        } catch (failure) {
-          if (current === version)
+          const res = await postDataFactoryEntityBatchGenerate({ ...payload, tables: batch })
+          if (valid()) generationResults.value.push(...(res.data?.items || []))
+        } catch (failure: unknown) {
+          if (valid())
             generationResults.value.push(
               ...batch.map((item) => ({
-                table_name: item.name,
+                table_name: item.table_name,
                 status: 'failed',
-                message: errorText(failure),
+                message: requestError(failure),
               }))
             )
         }
       }
-      if (current === version) {
+      if (valid()) {
         selectedKeys.value = generationResults.value
           .filter((item) => !['success', 'skipped'].includes(item.status))
-          .map((item) => tables.value.find(row => row.name === item.table_name)?.key)
+          .flatMap((item) => {
+            const row = tables.value.find((row) => row.name === item.table_name)
+            return row ? [row.key] : []
+          })
         if (selectedKeys.value.length) Message.warning('部分表失败，可查看原因后重试')
         else Message.success('所选表已完成生成或已存在')
       }

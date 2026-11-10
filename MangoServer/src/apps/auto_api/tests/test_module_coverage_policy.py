@@ -44,13 +44,19 @@ class ModuleCoveragePolicyTests(SimpleTestCase):
 
     def test_policy_does_not_override_computed_coverage_progress(self):
         snapshot = excluded_snapshot()
-        self.assertEqual(Service.interface_coverage_status(snapshot, 2, 2, 0), 'covered')
+        self.assertEqual(Service.interface_coverage_status(snapshot, 2, 2, 0, analysis_status='excluded'), 'partial')
         snapshot.module_interface.coverage_policy = 'deferred'
-        for target, completed, deferred, status in ((2, 2, 0, 'covered'), (2, 1, 0, 'partial'),
+        for target, completed, deferred, status in ((2, 2, 0, 'partial'), (2, 1, 0, 'partial'),
                                                     (0, 0, 1, 'deferred'), (0, 0, 0, 'uncovered')):
-            self.assertEqual(Service.interface_coverage_status(snapshot, target, completed, deferred), status)
+            self.assertEqual(Service.interface_coverage_status(snapshot, target, completed, deferred, analysis_status='deferred'), status)
         self.assertNotIn('excluded', ModuleCoverageInterfaceCoverageStatus.values)
         self.assertIn('excluded', ModuleCoveragePolicy.values)
+
+    def test_full_coverage_requires_completed_analysis(self):
+        snapshot = excluded_snapshot()
+        for status in ('pending', 'gap', 'deferred', 'excluded'):
+            self.assertEqual(Service.interface_coverage_status(snapshot, 2, 2, 0, analysis_status=status), 'partial')
+        self.assertEqual(Service.interface_coverage_status(snapshot, 2, 2, 0, analysis_status='completed'), 'covered')
 
     def run_update(self, ids, policy, reason, snapshots, allowed=True):
         source = MagicMock()

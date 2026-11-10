@@ -122,7 +122,13 @@ class APIBaseTestSetup(PublicBase):
             else nullcontext()
         )
         with replacement_context:
-            response = self.http(self.request_data_clean(request_model), api_info.project_product_id)
+            previous_resource_api = getattr(self, 'resource_cleanup_api_info_id', None)
+            previous_resource_env = getattr(self, 'resource_cleanup_test_env', None)
+            self.resource_cleanup_api_info_id, self.resource_cleanup_test_env = api_info.id, test_env
+            try:
+                response = self.http(self.request_data_clean(request_model), api_info.project_product_id)
+            finally:
+                self.resource_cleanup_api_info_id, self.resource_cleanup_test_env = previous_resource_api, previous_resource_env
         if not apply_api_info_posterior:
             response.api_info_posterior_skipped_reason = (
                 '场景已配置断言，本次由场景断言判定结果，未执行 API Info 公共后置处理'

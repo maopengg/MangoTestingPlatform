@@ -1,13 +1,14 @@
-import { reactive, ref } from 'vue'
+import { reactive } from 'vue'
 
-import { FormItem, SelectOptionItem } from '@/types/components'
-import { useTable, useTableColumn } from '@/hooks/table'
+import type { FormItem } from '@/types/components'
+import { useTableIndexColumn, useTableColumn } from '@/hooks/table'
 import { enableMultiSelectSearch } from '@/utils/search-condition'
 
-const table = useTable()
 export const tableScrollX = 1650
 
-export const fireStatusOptions: SelectOptionItem[] = [
+export interface FireRecordOption { label: string; value: number }
+
+export const fireStatusOptions: FireRecordOption[] = [
   { label: '待分发', value: 0 },
   { label: '分发中', value: 1 },
   { label: '已分发', value: 2 },
@@ -17,7 +18,7 @@ export const fireStatusOptions: SelectOptionItem[] = [
   { label: '已取消', value: 6 },
 ]
 
-export const fireSourceTypeOptions: SelectOptionItem[] = [
+export const fireSourceTypeOptions: FireRecordOption[] = [
   { label: '测试套执行', value: 0 },
   { label: 'Token刷新', value: 1 },
   { label: '数据清理', value: 2 },
@@ -25,45 +26,53 @@ export const fireSourceTypeOptions: SelectOptionItem[] = [
   { label: '系统定时任务', value: 4 },
 ]
 
-export const conditionItems = reactive<FormItem[]>([
-  {
-    key: 'task_name',
-    label: '任务名称',
-    type: 'input',
-    placeholder: '请输入任务名称',
-    value: ref(''),
-    optionItems: [],
-    reset: function () {
-      this.value = ''
+export interface FireRecordCondition extends Pick<FormItem, 'label' | 'type' | 'placeholder' | 'multiple' | 'searchOperator' | 'reset'> {
+  key: 'task_name' | 'status' | 'source_type'
+  value: string | number | Array<string | number> | null | undefined
+  optionItems?: FireRecordOption[]
+}
+export function createConditionItems(): FireRecordCondition[] {
+  const conditionItems: FireRecordCondition[] = [
+    {
+      key: 'task_name',
+      label: '任务名称',
+      type: 'input',
+      placeholder: '请输入任务名称',
+      value: '',
+      optionItems: [],
+      reset: function () {
+        this.value = ''
+      },
     },
-  },
-  {
-    key: 'status',
-    label: '状态',
-    type: 'select',
-    placeholder: '请选择状态',
-    value: ref(''),
-    optionItems: fireStatusOptions,
-    reset: function () {
-      this.value = ''
+    {
+      key: 'status',
+      label: '状态',
+      type: 'select',
+      placeholder: '请选择状态',
+      value: '',
+      optionItems: fireStatusOptions.map(item => ({ ...item })),
+      reset: function () {
+        this.value = ''
+      },
     },
-  },
-  {
-    key: 'source_type',
-    label: '触发类型',
-    type: 'select',
-    placeholder: '请选择触发类型',
-    value: ref(''),
-    optionItems: fireSourceTypeOptions,
-    reset: function () {
-      this.value = ''
+    {
+      key: 'source_type',
+      label: '触发类型',
+      type: 'select',
+      placeholder: '请选择触发类型',
+      value: '',
+      optionItems: fireSourceTypeOptions.map(item => ({ ...item })),
+      reset: function () {
+        this.value = ''
+      },
     },
-  },
-])
-enableMultiSelectSearch(conditionItems)
+  ]
+  enableMultiSelectSearch(conditionItems)
+  return reactive(conditionItems)
+}
 
 export const tableColumns = useTableColumn([
-  table.indexColumn,
+  { ...useTableIndexColumn(), align: 'center' },
   {
     title: '任务名称',
     key: 'task_name',

@@ -71,17 +71,13 @@
             </div>
           </template>
         </HoverTaskDetail>
-        <div v-if="loadingMore || loadMoreFailed" class="mango-upcoming-tasks__load-more">
-          <mango-panel-spin v-if="loadingMore" :size="16" />
-          <a-button v-else size="mini" type="text" @click="loadNextPage"
-            >加载失败，点击重试</a-button
-          >
-        </div>
+        <template v-if="loadingMore || loadMoreFailed"><a-button  size="mini" type="text" @click="loadNextPage"
+            >重新加载</a-button></template>
       </div>
       <div v-else-if="!loading" class="mango-empty-state mango-upcoming-tasks__empty">
         <template v-if="loadFailed">
-          <span>任务队列加载失败</span>
-          <a-button size="mini" type="text" @click="fetchData">重新加载</a-button>
+          <span></span>
+          <a-button size="mini" type="text" @click="refresh">重新加载</a-button>
         </template>
         <span v-else>暂无即将执行的定时任务</span>
       </div>
@@ -90,26 +86,20 @@
 </template>
 
 <script lang="ts" setup>
-  import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+  import { useRoute } from 'vue-router'
+  import useUserStore from '@/store/modules/user'
+  import { usePagePolling, type PollingContext } from '@/hooks/use-page-polling'
+  import { scaleDensityPixels } from '@/hooks/useDisplayDensity'
   import { getSystemIndexPendingTasks } from '@/api/system/tasks'
   import { useEnum } from '@/store/modules/get-enum'
   import { formatProjectProductPath, getEnumTagColor } from '@/utils/business-format'
   import HoverTaskDetail from './HoverTaskDetail.vue'
-
-  interface UpcomingTaskRecord {
-    id: number
-    name: string
-    test_envs: number[]
-    execution_scenes: string[]
-    execution_scope: string | null
-    latest_result_status: number | null
-    next_run_at: string
-    next_run_time?: string
-    seconds_until_run: number
-    project_product?: { name?: string; project?: { name?: string } }
-    timing_strategies?: Array<{ id: number; name?: string; cron?: string }>
-    case_people?: { id?: number; name?: string }
-  }
+  import { homeFeedPageSize as pageSize } from '../config'
+  import { readUpcomingTasks } from '../records'
+  import type { UpcomingTaskRecord } from '../types'
 
   const enumStore = useEnum()
   const dataList = ref<UpcomingTaskRecord[]>([])
@@ -119,21 +109,32 @@
   const loadMoreFailed = ref(false)
   const page = ref(1)
   const total = ref(0)
-  const pageSize = 20
   const now = ref(Date.now())
-  let clockTimer: ReturnType<typeof setInterval> | undefined
-  let refreshTimer: ReturnType<typeof setInterval> | undefined
+  const route = useRoute(), user = useUserStore()
+  const contextKey = computed(() => JSON.stringify([
+    route.fullPath, user.userId, user.roleId, user.token, user.selected_environment,
+  ]))
+  let mounted = false
+  let requestPending = false
   let requestSequence = 0
+  const polling = usePagePolling(context => fetchData('quiet', context), invalidateRequest)
+
+  function invalidateRequest() {
+    requestSequence++
+    requestPending = false
+    loading.value = false
+    loadingMore.value = false
+  }
 
   function optionTitle(value: string) {
     const options = enumStore.automation_execution_scene || []
-    return options.find((item: any) => String(item.key) === String(value))?.title || '未分类'
+    return options.find(item => String(item.key) === String(value))?.title || '未分类'
   }
 
   function environmentName(value: number | null) {
     if (value === null || value === undefined) return '-'
     const options = enumStore.environment_type || []
-    return options.find((item: any) => Number(item.key) === Number(value))?.title || '-'
+    return options.find(item => Number(item.key) === Number(value))?.title || '-'
   }
 
   function environmentColor(value: number | null) {
@@ -164,7 +165,7 @@
   function executionScopeName(value: string | null) {
     if (!value) return '-'
     const options = enumStore.automation_execution_scope || []
-    return options.find((item: any) => String(item.key) === String(value))?.title || value
+    return options.find(item => String(item.key) === String(value))?.title || value
   }
 
   function taskDetailRows(task: UpcomingTaskRecord) {
@@ -223,73 +224,80 @@
     return `${year}-${month}-${day} ${hour}:${minute}:${second}`
   }
 
-  async function fetchData(reset = true) {
-    if (!reset && (loading.value || loadingMore.value || dataList.value.length >= total.value))
-      return
+  async function fetchData(mode: 'reset' | 'append' | 'quiet', pollContext?: PollingContext) {
+    if (!polling.isAvailable() || requestPending) return
+    if (mode === 'append' && dataList.value.length >= total.value) return
     const sequence = ++requestSequence
-    const targetPage = reset ? 1 : page.value + 1
-    if (reset) {
-      loading.value = dataList.value.length === 0
+    const context = contextKey.value
+    const current = () => polling.isAvailable() && sequence === requestSequence
+      && context === contextKey.value && (!pollContext || pollContext.isCurrent())
+    requestPending = true
+    const targetPage = mode === 'append' ? page.value + 1 : mode === 'quiet' ? page.value : 1
+    if (mode !== 'append') {
+      loading.value = mode === 'reset' || dataList.value.length === 0
       loadFailed.value = false
     } else {
       loadingMore.value = true
       loadMoreFailed.value = false
     }
     try {
-      const res = await getSystemIndexPendingTasks({ page: targetPage, pageSize })
-      if (sequence !== requestSequence) return
-      const rows = Array.isArray(res.data) ? res.data : []
-      if (reset) {
-        dataList.value = rows
-      } else {
-        const existingIds = new Set(dataList.value.map((item) => item.id))
-        dataList.value.push(...rows.filter((item) => !existingIds.has(item.id)))
+      const rows = mode === 'append' ? [...dataList.value] : []
+      let nextTotal = 0, lastPage = 1
+      // 队列排序随调度变化，静默刷新重读已加载页后一次替换，避免丢失滚动分页内容。
+      for (let nextPage = mode === 'append' ? targetPage : 1; nextPage <= targetPage; nextPage++) {
+        const result = readUpcomingTasks(await getSystemIndexPendingTasks({ page: nextPage, pageSize }))
+        if (!current()) return
+        rows.push(...result.rows)
+        nextTotal = result.total
+        lastPage = nextPage
+        if (nextPage * pageSize >= nextTotal || !result.rows.length) break
       }
-      page.value = targetPage
-      total.value = Number(res.totalSize || rows.length)
+      const unique = new Map(rows.map(row => [row.id, row]))
+      dataList.value = nextTotal === 0 ? [] : [...unique.values()].slice(0, nextTotal)
+      page.value = lastPage
+      total.value = nextTotal
+      loadFailed.value = false
+      loadMoreFailed.value = false
       now.value = Date.now()
-    } catch {
-      if (sequence !== requestSequence) return
-      if (reset) {
-        dataList.value = []
-        loadFailed.value = true
-      } else {
-        loadMoreFailed.value = true
-      }
+    } catch (loadFailure0) {
+      if (!current()) return
+      if (mode === 'append') (reportLoadError(loadFailure0, "加载失败，请重试", false), loadMoreFailed.value = true)
+      else (reportLoadError(loadFailure0, "加载失败，请重试", false), loadFailed.value = true)
     } finally {
       if (sequence === requestSequence) {
+        requestPending = false
         loading.value = false
         loadingMore.value = false
       }
     }
   }
 
+  function refresh() { return fetchData('reset') }
+
   function loadNextPage() {
-    fetchData(false)
+    return fetchData('append')
   }
 
   function handleScroll(event: Event) {
     const target = event.currentTarget as HTMLElement
-    if (target.scrollHeight - target.scrollTop - target.clientHeight <= 64) {
-      loadNextPage()
+    if (target.scrollHeight - target.scrollTop - target.clientHeight <= scaleDensityPixels(64)) {
+      void loadNextPage()
     }
   }
 
-  onMounted(() => {
-    fetchData()
-    clockTimer = setInterval(() => {
-      now.value = Date.now()
-    }, 30_000)
-    refreshTimer = setInterval(() => fetchData(true), 60_000)
-  })
+  watch(contextKey, () => {
+    invalidateRequest()
+    dataList.value = []
+    page.value = 1
+    total.value = 0
+    loadFailed.value = false
+    loadMoreFailed.value = false
+    if (mounted) void refresh()
+  }, { flush: 'sync' })
+  onMounted(() => { mounted = true; polling.start(); void refresh() })
+  onBeforeUnmount(() => { mounted = false; invalidateRequest() })
 
-  onBeforeUnmount(() => {
-    requestSequence += 1
-    if (clockTimer) clearInterval(clockTimer)
-    if (refreshTimer) clearInterval(refreshTimer)
-  })
-
-  defineExpose({ refresh: fetchData })
+  defineExpose({ refresh })
 </script>
 
 <style lang="less" scoped>

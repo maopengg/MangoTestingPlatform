@@ -1,20 +1,14 @@
-import { FormItem } from '@/types/components'
-import { reactive, ref } from 'vue'
-import { Message } from '@arco-design/web-vue'
-import { isValidInteger } from '@/utils/form'
-import { useTable, useTableColumn } from '@/hooks/table'
+import { useTableIndexColumn, useTableColumn } from '@/hooks/table'
 import { updateTimeColumn, updateUserColumn } from '@/utils/update-user'
 
-const table = useTable()
-
 export const tableColumns = useTableColumn([
-  table.indexColumn,
+  { ...useTableIndexColumn(), align: 'center' },
   {
     title: '元素名称',
     key: 'name',
     dataIndex: 'name',
     align: 'left',
-    width: 250,
+    width: 250, ellipsis: true, tooltip: true,
   },
   {
     title: '分类',
@@ -64,14 +58,15 @@ export const tableColumns = useTableColumn([
   },
   {
     title: '元素描述',
+    width: 240,
     key: 'prompt',
     dataIndex: 'prompt',
     align: 'left',
     ellipsis: true,
     tooltip: true,
   },
-  updateUserColumn(),
-  updateTimeColumn(),
+  { ...updateUserColumn(), key: 'update_user' },
+  { ...updateTimeColumn(), key: 'update_time' },
   {
     title: '操作',
     key: 'actions',
@@ -81,201 +76,11 @@ export const tableColumns = useTableColumn([
   },
 ])
 
-export const formItems: FormItem[] = reactive([
-  {
-    label: '元素名称',
-    key: 'name',
-    value: ref(''),
-    placeholder: '请输入元素名称',
-    required: true,
-    type: 'input',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '定位类型-1',
-    key: 'exp',
-    value: null,
-    type: 'select',
-    required: true,
-    placeholder: '请选择定位类型',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '定位表达式-1',
-    key: 'loc',
-    value: ref(''),
-    type: 'input',
-    required: true,
-    placeholder: '请输入定位表达式',
-    validator: function () {
-      return true
-    },
-  },
-  {
-    label: '元素下标-1',
-    key: 'sub',
-    value: ref(''),
-    type: 'input',
-    required: false,
-    placeholder: '请输入元素下标，从1开始数',
-    validator: function () {
-      if (!this.value && !this.required) {
-        return true
-      }
-      if (!isValidInteger(this.value)) {
-        Message.error(`${this.label}请输入正整数！`)
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '定位类型-2',
-    key: 'exp2',
-    value: null,
-    type: 'select',
-    required: false,
-    placeholder: '请选择第二组定位类型',
-    validator: function () {
-      return true
-    },
-  },
-  {
-    label: '定位表达式-2',
-    key: 'loc2',
-    value: ref(''),
-    type: 'input',
-    required: false,
-    placeholder: '请输入第二组定位表达式',
-    validator: function () {
-      return true
-    },
-  },
-  {
-    label: '元素下标-2',
-    key: 'sub2',
-    value: ref(''),
-    type: 'input',
-    required: false,
-    placeholder: '请输入元素下标，从1开始数',
-    validator: function () {
-      if (!this.value && !this.required) {
-        return true
-      }
-      if (!isValidInteger(this.value)) {
-        Message.error(`${this.label}请输入正整数！`)
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '定位类型-3',
-    key: 'exp3',
-    value: null,
-    type: 'select',
-    required: false,
-    placeholder: '请选择第三组定位类型',
-    validator: function () {
-      return true
-    },
-  },
-  {
-    label: '定位表达式-3',
-    key: 'loc3',
-    value: ref(''),
-    type: 'input',
-    required: false,
-    placeholder: '请输入第三组定位表达式',
-    validator: function () {
-      return true
-    },
-  },
-  {
-    label: '元素下标-3',
-    key: 'sub3',
-    value: ref(''),
-    type: 'input',
-    required: false,
-    placeholder: '请输入元素下标，从1开始数',
-    validator: function () {
-      if (!this.value && !this.required) {
-        return true
-      }
-      if (!isValidInteger(this.value)) {
-        Message.error(`${this.label}请输入正整数！`)
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '元素描述',
-    key: 'prompt',
-    value: ref(''),
-    type: 'input',
-    required: false,
-    placeholder: '请输入元素位置、周边文字等正向识别线索',
-    validator: function () {
-      return true
-    },
-  },
-  {
-    label: '等待时间',
-    key: 'sleep',
-    value: ref(''),
-    type: 'input',
-    required: false,
-    placeholder: '请输入元素等待时间',
-    validator: function () {
-      if (!this.value && !this.required) {
-        return true
-      }
-      if (!isValidInteger(this.value)) {
-        Message.error(`${this.label}请输入正整数！`)
-        return false
-      }
-      return true
-    },
-  },
-])
-
-export const opeForm = reactive([
-  {
-    label: '元素操作',
-    key: 'ope_key',
-    value: ref(''),
-    type: 'cascader',
-    required: true,
-    placeholder: '请选择对元素的操作',
-    validator: function () {
-      return true
-    },
-  },
-])
-
-export const formItems1 = reactive([
-  {
-    label: '步骤类型',
-    key: 'type',
-    value: ref(''),
-    type: 'radio',
-    required: true,
-    placeholder: '请选择对元素的操作类型',
-    validator: function () {
-      return true
-    },
-  },
-])
+export const TABLE_SCROLL_X = 2760
+export function aiHealStatusMeta(status: number) {
+  const values: Record<number, { label: string; color: string }> = {
+    0: { label: '无基线', color: 'gray' }, 1: { label: '已有基线', color: 'green' },
+    2: { label: '待确认', color: 'orange' }, 3: { label: '已修复', color: 'blue' }, 4: { label: '修复失败', color: 'red' },
+  }
+  return values[status] || values[0]
+}

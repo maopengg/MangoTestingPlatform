@@ -26,8 +26,21 @@ export function getPytestRepositories() {
   return get({ url: 'pytest/repository', data: () => ({}) })
 }
 
-export function savePytestRepository(data: Record<string, any>) {
-  const request = data.id ? put : post
+export interface PytestRepositoryInput {
+  id?: number
+  name: string
+  provider: string
+  repo_url: string
+  api_base_url: string
+  remote_project: string
+  default_branch: string
+  credential_auth_type: string
+  credential_username: string
+  credential_secret: string
+}
+
+export function savePytestRepository(data: PytestRepositoryInput): Promise<unknown> {
+  const request = data.id != null ? put : post
   return request({ url: 'pytest/repository', data: () => data })
 }
 

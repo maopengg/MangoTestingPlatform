@@ -21,14 +21,14 @@ export function putUserDepartment(data: object) {
   })
 }
 
-export function deleteUserDepartment(id: number | string[] | number[]) {
+export function deleteUserDepartment(id: number | string | string[] | number[]) {
   return deleted({
     url: '/user/department',
     data: () => ({ id }),
   })
 }
 
-export function getUserDepartmentProductScope(departmentId: number) {
+export function getUserDepartmentProductScope(departmentId: number | string) {
   return get({
     url: '/user/department/product-scope',
     data: () => ({

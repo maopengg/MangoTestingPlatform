@@ -3,7 +3,13 @@
     <template #header>
       <div class="mango-detail-toolbar">
         <div class="mango-detail-heading"
-          ><div class="mango-evaluation-case-title"><div class="mango-detail-title" :title="record?.name">{{ record?.name || '测试用例详情' }}</div><a-tag v-if="record" size="small" :color="statusColor(record.status)">{{ enumTitle('evaluation_case_status', record.status) }}</a-tag><a-tag v-if="false" size="small">只读</a-tag></div
+          ><div class="mango-evaluation-case-title"
+            ><div class="mango-detail-title" :title="record?.name">{{
+              record?.name || '测试用例详情'
+            }}</div
+            ><a-tag v-if="record" size="small" :color="statusColor(record.status)">{{
+              enumTitle('evaluation_case_status', record.status)
+            }}</a-tag></div
           ><div class="mango-detail-subtitle mango-evaluation-case-meta"
             >Case #{{ caseId
             }}<template v-if="record?.dataset_name">
@@ -16,7 +22,6 @@
         >
         <a-space class="mango-detail-actions" wrap>
           <a-button
-
             size="small"
             type="primary"
             :loading="Boolean(editor?.saving || editor?.loading)"
@@ -27,15 +32,10 @@
             @click="saveConfiguration"
             >{{ saveButtonLabel }}</a-button
           >
-          <a-button
-
-            size="small"
-            :disabled="!record"
-            @click="historyVisible = true"
+          <a-button size="small" :disabled="!record" @click="historyVisible = true"
             >历史结果</a-button
           >
           <a-button
-
             size="small"
             status="success"
             :disabled="record?.status !== 'enabled'"
@@ -55,36 +55,43 @@
     <template #default>
       <div class="mango-case-details mango-detail-workbench">
         <MangoPanelSpin :loading="loading" class="mango-case-details-body">
-          <div v-if="!record && !loading" class="mango-empty-state">Case 不存在或无权查看。</div>
+          <div v-if="!record && !loading" class="mango-empty-state">
+            {{ loadError ? '' : 'Case 不存在或无权查看。' }}
+            <a-button v-if="loadError" size="small" :loading="loading" @click="load">重试</a-button>
+          </div>
           <template v-else-if="record">
-              <div class="mango-evaluation-workspace">
-                <section class="mango-evaluation-config-panel" aria-label="用例配置与执行结果">
-                  <CaseEditor
-                    ref="editor"
-                    embedded
-                    :case-id="caseId"
-                    :initial-record="record"
-                    :initial-catalog="graderCatalog"
-                    :initial-step="initialStep"
-                    @saved="configurationSaved"
-                  >
-                    <template #results><section class="mango-evaluation-results-panel" aria-label="执行结果"
-                  ><ExecutionPanel
-                    flat
-                    :case-id="caseId"
-                    :execution-id="executionId"
-                    :grading-preview="gradingPreview"
-                    :preview-loading="previewLoading"
-                    :grader-catalog="graderCatalog"
-                    @preview="preview"
-                    :dataset-name="record.dataset_name"
-                    :dataset-id="record.dataset_id"
-                    @selected="selected"
-                /></section></template>
-                  </CaseEditor>
-                </section>
-                <CaseInfoPanel :record="record" />
-              </div>
+            <div class="mango-evaluation-workspace">
+              <section class="mango-evaluation-config-panel" aria-label="用例配置与执行结果">
+                <CaseEditor
+                  ref="editor"
+                  embedded
+                  :case-id="caseId"
+                  :initial-record="record"
+                  :initial-catalog="graderCatalog"
+                  :catalog-loading="catalogLoading"
+                  :catalog-error="catalogError"
+                  :initial-step="initialStep"
+                  @saved="configurationSaved"
+                  @retry-catalog="loadCatalog"
+                >
+                  <template #results
+                    ><section class="mango-evaluation-results-panel" aria-label="执行结果"
+                      ><ExecutionPanel
+                        flat
+                        :case-id="caseId"
+                        :execution-id="executionId"
+                        :grading-preview="gradingPreview"
+                        :preview-loading="previewLoading"
+                        :grader-catalog="graderCatalog"
+                        @preview="preview"
+                        :dataset-name="record.dataset_name ?? undefined"
+                        :dataset-id="record.dataset_id ?? undefined"
+                        @selected="selected" /></section
+                  ></template>
+                </CaseEditor>
+              </section>
+              <CaseInfoPanel :record="record" />
+            </div>
           </template>
         </MangoPanelSpin>
       </div>
@@ -100,18 +107,19 @@
     ><ExecutionPanel
       v-if="historyVisible"
       :case-id="caseId"
-      :dataset-name="record?.dataset_name"
-      :dataset-id="record?.dataset_id"
+      :dataset-name="record?.dataset_name ?? undefined"
+      :dataset-id="record?.dataset_id ?? undefined"
       history
   /></EvaluationDrawer>
 </template>
 <script setup lang="ts">
+import { reportLoadError } from '@/utils/load-error'
+
   import EvaluationDrawer from '../../components/EvaluationDrawer.vue'
-  import { computed, onBeforeUnmount, ref, watch } from 'vue'
+  import { computed, onActivated, onDeactivated, onBeforeUnmount, ref, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { Message } from '@arco-design/web-vue'
   import useUserStore from '@/store/modules/user'
-  import usePermissionStore from '@/store/modules/permission'
   import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
   import { useEvaluationEnums } from '../../components/useEvaluationEnums'
   import {
@@ -123,21 +131,30 @@
   import CaseEditor from '../../components/CaseEditor.vue'
   import ExecutionPanel from '../../components/ExecutionPanel.vue'
   import CaseInfoPanel from '../../components/CaseInfoPanel.vue'
+  import type {
+    EvaluationCaseRecord,
+    GraderCatalogEntry,
+    GradingPreview,
+    CaseEditorHandle,
+  } from '../../types'
   const route = useRoute(),
     router = useRouter(),
     user = useUserStore(),
-    permissions = usePermissionStore()
+    pagePath = route.path
   const caseId = computed(() => Number(route.query.id)),
-    editor = ref<InstanceType<typeof CaseEditor>>()
-  const record = ref<any>(),
-    graderCatalog = ref<any[]>([]),
-    loading = ref(false),
+    editor = ref<CaseEditorHandle | null>(null)
+  const record = ref<EvaluationCaseRecord | null>(null),
+    graderCatalog = ref<GraderCatalogEntry[]>([])
+  const loading = ref(false),
+    loadError = ref(false),
+    catalogLoading = ref(false),
+    catalogError = ref(false),
     executing = ref(false),
-    previewLoading = ref(false),
-    gradingPreview = ref<any>()
-  const executionId = ref<number | undefined>(Number(route.query.execution) || undefined)
-  const historyVisible = ref(route.query.tab === 'history')
-  const initialStep = ref('data')
+    previewLoading = ref(false)
+  const gradingPreview = ref<GradingPreview>()
+  const executionId = ref<number>(),
+    historyVisible = ref(false),
+    initialStep = ref('data')
   const { title: enumTitle, color: statusColor } = useEvaluationEnums()
   const saveButtonLabel = computed(() => {
     if (editor.value?.loading) return '加载中'
@@ -145,120 +162,205 @@
     if (editor.value?.saveError) return editor.value.ready ? '重试保存' : '重试加载'
     return editor.value?.ready && !editor.value.dirty ? '已保存' : '保存'
   })
+  let active = true,
+    generation = 0,
+    catalogRequest = 0,
+    previewRequest = 0,
+    environmentVersion = 0,
+    previewPending = false
+  const executionKeys = new Map<string, string>()
+  const isActive = () => active && route.path === pagePath
+  const current = (version: number) => isActive() && generation === version
   async function saveConfiguration() {
-    if (loading.value || executing.value || !editor.value || editor.value.saving || editor.value.loading)
-    return;
+    if (
+      !isActive() ||
+      loading.value ||
+      executing.value ||
+      !editor.value ||
+      editor.value.saving ||
+      editor.value.loading
+    )
+      return false
     if (!editor.value.ready) {
       await editor.value.open(caseId.value)
-      return
+      return false
     }
-    await flushConfiguration()
+    return flushConfiguration()
   }
-  let generation = 0,
-    previewRequest = 0
-  const executionKeys = new Map<string, string>()
   async function load() {
-    const request = ++generation
+    if (!isActive() || !Number.isSafeInteger(caseId.value) || caseId.value <= 0) return
+    const version = ++generation,
+      id = caseId.value
     loading.value = true
+    loadError.value = false
+    void loadCatalog()
     try {
-      const [response, catalog]: any[] = await Promise.allSettled([
-        getEvaluationCase(caseId.value),
-        getCaseGraderCatalog(),
-      ])
-      if (request !== generation) return
-      if (response.status === 'rejected') throw response.reason
-      record.value = response.value.data
-      graderCatalog.value =
-        catalog.status === 'fulfilled' && Array.isArray(catalog.value.data)
-          ? catalog.value.data
-          : []
+      const response = await getEvaluationCase(id)
+      if (!current(version)) return
+      record.value = response.data || null
+      return true
+    } catch (loadFailure0) {
+      if (current(version)) (reportLoadError(loadFailure0, "加载失败，请重试", false), loadError.value = true)
+      return false
     } finally {
-      if (request === generation) loading.value = false
+      if (version === generation) loading.value = false
+    }
+  }
+  async function loadCatalog() {
+    if (!isActive()) return false
+    const version = generation,
+      request = ++catalogRequest
+    catalogLoading.value = true
+    catalogError.value = false
+    try {
+      const response = await getCaseGraderCatalog()
+      if (!current(version) || request !== catalogRequest) return false
+      graderCatalog.value = Array.isArray(response.data) ? response.data : []
+      return true
+    } catch (loadFailure1) {
+      if (current(version) && request === catalogRequest) (reportLoadError(loadFailure1, "加载失败，请重试", false), catalogError.value = true)
+      return false
+    } finally {
+      if (request === catalogRequest) catalogLoading.value = false
     }
   }
   async function flushConfiguration() {
-    if (!editor.value) return true
-    const saved = await editor.value.flush()
+    if (!isActive() || !editor.value) return false
+    const version = generation,
+      saved = await editor.value.flush()
+    if (!current(version)) return false
     if (!saved) Message.warning('配置尚未保存，请先完善配置或重试保存')
     return saved
   }
-  function configurationSaved(value: any) {
-    if (value && record.value?.id === value.id) {
-      Object.assign(record.value, value)
-      gradingPreview.value = undefined
-      previewRequest += 1
+  function configurationSaved(value?: Partial<EvaluationCaseRecord>) {
+    if (!isActive() || !value || !record.value || record.value.id !== value.id) return
+    const previous = record.value
+    record.value = {
+      ...previous,
+      config: value.config ?? previous.config,
+      dataset_version: value.dataset_version,
+      dataset_id: value.dataset_id,
+      dataset_name: value.dataset_name,
+      dataset_version_no: value.dataset_version_no,
     }
+    gradingPreview.value = undefined
+    ++previewRequest
+    if (!previewPending) previewLoading.value = false
   }
   async function preview() {
-    const id = caseId.value
-    let request = previewRequest
+    if (!isActive() || previewPending || loading.value) return false
+    const version = generation,
+      environment = environmentVersion,
+      id = caseId.value
+    previewPending = true
     previewLoading.value = true
     try {
-      if (!(await flushConfiguration()) || caseId.value !== id) return
-      request = ++previewRequest
-      const response: any = await getCaseGradingPreview(id)
-      if (request === previewRequest) gradingPreview.value = response.data
+      if (!(await flushConfiguration()) || !current(version) || environment !== environmentVersion)
+        return false
+      const ownRequest = ++previewRequest
+      const response = await getCaseGradingPreview(id)
+      if (current(version) && environment === environmentVersion && ownRequest === previewRequest)
+        gradingPreview.value = response.data
+      return current(version) && environment === environmentVersion && ownRequest === previewRequest
+    } catch {
+      return false
     } finally {
-      if (request === previewRequest || caseId.value === id) previewLoading.value = false
+      previewPending = false
+      previewLoading.value = false
     }
   }
   async function execute() {
+    if (!isActive() || executing.value || loading.value || record.value?.status !== 'enabled')
+      return false
     if (!user.selected_environment) {
       Message.warning('请先选择顶部测试环境')
-      return
+      return false
     }
-    if (executing.value) return
-    const environment = user.selected_environment
-    const scope = `${caseId.value}:${environment}`,
+    const environment = user.selected_environment,
+      version = generation,
+      environmentEpoch = environmentVersion,
       id = caseId.value
+    const scope = `${user.userId}:${user.roleId}:${id}:${environment}`
     if (!executionKeys.has(scope)) executionKeys.set(scope, crypto.randomUUID())
+    const key = executionKeys.get(scope)!
     executing.value = true
     try {
-      if (!(await flushConfiguration())) return
-      if (caseId.value !== id || user.selected_environment !== environment) return
-      const response: any = await executeEvaluationCase(
-        id,
-        { test_env: Number(environment) },
-        executionKeys.get(scope)!
+      if (
+        !(await flushConfiguration()) ||
+        !current(version) ||
+        environmentEpoch !== environmentVersion
       )
-      executionKeys.delete(scope)
-      if (caseId.value === id && user.selected_environment === environment) {
-        executionId.value = response.data.id
-        editor.value?.scrollToStep?.('results')
-        Message.success('已提交执行')
-      }
+        return false
+      const response = await executeEvaluationCase(id, { test_env: Number(environment) }, key)
+      if (executionKeys.get(scope) === key) executionKeys.delete(scope)
+      if (!current(version) || environmentEpoch !== environmentVersion) return false
+      executionId.value = response.data.id
+      editor.value?.scrollToStep('results')
+      Message.success('已提交执行')
+      return true
+    } catch {
+      return false
     } finally {
       executing.value = false
     }
   }
   function selected(id: number) {
-    executionId.value = id
+    if (isActive()) executionId.value = id
   }
-  watch([caseId, () => true], () => {
-    generation += 1;
-    previewRequest += 1;
-    record.value = undefined;
-    gradingPreview.value = undefined;
-    loading.value = false;
-    previewLoading.value = false;
-    executionId.value = Number(route.query.execution) || undefined;
-    initialStep.value = executionId.value || route.query.tab === 'results' ? 'results' : 'data';
-    historyVisible.value =
-        route.query.tab === 'history';
-    if (caseId.value > 0)
-        load();
-}, { immediate: true })
+  function invalidate() {
+    ++generation
+    ++catalogRequest
+    ++previewRequest
+    loading.value = false
+    catalogLoading.value = false
+    catalogError.value = false
+    previewLoading.value = false
+    record.value = null
+    graderCatalog.value = []
+    gradingPreview.value = undefined
+    historyVisible.value = false
+    executionId.value = undefined
+  }
+  function reload() {
+    invalidate()
+    if (!isActive()) return
+    executionId.value = Number(route.query.execution) || undefined
+    initialStep.value = executionId.value || route.query.tab === 'results' ? 'results' : 'data'
+    historyVisible.value = route.query.tab === 'history'
+    void load()
+  }
+  watch(() => [caseId.value, route.path, user.userId, user.roleId, user.token], reload, {
+    immediate: true,
+    flush: 'sync',
+  })
   watch(
     () => user.selected_environment,
     (_environment, previous) => {
+      ++environmentVersion
+      ++previewRequest
+      previewLoading.value = false
+      gradingPreview.value = undefined
       if (!previous) return
       executionId.value = undefined
-      router.replace({ query: { ...route.query, execution: undefined } })
-    }
+      historyVisible.value = false
+      if (isActive() && route.query.execution)
+        void router.replace({ query: { ...route.query, execution: undefined } })
+    },
+    { flush: 'sync' }
   )
+  onDeactivated(() => {
+    active = false
+    invalidate()
+  })
+  onActivated(() => {
+    if (!active) {
+      active = true
+      reload()
+    }
+  })
   onBeforeUnmount(() => {
-    generation += 1
-    previewRequest += 1
+    active = false
+    invalidate()
   })
 </script>
 <style scoped>
@@ -275,15 +377,24 @@
     flex: 1;
     min-height: 0;
   }
-  .mango-evaluation-case-page :deep(> .mango-table-body__header) { padding-inline: var(--m-page-gap); }
-  .mango-evaluation-case-page :deep(> .mango-table-body__header > .mango-detail-toolbar) { padding: var(--m-card-padding) 0; }
+  .mango-evaluation-case-page :deep(> .mango-table-body__header) {
+    padding-inline: var(--m-page-gap);
+  }
+  .mango-evaluation-case-page :deep(> .mango-table-body__header > .mango-detail-toolbar) {
+    padding: var(--m-card-padding) 0;
+  }
   .mango-evaluation-case-page :deep(> .mango-table-body__content) {
     display: flex;
     flex-direction: column;
     overflow: hidden;
     padding: 0 var(--m-page-gap) var(--m-page-gap);
   }
-  .mango-case-details-body :deep(> .mango-panel-spin__content) { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+  .mango-case-details-body :deep(> .mango-panel-spin__content) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
   .mango-evaluation-workspace {
     min-width: 0;
     flex: 1;
@@ -294,30 +405,46 @@
     min-height: 0;
   }
   @container (max-width: 1200px) {
-    .mango-evaluation-workspace { grid-template-columns: minmax(0, 1fr) 300px; }
+    .mango-evaluation-workspace {
+      grid-template-columns: minmax(0, 1fr) 300px;
+    }
   }
   @container (max-width: 800px) {
-    .mango-evaluation-workspace { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 200px); }
+    .mango-evaluation-workspace {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr) minmax(0, 200px);
+    }
   }
   .mango-evaluation-config-panel,
   .mango-evaluation-results-panel {
     min-width: 0;
     container-type: inline-size;
   }
-  .mango-evaluation-config-panel { flex: 1; min-height: 0; }
+  .mango-evaluation-config-panel {
+    flex: 1;
+    min-height: 0;
+  }
   .mango-evaluation-case-title {
     display: flex;
     align-items: center;
     gap: var(--m-space-sm);
     min-width: 0;
   }
-  .mango-evaluation-case-title :deep(.arco-tag) { flex-shrink: 0; }
+  .mango-evaluation-case-title :deep(.arco-tag) {
+    flex-shrink: 0;
+  }
   .mango-evaluation-case-meta {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .mango-evaluation-case-page :deep(.mango-detail-toolbar) { flex-wrap: wrap; }
-  .mango-evaluation-case-page :deep(.mango-detail-heading) { flex: 1; }
-  .mango-evaluation-case-page :deep(.mango-detail-actions) { margin-left: auto; }
+  .mango-evaluation-case-page :deep(.mango-detail-toolbar) {
+    flex-wrap: wrap;
+  }
+  .mango-evaluation-case-page :deep(.mango-detail-heading) {
+    flex: 1;
+  }
+  .mango-evaluation-case-page :deep(.mango-detail-actions) {
+    margin-left: auto;
+  }
 </style>

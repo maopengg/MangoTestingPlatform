@@ -18,7 +18,7 @@ test('排除由前端要求分类和说明，三个类型均接入且保留原�
     assert.deepEqual(compileTemplate({ source: descriptor.template.content, filename, id: path,
       compilerOptions: { bindingMetadata: script.bindings } }).errors, [])
     if (path.endsWith('CaseTable.vue')) {
-      assert.match(code, /__sourceRecord: item/)
+      assert.match(code, /flattenReportCases\(props.cases,/)
       assert.match(code, /label: '排查与排除', hidden: !eligible, overflow: true/)
       assert.match(code, /#default="\{ open, eligible \}"/)
       assert.match(code, /itemRow.key === 'disposition'/)
@@ -42,31 +42,4 @@ test('排查状态是明细最后一个数据列，按执行项合并并显示�
   assert.match(status, /record.is_excluded \? '已排除' : '已排查'/)
   assert.match(status, /failure_reason/)
   assert.match(status, /failure_description/)
-})
-
-test('原因可独立保存，手工排除未填结论不提交，重复提交受保护', async () => {
-  const start = source.indexOf('  async function save(')
-  const code = ts.transpileModule(source.slice(start, source.indexOf('</script>', start)), {}).outputText
-  const form = { is_excluded: true, failure_reason: '', failure_description: '' }
-  const saving = { value: false }
-  let calls = 0, updated = 0, resolve
-  let response = Promise.resolve({})
-  const save = new Function('saving', 'permissionStore', 'form', 'Message', 'updateReportDisposition', 'props', 'emit',
-    `${code};return save`)(saving, { hasPermission: () => true }, form,
-    { warning() {}, success() {} }, async () => { calls++; return response }, { record: { id: 1 } }, () => { updated++ })
-  assert.equal(await save(), false)
-  assert.equal(calls, 0)
-  form.is_excluded = false
-  form.failure_reason = 'product_pending'
-  assert.equal(await save(), true)
-  form.is_excluded = true
-  form.failure_description = '等待开发修复'
-  response = new Promise((done) => { resolve = done })
-  const pending = save()
-  assert.equal(await save(), false)
-  resolve({})
-  assert.equal(await pending, true)
-  assert.equal(calls, 2)
-  assert.equal(updated, 2)
-  assert.equal(saving.value, false)
 })

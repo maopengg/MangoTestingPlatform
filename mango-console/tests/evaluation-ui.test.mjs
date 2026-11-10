@@ -1,7 +1,11 @@
+import { loadFeedbackModule } from './helpers/load-feedback-modules.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
+import { evaluationComponent } from './helpers/evaluation-harness.mjs'
+import { flush } from './helpers/case-details-harness.mjs'
 
 const require = createRequire(import.meta.url)
 const Vue = require('vue')
@@ -45,7 +49,7 @@ test('grader explanations distinguish headings, body, rules and constraints with
   assert.match(detail, /\.mango-grader-guide-note\s*\{[^}]*color: var\(--m-text-2\)/)
   assert.match(detail, /\.mango-grader-guide-scoring\s*\{[^}]*background: var\(--m-surface-soft\)/)
   assert.match(detail, /<strong>判定边界<\/strong>/)
-  assert.match(detail, /<strong>通过设置<\/strong>/)
+  assert.match(detail, /<strong>通过设置<\/strong\s*>/)
   assert.match(detail, /container-type: inline-size/)
   assert.doesNotMatch(detail, /<a-card|font-family:/)
 })
@@ -79,7 +83,9 @@ test('dataset pages use standard list chrome, bounded workbench and elastic cont
   const module = { exports: {} }
   new Function('module', 'exports', code)(module, module.exports)
   assert.equal(module.exports.datasetColumns.find(column => column.key === 'name').width, undefined)
-  assert.equal(module.exports.itemColumns.find(column => column.key === 'input_data').width, undefined)
+  const itemModule = { exports: {} }
+  new Function('module', 'exports', ts.transpileModule(read('dataset/details/config.ts'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText)(itemModule, itemModule.exports)
+  assert.equal(itemModule.exports.itemColumns.find(column => column.key === 'input_data').width, undefined)
   assert.match(list, /formatEvaluationDate\(record.update_time\)/)
   assert.match(detail, /:title="record.published_at"/)
 })
@@ -162,7 +168,7 @@ test('evaluation overlays and editor grids follow global sizing and scroll bound
   for (const file of files().filter(file => file.endsWith('.vue') && !file.endsWith('/EvaluationDrawer.vue'))) {
     assert.doesNotMatch(read(file), /<a-drawer\b/, file)
   }
-  assert.match(read('components/ItemSelectionDrawer.vue'), /:width="1000" contained/)
+  assert.match(read('components/ItemSelectionDrawer.vue'), /:width="1000"\s+contained/)
   assert.match(read('components/CaseEditor.vue'), /@container \(max-width: 920px\)/)
   assert.doesNotMatch(read('components/CaseEditor.vue'), /<a-grid\b/)
   assert.match(read('components/EvaluationDrawer.vue'), /padding: var\(--m-page-gap\)/)
@@ -198,54 +204,36 @@ test('grader rows stay single-line and the description absorbs spare table width
   assert.doesNotMatch(read('grader/index.vue'), /mango-grader-identity|white-space: normal/)
 })
 
-test('grader catalogue preserves multi-select search, pagination and detail permission boundaries', async () => {
+test('grader catalogue preserves multi-select search, pagination and backend detail authorization', async () => {
   const requests = [], detailCalls = []
-  let permitted = true
-  const descriptor = parse(read('grader/index.vue')).descriptor
-  const script = compileScript(descriptor, { id: 'grader-page' }).content
-  const code = ts.transpileModule(script, {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, esModuleInterop: true },
-  }).outputText
-  const module = { exports: {} }
-  new Function('require', 'module', 'exports', code)(name => {
-    if (name === 'vue') return Vue
-    if (name.endsWith('.vue')) return {}
-    if (name === './config') return { graderColumns: [], categoryOptions: [] }
-    if (name === '@/store/modules/get-enum') return { useEnum: () => ({ colors: ['arcoblue', 'orange', 'purple'] }) }
-    if (name === '@/utils/business-format') return { getEnumTagColor: () => 'arcoblue' }
-    if (name.endsWith('/presentation')) return { formatVersion: value => `V${value}` }
-    if (name === '@/store/modules/permission') return { __esModule: true, default: () => ({ hasPermission: () => permitted }) }
-    if (name === '@/api/evaluation') return {
+  let rejected = false
+  const view = evaluationComponent('index', 'filters,reload:load,displayedRows,pagination,detailError,detail,show', {
+    filename: fileURLToPath(new URL('grader/index.vue', root)),
+    api: {
       getGraderCatalog: async query => { requests.push(query); return { data: { items: Array.from({ length: 25 }, (_, index) => ({ grader_key: `rule_${index}`, grader_version: 1 })) } } },
-      getGrader: async (key, version) => { detailCalls.push([key, version]); return { data: { name: '规则', grader_key: key } } },
-    }
-    throw new Error(`Unexpected dependency: ${name}`)
-  }, module, module.exports)
-  const renderer = Vue.createRenderer({
-    createComment: () => ({}), insert() {}, remove() {}, parentNode: () => null, nextSibling: () => null,
+      getGrader: async (key, version) => { detailCalls.push([key, version]); if (rejected) throw new Error('Backend rejected access'); return { data: { name: '规则', grader_key: key, grader_version: version } } },
+    },
   })
-  module.exports.default.render = () => null
-  const app = renderer.createApp(module.exports.default)
-  app.mount({})
-  const state = app._instance.setupState
   try {
-    await new Promise(resolve => setImmediate(resolve))
-    state.filters.search = 'rule'
-    state.filters.categories = ['deterministic', 'model']
-    await state.load()
+    await flush()
+    view.filters.search = 'rule'
+    view.filters.categories = ['deterministic', 'model']
+    await view.reload()
     assert.equal(requests.at(-1).category__in, 'deterministic,model')
     assert.equal(requests.at(-1).search, 'rule')
-    assert.equal(state.displayedRows.length, 20)
-    state.pagination.page = 2
-    assert.equal(state.displayedRows.length, 5)
-    state.detailError = true
-    await state.show({ grader_key: 'rule_1', grader_version: 2 })
-    assert.equal(state.detailError, false)
+    assert.equal(view.displayedRows.value.length, 20)
+    view.pagination.page = 2
+    assert.equal(view.displayedRows.value.length, 5)
+    view.detailError.value = true
+    await view.show({ grader_key: 'rule_1', grader_version: 2 })
+    assert.equal(view.detailError.value, false)
     assert.deepEqual(detailCalls, [['rule_1', 2]])
-    permitted = false
-    await state.show({ grader_key: 'rule_2', grader_version: 1 })
-    assert.equal(detailCalls.length, 1)
-  } finally { app.unmount() }
+    rejected = true
+    assert.equal(await view.show({ grader_key: 'rule_2', grader_version: 1 }), false)
+    assert.equal(detailCalls.length, 2)
+    assert.equal(view.detailError.value, true)
+    assert.equal(view.detail.value, null)
+  } finally { view.dispose() }
 })
 
 test('grader category cells render real Arco tags using the global classification palette', async () => {
@@ -263,10 +251,15 @@ test('grader category cells render real Arco tags using the global classificatio
   const formatting = loadModule(readFileSync(new URL('../src/utils/business-format.ts', import.meta.url), 'utf8'), () => { throw new Error('Unexpected formatter dependency') })
   const source = compileScript(parse(read('grader/index.vue')).descriptor, { id: 'grader-tags', inlineTemplate: true }).content
   const categories = ['deterministic', 'algorithm', 'model']
-  const component = loadModule(source, name => {
+  function resolveModule(name) {
     if (name === 'vue') return { ...Vue, onMounted: Vue.onServerPrefetch }
     if (name.endsWith('.vue')) return { __esModule: true, default: { render: () => null } }
     if (name === './config') return config
+    if (name === './catalog') return loadModule(read('grader/catalog.ts'), () => { throw new Error('Unexpected catalog dependency') })
+    if (name === './composables/useGraderDetail') return loadModule(read('grader/composables/useGraderDetail.ts'), resolveModule)
+    if (name === '../composables/useEvaluationScope') return loadModule(read('composables/useEvaluationScope.ts'), resolveModule)
+    if (name === '@/store/modules/user') return { __esModule: true, default: () => { Vue.onServerPrefetch(() => new Promise(resolve => setImmediate(resolve))); return { userId: 1, roleId: 1, token: 'fixture', selected_environment: 1 } } }
+    if (name === 'vue-router') return { useRoute: () => ({ path: '/evaluation/grader/index' }) }
     if (name === '@/utils/business-format') return formatting
     if (name === '@/store/modules/get-enum') return { useEnum: () => ({ colors: ['cyan', 'gold', 'pinkpurple'] }) }
     if (name === '@/store/modules/permission') return { __esModule: true, default: () => ({ hasPermission: () => false }) }
@@ -276,8 +269,9 @@ test('grader category cells render real Arco tags using the global classificatio
         name: `评分器 ${index}`, grader_key: `rule_${index}`, category, grader_version: 1, description: '规则说明',
       })) } }),
     }
-    throw new Error(`Unexpected rendering dependency: ${name}`)
-  }).default
+    { if (['@/utils/load-error', '@/utils/api-response'].includes(name)) return loadFeedbackModule(name); throw new Error(`Unexpected rendering dependency: ${name}`) }
+  }
+  const component = loadModule(source, resolveModule).default
   const app = Vue.createSSRApp(component)
   app.use(Arco.default)
   app.component('TableBody', { setup: (_, { slots }) => () => Vue.h('main', [slots.header?.(), slots.default?.(), slots.footer?.()]) })
@@ -290,7 +284,7 @@ test('grader category cells render real Arco tags using the global classificatio
 
 test('evaluation classification tags share the global formatter and dense list defaults', () => {
   for (const file of ['grader/index.vue', 'case/index.vue', 'dataset/details/index.vue']) {
-    assert.match(read(file), /getEnumTagColor\([^\n]*enumStore.colors\)/, file)
+    assert.match(read(file), /getEnumTagColor\([^)]*enumStore.colors\s*\)/, file)
     assert.match(read(file), /size="small"/, file)
   }
   assert.match(read('dataset/index.vue'), /record.task_type.slice\(0, 2\)/)
@@ -302,11 +296,11 @@ test('case configuration and results share a continuous anchored workbench', asy
   const page = read('case/details/index.vue')
   assert.doesNotMatch(read('components/CaseEditor.vue'), /mango-case-editor-toolbar|配置修改后自动保存/)
   assert.ok(page.indexOf('@click="saveConfiguration"') < page.indexOf('@click="historyVisible = true"'))
-  assert.match(page, /v-permission="'evaluation.case:change'"/)
+  assert.doesNotMatch(page, /v-permission=/)
   assert.doesNotMatch(page, /<TableTabs|<a-tabs|activeWorkspace/)
-  assert.match(page, /<template #results>/)
+  assert.match(page, /<template\s+#results\s*>/)
   assert.doesNotMatch(page, /grid-template-columns:\s*minmax\(560px/)
-  assert.match(read('components/CaseEditor.vue'), /label="用例配置步骤" layout="workspace"/)
+  assert.match(read('components/CaseEditor.vue'), /label="用例配置步骤"\s+layout="workspace"/)
   const filename = new URL('../src/components/forms/MangoStepCards.vue', import.meta.url)
   const { descriptor, errors } = parse(readFileSync(filename, 'utf8'))
   assert.deepEqual(errors, [])
@@ -385,6 +379,6 @@ test('case form controls have bounded field, expression and grader widths', () =
   assert.match(editor, /arco-input-number\)[^}]*max-width: 160px/)
   assert.match(editor, /mango-case-code-field\)[^}]*max-width: none/)
   assert.match(read('components/ExtractionEditor.vue'), /mango-extraction-editor[^}]*max-width: 880px/)
-  assert.match(read('components/GraderEditor.vue'), /<div class="mango-grader-editor__select"><a-select/)
+  assert.match(read('components/GraderEditor.vue'), /<div class="mango-grader-editor__select"\s*>\s*<a-select/)
   assert.match(read('components/GraderEditor.vue'), /mango-grader-editor__select[^}]*max-width: 360px/)
 })

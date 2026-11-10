@@ -32,6 +32,8 @@ from src.apps.auto_api.api.views.module_coverage_interface import ModuleCoverage
 from src.apps.auto_api.api.views.module_coverage_scan import ModuleCoverageScanViews
 
 urlpatterns = [
+    path('case/resource-cleanup/results', ApiCaseViews.as_view({'get': 'resource_cleanup_results'})),
+    path('case/resource-cleanup/retry', ApiCaseViews.as_view({'post': 'resource_cleanup_retry'})),
     path("mock/config", ApiMockConfigCRUD.as_view()),
     path('case/callback/results', ApiCallbackViews.as_view({'get': 'results'})),
     path('case/callback/deliveries', ApiCallbackViews.as_view({'get': 'deliveries'})),

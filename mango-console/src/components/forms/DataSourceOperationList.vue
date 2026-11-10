@@ -109,7 +109,9 @@
 <script lang="ts" setup>
   import { ref } from 'vue'
   import { Message, Modal, Notification } from '@arco-design/web-vue'
-  import { postDataSourceExecution } from '@/api/data-source-execution'
+  import { postDataSourceExecution, type DataSourceOperationPayload } from '@/api/data-source-execution'
+  import { useLiveWorkbenchScope } from '@/hooks/use-live-workbench-scope'
+  import { cloneLosslessJson } from '@/utils/lossless-json'
 
   const ELASTICSEARCH_TYPE = 20
   const RESULT_PREVIEW_LENGTH = 1200
@@ -125,8 +127,8 @@
     datasource_alias?: string | number | null
     test_envs?: Array<string | number> | null
     key?: string
-    key_list?: string | string[]
-    sql?: string
+    key_list?: string | string[] | null
+    sql?: string | Record<string, unknown>
     value?: string | Record<string, unknown>
     [key: string]: unknown
   }
@@ -139,6 +141,7 @@
     onDeleteItem?: (index: number) => void
     onSave?: () => void
     onDraftChange?: (item: DataSourceOperationItem, index: number) => void
+    onOperationDraftChange?: (item: DataSourceOperationItem, pending: boolean) => void
     emptyText?: string
     projectProductId?: string | number | null
     testEnv?: string | number | null
@@ -239,6 +242,7 @@
       const drafts = new Map(operationDrafts.value)
       drafts.set(item, value)
       operationDrafts.value = drafts
+      props.onOperationDraftChange?.(item, true)
       return
     }
     item[props.operationField] = value
@@ -265,6 +269,7 @@
     const drafts = new Map(operationDrafts.value)
     drafts.delete(item)
     operationDrafts.value = drafts
+    props.onOperationDraftChange?.(item, false)
     return value
   }
 
@@ -319,10 +324,20 @@
     })
   }
 
-  async function executeTest(item: DataSourceOperationItem, index: number, confirmWrite = false) {
+  let confirmation: ReturnType<typeof Modal.confirm> | null = null
+  const executionScope = useLiveWorkbenchScope(() => [props.projectProductId, props.testEnv, props.dataList.map(item => item.id ?? null)], {
+    invalidate() { confirmation?.close(); confirmation = null },
+    resume() {},
+  })
+  type TestPayload = DataSourceOperationPayload
+  async function executeTest(item: DataSourceOperationItem, index: number, confirmWrite = false, frozen?: TestPayload) {
+    if (props.disabled || isTesting(index) || !executionScope.available()) return false
+    const captured = executionScope.capture()
+    const current = () => captured() && props.dataList[index] === item && !props.disabled
+    let payload: TestPayload | undefined
     setTesting(index, true)
     try {
-      const result = await postDataSourceExecution({
+      payload = frozen ?? cloneLosslessJson({
         action: 'execute',
         project_product_id: props.projectProductId as string | number,
         datasource_alias_id: item.datasource_alias as string | number,
@@ -330,18 +345,25 @@
         operation_config: commitOperationValue(item),
         confirm_write: confirmWrite,
       })
+      const result = await postDataSourceExecution(payload)
+      if (!current()) return false
       showTestResult(result.data)
       return true
     } catch (error: any) {
+      if (!current()) return false
       const message = error?.message || error?.msg || '数据源测试失败'
       if (!confirmWrite && message.includes('包含写入行为')) {
-        Modal.confirm({
+        if (!payload) return false
+        const snapshot = cloneLosslessJson(payload)
+        snapshot.confirm_write = true
+        confirmation?.close()
+        confirmation = Modal.confirm({
           title: '确认执行写入操作',
           content: '当前内容包含数据库写入行为，将直接修改所选环境的数据。确定继续执行吗？',
           cancelText: '取消',
           okText: '继续执行',
           okButtonProps: { status: 'danger' },
-          onBeforeOk: () => executeTest(item, index, true),
+          onBeforeOk: () => current() ? executeTest(item, index, true, snapshot) : Promise.resolve(false),
         })
         return false
       }
@@ -354,7 +376,8 @@
 
   function onTestOperation(item: DataSourceOperationItem, index: number) {
     validationRows.value = new Set(validationRows.value).add(index)
-    if (!props.projectProductId) {
+    if (props.disabled || isTesting(index) || !executionScope.available()) return
+    if (props.projectProductId == null || props.projectProductId === '') {
       Message.warning('当前用例缺少项目产品，无法测试数据库操作')
       return
     }

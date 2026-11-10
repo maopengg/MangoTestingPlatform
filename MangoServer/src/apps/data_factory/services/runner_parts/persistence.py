@@ -18,6 +18,7 @@ from ..factory_sql_execution import DataFactorySqlExecutionService
 from ..type_cast import DataFactoryTypeCast
 from ..execution_metadata import DataFactoryExecutionMetadata
 from ..datasource_wait import DatasourceWaitService
+from ..datasource_timing import DatasourceTimingService
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,7 @@ class DataFactoryRunnerPersistenceMixin:
 
         preparation_started = perf_counter()
         wait_started = DatasourceWaitService.elapsed()
+        timing_started = DatasourceTimingService.snapshot()
         engine, managed_by_worker = DataFactoryDatasource.get_worker_engine(database)
         audit_handle = None
         try:
@@ -80,6 +82,7 @@ class DataFactoryRunnerPersistenceMixin:
                 transaction_scope.enter_context(SqlExecutionAuditService.source({
                     'factory_preparation_ms': round((perf_counter() - preparation_started) * 1000, 2),
                     'factory_preparation_wait_ms': round(max(0, DatasourceWaitService.elapsed() - wait_started) * 1000, 2),
+                    'factory_preparation_timing_ms': DatasourceTimingService.delta(timing_started),
                 }))
 
                 def execute_insert():

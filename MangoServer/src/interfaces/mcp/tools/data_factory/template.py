@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any, Literal
 
 from django.forms import model_to_dict
@@ -339,8 +340,8 @@ def register_template_tools(mcp):
         env = _selected_test_env(user_id, test_env)
         preview = DataFactoryPreviewService.preview_template(
             template_id=template_id,
-            overrides=overrides or {},
-            context=context or {},
+            overrides=deepcopy(overrides or {}),
+            context=deepcopy(context or {}),
             test_object_id=test_object_id,
             test_env=env,
         )

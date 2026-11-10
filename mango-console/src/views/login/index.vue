@@ -22,89 +22,9 @@
           <h2>面向测试团队的一站式自动化平台</h2>
           <div class="module-viewport" aria-label="平台核心能力">
             <div class="module-track">
-              <div class="module-card">
-                <icon-find-replace />
-                <div>
-                  <strong>UI自动化</strong>
-                  <span>页面、元素、步骤、公共能力与执行链路统一管理</span>
-                </div>
-              </div>
-              <div class="module-card">
-                <icon-thunderbolt />
-                <div>
-                  <strong>API自动化</strong>
-                  <span>接口用例、断言、环境变量和场景编排</span>
-                </div>
-              </div>
-              <div class="module-card">
-                <icon-storage />
-                <div>
-                  <strong>数据工厂</strong>
-                  <span>实体、关系、变量与测试数据快速构造</span>
-                </div>
-              </div>
-              <div class="module-card">
-                <icon-calendar-clock />
-                <div>
-                  <strong>报告分析</strong>
-                  <span>执行趋势、失败定位和质量结果追踪</span>
-                </div>
-              </div>
-              <div class="module-card">
-                <icon-file />
-                <div>
-                  <strong>研发协同</strong>
-                  <span>迭代、需求、用例、计划与缺陷协同管理</span>
-                </div>
-              </div>
-              <div class="module-card">
-                <icon-schedule />
-                <div>
-                  <strong>任务调度</strong>
-                  <span>定时任务、任务组、触发策略与结果通知</span>
-                </div>
-              </div>
-              <div class="module-card">
-                <icon-command />
-                <div>
-                  <strong>测试配置</strong>
-                  <span>项目产品、模块、环境、文件和测试对象配置</span>
-                </div>
-              </div>
-              <div class="module-card">
-                <icon-experiment />
-                <div>
-                  <strong>评测中心</strong>
-                  <span>评测数据集、测试用例与评分器管理</span>
-                </div>
-              </div>
-              <div class="module-card">
-                <icon-code-block />
-                <div>
-                  <strong>Pytest自动化</strong>
-                  <span>代码用例、Fixture、Allure 和分层架构管理</span>
-                </div>
-              </div>
-              <div class="module-card">
-                <icon-dashboard />
-                <div>
-                  <strong>性能测试</strong>
-                  <span>压测场景、执行容量和性能结果分析</span>
-                </div>
-              </div>
-              <div class="module-card">
-                <icon-play-circle />
-                <div>
-                  <strong>监控中心</strong>
-                  <span>脚本定时运行、异常预警与监控报告</span>
-                </div>
-              </div>
-              <div class="module-card">
-                <icon-robot />
-                <div>
-                  <strong>智能能力</strong>
-                  <span>Skill、MCP 工具与 AI 任务执行</span>
-                </div>
+              <div v-for="capability in loginCapabilities" :key="capability.title" class="module-card">
+                <component :is="capability.icon" />
+                <div><strong>{{ capability.title }}</strong><span :title="capability.description">{{ capability.description }}</span></div>
               </div>
             </div>
           </div>
@@ -112,13 +32,13 @@
       </div>
 
       <aside class="login-panel">
-        <div v-if="baseData.isLogin === true" class="form-content">
+        <div v-if="mode === 'login'" class="form-content">
           <div class="form-kicker">secure sign in</div>
           <h1 class="title">登录测试平台</h1>
           <p class="subtitle">统一开展自动化测试、效果测评与性能测试</p>
           <div class="item-wrapper">
             <a-input
-              v-model="baseData.username"
+              v-model="loginForm.username"
               placeholder="请输入账号邮箱"
               allow-clear
               size="large"
@@ -132,7 +52,7 @@
           </div>
           <div class="item-wrapper">
             <a-input-password
-              v-model="baseData.password"
+              v-model="loginForm.password"
               placeholder="请输入密码"
               allow-clear
               size="large"
@@ -146,7 +66,7 @@
             </a-input-password>
           </div>
           <div class="remember-forgot">
-            <a-checkbox v-model="baseData.remember" data-testid="qa-views-login-checkbox-记住我"
+            <a-checkbox v-model="loginForm.remember" data-testid="qa-views-login-checkbox-记住我"
               >记住我</a-checkbox
             >
             <a-link @click="forgotPassword" data-testid="qa-views-login-link-忘记密码"
@@ -156,7 +76,8 @@
           <a-button
             type="primary"
             class="login-btn"
-            :loading="baseData.loading"
+            :loading="submission === 'login'"
+            :disabled="busy"
             @click="onLogin"
             data-testid="qa-views-login-button-登录"
           >
@@ -169,7 +90,7 @@
           <p class="subtitle">注册后，随机初始密码将发送到您的邮箱</p>
           <div class="item-wrapper">
             <a-input
-              v-model="baseData.name"
+              v-model="registrationForm.name"
               placeholder="请输入用户昵称"
               allow-clear
               size="large"
@@ -179,7 +100,7 @@
           </div>
           <div class="item-wrapper">
             <a-input
-              v-model="baseData.email"
+              v-model="registrationForm.email"
               placeholder="请输入登录邮箱"
               allow-clear
               size="large"
@@ -194,7 +115,8 @@
           <a-button
             type="primary"
             class="login-btn"
-            :loading="baseData.loading"
+            :loading="submission === 'register'"
+            :disabled="busy"
             @click="onRegister"
             data-testid="qa-views-login-button-注册"
           >
@@ -203,19 +125,20 @@
         </div>
         <div class="links-wrapper">
           <a-link
-            v-if="baseData.isLogin === true"
+            v-if="mode === 'login'"
             :underline="false"
             type="primary"
             :loading="registrationState.loading"
-            :disabled="registrationState.loading"
+            :disabled="registrationState.loading || busy"
             @click="register1"
             data-testid="qa-views-login-link-注册用户"
             >注册用户</a-link
           >
           <a-link
-            v-if="baseData.isLogin === false"
+            v-if="mode === 'register'"
             :underline="false"
             type="primary"
+            :disabled="busy"
             @click="returnToLogin"
             data-testid="qa-views-login-link-返回登录"
             >返回登录</a-link
@@ -237,14 +160,16 @@
       </aside>
     </section>
     <a-modal
+      modal-class="mango-simple-form-modal"
       v-model:visible="resetPassword.visible"
       title="通过邮箱重置密码"
-      width="540px"
+      :width="560"
       :on-before-ok="resetPasswordByEmail"
-      @cancel="resetPassword.email = ''"
+      :on-before-cancel="cancelPasswordReset"
+      :ok-loading="submission === 'reset'"
     >
-      <a-form layout="vertical" :model="resetPassword">
-        <a-form-item class="mango-form-item__require" label="登录邮箱">
+      <a-form auto-label-width class="mango-simple-form" layout="horizontal" :model="resetPassword">
+        <a-form-item class="mango-form-item__require mango-simple-form-item" label="登录邮箱">
           <a-input v-model="resetPassword.email" placeholder="请输入注册时使用的邮箱" allow-clear>
             <template #prefix><icon-email /></template>
           </a-input>
@@ -257,15 +182,14 @@
 </template>
 
 <script lang="ts" setup>
-  import { reactive, ref, onMounted, onBeforeUnmount } from 'vue'
+  import { computed, reactive, ref, watch, onMounted, onActivated, onDeactivated, onBeforeUnmount } from 'vue'
   import { startLoginBackgroundMotion } from './background-motion'
+  import { loginCapabilities, loginEmailPattern } from './config'
+  import { readLoginUser } from './records'
   import { useRoute, useRouter } from 'vue-router'
-  import { post, Response } from '@/api/http'
+  import { loginAccount, registerAccount, resetAccountPassword } from '@/api/user/authentication'
   import { md5 } from 'js-md5'
-
-  import { login, register } from '@/api/url'
   import { Message } from '@arco-design/web-vue'
-  import { UserState } from '@/store/types'
   import usePlatformBrandingStore from '@/store/modules/platform-branding'
   import type { PublicPlatformConfig } from '@/store/modules/platform-branding'
   import brandLogo from '@/assets/logo.svg'
@@ -283,179 +207,218 @@
   const userStore = useUserStore()
   const permissionStore = usePermissionStore()
   const appStore = useAppConfigStore()
+  const mode = ref<'login' | 'register'>('login')
+  const loginForm = reactive({ username: '', password: '', remember: false })
+  const registrationForm = reactive({ name: '', email: '' })
+  const submission = ref<'login' | 'register' | 'reset' | null>(null)
+  const busy = computed(() => submission.value !== null)
   const registrationState = reactive({ loading: false, configLoading: true, showAuthor: false })
-  type RegistrationConfig = PublicPlatformConfig
-  let registrationConfigRequest: Promise<RegistrationConfig> | undefined
+  const resetPassword = reactive({ visible: false, email: '' })
   const codeTextureTrack = ref<HTMLElement>()
   let stopBackgroundMotion: (() => void) | undefined
-  const baseData: any = reactive({
-    name: '',
-    email: '',
-    username: '',
-    password: '',
-    confirm_password: '',
-    remember: false,
-    loading: false,
-    isLogin: true,
-  })
-  const resetPassword = reactive({
-    visible: false,
-    email: '',
-  })
+  let registrationConfigRequest: Promise<PublicPlatformConfig> | undefined
+  let generation = 0
+  let configSequence = 0
+  let mounted = false
+  let active = false
+  let applyingLoginIdentity = false
+  const identity = computed(() => JSON.stringify([userStore.userId, userStore.roleId, userStore.token, userStore.selected_environment]))
+  const available = () => mounted && active && route.path === '/login'
+  const isCurrent = (version: number) => available() && generation === version
+
+  function invalidate() {
+    generation++
+    configSequence++
+    registrationConfigRequest = undefined
+    registrationState.loading = false
+    registrationState.configLoading = false
+    registrationState.showAuthor = false
+    resetPassword.visible = false
+    resetPassword.email = ''
+    loginForm.password = ''
+    Object.assign(registrationForm, { name: '', email: '' })
+    mode.value = 'login'
+  }
+
+  watch(() => [route.fullPath, identity.value], () => {
+    if (applyingLoginIdentity) return
+    invalidate()
+    if (available()) void loadRegistrationConfig().catch(() => {})
+  }, { flush: 'sync' })
 
   function forgotPassword() {
+    if (!available() || busy.value) return
     resetPassword.email = ''
     resetPassword.visible = true
   }
 
+  function cancelPasswordReset() {
+    if (submission.value === 'reset') return false
+    resetPassword.email = ''
+    return true
+  }
+
   function isEmail(value: string) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+    return loginEmailPattern.test(value)
   }
 
   async function resetPasswordByEmail() {
+    if (!available() || busy.value || !resetPassword.visible) return false
     const email = resetPassword.email.trim().toLowerCase()
     if (!isEmail(email)) {
       Message.error('请输入正确的邮箱地址')
       return false
     }
-    const res = await post({ url: '/reset-password', data: { email } })
-    Message.success(res.msg)
-    return true
+    const version = generation
+    submission.value = 'reset'
+    try {
+      const res = await resetAccountPassword(email)
+      if (!isCurrent(version)) return false
+      if (res.code !== 200) throw new Error('Password reset failed')
+      Message.success(res.msg)
+      resetPassword.email = ''
+      return true
+    } catch {
+      if (isCurrent(version)) Message.error('密码重置失败，请稍后重试')
+      return false
+    } finally {
+      submission.value = null
+    }
   }
 
   function passwordDigest(password: string) {
     return md5(md5(password))
   }
 
-  const onLogin = async () => {
-    const username = baseData.username?.trim()
-    const password = baseData.password?.trim()
-    if (!username) {
-      Message.error('请输入用户名/手机号')
-      return
-    }
-    if (!password) {
-      Message.error('请输入密码')
-      return
-    }
+  async function onLogin() {
+    if (!available() || busy.value || mode.value !== 'login') return
+    const username = loginForm.username.trim()
+    const password = loginForm.password.trim()
+    if (!username) { Message.error('请输入用户名/手机号'); return }
+    if (!password) { Message.error('请输入密码'); return }
     if (username === 'open') {
       Message.warning('open账号默认给执行器登录使用，请使用个人账号登录测试平台')
       return
     }
-    baseData.loading = true
+    const version = generation
+    submission.value = 'login'
     const encryptedPassword = passwordDigest(password)
     try {
-      const res = await post({
-        url: login,
-        data: {
-          username,
-          password: encryptedPassword,
-          type: 1,
-        },
-      })
-      const data = res.data as UserState
-      await userStore.saveUser(data, encryptedPassword)
-
-      // 每次登录都清理旧路由并重新请求菜单，菜单加载完成后才允许跳转。
-      await permissionStore.initPermissionRoute(true)
-
+      const res = await loginAccount(username, encryptedPassword)
+      if (!isCurrent(version)) return
+      if (res.code !== 200) throw new Error('Login failed')
+      const user = readLoginUser(res.data)
+      // saveUser 同步写入身份；只豁免本次写入，后续外部身份变化仍使登录失效。
+      applyingLoginIdentity = true
+      let saved: ReturnType<typeof userStore.saveUser>
+      try { saved = userStore.saveUser(user, encryptedPassword) }
+      finally { applyingLoginIdentity = false }
+      const savedIdentity = identity.value
+      await saved
+      if (!isCurrent(version) || identity.value !== savedIdentity) return
+      await permissionStore.initPermissionRoute(true, () => isCurrent(version) && identity.value === savedIdentity)
+      if (!isCurrent(version) || identity.value !== savedIdentity) return
       markWebSocketLoginSession()
       connectWebSocket(username, encryptedPassword)
       const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
       const safeRedirect = redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : ''
-      await router.replace(safeRedirect || permissionStore.homePath || '/index/home')
-      const roleName = data.roles?.[0]?.roleName || '游客'
-      const permissionType = data.is_super_admin ? '超级管理员' : '普通用户'
-      Message.success(
-        `登录成功，欢迎用户：${data.name}，您的角色是：${roleName}，您的权限是：${permissionType}`
-      )
-    } catch (error) {
-      console.error('登录流程执行失败', error)
+      const navigationFailure = await router.replace(safeRedirect || permissionStore.homePath || '/index/home')
+      if (navigationFailure || identity.value !== savedIdentity) return
+      Message.success(`登录成功，欢迎用户：${user.name}，您的角色是：${user.roles?.[0]?.roleName || '游客'}，您的权限是：${user.is_super_admin ? '超级管理员' : '普通用户'}`)
+    } catch {
+      if (isCurrent(version)) Message.error('登录未完成，请重试')
     } finally {
-      baseData.loading = false
+      submission.value = null
     }
   }
 
   async function loadRegistrationConfig() {
+    if (!available()) throw new Error('Login page inactive')
     if (!registrationConfigRequest) {
+      const version = generation
+      const sequence = ++configSequence
       registrationState.configLoading = true
       registrationConfigRequest = branding.loadPublicConfig().then((config) => {
         if (typeof config?.allow_registration !== 'boolean' || typeof config.disabled_message !== 'string') {
           throw new Error('Invalid registration configuration')
         }
-        registrationState.showAuthor = config.show_author_info === true
+        if (isCurrent(version) && sequence === configSequence) registrationState.showAuthor = config.show_author_info === true
         return config
       }).finally(() => {
-        registrationConfigRequest = undefined
-        registrationState.configLoading = false
+        if (isCurrent(version) && sequence === configSequence) {
+          registrationConfigRequest = undefined
+          registrationState.configLoading = false
+        }
       })
     }
     return registrationConfigRequest
   }
 
   async function register1() {
-    if (registrationState.loading) return
+    if (!available() || busy.value || registrationState.loading) return
+    const version = generation
     registrationState.loading = true
     try {
       const config = await loadRegistrationConfig()
-      if (!config.allow_registration) {
-        Message.info(config.disabled_message)
-        return
-      }
-      baseData.isLogin = false
+      if (!isCurrent(version) || busy.value) return
+      if (!config.allow_registration) { Message.info(config.disabled_message); return }
+      Object.assign(registrationForm, { name: '', email: '' })
+      loginForm.password = ''
+      mode.value = 'register'
     } catch {
-      Message.error('注册配置加载失败，请稍后重试')
+      if (isCurrent(version)) Message.error('注册配置加载失败，请稍后重试')
     } finally {
-      registrationState.loading = false
+      if (isCurrent(version)) registrationState.loading = false
     }
   }
 
   function returnToLogin() {
-    baseData.isLogin = true
+    if (!available() || busy.value) return
+    Object.assign(registrationForm, { name: '', email: '' })
+    mode.value = 'login'
   }
 
-  function onRegister() {
-    const name = baseData.name?.trim()
-    const email = baseData.email?.trim().toLowerCase()
-    if (!name || !email) {
-      Message.error('用户昵称和登录邮箱不允许为空')
-      return
+  async function onRegister() {
+    if (!available() || busy.value || mode.value !== 'register') return
+    const name = registrationForm.name.trim()
+    const email = registrationForm.email.trim().toLowerCase()
+    if (!name || !email) { Message.error('用户昵称和登录邮箱不允许为空'); return }
+    if (!isEmail(email)) { Message.error('请输入正确的邮箱地址'); return }
+    const version = generation
+    submission.value = 'register'
+    try {
+      const res = await registerAccount(name, email)
+      if (!isCurrent(version)) return
+      if (res.code !== 200) throw new Error('Registration failed')
+      Message.success(res.msg)
+      loginForm.username = email
+      loginForm.password = ''
+      Object.assign(registrationForm, { name: '', email: '' })
+      mode.value = 'login'
+    } catch {
+      if (isCurrent(version)) Message.error('注册失败，请稍后重试')
+    } finally {
+      submission.value = null
     }
-    if (!isEmail(email)) {
-      Message.error('请输入正确的邮箱地址')
-      return
-    }
-    baseData.loading = true
-    post({
-      url: register,
-      data: {
-        name,
-        email,
-      },
-    })
-      .then((res: Response) => {
-        if (res.code === 200) {
-          Message.success(res.msg)
-          baseData.username = email
-          baseData.password = ''
-          returnToLogin()
-        }
-      })
-      .finally(() => {
-        baseData.loading = false
-      })
   }
 
-  onMounted(() => {
+  function resume() {
+    if (!mounted || active) return
+    active = true
     appStore.applyCurrentThemePreset()
-    void loadRegistrationConfig().catch(() => {
-      registrationState.showAuthor = false
-    })
-    if (codeTextureTrack.value) {
-      stopBackgroundMotion = startLoginBackgroundMotion(codeTextureTrack.value)
-    }
-  })
-  onBeforeUnmount(() => stopBackgroundMotion?.())
+    void loadRegistrationConfig().catch(() => {})
+    if (codeTextureTrack.value) stopBackgroundMotion = startLoginBackgroundMotion(codeTextureTrack.value)
+  }
+  function suspend() {
+    active = false
+    invalidate()
+    stopBackgroundMotion?.()
+    stopBackgroundMotion = undefined
+  }
+  onMounted(() => { mounted = true; resume() })
+  onActivated(resume)
+  onDeactivated(suspend)
+  onBeforeUnmount(() => { mounted = false; suspend() })
 </script>
 
 <style lang="less" scoped>
@@ -810,10 +773,7 @@
   }
 
   .mango-login-author {
-    position: absolute;
-    right: 42px;
-    bottom: 24px;
-    left: 42px;
+    margin-top: 28px;
     padding-top: 14px;
     border-top: 1px solid var(--m-border);
     color: var(--m-text-2);

@@ -1,46 +1,9 @@
 <template>
   <div class="mango-capability-overview">
     <mango-panel-spin :loading="loading" class="mango-capability-overview__spin">
-      <div
-        v-if="!loadFailed"
-        ref="capabilityGridRef"
-        class="mango-capability-grid mango-native-scrollbar"
-        :class="{ 'mango-capability-grid--single': capabilityColumns === 1 }"
-      >
-        <article
-          v-for="group in capabilityGroups"
-          :key="group.key"
-          class="mango-capability-card"
-          :style="{ '--mango-capability-accent': group.accent }"
-        >
-          <header class="mango-capability-card__header">
-            <span class="mango-capability-card__icon">
-              <component :is="group.icon" />
-            </span>
-            <div class="mango-capability-card__title" :title="group.title">
-              <strong>{{ group.title }}</strong>
-              <span :title="group.description">{{ group.description }}</span>
-            </div>
-            <div class="mango-capability-card__total">
-              <strong>{{ formatValue(group.total) }}</strong>
-              <span>建设总量</span>
-            </div>
-          </header>
-          <dl class="mango-capability-card__metrics">
-            <div
-              v-for="metric in group.metrics"
-              :key="metric.label"
-              class="mango-capability-metric"
-              :title="`${metric.label}：${formatValue(metric.value)}`"
-            >
-              <dt>{{ metric.label }}</dt>
-              <dd>{{ formatValue(metric.value) }}</dd>
-            </div>
-          </dl>
-        </article>
-      </div>
+      <template v-if="!loadFailed"></template>
       <div v-else-if="!loading" class="mango-empty-state mango-capability-overview__empty">
-        <span>能力数据加载失败</span>
+        <span></span>
         <a-button size="mini" type="text" @click="fetchStatistics">重新加载</a-button>
       </div>
     </mango-panel-spin>
@@ -48,7 +11,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, markRaw, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+  import { computed, markRaw, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
   import {
     IconCalendar,
     IconCode,
@@ -59,109 +22,16 @@
   } from '@arco-design/web-vue/es/icon'
   import { getSystemIndexStatistics } from '@/api/system'
   import { useHomeMenuIcon } from '@/views/index/composables/use-home-menu-icon'
+  import { useHomeSnapshot } from '../composables/use-home-snapshot'
+  import { emptyStatistics, readStatistics } from '../records'
   import { displayDensityScale, scaleDensityPixels } from '@/hooks/useDisplayDensity'
 
-  interface StatisticsData {
-    uiStats: {
-      elementCount: number | null
-      pageCount: number | null
-      stepCount: number | null
-      caseCount: number | null
-      publicCount: number | null
-      authConfigCount: number | null
-    }
-    apiStats: {
-      interfaceCount: number | null
-      caseCount: number | null
-      scenarioCount: number | null
-      publicCount: number | null
-      headerCount: number | null
-      authConfigCount: number | null
-    }
-    pytestStats: {
-      projectCount: number | null
-      caseCount: number | null
-      fileCount: number | null
-      boundProjectCount: number | null
-      boundProductCount: number | null
-    }
-    dataFactoryStats: {
-      datasourceCount: number | null
-      datasourceBindingCount: number | null
-      entityCount: number | null
-      fieldCount: number | null
-      templateCount: number | null
-      caseConfigCount: number | null
-    }
-    testConfigStats: {
-      projectCount: number | null
-      projectProductCount: number | null
-      databaseCount: number | null
-      testObjectCount: number | null
-      testFileCount: number | null
-    }
-    scheduledTaskStats: {
-      taskCount: number | null
-      strategyCount: number | null
-      fireRecordCount: number | null
-      systemJobCount: number | null
-    }
-  }
-
-  const emptyStatistics = (): StatisticsData => ({
-    uiStats: {
-      elementCount: null,
-      pageCount: null,
-      stepCount: null,
-      caseCount: null,
-      publicCount: null,
-      authConfigCount: null,
-    },
-    apiStats: {
-      interfaceCount: null,
-      caseCount: null,
-      scenarioCount: null,
-      publicCount: null,
-      headerCount: null,
-      authConfigCount: null,
-    },
-    pytestStats: {
-      projectCount: null,
-      caseCount: null,
-      fileCount: null,
-      boundProjectCount: null,
-      boundProductCount: null,
-    },
-    dataFactoryStats: {
-      datasourceCount: null,
-      datasourceBindingCount: null,
-      entityCount: null,
-      fieldCount: null,
-      templateCount: null,
-      caseConfigCount: null,
-    },
-    testConfigStats: {
-      projectCount: null,
-      projectProductCount: null,
-      databaseCount: null,
-      testObjectCount: null,
-      testFileCount: null,
-    },
-    scheduledTaskStats: {
-      taskCount: null,
-      strategyCount: null,
-      fireRecordCount: null,
-      systemJobCount: null,
-    },
+  const { snapshot: statistics, loading, loadFailed, reload: fetchStatistics, isAvailable } = useHomeSnapshot({
+    read: getSystemIndexStatistics, parse: readStatistics, empty: emptyStatistics,
   })
-
-  const statistics = reactive<StatisticsData>(emptyStatistics())
   const { resolveMenuIcon } = useHomeMenuIcon()
-  const loading = ref(true)
-  const loadFailed = ref(false)
   const capabilityGridRef = ref<HTMLElement | null>(null)
   const capabilityColumns = ref<1 | 2>(1)
-  let requestSequence = 0
   let capabilityResizeObserver: ResizeObserver | null = null
   let capabilityLayoutFrame = 0
 
@@ -174,12 +44,12 @@
         icon: resolveMenuIcon('/uitest', markRaw(IconDesktop)),
         accent: 'var(--m-primary)',
         metrics: [
-          { label: '页面', value: statistics.uiStats.pageCount },
-          { label: '元素', value: statistics.uiStats.elementCount },
-          { label: '页面步骤', value: statistics.uiStats.stepCount },
-          { label: '测试用例', value: statistics.uiStats.caseCount },
-          { label: '全局变量', value: statistics.uiStats.publicCount },
-          { label: '授权配置', value: statistics.uiStats.authConfigCount },
+          { label: '页面', value: statistics.value.uiStats.pageCount },
+          { label: '元素', value: statistics.value.uiStats.elementCount },
+          { label: '页面步骤', value: statistics.value.uiStats.stepCount },
+          { label: '测试用例', value: statistics.value.uiStats.caseCount },
+          { label: '全局变量', value: statistics.value.uiStats.publicCount },
+          { label: '授权配置', value: statistics.value.uiStats.authConfigCount },
         ],
       },
       {
@@ -189,12 +59,12 @@
         icon: resolveMenuIcon('/apitest', markRaw(IconThunderbolt)),
         accent: 'color-mix(in srgb, var(--m-primary) 78%, var(--m-text))',
         metrics: [
-          { label: '接口', value: statistics.apiStats.interfaceCount },
-          { label: '测试用例', value: statistics.apiStats.caseCount },
-          { label: '执行场景', value: statistics.apiStats.scenarioCount },
-          { label: '全局变量', value: statistics.apiStats.publicCount },
-          { label: '公共请求头', value: statistics.apiStats.headerCount },
-          { label: '授权配置', value: statistics.apiStats.authConfigCount },
+          { label: '接口', value: statistics.value.apiStats.interfaceCount },
+          { label: '测试用例', value: statistics.value.apiStats.caseCount },
+          { label: '执行场景', value: statistics.value.apiStats.scenarioCount },
+          { label: '全局变量', value: statistics.value.apiStats.publicCount },
+          { label: '公共请求头', value: statistics.value.apiStats.headerCount },
+          { label: '授权配置', value: statistics.value.apiStats.authConfigCount },
         ],
       },
       {
@@ -204,11 +74,11 @@
         icon: resolveMenuIcon('/pytest', markRaw(IconCode)),
         accent: 'color-mix(in srgb, var(--m-primary) 68%, var(--m-surface))',
         metrics: [
-          { label: '工程', value: statistics.pytestStats.projectCount },
-          { label: '测试用例', value: statistics.pytestStats.caseCount },
-          { label: '测试文件', value: statistics.pytestStats.fileCount },
-          { label: '已绑定工程', value: statistics.pytestStats.boundProjectCount },
-          { label: '绑定产品', value: statistics.pytestStats.boundProductCount },
+          { label: '工程', value: statistics.value.pytestStats.projectCount },
+          { label: '测试用例', value: statistics.value.pytestStats.caseCount },
+          { label: '测试文件', value: statistics.value.pytestStats.fileCount },
+          { label: '已绑定工程', value: statistics.value.pytestStats.boundProjectCount },
+          { label: '绑定产品', value: statistics.value.pytestStats.boundProductCount },
         ],
       },
       {
@@ -218,12 +88,12 @@
         icon: resolveMenuIcon('/data-factory', markRaw(IconStorage)),
         accent: 'color-mix(in srgb, var(--m-primary) 52%, var(--m-muted))',
         metrics: [
-          { label: '逻辑数据源', value: statistics.dataFactoryStats.datasourceCount },
-          { label: '数据库绑定', value: statistics.dataFactoryStats.datasourceBindingCount },
-          { label: '数据实体', value: statistics.dataFactoryStats.entityCount },
-          { label: '字段规则', value: statistics.dataFactoryStats.fieldCount },
-          { label: '场景模板', value: statistics.dataFactoryStats.templateCount },
-          { label: '用例配置', value: statistics.dataFactoryStats.caseConfigCount },
+          { label: '逻辑数据源', value: statistics.value.dataFactoryStats.datasourceCount },
+          { label: '数据库绑定', value: statistics.value.dataFactoryStats.datasourceBindingCount },
+          { label: '数据实体', value: statistics.value.dataFactoryStats.entityCount },
+          { label: '字段规则', value: statistics.value.dataFactoryStats.fieldCount },
+          { label: '场景模板', value: statistics.value.dataFactoryStats.templateCount },
+          { label: '用例配置', value: statistics.value.dataFactoryStats.caseConfigCount },
         ],
       },
       {
@@ -233,11 +103,11 @@
         icon: resolveMenuIcon('/config', markRaw(IconSettings)),
         accent: 'color-mix(in srgb, var(--m-primary) 62%, var(--m-text-2))',
         metrics: [
-          { label: '项目配置', value: statistics.testConfigStats.projectCount },
-          { label: '项目产品', value: statistics.testConfigStats.projectProductCount },
-          { label: '数据库配置', value: statistics.testConfigStats.databaseCount },
-          { label: '测试对象', value: statistics.testConfigStats.testObjectCount },
-          { label: '测试文件', value: statistics.testConfigStats.testFileCount },
+          { label: '项目配置', value: statistics.value.testConfigStats.projectCount },
+          { label: '项目产品', value: statistics.value.testConfigStats.projectProductCount },
+          { label: '数据库配置', value: statistics.value.testConfigStats.databaseCount },
+          { label: '测试对象', value: statistics.value.testConfigStats.testObjectCount },
+          { label: '测试文件', value: statistics.value.testConfigStats.testFileCount },
         ],
       },
       {
@@ -247,10 +117,10 @@
         icon: resolveMenuIcon('/timing', markRaw(IconCalendar)),
         accent: 'color-mix(in srgb, var(--m-primary) 46%, var(--m-muted))',
         metrics: [
-          { label: '定时任务', value: statistics.scheduledTaskStats.taskCount },
-          { label: '定时策略', value: statistics.scheduledTaskStats.strategyCount },
-          { label: '触发记录', value: statistics.scheduledTaskStats.fireRecordCount },
-          { label: '系统定时任务', value: statistics.scheduledTaskStats.systemJobCount },
+          { label: '定时任务', value: statistics.value.scheduledTaskStats.taskCount },
+          { label: '定时策略', value: statistics.value.scheduledTaskStats.strategyCount },
+          { label: '触发记录', value: statistics.value.scheduledTaskStats.fireRecordCount },
+          { label: '系统定时任务', value: statistics.value.scheduledTaskStats.systemJobCount },
         ],
       },
     ].map((group) => {
@@ -267,28 +137,6 @@
     return Number(value).toLocaleString('zh-CN')
   }
 
-  async function fetchStatistics() {
-    const sequence = ++requestSequence
-    loading.value = true
-    loadFailed.value = false
-    try {
-      const res = await getSystemIndexStatistics()
-      if (sequence !== requestSequence) return
-      const payload = res.data || {}
-      Object.assign(statistics.uiStats, payload.uiStats || {})
-      Object.assign(statistics.apiStats, payload.apiStats || {})
-      Object.assign(statistics.pytestStats, payload.pytestStats || {})
-      Object.assign(statistics.dataFactoryStats, payload.dataFactoryStats || {})
-      Object.assign(statistics.testConfigStats, payload.testConfigStats || {})
-      Object.assign(statistics.scheduledTaskStats, payload.scheduledTaskStats || {})
-    } catch {
-      if (sequence !== requestSequence) return
-      loadFailed.value = true
-    } finally {
-      if (sequence === requestSequence) loading.value = false
-    }
-  }
-
   function updateCapabilityColumns() {
     const container = capabilityGridRef.value
     if (!container) return
@@ -299,32 +147,36 @@
   }
 
   function scheduleCapabilityLayout() {
+    if (!isAvailable()) return
     if (capabilityLayoutFrame) window.cancelAnimationFrame(capabilityLayoutFrame)
     capabilityLayoutFrame = window.requestAnimationFrame(() => {
-      updateCapabilityColumns()
+      if (isAvailable()) updateCapabilityColumns()
       capabilityLayoutFrame = 0
     })
   }
 
-  onMounted(() => {
-    fetchStatistics()
-    scheduleCapabilityLayout()
-    if (capabilityGridRef.value && typeof ResizeObserver !== 'undefined') {
-      capabilityResizeObserver = new ResizeObserver(scheduleCapabilityLayout)
-      capabilityResizeObserver.observe(capabilityGridRef.value)
-    } else {
-      window.addEventListener('resize', scheduleCapabilityLayout)
-    }
-  })
-
-  watch(displayDensityScale, scheduleCapabilityLayout)
-
-  onBeforeUnmount(() => {
-    requestSequence += 1
+  function stopLayout() {
     capabilityResizeObserver?.disconnect()
+    capabilityResizeObserver = null
     window.removeEventListener('resize', scheduleCapabilityLayout)
     if (capabilityLayoutFrame) window.cancelAnimationFrame(capabilityLayoutFrame)
-  })
+    capabilityLayoutFrame = 0
+  }
+  function startLayout() {
+    stopLayout()
+    if (!isAvailable() || !capabilityGridRef.value) return
+    scheduleCapabilityLayout()
+    if (typeof ResizeObserver !== 'undefined') {
+      capabilityResizeObserver = new ResizeObserver(scheduleCapabilityLayout)
+      capabilityResizeObserver.observe(capabilityGridRef.value)
+    } else window.addEventListener('resize', scheduleCapabilityLayout)
+  }
+  watch(capabilityGridRef, startLayout, { flush: 'post' })
+  watch(displayDensityScale, scheduleCapabilityLayout)
+  onMounted(startLayout)
+  onActivated(startLayout)
+  onDeactivated(stopLayout)
+  onBeforeUnmount(stopLayout)
 
   defineExpose({ refresh: fetchStatistics })
 </script>

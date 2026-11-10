@@ -11,7 +11,6 @@ from types import SimpleNamespace
 
 import jsonschema
 import requests
-import time
 from django.conf import settings
 from jsonschema import validate
 from mangotools.enums import StatusEnum
@@ -281,7 +280,8 @@ class CaseParameter:
         if seconds < 0 or seconds > 32767:
             raise AutoApiError(AUTO_API_BASE_CASE_PARAMETER_TIME_CONFIG_OUT_OF_RANGE, value=(seconds,))
         try:
-            time.sleep(seconds)
+            from src.apps.task_center.services.execution.cooperative_executor import cooperative_sleep
+            cooperative_sleep(seconds)
         except Exception as error:
             raise AutoApiError(AUTO_API_BASE_CASE_PARAMETER_PLAN_EXECUTION_FAILED, value=(seconds, error)) from error
 

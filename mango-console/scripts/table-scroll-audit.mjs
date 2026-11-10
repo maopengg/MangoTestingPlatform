@@ -1,5 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
+import { parse } from '@vue/compiler-sfc'
+import { baseParse } from '@vue/compiler-dom'
 
 const root = process.cwd()
 const scanRoot = path.join(root, 'src')
@@ -56,10 +58,25 @@ const hiddenPersistentScrollbars = []
 const uncontainedStickyTables = []
 const incompleteNativeScrollTables = []
 const unboundedWorkbenchTables = []
+const sizedTableSwitches = []
+let tableSwitchCount = 0
 
 for (const file of files) {
   const content = await readFile(file, 'utf8')
   const relative = path.relative(root, file)
+  const { descriptor } = parse(content)
+  function checkSwitches(node, inTable = false) {
+    const table = inTable || (node.type === 1 && ['a-table', 'a-table-column', 'table'].includes(node.tag))
+    const cellComponent = relative === 'src/views/uitest/case/details/components/UiCaseStepUrlSwitch.vue'
+    if (node.type === 1 && node.tag === 'a-switch' && (table || cellComponent)) {
+      tableSwitchCount++
+      if (node.props.some(prop => prop.name === 'size' || prop.arg?.content === 'size')) {
+        sizedTableSwitches.push({ file: relative, line: node.loc.start.line + descriptor.template.loc.start.line - 1, tag: compactTag(node.loc.source) })
+      }
+    }
+    for (const child of node.children || []) checkSwitches(child, table)
+  }
+  if (descriptor.template) checkSwitches(baseParse(descriptor.template.content))
   const disablesPersistentScrollbar = /<TableBody\b[\s\S]*?:sticky-horizontal-scroll\s*=\s*["']false["'][\s\S]*?>/.test(
     content
   )
@@ -180,6 +197,8 @@ function printGroup(title, items) {
 
 console.log('Mango table scroll audit')
 console.log(`Scanned Vue files: ${files.length}`)
+console.log(`Table switches using default size: ${tableSwitchCount - sizedTableSwitches.length}/${tableSwitchCount}`)
+printGroup('Table switches overriding default size', sizedTableSwitches)
 printGroup('Missing scroll.x', findings)
 printGroup('Allowed exceptions', exceptions)
 printGroup('Overridden global scrollbar', overriddenGlobalScrollbars)
@@ -189,6 +208,7 @@ printGroup('Incomplete native bidirectional table scroll', incompleteNativeScrol
 printGroup('Unbounded project workbench table', unboundedWorkbenchTables)
 
 if (
+  sizedTableSwitches.length > 0 ||
   findings.length > 0 ||
   overriddenGlobalScrollbars.length > 0 ||
   hiddenPersistentScrollbars.length > 0 ||

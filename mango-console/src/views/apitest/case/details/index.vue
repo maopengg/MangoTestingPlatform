@@ -45,17 +45,17 @@
           </section>
 
           <ApiCaseOrchestrationPanel
-            :active-key="data.apiType"
-            :step-count="data.data.length || 0"
+            :active-key="workspaceTabs.apiType"
+            :step-count="caseSteps.length || 0"
             :edit-locked="caseEditLocked"
             :show-add="showCaseAddButton"
-            :loading="data.caseConfigLoading"
+            :loading="panelLoading.caseConfigLoading"
             @change="switchType"
             @add="addData"
           >
             <template #preparation>
               <a-tabs
-                :active-key="data.apiSonType"
+                :active-key="workspaceTabs.apiSonType"
                 class="case-config-tabs"
                 position="left"
                 @tab-click="(key) => switchSonType(key)"
@@ -89,7 +89,7 @@
                           @change="changeCaseGlobalOptions"
                         >
                           <a-checkbox
-                            v-for="item in data.publicOptions"
+                            v-for="item in optionLists.publicOptions"
                             :key="item.value"
                             :value="item.value"
                             :disabled="caseEditLocked || item.disabled || caseGlobalSaving"
@@ -156,7 +156,7 @@
                           @change="changeCaseGlobalOptions"
                         >
                           <a-checkbox
-                            v-for="item in data.authConfigOptions"
+                            v-for="item in optionLists.authConfigOptions"
                             :key="item.value"
                             :value="item.value"
                             :disabled="caseEditLocked || item.disabled || caseGlobalSaving"
@@ -204,7 +204,7 @@
                     class="mango-horizontal-scroll-region mango-horizontal-scroll-region--compact mango-case-custom-variable-list"
                   >
                     <KeyValueList
-                      :data-list="pageData.record.front_custom"
+                      :data-list="caseRecord.front_custom"
                       layout="environment-key-value"
                       :field-config="[
                         {
@@ -240,16 +240,16 @@
                         },
                       ]"
                       :on-delete-item="
-                        (index) => removeFrontSql1(pageData.record.front_custom, index, false)
+                        (index) => removeFrontSql1(caseRecord.front_custom, index, false)
                       "
                       :on-save="upDataCaseWithoutScenarioRefresh"
                       @update:item="
                         (index, value) =>
                           updateArrayItem(
-                            pageData.record.front_custom,
+                            caseRecord.front_custom,
                             index,
                             value,
-                            pageData.record,
+                            caseRecord,
                             'front_custom',
                             upDataCaseWithoutScenarioRefresh
                           )
@@ -265,20 +265,20 @@
                     </span>
                   </template>
                   <DataSourceOperationList
-                    :data-list="pageData.record.front_sql"
-                    :datasource-options="data.datasourceAliasOptions"
+                    :data-list="caseRecord.front_sql"
+                    :datasource-options="optionLists.datasourceAliasOptions"
                     :environment-options="sqlEnvironmentOptions"
                     :project-product-id="apiProjectProductId"
                     :test-env="userStore.selected_environment"
-                    :on-delete-item="(index) => removeFrontSql1(pageData.record.front_sql, index)"
+                    :on-delete-item="(index) => removeFrontSql1(caseRecord.front_sql, index)"
                     :on-save="upDataCase"
                     @update:item="
                       (index, value) =>
                         updateArrayItem(
-                          pageData.record.front_sql,
+                          caseRecord.front_sql,
                           index,
                           value,
-                          pageData.record,
+                          caseRecord,
                           'front_sql',
                           upDataCase
                         )
@@ -293,7 +293,7 @@
                     </span>
                   </template>
                   <DataFactoryCaseConfigPanel
-                    v-if="data.apiType === '1' && data.apiSonType === '14'"
+                    v-if="workspaceTabs.apiType === '1' && workspaceTabs.apiSonType === '14'"
                     ref="dataFactoryPanelRef"
                     :case-id="apiCaseId as string"
                     :project-product-id="apiProjectProductId as string"
@@ -319,13 +319,13 @@
                         </div>
                         <a-checkbox-group
                           class="mango-case-global-table__body"
-                          v-model="pageData.record.front_headers"
+                          v-model="caseRecord.front_headers"
                           :disabled="caseEditLocked"
                           direction="vertical"
                           @change="changeHeaders"
                         >
                           <a-checkbox
-                            v-for="item of data.headers_list"
+                            v-for="item of optionLists.headers_list"
                             :key="item.id"
                             :value="item.id"
                           >
@@ -348,9 +348,9 @@
             <template #steps>
               <ApiCaseStepTable
                 :columns="columns"
-                :data="data.data"
-                :loading="stepTableLoading"
-                :selected-step-id="data.tabelJson?.id"
+                :data="caseSteps"
+                :loading="stepTableLoading || sortingSteps"
+                :selected-step-id="selectedStep?.id"
                 :debug-running-step-id="debugRunningStepId"
                 :edit-locked="caseEditLocked"
                 :execution-active="caseExecutionActive"
@@ -363,12 +363,12 @@
                 @refresh="refresh"
                 @api-info="openApiInfoDetail"
                 @delete="onDelete"
-                @recovery="openRecoveryConfig"
+                @edit="openStepEditor"
               />
             </template>
             <template #cleanup>
               <a-tabs
-                :active-key="data.apiSonType"
+                :active-key="workspaceTabs.apiSonType"
                 class="case-config-tabs"
                 position="left"
                 @tab-click="(key) => switchSonType(key)"
@@ -383,23 +383,21 @@
                     </span>
                   </template>
                   <DataSourceOperationList
-                    :data-list="pageData.record.posterior_sql"
-                    :datasource-options="data.datasourceAliasOptions"
+                    :data-list="caseRecord.posterior_sql"
+                    :datasource-options="optionLists.datasourceAliasOptions"
                     :environment-options="sqlEnvironmentOptions"
                     :project-product-id="apiProjectProductId"
                     :test-env="userStore.selected_environment"
-                    :on-delete-item="
-                      (index) => removeFrontSql1(pageData.record.posterior_sql, index)
-                    "
+                    :on-delete-item="(index) => removeFrontSql1(caseRecord.posterior_sql, index)"
                     :on-save="upDataCase"
                     empty-text="暂无数据库操作配置，点击上方“增加”按钮添加"
                     @update:item="
                       (index, value) =>
                         updateArrayItem(
-                          pageData.record.posterior_sql,
+                          caseRecord.posterior_sql,
                           index,
                           value,
-                          pageData.record,
+                          caseRecord,
                           'posterior_sql',
                           upDataCase
                         )
@@ -421,17 +419,17 @@
             <a-space direction="vertical" fill>
               <a-space direction="vertical" fill>
                 <mango-panel-spin
-                  :loading="data.collapseLoading"
+                  :loading="panelLoading.collapseLoading"
                   tip="场景数据加载中..."
                   class="scenario-loading-spin full-width"
                 >
                   <a-collapse
                     :bordered="false"
-                    :active-key="data.activeCollapseKey"
+                    :active-key="scenarioViewport.activeCollapseKey"
                     accordion
                     @change="onCollapseChange"
                   >
-                    <a-collapse-item v-for="(item, index) of data.selectDataObj" :key="index">
+                    <a-collapse-item v-for="(item, index) of scenarios" :key="index">
                       <template #header>
                         <ApiCaseScenarioHeader
                           :item="item"
@@ -451,12 +449,12 @@
                         class="scenario-expand-body"
                       >
                         <mango-panel-spin
-                          :loading="!data.collapseLoading && data.caseDetailTabLoading"
+                          :loading="!panelLoading.collapseLoading && panelLoading.caseDetailTabLoading"
                           tip="页签内容加载中..."
                           class="scenario-tab-loading-spin"
                         >
                           <ApiCaseScenarioNav
-                            :active-key="data.caseDetailsTypeKey"
+                            :active-key="workspaceTabs.caseDetailsTypeKey"
                             :counts="{
                               front: getScenarioTabCount(item, 'front'),
                               request: getScenarioTabCount(item, 'request'),
@@ -472,10 +470,11 @@
                             <template #front>
                               <ApiCaseScenarioFrontPanel
                                 :item="item"
-                                :active-key="data.tabsKey"
+                                @patch="applyScenarioPatch"
+                                :active-key="workspaceTabs.tabsKey"
                                 :active="isActiveCaseDetailTab('1', '12')"
                                 :edit-locked="caseEditLocked"
-                                :datasource-options="data.datasourceAliasOptions"
+                                :datasource-options="optionLists.datasourceAliasOptions"
                                 :environment-options="sqlEnvironmentOptions"
                                 :project-product-id="apiProjectProductId"
                                 :test-env="userStore.selected_environment"
@@ -486,9 +485,10 @@
                             <template #request>
                               <ApiCaseRequestPanel
                                 :item="item"
-                                :active-key="data.tabsKey"
+                                @patch="applyScenarioPatch"
+                                :active-key="workspaceTabs.tabsKey"
                                 :edit-locked="caseEditLocked"
-                                :header-options="data.parameter_headers_list"
+                                :header-options="optionLists.parameter_headers_list"
                                 :project-product-id="apiProjectProductId"
                                 :protocol-type="getScenarioProtocolType(item)"
                                 :body-type="getScenarioBodyType(item)"
@@ -500,8 +500,8 @@
                             <template #response>
                               <ApiCaseResponsePanel
                                 :item="item"
-                                :active-key="data.tabsKey"
-                                :active-root="data.caseDetailsTypeKey === '2'"
+                                :active-key="workspaceTabs.tabsKey"
+                                :active-root="workspaceTabs.caseDetailsTypeKey === '2'"
                                 :protocol-type="getScenarioProtocolType(item)"
                                 :body-type="getScenarioBodyType(item)"
                                 @change="tabsChange($event, item)"
@@ -510,9 +510,10 @@
                             <template #posterior>
                               <ApiCasePosteriorPanel
                                 :item="item"
-                                :active-key="data.tabsKey"
+                                @patch="applyScenarioPatch"
+                                :active-key="workspaceTabs.tabsKey"
                                 :edit-locked="caseEditLocked"
-                                :datasource-options="data.datasourceAliasOptions"
+                                :datasource-options="optionLists.datasourceAliasOptions"
                                 :environment-options="sqlEnvironmentOptions"
                                 :project-product-id="apiProjectProductId"
                                 :test-env="userStore.selected_environment"
@@ -522,34 +523,43 @@
                             <template #assertion>
                               <ApiCaseAssertionPanel
                                 :item="item"
-                                :active-key="data.tabsKey"
+                                :active-key="workspaceTabs.tabsKey"
                                 :edit-locked="caseEditLocked"
                                 :verifying="assertionVerifyLoadingId === item.id"
                                 :schema-loading="schemaLoadingId === item.id"
                                 :compare-open="Boolean(item.__assertion_compare_open)"
                                 :compare-results="getAssertionResultData(item)"
-                                :compare-source="Array.isArray(item.__assertion_verify_result) ? 'verify' : 'runtime'"
+                                :compare-source="
+                                  Array.isArray(item.__assertion_verify_result)
+                                    ? 'verify'
+                                    : 'runtime'
+                                "
                                 :compare-stale="isAssertionVerifyStale(item)"
-                                :text-methods="data.textAss"
-                                :general-methods="data.ass"
+                                :text-methods="optionLists.textAss"
+                                :general-methods="optionLists.ass"
                                 :sql-datasource-options="sqlAssertionDatasourceOptions"
                                 :sql-method-options="sqlAssertionMethodOptions"
                                 @change="tabsChange($event)"
                                 @save="blurSave"
-                                @verify="verifyAssertions(item)"
-                                @toggle-compare="item.__assertion_compare_open = !item.__assertion_compare_open"
+                                @verify="verifyAssertions"
+                                @toggle-compare="
+                                  item.__assertion_compare_open = !item.__assertion_compare_open
+                                "
                                 @generate-schema="setSchema(item.id)"
                               >
                                 <template #callback>
                                   <ApiCaseCallbackPanel
-                                    :general-methods="data.ass"
+                                    :general-methods="optionLists.ass"
                                     :case-id="apiCaseId || ''"
                                     :product-id="apiProjectProductId || ''"
-                                    :rules="pageData.record.callback_checks || []"
-                                    :trigger-step="data.tabelJson"
-                                    :scenario-count="data.selectDataObj.length"
+                                    :rules="caseRecord.callback_checks || []"
+                                    :trigger-step="selectedStep"
+                                    :scenario-count="scenarios.length"
                                     :scenario-retry="item.error_retry"
-                                    :active="isActiveCaseDetailTab('3', '36') && isActiveCollapseItem(index)"
+                                    :active="
+                                      isActiveCaseDetailTab('3', '36') &&
+                                      isActiveCollapseItem(index)
+                                    "
                                     :edit-locked="caseEditLocked"
                                     :trace-id="lastTraceId"
                                     :save-pending="callbackSavePending"
@@ -560,19 +570,26 @@
                             </template>
                             <template #runtime>
                               <ApiCaseRuntimeCachePanel
-                                :active="data.caseDetailsTypeKey === '5'"
+                                :active="workspaceTabs.caseDetailsTypeKey === '5'"
                                 :data="item.result_data?.cache_data"
                               />
                             </template>
                             <template #factory>
                               <ApiCaseDataFactoryPanel
-                                :active="data.caseDetailsTypeKey === '7'"
+                                :active="workspaceTabs.caseDetailsTypeKey === '7'"
                                 :data="item.result_data?.data_factory_cache_data"
                               />
                             </template>
                             <template #assertion-result>
-                              <div v-if="data.caseDetailsTypeKey === '6'" class="mango-scenario-assertion-results">
-                                <header v-if="getCallbackAssertionResults(item).length" class="mango-section-title"><h2>接口响应断言</h2></header>
+                              <div
+                                v-if="workspaceTabs.caseDetailsTypeKey === '6'"
+                                class="mango-scenario-assertion-results"
+                              >
+                                <header
+                                  v-if="getCallbackAssertionResults(item).length"
+                                  class="mango-section-title"
+                                  ><h2>接口响应断言</h2></header
+                                >
                                 <AssertionResult
                                   :data="getAssertionResultData(item)"
                                   :stale="isAssertionVerifyStale(item)"
@@ -583,9 +600,9 @@
                                   :archived-results="getCallbackAssertionResults(item)"
                                   :case-id="apiCaseId || ''"
                                   :product-id="apiProjectProductId || ''"
-                                  :rules="pageData.record.callback_checks || []"
-                                  :trigger-step="data.tabelJson"
-                                  :scenario-count="data.selectDataObj.length"
+                                  :rules="caseRecord.callback_checks || []"
+                                  :trigger-step="selectedStep"
+                                  :scenario-count="scenarios.length"
                                   :active="true"
                                   :edit-locked="true"
                                   :trace-id="lastTraceId"
@@ -632,97 +649,42 @@
     @save="saveJsonEditDrawer"
   />
   <ApiCaseInfoDetailPanel ref="apiInfoDetailPanelRef" />
-  <ApiCaseRecoveryConfig ref="recoveryConfigRef" @saved="doRefresh" />
   <ApiCaseExecutionTraceDrawer ref="traceDrawerRef" />
-  <ApiCaseDiagnosisDrawer ref="caseDiagnosisDrawerRef" :result-id="selectedExecutionResultSummary?.id" />
-  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
-    <template #content>
-      <a-form :model="formModel">
-        <a-form-item
-          v-for="item of formItems"
-          :key="item.key"
-          v-show="!item.hidden"
-          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
-          :label="item.label"
-        >
-          <template v-if="item.type === 'input'">
-            <a-input v-model="item.value" :placeholder="item.placeholder" />
-          </template>
-          <template v-else-if="item.type === 'cascader' && item.key === 'module'">
-            <ProductModuleSelect
-              v-model="item.value"
-              :project-product-id="apiProjectProductId as string"
-              :placeholder="item.placeholder"
-              @change="getModuleApi"
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'api_info'">
-            <a-select
-              v-model="item.value"
-              :field-names="fieldNames"
-              :options="data.apiList"
-              :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              value-key="key"
-              @change="loadApiInfoRevisions"
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'pinned_api_info_revision'">
-            <a-select
-              v-model="item.value"
-              :field-names="fieldNames"
-              :options="data.apiRevisionList"
-              :placeholder="item.placeholder"
-              allow-clear
-            />
-          </template>
-        </a-form-item>
-      </a-form>
-    </template>
-  </ModalDialog>
-  <ModalDialog
-    ref="modalDialogRefParameter"
-    :title="data.actionParameterTitle"
-    @confirm="onDataFormParameter"
-  >
-    <template #content>
-      <a-form :model="formParameterModel">
-        <a-form-item
-          v-for="item of formParameterItems"
-          v-show="isParameterFormItemVisible(item)"
-          :key="item.key"
-          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
-          :label="item.label"
-        >
-          <template v-if="item.type === 'input'">
-            <a-input v-model="item.value" :placeholder="item.placeholder" />
-          </template>
-          <template v-else-if="item.type === 'select'">
-            <div class="scenario-protocol-expectation-control">
-              <a-select v-model="item.value" :options="item.optionItems" />
-              <span class="scenario-allow-failure-control__hint">{{ item.placeholder }}</span>
-            </div>
-          </template>
-          <template v-else-if="item.type === 'switch'">
-            <div class="scenario-allow-failure-control">
-              <a-switch v-model="item.value" size="small" />
-              <span class="scenario-allow-failure-control__hint">{{ item.placeholder }}</span>
-            </div>
-          </template>
-        </a-form-item>
-      </a-form>
-    </template>
-  </ModalDialog>
+  <ApiCaseDiagnosisDrawer
+    ref="caseDiagnosisDrawerRef"
+    :result-id="selectedExecutionResultSummary?.id"
+  />
+  <ApiCaseStepEditor
+    ref="stepEditorRef"
+    :case-id="apiCaseId"
+    :project-product-id="apiProjectProductId"
+    :edit-locked="caseEditLocked || caseExecutionActive"
+    :step-count="caseSteps.length"
+    @saved="doRefresh"
+  />
+  <ApiCaseScenarioEditor
+    ref="scenarioEditorRef"
+    :case-id="apiCaseId"
+    :edit-locked="caseEditLocked || caseExecutionActive"
+    @saved="onScenarioSaved"
+  />
 </template>
 
 <script lang="ts" setup>
   import { isPendingExecution, type PollingContext } from '@/hooks/use-page-polling'
   import { useApiCaseAutoSave } from './composables/useApiCaseAutoSave'
-  import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
+  import {
+    computed,
+    nextTick,
+    onActivated,
+    onDeactivated,
+    onMounted,
+    onUnmounted,
+    reactive,
+    ref,
+    watch,
+  } from 'vue'
   import { useRoute } from 'vue-router'
-  import { getFormItems } from '@/utils/datacleaning'
-  import { ModalDialogType } from '@/types/components'
   import { fieldNames } from '@/setting'
   import { Message, Modal } from '@arco-design/web-vue'
   import { usePageData } from '@/store/page-data'
@@ -733,20 +695,26 @@
     normalizeEnvironmentValues,
     toEnvironmentSelectValue,
   } from '@/utils/environment-scope'
-  import { columns, formItems, formParameterItems } from './config'
-  import {
-    getApiCase,
-    getApiCaseRunRaw,
-    postApiCaseStepDebugRaw,
-  } from '@/api/apitest/case'
+  import { columns, FRONT_FUNC_TEMPLATE, POSTERIOR_FUNC_TEMPLATE } from './config'
+  import ApiCaseStepEditor from './components/ApiCaseStepEditor.vue'
+  import ApiCaseScenarioEditor from './components/ApiCaseScenarioEditor.vue'
+  import type {
+    ApiCaseStep,
+    ApiCaseScenario,
+    CaseWorkspaceRecord,
+    CaseResourceOptions,
+    ScenarioPatch,
+    CaseExecutionSummary,
+    CallbackRuleDraft,
+  } from './types'
+  import { createCaseRequestScope } from './request-scope'
+  import { getApiCase, getApiCaseRunRaw, postApiCaseStepDebugRaw } from '@/api/apitest/case'
   import {
     deleteApiCaseDetailed,
     getApiCaseDetailed,
-    postApiCaseDetailed,
     putApiPutCaseSort,
     putApiPutRefreshApiInfo,
   } from '@/api/apitest/case_detailed'
-  import { getApiInfoName } from '@/api/apitest/info'
   import useUserStore from '@/store/modules/user'
 
   import { useEnum } from '@/store/modules/get-enum'
@@ -756,10 +724,7 @@
   import {
     deleteApiCaseDetailedParameter,
     getApiCaseDetailedParameter,
-    postApiCaseDetailedParameter,
-    postApiCaseDetailedParameterCopy,
     postVerifyApiCaseAssertions,
-    putApiCaseDetailedParameter,
     putSetSchema,
   } from '@/api/apitest/case-detailed-parameter'
   import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
@@ -767,7 +732,6 @@
   import AssertionResult from '@/components/feedback/AssertionResult.vue'
   import TipMessage from '@/components/feedback/TipMessage.vue' // 引入断言结果组件
   import DataFactoryCaseConfigPanel from '@/components/DataFactory/CaseConfigPanel.vue'
-  import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
   import DataSourceOperationList from '@/components/forms/DataSourceOperationList.vue'
   import ApiCaseVersionPanel from './components/ApiCaseVersionPanel.vue'
   import ApiCasePageHeader from './components/ApiCasePageHeader.vue'
@@ -776,11 +740,14 @@
   import ApiCaseDiagnosisDrawer from './components/ApiCaseDiagnosisDrawer.vue'
   import ApiCaseInfoDetailPanel from './components/ApiCaseInfoDetailPanel.vue'
   import ApiCaseStepTable from './components/ApiCaseStepTable.vue'
-  import ApiCaseRecoveryConfig from './components/ApiCaseRecoveryConfig.vue'
   import ApiCaseOrchestrationPanel from './components/ApiCaseOrchestrationPanel.vue'
   import ApiCaseCallbackPanel from './components/ApiCaseCallbackPanel.vue'
   import { callbackRulesForStep } from './components/callback-config'
-  import { callbackResultsForScenario, callbackAssertionCount, callbackResultsFromAssertions } from './components/callback-results'
+  import {
+    callbackResultsForScenario,
+    callbackAssertionCount,
+    callbackResultsFromAssertions,
+  } from './components/callback-results'
   import { latestScenarioAttempts } from './execution-results'
   import ApiCaseScenarioHeader from './components/ApiCaseScenarioHeader.vue'
   import ApiCaseScenarioWorkspace from './components/ApiCaseScenarioWorkspace.vue'
@@ -812,79 +779,33 @@
     getExecutionResultList,
   } from '@/api/system/execution_result'
 
+  const requests = createCaseRequestScope()
+  let pageActive = true
+  function applyScenarioPatch(patch: ScenarioPatch) {
+    const index = scenarios.value.findIndex((item) => Number(item.id) === patch.id)
+    if (index < 0 || caseEditLocked.value) return
+    scenarios.value[index] = { ...scenarios.value[index], ...cloneLosslessJson(patch.changes) }
+    if (selectedStep.value)
+      parameterCacheByStep.set(String(selectedStep.value.id), cloneVersionValue(scenarios.value))
+  }
   const userStore = useUserStore()
 
-  const FRONT_FUNC_TEMPLATE = `def func(self, request):
-    # self 是当前执行上下文，常用能力：
-    # self.test_setup.test_data：变量/缓存工具，支持 get_cache、set_cache、replace 等
-    # self.case_parameter：当前场景参数对象，可查看当前场景配置
-    test_data = self.test_setup.test_data
-    try:
-        username = test_data.get_cache('username')
-    except Exception:
-        username = None
-
-    # request 是本次即将发送的请求模型，常用字段：
-    method = request.method  # 请求方法：GET/POST/PUT/PATCH/DELETE...
-    url = request.url  # 请求地址，通常已拼接环境域名
-    headers = request.headers or {}  # 请求头
-    params = request.params  # Query 参数，支持 dict/list/str
-    protocol_type = request.protocol_type  # 协议类型：http/sse
-    body_type = request.body_type  # 请求体类型：none/json/form/raw/multipart
-    body_config = request.body_config or {}  # 请求体配置
-    sse_config = request.sse_config  # SSE 停止条件配置
-    posterior_file = request.posterior_file  # 响应文件保存到缓存的 key
-
-    # 修改请求示例：追加请求头
-    headers['X-Debug-User'] = username or 'anonymous'
-    request.headers = headers
-
-    # 修改 JSON 请求体示例
-    if body_type == 'json':
-        body = body_config.get('body_text') if body_config.get('source_type') == 'template' else body_config.get('body')
-        if isinstance(body, dict):
-            body['operator'] = username
-            request.body_config = {'source_type': 'value', 'body': body}
-
-    return request`
-
-  const POSTERIOR_FUNC_TEMPLATE = `def func(self, response):
-    # self 是当前执行上下文，常用能力：
-    # self.test_setup.test_data：变量/缓存工具，支持 get_cache、set_cache、replace 等
-    # self.case_parameter：当前场景参数对象，可查看当前场景配置
-    test_data = self.test_setup.test_data
-
-    # response 是本次接口响应模型，常用字段：
-    code = response.code  # HTTP 状态码
-    time = response.time  # 响应耗时，单位秒
-    url = response.url  # 实际请求 URL
-    headers = response.headers or {}  # 响应头
-    json_body = response.json  # 解析后的 JSON，可能是 dict/list/str/number/bool/null
-    text = response.text  # 原始响应文本，非 JSON 或文本断言可使用
-    response_mode = response.response_mode  # 响应模式：http/sse/grpc/websocket
-    sse_events = response.sse_events  # SSE 事件列表，仅 SSE 场景有值
-    sse_stop_reason = response.sse_stop_reason  # SSE 停止原因
-    request_body = response.request_body  # 实际发送的请求体
-    request_headers = response.request_headers  # 实际发送的请求头
-
-    # 提取响应数据到缓存示例
-    if isinstance(json_body, dict):
-        data = json_body.get('data') or {}
-        if isinstance(data, dict) and data.get('id'):
-            test_data.set_cache('response_id', data.get('id'))
-
-    # 修改响应示例：追加自定义错误信息
-    if code >= 400 and not response.error_msg:
-        response.error_msg = text
-
-    return response`
-
-  const modalDialogRef = ref<ModalDialogType | null>(null)
-  const modalDialogRefParameter = ref<ModalDialogType | null>(null)
+  const stepEditorRef = ref<InstanceType<typeof ApiCaseStepEditor> | null>(null)
+  const scenarioEditorRef = ref<InstanceType<typeof ApiCaseScenarioEditor> | null>(null)
   const dataFactoryPanelRef = ref<InstanceType<typeof DataFactoryCaseConfigPanel> | null>(null)
-  const formModel = ref({})
-  const formParameterModel = ref({})
-  const pageData: any = usePageData()
+  const initialRecord = cloneLosslessJson(usePageData().record) as CaseWorkspaceRecord | null
+  const caseRecord = ref<CaseWorkspaceRecord>({
+    id: '',
+    name: '',
+    front_custom: [],
+    front_sql: [],
+    front_headers: [],
+    front_public: [],
+    front_auth_config: [],
+    callback_checks: [],
+    posterior_sql: [],
+    project_product: null,
+  })
   const props = withDefaults(
     defineProps<{
       caseId?: string | number
@@ -901,15 +822,21 @@
     (event: 'close'): void
   }>()
   const route = useRoute()
-  const apiCaseId = computed(
-    () => props.caseId || route.query.case_id || route.query.id || pageData.record?.id || ''
+  const scalarId = (value: unknown): string | number =>
+    Array.isArray(value)
+      ? scalarId(value[0])
+      : typeof value === 'string' || typeof value === 'number'
+      ? value
+      : ''
+  const apiCaseId = computed(() =>
+    scalarId(props.caseId || route.query.case_id || route.query.id || initialRecord?.id)
   )
   const apiProjectProductId = computed(
     () =>
       props.projectProductId ||
-      route.query.project_product ||
-      pageData.record?.project_product?.id ||
-      pageData.record?.project_product ||
+      scalarId(route.query.project_product) ||
+      caseRecord.value.project_product?.id ||
+      initialRecord?.project_product?.id ||
       ''
   )
   const defaultCaseRecord = () => ({
@@ -924,9 +851,7 @@
     posterior_sql: [],
     project_product: apiProjectProductId.value ? { id: apiProjectProductId.value } : null,
   })
-  if (!pageData.record) {
-    pageData.setRecord(defaultCaseRecord())
-  }
+  caseRecord.value = defaultCaseRecord()
   const enumStore = useEnum()
   const caseVariableEnvironmentOptions = computed(() => [
     { key: COMMON_ENV_VALUE, title: '环境通用' },
@@ -934,11 +859,11 @@
   ])
   const versionPanelRef = ref<InstanceType<typeof ApiCaseVersionPanel> | null>(null)
   const selectedExecutionVersion = ref<ApiCaseExecutionVersion | null>(null)
-  const selectedExecutionResultSummary = ref<any>(null)
+  const selectedExecutionResultSummary = ref<CaseExecutionSummary | null>(null)
   const selectedCaseVersionDetail = ref<ApiCaseRevisionDetail | null>(null)
-  const snapshotParametersByStep = new Map<string, any[]>()
-  const liveCaseRecord = ref<any>(null)
-  const liveCaseRows = ref<any[]>([])
+  const snapshotParametersByStep = new Map<string, ApiCaseScenario[]>()
+  const liveCaseRecord = ref<CaseWorkspaceRecord | null>(null)
+  const liveCaseRows = ref<ApiCaseStep[]>([])
   const caseVersionPayloadActive = ref(false)
   const caseVersionEditUnlocked = ref(false)
   const apiCaseCompareCurrentPayload = computed(() => buildApiCaseCompareCurrentPayload())
@@ -955,54 +880,51 @@
     label: '',
     title: '',
     value: '',
-    item: null as any,
+    item: null as ApiCaseScenario | null,
   })
   const apiInfoDetailPanelRef = ref<InstanceType<typeof ApiCaseInfoDetailPanel> | null>(null)
-  const recoveryConfigRef = ref<InstanceType<typeof ApiCaseRecoveryConfig> | null>(null)
-
-  function openRecoveryConfig(step: any) {
+  function openStepEditor(step: ApiCaseStep) {
     if (!ensureCaseEditable() || caseExecutionActive.value) return
-    recoveryConfigRef.value?.open(step)
+    stepEditorRef.value?.open(step)
   }
-  const data: any = reactive({
-    actionTitle: '新增执行编排',
-
-    assClickAdd: true,
-    results: null,
-    selectDataObj: [],
-    data: [],
-    apiList: [],
-    apiRevisionList: [],
-    ass: [],
-    textAss: [],
-    caseHeadersList: [],
-    caseDetailsHeadersList: [],
-    headers_list: [],
-    parameter_headers_list: [],
+  const caseSteps = ref<ApiCaseStep[]>([])
+  const selectedStep = ref<ApiCaseStep | null>(null)
+  const scenarios = ref<ApiCaseScenario[]>([])
+  const assertionEditingAllowed = ref(true)
+  const workspaceTabs = reactive({
     apiType: '2',
     apiSonType: '0',
     caseDetailsTypeKey: '2',
     tabsKey: '10',
-
-    actionParameterTitle: '新增接口场景',
-    isAdd: true,
-    isCopy: false,
-    copyParameterId: null,
-    updateId: null,
+  })
+  const scenarioViewport = reactive<{
+    activeCollapseKey: (string | number)[]
+    mountedCollapseKeys: number[]
+    expandingIndex: number
+  }>({
     activeCollapseKey: [0],
     mountedCollapseKeys: [],
-    collapseLoading: false, // 列表整体 loading
+    expandingIndex: -1,
+  })
+  const panelLoading = reactive({
+    collapseLoading: false,
     caseConfigLoading: false,
     caseDetailTabLoading: false,
-    expandingIndex: -1, // 正在展开中的 item index，-1 表示无
+  })
+  const optionLists = reactive<CaseResourceOptions>({
+    ass: [],
+    textAss: [],
+    caseHeadersList: [],
+    headers_list: [],
+    parameter_headers_list: [],
     datasourceAliasOptions: [],
     publicOptions: [],
     authConfigOptions: [],
   })
 
   const { saveCase, saveParameter } = useApiCaseAutoSave(
-    () => pageData.record,
-    () => data.selectDataObj
+    () => caseRecord.value,
+    () => scenarios.value
   )
 
   const {
@@ -1019,12 +941,13 @@
     startDebugRunLoadingLimit,
     stopDebugRunLoadingLimit,
     disposeExecutionTimers,
-  } = useApiCaseExecution(context => refreshCaseRunStatusByStep(context))
+  } = useApiCaseExecution((context) => refreshCaseRunStatusByStep(context))
   const stepTableLoading = ref(false)
+  const sortingSteps = ref(false)
   const caseGlobalSaving = ref(false)
   const callbackSavePending = ref(false)
 
-  async function saveCallbackRules(rules: any[]): Promise<boolean> {
+  async function saveCallbackRules(rules: CallbackRuleDraft[]): Promise<boolean> {
     if (callbackSavePending.value || !ensureCaseEditable()) return false
     const caseId = apiCaseId.value
     const version = selectedCaseVersionDetail.value
@@ -1036,9 +959,13 @@
         Message.error('服务端尚未支持回调配置，请确认后端版本及数据库迁移')
         return false
       }
-      if (caseId !== apiCaseId.value || version !== selectedCaseVersionDetail.value || caseEditLocked.value)
+      if (
+        caseId !== apiCaseId.value ||
+        version !== selectedCaseVersionDetail.value ||
+        caseEditLocked.value
+      )
         return false
-      pageData.record.callback_checks = response.data.callback_checks
+      caseRecord.value.callback_checks = response.data.callback_checks
       return true
     } finally {
       callbackSavePending.value = false
@@ -1062,32 +989,36 @@
     () => caseVersionPayloadActive.value && !caseVersionEditUnlocked.value
   )
   const showCaseAddButton = computed(
-    () => !(data.apiType === '1' && ['13', '15', '16'].includes(data.apiSonType))
+    () => !(workspaceTabs.apiType === '1' && ['13', '15', '16'].includes(workspaceTabs.apiSonType))
   )
   const toggleScenarioWorkbench = () => {
     scenarioWorkbenchExpanded.value = !scenarioWorkbenchExpanded.value
   }
   const apiCaseDetailTitle = computed(() => {
     const id = apiCaseId.value || '-'
-    const name = pageData.record?.name || '-'
+    const name = caseRecord.value?.name || '-'
     return `组合用例场景配置 / ${id} / ${name}`
   })
   const frontPublicCheckedValues = computed({
-    get: () => mergeCheckedOptionValues(pageData.record.front_public, data.publicOptions),
+    get: () => mergeCheckedOptionValues(caseRecord.value.front_public, optionLists.publicOptions),
     set: (value: any[]) => {
-      pageData.record.front_public = filterOptionalOptionValues(value, data.publicOptions)
+      caseRecord.value.front_public = filterOptionalOptionValues(value, optionLists.publicOptions)
     },
   })
   const frontAuthConfigCheckedValues = computed({
-    get: () => mergeCheckedOptionValues(pageData.record.front_auth_config, data.authConfigOptions),
+    get: () =>
+      mergeCheckedOptionValues(caseRecord.value.front_auth_config, optionLists.authConfigOptions),
     set: (value: any[]) => {
-      pageData.record.front_auth_config = filterOptionalOptionValues(value, data.authConfigOptions)
+      caseRecord.value.front_auth_config = filterOptionalOptionValues(
+        value,
+        optionLists.authConfigOptions
+      )
     },
   })
   const traceDrawerRef = ref<InstanceType<typeof ApiCaseExecutionTraceDrawer> | null>(null)
   const caseDiagnosisDrawerRef = ref<InstanceType<typeof ApiCaseDiagnosisDrawer> | null>(null)
   const selectedStepSummary = computed(() => {
-    const step = data.tabelJson
+    const step = selectedStep.value
     if (!step?.api_info) {
       return '从左侧选择接口后，可为同一个接口扩展多组场景参数、断言和执行结果'
     }
@@ -1098,8 +1029,8 @@
   })
   const selectedRuntimeResultOutdated = computed(
     () =>
-      Boolean(data.tabelJson?.runtime_result_outdated) ||
-      data.selectDataObj.some((item: any) => item.runtime_result_outdated)
+      Boolean(selectedStep.value?.runtime_result_outdated) ||
+      scenarios.value.some((item: any) => item.runtime_result_outdated)
   )
   const latestScenarioExecutionLabel = computed(() => {
     const testTime =
@@ -1120,13 +1051,14 @@
       debugRequestPending.value ||
       scenarioHeaderSavingCount.value > 0 ||
       caseRunRefreshActive.value ||
-      hasRunningCaseStep(data.data)
+      hasRunningCaseStep(caseSteps.value)
   )
   const dataFactoryConfigCache = reactive(new Map<string, number>())
-  const parameterCacheByStep = new Map<string, any[]>()
+  const parameterCacheByStep = new Map<string, ApiCaseScenario[]>()
   let latestExecutionResultData: any = null
   const {
     nextParameterLoadToken,
+    invalidateParameterLoad,
     isCurrentParameterLoad,
     nextExecutionResultLoadToken,
     isCurrentExecutionResultLoad,
@@ -1134,19 +1066,23 @@
   } = useApiCaseSelection()
   const {
     panelLoaded,
+    clearPanelCache,
     markPanelLoaded,
     runWithPanelLoading: runCaseDetailTabLoading,
-  } = useApiCasePanelLoader(data)
+  } = useApiCasePanelLoader(panelLoading)
   let caseConfigLoadingCount = 0
 
   async function runCaseConfigLoading(task: () => void | Promise<void>) {
+    const isCurrent = requests.capture()
     caseConfigLoadingCount += 1
-    data.caseConfigLoading = true
+    panelLoading.caseConfigLoading = true
     try {
       await task()
     } finally {
-      caseConfigLoadingCount = Math.max(0, caseConfigLoadingCount - 1)
-      data.caseConfigLoading = caseConfigLoadingCount > 0
+      if (isCurrent()) {
+        caseConfigLoadingCount = Math.max(0, caseConfigLoadingCount - 1)
+        panelLoading.caseConfigLoading = caseConfigLoadingCount > 0
+      }
     }
   }
 
@@ -1164,7 +1100,7 @@
   }
 
   function getLatestScenarioTestTime() {
-    const rows = Array.isArray(data.selectDataObj) ? data.selectDataObj : []
+    const rows = Array.isArray(scenarios.value) ? scenarios.value : []
     for (let index = rows.length - 1; index >= 0; index--) {
       const row = rows[index]
       const testTime = row?.result_data?.test_time || row?.test_time
@@ -1174,53 +1110,68 @@
   }
 
   function isActiveCollapseItem(index: number) {
-    return data.activeCollapseKey.some((key: string | number) => String(key) === String(index))
+    return scenarioViewport.activeCollapseKey.some(
+      (key: string | number) => String(key) === String(index)
+    )
   }
 
   function isMountedCollapseItem(index: number) {
-    return data.mountedCollapseKeys.some((key: string | number) => String(key) === String(index))
+    return scenarioViewport.mountedCollapseKeys.some(
+      (key: string | number) => String(key) === String(index)
+    )
   }
 
   function mountCollapseItem(index: number) {
     if (!isMountedCollapseItem(index)) {
-      data.mountedCollapseKeys.push(index)
+      scenarioViewport.mountedCollapseKeys.push(index)
     }
   }
 
   function deferMountCollapseItem(index: number) {
-    data.expandingIndex = index
+    const isCurrent = requests.capture()
+    scenarioViewport.expandingIndex = index
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        if (!isActiveCollapseItem(index)) {
+        if (!isCurrent() || !isActiveCollapseItem(index)) {
           return
         }
         mountCollapseItem(index)
-        data.expandingIndex = -1
+        scenarioViewport.expandingIndex = -1
       })
     })
   }
 
   function isActiveCaseDetailTab(caseDetailsTypeKey: string, tabsKey: string) {
-    return data.caseDetailsTypeKey === caseDetailsTypeKey && data.tabsKey === tabsKey
+    return (
+      workspaceTabs.caseDetailsTypeKey === caseDetailsTypeKey && workspaceTabs.tabsKey === tabsKey
+    )
   }
 
   function isRuntimeResultTab() {
-    return data.caseDetailsTypeKey === '2' || data.caseDetailsTypeKey === '6'
+    return workspaceTabs.caseDetailsTypeKey === '2' || workspaceTabs.caseDetailsTypeKey === '6'
   }
 
   async function switchType(key: any) {
     if (key === '1') {
-      data.apiSonType = '15'
+      workspaceTabs.apiSonType = '15'
     } else if (key === '3') {
-      data.apiSonType = '31'
+      workspaceTabs.apiSonType = '31'
     }
-    data.apiType = key
+    workspaceTabs.apiType = key
     if (key !== '2') {
       await runCaseConfigLoading(() => ensureActiveCasePanelLoaded())
     }
   }
 
   function selectExecutionVersion(version: ApiCaseExecutionVersion) {
+    requests.invalidate()
+    invalidateParameterLoad()
+    invalidateExecutionResultLoad()
+    clearPanelCache()
+    stepEditorRef.value?.close()
+    scenarioEditorRef.value?.close()
+    jsonEditDrawer.visible = false
+    stepTableLoading.value = false
     selectedExecutionVersion.value = version
     caseVersionEditUnlocked.value = false
     clearDisplayedRuntimeResults()
@@ -1235,12 +1186,17 @@
   }
 
   function showCurrentConfiguration() {
+    requests.invalidate()
+    invalidateParameterLoad()
+    invalidateExecutionResultLoad()
+    clearPanelCache()
+    jsonEditDrawer.visible = false
     selectedCaseVersionDetail.value = null
     caseVersionPayloadActive.value = false
     caseVersionEditUnlocked.value = false
     snapshotParametersByStep.clear()
     if (liveCaseRecord.value) {
-      pageData.setRecord(normalizeCaseRecord(liveCaseRecord.value))
+      setCaseRecord(normalizeCaseRecord(liveCaseRecord.value))
     }
     void Promise.all([doRefresh(), loadCaseDataFactoryCount()]).then(() =>
       refreshSelectedRuntimeResult()
@@ -1278,8 +1234,14 @@
 
   function pickCaseStepEditablePayload(row: Record<string, any>, index: number) {
     const apiInfoId = getSnapshotApiInfoId(row) || getApiInfoId(row)
-    const fields = ['id', 'logical_id', 'case_sort', 'posterior_sql', 'api_info_revision_id',
-      'execution_config']
+    const fields = [
+      'id',
+      'logical_id',
+      'case_sort',
+      'posterior_sql',
+      'api_info_revision_id',
+      'execution_config',
+    ]
     const step = fields.reduce<Record<string, any>>((result, field) => {
       result[field] = cloneVersionValue(row?.[field])
       return result
@@ -1301,16 +1263,16 @@
     if (Array.isArray(row?.api_case_detailed_parameter)) {
       return cloneVersionValue(row.api_case_detailed_parameter)
     }
-    if (data.tabelJson && String(data.tabelJson.id) === String(row?.id)) {
-      return cloneVersionValue(data.selectDataObj || [])
+    if (selectedStep.value && String(selectedStep.value.id) === String(row?.id)) {
+      return cloneVersionValue(scenarios.value || [])
     }
     return []
   }
 
   function buildApiCaseCompareCurrentPayload() {
     return {
-      api_case: pickCaseEditablePayload(pageData.record || {}),
-      api_case_detailed: (Array.isArray(data.data) ? data.data : []).map(
+      api_case: pickCaseEditablePayload(caseRecord.value || {}),
+      api_case_detailed: (Array.isArray(caseSteps.value) ? caseSteps.value : []).map(
         (row: Record<string, any>, index: number) => pickCaseStepEditablePayload(row, index)
       ),
     }
@@ -1325,9 +1287,14 @@
     dependencies: ApiCaseRevisionDetail['api_revision_dependencies'] = []
   ) {
     if (!payload || typeof payload !== 'object') return
+    requests.invalidate()
+    invalidateParameterLoad()
+    invalidateExecutionResultLoad()
+    clearPanelCache()
+    stepTableLoading.value = false
     if (!caseVersionPayloadActive.value) {
-      liveCaseRecord.value = cloneVersionValue(pageData.record)
-      liveCaseRows.value = cloneVersionValue(Array.isArray(data.data) ? data.data : [])
+      liveCaseRecord.value = cloneVersionValue(caseRecord.value)
+      liveCaseRows.value = cloneVersionValue(Array.isArray(caseSteps.value) ? caseSteps.value : [])
     }
     caseVersionPayloadActive.value = true
     const currentRows = liveCaseRows.value
@@ -1351,7 +1318,7 @@
     const rows = steps.map((step: any, index: number) => {
       const apiInfoId = getSnapshotApiInfoId(step)
       const sourceId = String(step.id || '').replace(/^step-/, '')
-      const current =
+      const current: Partial<ApiCaseStep> =
         currentRows.find((row: any) => String(row.id) === sourceId) ||
         currentRows.find((row: any) => String(getApiInfoId(row)) === String(apiInfoId)) ||
         {}
@@ -1382,16 +1349,19 @@
       )
       return normalizeCaseDetailRow(row)
     })
-    pageData.setRecord(
-      normalizeCaseRecord({ ...pageData.record, ...cloneVersionValue(casePayload),
-                            callback_checks: cloneVersionValue(casePayload.callback_checks || []) })
+    setCaseRecord(
+      normalizeCaseRecord({
+        ...caseRecord.value,
+        ...cloneVersionValue(casePayload),
+        callback_checks: cloneVersionValue(casePayload.callback_checks || []),
+      })
     )
-    data.caseHeadersList = pageData.record.front_headers
-    data.data = rows
+    optionLists.caseHeadersList = caseRecord.value.front_headers
+    caseSteps.value = rows
     if (rows.length) select(rows[0])
     else {
-      data.tabelJson = null
-      data.selectDataObj = []
+      selectedStep.value = null
+      scenarios.value = []
     }
   }
 
@@ -1400,7 +1370,7 @@
     caseRun(null, version)
   }
 
-  async function ensureCasePanelLoaded(panelKey: string, record: any = data.tabelJson) {
+  async function ensureCasePanelLoaded(panelKey: string, record: any = selectedStep.value) {
     if (panelKey === 'case-public') {
       await loadCasePublicOptions()
     } else if (panelKey === 'case-auth') {
@@ -1414,32 +1384,32 @@
     }
   }
 
-  async function ensureActiveCasePanelLoaded(record: any = data.tabelJson) {
-    if (data.apiType === '1') {
-      if (data.apiSonType === '15') {
+  async function ensureActiveCasePanelLoaded(record: any = selectedStep.value) {
+    if (workspaceTabs.apiType === '1') {
+      if (workspaceTabs.apiSonType === '15') {
         await ensureCasePanelLoaded('case-public', record)
-      } else if (data.apiSonType === '16') {
+      } else if (workspaceTabs.apiSonType === '16') {
         await ensureCasePanelLoaded('case-auth', record)
-      } else if (data.apiSonType === '12') {
+      } else if (workspaceTabs.apiSonType === '12') {
         await ensureCasePanelLoaded('datasource-aliases', record)
-      } else if (data.apiSonType === '13') {
+      } else if (workspaceTabs.apiSonType === '13') {
         await ensureCasePanelLoaded('case-headers', record)
       }
       return
     }
-    if (data.apiType === '3') {
-      if (data.apiSonType === '31') {
+    if (workspaceTabs.apiType === '3') {
+      if (workspaceTabs.apiSonType === '31') {
         await ensureCasePanelLoaded('datasource-aliases', record)
       }
       return
     }
-    if (data.apiType !== '2') {
+    if (workspaceTabs.apiType !== '2') {
       return
     }
-    if (data.caseDetailsTypeKey === '0' && data.tabsKey === '00') {
+    if (workspaceTabs.caseDetailsTypeKey === '0' && workspaceTabs.tabsKey === '00') {
       await ensureCasePanelLoaded('parameter-headers', record)
     }
-    if (['10', '41'].includes(String(data.tabsKey))) {
+    if (['10', '41'].includes(String(workspaceTabs.tabsKey))) {
       await ensureCasePanelLoaded('datasource-aliases', record)
     }
     if (isRuntimeResultTab()) {
@@ -1483,12 +1453,15 @@
   }
 
   async function loadCaseDataFactoryCount() {
+    const isCurrent = requests.capture()
     if (!apiCaseId.value) {
+      if (!isCurrent()) return
       setCaseDataFactoryCount(0)
       return
     }
     try {
       const res = await getDataFactoryCaseConfig({ source_type: 1, source_id: apiCaseId.value })
+      if (!isCurrent()) return
       setCaseDataFactoryCount(Array.isArray(res.data) ? res.data.length : 0)
     } catch (error) {
       console.log(error)
@@ -1500,11 +1473,11 @@
   ) {
     if (type === 'public') return configuredItemCount(frontPublicCheckedValues.value)
     if (type === 'auth') return configuredItemCount(frontAuthConfigCheckedValues.value)
-    if (type === 'custom') return configuredItemCount(pageData.record?.front_custom)
-    if (type === 'frontSql') return configuredItemCount(pageData.record?.front_sql)
+    if (type === 'custom') return configuredItemCount(caseRecord.value?.front_custom)
+    if (type === 'frontSql') return configuredItemCount(caseRecord.value?.front_sql)
     if (type === 'factory') return caseDataFactoryCount.value
-    if (type === 'headers') return configuredItemCount(pageData.record?.front_headers)
-    return configuredItemCount(pageData.record?.posterior_sql)
+    if (type === 'headers') return configuredItemCount(caseRecord.value?.front_headers)
+    return configuredItemCount(caseRecord.value?.posterior_sql)
   }
 
   function setScenarioDataFactoryCount(id: number | string, count: number) {
@@ -1512,11 +1485,13 @@
   }
 
   async function loadScenarioDataFactoryCounts(items: any[]) {
+    const isCurrent = requests.capture()
     await Promise.allSettled(
       items.map(async (item) => {
         const cacheKey = String(item?.id || '')
         if (!cacheKey || dataFactoryConfigCache.has(cacheKey)) return
         const res = await getDataFactoryCaseConfig({ source_type: 3, source_id: item.id })
+        if (!isCurrent()) return
         setScenarioDataFactoryCount(item.id, Array.isArray(res.data) ? res.data.length : 0)
       })
     )
@@ -1570,14 +1545,17 @@
         configuredItemCount(item?.ass_sql) +
         configuredItemCount(item?.ass_schema) +
         configuredItemCount(item?.ass_general) +
-        callbackRulesForStep(pageData.record.callback_checks || [], data.tabelJson?.id).length
+        callbackRulesForStep(caseRecord.value.callback_checks || [], selectedStep.value?.id).length
       )
     }
     if (tab === 'cache') return resultItemCount(item?.result_data?.cache_data)
     if (tab === 'factory') {
       return resultItemCount(item?.result_data?.data_factory_cache_data)
     }
-    return getAssertionResultData(item).length + callbackAssertionCount(getCallbackAssertionResults(item))
+    return (
+      getAssertionResultData(item).length +
+      callbackAssertionCount(getCallbackAssertionResults(item))
+    )
   }
 
   function getResultRequestParams(item: any) {
@@ -1655,82 +1633,85 @@
   }
 
   async function switchApiInfoType(key: any, item: any) {
-    if (data.caseDetailTabLoading) {
+    if (panelLoading.caseDetailTabLoading) {
       return
     }
     await runCaseDetailTabLoading(async () => {
-      data.caseDetailsTypeKey = key
+      workspaceTabs.caseDetailsTypeKey = key
       if (key === '0') {
         if (hasConfigValue(item?.body_config) || getScenarioBodyType(item) !== 'none') {
-          data.tabsKey = '02'
+          workspaceTabs.tabsKey = '02'
         } else if (hasConfigValue(item?.params)) {
-          data.tabsKey = '01'
+          workspaceTabs.tabsKey = '01'
         } else if (hasConfigValue(item?.headers)) {
-          data.tabsKey = '00'
+          workspaceTabs.tabsKey = '00'
         } else {
-          data.tabsKey = '02'
+          workspaceTabs.tabsKey = '02'
         }
       } else if (key === '1') {
         await switchFrontProcessTab(item)
       } else if (key === '2') {
-        data.tabsKey = getResultResponseTabKey(item)
+        workspaceTabs.tabsKey = getResultResponseTabKey(item)
       } else if (key === '3') {
         if (item.ass_sql && item.ass_sql.length > 0) {
-          data.tabsKey = '35'
-          data.assClickAdd = true
+          workspaceTabs.tabsKey = '35'
+          assertionEditingAllowed.value = true
         } else if (item.ass_general && item.ass_general.length > 0) {
-          data.tabsKey = '32'
-          data.assClickAdd = true
+          workspaceTabs.tabsKey = '32'
+          assertionEditingAllowed.value = true
         } else if (item.ass_jsonpath && item.ass_jsonpath.length > 0) {
-          data.tabsKey = '31'
-          data.assClickAdd = true
+          workspaceTabs.tabsKey = '31'
+          assertionEditingAllowed.value = true
         } else if (item.ass_text_all) {
-          data.tabsKey = '33'
-          data.assClickAdd = false
+          workspaceTabs.tabsKey = '33'
+          assertionEditingAllowed.value = false
         } else if (item.ass_schema) {
-          data.tabsKey = '34'
-          data.assClickAdd = false
-        } else if (callbackRulesForStep(pageData.record.callback_checks || [], data.tabelJson?.id).length) {
-          data.tabsKey = '36'
-          data.assClickAdd = false
+          workspaceTabs.tabsKey = '34'
+          assertionEditingAllowed.value = false
+        } else if (
+          callbackRulesForStep(caseRecord.value.callback_checks || [], selectedStep.value?.id)
+            .length
+        ) {
+          workspaceTabs.tabsKey = '36'
+          assertionEditingAllowed.value = false
         } else {
-          data.tabsKey = '30'
-          data.assClickAdd = false
+          workspaceTabs.tabsKey = '30'
+          assertionEditingAllowed.value = false
         }
       } else if (key === '4') {
         if (hasConfigValue(item.posterior_response)) {
-          data.tabsKey = '40'
+          workspaceTabs.tabsKey = '40'
         } else if (hasConfigValue(item.posterior_response_text)) {
-          data.tabsKey = '44'
+          workspaceTabs.tabsKey = '44'
         } else if (hasConfigValue(item.posterior_sql)) {
-          data.tabsKey = '41'
+          workspaceTabs.tabsKey = '41'
         } else if (hasConfigValue(item.posterior_sleep)) {
-          data.tabsKey = '42'
+          workspaceTabs.tabsKey = '42'
         } else if (hasConfigValue(item.posterior_func)) {
-          data.tabsKey = '43'
+          workspaceTabs.tabsKey = '43'
         } else {
-          data.tabsKey = '40'
+          workspaceTabs.tabsKey = '40'
         }
-        data.assClickAdd = !['42', '43'].includes(String(data.tabsKey))
+        assertionEditingAllowed.value = !['42', '43'].includes(String(workspaceTabs.tabsKey))
       } else if (key === '5') {
-        data.tabsKey = '50'
+        workspaceTabs.tabsKey = '50'
       }
       await ensureActiveCasePanelLoaded(item)
       if (key === '2') {
-        data.tabsKey = getResultResponseTabKey(item)
+        workspaceTabs.tabsKey = getResultResponseTabKey(item)
       }
     })
   }
 
   async function switchFrontProcessTab(item: any) {
     if (item?.front_sql && item.front_sql.length > 0) {
-      data.tabsKey = '10'
-      data.assClickAdd = true
+      workspaceTabs.tabsKey = '10'
+      assertionEditingAllowed.value = true
       return
     }
     if (item?.front_func) {
-      data.tabsKey = '11'
-      data.assClickAdd = false
+      workspaceTabs.tabsKey = '11'
+      assertionEditingAllowed.value = false
       return
     }
     try {
@@ -1741,19 +1722,19 @@
         setScenarioDataFactoryCount(item.id, dataFactoryConfigCount)
       }
       if (dataFactoryConfigCount > 0) {
-        data.tabsKey = '12'
-        data.assClickAdd = true
+        workspaceTabs.tabsKey = '12'
+        assertionEditingAllowed.value = true
         return
       }
     } catch (error) {
       console.log(error)
     }
-    data.tabsKey = '10'
-    data.assClickAdd = true
+    workspaceTabs.tabsKey = '10'
+    assertionEditingAllowed.value = true
   }
 
   async function switchSonType(key: any) {
-    data.apiSonType = key
+    workspaceTabs.apiSonType = key
     await runCaseConfigLoading(() => ensureActiveCasePanelLoaded())
   }
 
@@ -1768,17 +1749,17 @@
   }
 
   async function tabsChange(key: string | number, item: any = null) {
-    if (data.caseDetailTabLoading) {
+    if (panelLoading.caseDetailTabLoading) {
       return
     }
     if (isRuntimeResultTab()) {
-      data.tabsKey = key
+      workspaceTabs.tabsKey = String(key)
       return
     }
     await runCaseDetailTabLoading(async () => {
-      data.tabsKey = key
+      workspaceTabs.tabsKey = String(key)
       fillDefaultFunc(item, key)
-      data.assClickAdd = !(
+      assertionEditingAllowed.value = !(
         key === '30' ||
         key === '42' ||
         key === '33' ||
@@ -1791,18 +1772,18 @@
 
   function addData() {
     if (!ensureCaseEditable()) return
-    if (data.apiType == '2') {
+    if (workspaceTabs.apiType == '2') {
       addApiInfo()
       return
     }
-    if (data.apiSonType === '11') {
-      pageData.record.front_custom.push({ key: '', value: '', test_envs: [] })
-    } else if (data.apiSonType === '12') {
-      pageData.record.front_sql.push({ key: '', value: '', datasource_alias: null, test_envs: [] })
-    } else if (data.apiSonType === '14') {
+    if (workspaceTabs.apiSonType === '11') {
+      caseRecord.value.front_custom.push({ key: '', value: '', test_envs: [] })
+    } else if (workspaceTabs.apiSonType === '12') {
+      caseRecord.value.front_sql.push({ key: '', value: '', datasource_alias: null, test_envs: [] })
+    } else if (workspaceTabs.apiSonType === '14') {
       dataFactoryPanelRef.value?.open()
-    } else if (data.apiSonType === '31') {
-      pageData.record.posterior_sql.push({
+    } else if (workspaceTabs.apiSonType === '31') {
+      caseRecord.value.posterior_sql.push({
         key: '',
         value: '',
         datasource_alias: null,
@@ -1822,11 +1803,14 @@
   function setSchema(id: number) {
     if (!ensureCaseEditable()) return
     if (schemaLoadingId.value) return
+    const stepId = selectedStep.value?.id
+    const isCurrent = requests.capture()
     schemaLoadingId.value = id
     putSetSchema(id)
       .then((res) => {
         Message.success(res.msg)
-        doRefreshParameter(data.tabelJson.id, { force: true })
+        if (stepId && isCurrent() && String(selectedStep.value?.id) === String(stepId))
+          void doRefreshParameter(stepId, { force: true })
       })
       .catch(console.log)
       .finally(() => {
@@ -1850,10 +1834,11 @@
 
   function getAssertionResultData(item: any) {
     if (Array.isArray(item?.__assertion_verify_result)) {
-      return item.__assertion_verify_result
+      return item.__assertion_verify_result.filter((assertion: any) => assertion.source_type !== 'assertion_group')
     }
     return Array.isArray(item?.result_data?.ass)
-      ? item.result_data.ass.filter((assertion: any) => !assertion.callback) : []
+      ? item.result_data.ass.filter((assertion: any) => !assertion.callback && assertion.source_type !== 'assertion_group')
+      : []
   }
 
   function getCallbackAssertionResults(item: any) {
@@ -1876,14 +1861,15 @@
   }
 
   function isAssertionVerifyStale(item: any) {
-    return Boolean(item?.__assertion_verify_result) && (
-      Boolean(item.__assertion_verify_stale)
-      || item.__assertion_verify_signature !== getAssertionVerifySignature(item)
+    return (
+      Boolean(item?.__assertion_verify_result) &&
+      (Boolean(item.__assertion_verify_stale) ||
+        item.__assertion_verify_signature !== getAssertionVerifySignature(item))
     )
   }
 
   function clearAssertionVerifyResults() {
-    data.selectDataObj.forEach((item: any) => {
+    scenarios.value.forEach((item: any) => {
       item.__assertion_verify_result = null
       item.__assertion_verify_signature = null
       item.__assertion_verify_stale = false
@@ -1904,8 +1890,10 @@
 
     assertionVerifyLoadingId.value = item.id
     const verifySignature = getAssertionVerifySignature(item)
+    const isCurrent = requests.capture(),
+      environment = userStore.selected_environment
     try {
-      const res = await postVerifyApiCaseAssertions({
+      const verifyPayload = {
         id: item.id,
         test_env: Number(userStore.selected_environment ?? 0),
         assertions: {
@@ -1916,6 +1904,16 @@
           ass_general: normalizeAssGeneral(item.ass_general),
           ass_sql: normalizeAssSql(item.ass_sql),
         },
+      }
+      const res = await postVerifyApiCaseAssertions(verifyPayload)
+      if (!isCurrent() || environment !== userStore.selected_environment) return
+      const target = scenarios.value.find((scenario) => scenario.id === item.id)
+      if (!target) return
+      Object.assign(target, {
+        __assertion_verify_result: res.data.assertions,
+        __assertion_verify_signature: verifySignature,
+        __assertion_verify_stale: false,
+        __assertion_compare_open: true,
       })
       item.__assertion_verify_result = res.data.assertions
       item.__assertion_verify_signature = verifySignature
@@ -1933,66 +1931,30 @@
     }
   }
 
-  function parameterEditing(item: any) {
-    if (!ensureCaseEditable()) return
-    data.actionParameterTitle = '编辑接口场景名称'
-    data.isAdd = false
-    data.isCopy = false
-    data.copyParameterId = null
-    data.updateId = item.id
-    modalDialogRefParameter.value?.toggle()
-    nextTick(() => {
-      formParameterItems.forEach((it) => {
-        const expectation = item.body_config?.protocol_expectation || {}
-        const legacyStatusCodes = getLegacyExpectedStatusCodes(item)
-        const propName =
-          it.key === 'protocol_expectation_mode'
-            ? expectation.mode || (legacyStatusCodes.length ? 'codes' : 'auto')
-            : it.key === 'protocol_expectation_codes'
-            ? (expectation.status_codes || legacyStatusCodes).join(',')
-            : it.key === 'allow_failure'
-            ? Boolean(item[it.key])
-            : item[it.key]
-        if (typeof propName === 'object' && propName !== null) {
-          it.value = propName.id
-        } else {
-          it.value = propName
-        }
-      })
-    })
+  function parameterEditing(item: ApiCaseScenario) {
+    if (ensureCaseEditable() && selectedStep.value)
+      scenarioEditorRef.value?.open(selectedStep.value, 'edit', item)
   }
-
-  function parameterCopy(item: any) {
-    if (!ensureCaseEditable()) return
-    data.actionParameterTitle = '复制接口场景'
-    data.isAdd = false
-    data.isCopy = true
-    data.copyParameterId = item.id
-    data.updateId = null
-    modalDialogRefParameter.value?.toggle()
-    nextTick(() => {
-      formParameterItems.forEach((it) => {
-        const expectation = item.body_config?.protocol_expectation || {}
-        const legacyStatusCodes = getLegacyExpectedStatusCodes(item)
-        const propName =
-          it.key === 'protocol_expectation_mode'
-            ? expectation.mode || (legacyStatusCodes.length ? 'codes' : 'auto')
-            : it.key === 'protocol_expectation_codes'
-            ? (expectation.status_codes || legacyStatusCodes).join(',')
-            : it.key === 'allow_failure'
-            ? Boolean(item[it.key])
-            : item[it.key]
-        if (typeof propName === 'object' && propName !== null) {
-          it.value = propName.id
-        } else {
-          it.value = propName
-        }
-      })
-    })
+  function parameterCopy(item: ApiCaseScenario) {
+    if (ensureCaseEditable() && selectedStep.value)
+      scenarioEditorRef.value?.open(selectedStep.value, 'copy', item)
   }
-
+  function addApiInfo() {
+    if (ensureCaseEditable()) stepEditorRef.value?.open()
+  }
+  function addParameter() {
+    if (ensureCaseEditable() && selectedStep.value)
+      scenarioEditorRef.value?.open(selectedStep.value)
+  }
+  function onScenarioSaved(stepId: string | number) {
+    parameterCacheByStep.delete(String(stepId))
+    if (String(selectedStep.value?.id) === String(stepId))
+      void doRefreshParameter(Number(stepId), { force: true })
+  }
   function parameterDelete(item: any) {
     if (!ensureCaseEditable()) return
+    const stepId = selectedStep.value?.id
+    const isCurrent = requests.capture()
     Modal.confirm({
       title: '提示',
       content: '确定要删除此数据吗？',
@@ -2002,9 +1964,10 @@
         return deleteApiCaseDetailedParameter(item.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefreshParameter(data.tabelJson.id, { force: true })
+            if (stepId && isCurrent()) onScenarioSaved(stepId)
           })
-          .catch(console.log)
+          .then(() => true)
+          .catch(() => false)
       },
     })
   }
@@ -2016,42 +1979,46 @@
     upDataCase({ refreshScenario })
   }
 
-  function openJsonEditDrawer(field: string, label: string, item: any) {
-    if (!ensureCaseEditable()) return
+  function openJsonEditDrawer(field: string, label: string, item: ApiCaseScenario) {
+    if (!ensureCaseEditable() || jsonEditSaving.value) return
     jsonEditDrawer.visible = true
     jsonEditDrawer.field = field
     jsonEditDrawer.label = label
     jsonEditDrawer.title = `${label} JSON 编辑`
     jsonEditDrawer.item = item
-    jsonEditDrawer.value = item?.[field] || ''
+    const raw = Object.entries(item).find(([key]) => key === field)?.[1]
+    jsonEditDrawer.value = typeof raw === 'string' ? raw : raw == null ? '' : formatJson(raw) ?? ''
   }
 
-  function saveJsonEditDrawer(value = jsonEditDrawer.value) {
-    if (!ensureCaseEditable()) return
-    const item = jsonEditDrawer.item
-    const field = jsonEditDrawer.field
+  async function saveJsonEditDrawer(value = jsonEditDrawer.value) {
+    if (!ensureCaseEditable() || jsonEditSaving.value) return
+    const item = jsonEditDrawer.item,
+      field = jsonEditDrawer.field
     if (!item || !field) return
-    if (jsonEditSaving.value) return
+    const isCurrent = requests.capture(),
+      targetId = item.id
+    const parsed = ['ass_json_all', 'ass_schema'].includes(field)
+      ? formatJsonObj(field, value)
+      : value
+    if (parsed === false) return
     jsonEditSaving.value = true
-    item[field] = value
-    const saveTask = blurSave(field, value, item.id)
-    if (!saveTask) {
-      jsonEditSaving.value = false
-      return
-    }
-    saveTask
-      .then(() => {
+    try {
+      await saveParameter({ id: targetId, [field]: parsed })
+      if (!isCurrent()) return
+      applyScenarioPatch({ id: targetId, changes: { [field]: value } })
+      if (jsonEditDrawer.item?.id === targetId && jsonEditDrawer.field === field)
         jsonEditDrawer.visible = false
-      })
-      .finally(() => {
-        jsonEditSaving.value = false
-      })
+    } catch {
+      // 保留抽屉草稿，允许重试。
+    } finally {
+      jsonEditSaving.value = false
+    }
   }
 
   function changeHeaders(selectedValues: any) {
     if (!ensureCaseEditable()) return
     const value = {
-      id: pageData.record.id,
+      id: caseRecord.value.id,
       front_headers: selectedValues,
     }
     saveCase(value)
@@ -2067,16 +2034,19 @@
     if (!ensureCaseEditable()) return
     if (caseGlobalSaving.value) return
     caseGlobalSaving.value = true
-    const frontPublic = filterOptionalOptionValues(pageData.record.front_public, data.publicOptions)
-    const frontAuthConfig = filterOptionalOptionValues(
-      pageData.record.front_auth_config,
-      data.authConfigOptions
+    const frontPublic = filterOptionalOptionValues(
+      caseRecord.value.front_public,
+      optionLists.publicOptions
     )
-    pageData.record.front_public = frontPublic
-    pageData.record.front_auth_config = frontAuthConfig
+    const frontAuthConfig = filterOptionalOptionValues(
+      caseRecord.value.front_auth_config,
+      optionLists.authConfigOptions
+    )
+    caseRecord.value.front_public = frontPublic
+    caseRecord.value.front_auth_config = frontAuthConfig
     try {
       const res = await saveCase({
-        id: pageData.record.id,
+        id: caseRecord.value.id,
         front_public: frontPublic,
         front_auth_config: frontAuthConfig,
       })
@@ -2141,14 +2111,14 @@
   function upDataCase(options: { refreshScenario?: boolean } = {}) {
     if (!ensureCaseEditable()) return
     saveCase({
-      id: pageData.record.id,
-      name: pageData.record.name,
-      posterior_sql: pageData.record.posterior_sql,
-      front_sql: pageData.record.front_sql,
-      front_custom: pageData.record.front_custom,
-      front_headers: pageData.record.front_headers,
-      front_public: pageData.record.front_public,
-      front_auth_config: pageData.record.front_auth_config,
+      id: caseRecord.value.id,
+      name: caseRecord.value.name,
+      posterior_sql: caseRecord.value.posterior_sql,
+      front_sql: caseRecord.value.front_sql,
+      front_custom: caseRecord.value.front_custom,
+      front_headers: caseRecord.value.front_headers,
+      front_public: caseRecord.value.front_public,
+      front_auth_config: caseRecord.value.front_auth_config,
     })
       .then((res) => {
         if (!res) return
@@ -2164,7 +2134,7 @@
     upDataCase({ refreshScenario: false })
   }
 
-  function blurSave(key: string, item: string | null, id: number) {
+  function blurSave(key: string, item: unknown, id: number) {
     if (!ensureCaseEditable()) return null
     if (
       [
@@ -2176,9 +2146,11 @@
         'ass_sql',
       ].includes(key)
     ) {
-      const currentItem = data.selectDataObj.find((scenario: any) => scenario.id === id)
-      if (currentItem?.__assertion_verify_result
-        && currentItem.__assertion_verify_signature !== getAssertionVerifySignature(currentItem)) {
+      const currentItem = scenarios.value.find((scenario: any) => scenario.id === id)
+      if (
+        currentItem?.__assertion_verify_result &&
+        currentItem.__assertion_verify_signature !== getAssertionVerifySignature(currentItem)
+      ) {
         currentItem.__assertion_verify_stale = true
       }
     }
@@ -2203,10 +2175,15 @@
         payload[key] = item
       }
     } else if (in_serialize.includes(key)) {
-      if (formatJsonObj(key, item) === false) {
+      if (
+        formatJsonObj(key, typeof item === 'string' ? item : JSON.stringify(item ?? null)) === false
+      ) {
         return null
       } else {
-        payload[key] = formatJsonObj(key, item)
+        payload[key] = formatJsonObj(
+          key,
+          typeof item === 'string' ? item : JSON.stringify(item ?? null)
+        )
       }
     } else if (key === 'ass_general') {
       payload[key] = normalizeAssGeneral(item)
@@ -2216,69 +2193,21 @@
       payload[key] = item
     }
 
+    const isCurrent = requests.capture()
     return saveParameter(payload)
       .then((res) => {
+        if (isCurrent()) applyScenarioPatch({ id, changes: { [key]: item } })
         if (res) Message.success(res.msg)
       })
       .catch(console.log)
   }
 
   function getScenarioProtocolType(item: any) {
-    return data.tabelJson?.api_info?.protocol_type || item?.api_info?.protocol_type || 'http'
-  }
-
-  function isParameterFormItemVisible(item: any) {
-    const protocolType = String(data.tabelJson?.api_info?.protocol_type || 'http').toLowerCase()
-    if (['mcp', 'grpc', 'websocket'].includes(protocolType)) {
-      return !String(item.key).startsWith('protocol_expectation_')
-    }
-    if (item.key === 'protocol_expectation_codes') {
-      return (
-        formParameterItems.find((formItem) => formItem.key === 'protocol_expectation_mode')
-          ?.value === 'codes'
-      )
-    }
-    return true
-  }
-
-  function getLegacyExpectedStatusCodes(item: any) {
-    const codes = new Set<number>()
-    const addCode = (value: unknown) => {
-      const code = Number(value)
-      if (Number.isInteger(code) && code >= 100 && code <= 599) {
-        codes.add(code)
-        return
-      }
-      const prefix = Number(String(value || '').slice(0, 3))
-      if ([400, 404, 405, 409, 422].includes(prefix)) codes.add(prefix)
-    }
-    let jsonAll = item?.ass_json_all
-    if (typeof jsonAll === 'string') {
-      try {
-        jsonAll = JSON.parse(jsonAll)
-      } catch {
-        jsonAll = null
-      }
-    }
-    if (jsonAll && typeof jsonAll === 'object') addCode(jsonAll.code)
-    ;(item?.ass_jsonpath || []).forEach((assertion: any) => {
-      const actual = String(assertion?.actual || '').trim()
-      const method = String(assertion?.method || '').toLowerCase()
-      if (
-        ['$.code', '$["code"]', "$['code']"].includes(actual) &&
-        (!method || method.includes('equal'))
-      ) {
-        addCode(assertion.expect)
-      }
-    })
-    addCode(item?.ass_schema?.properties?.code?.const)
-    const latestHttpStatus = Number(item?.result_data?.response?.code)
-    if ([400, 404, 405, 409, 422].includes(latestHttpStatus)) codes.add(latestHttpStatus)
-    return Array.from(codes).sort((left, right) => left - right)
+    return selectedStep.value?.api_info?.protocol_type || item?.api_info?.protocol_type || 'http'
   }
 
   function getScenarioBodyType(item: any) {
-    return data.tabelJson?.api_info?.body_type || item?.api_info?.body_type || 'none'
+    return selectedStep.value?.api_info?.body_type || item?.api_info?.body_type || 'none'
   }
 
   // 通用断言测试方法
@@ -2304,19 +2233,22 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       .then((res) => {
         filterDeprecatedAssertionMethods(res.data).forEach((item: any) => {
           if (item.value.includes('断言')) {
-            data.ass.push(item)
+            optionLists.ass.push(item)
           }
           if (item.value === '内容断言') {
-            data.textAss.push(...item.children)
+            optionLists.textAss.push(...item.children)
           }
           if (item.value === '自定义断言') {
-            data.textAss.push(...item.children)
+            optionLists.textAss.push(...item.children)
           }
         })
       })
       .catch(console.log)
   }
 
+  function setCaseRecord(record: CaseWorkspaceRecord) {
+    caseRecord.value = record
+  }
   function normalizeCaseRecord(record: any) {
     return {
       ...defaultCaseRecord(),
@@ -2348,79 +2280,80 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   async function ensureCaseRecord() {
     const caseId = apiCaseId.value
     if (!caseId) return
-    if (pageData.record?.id && String(pageData.record.id) === String(caseId)) {
-      pageData.setRecord(normalizeCaseRecord(pageData.record))
-      return
-    }
-    const res = await getApiCase({ id: caseId, page: 1, pageSize: 1 } as any)
-    const record = (res.data || [])[0]
-    pageData.setRecord(normalizeCaseRecord(record || { id: caseId }))
+    const isCurrent = requests.begin('record')
+    const res = await getApiCase({ id: caseId, page: 1, pageSize: 1 })
+    if (!isCurrent() || String(caseId) !== String(apiCaseId.value)) return
+    setCaseRecord(normalizeCaseRecord((res.data || [])[0] || { id: caseId }))
   }
-
-  function doRefresh(options: { loadParameters?: boolean } = {}) {
-    if (!apiCaseId.value) return Promise.resolve()
+  async function doRefresh(options: { loadParameters?: boolean } = {}) {
+    if (!apiCaseId.value || !pageActive || caseVersionPayloadActive.value) return
+    const isCurrent = requests.begin('steps')
+    const caseId = apiCaseId.value
     stepTableLoading.value = true
-    data.caseHeadersList = pageData.record.front_headers
-    return getApiCaseDetailed(apiCaseId.value)
-      .then((res) => {
-        const rows = Array.isArray(res.data) ? res.data.map(normalizeCaseDetailRow) : []
-        data.data = rows
-        let selectionRefresh: Promise<void> = Promise.resolve()
-        if (data.tabelJson && rows.length) {
-          const selected = rows.find((item: any) => item.id === data.tabelJson.id)
-          if (selected) {
-            selectionRefresh = select(selected, {
-              loadParameters: options.loadParameters !== false,
-            })
-          }
-        } else if (rows.length) {
-          selectionRefresh = select(rows[0], {
-            loadParameters: options.loadParameters !== false,
-          })
-        } else {
-          data.tabelJson = null
-          data.selectDataObj = []
-        }
-        syncCaseRunRefreshByRows(rows)
-        return selectionRefresh
-      })
-      .catch(console.log)
-      .finally(() => {
-        stepTableLoading.value = false
-      })
+    optionLists.caseHeadersList = caseRecord.value.front_headers
+    try {
+      const res = await getApiCaseDetailed(caseId)
+      if (!isCurrent() || caseVersionPayloadActive.value) return
+      const rows = Array.isArray(res.data) ? res.data.map(normalizeCaseDetailRow) : []
+      caseSteps.value = rows
+      const selectedId = selectedStep.value?.id
+      const nextStep =
+        rows.find((item: ApiCaseStep) => String(item.id) === String(selectedId)) || rows[0]
+      if (nextStep) await select(nextStep, { loadParameters: options.loadParameters !== false })
+      else {
+        selectedStep.value = null
+        scenarios.value = []
+        invalidateParameterLoad()
+      }
+      if (isCurrent()) syncCaseRunRefreshByRows(rows)
+    } catch {
+      // 公共请求层展示错误，保留已加载数据。
+    } finally {
+      if (isCurrent()) stepTableLoading.value = false
+    }
   }
 
-  function doRefreshParameter(id: number, options: { force?: boolean } = {}): Promise<boolean> {
+  function doRefreshParameter(
+    id: string | number,
+    options: { force?: boolean } = {}
+  ): Promise<boolean> {
     const cacheKey = String(id)
+    const isPageCurrent = requests.capture()
     const loadToken = nextParameterLoadToken()
     const isCurrentSelection = () =>
-      isCurrentParameterLoad(loadToken) && String(data.tabelJson?.id || '') === cacheKey
+      isPageCurrent() &&
+      isCurrentParameterLoad(loadToken) &&
+      String(selectedStep.value?.id || '') === cacheKey
     if (!options.force && parameterCacheByStep.has(cacheKey)) {
       if (!isCurrentSelection()) return Promise.resolve(false)
-      data.collapseLoading = false
-      data.selectDataObj = cloneVersionValue(parameterCacheByStep.get(cacheKey) || [])
-      data.activeCollapseKey = data.selectDataObj.length ? [0] : []
-      data.mountedCollapseKeys = []
-      data.expandingIndex = -1
-      onCollapseChange(data.selectDataObj.length ? [0] : [])
-      void loadScenarioDataFactoryCounts(data.selectDataObj)
+      panelLoading.collapseLoading = false
+      scenarios.value = cloneVersionValue(parameterCacheByStep.get(cacheKey) || [])
+      scenarioViewport.activeCollapseKey = scenarios.value.length ? [0] : []
+      scenarioViewport.mountedCollapseKeys = []
+      scenarioViewport.expandingIndex = -1
+      onCollapseChange(scenarios.value.length ? [0] : [])
+      void loadScenarioDataFactoryCounts(scenarios.value)
       return Promise.resolve(true)
     }
-    data.collapseLoading = true
+    panelLoading.collapseLoading = true
     dataFactoryConfigCache.clear()
-    data.mountedCollapseKeys = []
-    data.expandingIndex = -1
+    scenarioViewport.mountedCollapseKeys = []
+    scenarioViewport.expandingIndex = -1
     return getApiCaseDetailedParameter({ case_detailed_id: id })
       .then(
         (res) =>
           new Promise<boolean>((resolve) => {
             const formattedItems: any[] = []
+            if (!isCurrentSelection()) {
+              resolve(false)
+              return
+            }
             if (!res.data || res.data.length === 0) {
               parameterCacheByStep.set(cacheKey, [])
               if (isCurrentSelection()) {
-                data.selectDataObj = []
-                data.activeCollapseKey = []
-                data.collapseLoading = false
+                scenarios.value = []
+                scenarioViewport.activeCollapseKey = []
+                panelLoading.collapseLoading = false
                 resolve(true)
               } else {
                 resolve(false)
@@ -2445,9 +2378,9 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
                 requestAnimationFrame(writeBatch)
               } else {
                 parameterCacheByStep.set(cacheKey, cloneVersionValue(formattedItems))
-                data.selectDataObj = formattedItems
-                data.activeCollapseKey = formattedItems.length ? [0] : []
-                data.collapseLoading = false
+                scenarios.value = formattedItems
+                scenarioViewport.activeCollapseKey = formattedItems.length ? [0] : []
+                panelLoading.collapseLoading = false
                 onCollapseChange(formattedItems.length ? [0] : [])
                 void loadScenarioDataFactoryCounts(formattedItems)
                 resolve(true)
@@ -2458,7 +2391,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
           })
       )
       .catch(() => {
-        if (isCurrentSelection()) data.collapseLoading = false
+        if (isCurrentSelection()) panelLoading.collapseLoading = false
         return false
       })
   }
@@ -2485,12 +2418,12 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     lastTraceId.value = ''
     parameterCacheByStep.clear()
     selectedExecutionResultSummary.value = null
-    data.data.forEach((row: any) => {
+    caseSteps.value.forEach((row: any) => {
       row.status = 2
       row.error_message = null
       row.runtime_result_outdated = false
     })
-    data.selectDataObj.forEach((parameter: any) => {
+    scenarios.value.forEach((parameter: any) => {
       parameter.status = 2
       parameter.result_data = null
       parameter.error_message = null
@@ -2525,16 +2458,16 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   async function refreshSelectedRuntimeResult(silent = false, context?: PollingContext) {
     const loadToken = nextExecutionResultLoadToken()
     if (!silent) {
-    latestExecutionResultData = null
-    selectedExecutionResultSummary.value = null
-    data.data.forEach((row: any) => {
-      row.runtime_result_outdated = false
-    })
-    data.selectDataObj.forEach((parameter: any) => {
-      parameter.result_data = null
-      parameter.error_message = null
-      parameter.runtime_result_outdated = false
-    })
+      latestExecutionResultData = null
+      selectedExecutionResultSummary.value = null
+      caseSteps.value.forEach((row: any) => {
+        row.runtime_result_outdated = false
+      })
+      scenarios.value.forEach((parameter: any) => {
+        parameter.result_data = null
+        parameter.error_message = null
+        parameter.runtime_result_outdated = false
+      })
     }
     try {
       const latest = await getLatestCaseExecutionResult()
@@ -2552,11 +2485,14 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   function applyLatestExecutionResultToSnapshot(resultData: any) {
     const resultSteps = normalizeExecutionResultSteps(resultData)
     const configChangedAfterExecution =
-      Boolean(pageData.record?.update_time) &&
+      Boolean(caseRecord.value?.update_time) &&
       Boolean(selectedExecutionResultSummary.value?.create_time) &&
-      String(pageData.record.update_time) > String(selectedExecutionResultSummary.value.create_time)
-    data.data.forEach((row: any) => {
-      const stepResults = latestScenarioAttempts(resultSteps.filter((item: any) => String(item?.id) === String(row?.id)))
+      String(caseRecord.value.update_time) >
+        String(selectedExecutionResultSummary.value?.create_time)
+    caseSteps.value.forEach((row: any) => {
+      const stepResults = latestScenarioAttempts(
+        resultSteps.filter((item: any) => String(item?.id) === String(row?.id))
+      )
       row.runtime_result_outdated = !stepResults.length && configChangedAfterExecution
       if (!stepResults.length) return
       const failed = stepResults.find((item: any) => Number(item?.status) === 0)
@@ -2565,24 +2501,28 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       const result = failed || warning || running || stepResults[stepResults.length - 1]
       row.status = result.status
       row.error_message = result.error_message
-      if (String(data.tabelJson?.id) === String(row.id)) {
-        data.tabelJson = row
+      if (String(selectedStep.value?.id) === String(row.id)) {
+        selectedStep.value = row
       }
     })
-    data.selectDataObj.forEach((parameter: any) => {
+    scenarios.value.forEach((parameter: any) => {
       const result = findScenarioResult(resultData, parameter.id)
       parameter.runtime_result_outdated = !result && configChangedAfterExecution
       if (!result) return
       parameter.status = result.status
       parameter.result_data = {
         ...result,
-        callback_results: callbackResultsForScenario(resultData, data.tabelJson?.id, parameter.id,
-          pageData.record.callback_checks || []),
+        callback_results: callbackResultsForScenario(
+          resultData,
+          selectedStep.value?.id,
+          parameter.id,
+          caseRecord.value.callback_checks || []
+        ),
       }
       parameter.error_message = result.error_message
     })
-    if (!caseVersionPayloadActive.value && data.tabelJson?.id) {
-      parameterCacheByStep.set(String(data.tabelJson.id), cloneVersionValue(data.selectDataObj))
+    if (!caseVersionPayloadActive.value && selectedStep.value?.id) {
+      parameterCacheByStep.set(String(selectedStep.value.id), cloneVersionValue(scenarios.value))
     }
   }
 
@@ -2613,21 +2553,22 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   function mergeCaseStepRows(rows: any[]) {
-    data.data = rows
-    const selectedId = data.tabelJson?.id
+    caseSteps.value = rows
+    const selectedId = selectedStep.value?.id
     if (!selectedId) {
-      if (rows.length > 0) data.tabelJson = rows[0]
+      if (rows.length > 0) selectedStep.value = rows[0]
       return
     }
     const latestSelected = rows.find((item: any) => String(item.id) === String(selectedId))
-    if (latestSelected) data.tabelJson = latestSelected
+    if (latestSelected) selectedStep.value = latestSelected
   }
 
   function refreshCaseRunStatusByStep(context?: PollingContext) {
     if (!apiCaseId.value) return Promise.resolve(false)
+    const isCurrent = requests.capture()
     return getApiCaseDetailed(apiCaseId.value)
       .then(async (res) => {
-        if (context && !context.isCurrent()) return false
+        if (!isCurrent() || (context && !context.isCurrent())) return false
         const rows = Array.isArray(res.data) ? res.data : []
         mergeCaseStepRows(rows)
         if (isRuntimeResultTab()) {
@@ -2722,19 +2663,19 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   // 在 collapse 展开时懒格式化当前 item，避免首次渲染时阻塞主线程
   function onCollapseChange(keys: any[]) {
     if (keys.length === 0) {
-      data.activeCollapseKey = []
-      data.expandingIndex = -1
+      scenarioViewport.activeCollapseKey = []
+      scenarioViewport.expandingIndex = -1
       return
     }
     const idx = Number(keys[keys.length - 1])
-    data.activeCollapseKey = keys
+    scenarioViewport.activeCollapseKey = keys
     if (!isMountedCollapseItem(idx)) {
       deferMountCollapseItem(idx)
     } else {
-      data.expandingIndex = -1
+      scenarioViewport.expandingIndex = -1
     }
     // 懒格式化当前 item
-    const item = data.selectDataObj[idx]
+    const item = scenarios.value[idx]
     if (item && !item.__formatted) {
       formatParameterJsonFields(item)
     }
@@ -2885,9 +2826,9 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     append('失败信息', runtimeResult.error_message, '2', '20')
   }
 
-  async function loadConfigSearchDocuments() {
+  async function loadConfigSearchDocuments(isCurrent: () => boolean = () => true) {
     const documents: ConfigSearchDocument[] = []
-    const caseLocation = `Case ${apiCaseId.value} / ${pageData.record?.name || '-'}`
+    const caseLocation = `Case ${apiCaseId.value} / ${caseRecord.value?.name || '-'}`
     const caseFields: Array<{
       key: string
       label: string
@@ -2902,14 +2843,14 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       { key: 'posterior_sql', label: '后置数据库', caseApiType: '3', caseApiSonType: '31' },
     ]
     caseFields.forEach((field) => {
-      addConfigSearchDocument(documents, caseLocation, field.label, pageData.record?.[field.key], {
+      addConfigSearchDocument(documents, caseLocation, field.label, caseRecord.value?.[field.key], {
         caseApiType: field.caseApiType,
         caseApiSonType: field.caseApiSonType,
       })
     })
 
-    const steps = Array.isArray(data.data) ? data.data : []
-    const stepParameters = new Map<string, any[]>()
+    const steps = Array.isArray(caseSteps.value) ? caseSteps.value : []
+    const stepParameters = new Map<string, ApiCaseScenario[]>()
     const latestExecutionPromise = getLatestCaseExecutionResult().catch((error) => {
       console.log(error)
       return null
@@ -2933,10 +2874,10 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
         }
       }
       stepParameters.set(stepKey, parameters)
-      configSearch.completed += 1
+      if (isCurrent()) configSearch.completed += 1
     })
     const latestExecution = await latestExecutionPromise
-    configSearch.completed += 1
+    if (isCurrent()) configSearch.completed += 1
 
     steps.forEach((step) => {
       const stepName = step?.api_info?.name || `步骤 ${step?.id || '-'}`
@@ -3035,7 +2976,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
         )
       })
     } else {
-      const productId = getProjectProductId(pageData.record?.project_product)
+      const productId = getProjectProductId(caseRecord.value?.project_product)
       const [headersResult, publicResult, authResult, caseFactoryResult] = await Promise.allSettled(
         [
           getApiHeaders({ page: 1, pageSize: 10000, project_product_id: productId }),
@@ -3086,21 +3027,21 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
         })
       }
       appendReferencedConfig(
-        pageData.record?.front_headers,
+        caseRecord.value?.front_headers,
         headerMap,
         `${caseLocation} / 默认请求头`,
         '请求头',
         { caseApiType: '1', caseApiSonType: '13' }
       )
       appendReferencedConfig(
-        pageData.record?.front_public,
+        caseRecord.value?.front_public,
         publicMap,
         `${caseLocation} / 全局变量`,
         '全局变量',
         { caseApiType: '1', caseApiSonType: '15' }
       )
       appendReferencedConfig(
-        pageData.record?.front_auth_config,
+        caseRecord.value?.front_auth_config,
         authMap,
         `${caseLocation} / 授权管理`,
         '授权配置',
@@ -3115,7 +3056,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       const scenarioEntries = steps.flatMap((step) =>
         (stepParameters.get(String(step.id)) || []).map((parameter) => ({ step, parameter }))
       )
-      configSearch.total += scenarioEntries.length
+      if (isCurrent()) configSearch.total += scenarioEntries.length
       await mapWithConcurrency(scenarioEntries, async ({ step, parameter }) => {
         try {
           const response = await getDataFactoryCaseConfig({
@@ -3139,13 +3080,13 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
         } catch (error) {
           console.log(error)
         } finally {
-          configSearch.completed += 1
+          if (isCurrent()) configSearch.completed += 1
         }
       })
       steps.forEach((step) => {
         ;(stepParameters.get(String(step.id)) || []).forEach((parameter) => {
           appendReferencedConfig(
-            parameter.headers,
+            parameter.headers || [],
             headerMap,
             `${step?.api_info?.name || '步骤'} / ${parameter?.name || '场景'} / 请求头`,
             '请求头',
@@ -3154,47 +3095,49 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
         })
       })
     }
-    setConfigSearchDocuments(documents)
+    if (isCurrent()) setConfigSearchDocuments(documents)
   }
 
   async function openConfigSearch() {
+    const isCurrent = requests.begin('config-search')
     configSearch.visible = true
     resetConfigSearch()
     try {
-      await loadConfigSearchDocuments()
+      await loadConfigSearchDocuments(isCurrent)
     } catch (error) {
       console.log(error)
-      Message.error('当前 Case 数据加载失败，请重试')
+      if (isCurrent()) Message.error('当前 Case 数据加载失败，请重试')
     } finally {
-      configSearch.loading = false
+      if (isCurrent()) configSearch.loading = false
     }
   }
 
   async function locateConfigSearchResult(result: ConfigSearchMatch) {
     configSearch.visible = false
     if (result.caseApiType) {
-      data.apiType = result.caseApiType
-      data.apiSonType = result.caseApiSonType || data.apiSonType
+      workspaceTabs.apiType = result.caseApiType
+      workspaceTabs.apiSonType = result.caseApiSonType || workspaceTabs.apiSonType
       await runCaseDetailTabLoading(() => ensureActiveCasePanelLoaded())
       return
     }
     if (!result.stepId) return
-    const step = data.data.find((item: any) => String(item.id) === String(result.stepId))
+    const step = caseSteps.value.find((item: any) => String(item.id) === String(result.stepId))
     if (!step) return
-    data.apiType = '2'
+    workspaceTabs.apiType = '2'
     await select(step)
     if (result.scenarioId) {
-      const scenarioIndex = data.selectDataObj.findIndex(
+      const scenarioIndex = scenarios.value.findIndex(
         (item: any) => String(item.id) === String(result.scenarioId)
       )
       if (scenarioIndex >= 0) onCollapseChange([scenarioIndex])
     }
-    data.caseDetailsTypeKey = result.detailType || '0'
-    data.tabsKey = result.detailTab || '02'
+    workspaceTabs.caseDetailsTypeKey = result.detailType || '0'
+    workspaceTabs.tabsKey = result.detailTab || '02'
     await runCaseDetailTabLoading(() => ensureActiveCasePanelLoaded(step))
   }
 
   function loadCaseHeaders(project_product_id: any = apiProjectProductId.value) {
+    const isCurrent = requests.capture()
     const productId = getProjectProductId(project_product_id)
     if (!productId) return Promise.resolve()
     const cacheKey = `case-headers:${productId}`
@@ -3206,13 +3149,15 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     }
     return getApiHeaders(value)
       .then((res) => {
-        data.headers_list = res.data
+        if (!isCurrent()) return
+        optionLists.headers_list = res.data
         markPanelLoaded(cacheKey)
       })
       .catch(console.log)
   }
 
   function loadParameterHeaders(project_product_id: any) {
+    const isCurrent = requests.capture()
     const productId = getProjectProductId(project_product_id)
     if (!productId) return Promise.resolve()
     const cacheKey = `parameter-headers:${productId}`
@@ -3224,13 +3169,15 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     }
     return getApiHeaders(value)
       .then((res) => {
-        data.parameter_headers_list = res.data
+        if (!isCurrent()) return
+        optionLists.parameter_headers_list = res.data
         markPanelLoaded(cacheKey)
       })
       .catch(console.log)
   }
 
   function loadCasePublicOptions(project_product_id: any = apiProjectProductId.value) {
+    const isCurrent = requests.capture()
     const productId = getProjectProductId(project_product_id)
     if (!productId) return Promise.resolve()
     const cacheKey = `case-public:${productId}`
@@ -3242,7 +3189,8 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     }
     return getApiPublic(params)
       .then((res) => {
-        data.publicOptions = (res.data || []).map((item: any) => ({
+        if (!isCurrent()) return
+        optionLists.publicOptions = (res.data || []).map((item: any) => ({
           value: item.id,
           name: item.name || item.key || `全局变量 ${item.id}`,
           key: item.key || '-',
@@ -3259,6 +3207,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   function loadCaseAuthOptions(project_product_id: any = apiProjectProductId.value) {
+    const isCurrent = requests.capture()
     const productId = getProjectProductId(project_product_id)
     if (!productId) return Promise.resolve()
     const cacheKey = `case-auth:${productId}`
@@ -3270,7 +3219,8 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     }
     return getApiAuthConfig(params)
       .then((res) => {
-        data.authConfigOptions = (res.data || []).map((item: any) => ({
+        if (!isCurrent()) return
+        optionLists.authConfigOptions = (res.data || []).map((item: any) => ({
           value: item.id,
           name: item.name || `授权配置 ${item.id}`,
           authType: item.auth_type,
@@ -3292,10 +3242,10 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     executionVersion: ApiCaseExecutionVersion | null = selectedExecutionVersion.value
   ) => {
     if (!apiCaseId.value) return
-    if (!executionVersion && !pageData.record?.published_release_id) {
+    if (!executionVersion && !caseRecord.value?.published_release_id) {
       await versionPanelRef.value?.selectPreferredRevision()
       Message.warning(
-        pageData.record?.publication_status === 'prepublished'
+        caseRecord.value?.publication_status === 'prepublished'
           ? '当前预发布修订尚未通过，已定位到版本盒子；可等待产品负责人发布，或执行当前配置验证'
           : '当前用例尚未发布，已定位到版本盒子；请先创建修订并提交预发布，或执行当前配置验证'
       )
@@ -3306,6 +3256,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       return
     }
     if (caseExecutionActive.value) return
+    const isCurrent = requests.capture()
     clearAssertionVerifyResults()
     caseRequestPending.value = true
     caseRunning.value = true
@@ -3318,6 +3269,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
         executionVersion?.revisionId,
         executionVersion?.releaseId
       )
+      if (!isCurrent()) return
       const res = response.data || {}
       lastTraceId.value = res.data?.trace_id || ''
       saveStepDebugContextId(res.data?.execution_context_id)
@@ -3335,8 +3287,9 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       caseRequestPending.value = false
       caseRunning.value = false
       stopCaseRunLoadingLimit()
+      if (!isCurrent()) return
       await refreshCaseDetailAfterRun()
-      syncCaseRunRefreshByRows(data.data)
+      syncCaseRunRefreshByRows(caseSteps.value)
     }
   }
 
@@ -3347,6 +3300,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       return
     }
     if (caseExecutionActive.value) return
+    const isCurrent = requests.capture()
     clearAssertionVerifyResults()
     debugRequestPending.value = true
     debugRunningStepId.value = record.id
@@ -3358,8 +3312,9 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
         test_env: userStore.selected_environment,
         context_id: getStepDebugContextId(),
       })
-      handleStepDebugResponse(response.data || {})
+      if (isCurrent()) handleStepDebugResponse(response.data || {})
     } catch (error: any) {
+      if (!isCurrent()) return
       const res = error?.response?.data
       if (res) {
         handleStepDebugResponse(res)
@@ -3371,6 +3326,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       debugRequestPending.value = false
       debugRunningStepId.value = null
       stopDebugRunLoadingLimit()
+      if (!isCurrent()) return
       const running = await refreshCaseRunStatusByStep()
       if (running !== false) {
         startCaseRunRefresh()
@@ -3409,39 +3365,8 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     )
   }
 
-  function getModuleApi(moduleId: number) {
-    data.apiRevisionList = []
-    const apiInfoItem = formItems.find((item) => item.key === 'api_info')
-    const revisionItem = formItems.find((item) => item.key === 'pinned_api_info_revision')
-    if (apiInfoItem) apiInfoItem.value = ''
-    if (revisionItem) revisionItem.value = ''
-    getApiInfoName(moduleId)
-      .then((res) => {
-        data.apiList = res.data
-      })
-      .catch(console.log)
-  }
-
-  function loadApiInfoRevisions(apiInfoId: number | string) {
-    const revisionItem = formItems.find((item) => item.key === 'pinned_api_info_revision')
-    data.apiRevisionList = []
-    if (revisionItem) revisionItem.value = ''
-    if (!apiInfoId) return
-    const selectedApi = data.apiList.find((item: any) => String(item.key) === String(apiInfoId))
-    if (!selectedApi?.published_revision_id) {
-      Message.warning('该接口未发布，不能添加到 Case')
-      return
-    }
-    data.apiRevisionList = [
-      {
-        key: selectedApi.published_revision_id,
-        title: selectedApi.published_version_label || '当前发布版本',
-      },
-    ]
-    if (revisionItem) revisionItem.value = selectedApi.published_revision_id
-  }
-
   function loadDatasourceAliases() {
+    const isCurrent = requests.capture()
     const productId = getProjectProductId(apiProjectProductId.value)
     if (!productId) return Promise.resolve()
     const cacheKey = `datasource-aliases:${productId}`
@@ -3451,7 +3376,8 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       status: 1,
     })
       .then((res) => {
-        data.datasourceAliasOptions = (res.data || []).map((item: any) => ({
+        if (!isCurrent()) return
+        optionLists.datasourceAliasOptions = (res.data || []).map((item: any) => ({
           label: item.name,
           value: item.id,
           dbType: item.db_type,
@@ -3461,152 +3387,44 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       .catch(console.log)
   }
 
-  const handleChange = (_data: any) => {
-    data.data = _data
-    let data1: any = []
-    data.data.forEach((item: any, index: any) => {
-      data1.push({
-        id: item.id,
-        case_sort: index,
-      })
-    })
-    putApiPutCaseSort(data1)
-      .then((res) => {
-        Message.success(res.msg)
-      })
-      .catch(console.log)
-  }
-
-  function onDataForm() {
-    if (!ensureCaseEditable()) {
-      modalDialogRef.value?.setConfirmLoading(false)
-      return
-    }
-    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      if (!apiCaseId.value) return
-      let value = getFormItems(formItems)
-      value['case'] = apiCaseId.value
-      value['case_sort'] = data.data.length
-      postApiCaseDetailed(value, apiCaseId.value)
-        .then((res) => {
-          modalDialogRef.value?.toggle()
-          Message.success(res.msg)
-          doRefresh()
-        })
-        .catch((error) => {
-          console.log(error)
-        })
-        .finally(() => {
-          modalDialogRef.value?.setConfirmLoading(false)
-        })
-    } else {
-      modalDialogRef.value?.setConfirmLoading(false)
-    }
-  }
-
-  function onDataFormParameter() {
-    if (!ensureCaseEditable()) {
-      modalDialogRefParameter.value?.setConfirmLoading(false)
-      return
-    }
-    if (formParameterItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRefParameter.value?.toggle()
-      let value = getFormItems(formParameterItems)
-      const expectationMode = value.protocol_expectation_mode || 'auto'
-      const protocolType = String(data.tabelJson?.api_info?.protocol_type || 'http').toLowerCase()
-      if (!['mcp', 'grpc', 'websocket'].includes(protocolType)) {
-        value.protocol_expectation = {
-          mode: expectationMode,
-          status_codes:
-            expectationMode === 'codes'
-              ? String(value.protocol_expectation_codes || '')
-                  .split(',')
-                  .map((code) => code.trim())
-                  .filter(Boolean)
-                  .map((code) => Number(code))
-              : [],
-        }
-      }
-      delete value.protocol_expectation_mode
-      delete value.protocol_expectation_codes
-      if (data.isCopy) {
-        value['id'] = data.copyParameterId
-        postApiCaseDetailedParameterCopy(value)
-          .then((res) => {
-            Message.success(res.msg)
-            data.isCopy = false
-            data.copyParameterId = null
-            doRefreshParameter(data.tabelJson.id, { force: true })
-          })
-          .catch(console.log)
-      } else if (data.isAdd) {
-        value['case_detailed'] = data.tabelJson.id
-        value['api_info'] = data.tabelJson.api_info.id
-        postApiCaseDetailedParameter(value)
-          .then((res) => {
-            Message.success(res.msg)
-            doRefreshParameter(data.tabelJson.id, { force: true })
-          })
-          .catch(console.log)
-      } else {
-        value['id'] = data.updateId
-        putApiCaseDetailedParameter(value)
-          .then((res) => {
-            Message.success(res.msg)
-            doRefreshParameter(data.tabelJson.id, { force: true })
-          })
-          .catch(console.log)
-      }
+  async function handleChange(rows: ApiCaseStep[]) {
+    if (!ensureCaseEditable() || caseExecutionActive.value || sortingSteps.value) return
+    const isCurrent = requests.capture(),
+      previous = [...caseSteps.value]
+    const next = [...rows]
+    const payload = next.map((item, index) => ({ id: item.id, case_sort: index }))
+    caseSteps.value = next
+    sortingSteps.value = true
+    try {
+      const response = await putApiPutCaseSort(payload)
+      if (isCurrent()) Message.success(response.msg)
+    } catch {
+      if (isCurrent()) caseSteps.value = previous
+    } finally {
+      if (isCurrent()) sortingSteps.value = false
     }
   }
 
   function onDelete(record: any) {
     if (!ensureCaseEditable()) return
+    const caseId = apiCaseId.value,
+      isCurrent = requests.capture()
     Modal.confirm({
       title: '提示',
       content: '是否要删除此接口？',
       cancelText: '取消',
       okText: '删除',
       onBeforeOk: () => {
-        return deleteApiCaseDetailed(record.id, apiCaseId.value)
+        return deleteApiCaseDetailed(record.id, caseId)
           .then((res) => {
             Message.success(res.msg)
           })
-          .catch(console.log)
-          .finally(() => {
-            doRefresh()
+          .then(() => {
+            if (isCurrent()) void doRefresh()
+            return true
           })
+          .catch(() => false)
       },
-    })
-  }
-
-  function addApiInfo() {
-    if (!ensureCaseEditable()) return
-    data.actionTitle = '新增执行编排'
-    modalDialogRef.value?.toggle()
-    formItems.forEach((it) => {
-      if (it.reset) {
-        it.reset()
-      } else {
-        it.value = ''
-      }
-    })
-    data.apiRevisionList = []
-  }
-
-  function addParameter() {
-    if (!ensureCaseEditable()) return
-    data.actionParameterTitle = '增加接口场景'
-    data.isAdd = true
-    data.isCopy = false
-    data.copyParameterId = null
-    modalDialogRefParameter.value?.toggle()
-    formParameterItems.forEach((it) => {
-      if (it.reset) {
-        it.reset()
-      } else {
-        it.value = ''
-      }
     })
   }
 
@@ -3623,7 +3441,8 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
             Message.success(res.msg)
             doRefresh()
           })
-          .catch(console.log)
+          .then(() => true)
+          .catch(() => false)
       },
     })
   }
@@ -3644,45 +3463,114 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
 
   function select(record: any, options: { loadParameters?: boolean } = {}): Promise<void> {
     if (!record?.api_info) {
-      data.tabelJson = record || null
-      data.selectDataObj = []
+      selectedStep.value = record || null
+      scenarios.value = []
       return Promise.resolve()
     }
-    data.tabelJson = record
+    selectedStep.value = record
     if (options.loadParameters === false) {
-      data.selectDataObj = []
-      data.activeCollapseKey = []
-      data.mountedCollapseKeys = []
-      data.expandingIndex = -1
+      scenarios.value = []
+      scenarioViewport.activeCollapseKey = []
+      scenarioViewport.mountedCollapseKeys = []
+      scenarioViewport.expandingIndex = -1
       return Promise.resolve()
     }
     if (caseVersionPayloadActive.value) {
       const parameters = snapshotParametersByStep.get(String(record.id)) || []
-      data.selectDataObj = parameters.map((item: any) => formatParameterJsonFields(item))
+      scenarios.value = parameters.map((item: any) => formatParameterJsonFields(item))
       if (latestExecutionResultData) applyLatestExecutionResultToSnapshot(latestExecutionResultData)
-      switchApiInfoType(data.caseDetailsTypeKey, data.selectDataObj[0] || record)
-      onCollapseChange(data.selectDataObj.length ? [0] : [])
+      switchApiInfoType(workspaceTabs.caseDetailsTypeKey, scenarios.value[0] || record)
+      onCollapseChange(scenarios.value.length ? [0] : [])
       return Promise.resolve()
     }
     return doRefreshParameter(record.id).then(async (applied) => {
-      if (!applied || String(data.tabelJson?.id) !== String(record.id)) return
+      if (!applied || String(selectedStep.value?.id) !== String(record.id)) return
       if (latestExecutionResultData) applyLatestExecutionResultToSnapshot(latestExecutionResultData)
-      await switchApiInfoType(data.caseDetailsTypeKey, data.selectDataObj[0] || record)
-      onCollapseChange(data.selectDataObj.length ? [0] : [])
+      await switchApiInfoType(workspaceTabs.caseDetailsTypeKey, scenarios.value[0] || record)
+      onCollapseChange(scenarios.value.length ? [0] : [])
     })
   }
 
-  onMounted(() => {
-    nextTick(async () => {
-      await ensureCaseRecord()
-      void Promise.all([doRefresh(), loadCaseDataFactoryCount()])
-      getCacheDataKeyValue()
-    })
-  })
-
-  onUnmounted(() => {
+  function invalidatePageContext() {
+    pageActive = false
+    caseConfigLoadingCount = 0
+    sortingSteps.value = false
+    requests.invalidate()
+    invalidateParameterLoad()
+    invalidateExecutionResultLoad()
+    clearPanelCache()
     disposeExecutionTimers()
+    traceDrawerRef.value?.close()
+    caseDiagnosisDrawerRef.value?.close()
+    apiInfoDetailPanelRef.value?.close()
+    stepEditorRef.value?.close()
+    scenarioEditorRef.value?.close()
+    jsonEditDrawer.visible = false
+    configSearch.visible = false
+    stepTableLoading.value = false
+    panelLoading.collapseLoading =
+      panelLoading.caseConfigLoading =
+      panelLoading.caseDetailTabLoading =
+        false
+  }
+  async function initializePage(reset = false) {
+    invalidatePageContext()
+    pageActive = true
+    const isCurrent = requests.capture()
+    if (reset) {
+      caseVersionPayloadActive.value = false
+      caseVersionEditUnlocked.value = false
+      selectedExecutionVersion.value = null
+      selectedCaseVersionDetail.value = null
+      selectedExecutionResultSummary.value = null
+      latestExecutionResultData = null
+      liveCaseRecord.value = null
+      liveCaseRows.value = []
+      snapshotParametersByStep.clear()
+      parameterCacheByStep.clear()
+      dataFactoryConfigCache.clear()
+      caseRecord.value = defaultCaseRecord()
+      caseSteps.value = []
+      selectedStep.value = null
+      scenarios.value = []
+      optionLists.publicOptions = []
+      optionLists.authConfigOptions = []
+      optionLists.headers_list = []
+      optionLists.parameter_headers_list = []
+    }
+    try {
+      if (caseVersionPayloadActive.value) {
+        await refreshSelectedRuntimeResult()
+        return
+      }
+      await ensureCaseRecord()
+      if (!isCurrent()) return
+      await Promise.all([doRefresh(), loadCaseDataFactoryCount()])
+    } catch {
+      // 保留错误提示及局部状态，可通过重新进入页面重试。
+    }
+  }
+  watch(
+    () => configSearch.visible,
+    (visible) => {
+      if (!visible) {
+        requests.begin('config-search')
+        configSearch.loading = false
+      }
+    }
+  )
+  watch(apiCaseId, () => {
+    if (props.embedded || route.path === '/apitest/case/details') void initializePage(true)
   })
+  onMounted(() => {
+    getCacheDataKeyValue()
+    void initializePage()
+  })
+  onDeactivated(invalidatePageContext)
+  onActivated(() => {
+    if (!pageActive) void initializePage()
+  })
+  onUnmounted(invalidatePageContext)
 
   function updateArrayItem(
     array: any[],
@@ -3703,7 +3591,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     }
   }
 
-  function normalizeGroupLogic(value: any) {
+  function normalizeGroupLogic(value: unknown): 'AND' | 'OR' {
     const logic = String(value || 'AND').toUpperCase()
     return logic === 'OR' ? 'OR' : 'AND'
   }
@@ -3768,7 +3656,9 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
   }
 
   const sqlAssertionDatasourceOptions = computed(() =>
-    data.datasourceAliasOptions.filter((item: any) => [0, 1, 2].includes(Number(item.dbType)))
+    optionLists.datasourceAliasOptions.filter((item: any) =>
+      [0, 1, 2].includes(Number(item.dbType))
+    )
   )
 
   const sqlAssertionMethodOptions = computed(() => {
@@ -3784,7 +3674,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
         if (Array.isArray(item?.children)) walk(item.children)
       }
     }
-    walk(data.ass)
+    walk(optionLists.ass)
     return result
   })
 

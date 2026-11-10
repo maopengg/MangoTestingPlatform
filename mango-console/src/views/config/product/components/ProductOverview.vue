@@ -36,20 +36,13 @@
     <template #toolbar>
       <a-space wrap>
         <span class="mango-product-overview__guide">请先在“项目配置”中创建项目，再配置产品。</span>
-        <a-button
-
-          type="primary"
-          size="small"
-          @click="emit('add', activeProject || undefined)"
+        <a-button type="primary" size="small" @click="emit('add', activeProject || undefined)"
           >新增产品</a-button
         >
       </a-space>
     </template>
     <div ref="overviewRef" class="mango-product-overview__body">
-      <a-alert v-if="error" type="error" class="mango-product-overview__error">
-        {{ error }}
-        <a-button size="small" type="text" :loading="loading" @click="emit('refresh')">重试</a-button>
-      </a-alert>
+      <template v-if="error"><a-button size="small" type="text" :loading="loading" @click="emit('refresh')">重新加载</a-button></template>
       <MangoPanelSpin :loading="loading" class="mango-product-overview__spin">
         <div v-if="!groups.length && !loading" class="mango-empty-state"
           >暂无匹配的项目或产品，请调整筛选条件。</div
@@ -125,31 +118,33 @@
                     <MangoTableActions
                       v-else-if="item.key === 'actions'"
                       :actions="[
-    {
-        label: '模块',
-        onClick: () => emit('module', record),
-    },
-    {
-        label: '逻辑数据库',
-        onClick: () => emit('datasource', record),
-    },
-    {
-        label: '编辑',
-        onClick: () => emit('edit', record),
-    },
-    {
-        label: '删除',
-        danger: true,
-        onClick: () => emit('delete', record),
-    },
-]"
+                        {
+                          label: '模块',
+                          onClick: () => emit('module', record),
+                        },
+                        {
+                          label: '逻辑数据库',
+                          onClick: () => emit('datasource', record),
+                        },
+                        {
+                          label: '编辑',
+                          onClick: () => emit('edit', record),
+                        },
+                        {
+                          label: '删除',
+                          danger: true,
+                          onClick: () => emit('delete', record),
+                        },
+                      ]"
                     />
                     <template v-else>{{ record[item.key] ?? '-' }}</template>
                   </template>
                 </a-table-column>
               </template>
             </a-table>
-            <div v-else class="mango-empty-state">该项目暂无产品，可通过页面顶部“新增产品”创建。</div>
+            <div v-else class="mango-empty-state"
+              >该项目暂无产品，可通过页面顶部“新增产品”创建。</div
+            >
           </div>
         </section>
       </MangoPanelSpin>
@@ -163,17 +158,19 @@
   import { useEnum } from '@/store/modules/get-enum'
   import { tableColumns } from '../config'
   import { groupProducts } from '../overview'
+  import type { ProductRecord, ProductOption } from '../types'
+  import type { FormItem } from '@/types/components'
   const props = defineProps<{
-    products: any[]
-    projects: any[]
-    conditions: any[]
+    products: ProductRecord[]
+    projects: ProductOption[]
+    conditions: FormItem[]
     loading: boolean
     error: string
   }>()
   const emit = defineEmits<{
     (event: 'search' | 'reset-search' | 'refresh'): void
     (event: 'add', projectId?: string): void
-    (event: 'module' | 'datasource' | 'edit' | 'delete', product: any): void
+    (event: 'module' | 'datasource' | 'edit' | 'delete', product: ProductRecord): void
   }>()
   const enumStore = useEnum()
   const collapsed = ref<string[]>([])
@@ -191,11 +188,11 @@
   const matchedCount = computed(() =>
     groups.value.reduce((sum, group) => sum + group.products.length, 0)
   )
-  function enumTitle(options: any[], value: unknown) {
+  function enumTitle(options: ProductOption[], value: unknown) {
     return options?.find((item) => String(item.key) === String(value))?.title || '-'
   }
-  function setSection(id: string, element: any) {
-    if (element) sections.set(id, element)
+  function setSection(id: string, element: unknown) {
+    if (element instanceof HTMLElement) sections.set(id, element)
     else sections.delete(id)
   }
   function toggle(id: string) {

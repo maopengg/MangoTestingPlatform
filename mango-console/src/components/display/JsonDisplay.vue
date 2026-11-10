@@ -29,6 +29,7 @@
       <a-button v-if="showDrawerButton && canPreviewJson" type="outline" @click="openJsonDrawer" data-testid="qa-components-display-jsondisplay-button-查看json"
         >查看JSON</a-button
       >
+      <a-button v-if="showEditButton" type="outline" :disabled="editDisabled" @click="emit('edit')">编辑 JSON</a-button>
     </a-space>
   </div>
   <div class="mango-json-display-content mango-code-panel">
@@ -124,6 +125,14 @@
       type: Boolean,
       default: true,
     },
+    showEditButton: {
+      type: Boolean,
+      default: false,
+    },
+    editDisabled: {
+      type: Boolean,
+      default: false,
+    },
     showExpandButton: {
       type: Boolean,
       default: true,
@@ -134,6 +143,7 @@
     },
   })
 
+  const emit = defineEmits(['edit'])
   const extractType = ref('jsonpath')
   const extractExpression = ref('')
   const extractLoading = ref(false)

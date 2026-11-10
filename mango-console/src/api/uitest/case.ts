@@ -28,7 +28,7 @@ export function putUiCase(data: UiCasePayload) {
   })
 }
 
-export function putUiCasePublication(caseId: number, targetStatus: 'prepublished' | 'published' | 'unpublished') {
+export function putUiCasePublication(caseId: number | string, targetStatus: 'prepublished' | 'published' | 'unpublished') {
   return put({
     url: '/ui/case/publication',
     data: () => ({
@@ -38,7 +38,7 @@ export function putUiCasePublication(caseId: number, targetStatus: 'prepublished
   })
 }
 
-export function deleteUiCase(id: number | string[] | number[]) {
+export function deleteUiCase(id: number | string | Array<string | number>) {
   return deleted({
     url: '/ui/case',
     data: () => {
@@ -49,7 +49,7 @@ export function deleteUiCase(id: number | string[] | number[]) {
   })
 }
 
-export function postUiCaseCopy(caseId: number) {
+export function postUiCaseCopy(caseId: number | string) {
   return post({
     url: '/ui/case/copy',
     data: () => {
@@ -60,7 +60,7 @@ export function postUiCaseCopy(caseId: number) {
   })
 }
 
-export function postUiRunCaseBatch(caseIdList: number[] | string[], testingEnvironment: any) {
+export function postUiRunCaseBatch(caseIdList: Array<number | string>, testingEnvironment: number | string) {
   return post({
     url: 'ui/case/batch',
     data: () => {
@@ -72,11 +72,11 @@ export function postUiRunCaseBatch(caseIdList: number[] | string[], testingEnvir
   })
 }
 
-export function getUiCaseRun(caseId: any, testingEnvironment: any, actuatorUsername?: string) {
+export function getUiCaseRun(caseId: number | string, testingEnvironment: number | string, actuatorUsername?: string) {
   return get({
     url: '/ui/case/test',
     data: () => {
-      const params: Record<string, any> = {
+      const params: { case_id: number | string; test_env: number | string; actuator_username?: string } = {
         case_id: caseId,
         test_env: testingEnvironment,
       }

@@ -105,7 +105,7 @@ class PublicationReviewTests(SimpleTestCase):
         self.assertFalse(summary['latest_execution']['matches_revision'])
         self.assertEqual(summary['eligibility_reasons'], [])
 
-    def test_review_routes_require_publish_permission_and_scope(self):
+    def test_review_routes_require_change_permission_and_scope(self):
         routes = ((ApiCasePrepublicationViews, 'review', 'api', 'has_case_scope'),
                   (UiCaseViews, 'publication_review', 'ui', '_has_case_scope'),
                   (PytestCaseViews, 'publication_review', 'pytest', '_has_case_scope'))
@@ -117,7 +117,8 @@ class PublicationReviewTests(SimpleTestCase):
                                       user=SimpleNamespace(user_obj=SimpleNamespace(id=9)))
             view.request = request
             with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False):
-                for keys, allowed in (({f'{domain}.case:publish'}, True), ({f'{domain}.case:detail'}, False), (set(), False)):
+                for keys, allowed in (({f'{domain}.case:change'}, True), ({f'{domain}.case:read'}, False),
+                                      ({f'{domain}.case:publish'}, False), (set(), False)):
                     with self.subTest(domain=domain, keys=keys), patch.object(
                         PermissionMenuService, 'permission_keys_for_user', return_value=keys,
                     ):
@@ -126,7 +127,7 @@ class PublicationReviewTests(SimpleTestCase):
                 response = getattr(view, action)(request)
             self.assertNotEqual(response.data['code'], 200)
 
-    def test_review_configuration_details_require_the_domains_detail_permission(self):
+    def test_review_configuration_details_require_the_domains_read_permission(self):
         routes = (
             (ApiCasePrepublicationViews, 'review', 'api', 'has_case_scope', 'src.apps.auto_api.selectors.publication_review.ApiPublicationReviewSelector'),
             (UiCaseViews, 'publication_review', 'ui', '_has_case_scope', 'src.apps.auto_ui.selectors.publication_review.UiPublicationReviewSelector'),
@@ -139,7 +140,7 @@ class PublicationReviewTests(SimpleTestCase):
             for allowed in (True, False):
                 with self.subTest(domain=domain, allowed=allowed), patch.object(view, scope_method, return_value=True), patch(
                     selector + '.review', return_value={'id': 1, 'sql_count': 1, 'configuration_details': [{'kind': 'sql'}]},
-                ), patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={f'{domain}.case:detail'} if allowed else set()):
+                ), patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={f'{domain}.case:read'} if allowed else set()):
                     response = getattr(view, action)(request)
                 self.assertEqual('configuration_details' in response.data['data'], allowed)
                 self.assertEqual(response.data['data']['sql_count'], 1)

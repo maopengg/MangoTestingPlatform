@@ -1,5 +1,5 @@
 <template>
-  <TableBody ref="tableBody" class="mango-detail-workbench-page">
+  <TableBody class="mango-detail-workbench-page mango-notice-page">
     <template #header>
       <div class="mango-detail-toolbar">
         <div class="mango-detail-heading">
@@ -7,8 +7,21 @@
           <div class="mango-detail-subtitle">维护项目通知接收人、邮箱和消息测试配置</div>
         </div>
         <a-space class="mango-detail-actions" wrap>
-          <a-button  size="small" type="primary" @click="onAdd" data-testid="qa-views-config-project-notice-button-新增">新增</a-button>
-          <a-button class="mango-back-button" size="small" @click="doResetSearch" data-testid="qa-views-config-project-notice-button-返回">返回</a-button>
+          <a-button
+            size="small"
+            type="primary"
+            :disabled="projectId === null || editorSaving"
+            @click="onAdd"
+            data-testid="qa-views-config-project-notice-button-新增"
+            >新增</a-button
+          >
+          <a-button
+            class="mango-back-button"
+            size="small"
+            @click="doResetSearch"
+            data-testid="qa-views-config-project-notice-button-返回"
+            >返回</a-button
+          >
         </a-space>
       </div>
     </template>
@@ -22,16 +35,17 @@
           </div>
           <a-tag size="small">{{ pagination.pageCount || 0 }}</a-tag>
         </div>
+
         <div class="mango-project-notice-table">
           <a-table
-            :scroll="{ x: 1100 }"
+            class="mango-native-scroll-table"
+            :scroll="{ x: 1350, y: '100%' }"
             :bordered="false"
             :columns="tableColumns"
-            :data="table.dataList"
-            :loading="table.tableLoading.value"
+            :data="rows"
+            :loading="listLoading"
             :pagination="false"
-            :rowKey="rowKey"
-            @selection-change="onSelectionChange"
+            row-key="id"
           >
             <template #columns>
               <a-table-column
@@ -57,10 +71,25 @@
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <MangoTableActions
                     :actions="[
-    { label: '测试', onClick: () => onTest(record) },
-    { label: '编辑', onClick: () => onUpdate(record) },
-    { label: '删除', danger: true, onClick: () => onDelete(record) },
-]"
+                      {
+                        label: '测试',
+                        loading: testingIds.has(record.id),
+                        disabled: isWriting(record.id),
+                        onClick: () => onTest(record),
+                      },
+                      {
+                        label: '编辑',
+                        disabled: editorSaving || isBusy(record.id),
+                        onClick: () => onUpdate(record),
+                      },
+                      {
+                        label: '删除',
+                        danger: true,
+                        loading: deletingIds.has(record.id),
+                        disabled: testingIds.has(record.id) || editingIds.has(record.id),
+                        onClick: () => onDelete(record),
+                      },
+                    ]"
                   />
                 </template>
               </a-table-column>
@@ -73,238 +102,193 @@
       <TableFooter :pagination="pagination" />
     </template>
   </TableBody>
-  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
-    <template #content>
-      <a-form :model="formModel">
-        <a-form-item
-          v-for="item of formItems"
-          :key="item.key"
-          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
-          :label="item.label"
-        >
-          <template v-if="item.type === 'input'">
-            <a-input v-model="item.value" :placeholder="item.placeholder" />
-          </template>
-          <template v-else-if="item.type === 'textarea'">
-            <a-textarea
-              v-model="item.value"
-              :auto-size="{ minRows: 2, maxRows: 3 }"
-              :placeholder="item.placeholder"
-            />
-          </template>
-          <template v-else-if="item.type === 'input-tag'">
-            <a-input-tag v-model="item.value" :placeholder="item.placeholder" allow-clear />
-          </template>
-          <template v-else-if="item.type === 'select'">
-            <a-select
-              v-model="item.value"
-              :placeholder="item.placeholder"
-              multiple
-            >
-              <a-option v-for="user of data.userList" :key="user.key" :value="user.key">
-                {{ user.title }}
-              </a-option>
-            </a-select>
-          </template>
-        </a-form-item>
-      </a-form>
-    </template>
-  </ModalDialog>
+  <NoticeGroupEditor
+    ref="editorRef"
+    :project-id="projectId"
+    @saved="doRefresh"
+    @saving-change="onEditorSaving"
+  />
 </template>
+<script setup lang="ts">
+import { reportLoadError } from '@/utils/load-error'
 
-<script lang="ts" setup>
-  import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { ModalDialogType } from '@/types/components'
+  import { computed, onMounted, reactive, ref } from 'vue'
+  import { useRoute } from 'vue-router'
+  import { usePageData } from '@/store/page-data'
+  import { usePagination } from '@/hooks/table'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { computed, onMounted, ref, nextTick, reactive } from 'vue'
-  import { getFormItems } from '@/utils/datacleaning'
-  import { formItems, tableColumns } from './config'
   import {
     deleteSystemNotice,
     getSystemNotice,
     getSystemNoticeTest,
-    postSystemNotice,
-    putSystemNotice,
   } from '@/api/system/notice_group'
-  import { getUserName } from '@/api/user/user'
-  import { useRoute } from 'vue-router'
-  import { usePageData } from '@/store/page-data'
-
-  const route = useRoute()
-  const pageData = usePageData()
-  const projectId = computed(() => route.query.id || pageData.record?.id)
-  const noticeDetailTitle = computed(() => {
-    const id = projectId.value || '-'
-    const name = pageData.record?.name || route.query.name || '-'
-    return `通知组配置 / ${id} / ${name}`
-  })
-
-  const modalDialogRef = ref<ModalDialogType | null>(null)
-  const pagination = usePagination(doRefresh, () => table.tableLoading)
-  const { onSelectionChange } = useRowSelection()
-  const table = useTable()
-  const rowKey = useRowKey('id')
-  const formModel = ref({})
-
-  const data: any = reactive({
-    isAdd: false,
-    updateId: 0,
-    actionTitle: '新增',
-    userList: [],
-  })
-
+  import MangoTableActions from '@/components/table/MangoTableActions.vue'
+  import NoticeGroupEditor from './components/NoticeGroupEditor.vue'
+  import { tableColumns } from './config'
+  import { resolveNoticeProject } from './context'
+  import { useNoticeScope } from './composables/useNoticeScope'
+  import type { NoticeRecord, NoticeEditorHandle } from './types'
+  const route = useRoute(),
+    pageData = usePageData()
+  const projectContext = computed(() => resolveNoticeProject(route.query, pageData.record))
+  const projectId = computed(() => projectContext.value.id)
+  const noticeDetailTitle = computed(
+    () => `通知组配置 / ${projectId.value ?? '-'} / ${projectContext.value.name}`
+  )
+  const rows = ref<NoticeRecord[]>([]),
+    listLoading = ref(false),
+    loadError = ref('')
+  const pagination = usePagination(doRefresh, listLoading)
+  const editorRef = ref<NoticeEditorHandle | null>(null),
+    editorSaving = ref(false)
+  const testingIds = reactive(new Set<number>()),
+    deletingIds = reactive(new Set<number>()),
+    editingIds = reactive(new Set<number>())
+  let listRequest = 0,
+    lastProject = projectId.value
+  let confirmation: ReturnType<typeof Modal.confirm> | null = null
+  const scope = useNoticeScope(
+    () => [projectId.value],
+    reset,
+    () => void doRefresh()
+  )
+  const isWriting = (id: number) => deletingIds.has(id) || editingIds.has(id)
+  const isBusy = (id: number) => isWriting(id) || testingIds.has(id)
+  function reset() {
+    ++listRequest
+    rows.value = []
+    pagination.setTotalSize(0)
+    listLoading.value = false
+    loadError.value = ''
+    if (lastProject !== projectId.value) {
+      pagination.page = 1
+      lastProject = projectId.value
+    }
+    editorRef.value?.close()
+    confirmation?.close()
+    confirmation = null
+  }
+  async function doRefresh() {
+    if (!scope.isActive()) return
+    const request = ++listRequest,
+      version = scope.snapshot(),
+      id = projectId.value
+    if (id === null) {
+      rows.value = []
+      pagination.setTotalSize(0)
+      loadError.value = '缺少有效项目 ID，请从项目配置重新进入'
+      listLoading.value = false
+      return
+    }
+    const payload = { project: id, page: pagination.page, pageSize: pagination.pageSize }
+    listLoading.value = true
+    loadError.value = ''
+    try {
+      const response = await getSystemNotice(payload)
+      if (request !== listRequest || !scope.current(version)) return
+      rows.value = response.data || []
+      pagination.setTotalSize(response.totalSize ?? 0)
+    } catch (loadFailure0) {
+      if (request === listRequest && scope.current(version))
+        void (reportLoadError(loadFailure0, "通知组加载失败，请重试", false), loadError.value = '通知组加载失败，请重试')
+    } finally {
+      if (request === listRequest) listLoading.value = false
+    }
+  }
+  function onEditorSaving(id: number | null, pending: boolean) {
+    editorSaving.value = pending
+    if (id !== null) {
+      if (pending) editingIds.add(id)
+      else editingIds.delete(id)
+    }
+  }
+  function onAdd() {
+    if (scope.isActive() && !editorSaving.value && projectId.value !== null) editorRef.value?.open()
+  }
+  function onUpdate(record: NoticeRecord) {
+    if (scope.isActive() && !editorSaving.value && !isBusy(record.id)) editorRef.value?.open(record)
+  }
+  function onDelete(record: NoticeRecord) {
+    if (!scope.isActive() || projectId.value === null || confirmation || isBusy(record.id)) return
+    const id = record.id,
+      version = scope.snapshot()
+    const dialog = Modal.confirm({
+      title: '提示',
+      content: '是否要删除此配置？',
+      okText: '删除',
+      cancelText: '取消',
+      okButtonProps: { status: 'danger' },
+      async onBeforeOk() {
+        if (!scope.current(version) || isBusy(id)) return false
+        deletingIds.add(id)
+        try {
+          const response = await deleteSystemNotice(id)
+          if (scope.current(version)) {
+            Message.success(response.msg)
+            if (rows.value.length === 1 && rows.value[0].id === id && pagination.page > 1)
+              pagination.page--
+            await doRefresh()
+          }
+          return true
+        } catch {
+          return false
+        } finally {
+          deletingIds.delete(id)
+        }
+      },
+      onClose() {
+        if (confirmation === dialog) confirmation = null
+      },
+    })
+    confirmation = dialog
+  }
+  async function onTest(record: NoticeRecord) {
+    if (!scope.isActive() || projectId.value === null || isBusy(record.id)) return
+    const id = record.id,
+      version = scope.snapshot()
+    testingIds.add(id)
+    try {
+      const response = await getSystemNoticeTest(id)
+      if (scope.current(version)) Message.success(response.msg)
+    } catch (error: unknown) {
+      if (scope.current(version)) {
+        const message =
+          error &&
+          typeof error === 'object' &&
+          'message' in error &&
+          typeof error.message === 'string'
+            ? error.message
+            : error && typeof error === 'object' && 'msg' in error && typeof error.msg === 'string'
+            ? error.msg
+            : '通知测试失败，请重试'
+        Message.error(message)
+      }
+    } finally {
+      testingIds.delete(id)
+    }
+  }
   function doResetSearch() {
     window.history.back()
   }
-
-  function doRefresh() {
-    let value = {}
-    value['project'] = projectId.value
-    value['page'] = pagination.page
-    value['pageSize'] = pagination.pageSize
-    getSystemNotice(value)
-      .then((res) => {
-        table.handleSuccess(res)
-        pagination.setTotalSize((res as any).totalSize)
-      })
-      .catch(console.log)
-  }
-
-  function onAdd() {
-    data.actionTitle = '添加'
-    modalDialogRef.value?.toggle()
-    data.isAdd = true
-    formItems.forEach((it: any) => {
-      if (it.reset) {
-        it.reset()
-      } else {
-        // 特别处理 mail 字段，确保它是数组格式
-        if (it.key === 'mail') {
-          it.value = []
-        } else {
-          it.value = ''
-        }
-      }
-    })
-  }
-
-  function onDelete(record: any) {
-    Modal.confirm({
-      title: '提示',
-      content: '是否要删除此配置？',
-      cancelText: '取消',
-      okText: '删除',
-      onBeforeOk: () => {
-        return deleteSystemNotice(record.id)
-          .then((res) => {
-            Message.success(res.msg)
-          })
-          .catch(console.log)
-          .finally(() => {
-            doRefresh()
-          })
-      },
-    })
-  }
-
-  function onUpdate(item: any) {
-    data.actionTitle = '编辑'
-    modalDialogRef.value?.toggle()
-    data.isAdd = false
-    data.updateId = item.id
-    nextTick(() => {
-      formItems.forEach((it: any) => {
-        const propName = item[it.key]
-        if (typeof propName === 'object' && propName !== null && it.key !== 'mail') {
-          it.value = propName.id
-        } else if (it.key === 'mail') {
-          // 特殊处理 mail 字段，确保它是数组格式
-          if (Array.isArray(propName)) {
-            it.value = propName
-          } else if (typeof propName === 'string') {
-            // 如果是字符串，按逗号分割成数组
-            it.value = propName
-              .split(',')
-              .map((email) => email.trim())
-              .filter((email) => email.length > 0)
-          } else {
-            it.value = []
-          }
-        } else {
-          it.value = propName
-        }
-      })
-    })
-  }
-
-  function onDataForm() {
-    if (formItems.every((it: any) => (it.validator ? it.validator() : true))) {
-      let value = getFormItems(formItems)
-      if (data.isAdd) {
-        value['project'] = projectId.value
-        postSystemNotice(value)
-          .then((res) => {
-            modalDialogRef.value?.toggle()
-            Message.success(res.msg)
-            doRefresh()
-          })
-          .catch((error) => {
-            console.log(error)
-          })
-          .finally(() => {
-            modalDialogRef.value?.setConfirmLoading(false)
-          })
-      } else {
-        value['id'] = data.updateId
-        putSystemNotice(value)
-          .then((res) => {
-            modalDialogRef.value?.toggle()
-            Message.success(res.msg)
-            doRefresh()
-          })
-          .catch((error) => {
-            console.log(error)
-          })
-          .finally(() => {
-            modalDialogRef.value?.setConfirmLoading(false)
-          })
-      }
-    } else {
-      modalDialogRef.value?.setConfirmLoading(false)
-    }
-  }
-
-  function getNickName() {
-    getUserName()
-      .then((res) => {
-        data.userList = res.data
-      })
-      .catch(console.log)
-  }
-
-  function onTest(record: any) {
-    getSystemNoticeTest(record.id)
-      .then((res) => {
-        Message.success(res.msg)
-      })
-      .catch(console.log)
-  }
-
-  onMounted(() => {
-    nextTick(async () => {
-      doRefresh()
-      getNickName()
-    })
-  })
+  onMounted(() => void doRefresh())
 </script>
-
 <style lang="less" scoped>
+  .mango-notice-page :deep(.mango-table-body__content) {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
   .mango-project-notice-section {
     display: flex;
+    flex: 1;
     height: calc(100% - var(--m-page-gap));
     min-height: 0;
     margin-top: var(--m-page-gap);
     flex-direction: column;
+  }
+
+  .mango-project-notice-section > :not(.mango-project-notice-table) {
+    flex: none;
   }
 
   .mango-project-notice-table {

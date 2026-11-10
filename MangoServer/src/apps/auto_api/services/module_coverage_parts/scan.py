@@ -27,7 +27,6 @@ from src.apps.auto_api.exceptions import (
     QUALITY_COVERAGE_MODULE_UPLOAD_NOT_ALLOWED,
     QUALITY_COVERAGE_UPLOAD_INVALID,
     QUALITY_COVERAGE_EXECUTION_INVALID,
-    QUALITY_COVERAGE_PROJECT_PRODUCT_BINDING_NOT_FOUND,
     QUALITY_COVERAGE_INVALID,
     QUALITY_COVERAGE_FIELD_INVALID,
     QUALITY_COVERAGE_SCAN_UPLOAD_INCOMPLETE,
@@ -303,21 +302,11 @@ class ModuleCoverageScanMixin:
     @classmethod
     def validate_api_case(
             cls, scan: ModuleCoverageScan, module_id: int, api_case_id: int | None,
-            api_case_revision_id: int | None,
+            api_case_revision_id: int | None, *, interface_snapshot=None, coverage_case=None,
     ) -> tuple[ApiCase | None, ApiCaseRevision | None]:
-        if not api_case_id:
-            if api_case_revision_id:
-                raise AutoApiError(QUALITY_COVERAGE_PROJECT_PRODUCT_BINDING_NOT_FOUND)
-            return None, None
-        api_case = ApiCase.objects.filter(id=api_case_id, project_product_id=scan.project_product_id).first()
-        if api_case is None or api_case.module_id != module_id:
-            raise AutoApiError(QUALITY_COVERAGE_PROJECT_PRODUCT_BINDING_NOT_FOUND)
-        revision = None
-        if api_case_revision_id:
-            revision = ApiCaseRevision.objects.filter(id=api_case_revision_id, api_case=api_case).first()
-            if revision is None:
-                raise AutoApiError(QUALITY_COVERAGE_PROJECT_PRODUCT_BINDING_NOT_FOUND)
-        return api_case, revision
+        from .binding import ModuleCoverageCaseBindingService
+        return ModuleCoverageCaseBindingService.validate(scan.project_product_id, module_id,
+            api_case_id, api_case_revision_id, interface=interface_snapshot, previous=coverage_case)
 
     @classmethod
     def resolve_api_info_binding(
@@ -794,8 +783,15 @@ class ModuleCoverageScanMixin:
                 raise AutoApiError(QUALITY_COVERAGE_INVALID,
                                    value=(f"Case 与接口 {interface_source_key} 的定义或覆盖路径不一致",),
                                    )
+            source_key = cls.normalized_text("source_key", raw["source_key"])
+            source_key_hash = hashlib.sha256(source_key.encode("utf-8")).hexdigest()
+            coverage_case = ModuleCoverageCase.objects.filter(
+                project_product_id=scan.project_product_id, module_id=module_id,
+                repository_key=scan.repository_key, branch=scan.branch, source_key_hash=source_key_hash,
+            ).first()
             api_case, api_case_revision = cls.validate_api_case(
                 scan, module_id, raw.get("api_case_id"), raw.get("api_case_revision_id"),
+                interface_snapshot=interface_snapshot, coverage_case=coverage_case,
             )
             is_completed = payload["current_status"] == ModuleCoverageCaseStatus.COMPLETED
             if is_completed != (api_case is not None):
@@ -810,15 +806,6 @@ class ModuleCoverageScanMixin:
                 "api_case_id": api_case.id if api_case else None,
                 "api_case_revision_id": api_case_revision.id if api_case_revision else None,
             })
-            source_key = cls.normalized_text("source_key", raw["source_key"])
-            source_key_hash = hashlib.sha256(source_key.encode("utf-8")).hexdigest()
-            coverage_case = ModuleCoverageCase.objects.filter(
-                project_product_id=scan.project_product_id,
-                module_id=module_id,
-                repository_key=scan.repository_key,
-                branch=scan.branch,
-                source_key_hash=source_key_hash,
-            ).first()
             created = coverage_case is None
             if coverage_case is None:
                 coverage_case = ModuleCoverageCase.objects.create(
@@ -966,12 +953,22 @@ class ModuleCoverageScanMixin:
         invalid_case_snapshot_count = 0
         for snapshot in scan.case_snapshots.select_related(
                 "coverage_case__module_interface", "interface_snapshot__module_interface",
+                "api_case", "api_case_revision", "interface_snapshot__api_info",
         ):
             interface_snapshot = snapshot.interface_snapshot
             if ((interface_snapshot is not None and cls.interface_analysis_blocked(interface_snapshot))
                     or cls.interface_analysis_blocked(snapshot.coverage_case)):
                 continue
             payload = snapshot.payload or {}
+            if snapshot.api_case_id:
+                from .binding import ModuleCoverageCaseBindingService
+                try:
+                    ModuleCoverageCaseBindingService.validate(scan.project_product_id,
+                        snapshot.coverage_case.module_id, snapshot.api_case_id, snapshot.api_case_revision_id,
+                        interface=interface_snapshot, previous=snapshot.coverage_case,
+                        api_case=snapshot.api_case, revision=snapshot.api_case_revision)
+                except AutoApiError as error:
+                    blocking_errors.append(error.msg)
             if interface_snapshot is not None and (
                     interface_snapshot.id not in interface_snapshot_ids
                     or payload.get("method", "").upper() != interface_snapshot.method

@@ -1,4 +1,6 @@
 import { deleted, get, post, put } from '@/api/http'
+import type { Response } from '@/api/http'
+import type { ManualCaseDetail, ManualCaseVersion, ManualCaseBatchUpdateResult } from './types'
 
 export function getFunctionalIterations(data: Record<string, unknown>) {
   return get({ url: '/functional-test/iteration', data: () => data })
@@ -143,7 +145,7 @@ export function putManualCase(data: Record<string, unknown>) {
   return put({ url: '/functional-test/case', data: () => data })
 }
 
-export function putManualCaseBatch(data: Record<string, unknown>) {
+export function putManualCaseBatch(data: Record<string, unknown>): Promise<Response<ManualCaseBatchUpdateResult>> {
   return put({ url: '/functional-test/case/batch-update', data: () => data, silentError: true })
 }
 
@@ -163,11 +165,11 @@ export function deleteManualCase(data: number | Array<number | string> | Record<
 }
 
 export function getManualCaseDetail(id: number) {
-  return get({ url: '/functional-test/case/detail', data: () => ({ id }) })
+  return get<ManualCaseDetail>({ url: '/functional-test/case/detail', data: () => ({ id }) })
 }
 
 export function getManualCaseVersions(id: number) {
-  return get({ url: '/functional-test/case/versions', data: () => ({ id }) })
+  return get<ManualCaseVersion[]>({ url: '/functional-test/case/versions', data: () => ({ id }) })
 }
 
 export function getFunctionalContextResource(data: Record<string, unknown>) {

@@ -1,17 +1,17 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody>
     <template #header>
       <TableHeader
         :show-filter="true"
         title="自动化执行结果"
-        @search="doRefresh"
+        @search="onSearch"
         @reset-search="onResetSearch"
       >
         <template #search-content>
-          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
+          <a-form :model="{}" layout="inline" @keyup.enter="onSearch">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="onSearch" />
               </template>
               <template v-else-if="item.type === 'select'">
                 <a-select
@@ -20,11 +20,12 @@
                   :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
                   :options="selectOptions(item.key)"
+                  :loading="selectLoading(item.key)"
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
                   value-key="key"
-                  @change="doRefresh"
+                  @change="onSearch"
                 />
               </template>
               <template v-else-if="item.type === 'range'">
@@ -32,7 +33,7 @@
                   v-model="item.value"
                   show-time
                   value-format="YYYY-MM-DD HH:mm:ss"
-                  @change="doRefresh"
+                  @change="onSearch"
                 />
               </template>
             </a-form-item>
@@ -42,22 +43,28 @@
     </template>
 
     <template #default>
-      <a-spin :loading="data.configLoading">
-        <a-alert type="info" show-icon>
-          完整执行结果保留 {{ data.config.retention_days || '-' }} 天，定时任务
-          {{ data.config.cleanup_cron || '-' }} 执行，下次清理时间
-          {{ data.config.next_cleanup_at || '-' }}。清理只移除完整 JSON 或结果文件，执行记录会保留。
-          当前有 {{ data.config.expired_pending_count || 0 }} 条过期结果待清理。
+      <a-spin :loading="configLoading">
+        <a-alert v-if="!configError" type="info" show-icon>
+          完整执行结果保留 {{ config?.retention_days ?? '-' }} 天，定时任务
+          {{ config?.cleanup_cron || '-' }} 执行，下次清理时间
+          {{ config?.next_cleanup_at || '-' }}。清理只移除完整 JSON 或结果文件，执行记录会保留。
+          当前有 {{ config?.expired_pending_count ?? '-' }} 条过期结果待清理。
         </a-alert>
+        <div v-else class="mango-execution-admin-error" role="alert">
+          {{ configError }} <a-button size="small" :loading="configLoading" @click="loadConfig">重试</a-button>
+        </div>
       </a-spin>
+
+
+
 
       <TableTabs>
         <template #extra>
           <a-button
-            v-if="true"
             size="small"
             status="danger"
-            :loading="data.cleanupLoading"
+            :loading="cleanupLoading"
+            :disabled="!cleanupReady"
             @click="onCleanup"
             data-testid="qa-views-system-execution-result-button-手动清理"
           >
@@ -70,8 +77,8 @@
         :scroll="{ x: tableScrollX }"
         :bordered="false"
         :columns="tableColumns"
-        :data="table.dataList"
-        :loading="table.tableLoading.value"
+        :data="rows"
+        :loading="listLoading"
         :pagination="false"
         :rowKey="rowKey"
       >
@@ -148,125 +155,103 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, onMounted, reactive } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, onMounted, onBeforeUnmount, onActivated, onDeactivated, ref, watch } from 'vue'
+  import { useRoute } from 'vue-router'
   import { Message, Modal } from '@arco-design/web-vue'
   import { fieldNames } from '@/setting'
-  import { usePagination, useRowKey, useTable } from '@/hooks/table'
-  import { getFormItems } from '@/utils/datacleaning'
+  import { usePagination, useRowKey } from '@/hooks/table'
+  import useUserStore from '@/store/modules/user'
+  import usePermissionStore from '@/store/modules/permission'
   import { getUserName } from '@/api/user/user'
-  import {
-    getExecutionResultAdminConfig,
-    getExecutionResultAdminList,
-    postExecutionResultAdminCleanup,
-  } from '@/api/system/execution_result'
-
+  import { getExecutionResultAdminConfig, getExecutionResultAdminList, postExecutionResultAdminCleanup } from '@/api/system/execution_result'
+  import type { ExecutionResultAdminQuery } from '@/api/system/execution_result'
   import { useEnum } from '@/store/modules/get-enum'
   import { getEnumTagColor } from '@/utils/business-format'
-  import { conditionItems, tableColumns, tableScrollX } from './config'
+  import { createConditionItems, tableColumns, tableScrollX } from './config'
+  import { buildExecutionAdminQuery, resetExecutionAdminConditions, parseExecutionAdminRows, parseExecutionAdminConfig, parseExecutionAdminOptions, parseExecutionAdminCleanup } from './execution-admin'
+  import type { ExecutionAdminConfig, ExecutionAdminRow, ExecutionAdminOption, ExecutionAdminOptionKey } from './execution-admin'
+  import { useExecutionAdminRead } from './composables/useExecutionAdminRead'
   import TableTabs from '@/components/table/TableTabs.vue'
 
-
-  const enumStore = useEnum()
-
-  const pagination = usePagination(doRefresh, () => table.tableLoading)
-  const table = useTable()
-  const rowKey = useRowKey('id')
-  const data = reactive<any>({
-    configLoading: true,
-    cleanupLoading: false,
-    config: {},
-    userOptions: [],
-  })
-
-  function selectOptions(key: string | number) {
-    if (key === 'trigger_user_id') return data.userOptions
-    return data.config[`${String(key)}_options`] || []
-  }
-
-  function optionTagColor(key: string, value: string | number) {
-    return getEnumTagColor(selectOptions(key), value, enumStore.colors)
-  }
-
-  function buildQuery() {
-    const values = getFormItems(conditionItems)
-    const createTime = Array.isArray(values.create_time) ? values.create_time : []
-    delete values.create_time
-    if (createTime.length === 2) {
-      values.create_time_start = createTime[0]
-      values.create_time_end = createTime[1]
+  const route = useRoute(), pagePath = route.path, user = useUserStore(), permission = usePermissionStore(), enumStore = useEnum()
+  const conditionItems = createConditionItems(), rows = ref<ExecutionAdminRow[]>([]), config = ref<ExecutionAdminConfig | null>(null)
+  const userOptions = ref<ExecutionAdminOption[]>([]), cleanupLoading = ref(false), rowKey = useRowKey('id')
+  let mounted = false, active = true, disposed = false, needsLoad = true, epoch = 0
+  let confirmation: ReturnType<typeof Modal.confirm> | null = null
+  let listSnapshot: ExecutionResultAdminQuery = {}
+  const available = () => mounted && active && !disposed && route.path === pagePath && document.visibilityState === 'visible'
+  const identity = () => JSON.stringify([route.fullPath, user.userId, user.roleId, user.token, user.selected_environment, permission.permissionKeys])
+  const context = () => JSON.stringify([identity(), epoch])
+  const listRead = useExecutionAdminRead({ available, context: () => JSON.stringify([context(), listSnapshot]),
+    read: async () => parseExecutionAdminRows(await getExecutionResultAdminList({ ...listSnapshot })),
+    apply: value => { rows.value = value.rows; pagination.setTotalSize(value.total) }, clear: () => { rows.value = []; pagination.setTotalSize(0) }, message: '执行结果加载失败，请重试' })
+  const { loading: listLoading, error: listError } = listRead
+  const pagination = usePagination(doRefresh, listLoading)
+  const configRead = useExecutionAdminRead({ available, context, read: async () => parseExecutionAdminConfig(await getExecutionResultAdminConfig()),
+    apply: value => { config.value = value }, clear: () => { config.value = null }, message: '保留策略加载失败，请重试' })
+  const { loading: configLoading, error: configError, run: loadConfig } = configRead
+  const usersRead = useExecutionAdminRead({ available, context, read: async () => parseExecutionAdminOptions(await getUserName()),
+    apply: value => { userOptions.value = value }, clear: () => { userOptions.value = [] }, message: '触发人选项加载失败，请重试' })
+  const { loading: usersLoading, error: usersError, run: loadUsers } = usersRead
+  const enumRead = useExecutionAdminRead({ available, context, read: () => enumStore.getEnum(), apply: () => {}, clear: () => {}, message: '枚举颜色加载失败，请重试' })
+  const { loading: enumLoading, error: enumError, run: loadEnums } = enumRead
+  const cleanupReady = computed(() => config.value !== null && !configLoading.value && !configError.value)
+  function selectOptions(key: string | number): ExecutionAdminOption[] {
+    if (key === 'trigger_user_id') return userOptions.value
+    switch (key) {
+      case 'source_type': case 'target_type': case 'status': case 'test_env': case 'result_state': case 'is_latest': return config.value?.options[key] ?? []
+      default: return []
     }
-    return Object.fromEntries(
-      Object.entries(values).filter(
-        ([, value]) => value !== '' && value !== null && value !== undefined
-      )
-    )
   }
-
-  function doRefresh() {
-    table.tableLoading.value = true
-    return getExecutionResultAdminList({
-      ...buildQuery(),
-      page: pagination.page,
-      pageSize: pagination.pageSize,
-    })
-      .then((res) => {
-        table.handleSuccess(res)
-        pagination.setTotalSize((res as any).totalSize)
-      })
-      .catch(() => {
-        table.tableLoading.value = false
-      })
+  function selectLoading(key: string | number) { return key === 'trigger_user_id' ? usersLoading.value : configLoading.value }
+  function optionTagColor(key: ExecutionAdminOptionKey, value: string | number | boolean | null) {
+    return getEnumTagColor(selectOptions(key), typeof value === 'boolean' ? String(value) : value, enumStore.colors)
   }
-
-  function loadConfig() {
-    data.configLoading = true
-    return getExecutionResultAdminConfig()
-      .then((res) => {
-        data.config = res.data || {}
-      })
-      .finally(() => {
-        data.configLoading = false
-      })
+  function buildQuery() { return buildExecutionAdminQuery(conditionItems) }
+  function doRefresh(): Promise<void> {
+    if (!available()) { needsLoad = true; listLoading.value = false; return Promise.resolve() }
+    try { listSnapshot = { ...buildQuery(), page: pagination.page, pageSize: pagination.pageSize } }
+    catch (loadFailure0) { listRead.invalidate(); rows.value = []; pagination.setTotalSize(0); (reportLoadError(loadFailure0, "加载失败，请重试", false), listError.value = '搜索条件无效，请检查 ID 和创建时间'); return Promise.resolve() }
+    return listRead.run()
   }
-
-  function loadUsers() {
-    return getUserName().then((res) => {
-      data.userOptions = res.data || []
-    })
-  }
-
-  function onResetSearch() {
-    conditionItems.forEach((item) => {
-      item.value = item.type === 'range' || item.multiple ? [] : ''
-    })
-    doRefresh()
-  }
-
+  function onSearch() { pagination.page = 1; return doRefresh() }
+  function onResetSearch() { resetExecutionAdminConditions(conditionItems); return onSearch() }
   function onCleanup() {
-    const retentionDays = data.config.retention_days || 30
-    const pendingCount = data.config.expired_pending_count || 0
-    Modal.confirm({
+    if (!available() || cleanupLoading.value || confirmation || !cleanupReady.value || !config.value) return
+    const retentionDays = config.value.retention_days, pendingCount = config.value.expired_pending_count, key = context()
+    let closed = false
+    const valid = () => !closed && available() && key === context() && confirmation === handle
+    const close = () => { closed = true; if (confirmation === handle) confirmation = null }
+    const handle = Modal.confirm({
       title: '手动清理执行结果',
-      content:
-        `确认清理 ${retentionDays} 天前的完整执行结果吗？当前预计有 ${pendingCount} 条待清理。` +
-        '该操作会删除完整 JSON 或结果文件，但会保留 execution_result 执行记录。',
-      okText: '确认清理',
-      cancelText: '取消',
-      okButtonProps: { status: 'danger' },
-      onBeforeOk: () => {
-        data.cleanupLoading = true
-        return postExecutionResultAdminCleanup()
-          .then(async (res) => {
-            Message.success(`清理完成，共清理 ${res.data?.updated_count || 0} 条完整结果`)
-            await Promise.all([loadConfig(), doRefresh()])
-          })
-          .finally(() => {
-            data.cleanupLoading = false
-          })
+      content: `确认清理 ${retentionDays} 天前的完整执行结果吗？当前预计有 ${pendingCount} 条待清理。` + '该操作会删除完整 JSON 或结果文件，但会保留 execution_result 执行记录。',
+      okText: '确认清理', cancelText: '取消', okButtonProps: { status: 'danger' }, onCancel: close,
+      onBeforeOk: async () => {
+        if (!valid() || cleanupLoading.value) return false
+        if (!cleanupReady.value || config.value?.retention_days !== retentionDays) {
+          close(); handle.close(); Message.warning('保留策略已变化，请重新确认清理范围'); return false
+        }
+        cleanupLoading.value = true
+        let applied = false
+        try {
+          const count = parseExecutionAdminCleanup(await postExecutionResultAdminCleanup())
+          if (!valid()) return false
+          applied = true
+          Message.success(`清理完成，共清理 ${count} 条完整结果`)
+          close(); configRead.invalidate(); listRead.invalidate(); void loadConfig(); void doRefresh(); return true
+        } catch {
+          if (valid()) Message.error('清理失败，请重试')
+          return false
+        } finally {
+          cleanupLoading.value = false
+          if (!applied && !valid()) { listRead.invalidate(); configRead.invalidate(); needsLoad = true; resume() }
+        }
       },
     })
+    confirmation = handle
   }
-
   function statusColor(status: number | null) {
     if (status === 0) return 'red'
     if (status === 1) return 'green'
@@ -275,31 +260,42 @@
     if (status === 4) return 'orange'
     return 'gray'
   }
-
-  function resultState(record: any) {
+  function resultState(record: ExecutionAdminRow) {
     if (record.result_cleaned) return { text: '已清理', color: 'gray' }
     if (record.has_result_data) return { text: '结果可用', color: 'green' }
     return { text: '无完整结果', color: 'orange' }
   }
-
-  function formatDuration(value: unknown) {
-    if (value === null || value === undefined || value === '') return '-'
-    const duration = Number(value)
-    return Number.isFinite(duration) ? `${duration.toFixed(2)} 秒` : `${value} 秒`
+  function formatDuration(value: number | null) { return value === null ? '-' : `${value.toFixed(2)} 秒` }
+  function formatBytes(value: number) {
+    if (!Number.isFinite(value) || value <= 0) return '0 B'
+    const units = ['B', 'KB', 'MB', 'GB'], index = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1)
+    return `${(value / 1024 ** index).toFixed(index === 0 ? 0 : 2)} ${units[index]}`
   }
-
-  function formatBytes(value: unknown) {
-    const size = Number(value || 0)
-    if (!Number.isFinite(size) || size <= 0) return '0 B'
-    const units = ['B', 'KB', 'MB', 'GB']
-    const index = Math.min(Math.floor(Math.log(size) / Math.log(1024)), units.length - 1)
-    return `${(size / 1024 ** index).toFixed(index === 0 ? 0 : 2)} ${units[index]}`
+  function pause() {
+    epoch++; needsLoad = true
+    listRead.invalidate(); configRead.invalidate(); usersRead.invalidate(); enumRead.invalidate()
+    confirmation?.close(); confirmation = null
   }
-
-  onMounted(() => {
-    nextTick(async () => {
-      await Promise.all([enumStore.getEnum(), loadConfig(), loadUsers()])
-      doRefresh()
-    })
-  })
+  function resume() {
+    if (!available() || !needsLoad) return
+    needsLoad = false
+    void doRefresh(); void loadConfig(); void loadUsers(); void loadEnums()
+  }
+  function visibilityChanged() { if (document.visibilityState === 'visible') resume(); else pause() }
+  watch(identity, () => { pause(); rows.value = []; config.value = null; userOptions.value = []; pagination.setTotalSize(0); pagination.page = 1; resume() }, { flush: 'sync' })
+  onMounted(() => { mounted = true; document.addEventListener('visibilitychange', visibilityChanged); resume() })
+  onActivated(() => { active = true; resume() })
+  onDeactivated(() => { active = false; pause() })
+  onBeforeUnmount(() => { disposed = true; pause(); document.removeEventListener('visibilitychange', visibilityChanged) })
 </script>
+
+<style scoped>
+  .mango-execution-admin-error,
+  .mango-execution-admin-feedback {
+    padding: var(--m-page-gap);
+    color: var(--m-muted);
+  }
+  .mango-execution-admin-error {
+    color: var(--m-danger);
+  }
+</style>

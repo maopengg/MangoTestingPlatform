@@ -1,9 +1,10 @@
-import { useTable, useTableColumn } from '@/hooks/table'
+import { useTableIndexColumn, useTableColumn } from '@/hooks/table'
 import { FormItem } from '@/types/components'
 import { reactive, ref } from 'vue'
 import { enableMultiSelectSearch } from '@/utils/search-condition'
 
-const table = useTable()
+export const executionScrollX = 1990
+export const enumFieldNames = { value: 'key', label: 'title' }
 
 export const cleanupResourceColumns = [
   { title: '执行明细', dataIndex: 'alias', width: 160, ellipsis: true, tooltip: true },
@@ -15,56 +16,58 @@ export const cleanupResourceColumns = [
   { title: '说明', dataIndex: 'error', width: 310, ellipsis: true, tooltip: true },
 ]
 
-export const executionConditionItems: Array<FormItem> = reactive([
-  {
-    key: 'execution_no',
-    label: '执行编号',
-    type: 'input',
-    placeholder: '请输入执行编号',
-    value: ref(''),
-  },
-  {
-    key: 'project_product',
-    label: '项目/产品',
-    value: ref(''),
-    type: 'cascader',
-    placeholder: '请选择产品',
-  },
-  {
-    key: 'module',
-    label: '模块名称',
-    type: 'select',
-    placeholder: '请选择模块名称',
-    value: ref(''),
-  },
-  {
-    key: 'stage',
-    label: '阶段',
-    type: 'select',
-    placeholder: '请选择阶段',
-    value: ref(''),
-  },
-  {
-    key: 'status',
-    label: '状态',
-    type: 'select',
-    placeholder: '请选择状态',
-    value: ref(''),
-  },
-  {
-    key: 'cleanup_status',
-    label: '清理状态',
-    type: 'select',
-    placeholder: '请选择清理状态',
-    value: ref<number[]>([]),
-    multiple: true,
-    searchOperator: 'in',
-  },
-])
-enableMultiSelectSearch(executionConditionItems)
+export function createConditionItems() {
+  const fields: Array<Omit<FormItem, 'disabled'>> = [
+    {
+      key: 'execution_no',
+      label: '执行编号',
+      type: 'input',
+      placeholder: '请输入执行编号',
+      value: ref(''),
+    },
+    {
+      key: 'project_product',
+      label: '项目/产品',
+      value: ref(''),
+      type: 'cascader',
+      placeholder: '请选择产品',
+    },
+    {
+      key: 'module',
+      label: '模块名称',
+      type: 'select',
+      placeholder: '请选择模块名称',
+      value: ref(''),
+    },
+    {
+      key: 'stage',
+      label: '阶段',
+      type: 'select',
+      placeholder: '请选择阶段',
+      value: ref(''),
+    },
+    {
+      key: 'status',
+      label: '状态',
+      type: 'select',
+      placeholder: '请选择状态',
+      value: ref(''),
+    },
+    {
+      key: 'cleanup_status',
+      label: '清理状态',
+      type: 'select',
+      placeholder: '请选择清理状态',
+      value: ref<number[]>([]),
+      multiple: true,
+      searchOperator: 'in',
+    },
+  ]
+  return enableMultiSelectSearch(reactive(fields))
+}
 
 export const executionTableColumns = useTableColumn([
-  table.indexColumn,
+  { ...useTableIndexColumn(), align: 'center' },
   {
     title: '执行编号',
     key: 'execution_no',
@@ -87,6 +90,7 @@ export const executionTableColumns = useTableColumn([
     title: '错误',
     key: 'error_message',
     dataIndex: 'error_message',
+    width: 300,
     align: 'left',
     ellipsis: true,
     tooltip: true,
@@ -101,18 +105,21 @@ export const executionTableColumns = useTableColumn([
     title: '阶段',
     key: 'stage',
     dataIndex: 'stage',
+    align: 'center',
     width: 70,
   },
   {
     title: '状态',
     key: 'status',
     dataIndex: 'status',
+    align: 'center',
     width: 70,
   },
   {
     title: '清理状态',
     key: 'cleanup_status',
     dataIndex: 'cleanup_status',
+    align: 'center',
     width: 100,
   },
   {
@@ -138,12 +145,13 @@ export const executionTableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 120,
+    width: 160,
+    align: 'center',
   },
 ])
 
 export const executionItemColumns = useTableColumn([
-  table.indexColumn,
+  { ...useTableIndexColumn(), align: 'center' },
   {
     title: '别名',
     key: 'alias',
@@ -169,12 +177,14 @@ export const executionItemColumns = useTableColumn([
     title: '清理顺序',
     key: 'cleanup_order',
     dataIndex: 'cleanup_order',
+    align: 'center',
     width: 100,
   },
   {
     title: '清理状态',
     key: 'cleanup_status',
     dataIndex: 'cleanup_status',
+    align: 'center',
     width: 120,
   },
   {

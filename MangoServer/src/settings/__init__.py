@@ -25,7 +25,7 @@ def set_env():
 set_env()
 
 # ── 1. 公共参数与目录 ─────────────────────────────────────────
-VERSION = '7.2.3'  # 平台版本号
+VERSION = '7.2.4'  # 平台版本号
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent  # 后端根目录 MangoServer
 

@@ -33,7 +33,7 @@ export function putUiCaseStepsDetailed(data: object, parent_id: any) {
   })
 }
 
-export function deleteUiCaseStepsDetailed(id: number | string[] | number[], parentId: number) {
+export function deleteUiCaseStepsDetailed(id: number | string | string[] | number[], parentId: number | string) {
   return deleted({
     url: '/ui/case/steps/detailed',
     data: () => {
@@ -45,7 +45,7 @@ export function deleteUiCaseStepsDetailed(id: number | string[] | number[], pare
   })
 }
 
-export function getUiCaseStepsRefreshCacheData(id: number, case_id = null) {
+export function getUiCaseStepsRefreshCacheData(id: number | string, case_id: number | string | null = null) {
   return get({
     url: '/ui/case/steps/detailed/refresh',
     data: () => {
@@ -57,7 +57,7 @@ export function getUiCaseStepsRefreshCacheData(id: number, case_id = null) {
   })
 }
 
-export function putUiCasePutCaseSort(caseSortList: any) {
+export function putUiCasePutCaseSort(caseSortList: Array<{ id: number | string; case_sort: number }>) {
   return put({
     url: '/ui/case/steps/detailed/sort',
     data: () => {

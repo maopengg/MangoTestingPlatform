@@ -44,7 +44,8 @@ class ModuleCoverageCompletionMixin:
                                value=("；".join(validation["errors"]),),
                                )
         snapshots = list(scan.case_snapshots.select_related(
-            "coverage_case__module_interface", "interface_snapshot__module_interface", "api_case", "api_case_revision",
+            "coverage_case__module_interface", "interface_snapshot__module_interface", "interface_snapshot__api_info",
+            "api_case", "api_case_revision",
         ))
         interface_snapshots = list(scan.interface_snapshots.select_related(
             "api_info", "api_info_revision", "module_interface",
@@ -217,12 +218,13 @@ class ModuleCoverageCompletionMixin:
             item.api_case = snapshot.api_case
             item.api_case_revision = snapshot.api_case_revision
             if snapshot.api_case_id:
+                cross_module = snapshot.api_case.module_id != item.module_id
                 latest_result, executed_revision_id = cls.latest_api_case_execution(
-                    snapshot.api_case_id,
+                    snapshot.api_case_id, **({'revision_id': snapshot.api_case_revision_id} if cross_module else {}),
                 )
                 if latest_result:
                     item.execution_result = latest_result
-                if executed_revision_id:
+                if executed_revision_id and not cross_module:
                     item.api_case_revision = ApiCaseRevision.objects.filter(
                         id=executed_revision_id,
                         api_case_id=snapshot.api_case_id,

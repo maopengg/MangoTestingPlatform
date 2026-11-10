@@ -1,4 +1,9 @@
 export const DATA_FACTORY_VALIDATION_ENVIRONMENTS_KEY = 'DATA_FACTORY_VALIDATION_ENVIRONMENTS'
+export const EVALUATION_AI_PROVIDER_OPTIONS = [
+  { value: 'openai_compatible', label: 'OpenAI 兼容' },
+  { value: 'openai', label: 'OpenAI' },
+  { value: 'azure_openai', label: 'Azure OpenAI' },
+]
 export const API_TRANSIENT_RETRY_CONDITIONS_KEY = 'API_TRANSIENT_RETRY_CONDITIONS'
 export const API_DEFAULT_ASSERTION_CHECKS_KEY = 'API_DEFAULT_ASSERTION_CHECKS'
 export const API_DEFAULT_ASSERTION_HELP =

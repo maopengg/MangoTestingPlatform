@@ -1,45 +1,8 @@
-import { FormItem } from '@/types/components'
-import { reactive, ref } from 'vue'
-import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 import { updateUserColumn } from '@/utils/update-user'
 
 const table = useTable()
 export const tableScrollX = 1280
-
-export const formItems: FormItem[] = reactive([
-  {
-    label: '部门名称',
-    key: 'name',
-    value: ref(''),
-    placeholder: '请输入部门名称',
-    required: true,
-    type: 'input',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '状态',
-    key: 'status',
-    value: ref(1),
-    placeholder: '',
-    required: false,
-    type: 'switch',
-  },
-  {
-    label: '部门描述',
-    key: 'description',
-    value: ref(''),
-    placeholder: '请输入部门描述',
-    required: false,
-    type: 'textarea',
-  },
-])
 
 export const tableColumns = useTableColumn([
   table.indexColumn,
@@ -74,7 +37,7 @@ export const tableColumns = useTableColumn([
     dataIndex: 'create_time',
     width: 180,
   },
-  updateUserColumn(),
+  { ...updateUserColumn(), key: 'update_user' },
   {
     title: '更新时间',
     key: 'update_time',

@@ -1,7 +1,37 @@
-import type { FunctionalGridColumn } from '@/components/table/functional-case-grid'
+import type {
+  FunctionalGridColumn,
+  FunctionalGridOption,
+} from '@/components/table/functional-case-grid'
+import type { useEnum } from '@/store/modules/get-enum'
 
 export const CASE_LIBRARY_GRID_KEY = 'functional-case-library'
 export const CASE_LIBRARY_GRID_LAYOUT_VERSION = 2
+export const CASE_SPREADSHEET_FIELDS = [
+  ['case_no', '用例编号'],
+  ['title', '用例标题'],
+  ['project_product_id', '项目产品ID'],
+  ['module_id', '模块ID'],
+  ['category_level_1', '分类一'],
+  ['category_level_2', '分类二'],
+  ['category_level_3', '分类三'],
+  ['priority', '优先级'],
+  ['test_types', '测试类型'],
+  ['story_refs', '关联用户故事'],
+  ['precondition', '前置条件'],
+  ['test_point', '测试场景'],
+  ['test_steps', '测试步骤JSON'],
+  ['expected_result', '预期结果'],
+  ['acceptance_source', '验收标准来源'],
+  ['test_data', '测试数据'],
+  ['owner_id', '负责人ID'],
+  ['automation_status', '自动化状态'],
+  ['bindings', '自动化绑定'],
+  ['scenario_layer', '测试层级'],
+  ['scenario_type', '验证类型'],
+  ['scenario_tags', '执行场景'],
+  ['status', '资产状态'],
+  ['remark', '备注'],
+] as const
 export const AUTOMATION_STATUS_OPTIONS = [
   { label: '未自动化', value: 'not_automated', colorToken: '--m-muted' },
   { label: '已自动化', value: 'automated', colorToken: '--m-success' },
@@ -42,18 +72,25 @@ const ENUM_COLOR_TOKENS = {
   assetStatus: { 0: '--m-warning', 1: '--m-success', 2: '--m-danger' },
 } as const
 
-const enumOptions = (items: any[] = [], colors: Record<string, string>) =>
-  items.map((item: any) => ({
+const enumOptions = (
+  items: Array<{ key: string | number; title: string }> = [],
+  colors: Record<string, string>
+): FunctionalGridOption[] =>
+  items.map((item) => ({
     label: item.title,
     value: item.key,
     colorToken: colors[String(item.key)] || '--m-primary',
   }))
 
-export const formatAutomationBindings = (bindings: any[] = []) => {
+export const formatAutomationBindings = (bindings: unknown = []) => {
   if (!Array.isArray(bindings) || bindings.length === 0) return '-'
   return (
     bindings
-      .filter((binding) => binding?.automation_type === 0 || binding?.automation_type === 1)
+      .filter(
+        (binding): binding is Record<string, unknown> =>
+          !!binding && typeof binding === 'object' && !Array.isArray(binding)
+      )
+      .filter((binding) => binding.automation_type === 0 || binding.automation_type === 1)
       .map((binding) => {
         const type = binding.automation_type === 0 ? 'API' : 'UI'
         const caseId = binding.automation_case_id || binding.api_case_id || binding.ui_case_id
@@ -64,13 +101,38 @@ export const formatAutomationBindings = (bindings: any[] = []) => {
   )
 }
 
-const userOptions = (users: any[] = []) =>
-  users.map((item: any) => ({
-    label: item.title || item.name || item.username || `用户 ${item.key ?? item.id}`,
-    value: item.key ?? item.id,
-  }))
+interface GridUserOption {
+  key?: string | number
+  id?: string | number
+  title?: string
+  name?: string
+  username?: string
+}
+const userOptions = (users: GridUserOption[] = []): FunctionalGridOption[] =>
+  users.flatMap((item) => {
+    const value = item.key ?? item.id
+    if (value === undefined) return []
+    return [
+      {
+        label: item.title || item.name || item.username || `用户 ${item.key ?? item.id}`,
+        value,
+      },
+    ]
+  })
 
-export const createCaseLibraryColumns = (enums: any, users: any[] = []): FunctionalGridColumn[] => [
+type GridEnums = Pick<
+  ReturnType<typeof useEnum>,
+  | 'case_level'
+  | 'manual_test_type'
+  | 'api_case_scenario_layer'
+  | 'api_case_scenario_type'
+  | 'api_case_scenario_tag'
+  | 'functional_case_status'
+>
+export const createCaseLibraryColumns = (
+  enums: GridEnums,
+  users: GridUserOption[] = []
+): FunctionalGridColumn[] => [
   { field: 'case_no', title: '用例编号', width: 130, fixed: 'left', sortable: true },
   { field: 'title', title: '用例标题', width: 240, fixed: 'left', sortable: true },
   { field: 'category_level_1', title: '分类一', width: 130 },
@@ -167,29 +229,48 @@ export const createCaseLibraryColumns = (enums: any, users: any[] = []): Functio
   },
 ]
 
-export const emptyLibraryCase = () => ({
-  id: undefined,
-  case_no: '',
-  title: '',
-  project_product: undefined,
-  module: undefined,
-  category_level_1: '',
-  category_level_2: '',
-  category_level_3: '',
-  priority: 1,
-  test_types: [0],
-  story_refs: [],
-  precondition: '',
-  test_point: '',
-  test_steps: [{ action: '', expected: '' }],
-  expected_result: '',
-  acceptance_source: '',
-  owner: undefined,
-  automation_status: 'not_automated',
-  scenario_layer: 0,
-  scenario_type: 0,
-  scenario_tags: ['routine_regression'],
-  test_data: '',
-  remark: '',
-  status: 1,
-})
+export interface LibraryGridPreferences {
+  layout_version?: number
+  columns?: unknown
+}
+
+export function mergeLibraryGridColumns(
+  defaults: FunctionalGridColumn[],
+  preferences: LibraryGridPreferences
+) {
+  const aliases: Record<string, string> = {
+    owner_name: 'owner_id',
+    project_product_path: 'project_product_id',
+    module_path: 'module_id',
+  }
+  const saved: Array<Pick<FunctionalGridColumn, 'field' | 'width' | 'visible'>> = []
+  const seen = new Set<string>()
+  for (const item of Array.isArray(preferences.columns) ? preferences.columns : []) {
+    if (!item || typeof item !== 'object' || typeof item.field !== 'string') continue
+    const field = aliases[item.field] ?? item.field
+    if (seen.has(field) || !defaults.some((column) => column.field === field)) continue
+    seen.add(field)
+    saved.push({
+      field,
+      width:
+        typeof item.width === 'number' && Number.isFinite(item.width) && item.width > 0
+          ? item.width
+          : undefined,
+      visible: typeof item.visible === 'boolean' ? item.visible : undefined,
+    })
+  }
+  const upgrade = Number(preferences.layout_version ?? 0) < CASE_LIBRARY_GRID_LAYOUT_VERSION
+  const order = upgrade
+    ? [
+        ...saved.filter((item) => !['project_product_id', 'module_id'].includes(item.field)),
+        ...['project_product_id', 'module_id'].flatMap((field) =>
+          saved.filter((item) => item.field === field)
+        ),
+      ]
+    : saved
+  const columns = order.map((item) => {
+    const column = defaults.find((value) => value.field === item.field)!
+    return { ...column, width: item.width ?? column.width, visible: item.visible ?? column.visible }
+  })
+  return { columns: [...columns, ...defaults.filter((item) => !seen.has(item.field))], upgrade }
+}

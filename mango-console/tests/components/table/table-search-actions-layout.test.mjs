@@ -8,7 +8,7 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8')
 
 const actionsSource = read('src/components/table/TableSearchActions.vue')
 const headerSource = read('src/components/table/TableHeader.vue')
-const caseFiltersSource = read('src/views/apitest/case/ApiCaseSearchFilters.vue')
+const caseFiltersSource = read('src/views/apitest/case/components/ApiCaseSearchFilters.vue')
 const casePageSource = read('src/views/apitest/case/index.vue')
 const tableTabsSource = read('src/components/table/TableTabs.vue')
 const searchPanelSource = read('src/components/table/TableSearchPanel.vue')
@@ -16,7 +16,7 @@ const navigationWorkbenchSource = read(
   'src/components/business/ProjectProductNavigationWorkbench.vue'
 )
 const navigationSidebarSource = read('src/components/business/ProjectProductNavigationSidebar.vue')
-const infoFiltersSource = read('src/views/apitest/info/ApiInfoSearchFilters.vue')
+const infoFiltersSource = read('src/views/apitest/info/components/ApiInfoSearchFilters.vue')
 const resourceFiltersSource = read('src/components/business/ApiResourceSearchFilters.vue')
 const functionalTestSource = read('src/views/functional-test/suite/index.vue')
 
@@ -118,5 +118,5 @@ test('shared tabs and API case toolbar keep the global action spacing', () => {
     /\.mango-table-tabs\s+:deep\(\.arco-tabs-nav-extra\)\s*\{[^}]*height:\s*40px;[^}]*align-items:\s*center;[^}]*padding-right:\s*var\(--m-page-gap\);/s
   )
   assert.match(navigationWorkbenchSource, /<TableTabs[^>]*>[\s\S]*<slot name="toolbar"/)
-  assert.match(casePageSource, /<template #toolbar>[\s\S]*qa-views-apitest-case-button-批量删除/)
+  assert.match(casePageSource, /<template #tabs>[\s\S]*<TableTabs[^>]*>[\s\S]*<template #extra>[\s\S]*qa-views-apitest-case-button-批量删除/)
 })

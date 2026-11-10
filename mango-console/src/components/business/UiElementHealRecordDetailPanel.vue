@@ -6,7 +6,9 @@
     :footer="false"
     unmount-on-close
   >
-    <div class="mango-ui-heal-detail">
+
+    <MangoPanelSpin :loading="loading">
+    <div v-if="detail" class="mango-ui-heal-detail">
       <section
         v-for="section in detailSections"
         :key="section.title"
@@ -34,20 +36,34 @@
         </a-collapse>
       </section>
     </div>
+    <div v-else class="mango-empty-state">暂无自愈详情</div>
+    </MangoPanelSpin>
   </a-drawer>
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
-  import { Message } from '@arco-design/web-vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, onBeforeUnmount, ref, watch } from 'vue'
+  import { useLiveWorkbenchScope } from '@/hooks/use-live-workbench-scope'
+  import { cloneLosslessJson } from '@/utils/lossless-json'
+  import { liveId, liveObject, liveError } from './ui-live-workbench'
+  import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
+  import type { HealEvidence } from './ui-element-ai'
   import { getUiElementAiHealRecordDetail } from '@/api/uitest/element'
   import JsonDisplay from '@/components/display/JsonDisplay.vue'
   import UiStructuredDataView from '@/components/display/UiStructuredDataView.vue'
 
   const visible = ref(false)
+  let disposed = false
+  onBeforeUnmount(() => { disposed = true; visible.value = false; detail.value = null; sequence++ })
   const loading = ref(false)
-  const detail = ref<any>({})
-  const title = computed(() => `自愈详情 / 记录 #${detail.value?.id || '-'}`)
+  const detail = ref<HealEvidence | null>(null)
+  const error = ref('')
+  let sequence = 0, target: { id: string | number; elementId: string | number } | null = null
+  const scope = useLiveWorkbenchScope(() => null, { invalidate() { sequence++; visible.value = false; detail.value = null; target = null; loading.value = false; error.value = '' }, resume() {} })
+  watch(visible, value => { if (!value) { sequence++; loading.value = false } }, { flush: 'sync' })
+  const title = computed(() => `自愈详情 / 记录 #${detail.value?.id ?? '-'}`)
 
   const detailSections = computed(() => {
     const item = detail.value || {}
@@ -100,30 +116,29 @@
   })
 
   async function open(recordId: string | number, elementId: string | number) {
-    if (!recordId || !elementId || loading.value) return false
-    loading.value = true
+    const current = scope.capture(), request = ++sequence
+    if (!current() || liveId(recordId) === null || liveId(elementId) === null || disposed) return false
+    target = { id: recordId, elementId }; detail.value = null; error.value = ''; visible.value = true; loading.value = true
     try {
-      const res = await getUiElementAiHealRecordDetail({ record_id: recordId, element_id: elementId })
-      detail.value = res.data || {}
-      visible.value = true
+      const response: unknown = await getUiElementAiHealRecordDetail({ record_id: recordId, element_id: elementId })
+      if (!current() || request !== sequence || !visible.value || disposed) return false
+      const envelope = liveObject(response), data = liveObject(envelope.data)
+      if ((envelope.code != null && envelope.code !== 200) || String(data.id) !== String(recordId) || (liveId(data.element_id ?? data.element) !== null && String(data.element_id ?? data.element) !== String(elementId))) throw Error('详情数据与当前记录不匹配')
+      detail.value = cloneLosslessJson(data) as HealEvidence
       return true
-    } catch (error) {
-      console.log(error)
-      Message.error('自愈详情获取失败')
-      return false
-    } finally {
-      loading.value = false
-    }
+    } catch (reason) { if (current() && request === sequence) (reportLoadError(reason, "自愈详情获取失败，请重试", false), error.value = liveError(reason, '自愈详情获取失败，请重试')); return false }
+    finally { if (current() && request === sequence) loading.value = false }
   }
-  function formatValue(value: any) { return value == null || value === '' ? '-' : String(value) }
-  function expressionTypeLabel(value: any) {
+  function retry() { if (target) void open(target.id, target.elementId) }
+  function formatValue(value: unknown) { return value == null || value === '' ? '-' : String(value) }
+  function expressionTypeLabel(value: unknown) {
     const labels: Record<number, string> = { 0: 'XPATH', 2: '通用定位器', 3: '文本', 4: '占位符', 9: 'CSS', 11: 'DESCRIPTION', 12: 'BOUNDS', 14: 'RESOURCE_ID' }
     return labels[Number(value)] || formatValue(value)
   }
-  function sourceLabel(value: any) {
+  function sourceLabel(value: unknown) {
     return ({ 0: '元素检测', 1: '页面步骤', 2: 'UI Case' } as Record<number, string>)[Number(value)] || formatValue(value)
   }
-  function statusLabel(value: any) {
+  function statusLabel(value: unknown) {
     return ({ 1: '已生成建议', 2: '候选已验证', 3: '修复失败', 4: '人工写回', 5: '临时自愈成功', 6: '自动写回', 7: '自动写回失败' } as Record<number, string>)[Number(value)] || formatValue(value)
   }
 
@@ -131,6 +146,7 @@
 </script>
 
 <style scoped>
+  .mango-ui-evidence-error { color: var(--m-danger); padding: var(--m-page-gap); }
   .mango-ui-heal-detail { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   .mango-ui-heal-detail__section { padding: 12px; border: 1px solid var(--m-border); border-radius: var(--m-radius-lg); background: var(--m-surface); }
   .mango-ui-heal-detail__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }

@@ -45,6 +45,14 @@ class ReportNoticeDetailsService:
             return []
         data = TestSuiteExecutionResultService.normalize_detail_result_data(detail, data)
         items = data if isinstance(data, list) else [data] if isinstance(data, dict) else []
+        items = [item for item in items if isinstance(item, dict)]
+        if detail.type == TestCaseTypeEnum.API.value:
+            executed_items = [item for item in items
+                              if str(item.get('error_message') or '').strip() != TestSuiteExecutionResultService.SKIP_MESSAGE]
+            # 跳过占位可能带有历史失败状态；全部被过滤时不能再补成一条用例级失败通知。
+            if items and not executed_items:
+                return []
+            items = executed_items
         failed = [item for item in items if isinstance(item, dict) and cls.failed(item)]
         rows = []
         for item in failed or [{}]:
@@ -57,10 +65,18 @@ class ReportNoticeDetailsService:
             status_details = item.get('statusDetails')
             message = item.get('error_message') or (status_details.get('message') if isinstance(status_details, dict) else '')
             message = message or detail.error_message or '未记录错误提示，请查看完整执行报告。'
+            if detail.type == TestCaseTypeEnum.API.value and str(message).strip() == TestSuiteExecutionResultService.SKIP_MESSAGE:
+                continue
             rows.append(ReportFailureModel(case_type=detail.type, task_name=cls.text(task_name),
                 case_name=cls.text(detail.case_name or f'Case #{detail.case_id}'),
                 target_name=cls.text(target), message=cls.text(message)))
-        return rows
+        if len(rows) > 1:
+            # 通知按失败 Case 计行；同一 Case 的真实失败步骤保留在同一行中。
+            targets = '\n'.join(dict.fromkeys(row.target_name for row in rows))
+            messages = '\n'.join(dict.fromkeys(f'{row.target_name}：{row.message}' for row in rows))
+            rows[0].target_name = targets
+            rows[0].message = messages
+        return rows[:1]
 
     @staticmethod
     def text(value):

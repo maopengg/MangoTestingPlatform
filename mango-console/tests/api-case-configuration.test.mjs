@@ -4,8 +4,9 @@ import { readFileSync } from 'node:fs'
 import ts from 'typescript'
 import { computed, reactive, ref } from 'vue'
 import { parse } from '@vue/compiler-sfc'
+import { loadModule } from './helpers/auth-config-harness.mjs'
 
-const source = readFileSync(new URL('../src/views/apitest/case/useCaseConfigurationSummary.ts', import.meta.url), 'utf8')
+const source = readFileSync(new URL('../src/views/apitest/case/composables/useCaseConfigurationSummary.ts', import.meta.url), 'utf8')
 const tree = ts.createSourceFile('summary.ts', source, ts.ScriptTarget.Latest, true)
 const hook = tree.statements.find(node => ts.isFunctionDeclaration(node)).getText(tree).replace('export ', '')
 const code = ts.transpileModule(hook, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
@@ -19,7 +20,7 @@ function setup(fetch) {
 const summary = id => ({ id, has_sql: true, sql_count: 1, has_data_factory: false, data_factory_count: 0 })
 
 test('opening an empty configuration selector refreshes enums with loading and retry feedback', async () => {
-  const component = readFileSync(new URL('../src/views/apitest/case/ApiCaseSearchFilters.vue', import.meta.url), 'utf8')
+  const component = readFileSync(new URL('../src/views/apitest/case/components/ApiCaseSearchFilters.vue', import.meta.url), 'utf8')
   const ast = ts.createSourceFile('case.ts', parse(component).descriptor.scriptSetup.content, ts.ScriptTarget.Latest, true)
   const method = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name.text === 'loadConfigurationSearchOptions')
   const code = ts.transpileModule(method.getText(ast), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
@@ -130,6 +131,7 @@ test('review drawer uses supplied configuration without fetching the editing cas
     permissions: { hasPermission: () => true },
     pagination: { page: 3, setTotalSize(value) { this.total = value } },
     invalidateRequests: () => { invalidations++ },
+    cloneLosslessJson: value => structuredClone(value),
     getApiCaseConfigurationDetails: () => { requests++; throw new Error('must not fetch editing configuration') },
   }
   const methodsUnderTest = new Function(...Object.keys(state), `${methods};return {openSnapshot,load,onVisibilityChange}`)(...Object.values(state))
@@ -147,37 +149,20 @@ test('review drawer uses supplied configuration without fetching the editing cas
   assert.equal(state.snapshot.value, null)
   assert.equal(state.summary.value, null)
   assert.equal(invalidations, 2)
-  state.permissions.hasPermission = () => false
-  methodsUnderTest.openSnapshot(details, 'api.case:read')
-  assert.equal(state.visible.value, false)
+  methodsUnderTest.openSnapshot(details)
+  details.items[0].configuration.sql = 'changed'
+  assert.equal(state.summary.value.items[0].configuration.sql, 'select 1')
 })
 
-test('readonly factory opens the shared field preview with case overrides and cannot save', async () => {
-  const component = readFileSync(new URL('../src/components/DataFactory/CaseConfigPanel.vue', import.meta.url), 'utf8')
-  const script = parse(component).descriptor.scriptSetup.content
-  const ast = ts.createSourceFile('panel.ts', script, ts.ScriptTarget.Latest, true)
-  const functions = ast.statements.filter(node => ts.isFunctionDeclaration(node) && ['openReadonly', 'save'].includes(node.name.text))
-    .map(node => ts.transpileModule(node.getText(ast), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText).join('\n')
-  const template = { id: 7, entity: { id: 3, datasource_alias: { id: 4, name: '隔离数据库' } }, field_overrides: { name: '模板默认值' } }
-  const fields = [{ name: 'order_name', generator_type: 1 }]
-  const resets = []
-  const state = {
-    props: { readonly: true }, form: { template: 7 },
-    templateList: ref([]), readonlyError: ref(false), visible: ref(false), templateLoading: ref(false), fieldLoading: ref(false),
-    fieldRows: ref([]), datasourceAliasOptions: ref([]), canPreviewConfiguration: ref(true),
-    getDataFactoryTemplate: async () => ({ data: [template] }),
-    getDataFactoryField: async ({ entity }) => { assert.equal(entity, 3); return { data: fields } },
-    resetForm: record => { resets.push(record) },
-    loadItemFields: async () => {}, loadCasePreview: async () => {},
-  }
-  const run = new Function(...Object.keys(state), `let readonlyRequestVersion = 0;${functions};return {openReadonly,save}`)(...Object.values(state))
-  const record = { id: 1, template: { id: 7 }, field_overrides: { name: '当前用例覆盖值' } }
-  await run.openReadonly(record)
-  assert.equal(state.visible.value, true)
-  assert.deepEqual(state.templateList.value[0], template)
-  assert.deepEqual(state.fieldRows.value, fields)
-  assert.deepEqual(resets[1].field_overrides, record.field_overrides)
-  assert.equal(state.readonlyError.value, false)
-  assert.equal(state.fieldLoading.value, false)
-  assert.equal(await run.save(), false)
+test('readonly factory opens the shared field preview with case overrides and cannot save', async t => {
+  const { factoryEditor, factoryRecord } = await import('./helpers/factory-editor-harness.mjs')
+  const h = factoryEditor({ props: { readonly: true } }); t.after(h.cleanup)
+  const record = factoryRecord(); await h.openReadonly(record)
+  assert.equal(h.visible.value, true)
+  assert.equal(h.fieldRows.value[0].name, 'name')
+  assert.deepEqual(h.form.field_overrides, record.field_overrides)
+  assert.equal(h.readonlyError.value, false)
+  assert.equal(h.editorPending.fields, false)
+  assert.equal(await h.save(), false)
+  assert.equal(h.calls.length, 0)
 })

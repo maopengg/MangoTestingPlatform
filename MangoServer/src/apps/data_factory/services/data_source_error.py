@@ -152,6 +152,7 @@ class DataSourceErrorService:
             failure = DataFactoryError(DATA_SOURCE_ELASTICSEARCH_REQUEST_TIMEOUT)
             seconds = DataSourceConnectionService.timeout_seconds() if timeout is None else timeout
             failure.msg += f'。当前请求超时配置为 {seconds} 秒'
+            cls.preserve_execution_state(error, failure)
             raise DatasourceInfrastructureService.annotate(failure, database_id=getattr(database, 'id', None)) from error
         detail = cls.safe_detail(database, error)
         if isinstance(error, json.JSONDecodeError):
@@ -160,4 +161,43 @@ class DataSourceErrorService:
             message = DATA_SOURCE_ELASTICSEARCH_NETWORK_FAILED
         else:
             message = DATA_SOURCE_FAILED_CODE_FAILED
-        raise DataFactoryError(message, value=(detail,)) from error
+        raise cls.preserve_execution_state(error, DataFactoryError(message, value=(detail,))) from error
+
+    @staticmethod
+    def execution_error_chain(error):
+        """只沿显式驱动异常链查找执行标识，不读取异常正文或任意上下文。"""
+        seen = set()
+        pending = [error]
+        while pending and len(seen) < 32:
+            current = pending.pop(0)
+            if not isinstance(current, BaseException) or id(current) in seen:
+                continue
+            seen.add(id(current))
+            yield current
+            pending.extend((current.__cause__, getattr(current, 'orig', None), getattr(current, 'reason', None)))
+
+    @classmethod
+    def unknown_operation_permit(cls, error):
+        import re
+        for current in cls.execution_error_chain(error):
+            permit = getattr(current, '_datasource_unknown_permit', None)
+            if (isinstance(permit, (tuple, list)) and len(permit) == 2
+                    and all(isinstance(value, str) and re.fullmatch(r'[a-f0-9]{32}', value) for value in permit)):
+                return tuple(permit)
+        return None
+
+    @classmethod
+    def preserve_execution_state(cls, error, failure):
+        """协议异常包装不能丢失精确名额；不复制 __dict__、SQL 或连接信息。"""
+        permit = cls.unknown_operation_permit(error)
+        if permit is not None:
+            failure._datasource_unknown_permit = permit
+        for current in cls.execution_error_chain(error):
+            for attribute in ('_datasource_outcome_unknown', '_datasource_settlement_failed'):
+                if getattr(current, attribute, False) is True:
+                    setattr(failure, attribute, True)
+            request_id = getattr(current, '_datasource_audit_request_id', None)
+            if (isinstance(request_id, str) and request_id
+                    and not getattr(failure, '_datasource_audit_request_id', None)):
+                failure._datasource_audit_request_id = request_id
+        return failure

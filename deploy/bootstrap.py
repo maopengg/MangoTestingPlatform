@@ -612,7 +612,7 @@ def render(root,v):
         services['mango_server'].setdefault('depends_on',{})['minio']={'condition':'service_started'}
     services['mango-console']['image']=v['CONSOLE_IMAGE']
     services['mango-console']['build']['args'].update(VUE_ENV=v['VUE_ENV'],NODE_IMAGE=v['NODE_IMAGE'],NGINX_IMAGE=v['NGINX_IMAGE'])
-    services['mango-console']['build']['args']['NODE_HEAP_MB'] = '6144' if v['NODE_HEAP_MB'] == 'auto' else v['NODE_HEAP_MB']
+    services['mango-console']['build']['args']['NODE_HEAP_MB'] = '4096' if v['NODE_HEAP_MB'] == 'auto' else v['NODE_HEAP_MB']
     services['mango-console']['volumes']=[str(generated/'runtime-config.js')+':/usr/share/nginx/html/runtime-config.js:ro']
     gateway=services['mango_gateway'];gateway['image']=v['NGINX_IMAGE']
     gateway['networks']={'default':{'aliases':['mango-gateway']}}

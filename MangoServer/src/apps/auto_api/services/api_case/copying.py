@@ -58,7 +58,10 @@ class ApiCaseCopyService:
         copied.callback_checks = deepcopy(source.callback_checks)
         for rule in copied.callback_checks:
             rule['trigger_step_key'] = step_keys[rule['trigger_step_key']]
-        copied.save(update_fields=['callback_checks'])
+        copied.resource_cleanup = deepcopy(source.resource_cleanup)
+        for rule in copied.resource_cleanup:
+            rule['trigger_step_key'] = step_keys[rule['trigger_step_key']]
+        copied.save(update_fields=['callback_checks', 'resource_cleanup'])
         cls._copy_data_factory_configs(
             DataFactoryCaseSourceTypeEnum.API_CASE.value,
             source.id,

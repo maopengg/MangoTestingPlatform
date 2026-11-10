@@ -11,7 +11,7 @@ const useUserStore = defineStore('user-info', {
   state: () => {
     return {
       userId: 0,
-      roleId: 0,
+      roleId: 0 as number | null,
       token: '',
       userName: '',
       nickName: '',

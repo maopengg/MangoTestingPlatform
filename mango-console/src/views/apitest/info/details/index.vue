@@ -11,18 +11,19 @@
             size="small"
             status="success"
             :loading="caseRunning"
+            :disabled="!recordReady || configurationLoading"
             @click="onRunCase"
             data-testid="qa-views-apitest-info-details-button-执行"
           >
             执行
           </a-button>
           <a-button
-            v-if="canCopyApiInfoCurl(data.api_info)"
+            v-if="canCopyApiInfoCurl(apiRecord)"
             size="small"
-            :loading="copyingId === String(data.api_info.id)"
+            :loading="copyingId === String(apiRecord.id)"
             @click="
               copyApiInfoCurl(
-                { ...data.api_info, headers: data.headers },
+                { ...apiRecord, headers: headersText },
                 userStore.selected_environment
               )
             "
@@ -50,11 +51,20 @@
       <div class="mango-workbench-scroll-x api-detail-workbench-scroll">
         <div class="api-detail-workbench mango-detail-workbench">
           <ApiInfoVersionPanel
+            v-if="pageActive && recordReady"
+            :key="apiInfoId"
             ref="versionPanelRef"
             :api-info-id="apiInfoId"
             :current-payload="currentApiInfoPayload"
+            :before-action="waitForSaves"
             @select="handleApiVersionSelect"
+            @checkout="initialize"
           />
+          <MangoPanelSpin v-else :loading="configurationLoading" class="mango-api-version-loading">
+            <div class="mango-empty-state">{{
+              loadFailed ? '版本配置暂不可用' : '正在加载版本配置'
+            }}</div>
+          </MangoPanelSpin>
           <aside class="api-detail-nav">
             <div class="api-detail-nav-head">
               <div class="api-detail-nav-title">配置项</div>
@@ -66,7 +76,7 @@
               :class="[
                 'api-detail-nav-item',
                 {
-                  'api-detail-nav-item-active': data.pageType === item.key,
+                  'api-detail-nav-item-active': activeSection === item.key,
                   'api-detail-nav-item-disabled': item.disabled,
                 },
               ]"
@@ -79,766 +89,389 @@
             </button>
           </aside>
 
-          <section
-            class="api-detail-panel"
-            :class="{ 'api-detail-panel-readonly': apiVersionReadOnly }"
-          >
-            <div class="api-request-bar">
-              <a-select
-                v-model="data.api_info.method"
-                class="api-request-method"
-                :options="methodOptions"
-                :disabled="apiVersionReadOnly"
-                placeholder="方法"
-                data-testid="qa-views-apitest-info-details-select-方法"
-              />
-              <a-input
-                v-model="data.api_info.url"
-                class="api-request-url"
-                allow-clear
-                :disabled="apiVersionReadOnly"
-                placeholder="请输入接口路径，例如 /api/user/list"
-                @press-enter="saveRequestMeta"
-                data-testid="qa-views-apitest-info-details-input-请输入接口路径-例如-api-user-list"
-              />
-              <a-button
-                class="api-request-save"
-                type="primary"
-                :loading="requestMetaSaving"
-                :disabled="apiVersionReadOnly"
-                @click="saveRequestMeta"
-                data-testid="qa-views-apitest-info-details-button-保存"
-              >
-                保存
-              </a-button>
-            </div>
-            <div
-              class="api-version-context"
-              :class="{ readonly: apiVersionReadOnly }"
-              role="status"
-              aria-live="polite"
+          <MangoPanelSpin :loading="configurationLoading" class="mango-api-configuration-loading">
+            <section
+              class="api-detail-panel"
+              :class="{ 'api-detail-panel-readonly': apiVersionReadOnly }"
             >
-              <div>
-                <strong>{{ executionVersionTitle }}</strong>
-                <span>{{ executionVersionDescription }}</span>
-              </div>
-              <a-tag size="small" :color="apiVersionReadOnly ? 'gray' : 'orange'">
-                {{ apiVersionReadOnly ? '固定版本' : '编辑态' }}
-              </a-tag>
-            </div>
-            <div class="api-detail-panel-head">
-              <div>
-                <div class="api-detail-panel-title">
-                  <span>{{ currentNavItem.title }}</span>
-                  <a-tag v-if="apiVersionReadOnly" size="small" color="gray">只读快照</a-tag>
-                </div>
-                <div class="api-detail-panel-subtitle">{{ currentNavItem.description }}</div>
-              </div>
-              <a-space v-if="data.addButton && !apiVersionReadOnly">
+              <div class="api-request-bar">
+                <a-select
+                  v-model="apiRecord.method"
+                  class="api-request-method"
+                  :options="methodOptions"
+                  :disabled="editingLocked"
+                  placeholder="方法"
+                  data-testid="qa-views-apitest-info-details-select-方法"
+                />
+                <a-input
+                  v-model="apiRecord.url"
+                  class="api-request-url"
+                  allow-clear
+                  :disabled="editingLocked"
+                  placeholder="请输入接口路径，例如 /api/user/list"
+                  @press-enter="saveRequestMeta"
+                  data-testid="qa-views-apitest-info-details-input-请输入接口路径-例如-api-user-list"
+                />
                 <a-button
-                  size="small"
+                  class="api-request-save"
                   type="primary"
-                  @click="addData"
-                  data-testid="qa-views-apitest-info-details-button-增加"
-                  >增加</a-button
+                  :loading="requestMetaSaving"
+                  :disabled="editingLocked"
+                  @click="saveRequestMeta"
+                  data-testid="qa-views-apitest-info-details-button-保存"
                 >
-              </a-space>
-            </div>
-            <div class="api-detail-panel-body">
-              <div v-if="data.pageType === '0'" class="config-pane">
-                <a-space direction="vertical" fill>
-                  <TipMessage
-                    message="请求头必须为 JSON 格式。留空时默认使用请求头管理中已开启的请求头；获取 Token 等授权接口请填写 {}，避免公共 Authorization 引用待生成 Token 造成循环引用。"
-                  />
-                  <a-textarea
-                    v-model="data.headers"
-                    :auto-size="data.textareaAutoSize"
-                    allow-clear
-                    :disabled="apiVersionReadOnly"
-                    placeholder='请输入 JSON 格式的请求头，例如：{"Content-Type": "application/json"}'
-                    @blur="saveHeaders"
-                    data-testid="qa-views-apitest-info-details-textarea-请输入-json-格式的请求头-例如-content-type-application-json"
-                  />
-                  <div v-if="data.isDefaultHeadersPreview" class="default-headers-preview">
-                    <div class="default-headers-preview-title">请求头管理中已开启的 Headers</div>
-                    <pre>{{ data.defaultHeadersText }}</pre>
-                  </div>
-                </a-space>
+                  保存
+                </a-button>
               </div>
-
-              <div v-else-if="data.pageType === '1'" class="config-pane">
-                <a-space direction="vertical" fill>
-                  <TipMessage
-                    message="支持 JSON 对象/数组，也支持 query string，例如：case_id=21"
-                  />
-                  <a-textarea
-                    v-model="data.api_info.params"
-                    :auto-size="data.textareaAutoSize"
-                    allow-clear
-                    :disabled="apiVersionReadOnly"
-                    placeholder='请输入查询参数，例如：{"key": "value"} 或 case_id=21'
-                    @blur="upDate('params', data.api_info.params)"
-                    data-testid="qa-views-apitest-info-details-textarea-请输入查询参数-例如-key-value-或-case_id-21"
-                  />
-                </a-space>
-              </div>
-
-              <div v-else-if="data.pageType === '2'" class="config-pane">
-                <ApiRequestBodyEditor
-                  :protocol-type="data.api_info.protocol_type"
-                  :body-type="data.api_info.body_type"
-                  :body-config="data.api_info.body_config"
-                  :sse-config="data.api_info.sse_config"
-                  :project-product-id="projectProductId"
-                  :saving="requestBodySaving"
-                  :readonly="apiVersionReadOnly"
-                  @save="saveRequestBody"
-                />
-              </div>
-
               <div
-                v-else-if="data.pageType === '5'"
-                class="config-pane mango-horizontal-scroll-region mango-horizontal-scroll-region--compact"
+                class="api-version-context"
+                :class="{ readonly: apiVersionReadOnly }"
+                role="status"
+                aria-live="polite"
               >
-                <KeyValueList
-                  :data-list="data.api_info.posterior_json_path"
-                  :field-config="[
-                    { field: 'key', label: '缓存key', placeholder: '请输入缓存key' },
-                    { field: 'value', label: 'jsonpath语法', placeholder: '请输入jsonpath语法' },
-                  ]"
-                  :on-delete-item="
-                    (index) =>
-                      removeFrontSql(
-                        data.api_info.posterior_json_path,
-                        index,
-                        'posterior_json_path'
+                <div>
+                  <strong>{{ executionVersionTitle }}</strong>
+                  <span>{{ executionVersionDescription }}</span>
+                </div>
+                <a-tag size="small" :color="apiVersionReadOnly ? 'gray' : 'orange'">
+                  {{ apiVersionReadOnly ? '固定版本' : '编辑态' }}
+                </a-tag>
+              </div>
+              <template v-if="loadFailed"><a-button size="small" @click="initialize">重新加载</a-button></template>
+              <div class="api-detail-panel-head">
+                <div>
+                  <div class="api-detail-panel-title">
+                    <span>{{ currentNavItem.title }}</span>
+                    <a-tag v-if="apiVersionReadOnly" size="small" color="gray">只读快照</a-tag>
+                  </div>
+                  <div class="api-detail-panel-subtitle">{{ currentNavItem.description }}</div>
+                </div>
+                <a-spin v-if="pendingFields.size" :loading="true" />
+                <a-space v-if="canAddExtraction && !apiVersionReadOnly">
+                  <a-button
+                    size="small"
+                    type="primary"
+                    @click="addData"
+                    data-testid="qa-views-apitest-info-details-button-增加"
+                    >增加</a-button
+                  >
+                </a-space>
+              </div>
+              <div class="api-detail-panel-body">
+                <div v-if="activeSection === '0'" class="config-pane">
+                  <a-space direction="vertical" fill>
+                    <a-spin v-if="defaultHeadersLoading && activeSection === '0'" :loading="true" />
+                    <TipMessage
+                      message="请求头必须为 JSON 格式。留空时默认使用请求头管理中已开启的请求头；获取 Token 等授权接口请填写 {}，避免公共 Authorization 引用待生成 Token 造成循环引用。"
+                    />
+                    <a-textarea
+                      v-model="headersText"
+                      :auto-size="textareaAutoSize"
+                      allow-clear
+                      :disabled="editingLocked"
+                      placeholder='请输入 JSON 格式的请求头，例如：{"Content-Type": "application/json"}'
+                      @blur="saveHeaders"
+                      data-testid="qa-views-apitest-info-details-textarea-请输入-json-格式的请求头-例如-content-type-application-json"
+                    />
+                    <div v-if="isDefaultHeadersPreview" class="default-headers-preview">
+                      <div class="default-headers-preview-title">请求头管理中已开启的 Headers</div>
+                      <pre>{{ defaultHeadersText }}</pre>
+                    </div>
+                  </a-space>
+                </div>
+
+                <div v-else-if="activeSection === '1'" class="config-pane">
+                  <a-space direction="vertical" fill>
+                    <TipMessage
+                      message="支持 JSON 对象/数组，也支持 query string，例如：case_id=21"
+                    />
+                    <a-textarea
+                      v-model="apiRecord.params"
+                      :auto-size="textareaAutoSize"
+                      allow-clear
+                      :disabled="editingLocked"
+                      placeholder='请输入查询参数，例如：{"key": "value"} 或 case_id=21'
+                      @blur="upDate('params', apiRecord.params)"
+                      data-testid="qa-views-apitest-info-details-textarea-请输入查询参数-例如-key-value-或-case_id-21"
+                    />
+                  </a-space>
+                </div>
+
+                <div v-else-if="activeSection === '2'" class="config-pane">
+                  <ApiRequestBodyEditor
+                    ref="bodyEditorRef"
+                    :key="viewGeneration"
+                    :protocol-type="apiRecord.protocol_type"
+                    :body-type="apiRecord.body_type"
+                    :body-config="apiRecord.body_config"
+                    :sse-config="apiRecord.sse_config"
+                    :project-product-id="projectProductId"
+                    :saving="requestBodySaving"
+                    :readonly="editingLocked"
+                    @save="saveRequestBody"
+                  />
+                </div>
+
+                <div
+                  v-else-if="activeSection === '5'"
+                  class="config-pane mango-horizontal-scroll-region mango-horizontal-scroll-region--compact"
+                >
+                  <KeyValueList
+                    :disabled="
+                      editingLocked ||
+                      pendingFields.has(
+                        activeSection === '5' ? 'posterior_json_path' : 'posterior_re'
                       )
-                  "
-                  :on-save="() => upDate('posterior_json_path', data.api_info.posterior_json_path)"
-                />
-              </div>
-
-              <div
-                v-else-if="data.pageType === '6'"
-                class="config-pane mango-horizontal-scroll-region mango-horizontal-scroll-region--compact"
-              >
-                <KeyValueList
-                  :data-list="data.api_info.posterior_re"
-                  :field-config="[
-                    { field: 'key', label: '缓存key', placeholder: '请输入缓存key' },
-                    { field: 'value', label: '正则表达式', placeholder: '请输入正则表达式' },
-                  ]"
-                  :on-delete-item="
-                    (index) => removeFrontSql(data.api_info.posterior_re, index, 'posterior_re')
-                  "
-                  :on-save="() => upDate('posterior_re', data.api_info.posterior_re)"
-                />
-              </div>
-
-              <div v-else-if="data.pageType === '7'" class="config-pane">
-                <CodeEditor
-                  v-model="data.api_info.posterior_func"
-                  :line-height="360"
-                  :code-style="{ width: '100%' }"
-                  placeholder="根据帮助文档，输入自定义后置函数"
-                  @focus="recordPosteriorFuncSnapshot"
-                  @blur="savePosteriorFuncIfChanged"
-                />
-              </div>
-            </div>
-          </section>
-
-          <aside class="api-response-panel">
-            <div class="api-response-head">
-              <div>
-                <div class="api-response-title">调用结果</div>
-                <div class="api-response-subtitle">执行后固定展示最近一次响应</div>
-              </div>
-              <a-spin v-if="resultLoading" :loading="true" />
-            </div>
-            <div class="api-response-summary">
-              <div>
-                <span>状态码</span>
-                <strong>{{ data.api_info.result_data?.code || '-' }}</strong>
-              </div>
-              <div>
-                <span>响应时间</span>
-                <strong>{{ responseTimeText }}</strong>
-              </div>
-              <div>
-                <span>执行状态</span>
-                <a-tag size="small" :color="responseStatusColor">{{ responseStatusText }}</a-tag>
-              </div>
-            </div>
-            <div v-if="data.api_info.result_data?.error_msg" class="api-response-error">
-              {{ data.api_info.result_data.error_msg }}
-            </div>
-            <a-tabs default-active-key="response" class="api-response-tabs">
-              <a-tab-pane
-                key="response"
-                title="响应"
-                data-testid="qa-views-apitest-info-details-tab-pane-响应"
-              >
-                <div class="response-section">
-                  <div
-                    v-if="
-                      data.api_info.result_data?.headers &&
-                      Object.keys(data.api_info.result_data.headers).length > 0
                     "
-                    class="response-item"
-                  >
-                    <span class="response-label">响应头</span>
-                    <div class="response-value">
-                      <JsonDisplay
-                        :data="data.api_info.result_data.headers"
-                        :default-expanded="false"
-                      />
-                    </div>
-                  </div>
-                  <div class="response-item">
-                    <span class="response-label">响应体</span>
-                    <div class="response-value">
-                      <JsonDisplay :data="responseBodyData" />
-                    </div>
-                  </div>
+                    :data-list="apiRecord.posterior_json_path"
+                    :field-config="[
+                      { field: 'key', label: '缓存key', placeholder: '请输入缓存key' },
+                      { field: 'value', label: 'jsonpath语法', placeholder: '请输入jsonpath语法' },
+                    ]"
+                    :on-delete-item="(index) => removeExtraction(index, 'posterior_json_path')"
+                    :on-save="() => upDate('posterior_json_path', apiRecord.posterior_json_path)"
+                  />
                 </div>
-              </a-tab-pane>
-              <a-tab-pane
-                key="request"
-                title="请求"
-                data-testid="qa-views-apitest-info-details-tab-pane-请求"
-              >
-                <div class="response-section">
-                  <div v-if="data.api_info.result_data?.url" class="response-item">
-                    <span class="response-label">URL</span>
-                    <span class="response-value">{{ data.api_info.result_data.url }}</span>
-                  </div>
-                  <div
-                    v-if="
-                      data.api_info.result_data?.request_headers &&
-                      Object.keys(data.api_info.result_data.request_headers).length > 0
+
+                <div
+                  v-else-if="activeSection === '6'"
+                  class="config-pane mango-horizontal-scroll-region mango-horizontal-scroll-region--compact"
+                >
+                  <KeyValueList
+                    :disabled="
+                      editingLocked ||
+                      pendingFields.has(
+                        activeSection === '5' ? 'posterior_json_path' : 'posterior_re'
+                      )
                     "
-                    class="response-item"
-                  >
-                    <span class="response-label">请求头</span>
-                    <div class="response-value">
-                      <JsonDisplay :data="data.api_info.result_data.request_headers" />
-                    </div>
-                  </div>
-                  <div
-                    v-if="
-                      data.api_info.result_data?.request_params &&
-                      Object.keys(data.api_info.result_data.request_params).length > 0
-                    "
-                    class="response-item"
-                  >
-                    <span class="response-label">查询参数</span>
-                    <div class="response-value">
-                      <JsonDisplay :data="data.api_info.result_data.request_params" />
-                    </div>
-                  </div>
-                  <div
-                    v-if="hasValue(data.api_info.result_data?.request_body)"
-                    class="response-item"
-                  >
-                    <span class="response-label">请求体</span>
-                    <div class="response-value">
-                      <JsonDisplay :data="data.api_info.result_data.request_body" />
-                    </div>
-                  </div>
-                  <div class="response-item">
-                    <span class="response-label">请求类型</span>
-                    <span class="response-value">
-                      {{ data.api_info.result_data?.request_protocol_type || '-' }} /
-                      {{ data.api_info.result_data?.request_body_type || '-' }}
-                    </span>
-                  </div>
+                    :data-list="apiRecord.posterior_re"
+                    :field-config="[
+                      { field: 'key', label: '缓存key', placeholder: '请输入缓存key' },
+                      { field: 'value', label: '正则表达式', placeholder: '请输入正则表达式' },
+                    ]"
+                    :on-delete-item="(index) => removeExtraction(index, 'posterior_re')"
+                    :on-save="() => upDate('posterior_re', apiRecord.posterior_re)"
+                  />
                 </div>
-              </a-tab-pane>
-              <a-tab-pane
-                v-if="hasValue(data.api_info.result_data?.sse_events)"
-                key="sse"
-                title="SSE"
-                data-testid="qa-views-apitest-info-details-tab-pane-sse"
-              >
-                <JsonDisplay :data="data.api_info.result_data?.sse_events" />
-              </a-tab-pane>
-              <a-tab-pane
-                v-if="hasValue(data.api_info.result_data?.ws_messages)"
-                key="websocket"
-                title="WebSocket"
-                data-testid="qa-views-apitest-info-details-tab-pane-websocket"
-              >
-                <JsonDisplay
-                  :data="{
-                    stop_reason: data.api_info.result_data?.ws_stop_reason,
-                    close_code: data.api_info.result_data?.ws_close_code,
-                    close_reason: data.api_info.result_data?.ws_close_reason,
-                    messages: data.api_info.result_data?.ws_messages,
-                  }"
-                />
-              </a-tab-pane>
-              <a-tab-pane
-                v-if="data.api_info.result_data?.response_mode === 'grpc'"
-                key="grpc"
-                title="gRPC"
-                data-testid="qa-views-apitest-info-details-tab-pane-grpc"
-              >
-                <JsonDisplay
-                  :data="{
-                    full_method: data.api_info.result_data?.grpc_full_method,
-                    status_code: data.api_info.result_data?.grpc_status_code,
-                    status_details: data.api_info.result_data?.grpc_status_details,
-                    initial_metadata: data.api_info.result_data?.grpc_initial_metadata,
-                    trailing_metadata: data.api_info.result_data?.grpc_trailing_metadata,
-                    request_message: data.api_info.result_data?.request_body,
-                    response_message: data.api_info.result_data?.json,
-                  }"
-                />
-              </a-tab-pane>
-              <a-tab-pane
-                v-if="hasValue(data.api_info.result_data?.cache_all)"
-                key="cache"
-                title="缓存"
-                data-testid="qa-views-apitest-info-details-tab-pane-缓存"
-              >
-                <JsonDisplay :data="data.api_info.result_data?.cache_all" />
-              </a-tab-pane>
-            </a-tabs>
-          </aside>
+
+                <div v-else-if="activeSection === '7'" class="config-pane">
+                  <CodeEditor
+                    v-model="apiRecord.posterior_func"
+                    :line-height="360"
+                    :readonly="editingLocked || pendingFields.has('posterior_func')"
+                    :code-style="{ width: '100%' }"
+                    placeholder="根据帮助文档，输入自定义后置函数"
+                    @focus="recordPosteriorFuncSnapshot"
+                    @blur="savePosteriorFuncIfChanged"
+                  />
+                </div>
+              </div>
+            </section>
+          </MangoPanelSpin>
+
+          <ApiInfoResponsePanel :result="executionResult" :loading="resultLoading || caseRunning" />
         </div>
       </div>
     </template>
   </TableBody>
   <ApiInfoRuntimeParametersModal ref="runtimeParametersRef" />
 </template>
-<script lang="ts" setup>
-  import ApiInfoRuntimeParametersModal from '@/components/business/ApiInfoRuntimeParametersModal.vue'
-  import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+<script setup lang="ts">
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, nextTick, onBeforeUnmount, onActivated, onDeactivated, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { useRoute } from 'vue-router'
-  import { usePageData } from '@/store/page-data'
-  import { getApiCaseInfoRun, getApiInfo, putApiInfo } from '@/api/apitest/info'
-  import useUserStore from '@/store/modules/user'
-  import { useEnum } from '@/store/modules/get-enum'
-  import KeyValueList from '@/components/forms/KeyValueList.vue'
-  import TipMessage from '@/components/feedback/TipMessage.vue'
-  import CodeEditor from '@/components/editors/CodeEditor.vue'
-  import ApiInfoVersionPanel from './components/ApiInfoVersionPanel.vue'
-  import ApiRequestBodyEditor from '../../components/ApiRequestBodyEditor.vue'
-  import VariableReferencePanel from '@/components/business/VariableReferencePanel.vue'
+  import { getApiCaseInfoRun, getApiInfo } from '@/api/apitest/info'
   import { getApiHeaders } from '@/api/apitest/headers'
-  import { canCopyApiInfoCurl, useApiInfoCurl } from '../useApiInfoCurl'
   import {
     getExecutionResultDetailResolved,
     getExecutionResultLatestResolved,
   } from '@/api/system/execution_result'
+  import useUserStore from '@/store/modules/user'
+  import { useEnum } from '@/store/modules/get-enum'
+  import { getOptionId } from '@/utils/business-format'
+  import { cloneLosslessJson, stringifyLosslessJson } from '@/utils/lossless-json'
+  import ApiInfoRuntimeParametersModal from '@/components/business/ApiInfoRuntimeParametersModal.vue'
+  import VariableReferencePanel from '@/components/business/VariableReferencePanel.vue'
+  import KeyValueList from '@/components/forms/KeyValueList.vue'
+  import TipMessage from '@/components/feedback/TipMessage.vue'
+  import CodeEditor from '@/components/editors/CodeEditor.vue'
+  import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
+  import ApiInfoVersionPanel from './components/ApiInfoVersionPanel.vue'
+  import ApiInfoResponsePanel from './components/ApiInfoResponsePanel.vue'
+  import ApiRequestBodyEditor from '../../components/ApiRequestBodyEditor.vue'
+  import { canCopyApiInfoCurl, useApiInfoCurl } from '../composables/useApiInfoCurl'
+  import {
+    configNavItems,
+    fallbackMethodOptions,
+    POSTERIOR_FUNC_TEMPLATE,
+    textareaAutoSize,
+  } from './config'
+  import { normalizeApiInfoRecord } from './record'
+  import { useApiInfoDraft } from './composables/useApiInfoDraft'
+  import type {
+    ApiInfoPatch,
+    ApiInfoRecord,
+    ApiResponseData,
+    ApiVersionSelection,
+    ExtractionRow,
+  } from './types'
 
-  const userStore = useUserStore()
-  const enumStore = useEnum()
-  const caseRunning = ref(false)
-  const runtimeParametersRef = ref<InstanceType<typeof ApiInfoRuntimeParametersModal> | null>(null)
-  const { copyingId, copyApiInfoCurl } = useApiInfoCurl()
-  const versionPanelRef = ref<InstanceType<typeof ApiInfoVersionPanel> | null>(null)
-  const selectedApiVersion = ref<{
-    kind: 'current' | 'revision'
-    id: number
-    label: string
-  } | null>(null)
-  const apiVersionReadOnly = ref(false)
-  const requestMetaSaving = ref(false)
-  const requestBodySaving = ref(false)
-  const resultLoading = ref(false)
-  const requestMetaSnapshot = ref({ method: null as any, url: '' })
-  const posteriorFuncSnapshot = ref('')
-  const configNavItems = [
-    { key: '0', title: '请求头', description: '维护接口请求 Headers' },
-    { key: '1', title: '参数', description: '维护查询参数' },
-    { key: '2', title: '请求体', description: '维护 Body 配置' },
-    {
-      key: '5',
-      title: '后置 JSONPath 提取',
-      description: '从响应 JSON 提取值写入缓存，未匹配时执行失败',
-    },
-    {
-      key: '6',
-      title: '后置正则提取',
-      description: '从响应文本提取首个匹配值写入缓存，未匹配时执行失败',
-    },
-    {
-      key: '7',
-      title: '后置自定义函数',
-      description: '请求完成后执行自定义函数，可处理响应并操作运行缓存',
-    },
-  ]
-  const POSTERIOR_FUNC_TEMPLATE = `def func(self, response):
-    # self 是当前执行上下文，常用能力：
-    # self.test_setup.test_data：变量/缓存工具，支持 get_cache、set_cache、replace 等
-    test_data = self.test_setup.test_data
-
-    # response 是本次接口响应模型，常用字段：
-    code = response.code  # HTTP 状态码
-    time = response.time  # 响应耗时，单位秒
-    url = response.url  # 实际请求 URL
-    headers = response.headers or {}  # 响应头
-    json_body = response.json  # 解析后的 JSON，可能是 dict/list/str/number/bool/null
-    text = response.text  # 原始响应文本，非 JSON 或文本断言可使用
-    response_mode = response.response_mode  # 响应模式：http/sse/grpc/websocket
-    sse_events = response.sse_events  # SSE 事件列表，仅 SSE 场景有值
-    sse_stop_reason = response.sse_stop_reason  # SSE 停止原因
-    request_body = response.request_body  # 实际发送的请求体
-    request_headers = response.request_headers  # 实际发送的请求头
-
-    # 提取响应数据到缓存示例
-    if isinstance(json_body, dict):
-        data = json_body.get('data') or {}
-        if isinstance(data, dict) and data.get('id'):
-            test_data.set_cache('response_id', data.get('id'))
-
-    # 修改响应示例：追加自定义错误信息
-    if code >= 400 and not response.error_msg:
-        response.error_msg = text
-
-    return response`
-
-  const pageData: any = usePageData()
-  const props = withDefaults(
-    defineProps<{
-      apiInfoId?: string | number
-      embedded?: boolean
-    }>(),
-    {
-      apiInfoId: '',
-      embedded: false,
-    }
-  )
-  const emit = defineEmits<{
-    (event: 'close'): void
-  }>()
-  const route = useRoute()
-  const apiInfoId = computed(() => props.apiInfoId || route.query.id || pageData.record?.id || '')
-  const defaultApiInfoRecord = () => ({
-    id: apiInfoId.value,
-    name: '',
-    method: null,
-    url: '',
-    headers: null,
-    params: null,
-    protocol_type: 'http',
-    body_type: 'none',
-    body_config: null,
-    sse_config: null,
-    posterior_json_path: [],
-    posterior_re: [],
-    posterior_func: '',
-    result_data: null,
+  const props = withDefaults(defineProps<{ apiInfoId?: string | number; embedded?: boolean }>(), {
+    apiInfoId: '',
+    embedded: false,
   })
-  if (!pageData.record) {
-    pageData.setRecord(defaultApiInfoRecord())
-  }
-  function normalizeApiInfoRecord(record: any) {
-    return {
-      ...defaultApiInfoRecord(),
-      ...(record || {}),
-      posterior_json_path: Array.isArray(record?.posterior_json_path || record?.posterior_response)
-        ? record.posterior_json_path || record.posterior_response
-        : [],
-      posterior_re: Array.isArray(record?.posterior_re || record?.posterior_response_text)
-        ? record.posterior_re || record.posterior_response_text
-        : [],
-    }
-  }
-  const initialApiInfoRecord = normalizeApiInfoRecord(pageData.record)
-  const data: any = reactive({
-    id: 0,
-    pageType: '0',
-    addButton: false,
-    api_info: initialApiInfoRecord,
-    headers: formatJson(initialApiInfoRecord.headers),
-    defaultHeadersText: '',
-    isDefaultHeadersPreview: false,
-    textareaAutoSize: { minRows: 16, maxRows: 22 },
-  })
-  const currentApiInfoPayload = ref<any>(normalizeApiInfoRecord(initialApiInfoRecord))
-  const currentNavItem = computed(
+  const emit = defineEmits<{ (event: 'close'): void }>()
+  const route = useRoute(),
+    userStore = useUserStore(),
+    enumStore = useEnum()
+  const apiInfoId = computed(
     () =>
-      configNavItems.find((item) => item.key === data.pageType) || {
-        key: data.pageType,
-        title: '接口配置',
-        description: '维护接口配置',
-      }
+      props.apiInfoId || (Array.isArray(route.query.id) ? route.query.id[0] : route.query.id) || ''
   )
-  const apiDetailTitle = computed(() => {
-    const id = data.api_info?.id || apiInfoId.value || '-'
-    const name = data.api_info?.name || pageData.record?.name || '-'
-    return `服务调用工作台 / ${id} / ${name}`
-  })
-  const projectProductId = computed(() => {
-    const projectProduct = data.api_info?.project_product
-    return projectProduct?.id || projectProduct || ''
-  })
-  const methodOptions = computed(() => {
-    const methods = Array.isArray(enumStore.method) ? enumStore.method : []
-    if (methods.length > 0) {
-      return methods.map((item: any) => ({
-        label: item.title,
-        value: item.key,
-      }))
-    }
-    return [
-      { label: 'GET', value: 0 },
-      { label: 'POST', value: 1 },
-      { label: 'PUT', value: 2 },
-      { label: 'DELETE', value: 3 },
-      { label: 'PATCH', value: 4 },
-    ]
-  })
-  const responseTimeText = computed(() => {
-    const time = data.api_info?.result_data?.time
-    if (time === undefined || time === null || time === '') return '-'
-    const value = Number(time)
-    return Number.isFinite(value) ? `${value.toFixed(2)} 秒` : `${time} 秒`
-  })
-  const responseStatusText = computed(() => {
-    if (data.api_info?.result_data?.error_msg) return '调用失败'
-    if (data.api_info?.result_data?.code) return '调用完成'
-    return '未执行'
-  })
-  const responseStatusColor = computed(() => {
-    if (data.api_info?.result_data?.error_msg) return 'red'
-    if (data.api_info?.result_data?.code) return 'green'
-    return 'gray'
-  })
-  const responseBodyData = computed(() => {
-    const result = data.api_info?.result_data
-    if (!result) return undefined
-    if (Object.prototype.hasOwnProperty.call(result, 'json')) {
-      return result.json
-    }
-    return result.text
-  })
-  const executionVersionTitle = computed(() => {
-    if (selectedApiVersion.value?.kind === 'revision') {
-      return `当前执行：${selectedApiVersion.value.label}（Revision #${selectedApiVersion.value.id}）`
-    }
-    return '当前执行：编辑态配置'
-  })
-  const executionVersionDescription = computed(() => {
-    if (selectedApiVersion.value?.kind === 'revision') {
-      return '本次执行使用该只读快照，不会读取编辑态的最新修改。'
-    }
-    return '保存只更新编辑态；生成修订并发布后，才会形成新的正式版本。'
-  })
-
-  function handleApiVersionSelect(selection: {
-    kind: 'current' | 'revision'
-    id: number
-    label: string
-    payload: any
-  }) {
-    selectedApiVersion.value = {
-      kind: selection.kind,
-      id: selection.id,
-      label: selection.label,
-    }
-    apiVersionReadOnly.value = selection.kind !== 'current'
-    const record = normalizeApiInfoRecord({
-      ...selection.payload,
-      id: apiInfoId.value,
-      result_data: data.api_info?.result_data || null,
-    })
-    data.api_info = record
-    data.headers = formatJson(record.headers)
-    data.isDefaultHeadersPreview = false
-    syncRequestMetaSnapshot()
-    switchPageType()
+  const pageActive = ref(true),
+    recordReady = ref(false),
+    configurationLoading = ref(false),
+    loadFailed = ref(false)
+  const selectedApiVersion = ref<Omit<ApiVersionSelection, 'payload'> | null>(null)
+  const apiVersionReadOnly = computed(() => selectedApiVersion.value?.kind === 'revision')
+  const editingLocked = computed(
+    () => apiVersionReadOnly.value || !recordReady.value || configurationLoading.value
+  )
+  const {
+    draft: apiRecord,
+    saved: currentApiInfoPayload,
+    pendingFields,
+    reset,
+    view,
+    persist: persistApiInfo,
+    invalidate: invalidateDraft,
+    waitForSaves,
+  } = useApiInfoDraft(
+    () => apiInfoId.value,
+    () => pageActive.value && !editingLocked.value
+  )
+  const activeSection = ref('2'),
+    headersText = ref<string | null>(null),
+    defaultHeadersText = ref(''),
+    isDefaultHeadersPreview = ref(false),
+    defaultHeadersLoading = ref(false)
+  const executionResult = ref<ApiResponseData | null>(null),
+    resultLoading = ref(false),
+    caseRunning = ref(false)
+  const requestMetaSaving = ref(false),
+    requestBodySaving = ref(false)
+  const posteriorFuncSnapshot = ref('')
+  const viewGeneration = ref(0)
+  let contextVersion = 0,
+    loadRequest = 0,
+    previewRequest = 0,
+    resultRequest = 0
+  const runtimeParametersRef = ref<InstanceType<typeof ApiInfoRuntimeParametersModal> | null>(null)
+  const bodyEditorRef = ref<InstanceType<typeof ApiRequestBodyEditor> | null>(null)
+  const versionPanelRef = ref<InstanceType<typeof ApiInfoVersionPanel> | null>(null)
+  const { copyingId, copyApiInfoCurl } = useApiInfoCurl(
+    () => `${pageActive.value}:${apiInfoId.value}:${contextVersion}`
+  )
+  const currentNavItem = computed(
+    () => configNavItems.find((item) => item.key === activeSection.value) || configNavItems[2]
+  )
+  const canAddExtraction = computed(() => ['5', '6'].includes(activeSection.value))
+  const apiDetailTitle = computed(
+    () => `服务调用工作台 / ${apiInfoId.value || '-'} / ${apiRecord.value.name || '-'}`
+  )
+  const projectProductId = computed(() => getOptionId(apiRecord.value.project_product) || '')
+  const methodOptions = computed(() =>
+    enumStore.method?.length
+      ? enumStore.method.map((item) => ({ label: item.title, value: item.key }))
+      : fallbackMethodOptions
+  )
+  const executionVersionTitle = computed(() =>
+    selectedApiVersion.value?.kind === 'revision'
+      ? `当前执行：${selectedApiVersion.value.label}（Revision #${selectedApiVersion.value.id}）`
+      : '当前执行：编辑态配置'
+  )
+  const executionVersionDescription = computed(() =>
+    apiVersionReadOnly.value
+      ? '本次执行使用该只读快照，不会读取编辑态的最新修改。'
+      : '保存只更新编辑态；生成修订并发布后，才会形成新的正式版本。'
+  )
+  function isCurrent(token: number) {
+    return pageActive.value && token === contextVersion
   }
-
-  let persistApiInfoQueue: Promise<unknown> = Promise.resolve()
-
+  function formatJson(value: unknown) {
+    return value == null ? null : stringifyLosslessJson(value, 2)
+  }
   function showEditingSavedMessage() {
     Message.success('已保存到编辑态，发布版本未变更')
   }
-
-  function persistApiInfo(payload: Record<string, unknown>) {
-    if (apiVersionReadOnly.value) {
-      Message.warning('当前正在查看只读快照，请先在版本栏迁出到编辑态后再修改')
-      return Promise.resolve(null)
-    }
-    const request = persistApiInfoQueue
-      .catch(() => undefined)
-      .then(async () => {
-        const response = await putApiInfo({ id: apiInfoId.value, ...payload })
-        if (response?.data) {
-          const record = normalizeApiInfoRecord({
-            ...response.data,
-            result_data: data.api_info?.result_data || null,
-          })
-          currentApiInfoPayload.value = record
-          data.api_info = record
-          if (Object.prototype.hasOwnProperty.call(payload, 'headers')) {
-            data.headers = formatJson(record.headers)
-            data.isDefaultHeadersPreview = false
-          }
-        }
-        return response
-      })
-    persistApiInfoQueue = request.then(
-      () => undefined,
-      () => undefined
-    )
-    return request
+  function switchPageType() {
+    activeSection.value = apiRecord.value.params?.trim() ? '1' : '2'
   }
-
-  const hasValue = (value: unknown) => {
-    if (value === null || value === undefined || value === '') return false
-    if (Array.isArray(value)) return value.length > 0
-    if (typeof value === 'object') return Object.keys(value as Record<string, unknown>).length > 0
-    return true
-  }
-
-  function switchType(key: any) {
-    const navItem = configNavItems.find((item) => item.key === key)
-    if (navItem?.disabled) return
-    data.pageType = key
-    if (key === '7' && !data.api_info.posterior_func) {
-      data.api_info.posterior_func = POSTERIOR_FUNC_TEMPLATE
+  function switchType(key: string) {
+    activeSection.value = key
+    if (key === '7' && !apiRecord.value.posterior_func) {
+      apiRecord.value.posterior_func = POSTERIOR_FUNC_TEMPLATE
       recordPosteriorFuncSnapshot()
     }
-    if (data.pageType === '5' || data.pageType === '6') {
-      data.addButton = true
-    } else {
-      data.addButton = false
-    }
   }
-
-  function normalizeCodeValue(value: string | null | undefined) {
-    return value || ''
-  }
-
   function recordPosteriorFuncSnapshot() {
-    posteriorFuncSnapshot.value = normalizeCodeValue(data.api_info.posterior_func)
+    posteriorFuncSnapshot.value = apiRecord.value.posterior_func || ''
   }
-
-  function savePosteriorFuncIfChanged() {
-    const currentValue = normalizeCodeValue(data.api_info.posterior_func)
-    if (currentValue === posteriorFuncSnapshot.value) {
-      return
-    }
-    posteriorFuncSnapshot.value = currentValue
-    upDate('posterior_func', data.api_info.posterior_func)
+  async function savePosteriorFuncIfChanged() {
+    const value = apiRecord.value.posterior_func || ''
+    if (value === posteriorFuncSnapshot.value) return
+    if (await upDate('posterior_func', value)) posteriorFuncSnapshot.value = value
   }
-
   function addData() {
-    if (apiVersionReadOnly.value) {
-      Message.warning('当前正在查看只读快照，请先在版本栏迁出到编辑态后再修改')
-      return
+    if (editingLocked.value) return
+    if (activeSection.value === '5')
+      apiRecord.value.posterior_json_path.push({ key: '', value: '' })
+    if (activeSection.value === '6') apiRecord.value.posterior_re.push({ key: '', value: '' })
+  }
+  async function removeExtraction(index: number, key: 'posterior_json_path' | 'posterior_re') {
+    if (editingLocked.value || pendingFields.has(key)) return
+    const rows = cloneLosslessJson(apiRecord.value[key])
+    rows.splice(index, 1)
+    await upDate(key, rows)
+  }
+  async function upDate(
+    key: 'headers' | 'params' | 'posterior_func' | 'posterior_json_path' | 'posterior_re',
+    input: string | null | ExtractionRow[]
+  ) {
+    if (editingLocked.value || pendingFields.has(key)) return false
+    let value: unknown = input === '' ? null : input
+    if (key === 'headers') {
+      try {
+        value = input ? JSON.parse(String(input)) : null
+        if (value !== null && typeof value !== 'object') throw Error()
+      } catch {
+        Message.error('请输入json格式的：headers')
+        return false
+      }
     }
-    if (data.pageType === '5') {
-      data.api_info.posterior_json_path.push({ key: '', value: '' })
-    } else if (data.pageType === '6') {
-      data.api_info.posterior_re.push({ key: '', value: '' })
-    }
-  }
-
-  function hasConfigValue(value: any) {
-    if (value === undefined || value === null) return false
-    if (typeof value === 'string') {
-      const text = value.trim()
-      return text !== '' && text !== '{}' && text !== '[]'
-    }
-    if (Array.isArray(value)) return value.length > 0
-    if (typeof value === 'object') return Object.keys(value).length > 0
-    return Boolean(value)
-  }
-
-  function switchPageType() {
-    const record = data.api_info || pageData.record || {}
-    if (hasConfigValue(record.params)) {
-      data.pageType = '1'
-    } else if (hasConfigValue(record.body_config) || record.body_type !== 'none') {
-      data.pageType = '2'
-    } else {
-      data.pageType = '2'
-    }
-  }
-
-  function doResetSearch() {
-    if (props.embedded) {
-      emit('close')
-      return
-    }
-    window.history.back()
-  }
-
-  function formatJson(items: any) {
-    if (items === null) {
-      return null
-    }
-    return JSON.stringify(items, null, 2)
-  }
-
-  function formatHeadersPreview(items: Record<string, any>) {
-    const keys = Object.keys(items || {})
-    if (keys.length === 0) return ''
-    return JSON.stringify(items, null, 2)
-  }
-
-  function loadDefaultHeadersPreview(record: any) {
-    const projectProduct = record?.project_product
-    const projectProductValue = projectProduct?.id || projectProduct
-    data.defaultHeadersText = ''
-    data.isDefaultHeadersPreview = false
-    if (!projectProductValue || (record?.headers !== null && record?.headers !== undefined)) {
-      data.headers = formatJson(record?.headers)
-      return Promise.resolve()
-    }
-    return getApiHeaders({
-      project_product: projectProductValue,
-      status: 1,
-      page: 1,
-      pageSize: 1000,
-    })
-      .then((res) => {
-        const rows = Array.isArray(res.data) ? res.data : []
-        const headers = rows.reduce((acc: Record<string, string>, item: any) => {
-          if (item?.key) {
-            acc[item.key] = item.value
-          }
-          return acc
-        }, {})
-        const preview = formatHeadersPreview(headers)
-        data.defaultHeadersText = preview
-        data.headers = null
-        data.isDefaultHeadersPreview = Boolean(preview)
-      })
-      .catch((error) => {
-        console.log(error)
-        data.headers = null
-      })
-  }
-
-  function removeFrontSql(item: any, index: number, key: string) {
-    item.splice(index, 1)
-    upDate(key, item)
-  }
-
-  function syncRequestMetaSnapshot() {
-    requestMetaSnapshot.value = {
-      method: data.api_info?.method,
-      url: data.api_info?.url || '',
+    try {
+      const response = await persistApiInfo({ [key]: value } as ApiInfoPatch)
+      if (!response) return false
+      if (key === 'headers' && headersText.value === input) {
+        headersText.value = formatJson(apiRecord.value.headers)
+        isDefaultHeadersPreview.value = false
+      }
+      showEditingSavedMessage()
+      return true
+    } catch {
+      return false
     }
   }
-
-  function requestMetaChanged() {
-    return (
-      data.api_info?.method !== requestMetaSnapshot.value.method ||
-      (data.api_info?.url || '') !== requestMetaSnapshot.value.url
-    )
+  function saveHeaders() {
+    if (isDefaultHeadersPreview.value && !headersText.value) return
+    previewRequest++
+    defaultHeadersLoading.value = false
+    return upDate('headers', headersText.value)
   }
-
   function validateRequestPath(url: string) {
-    const value = (url || '').trim()
+    const value = url.trim()
     if (!value) {
       Message.error('请输入接口路径')
       return false
@@ -853,180 +486,221 @@
     }
     return true
   }
-
   async function saveRequestMeta() {
-    if (requestMetaSaving.value) return
-    if (!requestMetaChanged()) return
-    if (
-      data.api_info.method === undefined ||
-      data.api_info.method === null ||
-      data.api_info.method === ''
-    ) {
+    if (editingLocked.value || requestMetaSaving.value) return
+    const record = apiRecord.value,
+      saved = currentApiInfoPayload.value
+    if (record.method === saved.method && record.url === saved.url) return
+    if (record.method == null) {
       Message.error('请选择请求方法')
       return
     }
-    if (!validateRequestPath(data.api_info.url)) return
+    if (!validateRequestPath(record.url)) return
+    const payload = { method: record.method, url: record.url.trim() }
     requestMetaSaving.value = true
-    await nextTick()
     try {
-      const res = await persistApiInfo({
-        method: data.api_info.method,
-        url: data.api_info.url.trim(),
-      })
-      if (!res) return
-      showEditingSavedMessage()
-      syncRequestMetaSnapshot()
-    } catch (e) {
-      console.log(e)
+      if (await persistApiInfo(payload)) showEditingSavedMessage()
+    } catch {
+      /* 保留未保存的路径和方法，允许重试。 */
     } finally {
       requestMetaSaving.value = false
     }
   }
-
-  function upDate(key: string, value1: string) {
-    let value = ''
-    if (key === 'headers') {
-      try {
-        if (value1) {
-          const parsedValue = JSON.parse(value1)
-          if (typeof parsedValue === 'object') {
-            value = parsedValue
-          } else {
-            Message.error(`请输入json格式的：${key}`)
-            return
-          }
-        } else {
-          value = null
-        }
-      } catch (e) {
-        Message.error(`请输入json格式的：${key}`)
-        return
-      }
-    } else {
-      if (value1 === '') {
-        value = null
-      } else {
-        value = value1
-      }
-    }
-    if (!apiInfoId.value) return
-    persistApiInfo({ [key]: value })
-      .then((res) => {
-        if (!res) return
-        showEditingSavedMessage()
-      })
-      .catch(console.log)
-  }
-
-  function saveHeaders() {
-    if (
-      data.isDefaultHeadersPreview &&
-      (data.headers === null || data.headers === undefined || data.headers === '')
-    ) {
-      return
-    }
-    data.isDefaultHeadersPreview = false
-    upDate('headers', data.headers)
-  }
-
-  async function saveRequestBody(value: any) {
-    if (!apiInfoId.value || requestBodySaving.value) return
+  async function saveRequestBody(value: ApiInfoPatch) {
+    if (editingLocked.value || requestBodySaving.value) return
+    const token = contextVersion
     requestBodySaving.value = true
     try {
-      const res = await persistApiInfo(value)
-      if (!res) return
-      showEditingSavedMessage()
-    } catch (error) {
-      console.log(error)
+      if (await persistApiInfo(value)) showEditingSavedMessage()
+    } catch {
+      if (isCurrent(token)) bodyEditorRef.value?.resetSaveState()
     } finally {
       requestBodySaving.value = false
     }
   }
-
-  const onRunCase = async () => {
-    if (!apiInfoId.value) return
+  async function loadDefaultHeadersPreview(record: ApiInfoRecord) {
+    const request = ++previewRequest,
+      token = contextVersion,
+      originalText = headersText.value
+    defaultHeadersText.value = ''
+    isDefaultHeadersPreview.value = false
+    defaultHeadersLoading.value = false
+    const product = getOptionId(record.project_product)
+    if (!product || record.headers != null) return
+    defaultHeadersLoading.value = true
+    try {
+      const response = await getApiHeaders({
+        project_product: product,
+        status: 1,
+        page: 1,
+        pageSize: 1000,
+      })
+      if (request !== previewRequest || !isCurrent(token) || headersText.value !== originalText)
+        return
+      const headers: Record<string, string> = {}
+      for (const row of response.data || []) if (row.key) headers[row.key] = row.value
+      defaultHeadersText.value = Object.keys(headers).length
+        ? stringifyLosslessJson(headers, 2)
+        : ''
+      isDefaultHeadersPreview.value = Boolean(defaultHeadersText.value)
+    } catch {
+      /* 预览失败不清空用户输入。 */
+    } finally {
+      if (request === previewRequest) defaultHeadersLoading.value = false
+    }
+  }
+  function handleApiVersionSelect(selection: ApiVersionSelection) {
+    if (!recordReady.value) return
+    contextVersion++
+    viewGeneration.value++
+    resultRequest++
+    executionResult.value = null
+    runtimeParametersRef.value?.cancel()
+    selectedApiVersion.value = { kind: selection.kind, id: selection.id, label: selection.label }
+    view(normalizeApiInfoRecord(selection.payload, apiInfoId.value))
+    headersText.value = formatJson(apiRecord.value.headers)
+    recordPosteriorFuncSnapshot()
+    switchPageType()
+    void loadDefaultHeadersPreview(apiRecord.value)
+    void loadLatestExecutionResult()
+  }
+  async function loadLatestExecutionResult() {
+    if (!apiInfoId.value || !pageActive.value) return
+    const request = ++resultRequest,
+      token = contextVersion,
+      selection = selectedApiVersion.value
+    resultLoading.value = true
+    try {
+      const response = await getExecutionResultLatestResolved({
+        source_type: 'page',
+        target_type: 'api_info',
+        target_id: apiInfoId.value,
+        ...(selection?.kind === 'revision'
+          ? { revision_id: selection.id }
+          : { revision_id_isnull: 1 }),
+      })
+      if (request === resultRequest && isCurrent(token))
+        executionResult.value = response.data?.result_data || null
+    } catch {
+      /* 查询失败保留当前结果。 */
+    } finally {
+      if (request === resultRequest) resultLoading.value = false
+    }
+  }
+  async function onRunCase() {
+    if (!apiInfoId.value || !recordReady.value || caseRunning.value) return
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
-    if (caseRunning.value) return
+    const token = contextVersion,
+      targetId = apiInfoId.value,
+      testEnv = userStore.selected_environment
+    const versionParams =
+      selectedApiVersion.value?.kind === 'revision'
+        ? { revision_id: selectedApiVersion.value.id }
+        : {}
+    const request = ++resultRequest
     caseRunning.value = true
     try {
-      const versionParams =
-        selectedApiVersion.value?.kind === 'revision'
-          ? { revision_id: selectedApiVersion.value.id }
-          : {}
-      const targetId = apiInfoId.value
-      const testEnv = userStore.selected_environment
-      const parameters = await runtimeParametersRef.value?.prepare([{ id: targetId, ...versionParams }])
-      if (parameters == null) return
-      Message.loading('接口开始执行中~')
-      const res = await getApiCaseInfoRun(
-        targetId,
-        testEnv,
-        versionParams,
-        parameters
-      )
-      data.caseResult = res.data
-      if (res.data?.id) {
-        const detailRes = await getExecutionResultDetailResolved(res.data.id)
-        data.api_info.result_data = detailRes.data?.result_data || null
+      try { await waitForSaves() }
+      catch { if (isCurrent(token)) Message.warning('配置尚未保存成功，请先重试保存后再执行'); return }
+      if (!isCurrent(token)) return
+      const parameters = await runtimeParametersRef.value?.prepare([
+        { id: targetId, ...versionParams },
+      ])
+      if (parameters == null || !isCurrent(token)) return
+      const response = await getApiCaseInfoRun(targetId, testEnv, versionParams, parameters)
+      if (!isCurrent(token) || request !== resultRequest) return
+      if (response.data?.id) {
+        const detail = await getExecutionResultDetailResolved(response.data.id)
+        if (!isCurrent(token) || request !== resultRequest) return
+        executionResult.value = detail.data?.result_data || null
       }
-      if (res.data?.error_message) {
-        Message.error(res.data.error_message)
-      } else {
-        Message.success(res.msg)
-      }
-    } catch (e) {
-      doRefresh()
+      if (response.data?.error_message) Message.error(response.data.error_message)
+      else Message.success(response.msg)
+    } catch {
+      /* 公共请求层提示错误，不重新加载或覆盖未保存配置。 */
     } finally {
       caseRunning.value = false
     }
   }
-
-  async function loadLatestExecutionResult() {
-    if (!apiInfoId.value) return
-    resultLoading.value = true
+  async function initialize() {
+    contextVersion++
+    loadRequest++
+    previewRequest++
+    resultRequest++
+    viewGeneration.value++
+    runtimeParametersRef.value?.cancel()
+    versionPanelRef.value?.close()
+    selectedApiVersion.value = null
+    recordReady.value = false
+    loadFailed.value = false
+    headersText.value = null
+    defaultHeadersText.value = ''
+    isDefaultHeadersPreview.value = false
+    defaultHeadersLoading.value = false
+    executionResult.value = null
+    resultLoading.value = false
+    reset(normalizeApiInfoRecord(null, apiInfoId.value))
+    if (!pageActive.value || !apiInfoId.value) return
+    const request = loadRequest
+    configurationLoading.value = true
     try {
-      const res = await getExecutionResultLatestResolved({
-        source_type: 'page',
-        target_type: 'api_info',
-        target_id: apiInfoId.value,
-      })
-      data.api_info.result_data = res.data?.result_data || null
-    } catch (error) {
-      console.log(error)
-      data.api_info.result_data = null
+      const response = await getApiInfo({ id: apiInfoId.value })
+      if (request !== loadRequest || !pageActive.value) return
+      const source = response.data?.[0]
+      if (!source) {
+        loadFailed.value = true
+        return
+      }
+      reset(normalizeApiInfoRecord(source, apiInfoId.value))
+      recordReady.value = true
+      headersText.value = formatJson(apiRecord.value.headers)
+      recordPosteriorFuncSnapshot()
+      switchPageType()
+      void loadDefaultHeadersPreview(apiRecord.value)
+      void loadLatestExecutionResult()
+    } catch (loadFailure0) {
+      if (request === loadRequest) (reportLoadError(loadFailure0, "加载失败，请重试", false), loadFailed.value = true)
     } finally {
-      resultLoading.value = false
+      if (request === loadRequest) configurationLoading.value = false
     }
   }
-
-  function doRefresh() {
-    if (!apiInfoId.value) return Promise.resolve()
-    return getApiInfo({ id: apiInfoId.value })
-      .then((res) => {
-        const res_data = normalizeApiInfoRecord(res.data[0])
-        if (!props.embedded) {
-          pageData.setRecord(res_data)
-        }
-        currentApiInfoPayload.value = normalizeApiInfoRecord(res_data)
-        data.api_info = res_data
-        loadDefaultHeadersPreview(res_data)
-        syncRequestMetaSnapshot()
-        return loadLatestExecutionResult()
-      })
-      .catch(console.log)
+  function doResetSearch() {
+    if (props.embedded) emit('close')
+    else window.history.back()
   }
-
-  onMounted(() => {
-    nextTick(async () => {
-      await doRefresh()
-      switchPageType()
-      syncRequestMetaSnapshot()
-    })
+  function deactivate() {
+    pageActive.value = false
+    contextVersion++
+    loadRequest++
+    previewRequest++
+    resultRequest++
+    invalidateDraft()
+    configurationLoading.value = false
+    resultLoading.value = false
+    defaultHeadersLoading.value = false
+    runtimeParametersRef.value?.cancel()
+    versionPanelRef.value?.close()
+  }
+  watch(
+    apiInfoId,
+    () => {
+      void initialize()
+    },
+    { immediate: true }
+  )
+  onDeactivated(deactivate)
+  onBeforeUnmount(deactivate)
+  onActivated(() => {
+    if (!pageActive.value) {
+      pageActive.value = true
+      void initialize()
+    }
   })
 </script>
+
 <style scoped>
   .api-detail-workbench {
     display: grid;
@@ -1052,8 +726,7 @@
   }
 
   .api-detail-nav,
-  .api-detail-panel,
-  .api-response-panel {
+  .api-detail-panel {
     min-height: 0;
     border: 1px solid var(--m-border);
     border-radius: var(--m-radius-md);
@@ -1238,106 +911,6 @@
     padding: 12px;
   }
 
-  .api-response-panel {
-    display: flex;
-    overflow: hidden;
-    flex-direction: column;
-  }
-
-  .api-response-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    min-height: 58px;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--m-border);
-  }
-
-  .api-response-title {
-    color: var(--m-text);
-    font-size: 15px;
-    font-weight: 600;
-    line-height: 22px;
-  }
-
-  .api-response-subtitle {
-    margin-top: 2px;
-    color: var(--m-muted);
-    font-size: 12px;
-    line-height: 18px;
-  }
-
-  .api-response-summary {
-    display: grid;
-    flex-shrink: 0;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-    padding: 12px;
-    border-bottom: 1px solid var(--m-border);
-    background: var(--m-surface);
-  }
-
-  .api-response-summary > div {
-    min-width: 0;
-    padding: 9px 10px;
-    border: 1px solid var(--m-border);
-    border-radius: var(--m-radius-sm);
-    background: var(--m-surface-soft);
-  }
-
-  .api-response-summary span {
-    display: block;
-    color: var(--m-muted);
-    font-size: 12px;
-    line-height: 18px;
-  }
-
-  .api-response-summary strong {
-    display: block;
-    overflow: hidden;
-    margin-top: 3px;
-    color: var(--m-text);
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 20px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .api-response-error {
-    flex-shrink: 0;
-    margin: 12px 12px 0;
-    padding: 8px 10px;
-    border: 1px solid color-mix(in srgb, var(--m-danger) 28%, var(--m-border));
-    border-radius: var(--m-radius-sm);
-    background: color-mix(in srgb, var(--m-danger) 8%, var(--m-surface));
-    color: var(--m-danger);
-    font-size: 12px;
-    line-height: 18px;
-    word-break: break-word;
-  }
-
-  .api-response-tabs {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    padding: 0 12px 12px;
-  }
-
-  .api-response-tabs :deep(.arco-tabs-content) {
-    height: calc(100% - 42px);
-    min-height: 0;
-    padding-top: 8px;
-  }
-
-  .api-response-tabs :deep(.arco-tabs-content-list),
-  .api-response-tabs :deep(.arco-tabs-content-item),
-  .api-response-tabs :deep(.arco-tabs-pane) {
-    height: 100%;
-    min-height: 0;
-  }
-
   .config-pane {
     min-width: 0;
   }
@@ -1378,110 +951,30 @@
     width: min(500px, 100%);
   }
 
-  .response-section {
-    height: 100%;
-    overflow: auto;
-    padding: 0;
-    background-color: var(--m-surface);
-  }
-
-  .response-item {
-    display: block;
-    margin-bottom: 12px;
-    padding: 10px 12px;
-    background-color: var(--m-surface-soft);
-    border-radius: var(--m-radius-md);
-    border: 1px solid var(--m-border);
-    transition: all 0.2s ease;
-  }
-
-  .response-item:hover {
-    background-color: var(--m-surface);
-    border-color: var(--m-border-strong);
-    box-shadow: var(--m-shadow);
-  }
-
-  .response-item:last-child {
-    margin-bottom: 0;
-  }
-
-  .response-label {
-    display: block;
-    font-weight: 500;
-    color: var(--m-text);
-    margin-bottom: 8px;
-    font-size: 13px;
-    line-height: 20px;
-  }
-
-  .response-value {
-    display: block;
-    min-width: 0;
-    word-break: break-word;
-    font-size: 13px;
-    color: var(--m-text-2);
-  }
-
   .error-item {
     background-color: color-mix(in srgb, var(--m-warning) 12%, var(--m-surface));
     border-color: color-mix(in srgb, var(--m-warning) 34%, transparent);
   }
 
-  .error-item .response-label {
-    color: var(--m-warning);
-  }
-
   .error-item:hover {
     background-color: color-mix(in srgb, var(--m-warning) 16%, var(--m-surface));
   }
-
-  @media (max-width: 1px) {
-    .api-detail-workbench {
-      grid-template-columns: 190px minmax(340px, 0.9fr) minmax(430px, 1.1fr);
-    }
+  .mango-api-configuration-loading {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
   }
-
-  @media (max-width: 1px) {
-    .api-detail-workbench {
-      grid-template-columns: 200px minmax(0, 1fr);
-      height: auto;
-    }
-
-    .api-response-panel {
-      grid-column: 1 / -1;
-      min-height: 520px;
-    }
+  .mango-api-version-loading {
+    min-width: 0;
+    min-height: 0;
   }
-
-  @media (max-width: 1px) {
-    .api-detail-workbench {
-      grid-template-columns: 1fr;
-      height: auto;
-    }
-
-    .api-detail-nav {
-      max-height: none;
-    }
-
-    .api-detail-panel {
-      min-height: 520px;
-    }
-
-    .api-request-bar {
-      grid-template-columns: 104px minmax(0, 1fr);
-    }
-
-    .api-request-save {
-      grid-column: 1 / -1;
-      width: 100%;
-    }
-
-    .api-response-panel {
-      grid-column: auto;
-    }
-
-    .api-response-summary {
-      grid-template-columns: 1fr;
-    }
+  .mango-api-configuration-loading :deep(> .mango-panel-spin__content) {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+  }
+  .mango-api-configuration-loading .api-detail-panel {
+    flex: 1;
   }
 </style>

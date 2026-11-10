@@ -57,6 +57,28 @@ class CleanupScheduleTests(SimpleTestCase):
         self.assertTrue(self.mocks[1].call_args.args[1]['sql_done'])
         self.assertEqual(self.execution.cleanup_status, 0)
 
+    def test_parent_reconciles_exact_request_after_persisted_cleanup_success(self):
+        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
+        from src.apps.data_factory.schemas.cleanup_resource import (
+            CleanupResourceState, EsUncertainRequest, EsCleanupCheckResult, EsCleanupSnapshot, EsCleanupRule,
+        )
+        self.execution.cleanup_status = 1
+        self.mocks[-1].filter.return_value.exclude.return_value.exists.return_value = False
+        self.mocks[-1].filter.return_value.__iter__.return_value = iter([self.item])
+        self.item.cleanup_resources = CleanupResourceState(sql_cleaned=True,
+            snapshots=[EsCleanupSnapshot(rule=EsCleanupRule(datasource_alias_id=1, index_template='example'),
+                binding_id=2, connection_id=3, connection_version='AUTO_VERSION', environment=0,
+                index='example', document_id='1', tenant='7', baseline_absent=True)],
+            uncertain_requests=[EsUncertainRequest(request_id='AUTO_DELETE', index='example', document_id='1')],
+            results=[EsCleanupCheckResult(index='example', document_id='1', success=True,
+                                         checked_at=timezone.now().isoformat(), attempts=10)]).model_dump(mode='json')
+        with Infrastructure.scope():
+            error = TimeoutError()
+            error._datasource_audit_request_id = 'AUTO_DELETE'
+            Infrastructure.capture(error, result_unknown=True)
+            Schedule.verify_complete(7, require_full_cleanup=True)
+            self.assertFalse(Infrastructure.current())
+
     def test_scheduler_queue_gap_never_consumes_active_cleanup_budget(self):
         self.lease.progress = {'sql_done': True, 'started_at': timezone.now().timestamp() - 3600,
                                'active_seconds': 2.0}

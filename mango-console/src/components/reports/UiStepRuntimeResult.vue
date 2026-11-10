@@ -68,7 +68,7 @@
       <div v-if="elementRows.length" class="mango-ui-step-runtime__elements">
         <article
           v-for="(element, index) in elementRows"
-          :key="`${index}-${element.name || element.loc || element.id || 'element'}`"
+          :key="`${index}-${element.id ?? element.name}`"
           class="mango-ui-step-runtime__element-card"
         >
           <div class="mango-ui-step-runtime__element-head">
@@ -185,7 +185,7 @@
               <strong>{{ candidate.loc || '-' }}</strong>
             </a-tooltip>
             <em>匹配 {{ candidate.count ?? 0 }}</em>
-            <em v-if="candidate.final_score !== undefined"> 评分 {{ candidate.final_score }} </em>
+            <em v-if="candidate.final_score !== null"> 评分 {{ candidate.final_score }} </em>
             <small
               v-if="candidate.reject_reason || candidate.decision_reasons?.length"
               :title="candidate.reject_reason || candidate.decision_reasons.join('；')"
@@ -212,230 +212,80 @@
   import { useArtifactUrl } from '@/hooks/use-artifact-url'
   import { useEnum } from '@/store/modules/get-enum'
   import { useSelectValueStore } from '@/store/modules/get-ope-value'
+  import { normalizeUiRuntime, uiFallbackElements, type UiElementView, type UiLocatorCandidate, type UiRuntimeView } from './ui-report'
 
-  const props = withDefaults(
-    defineProps<{
-      result?: any
-      fallbackOpeKey?: any
-      fallbackElementName?: string
-      fallbackElement?: any
-      title?: string
-      emptyText?: string
-      imageWidth?: string | number
-      pictureTitle?: string
-      frameless?: boolean
-      showHeader?: boolean
-    }>(),
-    {
-      result: null,
-      fallbackOpeKey: '',
-      fallbackElementName: '',
-      fallbackElement: null,
-      title: '最近测试结果',
-      emptyText: '暂无最近测试结果',
-      imageWidth: '100%',
-      pictureTitle: '失败截图',
-      frameless: false,
-      showHeader: true,
-    }
-  )
-
+  const props = withDefaults(defineProps<{
+    result?: unknown
+    fallbackOpeKey?: unknown
+    fallbackElementName?: string
+    fallbackElement?: unknown
+    title?: string
+    emptyText?: string
+    imageWidth?: string | number
+    pictureTitle?: string
+    frameless?: boolean
+    showHeader?: boolean
+  }>(), {
+    result: null, fallbackOpeKey: '', fallbackElementName: '', fallbackElement: null,
+    title: '最近测试结果', emptyText: '暂无最近测试结果', imageWidth: '100%',
+    pictureTitle: '失败截图', frameless: false, showHeader: true,
+  })
   const enumStore = useEnum()
   const useSelectValue = useSelectValueStore()
-
-  const hasResult = computed(() =>
-    Boolean(
-      props.result?.id ||
-        props.result?.page_step_details_id ||
-        props.result?.ope_key ||
-        props.result?.status !== undefined
-    )
-  )
-  const resultElementRows = computed(() => getElementRows(props.result))
-  const elementRows = computed(() => {
-    if (resultElementRows.value.length) return resultElementRows.value
-    return getFallbackElementRows(props.fallbackElement)
+  const result = computed(() => normalizeUiRuntime(props.result))
+  const hasResult = computed(() => {
+    const row = result.value
+    return row !== null && (row.id !== null || row.page_step_details_id !== null || Boolean(row.ope_key) || row.status !== null)
   })
-  const statusText = computed(() => {
-    if (!hasResult.value) return '未测试'
-    if (props.result?.status === 1) return '通过'
-    if (props.result?.status === 0) return '失败'
-    if (props.result?.status === 3) return '执行中'
-    return '未测试'
-  })
-  const statusColor = computed(() => {
-    if (!hasResult.value) return 'gray'
-    if (props.result?.status === 1) return 'green'
-    if (props.result?.status === 0) return 'red'
-    if (props.result?.status === 3) return 'orange'
-    return 'gray'
-  })
+  const resultElementRows = computed(() => result.value?.elements ?? [])
+  const elementRows = computed(() => resultElementRows.value.length ? resultElementRows.value : uiFallbackElements(props.fallbackElement))
+  const statusText = computed(() => result.value?.status === 1 ? '通过' : result.value?.status === 0 ? '失败' : result.value?.status === 3 ? '执行中' : '未测试')
+  const statusColor = computed(() => result.value?.status === 1 ? 'green' : result.value?.status === 0 ? 'red' : result.value?.status === 3 ? 'orange' : 'gray')
   const operationLabel = computed(() => {
-    const value = props.result?.ope_key || props.fallbackOpeKey
+    const value = result.value?.ope_key || (typeof props.fallbackOpeKey === 'string' ? props.fallbackOpeKey : '')
     if (!value) return '-'
-    return (
-      useSelectValue.getSelectLabel(value) || useSelectValue.findItemByValue(value)?.label || value
-    )
+    const label: unknown = useSelectValue.getSelectLabel(value)
+    return typeof label === 'string' && label ? label : useSelectValue.findItemByValue(value)?.label || value
   })
-  const picturePath = computed(() => props.result?.picture_path || '')
+  const picturePath = computed(() => result.value?.picture_path || '')
   const pictureSrc = useArtifactUrl(picturePath)
   const locatorEngineSummary = computed(() => {
-    const engine = props.result?.locator_engine
-    if (!engine || typeof engine !== 'object') return ''
-    const source = engine.used_source || '-'
-    const count = engine.candidate_count ?? 0
-    const temporary = engine.temporary_heal_used ? '已临时自愈' : '未临时自愈'
-    return `${source} / 候选 ${count} / ${temporary}`
+    const engine = result.value?.locator_engine
+    if (!engine) return ''
+    return `${engine.used_source || '-'} / 候选 ${engine.candidate_count ?? 0} / ${engine.temporary_heal_used ? '已临时自愈' : '未临时自愈'}`
   })
-  const locatorCandidateRows = computed(() => {
-    const rows = props.result?.locator_engine?.candidates
-    return Array.isArray(rows) ? rows : []
-  })
+  const locatorCandidateRows = computed(() => result.value?.locator_engine?.candidates ?? [])
   const matchCountSummary = computed(() => {
-    const counts = resultElementRows.value
-      .map((item: any) => Number(item?.ele_quantity))
-      .filter((value: number) => Number.isFinite(value))
-    if (!counts.length) return '-'
-    return String(counts.reduce((total: number, value: number) => total + value, 0))
+    const counts = resultElementRows.value.map(item => item.ele_quantity).filter((value): value is number => value !== null)
+    return counts.length ? String(counts.reduce((total, value) => total + value, 0)) : '-'
   })
-
-  function getCandidateStatus(candidate: any) {
-    if (!candidate?.verified) return { text: '验证失败', color: 'red' }
-    if (
-      candidate.adopted ||
-      candidate.decision_status === 'temporary_heal' ||
-      candidate.decision_status === 'auto_apply'
-    ) {
-      return { text: '已采用', color: 'green' }
-    }
+  function getCandidateStatus(candidate: UiLocatorCandidate) {
+    if (!candidate.verified) return { text: '验证失败', color: 'red' }
+    if (candidate.adopted || candidate.decision_status === 'temporary_heal' || candidate.decision_status === 'auto_apply') return { text: '已采用', color: 'green' }
     return { text: '已验证未采用', color: 'orange' }
   }
-
-  function formatSleep(value: any) {
-    if (value === null || value === undefined || value === '') return '-'
-    return `${value} 秒`
+  function formatSleep(value: UiRuntimeView['sleep'] | undefined) {
+    return value === null || value === undefined || value === '' ? '-' : `${value} 秒`
   }
-
-  function formatDuration(value: any) {
-    if (value === null || value === undefined || value === '') return '-'
-    const numberValue = Number(value)
-    if (!Number.isFinite(numberValue)) return String(value)
-    if (numberValue >= 1000) return `${(numberValue / 1000).toFixed(2)} 秒`
-    return `${numberValue} ms`
+  function formatDuration(value: number | null | undefined) {
+    if (value == null) return '-'
+    return value >= 1000 ? `${(value / 1000).toFixed(2)} 秒` : `${value} ms`
   }
-
-  function formatViewport(value: any) {
-    if (!value || typeof value !== 'object') return '-'
-    const width = value.width ?? value.w
-    const height = value.height ?? value.h
-    if (!width || !height) return JSON.stringify(value)
-    return `${width} × ${height}`
+  function formatViewport(value: UiRuntimeView['viewport']) {
+    return value ? `${value.width ?? '-'} × ${value.height ?? '-'}` : '-'
   }
-
-  function formatBoundingBox(value: any) {
-    if (!value || typeof value !== 'object') return '-'
-    const x = value.x ?? '-'
-    const y = value.y ?? '-'
-    const width = value.width ?? '-'
-    const height = value.height ?? '-'
-    return `x:${x} y:${y} w:${width} h:${height}`
+  function formatBoundingBox(value: UiElementView['bounding_box']) {
+    return value ? `x:${value.x ?? '-'} y:${value.y ?? '-'} w:${value.width ?? '-'} h:${value.height ?? '-'}` : '-'
   }
-
-  function getElementExpText(value: any) {
-    return enumStore.element_exp?.find((item: any) => item.key === value)?.title || value || '-'
+  function getElementLocatorRows(element: UiElementView) {
+    return element.locators.map(locator => ({
+      ...locator, expText: enumStore.element_exp?.find(item => item.key === locator.exp)?.title ?? locator.exp ?? '-',
+    }))
   }
-
-  function normalizeLocatorValue(value: any) {
-    if (value === null || value === undefined || value === '') return '-'
-    if (typeof value === 'object') return JSON.stringify(value)
-    return String(value)
+  function getElementTitle(element: UiElementView, index: number) {
+    return element.name || props.fallbackElementName || `元素 ${index + 1}`
   }
-
-  function getElementLocatorRows(element: any) {
-    const locValue = element?.loc
-    if (Array.isArray(locValue)) {
-      return locValue
-        .map((locator: any, index: number) => {
-          if (locator && typeof locator === 'object') {
-            return {
-              expText: getElementExpText(locator.exp ?? locator.type ?? element?.exp),
-              loc: normalizeLocatorValue(locator.loc ?? locator.value ?? locator.expression),
-              sub: locator.sub ?? element?.sub,
-            }
-          }
-          return {
-            expText: getElementExpText(
-              Array.isArray(element?.exp) ? element.exp[index] : element?.exp
-            ),
-            loc: normalizeLocatorValue(locator),
-            sub: element?.sub,
-          }
-        })
-        .filter((locator: any) => locator.loc !== '-')
-    }
-    return [1, 2, 3]
-      .map((index) => {
-        const suffix = index === 1 ? '' : String(index)
-        return {
-          expText: getElementExpText(element?.[`exp${suffix}`]),
-          loc: normalizeLocatorValue(element?.[`loc${suffix}`]),
-          sub: element?.[`sub${suffix}`],
-        }
-      })
-      .filter((locator: any) => locator.loc !== '-')
-  }
-
-  function getElementRows(result: any) {
-    if (Array.isArray(result?.elements) && result.elements.length) return result.elements
-    if (Array.isArray(result?.element_result) && result.element_result.length) {
-      return result.element_result
-    }
-    if (Array.isArray(result?.element_list) && result.element_list.length) {
-      return result.element_list
-    }
-    if (Array.isArray(result?.element) && result.element.length) {
-      return result.element
-    }
-    if (result?.ele_name) return [result.ele_name]
-    if (result?.loc) {
-      return [
-        {
-          name: result.name,
-          exp: result.exp,
-          loc: result.loc,
-          sub: result.sub,
-          ele_quantity: result.ele_quantity,
-          element_text: result.element_text,
-        },
-      ]
-    }
-    return []
-  }
-
-  function getFallbackElementRows(element: any) {
-    if (!element || typeof element !== 'object') return []
-    const hasLocator = [element.loc, element.loc2, element.loc3].some(
-      (value) => value !== null && value !== undefined && value !== ''
-    )
-    if (!hasLocator) return []
-    return [
-      {
-        ...element,
-        __configuredFallback: true,
-      },
-    ]
-  }
-
-  function getElementTitle(element: any, index: number) {
-    return element?.name || props.fallbackElementName || `元素 ${index + 1}`
-  }
-
-  function getTextSnippets(element: any) {
-    if (Array.isArray(element?.text_snippets) && element.text_snippets.length) {
-      return element.text_snippets.filter(Boolean)
-    }
-    return []
-  }
+  function getTextSnippets(element: UiElementView) { return element.text_snippets }
 </script>
 
 <style scoped>

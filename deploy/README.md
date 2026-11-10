@@ -34,9 +34,15 @@ sh deploy.sh --build
 
 ## 前端构建内存
 
-`NODE_HEAP_MB=auto` 默认使用 6144MB Node 堆；需要时只在 `.env.example` 改为整数 MB。构建前检查主机可用内存与 Swap、Docker 总内存及可读取的 cgroup 限制，并为堆外内存预留至少 1536MB。检查不通过时提前退出，不停止现有服务。
+前端默认下载源统一为项目 `.npmrc` 中的华为镜像，Docker 和部署模板使用同一默认值；显式 `NPM_REGISTRY` 可覆盖。锁文件使用 npm 标准的 `registry.npmjs.org` 地址，由 npm 映射到配置的镜像源，避免锁死到其他镜像；不改变包版本和 integrity。CI 保留按依赖清单区分的 `node_modules` 缓存，并增加独立、跨清单复用的 `.npm/_cacache` 下载缓存，`npm ci --prefer-offline` 优先使用已下载且校验通过的内容。安装失败也保存下载缓存；首次冷缓存仍需下载，Runner 必须实际支持缓存存储。
 
-6GB 是已验证的构建上限配置，不保证所有源码与机器均能构建成功。资源有限时应在构建机器生成镜像；堆耗尽时保留日志并明确提示增大配置，不能靠无限重试解决。普通配置变更仍复用现有镜像。
+CI 和 Docker 通过 `scripts/ci-console-build.sh` 分别输出依赖准备、前端打包的耗时及退出码；失败立即停止，不继续下一阶段。项目 `.npm` 目录不进入 Git 或 Docker 构建上下文。
+
+`NODE_HEAP_MB=auto` 默认使用 4096MB Node 堆；需要时只在 `.env.example` 改为整数 MB。构建前检查主机可用内存与 Swap、Docker 总内存及可读取的 cgroup 限制，并为堆外内存预留至少 1536MB。检查不通过时提前退出，不停止现有服务。
+
+Univer、Mermaid、Excel、ECharts 和 CodeMirror 依赖先由 esbuild 独立打包，Vite/Rollup 再组装业务页面；同一套图表、编辑器的入口共享模块图，开发服务仍使用原来的依赖入口。默认堆上限维持 4096MB，低内存验收使用 `NODE_OPTIONS=--max-old-space-size=2048 npm run build:dev`，当前源码已在本地 Node 22 下通过。这只限制 Node 堆，不代表构建总进程占用不超过 2GB，也不是对所有 4GB 主机或 Linux 容器的保证。CI 构建容器保留 6GiB，Node 堆为 4096MB。
+
+4GB 运行服务器优先只部署 CI 生成的镜像或静态产物，Nginx 不运行 Node 构建进程。若在运行服务器上源码构建，后台服务和操作系统会占用内存，仍可能需要额外可用内存/Swap 才能通过资源检查；不会自动停止现有服务或调整 Swap。堆耗尽时保留日志排查，不能靠无限重试解决。普通配置变更仍复用现有镜像。
 
 ## Git 更新与兼容
 
@@ -77,7 +83,11 @@ startupProbe:
 
 流水线两个发布成功分支都会运行 `deploy/verify_runtime.py`，只读核对实际工作负载的镜像、更新代次/副本、scheduler 和探针；缺项、旧镜像或无读取权限均终止“成功”判定，不能只检查 API HTTP 健康。不会自动修改集群或外部配置仓库。只读核验使用 [Argo CD get-resource](https://argo-cd.readthedocs.io/en/stable/user-guide/commands/argocd_app_get-resource/) 的 JSON 输出。
 
-仍需由用户生成并提交新增任务索引的迁移；部署脚本只应用仓库已有迁移，不能替代这一步。未生成索引迁移不代表新增字段缺失，但会影响队列查询性能。RuntimeKV 既有表必须已就绪，否则健康检查拒绝通过。
+副本/代次尚未就绪时默认最多读取 4 次，间隔 5 秒，每次输出失败资源的 namespace、kind、name 以及目标、就绪、更新副本和 generation 数值；缺失状态明确标为“缺失”，不当作健康。镜像不一致、未获允许的零目标副本、缺少 scheduler/探针或读取权限错误直接失败。诊断不输出环境变量、凭据或完整 manifest。重试耗尽后，应提供这些诊断行及对应 Pod 的 Events，由此定位拉镜像、探针、调度或状态读取问题；不要通过移除校验强行判成功。
+
+dev/dev1 流水线明确传入 `--allow-disabled-scheduler`：scheduler 目标副本为 0、控制器已处理当前代次且实际副本归零时，按主动停用通过，不要求运行就绪探针。启用到 1 个或更多副本时仍必须检查就绪副本和 `check_scheduler` 探针；其他后端工作负载不能借此跳过检查。test/master/Tag 默认不传该参数，继续要求运行中的 scheduler。该参数只影响发布判定，不会启动服务、修改副本或改写外部部署配置。
+
+任务索引迁移已随源码提供；升级前请备份数据库并核对仓库已有迁移。部署脚本只应用已有迁移，不生成新迁移。RuntimeKV 既有表必须已就绪，否则健康检查拒绝通过。
 
 ## MySQL 三种模式如何选择
 

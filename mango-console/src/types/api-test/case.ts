@@ -80,6 +80,7 @@ export interface ApiCaseConfigurationDetails extends ApiCaseConfigurationSummary
 }
 
 export interface ApiCaseDetailedPayload {
+  pinned_api_info_revision?: number | string
   execution_config?: { is_recovery?: boolean }
   id?: number
   case?: number | string

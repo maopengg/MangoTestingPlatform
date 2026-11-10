@@ -32,6 +32,8 @@ from src.apps.system.services.runtime_kv import RuntimeKV
 from src.apps.system.services.system_config import SystemConfigService
 from src.apps.test_center.enums.data_source import DataSourceTypeEnum
 from src.apps.data_factory.enums.audit import DatasourceAuditStageEnum
+from src.apps.data_factory.enums.performance import DatasourceTimingPhaseEnum as TimingPhase
+from src.apps.data_factory.services.datasource_timing import DatasourceTimingService as Timing
 
 _operation_scope = ContextVar('datasource_operation_permit', default=None)
 _policy_scope = ContextVar('datasource_performance_policy', default=None)
@@ -168,7 +170,8 @@ class DatasourceGovernorService:
             store = cls.store()
             retries = 0
             while True:
-                with store.control_connection():
+                from src.apps.data_factory.services.datasource_wait import DatasourceWaitService
+                with DatasourceWaitService.control_io(), store.control_connection():
                     try:
                         # 配置共享锁与配额行锁属于同一个短事务，必须一起回滚、重新校验。
                         with cls.configuration_guard(store.using, expected_policy):
@@ -190,7 +193,8 @@ class DatasourceGovernorService:
                 from src.apps.data_factory.services.datasource_wait import DatasourceWaitService
                 # 已释放所有控制库锁后让出线程；不可递归调用同一配额行的续租。
                 # 仍检查报告/清理持有者，停止或接管会中断等待；不重放业务 SQL。
-                DatasourceWaitService.pause(random.uniform(0.08, 0.16), renew_operation=False)
+                with Timing.waiting(TimingPhase.CONTROL_LOCK):
+                    DatasourceWaitService.pause(random.uniform(0.08, 0.16), renew_operation=False)
         except DataFactoryError:
             raise
         except Exception as error:
@@ -341,9 +345,12 @@ class DatasourceGovernorService:
         blocked_by_suspect = False
         suspect_count = 0
         queued_at = time.time()
+        wait_started = time.monotonic()
+        next_log = wait_started + 30
+        wait_phase = TimingPhase.CONNECTION_SLOT if kind == DatasourcePermitKindEnum.CONNECTION else TimingPhase.OPERATION_SLOT
 
         def claim(state, now):
-            nonlocal permit_created, blocked_by_suspect, queued_at, suspect_count
+            nonlocal permit_created, blocked_by_suspect, queued_at, suspect_count, wait_phase
             permit_created = False
             elapsed = max(0, now - state.updated_at)
             normal_rate = budget.requests_per_second * (100 - budget.cleanup_rate_percent) / 100
@@ -370,6 +377,8 @@ class DatasourceGovernorService:
             rates_ok = (not uses_rate or (state.tokens >= cost
                         and (lane == DatasourceQueueLaneEnum.CLEANUP or state.normal_tokens >= cost)
                         and (lane != DatasourceQueueLaneEnum.METADATA or rate_only or state.metadata_tokens >= 1)))
+            if kind == DatasourcePermitKindEnum.OPERATION:
+                wait_phase = TimingPhase.SQL_RATE if capacity and not rates_ok else TimingPhase.OPERATION_SLOT
             # 同通道 FIFO；不同通道由保留容量保护，不让新请求插队挤掉旧请求。
             older = any(key != owner and value.lane == lane and value.kind == kind
                         for key, value in state.waiters.items())
@@ -418,10 +427,13 @@ class DatasourceGovernorService:
             cls.flush_pending_releases()
             while True:
                 from src.apps.data_factory.services.datasource_wait import DatasourceWaitService, DatasourceAdmissionProbeService
+                next_log = Timing.diagnose(wait_started, next_log, phase=wait_phase, database_id=target.id,
+                                           wait_id=owner, group=group)
                 if wait:
                     delay = DatasourceAdmissionProbeService.delay((group, kind.value), owner)
                     if delay > 0:
-                        DatasourceWaitService.pause(delay)
+                        with Timing.waiting(wait_phase):
+                            DatasourceWaitService.pause(delay)
                         continue
                 if cls.change(group, claim, expected_policy=policy):
                     DatasourceAdmissionProbeService.finished((group, kind.value), owner)
@@ -434,7 +446,8 @@ class DatasourceGovernorService:
                 if kind == DatasourcePermitKindEnum.CONNECTION:
                     cls.relieve_connection_pressure(group)
                 DatasourceAdmissionProbeService.congested((group, kind.value), owner, queued_at)
-                DatasourceWaitService.pause(random.uniform(0.08, 0.16))
+                with Timing.waiting(wait_phase):
+                    DatasourceWaitService.pause(random.uniform(0.08, 0.16))
         except BaseException as error:
             from src.apps.data_factory.services.datasource_wait import DatasourceAdmissionProbeService
             DatasourceAdmissionProbeService.finished((group, kind.value), owner)
@@ -645,7 +658,8 @@ class DatasourceGovernorService:
     def _operation(cls, target, *, physical=False):
         current = _operation_scope.get()
         _, _, group = cls.target_policy(target)
-        if target.db_type == DataSourceTypeEnum.MYSQL.value and not physical:
+        if target.db_type in {DataSourceTypeEnum.MYSQL.value, DataSourceTypeEnum.POSTGRESQL.value,
+                              DataSourceTypeEnum.REDIS.value, DataSourceTypeEnum.ELASTICSEARCH.value} and not physical:
             # 外层审计/元数据流程尚未取得连接，不能先占操作名额造成连接→操作的资源逆序。
             yield None
             return

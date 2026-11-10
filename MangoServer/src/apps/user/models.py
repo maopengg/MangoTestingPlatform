@@ -163,7 +163,7 @@ class DepartmentProjectProductPermission(models.Model):
         blank=True,
     )
     department = models.ForeignKey(to=Department, to_field="id", on_delete=models.CASCADE)
-    project_product = models.ForeignKey(to='test_center.ProjectProduct', to_field="id", on_delete=models.PROTECT)
+    project_product = models.ForeignKey(to='test_center.ProjectProduct', to_field="id", on_delete=models.CASCADE)
 
     class Meta:
         db_table = 'department_project_product_permission'

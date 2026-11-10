@@ -55,7 +55,7 @@
       />
 
       <div v-if="hasData" class="mango-period-quality-trend__periods">
-        <article v-for="item in normalizedItems" :key="item.key"
+        <article v-for="(item, index) in normalizedItems" :key="`${item.key}-${index}`"
           :class="{ 'is-current': item.key === 'current' }">
           <div>
             <strong>{{ item.displayLabel }}</strong>
@@ -79,27 +79,12 @@
   import StatusChart from '@/components/chart/StatusChart.vue'
   import EffectivenessChart from './EffectivenessChart.vue'
   import EffectivenessEmptyState from './EffectivenessEmptyState.vue'
-
-  interface PeriodQualityItem {
-    key: string
-    label?: string
-    start?: string
-    end?: string
-    suite_count?: number
-    detail_count?: number
-    success_count?: number
-    failed_count?: number
-    warning_count?: number
-    proceed_count?: number
-    stay_begin_count?: number
-    stopped_count?: number
-    unfinished_count?: number
-    final_pass_rate?: number | null
-  }
+  import { normalizeEffectivenessPeriods, effectivenessDate, effectivenessChartIndex, type EffectivenessPeriod } from '../overview'
+  import { chartPoints, chartHtml } from '../chart-boundary'
 
   const props = withDefaults(
     defineProps<{
-      items?: PeriodQualityItem[]
+      items?: unknown
       loading?: boolean
       insight?: string
       reportMode?: boolean
@@ -112,26 +97,27 @@
     }
   )
   const emit = defineEmits<{
-    (event: 'period-click', item: PeriodQualityItem): void
+    (event: 'period-click', item: EffectivenessPeriod): void
   }>()
 
   function dateValue(value?: string) {
-    const date = String(value || '').slice(0, 10)
-    return date ? new Date(`${date}T00:00:00`) : null
+    const date = effectivenessDate(value)
+    return date ? new Date(`${date}T00:00:00Z`) : null
   }
 
   function dateText(value?: string) {
-    return String(value || '').slice(0, 10) || '-'
+    return effectivenessDate(value) || '-'
   }
 
-  function inclusiveDays(item?: PeriodQualityItem) {
+  function inclusiveDays(item?: EffectivenessPeriod) {
     const start = dateValue(item?.start)
     const end = dateValue(item?.end)
     if (!start || !end) return 0
-    return Math.max(Math.round((end.getTime() - start.getTime()) / 86400000) + 1, 1)
+    return Math.max(Math.round((end.getTime() - start.getTime()) / 86400000) + 1, 0)
   }
 
-  const periodDays = computed(() => inclusiveDays(props.items[props.items.length - 1]))
+  const sourceItems = computed(() => normalizeEffectivenessPeriods(props.items))
+  const periodDays = computed(() => inclusiveDays(sourceItems.value.find(item => item.key === 'current') ?? sourceItems.value[sourceItems.value.length - 1]))
   const labelMap: Record<string, string> = {
     three_periods_ago: '前三周期',
     two_periods_ago: '前二周期',
@@ -139,7 +125,7 @@
     current: '当前周期',
   }
   const normalizedItems = computed(() =>
-    props.items.map((item) => ({
+    sourceItems.value.map((item) => ({
       ...item,
       displayLabel: labelMap[item.key] || item.label || '周期',
       dateText: `${dateText(item.start)} 至 ${dateText(item.end)}`,
@@ -213,12 +199,13 @@
       trigger: 'axis',
       confine: true,
       axisPointer: { type: 'shadow' },
-      formatter(params: any[]) {
-        const index = Number(params?.[0]?.dataIndex || 0)
+      formatter(params: unknown) {
+        const index = chartPoints(params)[0]?.dataIndex
+        if (index === null || index === undefined) return ''
         const item = normalizedItems.value[index]
         if (!item) return ''
         return [
-          `<strong>${item.displayLabel}</strong>`,
+          `<strong>${chartHtml(item.displayLabel)}</strong>`,
           item.dateText,
           `执行用例：${item.detail_count}`,
           `通过：${item.success_count}`,
@@ -341,9 +328,12 @@
     ],
   }))
 
-  function onChartClick(params: any) {
-    const item = props.items[Number(params?.dataIndex)]
-    if (item) emit('period-click', item)
+  function onChartClick(params: unknown) {
+    if (props.loading) return
+    const index = effectivenessChartIndex(params)
+    if (index === null) return
+    const item = sourceItems.value[index]
+    if (item && effectivenessDate(item.start) && effectivenessDate(item.end)) emit('period-click', item)
   }
 
 </script>

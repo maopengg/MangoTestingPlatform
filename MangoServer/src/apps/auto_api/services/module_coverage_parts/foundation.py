@@ -257,6 +257,15 @@ class ModuleCoverageFoundationMixin:
                     "status": ModuleCoverageValidity.PENDING_REVIEW,
                     "reason": "接口流程已变更，需重新确认Case覆盖路径",
                 }
+        if getattr(coverage_case, 'api_case_id', None):
+            from .binding import ModuleCoverageCaseBindingService
+            try:
+                ModuleCoverageCaseBindingService.validate(coverage_case.project_product_id,
+                    coverage_case.module_id, coverage_case.api_case_id, coverage_case.api_case_revision_id,
+                    interface=interface_snapshot, previous=coverage_case,
+                    api_case=coverage_case.api_case, revision=coverage_case.api_case_revision)
+            except AutoApiError as error:
+                return {"status": ModuleCoverageValidity.INVALID, "reason": error.msg}
         return {"status": ModuleCoverageValidity.VALID, "reason": ""}
 
     @staticmethod

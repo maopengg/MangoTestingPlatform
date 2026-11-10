@@ -2,22 +2,42 @@
   <div class="mango-workbench-scroll-x mango-source-boundary">
     <div class="mango-source-workbench">
       <aside class="mango-source-nav" aria-label="数据源导航">
-        <div class="mango-source-toolbar"><strong>连接配置 <small class="mango-source-count">{{ sources.length }}</small></strong>
-          <a-button  size="small" type="primary" @click="$emit('add')">新增</a-button></div>
-        <a-input v-model="keyword" placeholder="搜索名称、地址或账号" aria-label="搜索连接配置" allow-clear />
-        <a-spin :loading="loading" class="mango-source-tree">
+        <div class="mango-source-toolbar"
+          ><strong
+            >连接配置 <small class="mango-source-count">{{ sources.length }}</small></strong
+          >
+          <a-button size="small" type="primary" @click="$emit('add')">新增</a-button></div
+        >
+        <a-input
+          v-model="keyword"
+          placeholder="搜索名称、地址或账号"
+          aria-label="搜索连接配置"
+          allow-clear
+        />
+        <MangoPanelSpin :loading="loading" class="mango-source-tree">
           <div v-if="!groups.length" class="mango-empty-state">没有匹配的数据源</div>
           <details v-for="group in groups" :key="group.key" open>
-            <summary>{{ typeName(group.key) }} <small class="mango-source-count">{{ group.sources.length }}</small></summary>
-            <button v-for="source in group.sources" :key="source.id" type="button"
-              :class="['mango-source-leaf', { 'mango-source-leaf--active': selectedId === source.id }]"
-              :aria-pressed="selectedId === source.id" @click="selectSource(source.id)">
+            <summary
+              >{{ typeName(group.key) }}
+              <small class="mango-source-count">{{ group.sources.length }}</small></summary
+            >
+            <button
+              v-for="source in group.sources"
+              :key="source.id"
+              type="button"
+              :class="[
+                'mango-source-leaf',
+                { 'mango-source-leaf--active': selectedId === source.id },
+              ]"
+              :aria-pressed="selectedId === source.id"
+              @click="selectSource(source.id)"
+            >
               <span :title="source.display_name">{{ source.display_name }}</span>
               <small :title="connectionAddress(source)">{{ connectionAddress(source) }}</small>
               <small :title="source.user || '无账号'">账号：{{ source.user || '无账号' }}</small>
             </button>
           </details>
-        </a-spin>
+        </MangoPanelSpin>
       </aside>
       <main class="mango-source-content">
         <div v-if="!selected" class="mango-empty-state">请选择连接配置</div>
@@ -27,30 +47,71 @@
               <strong :title="selected.display_name">{{ selected.display_name }}</strong>
               <div class="mango-source-meta" aria-label="连接信息">
                 <small class="mango-source-muted">ID {{ selected.id }}</small>
-                <a-tag :color="enums.colors[selected.db_type]" size="small">{{ typeName(selected.db_type) }}</a-tag>
-                <span class="mango-source-meta-address" :title="connectionAddress(selected)">{{ connectionAddress(selected) }}</span>
-                <span :title="'账号：' + (selected.user || '无账号')">{{ selected.user || '无账号' }}</span>
-                <span :title="'最后修改：' + (selected.update_time || '-')">{{ selected.update_time || '-' }}</span>
+                <a-tag :color="enums.colors[selected.db_type]" size="small">{{
+                  typeName(selected.db_type)
+                }}</a-tag>
+                <span class="mango-source-meta-address" :title="connectionAddress(selected)">{{
+                  connectionAddress(selected)
+                }}</span>
+                <span :title="'账号：' + (selected.user || '无账号')">{{
+                  selected.user || '无账号'
+                }}</span>
+                <span :title="'最后修改：' + (selected.update_time || '-')">{{
+                  selected.update_time || '-'
+                }}</span>
               </div>
             </div>
             <a-space>
-              <a-button  size="small" :loading="testingIds.includes(selected.id)" @click="$emit('test', selected)">测试连接</a-button>
-              <a-button  size="small" @click="$emit('edit', selected)">编辑</a-button>
-              <a-button  size="small" status="danger" @click="$emit('remove', selected)">删除</a-button>
+              <a-button
+                size="small"
+                :loading="testingIds.includes(selected.id)"
+                @click="$emit('test', selected)"
+                >测试连接</a-button
+              >
+              <a-button size="small" @click="$emit('edit', selected)">编辑</a-button>
+              <a-button size="small" status="danger" @click="$emit('remove', selected)"
+                >删除</a-button
+              >
             </a-space>
           </div>
-          <a-tabs v-model:active-key="activeTab" class="mango-tabs-nav-only mango-source-tabs" @change="loadTab">
+          <a-tabs
+            v-model:active-key="activeTab"
+            class="mango-tabs-nav-only mango-source-tabs"
+            @change="loadTab"
+          >
             <a-tab-pane key="bindings" title="绑定关系">
               <div class="mango-source-table-pane">
-                <a-alert v-if="errors.bindings" type="error">{{ errors.bindings }}</a-alert>
+                <template v-if="errors.bindings"><a-button size="small" :loading="bindingLoading" @click="loadBindings"
+                    >重新加载</a-button></template>
                 <div class="mango-source-table-area">
-                  <a-table class="mango-native-scroll-table" :columns="bindingColumns" :data="pagedBindings"
-                    :loading="bindingLoading" :pagination="false" :scroll="{ x: 960, y: '100%' }" row-key="id">
-                    <template #environment="{ record }">{{ environmentName(record.environment) }}</template>
-                    <template #target="{ record }">{{ record.database_name || (record.redis_db != null ? 'DB ' + record.redis_db : '未选默认库') }}{{ record.schema_name ? ' / ' + record.schema_name : '' }}</template>
-                    <template #read="{ record }">{{ record.db_c_status === 1 ? '允许' : '禁止' }}</template>
-                    <template #write="{ record }">{{ record.db_rud_status === 1 ? '允许' : '禁止' }}</template>
-                    <template #actions="{ record }"><MangoTableActions :actions="[{ label: '管理绑定', onClick: () => openBindingPage(record) }]" /></template>
+                  <a-table
+                    class="mango-native-scroll-table"
+                    :columns="bindingColumns"
+                    :data="pagedBindings"
+                    :loading="bindingLoading"
+                    :pagination="false"
+                    :scroll="{ x: 960, y: '100%' }"
+                    row-key="id"
+                  >
+                    <template #environment="{ record }">{{
+                      environmentName(record.environment)
+                    }}</template>
+                    <template #target="{ record }"
+                      >{{
+                        record.database_name ||
+                        (record.redis_db != null ? 'DB ' + record.redis_db : '未选默认库')
+                      }}{{ record.schema_name ? ' / ' + record.schema_name : '' }}</template
+                    >
+                    <template #read="{ record }">{{
+                      record.db_c_status === 1 ? '允许' : '禁止'
+                    }}</template>
+                    <template #write="{ record }">{{
+                      record.db_rud_status === 1 ? '允许' : '禁止'
+                    }}</template>
+                    <template #actions="{ record }"
+                      ><MangoTableActions
+                        :actions="[{ label: '管理绑定', onClick: () => openBindingPage(record) }]"
+                    /></template>
                   </a-table>
                 </div>
                 <TableFooter :pagination="bindingPagination" :show-refresh="false" />
@@ -58,13 +119,32 @@
             </a-tab-pane>
             <a-tab-pane v-if="relational" key="databases" title="数据库发现">
               <div class="mango-source-table-pane">
+                <template v-if="errors.databases"><a-button size="small" :loading="databaseLoading" @click="loadDatabases()"
+                    >重新加载</a-button></template>
                 <div class="mango-source-toolbar">
-                  <a-input v-model="databaseKeyword" class="mango-source-database-search" size="medium" placeholder="搜索数据库" allow-clear />
+                  <a-input
+                    v-model="databaseKeyword"
+                    class="mango-source-database-search"
+                    size="medium"
+                    placeholder="搜索数据库"
+                    allow-clear
+                  />
                 </div>
-                <div class="mango-source-table-area"><a-table class="mango-native-scroll-table" :columns="databaseColumns"
-                  :data="pagedDatabases" :loading="databaseLoading" :pagination="false" :scroll="{ x: 600, y: '100%' }" row-key="name">
-                  <template #query="{ record }"><MangoTableActions :actions="[{ label: '查询', onClick: () => openDatabaseQuery(record) }]" /></template>
-                </a-table></div>
+                <div class="mango-source-table-area"
+                  ><a-table
+                    class="mango-native-scroll-table"
+                    :columns="databaseColumns"
+                    :data="pagedDatabases"
+                    :loading="databaseLoading"
+                    :pagination="false"
+                    :scroll="{ x: 600, y: '100%' }"
+                    row-key="name"
+                  >
+                    <template #query="{ record }"
+                      ><MangoTableActions
+                        :actions="[{ label: '查询', onClick: () => openDatabaseQuery(record) }]"
+                    /></template> </a-table
+                ></div>
                 <TableFooter :pagination="databasePagination" :show-refresh="false" />
               </div>
             </a-tab-pane>
@@ -74,18 +154,32 @@
     </div>
   </div>
   <BaseSidePanel v-model:visible="bindingPage.visible" mode="page" title="逻辑数据库">
-    <ProductDataSourcePage v-if="bindingPage.visible" embedded :project-product-id="bindingPage.productId"
-      :project-product-name="bindingPage.productName" :datasource-id="bindingPage.datasourceId" />
+    <ProductDataSourcePage
+      v-if="bindingPage.visible"
+      embedded
+      :project-product-id="bindingPage.productId"
+      :project-product-name="bindingPage.productName"
+      :datasource-id="bindingPage.datasourceId"
+    />
   </BaseSidePanel>
-  <DataSourceSqlQueryDrawer v-if="databaseQuery.visible" v-model:visible="databaseQuery.visible"
-    :source-id="databaseQuery.sourceId" :source-name="databaseQuery.sourceName" :database-name="databaseQuery.databaseName" />
+  <DataSourceSqlQueryDrawer
+    v-if="databaseQuery.visible && databaseQuery.sourceId !== null"
+    v-model:visible="databaseQuery.visible"
+    :source-id="databaseQuery.sourceId"
+    :source-name="databaseQuery.sourceName"
+    :database-name="databaseQuery.databaseName"
+  />
 </template>
 <script setup lang="ts">
+import { reportLoadError } from '@/utils/load-error'
+
   import { computed, reactive, ref, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
+  import { Message } from '@arco-design/web-vue'
   import { useEnum } from '@/store/modules/get-enum'
   import { getDataSourceBindings, getDataSourceDatabases } from '@/api/system/data_source'
   import MangoTableActions from '@/components/table/MangoTableActions.vue'
+  import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
   import TableFooter from '@/components/table/TableFooter.vue'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import ProductDataSourcePage from '@/views/config/product/datasource/index.vue'
@@ -93,94 +187,225 @@
   import { usePagination } from '@/hooks/table'
   import { formatProjectProductPath } from '@/utils/business-format'
   import { bindingColumns, databaseColumns } from '../config'
-  const props = defineProps<{ sources: any[]; loading: boolean; testingIds: any[] }>()
-  defineEmits(['add', 'edit', 'remove', 'test'])
+  import { sourceConnectionName, sourceError } from '../form'
+  import { useSourceScope } from '../composables/useSourceScope'
+  import type { DataSourceRecord, DiscoveredDatabase, SourceBinding } from '../types'
+  const props = defineProps<{
+    sources: DataSourceRecord[]
+    loading: boolean
+    testingIds: number[]
+  }>()
+  defineEmits<{
+    (event: 'add'): void
+    (event: 'edit' | 'remove' | 'test', source: DataSourceRecord): void
+  }>()
   const enums = useEnum()
   const route = useRoute()
   const router = useRouter()
   const keyword = ref('')
-  const selectedId = ref<number>()
-  const selected = computed(() => props.sources.find(item => item.id === selectedId.value))
-  const firstSourceId = computed(() => [...props.sources].sort((a,b) => a.db_type-b.db_type)[0]?.id)
+  const selectedId = ref<number | null>(null)
+  const selected = computed(() => props.sources.find((item) => item.id === selectedId.value))
+  const firstSourceId = computed(
+    () => [...props.sources].sort((a, b) => a.db_type - b.db_type)[0]?.id ?? null
+  )
   const groups = computed(() => {
-    const result = new Map<number, any>()
+    const result = new Map<number, { key: number; sources: DataSourceRecord[] }>()
     for (const source of props.sources) {
-      if (![source.display_name, source.host, source.user].join(' ').toLowerCase().includes(keyword.value.toLowerCase())) continue
-      if (!result.has(source.db_type)) result.set(source.db_type, {key: source.db_type, sources: []})
-      result.get(source.db_type).sources.push(source)
+      if (
+        ![source.display_name, source.host, source.user]
+          .join(' ')
+          .toLowerCase()
+          .includes(keyword.value.toLowerCase())
+      )
+        continue
+      let group = result.get(source.db_type)
+      if (!group) {
+        group = { key: source.db_type, sources: [] }
+        result.set(source.db_type, group)
+      }
+      group.sources.push(source)
     }
-    return [...result.values()].sort((a,b) => a.key-b.key)
+    return [...result.values()].sort((a, b) => a.key - b.key)
   })
-  const relational = computed(() => [0,1].includes(selected.value?.db_type))
+  const relational = computed(
+    () => selected.value !== undefined && [0, 1].includes(selected.value.db_type)
+  )
   const activeTab = ref('bindings')
-  const bindings = ref<any[]>([])
-  const databases = ref<any[]>([])
+  const bindings = ref<SourceBinding[]>([])
+  const databases = ref<DiscoveredDatabase[]>([])
   const bindingLoading = ref(false)
   const databaseLoading = ref(false)
   const databaseKeyword = ref('')
-  const errors = reactive({bindings: '', databases: ''})
-  const bindingPagination = usePagination(() => { bindingLoading.value = false }, bindingLoading)
-  const databasePagination = usePagination(() => { databaseLoading.value = false }, databaseLoading)
-  const filteredDatabases = computed(() => databases.value.filter(item => item.name.toLowerCase().includes(databaseKeyword.value.toLowerCase())))
-  const pagedBindings = computed(() => bindings.value.slice((bindingPagination.page-1)*bindingPagination.pageSize, bindingPagination.page*bindingPagination.pageSize))
-  const pagedDatabases = computed(() => filteredDatabases.value.slice((databasePagination.page-1)*databasePagination.pageSize, databasePagination.page*databasePagination.pageSize))
-  watch(bindings, value => bindingPagination.setTotalSize(value.length))
-  watch(filteredDatabases, value => {databasePagination.setTotalSize(value.length); databasePagination.page = 1})
-  const bindingPage = reactive({visible: false, productId: '', productName: '', datasourceId: ''})
-  const databaseQuery = reactive({visible: false, sourceId: 0, sourceName: '', databaseName: ''})
-  function openDatabaseQuery(record: any) {
-    if (!selected.value) return
-    Object.assign(databaseQuery, {visible: true, sourceId: selected.value.id,
-      sourceName: selected.value.display_name, databaseName: record.name})
+  const errors = reactive({ bindings: '', databases: '' })
+  const paginationLoading = ref(false)
+  const bindingPagination = usePagination(() => {
+    paginationLoading.value = false
+  }, paginationLoading)
+  const databasePagination = usePagination(() => {
+    paginationLoading.value = false
+  }, paginationLoading)
+  const filteredDatabases = computed(() =>
+    databases.value.filter((item) =>
+      item.name.toLowerCase().includes(databaseKeyword.value.toLowerCase())
+    )
+  )
+  const pagedBindings = computed(() =>
+    bindings.value.slice(
+      (bindingPagination.page - 1) * bindingPagination.pageSize,
+      bindingPagination.page * bindingPagination.pageSize
+    )
+  )
+  const pagedDatabases = computed(() =>
+    filteredDatabases.value.slice(
+      (databasePagination.page - 1) * databasePagination.pageSize,
+      databasePagination.page * databasePagination.pageSize
+    )
+  )
+  watch(bindings, (value) => {
+    bindingPagination.setTotalSize(value.length)
+    bindingPagination.page = Math.max(
+      1,
+      Math.min(bindingPagination.page, Math.ceil(value.length / bindingPagination.pageSize))
+    )
+  })
+  watch(filteredDatabases, (value) => {
+    databasePagination.setTotalSize(value.length)
+    databasePagination.page = 1
+  })
+  const bindingPage = reactive({ visible: false, productId: '', productName: '', datasourceId: '' })
+  const databaseQuery = reactive<{
+    visible: boolean
+    sourceId: number | null
+    sourceName: string
+    databaseName: string
+  }>({ visible: false, sourceId: null, sourceName: '', databaseName: '' })
+  let bindingRequest = 0,
+    databaseRequest = 0
+  const scope = useSourceScope(resetContext, loadTab)
+  function resetContext() {
+    ++bindingRequest
+    ++databaseRequest
+    bindings.value = []
+    databases.value = []
+    errors.bindings = ''
+    errors.databases = ''
+    bindingLoading.value = false
+    databaseLoading.value = false
+    bindingPagination.page = 1
+    databasePagination.page = 1
+    databaseKeyword.value = ''
+    bindingPage.visible = false
+    databaseQuery.visible = false
   }
-  function connectionAddress(source: any) {return source.file_path || source.host + ':' + source.port}
-  function typeName(value: number) {return enums.data_source_type?.find((item:any) => item.key === value)?.title || String(value)}
-  function environmentName(value: number) {return enums.environment_type?.find((item:any) => item.key === value)?.title || String(value)}
-  function selectSource(id:number) {selectedId.value=id; router.replace({query: {...route.query, data_source_id: String(id)}})}
-  function openBindingPage(record:any) {
-    Object.assign(bindingPage, {visible:true, productId:String(record.datasource_alias__project_product_id),
-      productName:record.datasource_alias__project_product__name, datasourceId:String(record.datasource_alias_id)})
+  function openDatabaseQuery(record: DiscoveredDatabase) {
+    if (!selected.value || !scope.isActive()) return
+    Object.assign(databaseQuery, {
+      visible: true,
+      sourceId: selected.value.id,
+      sourceName: selected.value.display_name,
+      databaseName: record.name,
+    })
+  }
+  const connectionAddress = sourceConnectionName
+  function typeName(value: number) {
+    return (
+      enums.data_source_type?.find((item) => Number(item.key) === value)?.title || String(value)
+    )
+  }
+  function environmentName(value: number) {
+    return (
+      enums.environment_type?.find((item) => Number(item.key) === value)?.title || String(value)
+    )
+  }
+  async function selectSource(id: number) {
+    if (!scope.isActive()) return
+    selectedId.value = id
+    try {
+      await router.replace({ query: { ...route.query, data_source_id: String(id) } })
+    } catch {
+      if (scope.isActive()) Message.error('连接导航更新失败')
+    }
+  }
+  function openBindingPage(record: SourceBinding) {
+    if (!scope.isActive()) return
+    Object.assign(bindingPage, {
+      visible: true,
+      productId: String(record.datasource_alias__project_product_id),
+      productName: record.datasource_alias__project_product__name,
+      datasourceId: String(record.datasource_alias_id),
+    })
   }
   async function loadBindings() {
-    const id=selectedId.value
-    if (!id) return
-    bindingLoading.value=true; errors.bindings=''
+    const id = selectedId.value,
+      version = scope.snapshot()
+    if (id === null || !scope.isActive()) return
+    const request = ++bindingRequest
+    bindingLoading.value = true
+    errors.bindings = ''
     try {
-      const res=await getDataSourceBindings({data_source_id:id})
-      if(id===selectedId.value) bindings.value=(res.data || []).map((record: any) => ({
-        ...record,
-        project_product_path: formatProjectProductPath({
-          name: record.datasource_alias__project_product__name,
-          project: {name: record.datasource_alias__project_product__project__name},
-        }),
-      }))
+      const res = await getDataSourceBindings({ data_source_id: id })
+      if (request === bindingRequest && scope.current(version))
+        bindings.value = (res.data || []).map((record: SourceBinding) => ({
+          ...record,
+          project_product_path: formatProjectProductPath({
+            name: record.datasource_alias__project_product__name,
+            project: { name: record.datasource_alias__project_product__project__name },
+          }),
+        }))
+    } catch (error: unknown) {
+      if (request === bindingRequest && scope.current(version))
+        void (reportLoadError(error, "加载失败，请重试", false), errors.bindings = sourceError(error, '读取绑定失败'))
+    } finally {
+      if (request === bindingRequest) bindingLoading.value = false
     }
-    catch(error:any) {if(id===selectedId.value) errors.bindings=error?.message || error?.msg || '读取绑定失败'}
-    finally {if(id===selectedId.value) bindingLoading.value=false}
   }
-  async function loadDatabases(refresh=false) {
-    const id=selectedId.value
-    if (!id || !relational.value) return
-    databaseLoading.value=true; errors.databases=''
-    try {const res=await getDataSourceDatabases({data_source_id:id,refresh}); if(id===selectedId.value) databases.value=res.data || []}
-    catch(error:any) {if(id===selectedId.value) errors.databases=error?.message || error?.msg || '数据库发现失败'}
-    finally {if(id===selectedId.value) databaseLoading.value=false}
-  }
-  function loadTab() {if(activeTab.value==='databases') loadDatabases(); else loadBindings()}
-  watch(() => props.sources.map(item => item.id), ids => {
-    if(!ids.includes(selectedId.value)) {
-      const requested=Number(route.query.data_source_id)
-      selectedId.value=ids.includes(requested)?requested:firstSourceId.value
+  async function loadDatabases(refresh = false) {
+    const id = selectedId.value,
+      version = scope.snapshot()
+    if (id === null || !relational.value || !scope.isActive()) return
+    const request = ++databaseRequest
+    databaseLoading.value = true
+    errors.databases = ''
+    try {
+      const res = await getDataSourceDatabases({ data_source_id: id, refresh })
+      if (request === databaseRequest && scope.current(version)) databases.value = res.data || []
+    } catch (error: unknown) {
+      if (request === databaseRequest && scope.current(version))
+        void (reportLoadError(error, "加载失败，请重试", false), errors.databases = sourceError(error, '数据库发现失败'))
+    } finally {
+      if (request === databaseRequest) databaseLoading.value = false
     }
-  }, {immediate:true})
-  watch(() => route.query.data_source_id, value => {
-    const id=Number(value); selectedId.value=props.sources.some(item=>item.id===id)?id:firstSourceId.value
-  })
-  watch([selectedId, () => selected.value?.update_time], () => {
-    bindings.value=[]; databases.value=[]; errors.bindings=''; errors.databases=''
-    bindingLoading.value=false; databaseLoading.value=false; bindingPagination.page=1; databasePagination.page=1
-    activeTab.value='bindings'; loadTab()
-  }, {immediate:true})
+  }
+  function loadTab() {
+    if (activeTab.value === 'databases') void loadDatabases()
+    else void loadBindings()
+  }
+  watch(
+    () => props.sources.map((item) => item.id),
+    (ids) => {
+      if (!ids.includes(selectedId.value ?? -1)) {
+        const requested = Number(route.query.data_source_id)
+        selectedId.value = ids.includes(requested) ? requested : firstSourceId.value
+      }
+    },
+    { immediate: true, flush: 'sync' }
+  )
+  watch(
+    () => route.query.data_source_id,
+    (value) => {
+      const id = Number(value)
+      selectedId.value = props.sources.some((item) => item.id === id) ? id : firstSourceId.value
+    }
+  )
+  watch(
+    () => selected.value,
+    () => {
+      resetContext()
+      activeTab.value = 'bindings'
+      loadTab()
+    },
+    { immediate: true, flush: 'sync' }
+  )
 </script>
 <style scoped>
   .mango-source-alias-row {
@@ -404,7 +629,10 @@
     max-height: 140px;
     overflow-y: auto;
   }
-  .mango-source-tree > details + details {
+  .mango-source-tree :deep(> .mango-panel-spin__content) {
+    min-height: 0;
+  }
+  .mango-source-tree :deep(> .mango-panel-spin__content > details + details) {
     border-top: 1px solid var(--m-border);
     margin-top: var(--m-space-sm);
   }

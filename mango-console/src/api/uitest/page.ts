@@ -27,7 +27,7 @@ export function putUiPage(data: object) {
   })
 }
 
-export function deleteUiPage(id: number | string[] | number[]) {
+export function deleteUiPage(id: number | string | Array<number | string>) {
   return deleted({
     url: '/ui/page',
     data: () => {
@@ -38,13 +38,13 @@ export function deleteUiPage(id: number | string[] | number[]) {
   })
 }
 
-export function getUiPageName(moduleId: number | string, projectProductId?: number | string) {
+export function getUiPageName(moduleId: number | string | null, projectProductId?: number | string) {
   return get({
     url: '/ui/page/name',
     data: () => {
       return {
         module_id: moduleId,
-        project_product_id: projectProductId || undefined,
+        project_product_id: projectProductId ?? undefined,
       }
     },
   })

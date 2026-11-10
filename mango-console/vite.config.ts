@@ -4,6 +4,7 @@ import path from 'path'
 import { defineConfig } from 'vite'
 import dotenv from 'dotenv'
 import vueJsx from '@vitejs/plugin-vue-jsx'
+import { prebundleHeavyDependencies } from './scripts/prebundle-heavy-dependencies.mjs'
 
 const univerDependencies = [
   '@univerjs/presets',
@@ -39,10 +40,11 @@ export default defineConfig(({ mode }) => {
       outDir: dotenvObj?.BUILD_OUT_DIR || 'dist',
       // 项目包含 Univer、编辑器等大型依赖。按 npm 包逐个拆 chunk 会在 Rollup
       // 渲染阶段同时维护数百个 chunk，显著放大 CI 构建的内存峰值。
-      // 保留路由动态导入形成的自然分包，并跳过仅用于提示的 gzip 体积统计。
+      // 大型纯 JS 依赖先独立预构建；其余保留路由自然分包，跳过 gzip 体积统计。
       reportCompressedSize: false,
     },
     plugins: [
+      prebundleHeavyDependencies(),
       vue(),
       viteSvgIcons({
         iconDirs: [path.resolve(process.cwd(), 'src/icons')],

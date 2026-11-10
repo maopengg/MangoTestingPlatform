@@ -2,6 +2,7 @@
   <a-form-item label="默认地址">
     <a-input
       v-model="draft.default"
+      :disabled="disabled"
       :max-length="1024"
       placeholder="域名/包名/路径（可选）；未匹配时使用此地址"
       @input="emitConfig"
@@ -10,6 +11,7 @@
   <a-form-item label="条件变量">
     <a-input
       v-model="draft.selector"
+      :disabled="disabled"
       :max-length="128"
       placeholder="缓存键名，例如租户id；留空使用固定地址"
       @input="emitConfig"
@@ -20,7 +22,9 @@
       <div class="mango-target-mapping">
         <div class="mango-target-mapping-toolbar">
           <span>已配置 {{ rows.length }} 项 · 按条件值精确匹配，未匹配时使用默认地址</span>
-          <a-button size="small" :disabled="rows.length >= 200" @click="addRow">新增映射</a-button>
+          <a-button size="small" :disabled="disabled || rows.length >= 200" @click="addRow"
+            >新增映射</a-button
+          >
         </div>
         <div v-if="rows.length" class="mango-target-mapping-header" aria-hidden="true">
           <span>条件值</span><span>对应地址</span><span>操作</span>
@@ -28,18 +32,22 @@
         <div v-for="(row, index) in rows" :key="row.id" class="mango-target-mapping-row">
           <a-input
             v-model="row.key"
+            :disabled="disabled"
             placeholder="租户 ID，例如 1001"
             :aria-label="`第 ${index + 1} 项条件值`"
             @input="emitConfig"
           />
           <a-input
             v-model="row.value"
+            :disabled="disabled"
             placeholder="对应域名/包名/路径"
             :max-length="1024"
             :aria-label="`第 ${index + 1} 项地址`"
             @input="emitConfig"
           />
-          <a-button status="danger" size="small" @click="removeRow(index)">删除</a-button>
+          <a-button status="danger" size="small" :disabled="disabled" @click="removeRow(index)"
+            >删除</a-button
+          >
         </div>
         <div v-if="!rows.length" class="mango-target-mapping-empty"
           >点击「新增映射」，填写租户 ID 与对应地址</div
@@ -53,9 +61,9 @@
 <script setup lang="ts">
   import { computed, reactive, ref, toRaw, watch } from 'vue'
   import type { TestTargetConfig } from '../target-config'
-  const props = defineProps<{ modelValue: TestTargetConfig }>()
+  const props = defineProps<{ modelValue: TestTargetConfig; disabled?: boolean }>()
   const emit = defineEmits<{ 'update:modelValue': [value: TestTargetConfig] }>()
-  const draft = reactive({ ...props.modelValue })
+  const draft = reactive({ default: props.modelValue.default, selector: props.modelValue.selector })
   let sequence = 0
   const rows = ref<{ id: number; key: string; value: string }[]>([])
   const duplicateKey = computed(
@@ -64,10 +72,10 @@
   let lastEmission: TestTargetConfig | undefined
   watch(
     () => props.modelValue,
-    (value) => {
+    (value: TestTargetConfig) => {
       // 父级 ref 会把回传配置包装成代理，不能因此重建正在输入的行。
       if (toRaw(value) === lastEmission) return
-      Object.assign(draft, value)
+      Object.assign(draft, { default: value.default, selector: value.selector })
       rows.value = Object.entries(value.mapping || {}).map(([key, value]) => ({
         id: ++sequence,
         key,
@@ -77,6 +85,7 @@
     { immediate: true }
   )
   function emitConfig() {
+    if (props.disabled) return
     const mapping = Object.fromEntries(rows.value.map((row) => [row.key, row.value]))
     // 重复 key 不能在转成对象时被悄悄覆盖；空 key 使提交校验明确失败。
     if (duplicateKey.value) mapping[''] = ''
@@ -88,10 +97,12 @@
     emit('update:modelValue', lastEmission)
   }
   function addRow() {
+    if (props.disabled || rows.value.length >= 200) return
     rows.value.push({ id: ++sequence, key: '', value: '' })
     emitConfig()
   }
   function removeRow(index: number) {
+    if (props.disabled) return
     rows.value.splice(index, 1)
     emitConfig()
   }

@@ -300,20 +300,22 @@
           "
           @blur="save"
         />
-        <a-textarea
-          v-else
-          v-model="jsonValueText"
-          class="mango-api-body-editor__textarea"
-          allow-clear
-          :disabled="readonly"
-          :auto-size="{ minRows: 10, maxRows: 18 }"
-          :placeholder="
-            local.protocol_type === 'grpc'
-              ? '请输入合法 JSON 对象，字段名建议使用 proto 中的原始字段名'
-              : '请输入合法JSON，例如 {&quot;key&quot;: &quot;value&quot;}'
-          "
-          @blur="save"
-        />
+        <div v-else class="mango-api-body-editor__json">
+          <JsonDisplay
+            :data="jsonValueText"
+            show-edit-button
+            :show-drawer-button="false"
+            :edit-disabled="readonly || saving"
+            @edit="jsonEditVisible = true"
+          />
+          <MangoJsonEditDrawer
+            v-model:visible="jsonEditVisible"
+            :model-value="jsonValueText"
+            title="编辑 JSON 请求体"
+            :saving="saving"
+            @save="saveJsonValue"
+          />
+        </div>
       </template>
 
       <template v-else-if="local.body_type === 'form'">
@@ -416,10 +418,12 @@
 
 <script setup lang="ts">
   import { Message } from '@arco-design/web-vue'
-  import { computed, nextTick, reactive, ref, watch } from 'vue'
+  import { computed, nextTick, reactive, ref, watch, onBeforeUnmount, onDeactivated } from 'vue'
   import { getUserFile } from '@/api/system/file_data'
   import { useProject } from '@/store/modules/get-project'
-  import { parseLosslessJson, stringifyLosslessJson } from '@/utils/lossless-json'
+  import { cloneLosslessJson, parseLosslessJson, stringifyLosslessJson } from '@/utils/lossless-json'
+  import JsonDisplay from '@/components/display/JsonDisplay.vue'
+  import MangoJsonEditDrawer from '@/components/editors/MangoJsonEditDrawer.vue'
 
   const props = defineProps<{
     protocolType?: string | null
@@ -477,16 +481,21 @@
   const projectInfo = useProject()
   const fileOptions = ref<any[]>([])
   const fileLoading = ref(false)
+  let fileRequest = 0
   const fileResourcesLoaded = ref(false)
   const syncingFromProps = ref(false)
   const lastEmittedPayload = ref('')
   const jsonValueText = ref('{}')
+  const jsonEditVisible = ref(false)
+  watch(() => [props.bodyConfig, props.readonly, props.bodyType, props.protocolType], () => {
+    jsonEditVisible.value = false
+  })
   const bodyTypeReadonly = computed(() => props.bodyTypeReadonly === true)
   const readonly = computed(() => props.readonly === true)
   const fileCascaderOptions = computed(() => buildFileCascaderOptions())
 
   function defaultBodyConfig(bodyType: string, source?: Record<string, any> | null) {
-    const config = source && typeof source === 'object' ? { ...source } : {}
+    const config = source && typeof source === 'object' ? cloneLosslessJson(source) : {}
     if (local.protocol_type === 'websocket') return defaultWebSocketConfig(config)
     if (bodyType === 'json') {
       const sourceType =
@@ -657,18 +666,21 @@
   async function loadFileResources() {
     if (fileResourcesLoaded.value || fileLoading.value) return
     fileLoading.value = true
+    const request = ++fileRequest
     try {
       await projectInfo.projectProductName()
+      if (request !== fileRequest) return
       const res = await getUserFile({
         page: 1,
         pageSize: 10000,
       })
+      if (request !== fileRequest) return
       fileOptions.value = Array.isArray(res.data) ? res.data : []
       fileResourcesLoaded.value = true
-    } catch (error) {
-      console.log(error)
+    } catch {
+      /* 公共请求层反馈错误，保留当前选择供重试。 */
     } finally {
-      fileLoading.value = false
+      if (request === fileRequest) fileLoading.value = false
     }
   }
 
@@ -761,6 +773,19 @@
     if (file.key && file.file_id) {
       save()
     }
+  }
+
+  function saveJsonValue(value: string) {
+    if (readonly.value || props.saving) return
+    try {
+      parseLosslessJson(value)
+    } catch {
+      Message.error('JSON值必须是合法JSON')
+      return
+    }
+    jsonValueText.value = value
+    jsonEditVisible.value = false
+    save()
   }
 
   function buildBodyConfig() {
@@ -865,7 +890,7 @@
   }
 
   function save() {
-    if (readonly.value || syncingFromProps.value) return
+    if (readonly.value || syncingFromProps.value || props.saving) return
     const bodyConfig = buildBodyConfig()
     if (bodyConfig === false) return
     const payload = {
@@ -876,7 +901,7 @@
     const payloadText = stringifyLosslessJson(payload)
     if (payloadText === lastEmittedPayload.value) return
     lastEmittedPayload.value = payloadText
-    emit('save', payload)
+    emit('save', cloneLosslessJson(payload))
   }
 
   watch(() => [props.protocolType, props.bodyType, props.bodyConfig, props.sseConfig], syncLocal, {
@@ -913,6 +938,11 @@
       }
     }
   )
+  function resetSaveState() { lastEmittedPayload.value = '' }
+  function invalidateFileRequest() { fileRequest++; fileLoading.value = false }
+  onBeforeUnmount(invalidateFileRequest)
+  onDeactivated(invalidateFileRequest)
+  defineExpose({ resetSaveState })
 </script>
 
 <style scoped>
@@ -1101,6 +1131,12 @@
     margin-top: 14px;
   }
 
+  .mango-api-body-editor__json {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
   .mango-api-body-editor__textarea {
     margin-top: 10px;
   }

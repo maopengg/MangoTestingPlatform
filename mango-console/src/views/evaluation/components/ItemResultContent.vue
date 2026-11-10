@@ -4,8 +4,19 @@
     <section v-if="item.details?.turns?.length" class="mango-item-result-section">
       <h3 class="mango-section-title">轮次结果</h3>
       <article v-for="turn in item.details.turns" :key="turn.index" class="mango-item-source">
-        <div class="mango-item-source-heading"><strong>{{ turn.name }}</strong><span>{{ turn.scored ? `${turn.score ?? '—'} 分` : '不计分' }}</span></div>
-        <JsonDisplay :data="{ 输入: turn.input, 预期: turn.expected, 实际输出: turn.output, 结论: turn.verdict }" :show-drawer-button="false" />
+        <div class="mango-item-source-heading"
+          ><strong>{{ turn.name }}</strong
+          ><span>{{ turn.scored ? `${turn.score ?? '—'} 分` : '不计分' }}</span></div
+        >
+        <JsonDisplay
+          :data="{
+            输入: turn.input,
+            预期: turn.expected,
+            实际输出: turn.output,
+            结论: turn.verdict,
+          }"
+          :show-drawer-button="false"
+        />
       </article>
     </section>
     <section class="mango-item-result-section">
@@ -41,14 +52,17 @@
     </div>
 
     <section v-if="expectedSources.length" class="mango-item-result-section">
-      <h3 class="mango-section-title">{{ actualAnswer !== undefined ? '评分依据' : '应命中的数据' }}</h3>
+      <h3 class="mango-section-title">{{
+        actualAnswer !== undefined ? '评分依据' : '应命中的数据'
+      }}</h3>
       <p class="mango-item-result-meta"
         >评测数据集：{{ datasetTitle }} · 条目 {{ item.dataset_item_id }}</p
       >
       <div v-for="(source, index) in expectedSources" :key="index" class="mango-item-source">
         <div class="mango-item-source-heading"
           ><strong
-            >{{ actualAnswer !== undefined ? '原文材料' : '期望原文' }}<template v-if="expectedSources.length > 1"> {{ index + 1 }}</template></strong
+            >{{ actualAnswer !== undefined ? '原文材料' : '期望原文'
+            }}<template v-if="expectedSources.length > 1"> {{ index + 1 }}</template></strong
           ><span v-if="source.time" class="mango-item-result-meta">{{ source.time }}</span></div
         >
         <p class="mango-item-result-text">{{ source.text }}</p>
@@ -70,10 +84,12 @@
               >包含期望原文</span
             ></div
           >
-          <p v-if="typeof memory === 'string' || typeof memory?.content === 'string'" class="mango-item-result-text">{{ typeof memory === 'string' ? memory : memory.content }}</p>
+          <p v-if="memoryContent(memory) !== undefined" class="mango-item-result-text">{{
+            memoryContent(memory)
+          }}</p>
           <JsonDisplay v-else :data="memory" />
           <div
-            v-for="(source, sourceIndex) in memory?.evidence || []"
+            v-for="(source, sourceIndex) in memoryEvidence(memory)"
             :key="sourceIndex"
             class="mango-item-memory-evidence"
           >
@@ -115,14 +131,21 @@
             ><dd>{{ grade.raw_value.evidence.reference_quote || '（空文本）' }}</dd></div
           >
         </dl>
-        <template v-for="group in ['expected_checks', 'actual_checks']" :key="group">
+        <template v-for="group in factCheckGroups" :key="group">
           <dl v-if="grade.raw_value?.[group]?.length" class="mango-item-judge-quotes">
             <div v-for="check in grade.raw_value[group]" :key="check.index">
-              <dt>{{ group === 'expected_checks' ? '标准事实' : '实际输出' }} {{ check.index + 1 }} · {{ enumTitle('evaluation_memory_fact_status', check.status) }}</dt>
+              <dt
+                >{{ group === 'expected_checks' ? '标准事实' : '实际输出' }} {{ check.index + 1 }} ·
+                {{ enumTitle('evaluation_memory_fact_status', check.status) }}</dt
+              >
               <dd>
                 <p class="mango-item-result-text">{{ check.reason }}</p>
-                <p v-if="check.actual_quote" class="mango-item-result-text">实际引用：{{ check.actual_quote }}</p>
-                <p v-if="check.source_quote" class="mango-item-result-text">来源依据：{{ check.source_quote }}</p>
+                <p v-if="check.actual_quote" class="mango-item-result-text"
+                  >实际引用：{{ check.actual_quote }}</p
+                >
+                <p v-if="check.source_quote" class="mango-item-result-text"
+                  >来源依据：{{ check.source_quote }}</p
+                >
               </dd>
             </div>
           </dl>
@@ -146,9 +169,18 @@
   import { computed, ref, watch } from 'vue'
   import JsonDisplay from '@/components/display/JsonDisplay.vue'
   import { useEvaluationEnums } from './useEvaluationEnums'
-  const props = defineProps<{ item: any; dataset?: any; datasetName?: string }>()
+  import type { ItemResult } from '../types'
+  import { resultObject, resultArray } from './result'
+  const props = defineProps<{
+    item: ItemResult
+    dataset?: { id?: number; version_no?: number }
+    datasetName?: string
+  }>()
+  const factCheckGroups = ['expected_checks', 'actual_checks'] as const
   const memoryGraderNames: Record<string, string> = {
-    memory_qa: '记忆问答', memory_extraction: '记忆提取', memory_update: '记忆更新',
+    memory_qa: '记忆问答',
+    memory_extraction: '记忆提取',
+    memory_update: '记忆更新',
   }
   const { title: enumTitle, color: statusColor } = useEvaluationEnums()
   const payloadTab = ref('request')
@@ -161,23 +193,26 @@
   const question = computed(() => {
     const input = props.item.item_snapshot?.input_data
     if (typeof input === 'string') return input
-    if (typeof input?.query === 'string') return input.query
-    if (typeof input?.question === 'string') return input.question
+    const object = resultObject(input)
+    if (typeof object.query === 'string') return object.query
+    if (typeof object.question === 'string') return object.question
     return undefined
   })
   const expectedAnswer = computed(() =>
-    typeof props.item.resolved_expected_output?.answer === 'string'
-      ? props.item.resolved_expected_output.answer
+    typeof resultObject(props.item.resolved_expected_output).answer === 'string'
+      ? resultObject(props.item.resolved_expected_output).answer
       : undefined
   )
   const actualAnswer = computed(() =>
-    typeof props.item.actual_output === 'string' ? props.item.actual_output : typeof props.item.actual_output?.answer === 'string'
-      ? props.item.actual_output.answer
+    typeof props.item.actual_output === 'string'
+      ? props.item.actual_output
+      : typeof resultObject(props.item.actual_output).answer === 'string'
+      ? resultObject(props.item.actual_output).answer
       : undefined
   )
-  const memories = computed<any[]>(() => {
-    const retrieval = props.item.actual_output?.retrieval ?? props.item.actual_output
-    return Array.isArray(retrieval) ? retrieval : Array.isArray(retrieval?.top_items) ? retrieval.top_items : []
+  const memories = computed<unknown[]>(() => {
+    const retrieval = resultObject(props.item.actual_output).retrieval ?? props.item.actual_output
+    return Array.isArray(retrieval) ? retrieval : resultArray(resultObject(retrieval).top_items)
   })
   const datasetTitle = computed(
     () =>
@@ -186,29 +221,42 @@
       }`
   )
   const normalize = (text: string) => text.trim().replace(/\s+/g, ' ')
-  const memoryExcerpts = (memory: any): string[] =>
-    (Array.isArray(memory?.evidence) ? memory.evidence : [])
-      .map((source: any) => source.excerpt)
-      .filter((value: any) => typeof value === 'string' && value.trim())
+  const memoryEvidence = (memory: unknown) =>
+    resultArray(resultObject(memory).evidence).map(resultObject)
+  const memoryContent = (memory: unknown) => {
+    if (typeof memory === 'string') return memory
+    const content = resultObject(memory).content
+    return typeof content === 'string' ? content : undefined
+  }
+  const memoryExcerpts = (memory: unknown): string[] =>
+    memoryEvidence(memory)
+      .map((source) => source.excerpt)
+      .filter((value): value is string => typeof value === 'string' && Boolean(value.trim()))
   const expectedSources = computed(() => {
-    const expected = props.item.resolved_expected_output || {}
+    const expected = resultObject(props.item.resolved_expected_output)
     const excerpts = [
       ...(Array.isArray(expected.source_excerpts) ? expected.source_excerpts : []),
       expected.source_excerpt,
-    ].filter((value: any): value is string => typeof value === 'string' && Boolean(value.trim()))
+    ].filter((value): value is string => typeof value === 'string' && Boolean(value.trim()))
     const turns = props.item.details?.turns
-    const scoredTurn = (Array.isArray(turns) ? [...turns].reverse() : []).find((turn: any) => turn.scored)
+    const scoredTurn = (turns ? [...turns].reverse() : []).find((turn) => turn.scored)
     const evidence = (scoredTurn?.context ?? props.item.item_snapshot?.context)?.source_evidence
     const materials = (Array.isArray(evidence) ? evidence : [])
-      .map((source: any) => typeof source === 'string' ? { excerpt: source } : source)
-      .filter((source: any) => typeof source?.excerpt === 'string' && source.excerpt.trim())
-    const texts = expectedAnswer.value !== undefined || actualAnswer.value !== undefined || !excerpts.length
-      ? materials.map((source: any) => source.excerpt)
-      : excerpts
+      .map((source: unknown) =>
+        typeof source === 'string' ? { excerpt: source } : resultObject(source)
+      )
+      .filter(
+        (source): source is Record<string, unknown> & { excerpt: string } =>
+          typeof source.excerpt === 'string' && Boolean(source.excerpt.trim())
+      )
+    const texts =
+      expectedAnswer.value !== undefined || actualAnswer.value !== undefined || !excerpts.length
+        ? materials.map((source) => source.excerpt)
+        : excerpts
     return [...new Set<string>(texts)].map((text) => ({
       text,
       time: materials.find(
-        (source: any) =>
+        (source) =>
           typeof source.excerpt === 'string' && normalize(source.excerpt) === normalize(text)
       )?.occurred_at,
       ranks: memories.value.flatMap((memory, index) =>
@@ -218,7 +266,7 @@
       ),
     }))
   })
-  const matchesExpected = (memory: any) =>
+  const matchesExpected = (memory: unknown) =>
     memoryExcerpts(memory).some((excerpt) =>
       expectedSources.value.some((source) => normalize(source.text) === normalize(excerpt))
     )

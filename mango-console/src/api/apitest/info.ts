@@ -77,7 +77,7 @@ export function putApiInfo(data: object) {
   })
 }
 
-export function deleteApiInfo(id: number | string[] | number[]) {
+export function deleteApiInfo(id: number | string | Array<number | string>) {
   return deleted({
     url: '/api/info',
     data: () => {

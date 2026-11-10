@@ -49,11 +49,32 @@ def case(identity, interface_id, module_id, **kwargs):
     return SimpleNamespace(id=identity, module_id=module_id, project_product_id=1,
                            repository_key="backend", branch="main", interface_source_key_hash=f"source-{interface_id}",
                            **{"status": "completed", "api_case_id": 100, "coverage_validity": "valid",
+                              "api_case_revision_id": None, "api_case_revision": None,
+                              "api_case": SimpleNamespace(id=100, project_product_id=1, module_id=module_id),
                               "current_snapshot": SimpleNamespace(scan=scan(1, module_id), payload={
                                   key: [] for key in ModuleCoverageService.REQUIRED_CURRENT_CASE_PAYLOAD_KEYS}), **kwargs})
 
 
 class ModuleCoverageOverviewTests(SimpleTestCase):
+    def test_analysis_gap_keeps_bindings_and_scene_progress_but_not_full_coverage(self):
+        for options in (
+            {"gap_reason": "缺少业务分支"},
+            {"scan": scan(1, 1, summary={"inventory_only": True})},
+            {"module_interface": SimpleNamespace(coverage_policy="included", last_seen_scan=scan(2, 1, commit_sha="b" * 40))},
+        ):
+            with self.subTest(options=options):
+                asset = case(1, 1, 1)
+                result = self.overview([module(1)], interfaces=[interface(
+                    1, 1, api_info_id=8, api_info_binding_status="bound", **options,
+                )], cases=[asset])
+                self.assertEqual(result["summary"]["covered_interface_count"], 0)
+                self.assertEqual(result["summary"]["partial_interface_count"], 1)
+                self.assertEqual(result["summary"]["completed_count"], 1)
+                self.assertEqual(result["summary"]["bound_count"], 1)
+                self.assertEqual(result["summary"]["incomplete_interface_count"], 1)
+                self.assertEqual(result["interface_gap_count"], 1)
+                self.assertEqual(asset.api_case_id, 100)
+
     def test_inventory_completes_stage_one_without_graphs_or_cases(self):
         result = self.overview([module(1)], interfaces=[interface(1, 1, mermaid="", node_ids=[],
                               scan=scan(10, 1, summary={"inventory_only": True}))],
@@ -74,11 +95,14 @@ class ModuleCoverageOverviewTests(SimpleTestCase):
         self.assertEqual(result["modules"][0]["inventory_scan_ids"], [2, 1])
         self.assertTrue(result["modules"][0]["inventory_completed"])
 
-    def test_empty_module_can_be_inventoried_and_summary_ignores_module_selection(self):
+    def test_empty_module_inventory_summary_follows_module_selection(self):
         modules = [module(1), module(2)]
         result = self.overview(modules, scans=[scan(1, 1, summary={"inventory_only": True})], module_ids=[2])
-        self.assertEqual(result["project_inventory_summary"]["inventoried_count"], 1)
+        self.assertEqual(result["project_inventory_summary"]["inventoried_count"], 0)
         self.assertEqual(result["summary"]["inventoried_count"], 0)
+        selected = self.overview(modules, scans=[scan(1, 1, summary={"inventory_only": True})], module_ids=[1])
+        self.assertEqual(selected["project_inventory_summary"]["inventoried_count"], 1)
+        self.assertEqual(selected["project_inventory_summary"]["inventory_rate"], 100)
 
     def test_analysis_requires_current_graph_and_valid_scenarios_not_apiinfo_binding(self):
         result = self.overview([module(1)], interfaces=[interface(i, 1) for i in (1, 2)],
@@ -103,8 +127,31 @@ class ModuleCoverageOverviewTests(SimpleTestCase):
         relation = SimpleNamespace(coverage_policy="included", last_seen_scan=scan(2, 1, commit_sha="b" * 40))
         target = interface(1, 1, module_interface=relation)
         result = self.overview([module(1)], interfaces=[target], cases=[case(1, 1, 1)])
-        self.assertEqual(result["summary"]["analysis_gap_count"], 1)
+        self.assertEqual(result["summary"]["analysis_review_count"], 1)
+        self.assertEqual(result["summary"]["analysis_gap_count"], 0)
         self.assertEqual(result["summary"]["analyzed_interface_count"], 0)
+
+    def test_analysis_six_states_explain_reason_and_recover_without_changing_bindings(self):
+        relation = SimpleNamespace(coverage_policy="included", last_seen_scan=scan(2, 1, commit_sha="b" * 40))
+        target = interface(1, 1, module_interface=relation, api_info_id=8)
+        assess = lambda: ModuleCoverageService.interface_analysis_assessment(target, 1, 1)
+        result = assess()
+        self.assertEqual(result["analysis_status"], "review")
+        self.assertIn("a" * 40, result["analysis_reason"])
+        self.assertEqual(result["latest_inventory_commit_sha"], "b" * 40)
+        self.assertEqual(target.api_info_id, 8)
+        target.scan = relation.last_seen_scan
+        self.assertEqual(assess()["analysis_status"], "completed")
+        target.gap_reason = "缺少异常分支"
+        self.assertEqual(assess()["analysis_reason"], "缺少异常分支")
+        self.assertEqual(assess()["analysis_status"], "gap")
+        relation.coverage_policy = "deferred"
+        self.assertEqual(assess()["analysis_status"], "deferred")
+        relation.coverage_policy = "excluded"
+        self.assertEqual(assess()["analysis_status"], "excluded")
+        relation.coverage_policy = "included"
+        target.mermaid = ""
+        self.assertEqual(assess()["analysis_status"], "pending")
 
     def test_analysis_filters_use_overview_assessment_before_pagination(self):
         targets = []
@@ -168,12 +215,14 @@ class ModuleCoverageOverviewTests(SimpleTestCase):
         self.assertEqual(result["summary"]["covered_interface_count"], 0)
         self.assertEqual(result["summary"]["uncovered_interface_count"], 1)
 
-    def test_project_scan_progress_is_independent_of_module_selection(self):
+    def test_scan_and_inventory_progress_follow_module_selection(self):
         modules = [module(1), module(2), module(3)]
         full = self.overview(modules, scans=[scan(1, 1)])
         filtered = self.overview(modules, scans=[scan(1, 1)], module_ids=[2])
-        self.assertEqual(filtered["project_scan_summary"], full["project_scan_summary"])
-        self.assertEqual(filtered["project_scan_summary"], {"leaf_count": 3, "scanned_count": 1, "unscanned_count": 2})
+        self.assertEqual(full["project_scan_summary"], {"leaf_count": 3, "scanned_count": 1, "unscanned_count": 2})
+        self.assertEqual(filtered["project_scan_summary"], {"leaf_count": 1, "scanned_count": 0, "unscanned_count": 1})
+        self.assertEqual(filtered["project_inventory_summary"]["leaf_count"], 1)
+        self.assertEqual(filtered["project_inventory_summary"]["inventoried_count"], 0)
         self.assertEqual(filtered["summary"]["leaf_count"], 1)
         self.assertEqual([row["id"] for row in filtered["modules"]], [2])
 
@@ -287,7 +336,9 @@ class ModuleCoverageOverviewTests(SimpleTestCase):
                          "deferred_case_count": deferred}
                 cases = MagicMock()
                 cases.filter.return_value.values.return_value.annotate.return_value = [stats]
+                cases.filter.return_value.select_related.return_value = [case(1, 1, 1)]
                 with patch.object(ModuleCoverageService, "active_cases", return_value=cases), \
+                        patch.object(ModuleCoverageService, "case_coverage_assessment", return_value={"status": "valid"}), \
                         patch("src.apps.auto_api.services.module_coverage_parts.query."
                               "ModuleCoverageInterfaceSnapshot.objects") as snapshots:
                     snapshots.filter.return_value.values.return_value.annotate.return_value = []
@@ -311,7 +362,9 @@ class ModuleCoverageOverviewTests(SimpleTestCase):
                  for identity in (2, 4)]
         cases = MagicMock()
         cases.filter.return_value.values.return_value.annotate.return_value = stats
+        cases.filter.return_value.select_related.return_value = [case(2, 2, 1), case(4, 4, 1)]
         with patch.object(ModuleCoverageService, "active_cases", return_value=cases), \
+                patch.object(ModuleCoverageService, "case_coverage_assessment", return_value={"status": "valid"}), \
                 patch("src.apps.auto_api.services.module_coverage_parts.query."
                       "ModuleCoverageInterfaceSnapshot.objects") as snapshots:
             snapshots.filter.return_value.values.return_value.annotate.return_value = []
@@ -328,6 +381,14 @@ class ModuleCoverageOverviewTests(SimpleTestCase):
                                                           resolution_statuses=["resolved"])
             self.assertEqual(result["count"], 1)
             self.assertEqual([row["id"] for row in result["items"]], [1])
+
+            targets[1].gap_reason = "当前分析缺少分支"
+            result = ModuleCoverageService.interface_page(source, coverage_statuses=["covered"])
+            self.assertEqual([row["id"] for row in result["items"]], [4])
+            result = ModuleCoverageService.interface_page(source, coverage_statuses=["partial"], analysis_statuses=["gap"])
+            self.assertEqual(result["count"], 1)
+            self.assertEqual(result["items"][0]["id"], 2)
+            self.assertEqual(result["items"][0]["effective_completed_case_count"], 1)
 
     def test_interface_search_filters_database_fields_and_validates_states(self):
         from src.apps.auto_api.exceptions import AutoApiError

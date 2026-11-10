@@ -1,3 +1,4 @@
+import { loadFeedbackModule } from '../../../../helpers/load-feedback-modules.mjs'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import vm from 'node:vm'
@@ -9,6 +10,14 @@ import { computed, nextTick, reactive, ref, watch } from 'vue'
 const filename = new URL('../../../../../src/views/timing/tasks/case/index.vue', import.meta.url)
 const source = fs.readFileSync(filename, 'utf8')
 const { descriptor } = parse(source, { filename: filename.pathname })
+function actual(file, dependencies = {}) {
+  const exports = {}, source = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
+  new Function('exports', 'require', source)(exports, name => { if (name in dependencies) return dependencies[name]; { if (['@/utils/load-error', '@/utils/api-response'].includes(name)) return loadFeedbackModule(name); throw Error('Unexpected dependency ' + name) } })
+  return exports
+}
+const records = actual(new URL('../../../../../src/views/timing/tasks/case/case-records.ts', import.meta.url), {
+  '@/utils/business-format': actual(new URL('../../../../../src/utils/business-format.ts', import.meta.url)),
+})
 const script = ts.createSourceFile(
   filename.pathname,
   descriptor.scriptSetup.content,
@@ -89,6 +98,9 @@ function createFilter() {
     boundCaseKeysLoading,
     boundCaseKeySet,
     candidateLoading,
+    candidateError: ref(''), boundCaseKeysError: ref(''), writeBusy: ref(false),
+    available: () => true, captureContext: () => () => true,
+    parseCandidateCases: records.parseCandidateCases, parseBoundCaseKeys: records.parseBoundCaseKeys,
     currentTaskId,
     currentProjectProductId: ref(10),
     getLeafValue: (value) => Array.isArray(value) ? value.at(-1) : value,
@@ -118,9 +130,9 @@ test('older bound-case responses cannot overwrite the latest case type', async (
   assert.deepEqual(JSON.parse(JSON.stringify(filter.boundRequests[1].args)), {
     task_id: 216, type: 1, case_ids_only: 1,
   })
-  filter.boundRequests[1].resolve({ data: [{ case_id: 1 }] })
+  filter.boundRequests[1].resolve({ code: 200, data: [{ case_id: 1 }] })
   await latest
-  filter.boundRequests[0].resolve({ data: [{ case_id: 3 }] })
+  filter.boundRequests[0].resolve({ code: 200, data: [{ case_id: 3 }] })
   await older
   assert.deepEqual(Array.from(filter.boundCaseKeySet.value), ['1'])
   assert.equal(filter.isCandidateSelectable({ key: 1, published_release_id: 101 }), false)
@@ -131,11 +143,11 @@ test('older bound requests do not end loading or enable selection while latest i
   const filter = createFilter()
   const older = filter.loadBoundCaseKeys()
   const latest = filter.loadBoundCaseKeys()
-  filter.boundRequests[0].resolve({ data: [] })
+  filter.boundRequests[0].resolve({ code: 200, data: [] })
   await older
   assert.equal(filter.boundCaseKeysLoading.value, true)
   assert.equal(filter.isCandidateSelectable({ key: 1, published_release_id: 101 }), false)
-  filter.boundRequests[1].resolve({ data: [] })
+  filter.boundRequests[1].resolve({ code: 200, data: [] })
   await latest
   assert.equal(filter.boundCaseKeysLoading.value, false)
   assert.equal(filter.isCandidateSelectable({ key: 1, published_release_id: 101 }), true)
@@ -146,7 +158,7 @@ test('clearing the task invalidates in-flight bound requests and clears loading'
   const older = filter.loadBoundCaseKeys()
   filter.currentTaskId.value = ''
   await filter.loadBoundCaseKeys()
-  filter.boundRequests[0].resolve({ data: [{ case_id: 1 }] })
+  filter.boundRequests[0].resolve({ code: 200, data: [{ case_id: 1 }] })
   await older
   assert.deepEqual(Array.from(filter.boundCaseKeySet.value), [])
   assert.equal(filter.boundCaseKeysLoading.value, false)
@@ -166,7 +178,7 @@ test('candidate requests submit every selected filter, including zero and string
     case_name: '筛选用例', levels: '0,1', scenario_layers: '0,2',
     scenario_types: '0,3', scenario_tags: 'temporary_validation,routine_regression',
   })
-  request.resolve({ data: [] })
+  request.resolve({ code: 200, data: [] })
   await pending
   assert.equal(filter.candidateLoading.value, false)
 })
@@ -176,11 +188,11 @@ test('older responses cannot override the latest filter result or end its loadin
   const older = filter.loadCandidateCases()
   filter.addForm.scenarioTags = ['temporary_validation']
   const latest = filter.loadCandidateCases()
-  filter.requests[0].resolve({ data: [{ key: 11 }] })
+  filter.requests[0].resolve({ code: 200, data: [{ key: 11, title: 'Example 11' }] })
   await older
   assert.deepEqual(ids(filter.candidateCases.value), [])
   assert.equal(filter.candidateLoading.value, true)
-  filter.requests[1].resolve({ data: [{ key: 12 }] })
+  filter.requests[1].resolve({ code: 200, data: [{ key: 12, title: 'Example 12' }] })
   await latest
   assert.deepEqual(ids(filter.candidateCases.value), [12])
   assert.equal(filter.candidateLoading.value, false)
@@ -190,9 +202,9 @@ test('an older request arriving after the latest result cannot overwrite it', as
   const filter = createFilter()
   const older = filter.loadCandidateCases()
   const latest = filter.loadCandidateCases()
-  filter.requests[1].resolve({ data: [{ key: 12 }] })
+  filter.requests[1].resolve({ code: 200, data: [{ key: 12, title: 'Example 12' }] })
   await latest
-  filter.requests[0].resolve({ data: [{ key: 11 }] })
+  filter.requests[0].resolve({ code: 200, data: [{ key: 11, title: 'Example 11' }] })
   await older
   assert.deepEqual(ids(filter.candidateCases.value), [12])
 })

@@ -55,18 +55,20 @@ export function deleteSystemTestSuite(id: number | string[] | number[]) {
   })
 }
 
-export function getSystemTestSuiteShare(id: number | string) {
+export function getSystemTestSuiteShare(id: number | string, silentError = false) {
   return get({
     url: 'system/test/suite/share',
+    silentError,
     data: () => {
       return { id: id }
     },
   })
 }
 
-export function getSystemTestSuiteDiagnosticMarkdown(id: number | string) {
+export function getSystemTestSuiteDiagnosticMarkdown(id: number | string, silentError = false) {
   return get<DiagnosticMarkdownResult>({
     url: 'system/test/suite/diagnostic/markdown',
+    silentError,
     data: () => ({ id }),
   })
 }

@@ -63,7 +63,9 @@ class ApiCaseMutationService:
 
     @staticmethod
     def validate_config(config: dict, project_product_id=None) -> dict:
+        from src.apps.auto_api.services.resource_cleanup import ApiResourceCleanupService
         validators = {
+            'resource_cleanup': lambda value: ApiResourceCleanupService.validate_config(value, project_product_id),
             "callback_checks": lambda value: ApiCallbackService.validate_config(value, project_product_id),
             "front_custom": lambda value: validate_model_list(value, ApiEnvironmentKeyValueItem, "前置方法"),
             "front_sql": lambda value: validate_data_source_operation_list(value, "前置数据库操作", project_product_id),
@@ -102,6 +104,9 @@ class ApiCaseMutationService:
     ) -> dict:
         identity, config = cls.split_payload(dict(payload))
         config = cls.validate_config(config, identity.get("project_product"))
+        if config.get('resource_cleanup'):
+            from src.apps.auto_api.exceptions import API_RESOURCE_CONFIG_INVALID
+            raise AutoApiError(API_RESOURCE_CONFIG_INVALID, value=('请先创建Case和步骤，再配置资源清理',))
         if config.get('callback_checks'):
             from src.apps.auto_api.exceptions import API_CALLBACK_CONFIG_INVALID
             raise AutoApiError(API_CALLBACK_CONFIG_INVALID, value=('请先创建用例及步骤，再配置回调验证',))
@@ -156,6 +161,10 @@ class ApiCaseMutationService:
         ):
             raise AutoApiError(API_CASE_PREPUBLICATION_PRODUCT_CHANGE_NOT_ALLOWED)
         config = cls.validate_config(config, identity.get("project_product") or instance.project_product_id)
+        if config.get('resource_cleanup') or instance.resource_cleanup:
+            from src.apps.auto_api.services.resource_cleanup import ApiResourceCleanupService
+            ApiResourceCleanupService.validate_config(config.get('resource_cleanup', instance.resource_cleanup),
+                normalized_project_product_id or instance.project_product_id, instance.id)
         if config.get('callback_checks') or instance.callback_checks:
             ApiCallbackService.validate_config(
                 config.get('callback_checks', instance.callback_checks),

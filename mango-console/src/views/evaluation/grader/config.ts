@@ -1,5 +1,12 @@
 export const graderColumns = [
-  { title: '评分器', dataIndex: 'name', slotName: 'name', width: 200, ellipsis: true, tooltip: true },
+  {
+    title: '评分器',
+    dataIndex: 'name',
+    slotName: 'name',
+    width: 200,
+    ellipsis: true,
+    tooltip: true,
+  },
   { title: '版本', slotName: 'version', width: 80, align: 'center' },
   { title: '类别', slotName: 'category', width: 120, align: 'center' },
   {
@@ -16,5 +23,8 @@ export const categoryOptions = [
   { label: '专业算法', value: 'algorithm' },
   { label: 'LLM 裁判', value: 'model' },
 ]
-export const categoryEnumOptions = categoryOptions.map(({ value, label }) => ({ key: value, title: label }))
+export const categoryEnumOptions = categoryOptions.map(({ value, label }) => ({
+  key: value,
+  title: label,
+}))
 export const GRADER_SCROLL_X = 960

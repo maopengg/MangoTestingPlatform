@@ -138,6 +138,7 @@
 
 <script lang="ts" setup>
   import { computed } from 'vue'
+  import type { LiveResult } from './ui-live-workbench'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import UiStepRuntimeResult from '@/components/reports/UiStepRuntimeResult.vue'
   import { useSelectValueStore } from '@/store/modules/get-ope-value'
@@ -146,7 +147,7 @@
     defineProps<{
       visible: boolean
       title?: string
-      data?: any
+      data?: LiveResult | null
       applyLoading?: boolean
       applied?: boolean
     }>(),
@@ -167,7 +168,7 @@
     if (props.data?.check_mode !== 'deep') return []
     const updates = props.data?.selected_result?.locator_engine?.locator_updates
     return Array.isArray(updates)
-      ? updates.filter((item: any) => item?.same_target === true && item?.slot && item?.loc)
+      ? updates.filter((item) => item?.same_target === true && item?.slot && item?.loc)
       : []
   })
   const expectedEventText = computed(() => {
@@ -189,13 +190,13 @@
     return '暂无基线'
   })
 
-  function formatValue(value: any) {
+  function formatValue(value: unknown) {
     if (value === null || value === undefined || value === '') return '-'
     if (typeof value === 'object') return JSON.stringify(value)
     return String(value)
   }
 
-  function formatDuration(value: any) {
+  function formatDuration(value: unknown) {
     const duration = Number(value)
     if (!Number.isFinite(duration)) return '-'
     if (duration >= 1000) return `${(duration / 1000).toFixed(duration >= 10000 ? 1 : 2)} 秒`
@@ -222,7 +223,7 @@
     return map[status] || map.invalid
   }
 
-  function elementExpName(value: any) {
+  function elementExpName(value: unknown) {
     const labels: Record<number, string> = {
       0: 'XPATH',
       1: 'ID',

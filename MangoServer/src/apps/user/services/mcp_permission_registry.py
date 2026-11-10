@@ -1,6 +1,9 @@
 """MCP 操作显式登记；未登记的工具、资源和提示词不开放。"""
 
 MCP_PERMISSION_RULES = {
+    'get_api_case_resource_cleanup_schema': {'permission_key': 'api.case:read', 'project_scoped': False, 'public': False, 'additional_permission_keys': ()},
+    'get_api_case_resource_cleanup_results': {'permission_key': 'api.case:read', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
+    'cleanup_api_case_resources': {'permission_key': 'api.case:read', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
     'get_monitoring_script_context': {'permission_key': 'index.home:read', 'project_scoped': False, 'public': False, 'additional_permission_keys': ()},
     'list_monitoring_tasks': {'permission_key': 'monitoring.task:read', 'project_scoped': True, 'public': False, 'additional_permission_keys': ()},
     'get_monitoring_task': {'permission_key': 'monitoring.task:read', 'project_scoped': True, 'public': False, 'additional_permission_keys': (), 'requires_resolved_scope': True},

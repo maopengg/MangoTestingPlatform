@@ -28,6 +28,9 @@ def owned_document(tenant='7'):
 
 class CleanupResourceTests(SimpleTestCase):
     def setUp(self):
+        resolver = patch.object(Resources, 'resolve_index', side_effect=lambda target, name: (name, 'AUTO_INDEX_UUID'))
+        resolver.start()
+        self.addCleanup(resolver.stop)
         governor = patch('src.apps.data_factory.services.datasource_governor.DatasourceGovernorService.operation',
                          side_effect=lambda target, **kwargs: nullcontext())
         governor.start()
@@ -301,6 +304,73 @@ class CleanupResourceTests(SimpleTestCase):
         self.assertTrue(all(call.kwargs['timeout'] == 5 for call in calls))
         self.assertTrue(any(call.kwargs.get('realtime') is False for call in calls))
 
+    def test_verified_timeout_resolves_only_its_request_and_keeps_original_audit(self):
+        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
+        record = SimpleNamespace(request_id='AUTO_DELETE', database_id=10, source_detail={}, slow_threshold_ms=20000)
+        handle = SqlExecutionAuditHandle(record, 0)
+        timeout = DataFactoryError(DATA_SOURCE_ELASTICSEARCH_REQUEST_TIMEOUT)
+        timeout.__cause__ = TimeoutError()
+        with Infrastructure.scope(), patch.object(Audit, 'save_completion'), patch.object(Audit, 'notify_slow'):
+            Audit.finish_failure(handle, timeout, 5001)
+            unrelated = TimeoutError()
+            unrelated._datasource_audit_request_id = 'AUTO_OTHER'
+            Infrastructure.capture(unrelated, result_unknown=True)
+            Infrastructure.capture(DataFactoryError(DATASOURCE_AUDIT_COMPLETION_FAILED))
+            self.assertEqual(len(Infrastructure.current()), 3)
+            self.run_checks([owned_document(), timeout] + [None] * 6)
+            self.assertEqual({issue.request_id for issue in Infrastructure.current()}, {'AUTO_OTHER', None})
+            self.assertEqual(record.status, 'timeout')
+            self.assertIn('34183', record.error_message)
+            self.assertEqual(self.item.cleanup_resources['uncertain_requests'][0]['request_id'], 'AUTO_DELETE')
+
+    def test_failed_verification_and_pending_permit_cannot_resolve_timeout(self):
+        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
+        from src.apps.data_factory.schemas.cleanup_resource import EsUncertainRequest, EsCleanupCheckResult, EsUnknownPermit
+        state = Resources.state(self.item)
+        state.uncertain_requests.append(EsUncertainRequest(
+            request_id='AUTO_DELETE', index=self.snapshot.index, document_id=self.snapshot.document_id))
+        with Infrastructure.scope():
+            timeout = TimeoutError()
+            timeout._datasource_audit_request_id = 'AUTO_DELETE'
+            Infrastructure.capture(timeout, result_unknown=True)
+            Resources.resolve_verified(state)
+            self.assertEqual(len(Infrastructure.current()), 1)
+            state.results.append(EsCleanupCheckResult(index=self.snapshot.index, document_id='1001',
+                success=True, checked_at=timezone.now().isoformat(), attempts=4))
+            state.unknown_permits.append(EsUnknownPermit(group='a' * 32, owner='b' * 32,
+                index=self.snapshot.index, document_id='1001'))
+            Resources.resolve_verified(state)
+            self.assertEqual(len(Infrastructure.current()), 1)
+            state.unknown_permits.clear()
+            Resources.resolve_verified(state)
+            self.assertFalse(Infrastructure.current())
+
+    def test_alias_retarget_or_recreated_index_blocks_before_document_read(self):
+        self.snapshot.requested_index = self.snapshot.index
+        self.snapshot.index_uuid = 'AUTO_ORIGINAL'
+        with patch.object(Resources, 'resolve_index', return_value=(self.snapshot.index, 'AUTO_RECREATED')), \
+                patch.object(Resources, 'document') as document:
+            with self.assertRaises(DataFactoryError) as raised:
+                Resources.sample(self.snapshot, Mock(), allow_delete=True)
+        self.assertEqual(raised.exception.code, 34181)
+        document.assert_not_called()
+
+    @patch.object(Resources, 'resolve_binding')
+    @patch('src.apps.data_factory.services.cleanup_resource.DatasourceTargetService.resolve')
+    @patch.object(Resources, 'document', return_value=None)
+    def test_capture_freezes_alias_target_and_keeps_original_rule(self, document, target, binding):
+        binding.return_value = self.binding
+        self.template.cleanup_resources = [self.rule.model_dump(mode='json')]
+        with patch.object(Resources, 'resolve_index', return_value=('example_template_7_new', 'AUTO_UUID')):
+            raw = Resources.capture(self.template, self.entity, self.item.data, SimpleNamespace(environment=0))
+        self.item.cleanup_resources = raw
+        state = Resources.validate_snapshot(self.item)
+        self.assertEqual(state.snapshots[0].index, 'example_template_7_new')
+        self.assertEqual(state.snapshots[0].requested_index, 'example_template_7')
+        self.assertEqual(state.snapshots[0].index_uuid, 'AUTO_UUID')
+        self.assertEqual(document.call_args.args[1], 'example_template_7_new')
+        self.assertEqual(state.snapshots[0].rule.index_template, self.rule.index_template)
+
     def test_http_timeout_keeps_failed_write_audit_and_verifies_both_read_views(self):
         clock = [0]
         requests = []
@@ -351,6 +421,7 @@ class CleanupResourceTests(SimpleTestCase):
     def test_audit_completion_timeout_cannot_be_reconciled_as_transport_timeout(self):
         error = DataFactoryError(DATASOURCE_AUDIT_COMPLETION_FAILED)
         error.__cause__ = TimeoutError()
+        error.__cause__._datasource_unknown_permit = ('a' * 32, 'b' * 32)
         calls = self.run_checks([owned_document(), error], expect_failure=True)
         self.assertEqual(len(calls), 2)
 

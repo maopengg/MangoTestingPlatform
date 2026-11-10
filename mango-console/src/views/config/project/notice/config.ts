@@ -1,79 +1,60 @@
-import { FormItem } from '@/types/components'
-import { reactive, ref } from 'vue'
-import { Message } from '@arco-design/web-vue'
-import { useTable, useTableColumn } from '@/hooks/table'
+import type { NoticeDraft } from './types'
+import { useTableIndexColumn, useTableColumn } from '@/hooks/table'
 import { updateTimeColumn, updateUserColumn } from '@/utils/update-user'
-
-const table = useTable()
-
-export const formItems: FormItem[] = reactive([
+type NoticeField = {
+  label: string
+  required: boolean
+  placeholder: string
+} & (
+  | { key: 'name'; type: 'input' }
+  | { key: 'mail'; type: 'input-tag' }
+  | { key: Exclude<keyof NoticeDraft, 'name' | 'mail'>; type: 'textarea' }
+)
+export const noticeFields: NoticeField[] = [
   {
-    label: '通知组名称',
     key: 'name',
-    value: ref(''),
+    label: '通知组名称',
     type: 'input',
     required: true,
     placeholder: '请输入通知组名称',
-    validator: function () {
-      if (this.value.length === 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
   },
   {
-    label: '邮箱联系人',
     key: 'mail',
-    value: ref([]),
+    label: '邮箱联系人',
     type: 'input-tag',
     required: false,
     placeholder: '请输入邮箱，回车输入多个',
-    validator: function () {
-      return true
-    },
   },
   {
-    label: '企微webhook',
     key: 'work_weixin',
-    value: ref(''),
+    label: '企微webhook',
     type: 'textarea',
     required: false,
     placeholder: '请输入企微webhook',
-    validator: function () {
-      return true
-    },
   },
   {
-    label: '飞书webhook',
     key: 'feishu',
-    value: ref(''),
+    label: '飞书webhook',
     type: 'textarea',
     required: false,
     placeholder: '请输入飞书webhook',
-    validator: function () {
-      return true
-    },
   },
   {
-    label: '钉钉webhook',
     key: 'dingding',
-    value: ref(''),
+    label: '钉钉webhook',
     type: 'textarea',
     required: false,
     placeholder: '请输入钉钉webhook',
-    validator: function () {
-      return true
-    },
   },
-])
-
+]
 export const tableColumns = useTableColumn([
-  table.indexColumn,
+  { ...useTableIndexColumn(), align: 'center' },
   {
     title: '通知组名称',
     key: 'name',
     dataIndex: 'name',
+    ellipsis: true,
+    tooltip: true,
     align: 'left',
     width: 150,
   },
@@ -113,12 +94,14 @@ export const tableColumns = useTableColumn([
     tooltip: true,
     width: 150,
   },
-  updateUserColumn(),
-  updateTimeColumn(),
+  { ...updateUserColumn(), key: 'update_user' },
+  { ...updateTimeColumn(), key: 'update_time' },
   {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     width: 160,
+    fixed: 'right',
+    align: 'center',
   },
 ])

@@ -23,9 +23,17 @@
         <NotificationCenter />
       </template>
     </a-popover>
-    <span v-if="appStore.actionBar.isShowRefresh" class="mango-action-item" @click="onRefrehRoute">
+    <a-button
+      v-if="appStore.actionBar.isShowRefresh"
+      type="text"
+      size="small"
+      class="mango-action-item"
+      :loading="refreshLoading"
+      aria-label="刷新当前页面"
+      @click="onRefrehRoute"
+    >
       <RefreshIcon />
-    </span>
+    </a-button>
     <span
       v-if="appStore.actionBar.isShowFullScreen && appStore.deviceType !== 'mobile'"
       class="mango-action-item"
@@ -42,7 +50,6 @@
 <script lang="ts">
   import { defineComponent, onBeforeUnmount, onMounted, ref } from 'vue'
   import { Message, Notification } from '@arco-design/web-vue'
-  import { useRoute, useRouter } from 'vue-router'
   import {
     IconSettings as SettingIcon,
     IconSearch as SearchIcon,
@@ -50,7 +57,8 @@
     IconRefresh as RefreshIcon,
     IconNotification as NotificationsIcon,
   } from '@arco-design/web-vue/es/icon'
-  import { useDebounceFn, useFullscreen } from '@vueuse/core'
+  import { useFullscreen } from '@vueuse/core'
+  import { useRouteRefresh } from '@/hooks/use-route-refresh'
   import useEmit from '@/hooks/useEmit'
   import useAppConfigStore from '@/store/modules/app-config'
   import { useNotificationMessage } from '@/store/modules/notification-message'
@@ -76,8 +84,7 @@
       const settingRef = ref()
       const notificationMessage = useNotificationMessage()
       const appStore = useAppConfigStore()
-      const router = useRouter()
-      const route = useRoute()
+      const { loading: refreshLoading, refresh: onRefrehRoute } = useRouteRefresh()
       const emitter = useEmit()
       let todoRefreshTimer: ReturnType<typeof setInterval> | undefined
       let lastTodoReminderAt = 0
@@ -182,14 +189,6 @@
         }
       }
 
-      const debouncedFn = useDebounceFn(() => {
-        router.replace({ path: '/redirect' + route.path, query: route.query })
-      }, 200)
-
-      function onRefrehRoute() {
-        debouncedFn()
-      }
-
       function onShowSetting() {
         emitter?.emit('show-setting')
       }
@@ -203,6 +202,7 @@
         onShowSearch,
         onScreenFull,
         onRefrehRoute,
+        refreshLoading,
         onShowSetting,
         onNotificationVisibleChange,
       }

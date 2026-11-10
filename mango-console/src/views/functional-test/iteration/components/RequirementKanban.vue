@@ -1,5 +1,5 @@
 <template>
-  <a-spin class="mango-requirement-kanban__spin" :loading="loading">
+  <mango-panel-spin class="mango-requirement-kanban__spin" :loading="loading">
     <div class="mango-requirement-kanban">
       <section
         v-for="column in columns"
@@ -18,9 +18,11 @@
             v-for="item in column.items"
             :key="item.id"
             class="mango-requirement-kanban__card"
-            draggable="true"
+            :draggable="!loading && !busyIds?.includes(item.id)"
+            tabindex="0"
+            @keydown.enter="emit('open', item)"
             @dragstart="dragStart(item)"
-            @dragend="dragging = undefined"
+            @dragend="dragging = null"
             @click="emit('open', item)"
           >
             <div class="mango-requirement-kanban__card-key">
@@ -28,8 +30,20 @@
               <a-space size="mini">
                 <a-tag size="small">V{{ item.version_no }}</a-tag>
                 <a-dropdown trigger="click" @click.stop>
-                  <a-button size="mini" type="text"><icon-more /></a-button>
-                  <template #content><a-doption @click="emit('cancel', item)">取消需求</a-doption></template>
+                  <a-button
+                    size="mini"
+                    type="text"
+                    aria-label="需求操作"
+                    :loading="busyIds?.includes(item.id)"
+                    ><icon-more
+                  /></a-button>
+                  <template #content
+                    ><a-doption
+                      :disabled="loading || busyIds?.includes(item.id)"
+                      @click="emit('cancel', item)"
+                      >取消需求</a-doption
+                    ></template
+                  >
                 </a-dropdown>
               </a-space>
             </div>
@@ -48,50 +62,176 @@
               <span>用例 {{ item.case_count || 0 }}</span>
               <span>进度 {{ formatRate(item.test_metrics?.progress) }}</span>
               <span>通过 {{ formatRate(item.test_metrics?.pass_rate) }}</span>
-              <a-tag v-if="item.open_defect_count" size="small" color="red">缺陷 {{ item.open_defect_count }}</a-tag>
+              <a-tag v-if="item.open_defect_count" size="small" color="red"
+                >缺陷 {{ item.open_defect_count }}</a-tag
+              >
             </div>
           </article>
-          <a-empty v-if="!column.items.length" description="暂无需求" />
+          <div v-if="!column.items.length" class="mango-empty-state">暂无需求</div>
         </div>
       </section>
     </div>
-  </a-spin>
+  </mango-panel-spin>
 </template>
 
 <script lang="ts" setup>
-  import { ref } from 'vue'
+  import { onActivated, onBeforeUnmount, onDeactivated, shallowRef, watch } from 'vue'
+  import type { IterationBoardColumn, IterationSuite } from '../types'
+  import type { IterationUserOption } from '../details/types'
 
   const emit = defineEmits<{
-    (event: 'open', item: any): void
-    (event: 'move', payload: { item: any; status: number }): void
-    (event: 'cancel', item: any): void
+    (event: 'open', item: IterationSuite): void
+    (event: 'move', payload: { item: IterationSuite; status: number }): void
+    (event: 'cancel', item: IterationSuite): void
   }>()
-  const props = defineProps<{ columns: any[]; loading?: boolean; priorityOptions?: any[] }>()
-  const dragging = ref<any>()
-  const priorityTitle = (value: number) => props.priorityOptions?.find((item) => item.key === value)?.title || '-'
-  const formatRate = (value: any) => `${Number(value || 0).toFixed(0)}%`
-  const dragStart = (item: any) => { dragging.value = item }
-  const drop = (status: number) => {
-    if (!dragging.value || dragging.value.status === status) return
-    emit('move', { item: dragging.value, status })
-    dragging.value = undefined
+  const props = defineProps<{
+    columns: IterationBoardColumn[]
+    loading?: boolean
+    priorityOptions?: IterationUserOption[]
+    busyIds?: number[]
+    contextKey?: string
+  }>()
+  const dragging = shallowRef<IterationSuite | null>(null)
+  let active = true
+  const priorityTitle = (value: number) =>
+    props.priorityOptions?.find((item) => item.key === value)?.title || '-'
+  const formatRate = (value: number | undefined) => `${Number(value || 0).toFixed(0)}%`
+  const dragStart = (item: IterationSuite) => {
+    if (active && !props.loading && !props.busyIds?.includes(item.id)) dragging.value = item
   }
+  const drop = (status: number) => {
+    const row = dragging.value
+    dragging.value = null
+    if (
+      !active ||
+      props.loading ||
+      !row ||
+      props.busyIds?.includes(row.id) ||
+      row.status === status
+    )
+      return
+    if (
+      !props.columns.some((column) => column.items.includes(row)) ||
+      !props.columns.some((column) => column.status === status)
+    )
+      return
+    emit('move', { item: row, status })
+  }
+  watch(
+    () => [props.contextKey, props.columns, props.loading],
+    () => {
+      dragging.value = null
+    },
+    { flush: 'sync' }
+  )
+  onDeactivated(() => {
+    active = false
+    dragging.value = null
+  })
+  onActivated(() => {
+    active = true
+  })
+  onBeforeUnmount(() => {
+    active = false
+    dragging.value = null
+  })
 </script>
 
 <style lang="less" scoped>
-  .mango-requirement-kanban__spin { display: block; height: 100%; min-height: 0; }
-  .mango-requirement-kanban { display: grid; height: 100%; min-height: 0; grid-template-columns: repeat(6, minmax(240px, 1fr)); gap: 10px; overflow: auto; padding: 10px; background: var(--m-surface); }
-  .mango-requirement-kanban__column { display: flex; min-height: 100%; flex-direction: column; border: 1px solid var(--m-border); border-radius: var(--m-radius-md); background: var(--m-surface); }
-  .mango-requirement-kanban__column-header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--m-border); color: var(--m-text-1); }
-  .mango-requirement-kanban__status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--m-muted); }
-  .mango-requirement-kanban__status-dot[data-status='3'], .mango-requirement-kanban__status-dot[data-status='5'] { background: var(--m-primary); }
-  .mango-requirement-kanban__status-dot[data-status='4'] { background: var(--m-warning); }
-  .mango-requirement-kanban__status-dot[data-status='6'] { background: var(--m-success); }
-  .mango-requirement-kanban__cards { display: flex; min-height: 120px; flex: 1; flex-direction: column; gap: 8px; padding: 8px; overflow: auto; }
-  .mango-requirement-kanban__card { cursor: grab; border: 1px solid var(--m-border); border-radius: var(--m-radius-md); background: var(--m-surface); padding: 10px; box-shadow: var(--m-shadow-sm); }
-  .mango-requirement-kanban__card:hover { border-color: var(--m-primary); }
-  .mango-requirement-kanban__card-key, .mango-requirement-kanban__metrics { display: flex; align-items: center; justify-content: space-between; gap: 6px; color: var(--m-text-3); font-size: 12px; }
-  .mango-requirement-kanban__card-title { margin: 8px 0; color: var(--m-text-1); font-weight: 600; line-height: 1.5; }
-  .mango-requirement-kanban__card-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--m-text-2); font-size: 12px; }
-  .mango-requirement-kanban__card-dates { margin: 8px 0; color: var(--m-text-3); font-size: 12px; }
+  .mango-requirement-kanban__spin,
+  .mango-requirement-kanban__spin :deep(> .mango-panel-spin__content) {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+  }
+  .mango-requirement-kanban {
+    display: grid;
+    height: 100%;
+    min-height: 0;
+    grid-template-columns: repeat(6, minmax(240px, 1fr));
+    gap: 10px;
+    overflow: auto;
+    padding: 10px;
+    background: var(--m-surface);
+  }
+  .mango-requirement-kanban__column {
+    display: flex;
+    min-height: 100%;
+    flex-direction: column;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-md);
+    background: var(--m-surface);
+  }
+  .mango-requirement-kanban__column-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--m-border);
+    color: var(--m-text);
+  }
+  .mango-requirement-kanban__status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--m-muted);
+  }
+  .mango-requirement-kanban__status-dot[data-status='3'],
+  .mango-requirement-kanban__status-dot[data-status='5'] {
+    background: var(--m-primary);
+  }
+  .mango-requirement-kanban__status-dot[data-status='4'] {
+    background: var(--m-warning);
+  }
+  .mango-requirement-kanban__status-dot[data-status='6'] {
+    background: var(--m-success);
+  }
+  .mango-requirement-kanban__cards {
+    display: flex;
+    min-height: 120px;
+    flex: 1;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+    overflow: auto;
+  }
+  .mango-requirement-kanban__card {
+    cursor: grab;
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius-md);
+    background: var(--m-surface);
+    padding: 10px;
+    box-shadow: var(--m-shadow);
+  }
+  .mango-requirement-kanban__card:hover {
+    border-color: var(--m-primary);
+  }
+  .mango-requirement-kanban__card-key,
+  .mango-requirement-kanban__metrics {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    color: var(--m-muted);
+    font-size: 12px;
+  }
+  .mango-requirement-kanban__card-title {
+    margin: 8px 0;
+    color: var(--m-text);
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  .mango-requirement-kanban__card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    color: var(--m-text-2);
+    font-size: 12px;
+  }
+  .mango-requirement-kanban__card-dates {
+    margin: 8px 0;
+    color: var(--m-muted);
+    font-size: 12px;
+  }
 </style>

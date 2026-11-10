@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 import ts from 'typescript'
+import { setupRolePage, roleOk } from './helpers/role-page-harness.mjs'
 
 function transpile(source) {
   return ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText
@@ -85,10 +86,6 @@ test('table click handling checks loading and disabled, not role permissions', (
   assert.doesNotMatch(source, /hasPermission|permission\??:/)
 })
 
-const roleSource = fs.readFileSync(new URL('../src/views/system/role/index.vue', import.meta.url), 'utf8')
-const loadStart = roleSource.indexOf('  async function onSelectRole(')
-const loadEnd = roleSource.indexOf('  function onAdd(', loadStart)
-const roleCode = transpile(roleSource.slice(loadStart, loadEnd))
 function deferred() {
   let resolve, reject
   const promise = new Promise((ok, fail) => { resolve = ok; reject = fail })
@@ -130,29 +127,21 @@ test('refreshing own permissions preserves menus while loading and replaces rout
   assert.deepEqual(state.permissionRoutes, updated)
   assert.equal(registered.length, 4)
 })
-function roleLoader() {
+function roleLoader(t) {
   const requests = new Map()
-  const selectedRole = { value: null }
-  const loadedRoleId = { value: null }
-  const panel = { saving: false, loading: false, checkedKeys: [], treeData: [] }
-  const select = new Function('permissionPanel', 'selectedRole', 'loadedRoleId', 'canReadPermission',
-    'getUserRolePermission', 'toPermissionTree', 'findFirstPageKey', 'console',
-    `let permissionRequestId = 0; ${roleCode}; return onSelectRole;`
-  )(panel, selectedRole, loadedRoleId, { value: true }, (id) => {
-    const pending = deferred()
-    requests.set(id, pending)
-    return pending.promise
-  }, (tree) => tree, (tree) => tree[0]?.key || '', { log() {} })
-  return { panel, requests, selectedRole, loadedRoleId, select }
+  const h = setupRolePage({ getUserAllRole: async () => roleOk([]), getUserRolePermission(id) { const pending = deferred(); requests.set(id, pending); return pending.promise } })
+  t.after(h.close); h.mount()
+  return { panel: h.permissionPanel, requests, selectedRole: h.selectedRole, loadedRoleId: h.loadedRoleId, select: h.onSelectRole }
 }
 
-test('late responses cannot overwrite the selected role permission set', async () => {
-  const state = roleLoader()
+test('late responses cannot overwrite the selected role permission set', async t => {
+  const state = roleLoader(t)
+  await Promise.resolve(); await Promise.resolve()
   const first = state.select({ id: 1 })
   const second = state.select({ id: 2 })
-  state.requests.get(2).resolve({ data: { tree: [], checked_keys: ['api.case'] } })
+  state.requests.get(2).resolve(roleOk({ tree: [], checked_keys: ['api.case'] }))
   await second
-  state.requests.get(1).resolve({ data: { tree: [], checked_keys: ['system.role'] } })
+  state.requests.get(1).resolve(roleOk({ tree: [], checked_keys: ['system.role'] }))
   await first
   assert.equal(state.selectedRole.value.id, 2)
   assert.equal(state.loadedRoleId.value, 2)
@@ -160,8 +149,9 @@ test('late responses cannot overwrite the selected role permission set', async (
   assert.equal(state.panel.loading, false)
 })
 
-test('failed loads clear stale permissions and cannot leave a role ready to save', async () => {
-  const state = roleLoader()
+test('failed loads clear stale permissions and cannot leave a role ready to save', async t => {
+  const state = roleLoader(t)
+  await Promise.resolve(); await Promise.resolve()
   state.panel.checkedKeys = ['system.role:change']
   const pending = state.select({ id: 2 })
   assert.deepEqual(state.panel.checkedKeys, [])
@@ -171,8 +161,9 @@ test('failed loads clear stale permissions and cannot leave a role ready to save
   assert.equal(state.panel.loading, false)
 })
 
-test('role selection is blocked while permission saving is in progress', async () => {
-  const state = roleLoader()
+test('role selection is blocked while permission saving is in progress', async t => {
+  const state = roleLoader(t)
+  await Promise.resolve(); await Promise.resolve()
   state.selectedRole.value = { id: 1 }
   state.panel.saving = true
   await state.select({ id: 2 })

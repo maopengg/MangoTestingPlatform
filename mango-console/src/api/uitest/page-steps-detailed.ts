@@ -56,7 +56,7 @@ export function putUiPageStepsDetailed(data: UiPageStepsDetailPayload, parent_id
   })
 }
 
-export function deleteUiPageStepsDetailed(id: number | string[] | number[], parentId: any) {
+export function deleteUiPageStepsDetailed(id: number | string | Array<number | string>, parentId: number | string) {
   return deleted({
     url: '/ui/page/steps/detailed',
     data: () => {

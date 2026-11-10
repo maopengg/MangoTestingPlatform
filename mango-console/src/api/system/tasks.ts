@@ -43,7 +43,7 @@ export function putSystemTasks(data: object) {
   })
 }
 
-export function deleteSystemTasks(id: number | string[] | number[]) {
+export function deleteSystemTasks(id: number | string | string[] | number[]) {
   return deleted({
     url: 'system/tasks',
     data: () => {
@@ -114,34 +114,34 @@ export function getScheduledTaskGroups(data: Record<string, any>) {
   })
 }
 
-export function getScheduledTaskGroupOptions(projectProductId?: number | null) {
+export function getScheduledTaskGroupOptions(projectProductId?: number | string | null) {
   return get({
     url: 'system/tasks/groups/options',
     data: () => ({
-      ...(projectProductId ? { project_product_id: projectProductId } : {}),
+      ...(projectProductId !== null && projectProductId !== undefined && projectProductId !== '' ? { project_product_id: projectProductId } : {}),
     }),
   })
 }
 
-export function getScheduledTaskGroupDetail(id: number) {
+export function getScheduledTaskGroupDetail(id: number | string) {
   return get({
     url: 'system/tasks/groups/detail',
     data: () => ({ id }),
   })
 }
 
-export function triggerScheduledTaskGroup(id: number) {
+export function triggerScheduledTaskGroup(id: number | string) {
   return get({
     url: 'system/tasks/groups/trigger',
     data: () => ({ id }),
   })
 }
 
-export function getLatestTaskGroupExecutions(id: number) {
+export function getLatestTaskGroupExecutions(id: number | string) {
   return get({ url: 'system/tasks/groups/executions/latest', data: () => ({ id }) })
 }
 
-export function resendTaskGroupNotice(id: number, executionId: number) {
+export function resendTaskGroupNotice(id: number | string, executionId: number | string) {
   return post({
     url: 'system/tasks/groups/notice/resend',
     data: () => ({ id, execution_id: executionId }),
@@ -168,7 +168,7 @@ export function updateScheduledTaskGroup(data: Record<string, any>) {
   })
 }
 
-export function deleteScheduledTaskGroup(id: number) {
+export function deleteScheduledTaskGroup(id: number | string) {
   return deleted({
     url: 'system/tasks/groups',
     data: () => ({ id }),
@@ -176,8 +176,8 @@ export function deleteScheduledTaskGroup(id: number) {
 }
 
 export function updateScheduledTaskGroupMemberStatus(
-  groupId: number,
-  memberId: number,
+  groupId: number | string,
+  memberId: number | string,
   enabled: boolean
 ) {
   return put({
@@ -186,9 +186,10 @@ export function updateScheduledTaskGroupMemberStatus(
   })
 }
 
-export function getSystemTaskDiagnosticMarkdown(id: number | string) {
+export function getSystemTaskDiagnosticMarkdown(id: number | string, silentError = false) {
   return get<DiagnosticMarkdownResult>({
     url: 'system/tasks/diagnostic/markdown',
+    silentError,
     data: () => ({ id }),
   })
 }
@@ -257,7 +258,7 @@ export function getSystemTaskRecentResults(taskIds: Array<number | string>, limi
 }
 
 export function postSystemTriggerManual(
-  taskId: number,
+  taskId: number | string,
   apiConcurrencyLimit?: number | null,
   testEnvs?: number[]
 ) {
@@ -283,8 +284,8 @@ export function getSystemTasksName(
     url: 'system/tasks/name',
     data: () => {
       return {
-        ...(projectProductId ? { project_product_id: projectProductId } : {}),
-        ...(moduleId ? { module_id: moduleId } : {}),
+        ...(projectProductId != null && projectProductId !== '' ? { project_product_id: projectProductId } : {}),
+        ...(moduleId != null && moduleId !== '' ? { module_id: moduleId } : {}),
         ...(caseType !== null && caseType !== undefined && caseType !== ''
           ? { case_type: caseType }
           : {}),
@@ -304,7 +305,7 @@ export function getSystemTaskFireRecord(data: object) {
 }
 
 export function getSystemTaskSystemJobs(data: object = {}) {
-  return get({
+  return get<unknown>({
     url: 'system/tasks/system/jobs',
     data: () => {
       return data
@@ -313,7 +314,7 @@ export function getSystemTaskSystemJobs(data: object = {}) {
 }
 
 export function postSystemTaskSystemJobTrigger(jobKey: string) {
-  return post({
+  return post<unknown>({
     url: 'system/tasks/system/jobs/trigger',
     data: () => {
       return {

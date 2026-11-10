@@ -6,7 +6,7 @@
     :pagination="false"
     :scroll="{ x: 1480 }"
     :span-method="spanMethod"
-    class="case-summary-table"
+    class="mango-case-summary-table"
     row-key="__rowKey"
   >
     <template #columns>
@@ -22,8 +22,9 @@
         :tooltip="itemRow.tooltip"
       >
         <template v-if="itemRow.key === '__caseCount'" #cell="{ record }">
-          <span class="case-count">共 {{ record.__caseCount }} 条</span>
+          <span class="mango-case-count">共 {{ record.__caseCount }} 条</span>
         </template>
+        <template v-else-if="itemRow.key === '__caseId'" #cell="{ record }"><span>{{ record.__caseId ?? '-' }}</span></template>
         <template v-else-if="itemRow.key === 'status'" #cell="{ record }">
           <a-tag :color="statusColor(record.status)" size="small">{{
             statusText(record.status)
@@ -51,8 +52,9 @@
         onClick: () => $emit('show-details', record.__detailRecord || record), },
     {
         label: '重试',
-        hidden: !(canRetry && record.__isFirstCaseRow),
-        onClick: () => $emit('retry', record.__caseSourceId), },
+        loading: retryingIds?.includes(String(record.__caseSourceId)),
+        hidden: !(canRetry && record.__isFirstCaseRow && record.__caseSourceId !== null),
+        onClick: () => retry(record), },
 ]"
           />
             </template>
@@ -69,101 +71,37 @@
   import ReportDisposition from './ReportDisposition.vue'
   import ReportDispositionStatus from './ReportDispositionStatus.vue'
   import { pytestColumns } from './config'
-  import { caseResultRows, reportRecords } from './report-rows'
+  import { flattenReportCases, reportStatusText, reportStatusColor, formatReportDateTime, type ReportCaseRow, type ReportStatusOption } from './report-rows'
 
   const props = defineProps<{
-    cases: any[]
-    enumStore: any
+    cases: unknown[]
+    statusOptions?: ReportStatusOption[]
+    statusColors?: Record<string, string>
+
     canRetry?: boolean
+    retryingIds?: string[]
     loading?: boolean
   }>()
+  const emit = defineEmits<{
 
-  defineEmits<{
-    (event: 'show-details', record: any): void
-    (event: 'retry', id: any): void
+    (event: 'show-details', record: unknown): void
+
+    (event: 'retry', id: string): void
     (event: 'disposition-saved'): void
   }>()
-
-  const flatRows = computed(() =>
-    reportRecords(props.cases).flatMap((item) => {
-      const rows = caseResultRows(item)
-      const warningRows = buildWarningRows(item)
-      const displayRows = [...rows, ...warningRows]
-      const rowSpan = displayRows.length
-      const caseId = item?.case_id || item?.id || '-'
-      const caseName = item?.case_name || item?.name || '未命名用例'
-      return displayRows.map((row: any, index: number) => ({
-        ...row,
-        children: undefined,
-        error_message: row?.statusDetails?.message || row?.error_message,
-        case_type: row?.case_type ?? 2,
-        name: row?.name || item?.case_name || item?.name,
-        __rowKey: `${item?.id || caseId}-${row?.id || index}-${index}`,
-        __detailId: item?.id || '-',
-        __caseId: caseId,
-        __caseName: caseName,
-        __caseCount: Number(item?.case_sum || displayRows.length || 0),
-        __caseRowSpan: index === 0 ? rowSpan : 0,
-        __caseSourceId: item?.id,
-        __isFirstCaseRow: index === 0,
-        __sourceRecord: item,
-        __isWarningRow: row?.__isWarningRow,
-        __detailRecord: {
-          ...row,
-          test_suite_detail_id: item?.id,
-          __caseSourceId: item?.id,
-          error_message: row?.statusDetails?.message || row?.error_message,
-          case_type: row?.case_type ?? 2,
-          name: row?.name || item?.case_name || item?.name,
-        },
-      }))
-    })
-  )
-
-  function spanMethod({ record, columnIndex }: any) {
+  const flatRows = computed(() => flattenReportCases(props.cases, 2))
+  function spanMethod({ record, columnIndex }: { record: ReportCaseRow; columnIndex: number }) {
     if (!pytestColumns[columnIndex]?.mergeCell) return undefined
-    return {
-      rowspan: record.__caseRowSpan,
-      colspan: record.__caseRowSpan > 0 ? 1 : 0,
-    }
+    return { rowspan: record.__caseRowSpan, colspan: record.__caseRowSpan > 0 ? 1 : 0 }
+  }
+  function statusText(status: unknown) { return reportStatusText(status, props.statusOptions) }
+  function statusColor(status: unknown) { return reportStatusColor(status, props.statusColors) }
+  function retry(record: ReportCaseRow) {
+    if (!props.canRetry || !record.__isFirstCaseRow || record.__caseSourceId === null || props.retryingIds?.includes(record.__caseSourceId)) return
+    emit('retry', record.__caseSourceId)
   }
 
-  function formatDateTime(timestamp: number | string) {
-    if (!timestamp) return ''
-    const date = new Date(timestamp)
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    const hours = String(date.getHours()).padStart(2, '0')
-    const minutes = String(date.getMinutes()).padStart(2, '0')
-    const seconds = String(date.getSeconds()).padStart(2, '0')
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
-  }
-
-  function statusColor(status: number | string) {
-    if (Number(status) === 4) return 'orange'
-    return props.enumStore?.status_colors?.[status] || 'gray'
-  }
-
-  function statusText(status: number | string) {
-    if (Number(status) === 4) return '警告'
-    return props.enumStore?.task_status?.[status]?.title || '未知'
-  }
-
-  function buildWarningRows(item: any) {
-    const rows = caseResultRows(item)
-    const writtenWarningCount = rows.filter((row: any) => Number(row?.status) === 4).length
-    const warningCount = Math.max(Number(item?.warning || 0) - writtenWarningCount, 0)
-    if (warningCount <= 0) return []
-    const fallbackName = '未执行步骤'
-    return Array.from({ length: warningCount }, (_, index) => ({
-      id: `warning-${item?.id || item?.case_id || 'case'}-${index}`,
-      name: fallbackName,
-      status: 4,
-      error_message: '该用例前置步骤失败，未被执行',
-      __isWarningRow: true,
-    }))
-  }
+  const formatDateTime = formatReportDateTime
 </script>
 
 <style scoped lang="less">

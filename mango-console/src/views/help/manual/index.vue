@@ -1,45 +1,68 @@
 <template>
-  <section class="mango-section-card manual-page">
+  <section ref="pageElement" class="mango-section-card mango-manual-page" aria-labelledby="mango-manual-title">
     <div class="mango-section-title">
       <div>
-        <h2>使用手册</h2>
+        <h2 id="mango-manual-title">使用手册</h2>
         <p>快速定位平台常用模块说明</p>
       </div>
     </div>
-    <div class="manual-layout">
-      <nav class="manual-nav">
-        <a href="#UI自动化" data-testid="qa-views-help-manual-a-ui自动化">UI自动化</a>
-        <a href="#API自动化" data-testid="qa-views-help-manual-a-API自动化">API自动化</a>
-        <a href="#系统设置" data-testid="qa-views-help-manual-a-系统设置">系统设置</a>
+    <div class="mango-manual-layout">
+      <nav class="mango-manual-nav" aria-label="手册目录">
+        <button
+          v-for="section in manualSections"
+          :key="section.id"
+          type="button"
+          :aria-controls="`mango-manual-${section.id}`"
+          :data-testid="section.testId"
+          @click="scrollToSection(section.id)"
+        >{{ section.title }}</button>
       </nav>
-
-      <div class="manual-content">
-        <h1 id="UI自动化">UI自动化</h1>
-        <p> 的呢啊我能打文凭佛呢我发发呢啊我贫困的哇破倒卖瓦尔v大二偶的卡位【的口味 </p>
-        <h1 id="API自动化">API自动化</h1>
-        <p> 的呢啊我能打文凭佛呢我发发呢啊我贫困的哇破倒卖瓦尔v大二偶的卡位【的口味 </p>
-        <h1 id="系统设置">系统设置</h1>
-        <p> 的呢啊我能打文凭佛呢我发发呢啊我贫困的哇破倒卖瓦尔v大二偶的卡位【的口味 </p>
+      <div class="mango-manual-content">
+        <section v-for="section in manualSections" :key="section.id" :aria-labelledby="`mango-manual-${section.id}`">
+          <h3 :id="`mango-manual-${section.id}`" tabindex="-1">{{ section.title }}</h3>
+          <p>{{ section.description }}</p>
+        </section>
       </div>
     </div>
   </section>
 </template>
 
-<script lang="ts" setup></script>
+<script setup lang="ts">
+  import { ref } from 'vue'
+  import { manualSections, type ManualSectionId } from './config'
+
+  const pageElement = ref<HTMLElement | null>(null)
+
+  function scrollToSection(id: ManualSectionId) {
+    const page = pageElement.value
+    const heading = page?.querySelector<HTMLElement>(`#mango-manual-${id}`)
+    if (!page || !heading) return
+    const top = page.scrollTop + heading.getBoundingClientRect().top - page.getBoundingClientRect().top - page.clientTop
+    page.scrollTo({ top: Math.max(0, top), behavior: 'auto' })
+    heading.focus({ preventScroll: true })
+  }
+</script>
+
 <style scoped>
-  .manual-page {
+  .mango-manual-page {
+    box-sizing: border-box;
     height: 100%;
     min-height: 0;
+    min-width: 0;
     overflow: auto;
+    padding: var(--m-page-gap);
   }
 
-  .manual-layout {
+  .mango-manual-layout {
     display: grid;
     grid-template-columns: 180px minmax(0, 1fr);
     gap: var(--m-page-gap);
+    align-items: start;
   }
 
-  .manual-nav {
+  .mango-manual-nav {
+    position: sticky;
+    top: 0;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -49,29 +72,48 @@
     background: var(--m-surface-soft);
   }
 
-  .manual-nav a {
+  .mango-manual-nav button {
+    padding: 6px 8px;
+    border: 0;
+    border-radius: var(--m-radius-md);
+    background: transparent;
     color: var(--m-text-2);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
   }
 
-  .manual-content {
+  .mango-manual-nav button:hover,
+  .mango-manual-nav button:focus-visible {
+    background: var(--m-primary-soft);
+    color: var(--m-primary);
+    outline: 1px solid var(--m-primary-border);
+  }
+
+  .mango-manual-content {
     min-width: 0;
     color: var(--m-text-2);
+    overflow-wrap: anywhere;
   }
 
-  .manual-content h1 {
+  .mango-manual-content h3 {
     margin: 0 0 8px;
-    color: var(--m-text);
-    font-size: 18px;
-    line-height: 26px;
+    color: var(--m-text-2);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 22px;
   }
 
-  .manual-content p + h1 {
+  .mango-manual-content p {
+    margin: 0;
+    color: var(--m-muted);
+    font-size: 13px;
+    line-height: 22px;
+  }
+
+  .mango-manual-content section + section {
     margin-top: 18px;
-  }
-
-  @media (max-width: 1px) {
-    .manual-layout {
-      grid-template-columns: 1fr;
-    }
+    padding-top: 18px;
+    border-top: 1px solid var(--m-border);
   }
 </style>

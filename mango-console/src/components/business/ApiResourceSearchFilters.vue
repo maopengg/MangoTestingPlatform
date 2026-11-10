@@ -14,6 +14,7 @@
         v-model="item.value"
         :field-names="fieldNames"
         :options="selectOptions(item)"
+        :loading="item.key === 'update_user' && usersLoading"
         :placeholder="item.placeholder"
         :multiple="item.multiple || item.key === 'test_envs'"
         :max-tag-count="item.multiple || item.key === 'test_envs' ? 1 : undefined"
@@ -32,6 +33,7 @@
     fieldNames: Record<string, string>
     enumStore: Record<string, any>
     userList: any[]
+    usersLoading?: boolean
     environmentOptions?: any[]
     optionOverrides?: Record<string, any[]>
   }>()

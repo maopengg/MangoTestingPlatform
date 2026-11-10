@@ -1,5 +1,6 @@
 import os
 import threading
+from contextlib import contextmanager
 from threading import Thread
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
@@ -50,6 +51,24 @@ class DatasourcePoolTests(SimpleTestCase):
         SqlPools.prune(0)
         dispose.assert_called_once()
         self.assertFalse(SqlPools._engines)
+
+    def test_protocol_operation_permit_is_taken_only_after_pool_is_borrowed(self):
+        from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService as Governor
+        order = []
+        @contextmanager
+        def operation(target, physical=False):
+            self.assertTrue(physical)
+            self.assertEqual(sum(entry['active'] for entry in ProtocolPools._entries.values()), 1)
+            order.append('admitted')
+            try:
+                yield
+            finally:
+                order.append('released')
+        with patch.object(Governor, 'operation', side_effect=operation):
+            with ProtocolPools.borrow(self.target, 'redis', lambda size: Mock()):
+                order.append('sent')
+        self.assertEqual(order, ['admitted', 'sent', 'released'])
+        self.assertEqual(sum(entry['active'] for entry in ProtocolPools._entries.values()), 0)
 
     def test_protocol_pool_reuses_credentials_but_not_different_versions(self):
         factory = Mock(side_effect=lambda size: Mock())

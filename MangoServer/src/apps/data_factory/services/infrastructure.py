@@ -205,7 +205,7 @@ class DatasourceInfrastructureService:
         current = _issues.get()
         if current is not None:
             for issue in issues:
-                if not any(item.code == issue.code and item.origin == issue.origin and
+                if not any(item.code == issue.code and item.origin == issue.origin and item.request_id == issue.request_id and
                            item.message == issue.message for item in current):
                     current.append(issue)
 
@@ -237,18 +237,33 @@ class DatasourceInfrastructureService:
         if result_unknown:
             from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService
             if DatasourceGovernorService.outcome_unknown(error):
-                DatasourceInfrastructureService.uncertain_result()
+                DatasourceInfrastructureService.uncertain_result(error)
 
     @staticmethod
-    def uncertain_result():
+    def uncertain_result(cause=None):
         from src.apps.test_center.enums.case import ReportFailureReasonEnum
         from src.apps.data_factory.exceptions import DataFactoryError
         issues = _issues.get()
-        if issues is not None and not any(item.origin == ReportFailureReasonEnum.ENVIRONMENT for item in issues):
+        request_id = getattr(cause, '_datasource_audit_request_id', None)
+        if issues is not None and not any(item.origin == ReportFailureReasonEnum.ENVIRONMENT
+                                         and item.request_id == request_id for item in issues):
             error = DataFactoryError(DATASOURCE_SETTLEMENT_FAILED)
             error.msg = '数据源请求已发送，但最终结果未确认。请先回查执行记录和实际数据，勿直接重复写入；清理仍须完成并验证'
             DatasourceInfrastructureService.annotate(error)
             issues.append(DatasourceInfrastructureIssue(
                 code=DATASOURCE_SETTLEMENT_FAILED.code,
                 message=error.msg,
+                request_id=request_id,
                 origin=ReportFailureReasonEnum.ENVIRONMENT))
+
+    @staticmethod
+    def resolve_verified_requests(request_ids):
+        """仅结算精确请求的结果未知问题；审计失败和协调故障不能被资源回查覆盖。"""
+        from src.apps.test_center.enums.case import ReportFailureReasonEnum
+        issues = _issues.get()
+        if issues is not None:
+            verified = set(request_ids)
+            issues[:] = [issue for issue in issues if not (
+                issue.request_id is not None and issue.request_id in verified
+                and issue.origin == ReportFailureReasonEnum.ENVIRONMENT
+                and issue.code == DATASOURCE_SETTLEMENT_FAILED.code)]

@@ -2,17 +2,17 @@ from __future__ import annotations
 
 import json
 import os
-import secrets
 import threading
 from contextvars import ContextVar, Token
 from typing import Any
 
 import jwt
 from django.conf import settings
-from django.core.cache import cache
 from django.db import close_old_connections
 from jwt import exceptions
 
+from src.apps.system.enums.mcp_confirmation import McpConfirmationStatusEnum
+from src.apps.system.services.mcp_confirmation import McpConfirmationService
 from src.apps.user.models import User
 from src.apps.user.selectors.querysets import UserQuerySelector
 from src.interfaces.mcp.enums import McpAuthErrorCode
@@ -214,19 +214,7 @@ def create_dangerous_action_preview(
 ) -> dict:
     """Create a short-lived confirmation token for high-risk MCP actions."""
     user = current_user()
-    preview_token = secrets.token_urlsafe(24)
-    cache_key = f"mcp:dangerous:{user.id}:{action}:{target_id}:{preview_token}"
-    cache.set(
-        cache_key,
-        {
-            "user_id": user.id,
-            "action": action,
-            "target_id": str(target_id),
-            "confirm_text": confirm_text,
-            "impact": impact,
-        },
-        ttl_seconds,
-    )
+    preview_token = McpConfirmationService.issue(user.id, action, target_id, confirm_text, ttl_seconds)
     return {
         "action": action,
         "target_id": target_id,
@@ -252,14 +240,12 @@ def validate_dangerous_action_confirmation(
             "PREVIEW_REQUIRED",
         )
     user = current_user()
-    cache_key = f"mcp:dangerous:{user.id}:{action}:{target_id}:{preview_token}"
-    payload = cache.get(cache_key)
-    if not payload:
-        return fail("预览确认已过期或不存在，请重新调用 preview_*_impact。", "PREVIEW_EXPIRED")
-    if payload.get("confirm_text") != confirm_text:
+    status = McpConfirmationService.consume(user.id, action, target_id, preview_token, confirm_text)
+    if status is McpConfirmationStatusEnum.ACCEPTED:
+        return None
+    if status is McpConfirmationStatusEnum.TEXT_MISMATCH:
         return fail("confirm_text 不匹配，请原样使用预览结果中的确认文案。", "CONFIRM_TEXT_MISMATCH")
-    cache.delete(cache_key)
-    return None
+    return fail("预览确认已过期或不存在，请重新调用 preview_*_impact。", "PREVIEW_EXPIRED")
 
 
 def _redact_sensitive(value: Any) -> Any:

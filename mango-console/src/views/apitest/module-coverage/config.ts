@@ -1,4 +1,5 @@
 import type { TableColumnData } from '@arco-design/web-vue'
+import type { CoverageMultiFilter } from './types'
 
 export const statusOptions = [
   { label: '待创建', value: 'pending_create' },
@@ -28,11 +29,15 @@ export const interfaceStatusOptions = [
 export const coveragePolicyHelp: Record<string, string> = {
   included: '正常参与调用链分析、流程图和扫描 Case 生成，按已有有效用例计算覆盖进度。',
   deferred: '仅保留基础盘点，暂缓后续分析和生成；仍计入覆盖率分母，已有有效覆盖继续按原规则计算。',
-  excluded: '仅保留基础盘点，不再分析或生成；不计入覆盖率分母。已有资产与历史保留，扫描不会自动恢复纳入。',
+  excluded:
+    '仅保留基础盘点，不再分析或生成；不计入覆盖率分母。已有资产与历史保留，扫描不会自动恢复纳入。',
 }
 
 export const coverageProgressLabels: Record<string, string> = {
-  covered: '已覆盖', partial: '部分覆盖', uncovered: '未覆盖', deferred: '仅暂缓场景',
+  covered: '已覆盖',
+  partial: '部分覆盖',
+  uncovered: '未覆盖',
+  deferred: '仅暂缓场景',
 }
 
 export const apiInfoBindingOptions = [
@@ -42,19 +47,45 @@ export const apiInfoBindingOptions = [
   { label: '待确认', value: 'mismatch' },
 ]
 
-export const interfaceSearchSelects = [
-  { key: 'analysis_statuses', label: '接口分析', options: [
-    { label: '已分析', value: 'completed' }, { label: '待分析', value: 'pending' },
-    { label: '分析缺口', value: 'gap' }, { label: '暂缓分析', value: 'deferred' },
-    { label: '排除分析', value: 'excluded' },
-  ] },
-  { key: 'resolution_statuses', label: '调用链解析', options: [
-    { label: '链路完整', value: 'resolved' }, { label: '占位图', value: 'placeholder' },
-    { label: '未解析Gap', value: 'gap' },
-  ] },
-  { key: 'coverage_statuses', label: '覆盖进度', options: Object.entries(coverageProgressLabels).map(([value, label]) => ({ value, label })) },
+export const interfaceSearchSelects: Array<{
+  key: CoverageMultiFilter
+  label: string
+  options: Array<{ label: string; value: string }>
+}> = [
+  {
+    key: 'analysis_statuses',
+    label: '接口分析',
+    options: [
+      { label: '已分析', value: 'completed' },
+      { label: '待分析', value: 'pending' },
+      { label: '版本待复核', value: 'review' },
+      { label: '分析不完整', value: 'gap' },
+      { label: '暂缓分析', value: 'deferred' },
+      { label: '已排除', value: 'excluded' },
+    ],
+  },
+  {
+    key: 'resolution_statuses',
+    label: '调用链解析',
+    options: [
+      { label: '链路完整', value: 'resolved' },
+      { label: '占位图', value: 'placeholder' },
+      { label: '未解析Gap', value: 'gap' },
+    ],
+  },
+  {
+    key: 'coverage_statuses',
+    label: '覆盖进度',
+    options: Object.entries(coverageProgressLabels).map(([value, label]) => ({ value, label })),
+  },
   { key: 'sync_actions', label: '变更', options: changeStatusOptions },
-  { key: 'methods', label: '请求方法', options: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE', 'CONNECT'].map(value => ({ value, label: value })) },
+  {
+    key: 'methods',
+    label: '请求方法',
+    options: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE', 'CONNECT'].map(
+      (value) => ({ value, label: value })
+    ),
+  },
 ]
 
 export const interfaceColumns: TableColumnData[] = [
@@ -69,7 +100,13 @@ export const interfaceColumns: TableColumnData[] = [
   },
   { title: 'Method', dataIndex: 'method', slotName: 'method', width: 90, align: 'center' },
   { title: 'URL', dataIndex: 'url', width: 300, ellipsis: true, tooltip: true },
-  { title: '接口分析', dataIndex: 'analysis_status', slotName: 'analysis_status', width: 120, align: 'center' },
+  {
+    title: '接口分析',
+    dataIndex: 'analysis_status',
+    slotName: 'analysis_status',
+    width: 120,
+    align: 'center',
+  },
   {
     title: '调用链解析',
     dataIndex: 'resolution_status',
@@ -84,7 +121,13 @@ export const interfaceColumns: TableColumnData[] = [
     width: 110,
     align: 'center',
   },
-  { title: '覆盖策略', dataIndex: 'coverage_policy', slotName: 'coverage_policy', width: 130, align: 'center' },
+  {
+    title: '覆盖策略',
+    dataIndex: 'coverage_policy',
+    slotName: 'coverage_policy',
+    width: 130,
+    align: 'center',
+  },
   { title: '处理原因', dataIndex: 'coverage_reason', width: 240, ellipsis: true, tooltip: true },
   {
     title: 'ApiInfo绑定',
@@ -158,12 +201,6 @@ export const interfaceColumns: TableColumnData[] = [
     align: 'center',
   },
 ]
-
-export const tableScrollXByTab: Record<string, number> = {
-  interfaces: interfaceColumns.reduce((total, column) => total + Number(column.width || 0), 0),
-  cases: 3890,
-  scans: 2050,
-}
 
 export const caseColumns: TableColumnData[] = [
   { title: 'ID', dataIndex: 'id', slotName: 'id', width: 72, align: 'center' },
@@ -346,6 +383,31 @@ export const scanColumns: TableColumnData[] = [
   },
 ]
 
+export const caseSnapshotColumns: TableColumnData[] = [
+  { title: '快照ID', dataIndex: 'id', width: 90, align: 'center' },
+  { title: '扫描ID', dataIndex: 'scan', width: 90, align: 'center' },
+  { title: 'Commit', dataIndex: 'commit_sha', slotName: 'commit_sha', width: 150 },
+  {
+    title: '变更状态',
+    dataIndex: 'sync_action',
+    slotName: 'sync_action',
+    width: 120,
+    align: 'center',
+  },
+  { title: '创建时间', dataIndex: 'create_time', width: 190 },
+  { title: '内容哈希', dataIndex: 'content_hash', width: 300, ellipsis: true, tooltip: true },
+]
+export const caseSnapshotScrollX = caseSnapshotColumns.reduce(
+  (total, column) => total + Number(column.width || 0),
+  0
+)
+
+export const tableScrollXByTab: Record<string, number> = {
+  interfaces: interfaceColumns.reduce((total, column) => total + Number(column.width || 0), 0),
+  cases: caseColumns.reduce((total, column) => total + Number(column.width || 0), 0),
+  scans: scanColumns.reduce((total, column) => total + Number(column.width || 0), 0),
+}
+
 export const labels: Record<string, string> = {
   pending_create: '待创建',
   completed: '已完成',
@@ -382,7 +444,7 @@ export const labels: Record<string, string> = {
   mismatch: '待确认',
 }
 
-export function tagColor(value: string) {
+export function tagColor(value = '') {
   if (value === 'excluded') return 'gray'
   if (value === 'included') return 'green'
   if (['completed', 'passed', 'covered', 'resolved', 'valid', 'bound'].includes(value))
@@ -397,7 +459,7 @@ export function tagColor(value: string) {
   return 'blue'
 }
 
-export function changeStatusTagColor(value: string, colors: string[]) {
+export function changeStatusTagColor(value: string | undefined, colors: string[]) {
   const index = changeStatusOptions.findIndex((item) => item.value === value)
   return colors[index >= 0 ? index : 0]
 }
@@ -415,7 +477,7 @@ const methodColorIndexes: Record<string, number> = {
   WEBSOCKET_CONNECT: 9,
 }
 
-export function methodTagColor(method: string, colors: string[]) {
+export function methodTagColor(method: string | undefined, colors: string[]) {
   return colors[methodColorIndexes[String(method || '').toUpperCase()]] || 'gray'
 }
 
@@ -427,11 +489,11 @@ const executionResultColorIndexes: Record<string, number> = {
   not_applicable: 5,
 }
 
-export function executionResultTagColor(result: string, statusColors: string[]) {
-  return statusColors[executionResultColorIndexes[result]] || 'gray'
+export function executionResultTagColor(result: string | undefined, statusColors: string[]) {
+  return statusColors[executionResultColorIndexes[result || '']] || 'gray'
 }
 
-export function ownershipTagColor(value: string) {
+export function ownershipTagColor(value?: string) {
   if (value === 'HTTP API自动化') return 'blue'
   if (value === '单元测试') return 'orange'
   if (value === '集成测试') return 'purple'
@@ -442,7 +504,8 @@ export const overviewFilters = [
   { value: 'scan', label: '接口未盘点' },
   { value: 'entry', label: '接口待分析' },
   { value: 'analysis_completed', label: '含已分析接口' },
-  { value: 'analysis_gap', label: '含分析缺口' },
+  { value: 'analysis_gap', label: '含分析不完整' },
+  { value: 'analysis_review', label: '含版本待复核' },
   { value: 'analysis_deferred', label: '含暂缓接口' },
   { value: 'covered', label: '含已覆盖接口' },
   { value: 'partial', label: '含部分覆盖接口' },
@@ -460,20 +523,34 @@ export const overviewModuleColumns: TableColumnData[] = [
   { title: '暂不处理场景', dataIndex: 'deferred_count', width: 120, align: 'center' },
   { title: '项目/产品', slotName: 'project_product', width: 180, ellipsis: true, tooltip: true },
   { title: '模块', dataIndex: 'full_path', width: 240, ellipsis: true, tooltip: true },
-  { title: '操作', slotName: 'actions', width: 120, fixed: 'right', align: 'center' },
+  { title: '操作', slotName: 'actions', width: 160, fixed: 'right', align: 'center' },
 ]
-export const overviewModuleScrollX = 1492
+export const overviewModuleScrollX = 1532
 export const overviewModuleScrollY = 400
 
 export function getInterfaceAnalysisData(summary: {
-  analyzed_interface_count: number; pending_analysis_count: number
-  analysis_gap_count: number; deferred_analysis_count: number
+  analyzed_interface_count: number
+  pending_analysis_count: number
+  analysis_gap_count: number
+  analysis_review_count?: number
+  deferred_analysis_count: number
 }) {
   return [
-    { name: '已分析', value: summary.analyzed_interface_count, status: 'completed', filter: 'analysis_completed' },
+    {
+      name: '已分析',
+      value: summary.analyzed_interface_count,
+      status: 'completed',
+      filter: 'analysis_completed',
+    },
     { name: '待分析', value: summary.pending_analysis_count, status: 'pending', filter: 'entry' },
-    { name: '分析缺口', value: summary.analysis_gap_count, status: 'gap', filter: 'analysis_gap' },
-    { name: '暂缓分析', value: summary.deferred_analysis_count, status: 'deferred', filter: 'analysis_deferred' },
+    { name: '分析不完整', value: summary.analysis_gap_count, status: 'gap', filter: 'analysis_gap' },
+    { name: '版本待复核', value: summary.analysis_review_count || 0, status: 'review', filter: 'analysis_review' },
+    {
+      name: '暂缓分析',
+      value: summary.deferred_analysis_count,
+      status: 'deferred',
+      filter: 'analysis_deferred',
+    },
   ]
 }
 

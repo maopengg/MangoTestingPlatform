@@ -44,18 +44,19 @@
                 allow-clear @clear="onSearchRefresh" />
               <a-select v-else-if="item.type === 'select'" v-model="item.value" :multiple="item.multiple"
                 :max-tag-count="item.multiple ? 1 : undefined" :options="searchOptions(item.key)"
-                :field-names="fieldNames" :placeholder="item.placeholder" allow-clear allow-search
+                :field-names="fieldNames" :placeholder="item.placeholder" :loading="item.key === 'case_people' && userLoading" allow-clear allow-search
                 @change="onSearchRefresh" />
             </a-form-item>
+            <a-button v-if="userFailed" type="text" size="small" :loading="userLoading" @click="loadUsers">重试</a-button>
           </a-form>
         </template>
         <div class="mango-pytest-file-workbench">
           <aside class="mango-pytest-file-workbench__directory mango-soft-panel">
-            <PytestCaseDirectoryTree
+            <template v-if="directoryFailed"></template>
+            <PytestCaseDirectoryTree v-else
               :data="directoryTree"
               :loading="directoryTreeLoading"
               :selected-key="selectedExplorerFileNode?.key || ''"
-              @directory-toggle="onDirectoryToggle"
               @select="onDirectorySelect"
             >
               <template #actions>
@@ -71,10 +72,12 @@
             </PytestCaseDirectoryTree>
           </aside>
           <section class="mango-pytest-source-panel">
+            <a-button v-if="metadataLoading" type="text" size="small" loading disabled>加载用例信息</a-button>
+
             <div v-if="selectedExplorerRecord" class="mango-pytest-source-panel__header">
               <div class="mango-pytest-source-panel__identity">
                 <div class="mango-pytest-source-panel__title-row">
-                  <strong>{{ selectedExplorerRecord.name }}</strong>
+                  <strong :title="selectedExplorerRecord.name">{{ selectedExplorerRecord.name }}</strong>
                   <a-space size="mini">
                     <a-tag
                       class="mango-pytest-module-tag"
@@ -118,14 +121,14 @@
                     </a-tag>
                   </a-space>
                 </div>
-                <span>{{ selectedExplorerRecord.file_path }}</span>
+                <span :title="selectedExplorerRecord.file_path">{{ selectedExplorerRecord.file_path }}</span>
               </div>
               <a-space class="mango-pytest-source-panel__actions" size="small" wrap>
                 <a-button
                   size="small"
                   status="success"
                   :loading="caseRunning"
-                  :disabled="!selectedCaseExecutable"
+                  :disabled="!selectedCaseExecutable || metadataLoading || metadataFailed"
                   @click="onRun(selectedExplorerRecord)"
                 >
                   执行文件
@@ -133,7 +136,7 @@
                 <a-button  size="small" @click="onUpdate(selectedExplorerRecord)">编辑</a-button>
                 <a-button  size="small" @click="onResult(selectedExplorerRecord)">执行结果</a-button>
                 <a-dropdown trigger="click">
-                  <a-button size="small" :loading="publicationActionCaseId === selectedExplorerRecord.id">更多</a-button>
+                  <a-button size="small" :loading="publicationActionCaseId === selectedExplorerRecord.id || deleteCaseId === selectedExplorerRecord.id">更多</a-button>
                   <template #content>
                     <a-doption
                       :disabled="!selectedSourceAvailable"
@@ -143,21 +146,21 @@
                     </a-doption>
                     <a-doption
                       v-if="selectedExplorerRecord.publication_status === 'unpublished'"
-                      :disabled="publicationActionCaseId !== null || !selectedSourceAvailable"
+                      :disabled="mutationBusy || !selectedSourceAvailable"
                       @click="onPublicationChange(selectedExplorerRecord, 'prepublished')"
                     >提交预发布</a-doption>
                     <a-doption
-                      v-if="selectedExplorerRecord.publication_status === 'prepublished' && selectedExplorerRecord.is_product_owner"
-                      :disabled="publicationActionCaseId !== null || !selectedSourceAvailable"
+                      v-if="selectedExplorerRecord.publication_status === 'prepublished'"
+                      :disabled="mutationBusy || !selectedSourceAvailable"
                       @click="onPublicationChange(selectedExplorerRecord, 'published')"
                     >通过发布</a-doption>
                     <a-doption
-                      v-if="selectedExplorerRecord.publication_status !== 'unpublished' && selectedExplorerRecord.is_product_owner"
-                      class="mango-pytest-danger-option" :disabled="publicationActionCaseId !== null"
+                      v-if="selectedExplorerRecord.publication_status !== 'unpublished'"
+                      class="mango-pytest-danger-option" :disabled="mutationBusy"
                       @click="onPublicationChange(selectedExplorerRecord, 'unpublished')"
                     >退回未发布</a-doption>
                     <a-doption
-                      class="mango-pytest-danger-option"
+                      class="mango-pytest-danger-option" :disabled="mutationBusy"
                       @click="onDelete(selectedExplorerRecord)"
                     >
                       删除平台资产
@@ -247,100 +250,33 @@
                 </a-radio-group>
               </div>
             </div>
+            <a-button v-if="methodsLoading" type="text" size="small" loading disabled>加载方法</a-button>
+            <a-button v-else-if="methodsFailed" type="text" size="small" @click="source.loadMethods">重试</a-button>
+            <a-button v-if="sourceFiles.feature.loading" type="text" size="small" loading disabled>检查 Feature 文件</a-button>
+            <a-button v-else-if="sourceFiles.feature.failed" type="text" size="small" @click="source.loadFile('feature')">重试</a-button>
+
             <mango-panel-spin :loading="explorerSourceLoading" class="mango-pytest-source-panel__body">
               <CodeEditor
-                v-if="selectedExplorerRecord"
-                v-model="explorerCodeText"
+                v-if="selectedExplorerFileNode && currentFile.snapshot && !currentFile.failed"
+                :model-value="explorerCodeText"
                 :code-style="{ height: '100%' }"
                 :line-actions="explorerFileType === 'py' ? methodLineActions : []"
                 readonly
                 placeholder="请选择左侧测试文件"
                 @line-action="onRunMethod"
               />
-              <div v-else-if="!explorerSourceLoading" class="mango-empty-state">
+              <div v-else-if="!explorerSourceLoading && !currentFile.failed" class="mango-empty-state">
                 请选择目录树中的 Python 文件查看源码
               </div>
             </mango-panel-spin>
           </section>
         </div>
-        <BaseSidePanel
-          :visible="data.drawerVisible"
-          title="编辑代码"
-          :width="1000"
-          @update:visible="
-            (val) => {
-              data.drawerVisible = val
-            }
-          "
-          @cancel="
-            () => {
-              data.drawerVisible = false
-            }
-          "
-        >
-          <template #default>
-            <div>
-              <a-tabs
-                v-if="data.hasFeatureFile"
-                :active-key="data.fileType"
-                @change="
-                  (key) => {
-                    data.fileType = key
-                    onFileTypeChange()
-                  }
-                "
-              >
-                <a-tab-pane
-                  key="py"
-                  title="Python 文件"
-                  data-testid="qa-views-pytest-case-tab-pane-python-文件"
-                >
-                  <mango-panel-spin
-                    :loading="methodNodesLoading || featureLookupLoading"
-                    class="mango-pytest-code-editor-spin"
-                  >
-                    <CodeEditor
-                      v-model="data.codeText"
-                      :line-actions="methodLineActions"
-                      placeholder="输入python代码"
-                      @line-action="onRunMethod"
-                    />
-                  </mango-panel-spin>
-                </a-tab-pane>
-                <a-tab-pane
-                  key="feature"
-                  title="Feature 文件"
-                  data-testid="qa-views-pytest-case-tab-pane-feature-文件"
-                >
-                  <CodeEditor v-model="data.codeText" placeholder="输入 Gherkin 语法" />
-                </a-tab-pane>
-              </a-tabs>
-              <template v-else>
-                <mango-panel-spin
-                  :loading="methodNodesLoading || featureLookupLoading"
-                  class="mango-pytest-code-editor-spin"
-                >
-                  <CodeEditor
-                    v-model="data.codeText"
-                    :line-actions="methodLineActions"
-                    placeholder="输入python代码"
-                    @line-action="onRunMethod"
-                  />
-                </mango-panel-spin>
-              </template>
-            </div>
-          </template>
-          <template #extra-buttons>
-            <a-button
-              type="primary"
-              :loading="codeSaving"
-              @click="drawerOk"
-              data-testid="qa-views-pytest-case-button-保存"
-            >
-              保存
-            </a-button>
-          </template>
-        </BaseSidePanel>
+        <PytestCaseCodeDrawer
+          ref="codeDrawerRef"
+          :context-key="String(props.caseId ?? '')"
+          @saved="onCodeSaved"
+          @started="onCodeMethodStarted"
+        />
         <ExecutionResultHistoryDrawer
           v-model:visible="resultHistoryVisible"
           :title="`Pytest 执行历史：${resultHistoryRecord?.name || '-'}`"
@@ -354,1200 +290,291 @@
       </ProjectProductNavigationWorkbench>
     </template>
   </TableBody>
-  <CasePublicationReviewModal ref="publicationReviewRef" @published="loadDirectoryTree()" />
+  <CasePublicationReviewModal ref="publicationReviewRef" @published="reviewPublished" />
   <PytestCaseBatchEditor
     v-model:visible="batchEditorVisible"
     :scopes="batchEditorScopes"
     :initial-scope-key="batchEditorInitialScopeKey"
-    :user-options="data.userList"
+    :user-options="userOptions"
     :current-user-id="userStore.userId"
     @saved="onBatchEditorSaved"
   />
-  <ModalDialog ref="updateModalRef" title="选择项目进行同步" @confirm="handleUpdateConfirm">
-    <template #content>
-      <a-form :model="updateForm">
-        <a-form-item class="mango-form-item__require" label="项目/产品">
-          <a-cascader
-            v-model="updateForm.projectId"
-            placeholder="请选择项目/产品"
-            :options="projectInfo.projectPytest2"
-            allow-search
-            allow-clear
-          />
-        </a-form-item>
-      </a-form>
-    </template>
-  </ModalDialog>
-  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
-    <template #content>
-      <a-form :model="formModel">
-        <a-form-item
-          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
-          :label="item.label"
-          v-for="item of formItems"
-          :key="item.key"
-        >
-          <template v-if="item.type === 'input'">
-            <a-input :placeholder="item.placeholder" v-model="item.value" />
-          </template>
-          <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
-            <a-cascader
-              v-model="item.value"
-              @change="onPytestProjectName(item.value)"
-              :placeholder="item.placeholder"
-              :options="projectInfo.projectPytest2"
-              allow-search
-              allow-clear
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'module'">
-            <ProductModuleSelect
-              v-model="item.value"
-              :disabled="!getPytestProjectProductId(getFormItemValue('project_product'))"
-              :project-product-id="getPytestProjectProductId(getFormItemValue('project_product'))"
-              :placeholder="item.placeholder"
-              :auto-clear="false"
-              :selectable-level="3"
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'asset_status'">
-            <a-select
-              v-model="item.value"
-              :multiple="item.multiple"
-              :max-tag-count="item.multiple ? 1 : undefined"
-              :placeholder="item.placeholder"
-              :options="editableAssetStatusOptions"
-              :field-names="fieldNames"
-              value-key="key"
-              allow-clear
-              allow-search
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'level'">
-            <a-select
-              v-model="item.value"
-              :multiple="item.multiple"
-              :max-tag-count="item.multiple ? 1 : undefined"
-              :placeholder="item.placeholder"
-              :options="enumStore.case_level"
-              :field-names="fieldNames"
-              value-key="key"
-              allow-clear
-              allow-search
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'scenario_layer'">
-            <a-select
-              v-model="item.value"
-              :multiple="item.multiple"
-              :max-tag-count="item.multiple ? 1 : undefined"
-              :placeholder="item.placeholder"
-              :options="enumStore.api_case_scenario_layer"
-              :field-names="fieldNames"
-              value-key="key"
-              allow-clear
-              allow-search
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'scenario_type'">
-            <a-select
-              v-model="item.value"
-              :multiple="item.multiple"
-              :max-tag-count="item.multiple ? 1 : undefined"
-              :placeholder="item.placeholder"
-              :options="enumStore.api_case_scenario_type"
-              :field-names="fieldNames"
-              value-key="key"
-              allow-clear
-              allow-search
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'scenario_tags'">
-            <a-select
-              v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="enumStore.api_case_scenario_tag"
-              :field-names="fieldNames"
-              value-key="key"
-              allow-clear
-              allow-search
-              multiple
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'case_people'">
-            <a-select
-              v-model="item.value"
-              :multiple="item.multiple"
-              :max-tag-count="item.multiple ? 1 : undefined"
-              :placeholder="item.placeholder"
-              :options="data.userList"
-              :field-names="fieldNames"
-              value-key="key"
-              allow-clear
-              allow-search
-              @change="doRefresh"
-            />
-          </template>
-        </a-form-item>
-      </a-form>
-    </template>
-  </ModalDialog>
+  <PytestCaseSyncDialog ref="syncDialogRef" @synced="onDirectorySynced" />
+  <PytestCaseEditor ref="caseEditorRef" @saved="onMetadataSaved" />
 </template>
 
 <script lang="ts" setup>
-  import { usePagePolling, isPendingExecution, type PollingContext } from '@/hooks/use-page-polling'
-  import CasePublicationReviewModal from '@/components/business/CasePublicationReviewModal.vue'
-  import { usePagination, useTable } from '@/hooks/table'
-  import { useLatestRequest } from '@/hooks/use-latest-request'
-  import { useProjectLockedRowSelection } from '@/hooks/use-project-locked-row-selection'
-  import { FormItem, ModalDialogType } from '@/types/components'
-  import { Message, Modal } from '@arco-design/web-vue'
-  import { computed, h, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, shallowRef, watch } from 'vue'
   import { useRoute } from 'vue-router'
-  import { getFormItems } from '@/utils/datacleaning'
-  import { fieldNames } from '@/setting'
-  import { formItems } from './config'
-  import { useEnum } from '@/store/modules/get-enum'
-  import {
-    deletePytestCase,
-    getPytestCase,
-    getPytestCaseRead,
-    getPytestCaseMethodNodes,
-    getPytestCaseDirectoryTree,
-    getPytestCaseTest,
-    postPytestCaseUpdate,
-    postPytestCase,
-    postPytestCaseWrite,
-    postPytestCaseBatch,
-    putPytestCase,
-    putPytestCasePublication,
-  } from '@/api/pytest/case'
-  import CodeEditor from '@/components/editors/CodeEditor.vue'
+  import { Message, Modal } from '@arco-design/web-vue'
+  import { usePagePolling, isPendingExecution, type PollingContext } from '@/hooks/use-page-polling'
+  import { getPytestCase, getPytestCaseDirectoryTree, getPytestCaseTest, deletePytestCase, putPytestCasePublication } from '@/api/pytest/case'
   import { getUserName } from '@/api/user/user'
+  import { fieldNames } from '@/setting'
+  import { useEnum } from '@/store/modules/get-enum'
   import { useProject } from '@/store/modules/get-project'
   import useUserStore from '@/store/modules/user'
-  import { conditionItems } from '@/views/pytest/case/config'
-  import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
-  import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
-  import { formatModulePath } from '@/utils/business-format'
+  import type { ProductModuleOption } from '@/store/modules/project-options'
+  import CodeEditor from '@/components/editors/CodeEditor.vue'
+  import CasePublicationReviewModal from '@/components/business/CasePublicationReviewModal.vue'
   import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
   import { flattenProjectProducts } from '@/components/business/project-product-filter'
-  import PytestCaseDirectoryTree, {
-    type PytestDirectoryNode,
-  } from './components/PytestCaseDirectoryTree.vue'
   import ExecutionResultHistoryDrawer from '@/components/business/ExecutionResultHistoryDrawer.vue'
+  import { formatModulePath } from '@/utils/business-format'
+  import PytestCaseDirectoryTree from './components/PytestCaseDirectoryTree.vue'
   import PytestExecutionResultDetail from './components/PytestExecutionResultDetail.vue'
   import PytestCaseBatchEditor from './components/PytestCaseBatchEditor.vue'
+  import PytestCaseEditor from './components/PytestCaseEditor.vue'
+  import PytestCaseSyncDialog from './components/PytestCaseSyncDialog.vue'
+  import PytestCaseCodeDrawer from './components/PytestCaseCodeDrawer.vue'
+  import { createSearchItems, resetSearchItems, searchQuery } from './config'
+  import type { CaseQuery } from './config'
+  import { batchSuccess } from './batch-editor'
+  import type { BatchOptionId, BatchScope, BatchUserOption } from './batch-editor'
+  import { caseUsers, directoryCaseIds, enumTitle as getEnumTitle, findFile, firstFile, optionalCaseId, projectNodes, readCase, readDirectory, readPublication } from './records'
+  import type { CaseRecord, DirectoryNode } from './records'
+  import { codeTarget, executionEnvironment, methodTarget } from './source'
+  import { useCaseSource } from './composables/use-case-source'
 
-  const projectInfo = useProject()
-
-  const modalDialogRef = ref<ModalDialogType | null>(null)
-  const publicationReviewRef = ref<InstanceType<typeof CasePublicationReviewModal> | null>(null)
-  const updateModalRef = ref<ModalDialogType | null>(null)
-  const table = useTable()
-  const pagination = usePagination(doRefresh, () => table.tableLoading)
-  const { selectedRowKeys, validateSingleProject } = useProjectLockedRowSelection<any>(
-    () => table.dataList,
-    (row) => row?.project_product?.project_product?.project
-  )
-  const sidebarModuleIds = ref<Array<string | number>>([])
   const props = defineProps<{ caseId?: string | number; embedded?: boolean }>()
-  const sidebarProjectProductId = ref<string | number | null>(null)
-  const route = useRoute()
-  const linkedCaseId = ref(Number(props.caseId || route.query.id) > 0 ? Number(props.caseId || route.query.id) : null)
-  const sidebarSelectedModuleId = ref<string | number | null>(null)
-  const directoryTree = ref<PytestDirectoryNode[]>([])
-  const directoryTreeLoading = ref(false)
-  const selectedDirectoryNode = ref<PytestDirectoryNode | null>(null)
-  const activeDirectoryNode = ref<PytestDirectoryNode | null>(null)
-  const selectedExplorerFileNode = ref<PytestDirectoryNode | null>(null)
-  const selectedExplorerRecord = ref<any | null>(null)
-  const explorerCodeText = ref('')
-  const explorerPythonText = ref('')
-  const explorerFeatureText = ref('')
-  const explorerFileType = ref<'py' | 'feature'>('py')
-  const explorerHasFeature = ref(false)
-  const explorerSourceLoading = ref(false)
-  const sourceSnapshots = reactive({
-    py: { commit: '', contentHash: '' },
-    feature: { commit: '', contentHash: '' },
-  })
-  const resultHistoryVisible = ref(false)
-  const resultHistoryRecord = ref<any | null>(null)
-  const batchEditorVisible = ref(false)
-  const batchEditorScopes = ref<
-    Array<{ key: string; label: string; caseIds: number[]; disabled?: boolean }>
-  >([])
-  const batchEditorInitialScopeKey = ref('')
-  let directoryTreeRequestId = 0
-  let explorerSourceRequestId = 0
-  let initialFileSelectionPending = true
-  const { beginRequest, isLatestRequest } = useLatestRequest()
-  const sidebarResetKey = ref(0)
-  const headerConditionItems = computed(() =>
-    conditionItems.filter((item) => ['id', 'name', 'file_path', 'publication_status', 'status',
-      'source_status', 'asset_status', 'level', 'case_people'].includes(item.key))
-  )
+  const route = useRoute(), userStore = useUserStore(), projectInfo = useProject(), enumStore = useEnum()
+  const mountedPath = route.path
+  const codeDrawerRef = ref<InstanceType<typeof PytestCaseCodeDrawer> | null>(null)
+  const caseEditorRef = ref<InstanceType<typeof PytestCaseEditor> | null>(null)
+  const publicationReviewRef = ref<InstanceType<typeof CasePublicationReviewModal> | null>(null)
+  const syncDialogRef = ref<InstanceType<typeof PytestCaseSyncDialog> | null>(null)
+  const conditionItems = createSearchItems(), headerConditionItems = conditionItems
+  const sidebarProjectProductId = ref<BatchOptionId | null>(null), sidebarSelectedModuleId = ref<BatchOptionId | null>(null), sidebarModuleIds = ref<BatchOptionId[]>([]), sidebarResetKey = ref(0)
+  const directoryTree = ref<DirectoryNode[]>([]), directoryTreeLoading = ref(false), directoryFailed = ref(false)
+  const userOptions = ref<BatchUserOption[]>([]), userLoading = ref(false), userFailed = ref(false)
+  const pageVersion = ref(0), linkedCaseId = ref(optionalCaseId(props.caseId ?? route.query.id))
+  const resultHistoryVisible = ref(false), resultHistoryRecord = ref<Pick<CaseRecord, 'id' | 'name'> | null>(null)
+  const batchEditorVisible = ref(false), batchEditorScopes = ref<BatchScope[]>([]), batchEditorInitialScopeKey = ref('')
+  const mutationBusy = ref(false), publicationActionCaseId = ref<number | null>(null), deleteCaseId = ref<number | null>(null), running = ref(new Set<string>())
+  let active = true, mounted = false, disposed = false, needsReload = false, initialFileSelectionPending = true
+  let directoryRequest = 0, userRequest = 0, confirmationVersion = 0, recordRevision = 0
+  let directoryRead: { key: string; current: () => boolean; promise: Promise<boolean> } | null = null
+  let userRead: { current: () => boolean; promise: Promise<boolean> } | null = null
+  let confirmation: ReturnType<typeof Modal.confirm> | null = null
+  const available = () => mounted && active && !disposed && route.path === mountedPath && (typeof document === 'undefined' || !document.hidden)
+  const current = (version: number) => available() && pageVersion.value === version
+  const source = useCaseSource({ available, version: () => pageVersion.value, loaded: row => {
+    recordRevision++
+    if (isPendingExecution(row)) startPollingCaseState(row.id)
+    else if (pollingCaseId.value === row.id) clearPollingTimer()
+  } })
+  const { record: selectedExplorerRecord, selectedFile: selectedExplorerFileNode, metadataLoading, metadataFailed, files: sourceFiles, currentFile, fileType: explorerFileType,
+    hasFeature: explorerHasFeature, text: explorerCodeText, nodes: sourceMethods, methodsLoading, methodsFailed } = source
+  const explorerSourceLoading = computed(() => currentFile.value.loading)
+  const selectedModuleLabel = computed(() => selectedExplorerRecord.value?.module ? formatModulePath(selectedExplorerRecord.value.module) : '未绑定')
+  const selectedScenarioTags = computed(() => selectedExplorerRecord.value?.scenario_tags ?? [])
+  const selectedSourceAvailable = computed(() => !!selectedExplorerRecord.value && ![2, 3, 4].includes(selectedExplorerRecord.value.source_status))
+  const selectedCaseExecutable = computed(() => !!selectedExplorerRecord.value && codeTarget(selectedExplorerRecord.value).executable)
+  const sourceStatusColor = computed(() => selectedExplorerRecord.value?.source_status === 1 ? 'orange' : selectedSourceAvailable.value ? 'green' : 'red')
+  const assetStatusColor = computed(() => Number(selectedExplorerRecord.value?.asset_status) === 1 ? 'green' : [2, 3, 4].includes(Number(selectedExplorerRecord.value?.asset_status)) ? 'gray' : 'arcoblue')
+  const currentProjectProductLabel = computed(() => sidebarProjectProductId.value === null ? '全部项目' : flattenProjectProducts(projectInfo.projectProduct).find(item => String(item.projectProductId) === String(sidebarProjectProductId.value))?.title || `产品 ${sidebarProjectProductId.value}`)
+  function findModuleLabel(nodes: ProductModuleOption[], id: BatchOptionId): string | null {
+    for (const node of nodes) { if (String(node.key) === String(id)) return node.title; const child = findModuleLabel(node.children || [], id); if (child) return child }
+    return null
+  }
+  const currentModuleLabel = computed(() => sidebarSelectedModuleId.value === null ? '全部模块' : findModuleLabel(projectInfo.allProductModuleTreeCache.data, sidebarSelectedModuleId.value) || `模块 ${sidebarSelectedModuleId.value}`)
+  const currentDirectoryLabel = computed(() => selectedExplorerFileNode.value?.breadcrumb.join(' / ') || '全部目录')
+  const currentScopeTitle = computed(() => `${currentProjectProductLabel.value} / ${currentModuleLabel.value} / ${currentDirectoryLabel.value}`)
+  const resultHistoryQuery = computed(() => resultHistoryRecord.value ? { target_type: 'pytest_case', target_id: resultHistoryRecord.value.id } : undefined)
+  const reviewPublished = shallowRef<() => void>(() => { onMetadataSaved() })
+  function getConditionValue(key: string): BatchOptionId | null { return key === 'project_product' ? sidebarProjectProductId.value : sidebarSelectedModuleId.value }
   function searchOptions(key: string) {
     if (key === 'publication_status') return enumStore.pytest_case_publication_status
     if (key === 'status') return enumStore.task_status
     if (key === 'level') return enumStore.case_level
-    if (key === 'case_people') return data.userList
-    return getLifecycleOptions(key)
+    if (key === 'case_people') return userOptions.value
+    return key === 'source_status' ? enumStore.pytest_source_status : enumStore.pytest_asset_status
   }
-
-  function buildCaseSearchParams() {
-    const params = getFormItems(conditionItems)
-    Object.keys(params).forEach((key) => {
-      if (params[key] === '' || params[key] === null || params[key] === undefined ||
-          (Array.isArray(params[key]) && !params[key].length)) delete params[key]
+  function buildCaseSearchParams(): CaseQuery {
+    return { ...searchQuery(conditionItems), ...(sidebarProjectProductId.value === null ? {} : { project_product_id: sidebarProjectProductId.value }), ...(sidebarModuleIds.value.length ? { module_ids: sidebarModuleIds.value.join(',') } : {}) }
+  }
+  function closeConfirmation(): void { confirmationVersion++; confirmation?.close(); confirmation = null }
+  function closeWindows(): void {
+    closeConfirmation(); codeDrawerRef.value?.close(); caseEditorRef.value?.close(); syncDialogRef.value?.close(); publicationReviewRef.value?.invalidate()
+    batchEditorVisible.value = false; batchEditorScopes.value = []; resultHistoryVisible.value = false; resultHistoryRecord.value = null
+  }
+  function invalidate(clear: boolean): void {
+    pageVersion.value++; directoryRequest++; userRequest++; directoryRead = null; userRead = null
+    directoryTreeLoading.value = false; userLoading.value = false; closeWindows(); source.invalidate(clear)
+    const epoch = pageVersion.value
+    reviewPublished.value = () => { if (current(epoch)) onMetadataSaved() }
+    if (clear) { directoryTree.value = []; directoryFailed.value = false; userOptions.value = []; userFailed.value = false }
+  }
+  function loadDirectoryTree(preferredCaseId: number | null = null, reloadSource = true): Promise<boolean> {
+    if (!available()) { needsReload = true; return Promise.resolve(false) }
+    const query = buildCaseSearchParams(), key = JSON.stringify([query, preferredCaseId, reloadSource])
+    if (directoryRead?.key === key && directoryRead.current()) return directoryRead.promise
+    const epoch = pageVersion.value, request = ++directoryRequest
+    const isCurrent = () => current(epoch) && directoryRequest === request
+    const job = { key, current: isCurrent, promise: Promise.resolve(false) }
+    directoryRead = job; directoryTreeLoading.value = true; directoryFailed.value = false
+    job.promise = Promise.resolve().then(async () => {
+      try {
+        if (!isCurrent()) return false
+        const next = readDirectory(await getPytestCaseDirectoryTree(query))
+        if (!isCurrent()) return false
+        directoryTree.value = next
+        const selectedId = preferredCaseId ?? selectedExplorerFileNode.value?.case_id ?? linkedCaseId.value
+        const file = selectedId ? findFile(next, selectedId) : initialFileSelectionPending ? firstFile(next) : null
+        if (!file) { source.invalidate(); clearPollingTimer(); return true }
+        initialFileSelectionPending = false
+        if (file.case_id === linkedCaseId.value) linkedCaseId.value = null
+        if (reloadSource || selectedExplorerFileNode.value?.case_id !== file.case_id) { clearPollingTimer(); void source.select(file) }
+        else { selectedExplorerFileNode.value = file; void source.loadMetadata() }
+        return true
+      } catch (loadFailure0) { if (isCurrent()) (reportLoadError(loadFailure0, "加载失败，请重试", false), directoryFailed.value = true); return false }
+      finally { if (directoryRead === job) { directoryRead = null; directoryTreeLoading.value = false } }
     })
-    return params
+    return job.promise
   }
-
-  function onSearchRefresh() {
-    pagination.page = 1
-    selectedRowKeys.value = []
-    clearPollingTimer()
-    explorerSourceRequestId += 1
-    explorerSourceLoading.value = false
-    selectedDirectoryNode.value = null
-    activeDirectoryNode.value = null
-    initialFileSelectionPending = true
-    loadDirectoryTree()
+  function loadUsers(): Promise<boolean> {
+    if (!available()) return Promise.resolve(false)
+    if (userRead?.current()) return userRead.promise
+    const epoch = pageVersion.value, request = ++userRequest, isCurrent = () => current(epoch) && userRequest === request
+    const job = { current: isCurrent, promise: Promise.resolve(false) }
+    userRead = job; userLoading.value = true; userFailed.value = false
+    job.promise = Promise.resolve().then(async () => {
+      try { if (!isCurrent()) return false; const next = caseUsers(await getUserName()); if (!isCurrent()) return false; userOptions.value = next; return true }
+      catch (loadFailure1) { if (isCurrent()) (reportLoadError(loadFailure1, "加载失败，请重试", false), userFailed.value = true); return false }
+      finally { if (userRead === job) { userRead = null; userLoading.value = false } }
+    })
+    return job.promise
   }
-  const formModel = ref({})
-  const enumStore = useEnum()
-  const userStore = useUserStore()
-
-  const currentProjectProductLabel = computed(() => {
-    if (sidebarProjectProductId.value === null) return '全部项目'
-    return (
-      flattenProjectProducts(projectInfo.projectProduct || []).find(
-        (item) => String(item.projectProductId) === String(sidebarProjectProductId.value)
-      )?.title || `产品 ${sidebarProjectProductId.value}`
-    )
-  })
-
-  function findModuleLabel(nodes: any[], moduleId: string | number | null): string | null {
-    if (moduleId === null) return null
-    for (const node of nodes || []) {
-      const id = node.id ?? node.key ?? node.value
-      if (String(id) === String(moduleId)) return node.title || node.name || node.label || null
-      const childLabel = findModuleLabel(node.children || [], moduleId)
-      if (childLabel) return childLabel
-    }
-    return null
+  function onSearchRefresh(): void { clearPollingTimer(); invalidate(true); initialFileSelectionPending = true; void loadDirectoryTree(); void loadUsers() }
+  function onResetSearch(): void { resetSearchItems(conditionItems); sidebarProjectProductId.value = null; sidebarSelectedModuleId.value = null; sidebarModuleIds.value = []; sidebarResetKey.value++; onSearchRefresh() }
+  function onSidebarFilterChange(filter: { projectProduct: BatchOptionId | null; module: BatchOptionId | null; moduleIds?: BatchOptionId[]; selectedModuleId?: BatchOptionId | null }): void {
+    sidebarProjectProductId.value = filter.projectProduct; sidebarSelectedModuleId.value = filter.selectedModuleId ?? filter.module; sidebarModuleIds.value = [...(filter.moduleIds || [])]; onSearchRefresh()
   }
-
-  const currentModuleLabel = computed(() => {
-    if (sidebarSelectedModuleId.value === null) return '全部模块'
-    return (
-      findModuleLabel(projectInfo.allProductModuleTreeCache.data, sidebarSelectedModuleId.value) ||
-      `模块 ${sidebarSelectedModuleId.value}`
-    )
-  })
-
-  const currentDirectoryLabel = computed(() =>
-    selectedExplorerFileNode.value?.breadcrumb?.length
-      ? selectedExplorerFileNode.value.breadcrumb.join(' / ')
-      : '全部目录'
-  )
-  const currentScopeTitle = computed(
-    () =>
-      `${currentProjectProductLabel.value} / ${currentModuleLabel.value} / ${currentDirectoryLabel.value}`
-  )
-  const resultHistoryQuery = computed(() =>
-    resultHistoryRecord.value
-      ? {
-          target_type: 'pytest_case',
-          target_id: resultHistoryRecord.value.id,
-        }
-      : undefined
-  )
-  const selectedModuleLabel = computed(() =>
-    selectedExplorerRecord.value?.module
-      ? formatModulePath(selectedExplorerRecord.value.module)
-      : '未绑定'
-  )
-  const selectedScenarioTags = computed(() =>
-    Array.isArray(selectedExplorerRecord.value?.scenario_tags)
-      ? selectedExplorerRecord.value.scenario_tags
-      : []
-  )
-  const selectedSourceAvailable = computed(
-    () => ![2, 3, 4].includes(Number(selectedExplorerRecord.value?.source_status ?? 0))
-  )
-  const selectedCaseExecutable = computed(() => {
-    const assetStatus = Number(
-      selectedExplorerRecord.value?.asset_status ??
-        (selectedExplorerRecord.value?.publication_status === 'published' ? 1 : 0)
-    )
-    return selectedSourceAvailable.value && ![2, 3, 4].includes(assetStatus)
-  })
-  const sourceStatusColor = computed(() => {
-    const status = Number(selectedExplorerRecord.value?.source_status ?? 0)
-    if (status === 1) return 'orange'
-    if ([2, 3, 4].includes(status)) return 'red'
-    return 'green'
-  })
-  const assetStatusColor = computed(() => {
-    const status = Number(
-      selectedExplorerRecord.value?.asset_status ??
-        (selectedExplorerRecord.value?.publication_status === 'published' ? 1 : 0)
-    )
-    if (status === 1) return 'green'
-    if ([2, 3, 4].includes(status)) return 'gray'
-    return 'arcoblue'
-  })
-  const editableAssetStatusOptions = computed(() => (enumStore.pytest_asset_status || []).filter((option) => {
-    if (selectedExplorerRecord.value?.publication_status === 'prepublished') {
-      return Number(option.key) === Number(selectedExplorerRecord.value.asset_status)
-    }
-    return (Number(option.key) === 1) === (selectedExplorerRecord.value?.publication_status === 'published')
+  function onDirectorySelect(node: DirectoryNode | null): void {
+    if (!node || node.type !== 'file' || !available()) return
+    clearPollingTimer(); invalidate(false); void source.select(node); void loadUsers()
+  }
+  function onExplorerFileTypeChange(value: unknown): void { if (value === 'py' || value === 'feature') explorerFileType.value = value }
+  const scopes = computed<BatchScope[]>(() => projectNodes(directoryTree.value).map(node => {
+    const caseIds = [...new Set(directoryCaseIds(node))]
+    return { key: node.key, label: [currentProjectProductLabel.value, currentModuleLabel.value, ...node.breadcrumb].join(' / '), caseIds, disabled: !caseIds.length || caseIds.length > 500 }
   }))
-  const canBatchEditCases = computed(() => getBatchEditScopes().some((scope) => !scope.disabled))
+  const canBatchEditCases = computed(() => scopes.value.some(scope => !scope.disabled))
+  function openBatchEditor(): void {
+    if (!available()) return
+    const id = selectedExplorerFileNode.value?.case_id, project = projectNodes(directoryTree.value).find(node => id == null || directoryCaseIds(node).includes(id))
+    const selected = scopes.value.find(scope => scope.key === project?.key)
+    if (!selected || selected.disabled) { Message.warning('请选择包含 1-500 条 Case 的项目范围'); return }
+    batchEditorScopes.value = scopes.value.map(scope => ({ ...scope, caseIds: [...scope.caseIds] })); batchEditorInitialScopeKey.value = selected.key; batchEditorVisible.value = true
+  }
+  function onBatchEditorSaved(): void { if (available()) { recordRevision++; source.invalidateMetadata(); void loadDirectoryTree(null, false) } }
+  function onMetadataSaved(): void { if (available()) { recordRevision++; source.invalidateMetadata(); void loadDirectoryTree(null, false) } }
+  function onDirectorySynced(): void { if (available()) { initialFileSelectionPending = true; void loadDirectoryTree() } }
+  function openUpdateModal(): void { if (available()) syncDialogRef.value?.open() }
+  function onUpdate(record: CaseRecord): void { if (available()) caseEditorRef.value?.open(record) }
+  function onClick(record: CaseRecord): void { if (available()) codeDrawerRef.value?.open(record) }
+  function onCodeSaved(caseId: number): void { const node = selectedExplorerFileNode.value; if (available() && node?.case_id === caseId) { clearPollingTimer(); void source.select(node) } }
+  function onCodeMethodStarted(caseId: number): void { if (available() && selectedExplorerRecord.value?.id === caseId) startPollingCaseState(caseId) }
+  function onResult(record: CaseRecord): void { if (available()) { resultHistoryRecord.value = { id: record.id, name: record.name }; resultHistoryVisible.value = true } }
 
-  const data: any = reactive({
-    isAdd: false,
-    updateId: 0,
-    actionTitle: '新增',
-    drawerVisible: false,
-    codeText: '',
-    moduleList: [],
-    fileType: 'py',
-    hasFeatureFile: false,
-    methodNodes: [],
-  })
-
-  const updateForm = reactive({
-    projectId: null as number | null,
-  })
-  const caseRunning = ref(false)
-  const publicationActionCaseId = ref<number | null>(null)
-  const methodNodesLoading = ref(false)
-  const featureLookupLoading = ref(false)
-  const codeSaving = ref(false)
-  const methodRunLoading = reactive<Record<string, boolean>>({})
-  const executionStartedMessage = '准备开始执行，执行完成之后，请在右侧按钮结果中查看执行结果~'
-  const methodLineActions = computed(() =>
-    (data.methodNodes || [])
-      .filter((node: any) => Number(node.line_number) > 0)
-      .map((node: any) => ({
-        id: node.nodeid,
-        line: Number(node.line_number),
-        label: `执行 ${node.class_name ? `${node.class_name}.` : ''}${node.method_name}`,
-        loading: Boolean(methodRunLoading[node.nodeid]),
-        payload: node,
-      }))
-  )
-  const pagePolling = usePagePolling(context => {
-    const id = pollingCaseId.value
-    if (id) return pollSelectedCaseState(id, context)
-  })
   const pollingCaseId = ref<number | null>(null)
-  let pollingRequestPending = false
-
-  function getConditionValue(key: string) {
-    return conditionItems.find((item) => item.key === key)?.value
-  }
-
-  function getFormItemValue(key: string) {
-    return formItems.find((item) => item.key === key)?.value
-  }
-
-  function getEnumTitle(options: any[] | null | undefined, value: any) {
-    return options?.find((item: any) => String(item.key) === String(value))?.title || '-'
-  }
-
-  function getLifecycleOptions(key: string) {
-    if (key === 'source_status') return enumStore.pytest_source_status
-    if (key === 'asset_status') return enumStore.pytest_asset_status
-    return enumStore.file_status
-  }
-
-  function getPytestProjectProductId(pytestProductId: any) {
-    return projectInfo.getPytestProjectProductId(pytestProductId)
-  }
-
-  function clearPollingTimer() {
-    pagePolling.stop()
-    pollingCaseId.value = null
-  }
-
-  async function refreshSelectedCaseState(caseId: number, context?: PollingContext) {
-    if (pollingRequestPending) return undefined
-    pollingRequestPending = true
-    try {
-      const res = await getPytestCase({ id: caseId, page: 1, pageSize: 1 })
-      if (context && !context.isCurrent()) return undefined
-      const record = res.data?.[0] || null
-      if (record && Number(selectedExplorerRecord.value?.id) === Number(caseId)) {
-        selectedExplorerRecord.value = {
-          ...selectedExplorerRecord.value,
-          ...record,
-        }
-      }
-      return record
-    } finally {
-      pollingRequestPending = false
-    }
-  }
-
-  async function pollSelectedCaseState(caseId: number, context?: PollingContext) {
-    try {
-      const record = await refreshSelectedCaseState(caseId, context)
-      if (record === undefined || pollingCaseId.value !== caseId) return
-      if (!isPendingExecution(record)) clearPollingTimer()
-    } catch {
-      // 短暂请求失败时保留轮询，下一个周期继续同步执行状态。
-    }
-  }
-
-  function startPollingCaseState(caseId: number) {
-    clearPollingTimer()
-    pollingCaseId.value = caseId
-    pagePolling.start()
-  }
-
-  function onDelete(record: any) {
-    const batch = record === null
-    if (batch) {
-      if (selectedRowKeys.value.length === 0) {
-        Message.error('请选择要删除的数据')
-        return
-      }
-    }
-    Modal.confirm({
-      title: '提示',
-      content: '该操作会删除平台资产及其配置，但不会删除 Git 源文件。确定继续吗？',
-      cancelText: '取消',
-      okText: '删除',
-      onBeforeOk: () => {
-        return deletePytestCase(batch ? selectedRowKeys.value : record.id)
-          .then((res) => {
-            Message.success(res.msg)
-          })
-          .catch(() => undefined)
-          .finally(() => {
-            doRefresh()
-            loadDirectoryTree()
-            if (batch) {
-              selectedRowKeys.value = []
-            }
-          })
-      },
+  let pollingGeneration = 0
+  let pollingRead: { current: () => boolean; promise: Promise<CaseRecord | undefined> } | null = null
+  const pagePolling = usePagePolling(context => { const id = pollingCaseId.value; if (id) return pollSelectedCaseState(id, context) })
+  function clearPollingTimer(): void { pollingGeneration++; pagePolling.stop(); pollingCaseId.value = null; pollingRead = null }
+  function startPollingCaseState(id: number): void { if (!available() || selectedExplorerRecord.value?.id !== id) return; clearPollingTimer(); pollingCaseId.value = id; pagePolling.start() }
+  function refreshSelectedCaseState(caseId: number, context?: PollingContext): Promise<CaseRecord | undefined> {
+    if (!available()) return Promise.resolve(undefined)
+    if (pollingRead?.current()) return pollingRead.promise
+    const epoch = pageVersion.value, node = selectedExplorerFileNode.value, generation = pollingGeneration, revision = recordRevision
+    const isCurrent = () => current(epoch) && generation === pollingGeneration && revision === recordRevision && node === selectedExplorerFileNode.value && selectedExplorerRecord.value?.id === caseId && (!context || context.isCurrent())
+    const job = { current: isCurrent, promise: Promise.resolve<CaseRecord | undefined>(undefined) }
+    pollingRead = job
+    job.promise = Promise.resolve().then(async () => {
+      try { if (!isCurrent()) return undefined; const next = readCase(await getPytestCase({ id: caseId, page: 1, pageSize: 1 }), caseId); if (!isCurrent()) return undefined; selectedExplorerRecord.value = next; return next }
+      finally { if (pollingRead === job) pollingRead = null }
     })
+    return job.promise
   }
-
-  function onPublicationChange(record: any, target: 'prepublished' | 'published' | 'unpublished') {
-    if (target === 'published') {
-      if (record.publication_status !== 'prepublished') {
-        Message.warning('只有预发布状态的用例可以进入发布审核')
-        return
-      }
-      void publicationReviewRef.value?.open('pytest', [Number(record.id)])
-      return
-    }
-    if (target !== 'unpublished' && record.status !== 1) {
-      Message.warning('用例必须执行通过后才能提交预发布或正式发布')
-      return
-    }
-    const title = target === 'prepublished' ? '提交预发布' : '退回未发布'
-    Modal.confirm({
-      title,
-      content: target === 'prepublished' ? '提交后由业务项目产品负责人审核，预发布不参与定时执行。确认提交吗？'
-        : '退回后该用例不再参与定时执行。确认退回吗？',
-      cancelText: '取消',
-      okText: title,
-      okButtonProps: target === 'unpublished' ? { status: 'danger' } : undefined,
+  async function pollSelectedCaseState(id: number, context?: PollingContext): Promise<void> {
+    try { const record = await refreshSelectedCaseState(id, context); if (record && pollingCaseId.value === id && !isPendingExecution(record)) clearPollingTimer() }
+    catch { /* 失败保留轮询，由公共 5 秒周期重试。 */ }
+  }
+  const executionStartedMessage = '准备开始执行，执行完成之后，请在右侧按钮结果中查看执行结果~'
+  const runKey = (id: number, env: number, node = '') => JSON.stringify([id, env, node])
+  const caseRunning = computed(() => !!selectedExplorerRecord.value && running.value.has(runKey(selectedExplorerRecord.value.id, Number(userStore.selected_environment))))
+  const methodLineActions = computed(() => sourceMethods.value.filter(node => node.line_number !== null).map(node => ({ id: node.nodeid, line: node.line_number!, label: `执行 ${node.class_name ? node.class_name + '.' : ''}${node.method_name}`,
+    loading: !!selectedExplorerRecord.value && running.value.has(runKey(selectedExplorerRecord.value.id, Number(userStore.selected_environment), node.nodeid)), disabled: !selectedCaseExecutable.value || metadataLoading.value || metadataFailed.value || methodsLoading.value || methodsFailed.value || currentFile.value.failed || currentFile.value.loading, payload: node })))
+  async function execute(record: CaseRecord, node?: ReturnType<typeof methodTarget>): Promise<boolean> {
+    if (!available() || metadataLoading.value || metadataFailed.value || selectedExplorerRecord.value?.id !== record.id || !codeTarget(record).executable) { Message.warning('当前测试文件源码不可用，或资产已停用、归档、忽略，不能执行'); return false }
+    let env: number
+    try { env = executionEnvironment(userStore.selected_environment) } catch { Message.error('请先选择用例执行的环境'); return false }
+    const epoch = pageVersion.value, id = record.id, key = runKey(id, env, node?.nodeid)
+    if (running.value.has(key)) return false
+    running.value = new Set([...running.value, key])
+    try { batchSuccess(await getPytestCaseTest(id, env, node || {})); if (!current(epoch) || selectedExplorerRecord.value?.id !== id) return false; Message.success(executionStartedMessage); startPollingCaseState(id); return true }
+    catch { if (current(epoch)) Message.error('执行失败，请重试'); return false }
+    finally { const next = new Set(running.value); next.delete(key); running.value = next }
+  }
+  function onRun(record: CaseRecord): Promise<boolean> { return execute(record) }
+  function onRunMethod(value: unknown): Promise<boolean> {
+    const id = value != null && typeof value === 'object' && 'nodeid' in value ? value.nodeid : null, node = sourceMethods.value.find(node => node.nodeid === id)
+    if (!selectedExplorerRecord.value || !node || methodsLoading.value || methodsFailed.value || !sourceFiles.py.snapshot || sourceFiles.py.failed) return Promise.resolve(false)
+    return execute(selectedExplorerRecord.value, methodTarget(node))
+  }
+  function onDelete(record: CaseRecord): void {
+    if (!available() || mutationBusy.value || confirmation) return
+    const epoch = pageVersion.value, serial = ++confirmationVersion, id = record.id
+    confirmation = Modal.confirm({ title: '提示', content: '该操作会删除平台资产及其配置，但不会删除 Git 源文件。确定继续吗？', cancelText: '取消', okText: '删除', okButtonProps: { status: 'danger' },
+      onClose: () => { if (serial === confirmationVersion) confirmation = null },
       onBeforeOk: async () => {
-        publicationActionCaseId.value = record.id
-        try {
-          const res = await putPytestCasePublication(record.id, target)
-          Message.success(res.msg)
-          Object.assign(record, res.data)
-          loadDirectoryTree(record.id, false)
-          return true
-        } finally {
-          publicationActionCaseId.value = null
-        }
+        if (!current(epoch) || serial !== confirmationVersion || mutationBusy.value) return false
+        mutationBusy.value = true; deleteCaseId.value = id
+        try { batchSuccess(await deletePytestCase(id)); if (!current(epoch)) return false; Message.success('删除成功'); closeConfirmation(); clearPollingTimer(); source.invalidate(); initialFileSelectionPending = true; void loadDirectoryTree(); return true }
+        catch { if (current(epoch)) Message.error('删除失败，请重试'); return false }
+        finally { mutationBusy.value = false; deleteCaseId.value = null }
       },
     })
   }
-
-  function openUpdateModal() {
-    updateForm.projectId = null
-    updateModalRef.value?.toggle()
-  }
-
-  function handleUpdateConfirm() {
-    const projectId = Array.isArray(updateForm.projectId)
-      ? updateForm.projectId[updateForm.projectId.length - 1]
-      : updateForm.projectId
-
-    if (!projectId) {
-      Message.error('请选择项目/产品')
-      updateModalRef.value?.setConfirmLoading(false)
-      return
-    }
-    Message.loading('文件更新中，请耐心等待10秒左右...')
-
-    postPytestCaseUpdate(projectId)
-      .then((res) => {
-        updateModalRef.value?.toggle()
-        Message.success(res.msg)
-        selectedDirectoryNode.value = null
-        loadDirectoryTree()
-        doRefresh()
-      })
-      .catch((error) => {
-        Message.error(error?.msg || '同步失败')
-      })
-      .finally(() => {
-        updateModalRef.value?.setConfirmLoading(false)
-      })
-  }
-
-  function onDataForm() {
-    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      let value = getFormItems(formItems)
-      value['scenario_layer'] = value['scenario_layer'] ?? 0
-      value['scenario_type'] = value['scenario_type'] ?? 0
-      value['scenario_tags'] = value['scenario_tags'] || []
-      if (data.isAdd) {
-        postPytestCase(value)
-          .then((res) => {
-            modalDialogRef.value?.toggle()
-            Message.success(res.msg)
-            doRefresh()
-          })
-          .catch(() => undefined)
-          .finally(() => {
-            modalDialogRef.value?.setConfirmLoading(false)
-          })
-      } else {
-        value['id'] = data.updateId
-        putPytestCase(value)
-          .then((res) => {
-            modalDialogRef.value?.toggle()
-            Message.success(res.msg)
-            doRefresh()
-            loadDirectoryTree(data.updateId, false)
-          })
-          .catch(() => undefined)
-          .finally(() => {
-            modalDialogRef.value?.setConfirmLoading(false)
-          })
-      }
-    } else {
-      modalDialogRef.value?.setConfirmLoading(false)
-    }
-  }
-
-  function onUpdate(item: any) {
-    data.actionTitle = '编辑'
-    data.isAdd = false
-    data.updateId = item.id
-    modalDialogRef.value?.toggle()
-    if (item.project_product) {
-      onPytestProjectName(item.project_product.id)
-    }
-    nextTick(() => {
-      formItems.forEach((it) => {
-        const propName =
-          it.key === 'asset_status' && item[it.key] === undefined
-            ? item.publication_status === 'published'
-              ? 1
-              : 0
-            : item[it.key]
-        if (it.key === 'scenario_layer' && (propName === undefined || propName === null)) {
-          it.value = 0
-        } else if (it.key === 'scenario_type' && (propName === undefined || propName === null)) {
-          it.value = 0
-        } else if (it.key === 'scenario_tags' && !Array.isArray(propName)) {
-          it.value = []
-        } else if (Array.isArray(propName)) {
-          it.value = propName
-        } else if (typeof propName === 'object' && propName !== null) {
-          it.value = propName.id
-        } else {
-          it.value = propName
-        }
-      })
-    })
-  }
-
-  function doRefresh(projectProductId: number | null = null, bool_ = false) {
-    const requestId = beginRequest()
-    table.tableLoading.value = true
-    const value = buildCaseSearchParams()
-    if (
-      value.project_product !== null &&
-      value.project_product !== undefined &&
-      value.project_product !== ''
-    ) {
-      value['project_product__project_product_id'] = value.project_product
-      delete value.project_product
-    }
-    if (sidebarModuleIds.value.length) value['module__in'] = sidebarModuleIds.value.join(',')
-    const directoryNode = selectedDirectoryNode.value
-    if (directoryNode) {
-      if (directoryNode.pytest_project_id) {
-        value.project_product = directoryNode.pytest_project_id
-      }
-      if (directoryNode.type === 'directory') {
-        value['file_path__startswith'] = `${directoryNode.path.replace(/\/$/, '')}/`
-      } else if (directoryNode.type === 'file') {
-        value['file_path__exact'] = directoryNode.path
-      }
-    }
-    if (!Array.isArray(value.scenario_tags) || !value.scenario_tags.length) {
-      delete value.scenario_tags
-    }
-    if (value.update_user === null || value.update_user === '') {
-      delete value.update_user
-    }
-    value['page'] = pagination.page
-    value['pageSize'] = pagination.pageSize
-    if (projectProductId && bool_) {
-      value['project_product__project_product_id'] = projectProductId
-      data.moduleList = projectInfo.getProjectPytestModule(projectProductId)
-    }
-    getPytestCase(value)
-      .then((res) => {
-        if (!isLatestRequest(requestId)) return
-        table.handleSuccess(res)
-        pagination.setTotalSize((res as any).totalSize)
-      })
-      .catch(() => undefined)
-      .finally(() => {
-        if (isLatestRequest(requestId)) table.tableLoading.value = false
-      })
-  }
-
-  function onSidebarFilterChange(filter: {
-    projectProduct: any
-    module: any
-    moduleIds?: Array<string | number>
-    selectedModuleId?: string | number | null
-  }) {
-    const projectItem = conditionItems.find((item) => item.key === 'project_product')
-    const moduleItem = conditionItems.find((item) => item.key === 'module')
-    if (projectItem) projectItem.value = filter.projectProduct
-    if (moduleItem) moduleItem.value = filter.module
-    sidebarProjectProductId.value = filter.projectProduct
-    sidebarSelectedModuleId.value = filter.selectedModuleId ?? filter.module ?? null
-    sidebarModuleIds.value = filter.moduleIds || []
-    clearPollingTimer()
-    selectedDirectoryNode.value = null
-    activeDirectoryNode.value = null
-    pagination.page = 1
-    selectedRowKeys.value = []
-    loadDirectoryTree()
-  }
-
-  function loadDirectoryTree(preferredCaseId: number | null = null, reloadSource = true) {
-    const requestId = ++directoryTreeRequestId
-    directoryTreeLoading.value = true
-    const params: Record<string, any> = buildCaseSearchParams()
-    delete params.project_product
-    delete params.module
-    if (sidebarProjectProductId.value !== null) {
-      params.project_product_id = sidebarProjectProductId.value
-    }
-    if (sidebarModuleIds.value.length) {
-      params.module_ids = sidebarModuleIds.value.join(',')
-    }
-    getPytestCaseDirectoryTree(params)
-      .then((res) => {
-        if (requestId !== directoryTreeRequestId) return
-        directoryTree.value = Array.isArray(res.data) ? res.data : []
-        const existingCaseId =
-          selectedDirectoryNode.value?.type === 'file'
-            ? selectedDirectoryNode.value.case_id || null
-            : null
-        const selectedCaseId = preferredCaseId || existingCaseId || linkedCaseId.value
-        const selectLinkedCase = Boolean(linkedCaseId.value && selectedCaseId === linkedCaseId.value)
-        const shouldSelectInitialFile = initialFileSelectionPending && !selectedCaseId
-        const selectedFile = selectedCaseId
-          ? findDirectoryFileByCaseId(directoryTree.value, selectedCaseId)
-          : shouldSelectInitialFile
-          ? findFirstDirectoryFile(directoryTree.value)
-          : null
-        if (selectedFile) {
-          if (selectLinkedCase) linkedCaseId.value = null
-          if (shouldSelectInitialFile) initialFileSelectionPending = false
-          selectedDirectoryNode.value = selectedFile
-          if (
-            shouldSelectInitialFile || selectLinkedCase ||
-            (preferredCaseId &&
-              (reloadSource ||
-                Number(selectedExplorerRecord.value?.id) !== Number(selectedFile.case_id)))
-          ) {
-            loadExplorerFile(selectedFile)
-          } else {
-            selectedExplorerFileNode.value = selectedFile
-            if (selectedFile.case_id) {
-              void refreshSelectedCaseState(selectedFile.case_id).catch(() => undefined)
-            }
-          }
-        } else {
-          selectedDirectoryNode.value = null
-          activeDirectoryNode.value = null
-          selectedExplorerFileNode.value = null
-          selectedExplorerRecord.value = null
-          explorerCodeText.value = ''
-          explorerPythonText.value = ''
-          explorerFeatureText.value = ''
-          explorerFileType.value = 'py'
-          explorerHasFeature.value = false
-          data.methodNodes = []
-        }
-      })
-      .catch(() => {
-        if (requestId !== directoryTreeRequestId) return
-        directoryTree.value = []
-        selectedDirectoryNode.value = null
-        activeDirectoryNode.value = null
-        selectedExplorerFileNode.value = null
-        selectedExplorerRecord.value = null
-        explorerCodeText.value = ''
-        explorerPythonText.value = ''
-        explorerFeatureText.value = ''
-        explorerFileType.value = 'py'
-        explorerHasFeature.value = false
-        data.methodNodes = []
-      })
-      .finally(() => {
-        if (requestId === directoryTreeRequestId) directoryTreeLoading.value = false
-      })
-  }
-
-  function findFirstDirectoryFile(nodes: PytestDirectoryNode[]): PytestDirectoryNode | null {
-    for (const node of nodes || []) {
-      if (node.type === 'file') return node
-      const child = findFirstDirectoryFile(node.children || [])
-      if (child) return child
-    }
-    return null
-  }
-
-  function findDirectoryFileByCaseId(
-    nodes: PytestDirectoryNode[],
-    caseId: number
-  ): PytestDirectoryNode | null {
-    for (const node of nodes || []) {
-      if (node.type === 'file' && node.case_id === caseId) return node
-      const child = findDirectoryFileByCaseId(node.children || [], caseId)
-      if (child) return child
-    }
-    return null
-  }
-
-  function collectDirectoryCaseIds(node: PytestDirectoryNode | null): number[] {
-    if (!node) return []
-    if (node.type === 'file') return node.case_id ? [node.case_id] : []
-    return (node.children || []).flatMap((child) => collectDirectoryCaseIds(child))
-  }
-
-  async function loadExplorerFile(node: PytestDirectoryNode) {
-    if (!node.case_id) return
-    const requestId = ++explorerSourceRequestId
-    selectedExplorerFileNode.value = node
-    explorerSourceLoading.value = true
-    data.updateId = node.case_id
-    data.methodNodes = []
-    try {
-      const [caseResponse, sourceResponse, methodResponse, featureResponse] = await Promise.all([
-        getPytestCase({ id: node.case_id, page: 1, pageSize: 1 }),
-        getPytestCaseRead(node.case_id, 'py').catch(() => null),
-        getPytestCaseMethodNodes(node.case_id, true).catch(() => null),
-        getPytestCaseRead(node.case_id, 'feature', true).catch(() => null),
-      ])
-      if (requestId !== explorerSourceRequestId) return
-      explorerPythonText.value = sourceResponse
-        ? typeof sourceResponse.data === 'string'
-          ? sourceResponse.data
-          : sourceResponse.data?.content || ''
-        : ''
-      sourceSnapshots.py.commit = sourceResponse?.data?.commit_hash || ''
-      sourceSnapshots.py.contentHash = sourceResponse?.data?.content_hash || ''
-      explorerFeatureText.value = featureResponse
-        ? typeof featureResponse.data === 'string'
-          ? featureResponse.data
-          : featureResponse.data?.content || ''
-        : ''
-      sourceSnapshots.feature.commit = featureResponse?.data?.commit_hash || ''
-      sourceSnapshots.feature.contentHash = featureResponse?.data?.content_hash || ''
-      explorerHasFeature.value = featureResponse !== null
-      explorerFileType.value = 'py'
-      explorerCodeText.value = explorerPythonText.value
-      data.methodNodes = methodResponse?.data || []
-      selectedExplorerRecord.value = caseResponse.data?.[0] || {
-        id: node.case_id,
-        name: node.title,
-        file_path: node.path,
-      }
-      if (isPendingExecution(selectedExplorerRecord.value)) {
-        startPollingCaseState(Number(node.case_id))
-      }
-    } catch {
-      if (requestId !== explorerSourceRequestId) return
-      selectedExplorerRecord.value = null
-      explorerCodeText.value = ''
-      explorerPythonText.value = ''
-      explorerFeatureText.value = ''
-      explorerFileType.value = 'py'
-      explorerHasFeature.value = false
-      data.methodNodes = []
-    } finally {
-      if (requestId === explorerSourceRequestId) explorerSourceLoading.value = false
-    }
-  }
-
-  function onDirectorySelect(node: PytestDirectoryNode | null) {
-    if (!node || node.type !== 'file') return
-    clearPollingTimer()
-    selectedDirectoryNode.value = node
-    activeDirectoryNode.value = null
-    loadExplorerFile(node)
-  }
-
-  function onDirectoryToggle(node: PytestDirectoryNode) {
-    activeDirectoryNode.value = node
-  }
-
-  function onExplorerFileTypeChange(value: string | number | boolean) {
-    explorerCodeText.value =
-      value === 'feature' ? explorerFeatureText.value : explorerPythonText.value
-  }
-
-  function findProjectNodeForCase(
-    nodes: PytestDirectoryNode[],
-    caseId: number
-  ): PytestDirectoryNode | null {
-    for (const node of nodes) {
-      if (node.type === 'project' && collectDirectoryCaseIds(node).includes(caseId)) return node
-      const child = findProjectNodeForCase(node.children || [], caseId)
-      if (child) return child
-    }
-    return null
-  }
-
-  function findFirstProjectNode(nodes: PytestDirectoryNode[]): PytestDirectoryNode | null {
-    for (const node of nodes) {
-      if (node.type === 'project') return node
-      const child = findFirstProjectNode(node.children || [])
-      if (child) return child
-    }
-    return null
-  }
-
-  function getBatchEditProjectNode() {
-    const selectedCaseId = Number(selectedExplorerFileNode.value?.case_id || 0)
-    return selectedCaseId
-      ? findProjectNodeForCase(directoryTree.value, selectedCaseId)
-      : findFirstProjectNode(directoryTree.value)
-  }
-
-  function collectProjectNodes(nodes: PytestDirectoryNode[]): PytestDirectoryNode[] {
-    return nodes.flatMap((node) => [
-      ...(node.type === 'project' ? [node] : []),
-      ...collectProjectNodes(node.children || []),
-    ])
-  }
-
-  function getBatchEditScopes() {
-    return collectProjectNodes(directoryTree.value).map((node) => {
-      const caseIds = Array.from(new Set(collectDirectoryCaseIds(node)))
-      return {
-        key: node.key,
-        label: [currentProjectProductLabel.value, currentModuleLabel.value, ...node.breadcrumb]
-          .filter(Boolean)
-          .join(' / '),
-        caseIds,
-        disabled: caseIds.length === 0 || caseIds.length > 500,
-      }
-    })
-  }
-
-  function openBatchEditor() {
-    const targetNode = getBatchEditProjectNode()
-    const scopes = getBatchEditScopes()
-    const targetScope = scopes.find((scope) => scope.key === targetNode?.key)
-    if (!targetScope?.caseIds.length) {
-      Message.warning('当前项目绑定下没有可编辑的 Case')
-      return
-    }
-    if (targetScope.caseIds.length > 500) {
-      Message.warning('一次最多批量编辑 500 条 Case，请先选择更小的目录范围')
-      return
-    }
-    batchEditorScopes.value = scopes
-    batchEditorInitialScopeKey.value = targetScope.key
-    batchEditorVisible.value = true
-  }
-
-  function onBatchEditorSaved() {
-    const preferredCaseId = selectedExplorerRecord.value?.id || null
-    loadDirectoryTree(preferredCaseId, false)
-  }
-
-  function onResetSearch() {
-    pagination.page = 1
-    selectedRowKeys.value = []
-    explorerSourceRequestId += 1
-    explorerSourceLoading.value = false
-    initialFileSelectionPending = true
-    clearPollingTimer()
-    sidebarModuleIds.value = []
-    sidebarProjectProductId.value = null
-    sidebarSelectedModuleId.value = null
-    selectedDirectoryNode.value = null
-    conditionItems.forEach((it) => {
-      it.value = it.key === 'project_product' || it.key === 'module' ? null : it.multiple ? [] : ''
-    })
-    data.moduleList = []
-    sidebarResetKey.value += 1
-    loadDirectoryTree()
-  }
-
-  function onSearchProjectProductChange(projectProductId: any) {
-    const moduleItem = conditionItems.find((it) => it.key === 'module')
-    if (moduleItem) {
-      moduleItem.value = null
-    }
-    if (projectProductId) {
-      data.moduleList = projectInfo.getProjectPytestModule(projectProductId)
-    } else {
-      data.moduleList = []
-    }
-    doRefresh(projectProductId, true)
-  }
-
-  function onBatchRun() {
-    if (userStore.selected_environment == null) {
-      Message.error('请先选择用例执行的环境')
-      return
-    }
-    if (selectedRowKeys.value.length === 0) {
-      Message.error('请选择要批量执行的用例')
-      return
-    }
-    if (!validateSingleProject()) return
-    Modal.confirm({
-      title: '批量执行 Pytest Case',
-      content: `确定执行已选择的 ${selectedRowKeys.value.length} 条用例吗？`,
-      cancelText: '取消',
-      okText: '执行',
+  function onPublicationChange(record: CaseRecord, target: 'prepublished' | 'published' | 'unpublished'): void {
+    if (!available() || mutationBusy.value || confirmation) return
+    if (target === 'published') { if (record.publication_status !== 'prepublished') { Message.warning('只有预发布状态的用例可以进入发布审核'); return }; void publicationReviewRef.value?.open('pytest', [record.id]); return }
+    if (target !== 'unpublished' && record.status !== 1) { Message.warning('用例必须执行通过后才能提交预发布或正式发布'); return }
+    const epoch = pageVersion.value, serial = ++confirmationVersion, id = record.id, title = target === 'prepublished' ? '提交预发布' : '退回未发布'
+    confirmation = Modal.confirm({ title, content: target === 'prepublished' ? '提交后由业务项目产品负责人审核，预发布不参与定时执行。确认提交吗？' : '退回后该用例不再参与定时执行。确认退回吗？', cancelText: '取消', okText: title, okButtonProps: target === 'unpublished' ? { status: 'danger' } : undefined,
+      onClose: () => { if (serial === confirmationVersion) confirmation = null },
       onBeforeOk: async () => {
-        caseRunning.value = true
+        if (!current(epoch) || serial !== confirmationVersion || mutationBusy.value) return false
+        mutationBusy.value = true; publicationActionCaseId.value = id
         try {
-          const res = await postPytestCaseBatch(
-            selectedRowKeys.value,
-            Number(userStore.selected_environment)
-          )
-          const reportId = res.data?.test_suite_id
-          Message.success(reportId ? `${res.msg}，测试报告 ID：${reportId}` : res.msg)
-          selectedRowKeys.value = []
-          doRefresh()
-          return true
-        } finally {
-          caseRunning.value = false
+          const next = readPublication(await putPytestCasePublication(id, target), id, target)
+          if (!current(epoch)) return false
+          recordRevision++; source.invalidateMetadata()
+          if (selectedExplorerRecord.value?.id === id) Object.assign(selectedExplorerRecord.value, next)
+          Message.success('操作成功'); closeConfirmation(); void loadDirectoryTree(null, false); return true
         }
+        catch { if (current(epoch)) Message.error('发布状态更新失败，请重试'); return false }
+        finally { mutationBusy.value = false; publicationActionCaseId.value = null }
       },
     })
   }
-
-  const onRun = async (param) => {
-    if (!selectedCaseExecutable.value) {
-      Message.warning('当前测试文件源码不可用，或资产已停用、归档、忽略，不能执行')
-      return
-    }
-    if (userStore.selected_environment == null) {
-      Message.error('请先选择用例执行的环境')
-      return
-    }
-    if (caseRunning.value) return
-    caseRunning.value = true
-    try {
-      await getPytestCaseTest(param.id, userStore.selected_environment)
-      Message.success(executionStartedMessage)
-      startPollingCaseState(Number(param.id))
-    } catch {
-    } finally {
-      caseRunning.value = false
-    }
+  function resetContext(): void {
+    clearPollingTimer(); invalidate(true); resetSearchItems(conditionItems); sidebarProjectProductId.value = null; sidebarSelectedModuleId.value = null; sidebarModuleIds.value = []; sidebarResetKey.value++
+    linkedCaseId.value = optionalCaseId(props.caseId ?? route.query.id); initialFileSelectionPending = true; needsReload = true
+    if (available()) { needsReload = false; void loadDirectoryTree(); void loadUsers() }
   }
-
-  const onRunMethod = async (node: any) => {
-    if (!selectedCaseExecutable.value) {
-      Message.warning('当前测试文件源码不可用，或资产已停用、归档、忽略，不能执行')
-      return
-    }
-    if (userStore.selected_environment == null) {
-      Message.error('请先选择用例执行的环境')
-      return
-    }
-    methodRunLoading[node.nodeid] = true
-    try {
-      await getPytestCaseTest(data.updateId, userStore.selected_environment, {
-        nodeid: node.nodeid,
-        node_type: node.node_type,
-        class_name: node.class_name,
-        method_name: node.method_name,
-        parameter_id: node.parameter_id,
-      })
-      Message.success(executionStartedMessage)
-      startPollingCaseState(Number(data.updateId))
-    } catch {
-    } finally {
-      methodRunLoading[node.nodeid] = false
-    }
-  }
-
-  function drawerOk() {
-    Modal.confirm({
-      title: '确认保存平台代码',
-      content: () =>
-        h('div', [
-          h('div', '请确认已了解以下事项：'),
-          h('ol', [
-            h(
-              'li',
-              '平台保存只会修改本地仓库工作区；你还需要自行提交并推送到 Git 远端，代码才会作为仓库版本正式生效。'
-            ),
-            h(
-              'li',
-              '建议优先在本地 IDE 或代码仓库中修改并正常提交，不建议长期通过测试平台直接编辑源码。'
-            ),
-          ]),
-        ]),
-      cancelText: '继续编辑',
-      okText: '仍要保存',
-      onBeforeOk: async () => {
-        const snapshot = sourceSnapshots[data.fileType as 'py' | 'feature']
-        codeSaving.value = true
-        try {
-          const res = await postPytestCaseWrite(
-            data.updateId,
-            data.codeText,
-            data.fileType,
-            snapshot.commit,
-            snapshot.contentHash
-          )
-          data.codeText = res.data?.content || ''
-          snapshot.commit = res.data?.commit_hash || ''
-          snapshot.contentHash = res.data?.content_hash || ''
-          data.drawerVisible = false
-          Message.success(`${res.msg}；请提交并推送到 Git 远端`)
-          if (selectedExplorerFileNode.value) loadExplorerFile(selectedExplorerFileNode.value)
-          return true
-        } catch {
-          return false
-        } finally {
-          codeSaving.value = false
-        }
-      },
-    })
-  }
-
-  function onResult(record: any) {
-    resultHistoryRecord.value = record
-    resultHistoryVisible.value = true
-  }
-
-  function onFileTypeChange() {
-    data.methodNodes = []
-    getPytestCaseRead(data.updateId, data.fileType)
-      .then((res) => {
-        data.codeText = typeof res.data === 'string' ? res.data : res.data?.content || ''
-        const snapshot = sourceSnapshots[data.fileType as 'py' | 'feature']
-        snapshot.commit = res.data?.commit_hash || ''
-        snapshot.contentHash = res.data?.content_hash || ''
-        if (data.fileType === 'py') {
-          loadMethodNodes(data.updateId)
-        }
-      })
-      .catch(() => undefined)
-  }
-
-  function onClick(record: any) {
-    data.drawerVisible = true
-    data.updateId = record.id
-    data.fileType = 'py'
-    data.hasFeatureFile = !!record.feature_file_path
-    data.methodNodes = []
-    featureLookupLoading.value = true
-    getPytestCaseRead(record.id, 'feature', true)
-      .then(() => {
-        data.hasFeatureFile = true
-      })
-      .catch(() => {
-        data.hasFeatureFile = false
-      })
-      .finally(() => {
-        featureLookupLoading.value = false
-      })
-    getPytestCaseRead(record.id, 'py')
-      .then((res) => {
-        data.codeText = typeof res.data === 'string' ? res.data : res.data?.content || ''
-        sourceSnapshots.py.commit = res.data?.commit_hash || ''
-        sourceSnapshots.py.contentHash = res.data?.content_hash || ''
-        loadMethodNodes(record.id)
-      })
-      .catch(() => undefined)
-  }
-
-  function loadMethodNodes(id: any) {
-    methodNodesLoading.value = true
-    getPytestCaseMethodNodes(id)
-      .then((res) => {
-        data.methodNodes = res.data || []
-      })
-      .catch(() => undefined)
-      .finally(() => {
-        methodNodesLoading.value = false
-      })
-  }
-
-  function onPytestProjectName(projectProductId: any) {
-    data.moduleList = projectInfo.getProjectPytestModule(projectProductId)
-    formItems.forEach((item: FormItem) => {
-      if (item.key === 'module') {
-        item.value = item.multiple ? [] : ''
-      }
-    })
-  }
-
-  function getNickName() {
-    getUserName()
-      .then((res) => {
-        data.userList = res.data
-      })
-      .catch(() => undefined)
-  }
-
-  onMounted(() => {
-    nextTick(async () => {
-      await projectInfo.projectPytestName()
-      getNickName()
-      onPytestProjectName(null)
-    })
-  })
-  onUnmounted(() => {
-    clearPollingTimer()
-  })
+  function pause(): void { if (!mounted || disposed) return; pagePolling.pause(); invalidate(false); needsReload = true }
+  function resume(): void { if (!available() || !needsReload) return; needsReload = false; void loadDirectoryTree(selectedExplorerFileNode.value?.case_id ?? null); void loadUsers() }
+  function visibilityChanged(): void { if (typeof document !== 'undefined' && document.hidden) pause(); else resume() }
+  watch(() => [userStore.userId, userStore.roleId, userStore.token, userStore.selected_environment, route.fullPath, props.caseId], resetContext, { flush: 'sync' })
+  onMounted(() => { mounted = true; if (typeof document !== 'undefined') document.addEventListener('visibilitychange', visibilityChanged); if (available()) { void loadDirectoryTree(); void loadUsers() } else needsReload = true })
+  onActivated(() => { active = true; resume() })
+  onDeactivated(() => { active = false; pause() })
+  onBeforeUnmount(() => { disposed = true; clearPollingTimer(); invalidate(true); if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', visibilityChanged) })
 </script>
 <style lang="less" scoped>
-  .mango-pytest-code-editor-spin {
-    width: 100%;
-
-    :deep(> .mango-panel-spin__content) {
-      width: 100%;
-    }
-  }
 
   .mango-pytest-title-extra {
     display: flex;

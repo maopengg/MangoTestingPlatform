@@ -90,9 +90,9 @@ def register_case_revision_tools(mcp):
         target_status=prepublished：把当前候选修订提交预发布，必须传 revision_id；Case 当前执行状态
         必须为通过，失败、未执行或执行中的 Case 不允许提交预发布；提交后旧正式版本转为历史版本，
         Case 仅处于预发布状态，不会被定时任务选中。提交前，调用方 AI 必须先用 get_api_case_detail_full 读取完整
-        Case，确认所有写数据步骤都有使用本次执行唯一标识的删除、撤销、恢复、用例级后置 SQL/函数
+        Case，确认所有写数据步骤都有使用本次执行唯一标识的失败安全删除、撤销、恢复、用例级后置 SQL
         或数据工厂清理闭环。API 创建的子表、关联表、业务或异步数据必须先由 Case 清理，再清理数据
-        工厂数据。无法确认副作用或清理有效性时不得提交。
+        工厂数据。场景 posterior_func/posterior_sql 不是用例级 finally，不得作为失败兜底；无法确认副作用或清理有效性时不得提交。
 
         target_status=published：由项目产品负责人通过当前预发布并生成正式版本，不传 revision_id。
         Case 当前执行状态必须为通过，失败、未执行或执行中的 Case 不允许正式发布。

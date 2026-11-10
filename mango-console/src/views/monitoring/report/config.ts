@@ -1,44 +1,49 @@
-import { FormItem } from '@/types/components'
+import type { ReportSearchItem } from './types'
 import { enableMultiSelectSearch } from '@/utils/search-condition'
-import { reactive, ref } from 'vue'
-import { useTable, useTableColumn } from '@/hooks/table'
+import { reactive } from 'vue'
+import { useTableIndexColumn, useTableColumn } from '@/hooks/table'
 
-const table = useTable()
+export const reportTableScrollX = 1250
 
 // 搜索条件
-export const conditionItems: Array<FormItem> = reactive([
-  {
-    key: 'task_name',
-    label: '任务名称',
-    type: 'input',
-    placeholder: '请输入任务名称',
-    value: ref(''),
-    reset() {
-      this.value = ''
+export function createConditionItems() {
+  const items: ReportSearchItem[] = reactive([
+    {
+      key: 'task_name',
+      label: '任务名称',
+      type: 'input',
+      placeholder: '请输入任务名称',
+      value: '',
+      reset() {
+        this.value = ''
+      },
     },
-  },
-  {
-    key: 'status',
-    label: '状态',
-    type: 'select',
-    placeholder: '请选择状态',
-    value: ref(''),
-    reset() {
-      this.value = ''
+    {
+      key: 'status',
+      label: '状态',
+      type: 'select',
+      placeholder: '请选择状态',
+      value: [],
+      reset() {
+        this.value = []
+      },
     },
-  },
-])
-enableMultiSelectSearch(conditionItems)
+  ])
+  enableMultiSelectSearch(items)
+  return items
+}
 
 // 表格列
 export const tableColumns = useTableColumn([
-  table.indexColumn,
+  { ...useTableIndexColumn(), align: 'center' },
   {
     title: '任务名称',
     key: 'task_name',
     dataIndex: 'task_name',
     align: 'left',
     width: 200,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '状态',
@@ -69,6 +74,8 @@ export const tableColumns = useTableColumn([
     dataIndex: 'notice_group',
     align: 'left',
     width: 150,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '创建时间',
@@ -82,6 +89,7 @@ export const tableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 160,
+    width: 120,
+    align: 'center',
   },
 ])

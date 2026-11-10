@@ -6,7 +6,10 @@
     :footer="false"
     unmount-on-close
   >
-    <a-spin :loading="loading" class="mango-coverage-flow__spin">
+    <MangoPanelSpin :loading="loading" class="mango-coverage-flow__spin">
+      <a-button v-if="renderError && !loading" size="small" :loading="loading" @click="retry"
+        >重新加载流程图</a-button
+      >
       <a-tabs
         v-if="interfaceItems.length > 1"
         v-model:active-key="activeInterfaceKey"
@@ -233,12 +236,15 @@
       <a-alert v-if="renderError" type="error" class="mango-coverage-flow__error">
         Mermaid 流程渲染失败：{{ renderError }}
       </a-alert>
-    </a-spin>
+    </MangoPanelSpin>
   </a-drawer>
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, reactive, ref } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, nextTick, onBeforeUnmount, onDeactivated, reactive, ref, watch } from 'vue'
+  import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
   import { Message } from '@arco-design/web-vue'
   import { toBlob } from 'html-to-image'
   import { useEnum } from '@/store/modules/get-enum'
@@ -248,6 +254,8 @@
     getCoverageCaseFlow,
     getCoverageInterfaceDetail,
   } from '@/api/apitest/module-coverage'
+  import { scaleDensityPixels } from '@/hooks/useDisplayDensity'
+  import type { CoverageRecord, CoveragePayload, CodeEvidence } from '../types'
   import { methodTagColor } from '../config'
 
   const enumStore = useEnum()
@@ -286,17 +294,21 @@
   const renderError = ref('')
   const zoom = ref(1)
   const selectedCaseId = ref<number | null>(null)
-  const interfaceCases = ref<any[]>([])
-  const interfaceItems = ref<Array<{ key: string; detail: any }>>([])
+  const interfaceCases = ref<CoverageRecord[]>([])
+  const interfaceItems = ref<Array<{ key: string; detail: CoverageRecord }>>([])
   const activeInterfaceKey = ref('')
-  const interfaceDetail = reactive<any>({})
-  const caseDetailCache = reactive<Record<number, any>>({})
+  const interfaceDetail = reactive<CoverageRecord>({ id: 0 })
+  const caseDetailCache = reactive<Record<number, CoverageRecord>>({})
   const caseDetailLoading = reactive<Record<number, boolean>>({})
   const caseDetailErrors = reactive<Record<number, string>>({})
   const canvasRef = ref<HTMLElement>()
   const viewportRef = ref<HTMLElement>()
   const diagramSize = { width: 0, height: 0 }
   let renderSequence = 0
+  let panelSession = 0
+  const caseDetailTokens: Record<number, number> = {}
+  let retryRows: CoverageRecord[] = []
+  let retryCaseId: number | undefined
 
   const zoomPercent = computed(() => Math.round(zoom.value * 100))
   const selectedCaseCoverage = computed(() => {
@@ -321,7 +333,7 @@
           ambiguous: 'ApiInfo 候选冲突',
           mismatch: 'ApiInfo 待确认',
         } as Record<string, string>
-      )[interfaceDetail.api_info_binding_status] || 'ApiInfo 未绑定'
+      )[interfaceDetail.api_info_binding_status || ''] || 'ApiInfo 未绑定'
     )
   })
   const apiInfoBindingColor = computed(
@@ -332,7 +344,7 @@
           ambiguous: 'red',
           mismatch: 'orange',
         } as Record<string, string>
-      )[interfaceDetail.api_info_binding_status] || 'blue')
+      )[interfaceDetail.api_info_binding_status || ''] || 'blue')
   )
 
   function cssToken(name: string) {
@@ -479,13 +491,16 @@
       Message.error('当前浏览器不支持复制图片，请使用 HTTPS 或 localhost 访问')
       return
     }
+    const context = panelSession
     copyingImage.value = true
     try {
       const blob = await createFlowImageBlob()
+      if (!visible.value || context !== panelSession) return
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-      Message.success('完整流程图已复制为图片')
-    } catch (error: any) {
-      Message.error(error?.message || '复制图片失败，请检查剪贴板权限')
+      if (visible.value && context === panelSession) Message.success('完整流程图已复制为图片')
+    } catch (error) {
+      if (visible.value && context === panelSession)
+        Message.error(error instanceof Error ? error.message : '复制图片失败，请检查剪贴板权限')
     } finally {
       copyingImage.value = false
     }
@@ -583,8 +598,14 @@
     const height = diagramSize.height * zoom.value
     svg.style.width = `${width}px`
     svg.style.height = `${height}px`
-    canvas.style.width = `${Math.max(viewport.clientWidth, width + VIEWPORT_PADDING)}px`
-    canvas.style.height = `${Math.max(viewport.clientHeight, height + VIEWPORT_PADDING)}px`
+    canvas.style.width = `${Math.max(
+      viewport.clientWidth,
+      width + scaleDensityPixels(VIEWPORT_PADDING)
+    )}px`
+    canvas.style.height = `${Math.max(
+      viewport.clientHeight,
+      height + scaleDensityPixels(VIEWPORT_PADDING)
+    )}px`
   }
 
   function centerViewport() {
@@ -643,12 +664,14 @@
   function fitFlow() {
     const viewport = viewportRef.value
     if (!viewport || !diagramSize.width || !diagramSize.height) return
-    const widthRatio = (viewport.clientWidth - VIEWPORT_PADDING) / diagramSize.width
-    const heightRatio = (viewport.clientHeight - VIEWPORT_PADDING) / diagramSize.height
+    const widthRatio =
+      (viewport.clientWidth - scaleDensityPixels(VIEWPORT_PADDING)) / diagramSize.width
+    const heightRatio =
+      (viewport.clientHeight - scaleDensityPixels(VIEWPORT_PADDING)) / diagramSize.height
     setZoom(Math.min(1, widthRatio, heightRatio))
   }
 
-  function statusLabel(status: string) {
+  function statusLabel(status = '') {
     const labels: Record<string, string> = {
       pending_create: '待创建',
       completed: '已完成',
@@ -658,7 +681,7 @@
     return labels[status] || status
   }
 
-  function statusColor(status: string) {
+  function statusColor(status = '') {
     if (status === 'completed') return 'green'
     if (status === 'deferred') return 'orange'
     if (status === 'removed') return 'red'
@@ -697,20 +720,23 @@
       : '-'
   }
 
-  function caseDetail(item: any) {
+  function caseDetail(item: CoverageRecord) {
     return caseDetailCache[item.id] || item
   }
 
-  function casePayloadValue(item: any, key: string) {
+  function casePayloadValue<K extends keyof CoveragePayload>(
+    item: CoverageRecord,
+    key: K
+  ): CoveragePayload[K] {
     const detail = caseDetail(item)
     return detail.payload?.[key] ?? detail[key]
   }
 
-  function testScenarioLabel(item: any) {
+  function testScenarioLabel(item: CoverageRecord) {
     return casePayloadValue(item, 'test_scenario') || '-'
   }
 
-  function coreAssertionLabel(item: any) {
+  function coreAssertionLabel(item: CoverageRecord) {
     return (
       casePayloadValue(item, 'core_assertion') ||
       casePayloadValue(item, 'scenario_assertion') ||
@@ -719,19 +745,19 @@
     )
   }
 
-  function apiCaseLabel(detail: any) {
+  function apiCaseLabel(detail: CoverageRecord) {
     if (!detail.api_case) return '-'
     return detail.api_case_name
       ? `#${detail.api_case} · ${detail.api_case_name}`
       : `#${detail.api_case}`
   }
 
-  function codeEvidenceLabel(item: any) {
+  function codeEvidenceLabel(item: CoverageRecord) {
     const evidence = casePayloadValue(item, 'code_evidence')
     if (typeof evidence === 'string') return evidence || '-'
     if (!Array.isArray(evidence) || !evidence.length) return '-'
     return evidence
-      .map((entry: any) => {
+      .map((entry: CodeEvidence) => {
         const location = [entry.path, entry.symbol].filter(Boolean).join(' · ')
         const lines = entry.start_line
           ? `:${entry.start_line}${entry.end_line ? `-${entry.end_line}` : ''}`
@@ -741,16 +767,27 @@
       .join('\n')
   }
 
-  async function onCaseDetailVisible(item: any, popupVisible: boolean) {
-    if (!popupVisible || caseDetailCache[item.id] || caseDetailLoading[item.id]) return
-    caseDetailLoading[item.id] = true
-    delete caseDetailErrors[item.id]
+  async function onCaseDetailVisible(item: CoverageRecord, popupVisible: boolean) {
+    const id = item.id
+    if (!popupVisible) {
+      caseDetailTokens[id] = (caseDetailTokens[id] || 0) + 1
+      caseDetailLoading[id] = false
+      return
+    }
+    if (!visible.value || caseDetailCache[id] || caseDetailLoading[id]) return
+    const context = panelSession,
+      token = (caseDetailTokens[id] = (caseDetailTokens[id] || 0) + 1)
+    caseDetailLoading[id] = true
+    delete caseDetailErrors[id]
     try {
-      caseDetailCache[item.id] = (await getCoverageCaseDetail(item.id)).data || item
-    } catch (error) {
-      caseDetailErrors[item.id] = error instanceof Error ? error.message : 'Case详情加载失败'
+      const response = await getCoverageCaseDetail(id)
+      if (visible.value && context === panelSession && token === caseDetailTokens[id])
+        caseDetailCache[id] = response.data || item
+    } catch {
+      if (visible.value && context === panelSession && token === caseDetailTokens[id])
+        caseDetailErrors[id] = 'Case详情加载失败，请重新展开重试'
     } finally {
-      caseDetailLoading[item.id] = false
+      if (context === panelSession && token === caseDetailTokens[id]) caseDetailLoading[id] = false
     }
   }
 
@@ -759,6 +796,7 @@
     if (!canvasRef.value || sequence !== renderSequence) return
     try {
       const { default: mermaid } = await import('mermaid')
+      if (!visible.value || sequence !== renderSequence) return
       mermaid.initialize({
         startOnLoad: false,
         securityLevel: 'strict',
@@ -773,17 +811,17 @@
           tertiaryColor: cssToken('--m-primary-soft'),
           edgeLabelBackground: cssToken('--m-surface'),
           fontFamily: 'inherit',
-          fontSize: '14px',
+          fontSize: `${scaleDensityPixels(14)}px`,
         },
         flowchart: {
           curve: 'linear',
           // SVG labels participate in Mermaid layout; HTML labels clip long CJK text.
           htmlLabels: false,
           useMaxWidth: false,
-          nodeSpacing: 44,
-          rankSpacing: 34,
-          padding: 14,
-          wrappingWidth: 260,
+          nodeSpacing: scaleDensityPixels(44),
+          rankSpacing: scaleDensityPixels(34),
+          padding: scaleDensityPixels(14),
+          wrappingWidth: scaleDensityPixels(260),
         },
       })
       const rendered = await mermaid.render(
@@ -805,7 +843,7 @@
       applySemanticStyles(svg)
       applyCaseHighlight()
       await nextTick()
-      fitFlow()
+      if (visible.value && sequence === renderSequence) fitFlow()
     } catch (error) {
       if (sequence !== renderSequence) return
       renderError.value = error instanceof Error ? error.message : String(error)
@@ -822,13 +860,17 @@
     interfaceCases.value = []
     diagramSize.width = 0
     diagramSize.height = 0
-    Object.keys(interfaceDetail).forEach((key) => delete interfaceDetail[key])
+    for (const key of Object.keys(interfaceDetail) as Array<keyof CoverageRecord>)
+      delete interfaceDetail[key]
+    interfaceDetail.id = 0
     if (canvasRef.value) canvasRef.value.innerHTML = ''
   }
 
-  function interfaceKey(row: any) {
+  function interfaceKey(row: CoverageRecord) {
     return String(
       row.key ||
+        row.coverage_interface ||
+        row.id ||
         [
           row.project_product?.id || row.project_product_id,
           row.module?.id || row.module_id,
@@ -839,12 +881,17 @@
     )
   }
 
-  async function fetchInterfaceDetail(row: any, caseId?: number) {
+  async function fetchInterfaceDetail(
+    row: CoverageRecord,
+    caseId?: number,
+    sequence = renderSequence
+  ) {
     let interfaceId = row.coverage_interface || row.id
     if (caseId && !row.coverage_interface) {
       const flowResponse = await getCoverageCaseFlow(caseId)
       interfaceId = flowResponse.data?.coverage_interface_id
     }
+    if (!visible.value || sequence !== renderSequence) return null
     const response = await getCoverageInterfaceDetail({
       id: interfaceId,
     })
@@ -855,6 +902,10 @@
     const target = interfaceItems.value.find((item) => item.key === String(key))
     if (!target) return
     const sequence = ++renderSequence
+    ++panelSession
+    Object.keys(caseDetailLoading).forEach((key) => {
+      caseDetailLoading[Number(key)] = false
+    })
     activeInterfaceKey.value = target.key
     resetFlow(selectedCaseId)
     try {
@@ -867,9 +918,12 @@
     }
   }
 
-  async function openMany(rows: any[], selectedCaseId?: number) {
+  async function openMany(rows: CoverageRecord[], selectedCaseId?: number) {
     if (!rows.length) return
     const requestSequence = ++renderSequence
+    ++panelSession
+    retryRows = rows.map((row) => ({ ...row }))
+    retryCaseId = selectedCaseId
     visible.value = true
     interfaceItems.value = []
     activeInterfaceKey.value = ''
@@ -879,19 +933,21 @@
     resetFlow(selectedCaseId)
     try {
       const details = await Promise.all(
-        rows.map((row) => fetchInterfaceDetail(row, selectedCaseId))
+        rows.map((row) => fetchInterfaceDetail(row, selectedCaseId, requestSequence))
       )
       if (requestSequence !== renderSequence) return
-      interfaceItems.value = details
-      await activateInterface(details[0].key, selectedCaseId)
+      const loaded = details.filter((item): item is NonNullable<typeof item> => item !== null)
+      interfaceItems.value = loaded
+      if (loaded[0]) await activateInterface(loaded[0].key, selectedCaseId)
+      else loading.value = false
     } catch (error) {
       if (requestSequence !== renderSequence) return
-      renderError.value = error instanceof Error ? error.message : String(error)
+      void (reportLoadError(error, "流程图加载失败，请重试", false), renderError.value = '流程图加载失败，请重试')
       loading.value = false
     }
   }
 
-  function open(row: any, selectedCaseId?: number) {
+  function open(row: CoverageRecord, selectedCaseId?: number) {
     return openMany([row], selectedCaseId)
   }
 
@@ -899,7 +955,45 @@
     activateInterface(String(key))
   }
 
-  defineExpose({ open, openMany })
+  function close() {
+    ++panelSession
+    ++renderSequence
+    visible.value = false
+    loading.value = false
+    interfaceItems.value = []
+    interfaceCases.value = []
+    activeInterfaceKey.value = ''
+    mermaidSource.value = ''
+    renderError.value = ''
+    for (const key of Object.keys(caseDetailLoading)) caseDetailLoading[Number(key)] = false
+    if (canvasRef.value) canvasRef.value.innerHTML = ''
+  }
+  function retry() {
+    return openMany(retryRows, retryCaseId)
+  }
+  watch(
+    visible,
+    (value) => {
+      if (!value) close()
+    },
+    { flush: 'sync' }
+  )
+  const resizeObserver =
+    typeof ResizeObserver === 'undefined'
+      ? undefined
+      : new ResizeObserver(() => {
+          if (visible.value) fitFlow()
+        })
+  watch(viewportRef, (element) => {
+    resizeObserver?.disconnect()
+    if (element) resizeObserver?.observe(element)
+  })
+  onDeactivated(close)
+  onBeforeUnmount(() => {
+    close()
+    resizeObserver?.disconnect()
+  })
+  defineExpose({ open, openMany, close })
 </script>
 
 <style lang="less" scoped>
@@ -908,6 +1002,12 @@
     width: 100%;
     min-height: 560px;
     flex-direction: column;
+  }
+
+  .mango-coverage-flow__spin :deep(> .mango-panel-spin__content) {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 
   .mango-coverage-flow__interface-tabs {

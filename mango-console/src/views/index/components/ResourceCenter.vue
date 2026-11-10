@@ -25,7 +25,12 @@
 <script lang="ts" setup>
   import { IconDownload, IconBook, IconUser, IconCode } from '@arco-design/web-vue/es/icon'
 
-  const emit = defineEmits(['download-executor', 'view-skill', 'view-help', 'contact-author'])
+  const emit = defineEmits<{
+    (event: 'download-executor'): void
+    (event: 'view-skill'): void
+    (event: 'view-help'): void
+    (event: 'contact-author'): void
+  }>()
 
   function handleDownloadExecutor() {
     emit('download-executor')

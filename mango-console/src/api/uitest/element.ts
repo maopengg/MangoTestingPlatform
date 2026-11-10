@@ -92,7 +92,7 @@ export function postUiElementAiLocatorRecommend(data: object) {
   })
 }
 
-export function deleteUiElement(id: number | string[] | number[]) {
+export function deleteUiElement(id: number | string | Array<number | string>) {
   return deleted({
     url: '/ui/element',
     data: () => {
@@ -165,7 +165,7 @@ export function putUiElementDeepCheckApply(data: {
 
 export function postUiElementOpenBrowser(data: {
   page_id: number | string
-  test_env: number
+  test_env: number | string
 }) {
   return post({
     url: '/ui/element/browser/open',
@@ -184,7 +184,7 @@ export function getUiUiElementName(id: any) {
   })
 }
 
-export function getUiElementUpload(data: any) {
+export function getUiElementUpload(data: FormData) {
   return post({
     url: '/ui/element/upload',
     headers: {

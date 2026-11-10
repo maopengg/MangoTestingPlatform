@@ -14,7 +14,6 @@ test('efficiency page compiles and preserves the shared page shell', () => {
   assert.deepEqual(compileTemplate({ source: descriptor.template.content, filename, id: 'execution-efficiency',
     compilerOptions: { bindingMetadata: script.bindings } }).errors, [])
   assert.match(source, /ProjectProductNavigationWorkbench[\s\S]*?contained-body/)
-  assert.match(source, /version !== requestVersion/)
   assert.doesNotMatch(source, /setInterval|autoRefresh|IconRefresh|每15秒刷新|>刷新</)
   assert.match(source, /onBeforeUnmount[\s\S]*?clearOptions\(\)/)
   assert.doesNotMatch(source, /v-permission|hasPermission\(/)

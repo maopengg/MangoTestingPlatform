@@ -1,9 +1,13 @@
 <template>
   <section
     class="mango-case-execution-panel"
-    :class="{ 'mango-case-execution-panel--history': history, 'mango-case-execution-panel--flat': flat }"
+    :class="{
+      'mango-case-execution-panel--history': history,
+      'mango-case-execution-panel--flat': flat,
+    }"
   >
     <template v-if="history">
+
       <div class="mango-evaluation-history">
         <aside class="mango-evaluation-history-sidebar"
           ><ExecutionHistoryList
@@ -28,12 +32,15 @@
     <template v-else>
       <section class="mango-section-card mango-execution-card" aria-label="执行概况">
         <div class="mango-section-title mango-execution-card-title mango-execution-heading"
-          ><div class="mango-execution-identity"><h3 class="mango-execution-item-heading">执行概况</h3><span :title="record?.execution_no">{{ record?.execution_no || '当前环境尚未执行' }}</span></div
+          ><div class="mango-execution-identity"
+            ><h3 class="mango-execution-item-heading">执行概况</h3
+            ><span :title="record?.execution_no">{{
+              record?.execution_no || '当前环境尚未执行'
+            }}</span></div
           ><a-space wrap>
             <a-button v-if="record" size="small" @click="snapshotVisible = true">执行快照</a-button>
             <a-button
               v-if="record && !isTerminal(record.status)"
-
               size="small"
               status="danger"
               :loading="stopping"
@@ -46,7 +53,6 @@
                 isTerminal(record.status) &&
                 (record.summary?.failed || record.summary?.invalid || record.summary?.warning)
               "
-
               size="small"
               :loading="retrying"
               @click="retry"
@@ -55,6 +61,7 @@
           </a-space></div
         >
         <MangoPanelSpin :loading="recordLoading" class="mango-execution-record-spin">
+
           <div v-if="!record" class="mango-empty-state"
             >此 Case 在当前环境尚无执行结果，可从“执行”开始。</div
           >
@@ -108,10 +115,14 @@
           <h4 class="mango-execution-summary-heading">本次结果 AI 总结</h4>
           <template v-if="record.summary.ai_summary.status === 'completed'">
             <p>{{ record.summary.ai_summary.overview }}</p>
-            <p v-for="finding in record.summary.ai_summary.findings" :key="finding">{{ finding }}</p>
+            <p v-for="finding in record.summary.ai_summary.findings" :key="finding">{{
+              finding
+            }}</p>
             <p v-for="tip in record.summary.ai_summary.recommendations" :key="tip">{{ tip }}</p>
           </template>
-          <a-alert v-else type="warning">总结生成失败，不影响评分结果。{{ record.summary.ai_summary.error_message }}</a-alert>
+          <a-alert v-else type="warning"
+            >总结生成失败，不影响评分结果。{{ record.summary.ai_summary.error_message }}</a-alert
+          >
         </section>
       </section>
       <template v-if="!history">
@@ -119,7 +130,12 @@
           <div class="mango-section-title mango-execution-card-title mango-execution-item-toolbar"
             ><h3 class="mango-execution-item-heading">条目结果</h3
             ><div class="mango-execution-item-tools">
-              <a-button v-if="record?.details?.workflow?.length"  size="small" @click="workflowVisible = true">查看执行流程</a-button>
+              <a-button
+                v-if="record?.details?.workflow?.length"
+                size="small"
+                @click="workflowVisible = true"
+                >查看执行流程</a-button
+              >
               <a-form v-if="record" layout="inline" :model="{ verdictFilter }">
                 <a-form-item label="效果结论"
                   ><a-select
@@ -135,7 +151,6 @@
               </a-form>
               <a-button
                 v-if="true"
-
                 size="small"
                 :loading="gradingLoading || previewLoading"
                 :disabled="recordLoading"
@@ -151,7 +166,8 @@
               ? '以下评分配置来自本次执行快照，修改当前用例不会改变历史结果。'
               : '以下为当前用例的评分配置，尚未执行，不代表实际得分。'
           }}</p>
-          <a-alert v-if="gradingError" type="error">部分评分配置加载失败，请收起后重试。</a-alert>
+
+
           <a-table
             :columns="displayColumns"
             :data="displayRows"
@@ -228,11 +244,11 @@
             <template #actions="{ record: item }"
               ><MangoTableActions
                 :actions="[
-    {
-        label: '详情',
-        onClick: () => showItem(item.id),
-    },
-]"
+                  {
+                    label: '详情',
+                    onClick: () => showItem(item.id),
+                  },
+                ]"
             /></template>
           </a-table>
           <TableFooter v-if="record" :pagination="itemPagination" />
@@ -247,7 +263,14 @@
       unmount-on-close
       ><JsonDisplay :data="record?.snapshot" :show-drawer-button="false"
     /></EvaluationDrawer>
-    <EvaluationDrawer v-model:visible="workflowVisible" title="本次执行流程" :width="900" :footer="false" unmount-on-close><WorkflowResult v-if="record" :records="record.details?.workflow || []" /></EvaluationDrawer>
+    <EvaluationDrawer
+      v-model:visible="workflowVisible"
+      title="本次执行流程"
+      :width="900"
+      :footer="false"
+      unmount-on-close
+      ><WorkflowResult v-if="record" :records="record.details?.workflow || []"
+    /></EvaluationDrawer>
     <EvaluationDrawer
       v-model:visible="itemVisible"
       contained
@@ -269,13 +292,14 @@
   </section>
 </template>
 <script setup lang="ts">
+import { reportLoadError, runLoadRequest } from '@/utils/load-error'
+
   import { usePagePolling, type PollingContext } from '@/hooks/use-page-polling'
   import WorkflowResult from './WorkflowResult.vue'
   import EvaluationDrawer from './EvaluationDrawer.vue'
-  import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+  import { computed, reactive, ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import useUserStore from '@/store/modules/user'
-
   import ExecutionHistoryList from '@/components/business/ExecutionHistoryList.vue'
   import { useEvaluationEnums } from './useEvaluationEnums'
   import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
@@ -293,6 +317,15 @@
   } from '@/api/evaluation'
   import { isTerminal } from '../case/config'
   import { itemColumns, gradingColumns, unexecutedColumns } from '../case/details/config'
+  import { useEvaluationScope } from '../composables/useEvaluationScope'
+  import type {
+    ExecutionRecord,
+    ItemResult,
+    GraderBinding,
+    GraderCatalogEntry,
+    GradingPreview,
+    ResultPage,
+  } from '../types'
   const props = defineProps<{
     caseId: number
     executionId?: number
@@ -301,22 +334,42 @@
     flat?: boolean
     datasetName?: string
     datasetId?: number
-    gradingPreview?: { items?: any[] }
+    gradingPreview?: GradingPreview
     previewLoading?: boolean
-    graderCatalog?: any[]
+    graderCatalog?: GraderCatalogEntry[]
   }>()
   const emit = defineEmits<{
     (event: 'selected', execution: number): void
     (event: 'preview'): void
   }>()
   const user = useUserStore()
-
-  const workflowVisible = ref(false)
-  const showGrading = ref(false),
+  const workflowVisible = ref(false),
+    showGrading = ref(false),
     gradingLoading = ref(false),
-    gradingError = ref(false),
-    frozenGraders = ref<Record<number, any[]>>({})
-  let gradingRequest = 0
+    gradingError = ref(false)
+  const frozenGraders = ref<Record<number, GraderBinding[]>>({})
+  const record = ref<ExecutionRecord | null>(null),
+    itemRows = ref<ItemResult[]>([]),
+    historyRows = ref<ExecutionRecord[]>([]),
+    verdictFilter = ref<string[]>([])
+  const selectedHistoryId = ref<number>(),
+    selectedItemId = ref<number>(),
+    itemVisible = ref(false),
+    snapshotVisible = ref(false)
+  const recordLoading = ref(false),
+    itemsLoading = ref(false),
+    historyLoading = ref(false),
+    stopping = ref(false),
+    retrying = ref(false)
+  const recordError = ref(false),
+    itemsError = ref(false),
+    historyError = ref(false)
+  let generation = 0,
+    itemRequest = 0,
+    historyRequest = 0,
+    gradingRequest = 0
+  const retryKeys = new Map<string, string>()
+  const recordReads = new Set<number>()
   const displayColumns = computed(() =>
     record.value
       ? showGrading.value
@@ -328,13 +381,17 @@
     record.value
       ? itemRows.value
       : showGrading.value
-      ? (props.gradingPreview?.items || []).map((item: any) => ({ ...item, id: item.item_id, dataset_item_id: item.item_id }))
+      ? (props.gradingPreview?.items || []).map((item) => ({
+          ...item,
+          id: item.item_id,
+          dataset_item_id: item.item_id,
+        }))
       : []
   )
-  function rowGraders(item: any): any[] {
+  function rowGraders(item: { id: number; graders?: GraderBinding[] }): GraderBinding[] {
     return record.value ? frozenGraders.value[item.id] || [] : item.graders || []
   }
-  function graderName(grader: any) {
+  function graderName(grader: GraderBinding) {
     return (
       props.graderCatalog?.find(
         (entry) =>
@@ -343,70 +400,13 @@
       )?.name || grader.grader_key
     )
   }
-  async function loadFrozenGraders() {
-    const request = ++gradingRequest,
-      execution = record.value?.id
-    if (!execution) return
-    gradingLoading.value = true
-    gradingError.value = false
-    const bindings = record.value.snapshot?.grader_bindings || {}
-    const missing = itemRows.value.filter(
-      (item) => !Object.prototype.hasOwnProperty.call(frozenGraders.value, item.id)
-    )
-    if (!missing.length) {
-      gradingLoading.value = false
-      return
-    }
-    try {
-      const responses = await Promise.allSettled(
-        missing.map(async (item) => {
-          const response: any = await getCaseExecutionItem(props.caseId, execution, item.id)
-          return [
-            item.id,
-            (response.data?.item_snapshot?.effective_graders || [])
-              .map((ref: any) => bindings[ref.binding_hash])
-              .filter(Boolean),
-          ] as const
-        })
-      )
-      if (request !== gradingRequest || record.value?.id !== execution) return
-      frozenGraders.value = {
-        ...frozenGraders.value,
-        ...Object.fromEntries(
-          responses.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []))
-        ),
-      }
-      gradingError.value = responses.some((result) => result.status === 'rejected')
-    } finally {
-      if (request === gradingRequest) gradingLoading.value = false
-    }
-  }
-  function toggleGrading() {
-    showGrading.value = !showGrading.value
-    if (!showGrading.value) {
-      gradingRequest++
-      gradingLoading.value = false
-      return
-    }
-    if (record.value) loadFrozenGraders()
-    else emit('preview')
-  }
   const { title: enumTitle, color: statusColor, options: enumOptions } = useEvaluationEnums()
   const resultFilters = computed(() => enumOptions('evaluation_verdict'))
-  const selectedHistoryId = ref<number>()
   const environmentTitle = computed(() =>
     Number(user.selected_environment) === Number(record.value?.test_env)
       ? user.selected_environment_title || record.value?.test_env
       : record.value?.test_env
   )
-  const skippedReasons: Record<string, string> = {
-    critical_gate_stopped: '硬门禁未通过，后续条目未执行',
-    execution_stopped: '执行已停止，条目未执行',
-  }
-  const record = ref<any>(),
-    itemRows = ref<any[]>([]),
-    historyRows = ref<any[]>([]),
-    verdictFilter = ref<string[]>([])
   const historyItems = computed(() =>
     historyRows.value.map((item) => ({
       id: item.id,
@@ -418,18 +418,10 @@
       latest: item.id === historyRows.value[0]?.id,
     }))
   )
-  const recordLoading = ref(false),
-    itemsLoading = ref(false),
-    historyLoading = ref(false),
-    stopping = ref(false),
-    retrying = ref(false)
-  const itemVisible = ref(false),
-    selectedItemId = ref<number>()
-  const snapshotVisible = ref(false)
-  let generation = 0,
-    itemRequest = 0,
-    historyRequest = 0
-  let retryKey: string | undefined
+  const skippedReasons: Record<string, string> = {
+    critical_gate_stopped: '硬门禁未通过，后续条目未执行',
+    execution_stopped: '执行已停止，条目未执行',
+  }
   const itemPagination = reactive({
     page: 1,
     pageSize: 10,
@@ -440,96 +432,246 @@
   })
   const percent = (value: number | null | undefined) =>
     value == null ? '-' : `${(value * 100).toFixed(1)}%`
-  const pagePolling = usePagePolling(context => {
-    if (props.history) { pagePolling.stop(); return }
-    return loadRecord(record.value?.id, true, context)
-  }, () => {
-    if (recordLoading.value && !props.history) pagePolling.start()
-    generation++; itemRequest++; gradingRequest++
-    recordLoading.value = false; itemsLoading.value = false; gradingLoading.value = false
-  })
-  function cancelTimer() {
+  const pagePolling = usePagePolling(
+    (context) =>
+      props.history ? undefined : loadRecord(record.value?.id || props.executionId, true, context),
+    () => {
+      ++generation
+      ++itemRequest
+      ++gradingRequest
+      recordLoading.value = false
+      itemsLoading.value = false
+      gradingLoading.value = false
+    }
+  )
+  const scope = useEvaluationScope(
+    () => [props.caseId, props.executionId, props.history],
+    reset,
+    resume
+  )
+  function reset() {
     pagePolling.stop()
+    ++generation
+    ++itemRequest
+    ++historyRequest
+    ++gradingRequest
+    record.value = null
+    itemRows.value = []
+    historyRows.value = []
+    frozenGraders.value = {}
+    showGrading.value = false
+    gradingLoading.value = false
+    gradingError.value = false
+    recordLoading.value = false
+    itemsLoading.value = false
+    historyLoading.value = false
+    recordError.value = false
+    itemsError.value = false
+    historyError.value = false
+    selectedHistoryId.value = undefined
+    selectedItemId.value = undefined
+    itemVisible.value = false
+    snapshotVisible.value = false
+    workflowVisible.value = false
+    itemPagination.page = 1
+    itemPagination.pageCount = 0
+    verdictFilter.value = []
+  }
+  function resume() {
+    if (!Number.isSafeInteger(props.caseId) || props.caseId <= 0) return
+    if (props.history) void loadHistory()
+    else {
+      pagePolling.start()
+      void loadRecord(props.executionId)
+    }
+  }
+  async function loadFrozenGraders() {
+    if (!scope.isActive()) return false
+    const request = ++gradingRequest,
+      execution = record.value?.id,
+      version = scope.snapshot()
+    if (!execution) return false
+    const bindings = record.value?.snapshot?.grader_bindings || {}
+    const missing = itemRows.value.filter(
+      (item) => !Object.prototype.hasOwnProperty.call(frozenGraders.value, item.id)
+    )
+    gradingLoading.value = Boolean(missing.length)
+    gradingError.value = false
+    if (!missing.length) return true
+    try {
+      const caseId = props.caseId
+      const responses = await Promise.allSettled(
+        missing.map(async (item) => {
+          const response: { data?: ItemResult } = await getCaseExecutionItem(
+            caseId,
+            execution,
+            item.id
+          )
+          if (!response.data) throw Error('条目结果为空')
+          return [
+            item.id,
+            (response.data.item_snapshot?.effective_graders || [])
+              .map((ref) => bindings[ref.binding_hash])
+              .filter((binding): binding is GraderBinding => Boolean(binding)),
+          ] as const
+        })
+      )
+      if (!scope.current(version) || request !== gradingRequest || record.value?.id !== execution)
+        return false
+      frozenGraders.value = {
+        ...frozenGraders.value,
+        ...Object.fromEntries(
+          responses.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []))
+        ),
+      }
+      gradingError.value = responses.some((result) => result.status === 'rejected')
+      return !gradingError.value
+    } finally {
+      if (request === gradingRequest) gradingLoading.value = false
+    }
+  }
+  function toggleGrading() {
+    if (!scope.isActive()) return
+    showGrading.value = !showGrading.value
+    if (!showGrading.value) {
+      ++gradingRequest
+      gradingLoading.value = false
+      return
+    }
+    if (record.value) void loadFrozenGraders()
+    else emit('preview')
   }
   async function loadRecord(id?: number, silent = false, context?: PollingContext) {
-    let loaded = false
+    if (!scope.isActive()) return false
+    const version = scope.snapshot()
+    if (recordReads.has(version)) return false
+    recordReads.add(version)
     const request = ++generation,
-      caseId = props.caseId
-    if (!silent) recordLoading.value = true
+      caseId = props.caseId,
+      environment = user.selected_environment
+    let loaded = false
+    if (!silent) {
+      recordLoading.value = true
+      recordError.value = false
+    }
     try {
-      const response: any = id
-        ? await getCaseExecution(caseId, id)
-        : await getLatestCaseExecution(
-            caseId,
-            user.selected_environment ? Number(user.selected_environment) : undefined
-          )
-      if (request !== generation || (context && !context.isCurrent())) return
+      const response: { data?: ExecutionRecord | null } = id
+        ? await runLoadRequest(silent, () => getCaseExecution(caseId, id))
+        : await runLoadRequest(silent, () => getLatestCaseExecution(caseId, environment ? Number(environment) : undefined))
+      if (!scope.current(version) || request !== generation || (context && !context.isCurrent()))
+        return false
       if (record.value?.id !== response.data?.id) {
         frozenGraders.value = {}
-        gradingRequest++
+        ++gradingRequest
         gradingLoading.value = false
+        itemVisible.value = false
+        snapshotVisible.value = false
+        workflowVisible.value = false
+        itemPagination.page = 1
       }
-      record.value = response.data
-      await loadItems(silent, context)
-      loaded = true
+      record.value = response.data || null
+      recordError.value = false
+      // The overview is ready independently of the item list.
+      if (!silent) recordLoading.value = false
+      loaded = await loadItems(silent, context)
+      return loaded
+    } catch (loadFailure0) {
+      if (scope.current(version) && request === generation && !silent) (reportLoadError(loadFailure0, "加载失败，请重试", silent), recordError.value = true)
+      return false
     } finally {
+      recordReads.delete(version)
       if (request === generation) {
-        if (!silent) recordLoading.value = false
-        if (!props.history && ((!loaded && silent) || (record.value && !isTerminal(record.value.status))))
+        recordLoading.value = false
+        if (
+          !props.history &&
+          scope.current(version) &&
+          (!loaded || (record.value && !isTerminal(record.value.status)))
+        )
           pagePolling.start()
         else pagePolling.stop()
       }
     }
   }
   async function loadItems(silent = false, context?: PollingContext) {
+    if (!scope.isActive()) return false
     const request = ++itemRequest,
-      id = record.value?.id
+      id = record.value?.id,
+      version = scope.snapshot()
     if (!id) {
       itemRows.value = []
       itemsLoading.value = false
-      return
+      return true
     }
-    if (!silent) itemsLoading.value = true
+    if (!silent) {
+      itemsLoading.value = true
+      itemsError.value = false
+    }
     try {
-      const response: any = await getCaseExecutionItems(props.caseId, id, {
+      const response: ResultPage<ItemResult> = await runLoadRequest(silent, () => getCaseExecutionItems(props.caseId, id, {
         page: itemPagination.page,
         pageSize: itemPagination.pageSize,
         verdict__in: verdictFilter.value.length ? verdictFilter.value.join(',') : undefined,
-      })
-      if (request !== itemRequest || record.value?.id !== id || (context && !context.isCurrent())) return
+      }))
+      if (
+        !scope.current(version) ||
+        request !== itemRequest ||
+        record.value?.id !== id ||
+        (context && !context.isCurrent())
+      )
+        return false
       itemRows.value = response.data?.items || []
       itemPagination.pageCount = response.data?.count || 0
+      itemsError.value = false
       if (showGrading.value && !silent) await loadFrozenGraders()
+      return true
+    } catch (loadFailure1) {
+      if (scope.current(version) && request === itemRequest && !silent) (reportLoadError(loadFailure1, "加载失败，请重试", silent), itemsError.value = true)
+      return false
     } finally {
       if (request === itemRequest && !silent) itemsLoading.value = false
     }
   }
   async function loadHistory() {
-    const request = ++historyRequest
+    if (!scope.isActive()) return false
+    const request = ++historyRequest,
+      version = scope.snapshot(),
+      caseId = props.caseId,
+      environment = user.selected_environment
     historyLoading.value = true
+    historyError.value = false
     try {
-      const response: any = await getCaseExecutions(props.caseId, {
+      const response: ResultPage<ExecutionRecord> = await getCaseExecutions(caseId, {
         page: 1,
         pageSize: 20,
-        test_env: user.selected_environment || undefined,
+        test_env: environment || undefined,
       })
-      if (request === historyRequest) {
-        historyRows.value = response.data?.items || []
-        if (
-          !selectedHistoryId.value &&
-          props.executionId &&
-          !historyRows.value.some((item) => item.id === props.executionId)
-        ) {
-          const selected: any = await getCaseExecution(props.caseId, props.executionId)
-          if (request !== historyRequest) return
-          if (selected.data && Number(selected.data.test_env) === Number(user.selected_environment))
+      if (!scope.current(version) || request !== historyRequest) return false
+      historyRows.value = response.data?.items || []
+      if (
+        !selectedHistoryId.value &&
+        props.executionId &&
+        !historyRows.value.some((item) => item.id === props.executionId)
+      ) {
+        try {
+          const selected: { data?: ExecutionRecord } = await getCaseExecution(
+            caseId,
+            props.executionId
+          )
+          if (!scope.current(version) || request !== historyRequest) return false
+          if (selected.data && Number(selected.data.test_env) === Number(environment))
             historyRows.value.push(selected.data)
+        } catch (loadFailure2) {
+          if (scope.current(version) && request === historyRequest) (reportLoadError(loadFailure2, "加载失败，请重试", false), historyError.value = true)
         }
-        const preferred = selectedHistoryId.value || props.executionId
-        selectedHistoryId.value = historyRows.value.some((item) => item.id === preferred)
-          ? preferred
-          : historyRows.value[0]?.id
       }
+      const preferred = selectedHistoryId.value || props.executionId
+      selectedHistoryId.value = historyRows.value.some((item) => item.id === preferred)
+        ? preferred
+        : historyRows.value[0]?.id
+      return true
+    } catch (loadFailure3) {
+      if (scope.current(version) && request === historyRequest) (reportLoadError(loadFailure3, "加载失败，请重试", false), historyError.value = true)
+      return false
     } finally {
       if (request === historyRequest) historyLoading.value = false
     }
@@ -539,94 +681,66 @@
   }
   function filterItems() {
     itemPagination.page = 1
-    loadItems()
+    ++gradingRequest
+    gradingLoading.value = false
+    return loadItems()
   }
   function select(id: number) {
+    if (!scope.isActive()) return
     itemPagination.page = 1
     itemRows.value = []
     selectedItemId.value = undefined
     emit('selected', id)
-    loadRecord(id)
+    void loadRecord(id)
   }
   function showItem(id: number) {
-    selectedItemId.value = id
-    itemVisible.value = true
+    if (scope.isActive()) {
+      selectedItemId.value = id
+      itemVisible.value = true
+    }
   }
   async function stop() {
+    if (!scope.isActive() || !record.value || stopping.value || retrying.value) return false
     const caseId = props.caseId,
-      execution = record.value.id
+      execution = record.value.id,
+      version = scope.snapshot()
     stopping.value = true
     try {
       await stopCaseExecution(caseId, execution)
-      if (props.caseId === caseId && record.value?.id === execution) await refresh()
+      if (scope.current(version) && record.value?.id === execution) {
+        await refresh()
+        return true
+      }
+      return false
+    } catch {
+      return false
     } finally {
       stopping.value = false
     }
   }
   async function retry() {
-    if (retrying.value) return
+    if (!scope.isActive() || !record.value || retrying.value || stopping.value) return false
     const caseId = props.caseId,
       execution = record.value.id,
-      environment = user.selected_environment
+      version = scope.snapshot()
+    const retryScope = `${user.userId}:${user.roleId}:${caseId}:${execution}:${user.selected_environment}`
+    if (!retryKeys.has(retryScope)) retryKeys.set(retryScope, crypto.randomUUID())
+    const key = retryKeys.get(retryScope)!
     retrying.value = true
-    retryKey ||= crypto.randomUUID()
     try {
-      const response: any = await retryCaseExecution(caseId, execution, retryKey)
-      retryKey = undefined
+      const response: { data: { id: number } } = await retryCaseExecution(caseId, execution, key)
+      if (retryKeys.get(retryScope) === key) retryKeys.delete(retryScope)
+      if (!scope.current(version) || record.value?.id !== execution) return false
       Message.success('已提交失败子集重试')
-      if (
-        props.caseId === caseId &&
-        record.value?.id === execution &&
-        environment === user.selected_environment
-      )
-        select(response.data.id)
+      select(response.data.id)
+      return true
+    } catch {
+      return false
     } finally {
       retrying.value = false
     }
   }
-  watch(
-    () => [props.caseId, props.executionId, user.selected_environment],
-    () => {
-      cancelTimer()
-      generation += 1
-      itemRequest += 1
-      historyRequest += 1
-      gradingRequest += 1
-      showGrading.value = false
-      gradingLoading.value = false
-      gradingError.value = false
-      frozenGraders.value = {}
-      historyRows.value = []
-      selectedHistoryId.value = undefined
-      record.value = undefined
-      itemRows.value = []
-      itemVisible.value = false
-      snapshotVisible.value = false
-      itemPagination.page = 1
-      retryKey = undefined
-      if (props.history) loadHistory()
-      else loadRecord(props.executionId)
-    },
-    { immediate: true }
-  )
-  watch(
-    () => props.history,
-    (value) => {
-      cancelTimer()
-      generation += 1
-      itemRequest += 1
-      historyRequest += 1
-      if (value) loadHistory()
-      else loadRecord(props.executionId || record.value?.id)
-    }
-  )
-  onBeforeUnmount(() => {
-    gradingRequest += 1
-    cancelTimer()
-    generation += 1
-    itemRequest += 1
-    historyRequest += 1
-  })
+  scope.start()
 </script>
 <style scoped>
   .mango-case-execution-panel {
@@ -651,8 +765,14 @@
     padding-top: var(--m-card-padding);
     border-top: 1px solid var(--m-border);
   }
-  .mango-case-execution-panel--flat .mango-execution-summary { background: var(--m-surface-soft); border-radius: var(--m-radius-sm); }
-  .mango-case-execution-panel--flat .mango-empty-state { background: var(--m-surface-soft); border: 0; }
+  .mango-case-execution-panel--flat .mango-execution-summary {
+    background: var(--m-surface-soft);
+    border-radius: var(--m-radius-sm);
+  }
+  .mango-case-execution-panel--flat .mango-empty-state {
+    background: var(--m-surface-soft);
+    border: 0;
+  }
   .mango-execution-card-title {
     margin: 0 0 12px;
     font-size: 14px;

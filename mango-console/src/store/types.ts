@@ -4,7 +4,7 @@ import { RouteRecordRaw } from 'vue-router'
 export interface UserState {
   userId: number
   token: string
-  roleId: number
+  roleId: number | null
   roles: Array<{
     description: string | null
     roleId: number | null

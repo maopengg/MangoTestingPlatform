@@ -60,23 +60,10 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, ref, watch } from 'vue'
+  import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
 
-  export type PytestDirectoryNode = {
-    key: string
-    case_id?: number
-    title: string
-    type: 'repository' | 'project' | 'directory' | 'file'
-    path: string
-    breadcrumb: string[]
-    repository_id: number | null
-    pytest_project_id?: number
-    case_count: number
-    count?: number
-    source_status?: number
-    asset_status?: number
-    children?: PytestDirectoryNode[]
-  }
+  import type { DirectoryNode } from '../records'
+  export type PytestDirectoryNode = DirectoryNode
 
   const props = withDefaults(
     defineProps<{
@@ -100,11 +87,18 @@
   const keyword = ref('')
   const expandedKeys = ref<string[]>([])
   const treeContainerRef = ref<HTMLElement | null>(null)
+  let revealVersion = 0
+  let active = true
+  let disposed = false
 
   function filterNodes(nodes: PytestDirectoryNode[], search: string): PytestDirectoryNode[] {
     return nodes.reduce<PytestDirectoryNode[]>((result, node) => {
+      if (node.title.toLocaleLowerCase().includes(search)) {
+        result.push(node)
+        return result
+      }
       const children = filterNodes(node.children || [], search)
-      if (node.title.toLocaleLowerCase().includes(search) || children.length) {
+      if (children.length) {
         result.push({ ...node, children })
       }
       return result
@@ -166,19 +160,23 @@
   }
 
   function revealSelectedNode() {
+    const version = ++revealVersion
+    if (!active || disposed || document.hidden) return
     const targetKey = props.selectedKey
     if (!targetKey) {
       if (!keyword.value.trim()) expandedKeys.value = []
       return
     }
-    const ancestors = findAncestorKeys(props.data, targetKey) || []
-    const selectedNode = findNode(props.data, targetKey)
+    const ancestors = findAncestorKeys(displayTree.value, targetKey)
+    if (!ancestors) return
+    const selectedNode = findNode(displayTree.value, targetKey)
     const selectedExpansion =
       props.expandSelected && (selectedNode?.children || []).length ? [targetKey] : []
     expandedKeys.value = keyword.value.trim()
       ? Array.from(new Set([...expandedKeys.value, ...ancestors, ...selectedExpansion]))
       : [...ancestors, ...selectedExpansion]
     nextTick(() => {
+      if (version !== revealVersion || !active || disposed || document.hidden) return
       const selectedNode = treeContainerRef.value?.querySelector(
         '.mango-pytest-directory-tree__node--selected'
       )
@@ -189,6 +187,7 @@
   }
 
   function onSelect(keys: string[]) {
+    if (!active || disposed || props.loading) return
     const key = keys[0]
     if (!key) return
     const node = findNode(props.data, key)
@@ -202,6 +201,7 @@
   }
 
   function toggleDirectory(node: PytestDirectoryNode) {
+    revealVersion++
     const targetKey = String(node.key)
     const isExpanded = expandedKeys.value.includes(targetKey)
     if (keyword.value.trim()) {
@@ -218,6 +218,7 @@
     keys: Array<string | number>,
     event: { expanded?: boolean; node?: PytestDirectoryNode }
   ) {
+    revealVersion++
     if (keyword.value.trim()) {
       expandedKeys.value = keys.map(String)
       return
@@ -229,6 +230,7 @@
   }
 
   function toggleExpansion() {
+    revealVersion++
     if (expandedKeys.value.length) {
       expandedKeys.value = []
       return
@@ -236,24 +238,40 @@
     revealSelectedNode()
   }
 
-  watch(keyword, (value) => {
-    if (value.trim()) {
-      expandedKeys.value = collectExpandableKeys(displayTree.value)
-      revealSelectedNode()
-    } else {
-      revealSelectedNode()
-    }
-  })
-
   watch(
-    () => props.data,
+    [() => props.data, keyword],
     () => {
+      expandedKeys.value = keyword.value.trim() ? collectExpandableKeys(displayTree.value) : []
       revealSelectedNode()
     },
-    { immediate: true }
+    { immediate: true, flush: 'sync' }
   )
 
-  watch(() => props.selectedKey, revealSelectedNode)
+  watch([() => props.selectedKey, () => props.expandSelected], revealSelectedNode, { flush: 'sync' })
+
+  function pauseReveal() {
+    revealVersion++
+  }
+  function onVisibilityChange() {
+    if (document.hidden) pauseReveal()
+  }
+  onMounted(() => {
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    revealSelectedNode()
+  })
+  onDeactivated(() => {
+    active = false
+    pauseReveal()
+  })
+  onActivated(() => {
+    active = true
+    revealSelectedNode()
+  })
+  onBeforeUnmount(() => {
+    disposed = true
+    pauseReveal()
+    document.removeEventListener('visibilitychange', onVisibilityChange)
+  })
 </script>
 
 <style lang="less" scoped>

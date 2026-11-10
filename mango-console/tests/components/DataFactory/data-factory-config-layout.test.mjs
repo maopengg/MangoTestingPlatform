@@ -36,16 +36,25 @@ for (const name of [
 }
 
 test('relation header gives description and wrapping legend full width independently of actions', () => {
-  const source = fs.readFileSync(new URL(base + 'DataFactoryRelationFlow.vue', import.meta.url), 'utf8')
+  const source = fs.readFileSync(
+    new URL(base + 'DataFactoryRelationFlow.vue', import.meta.url),
+    'utf8'
+  )
   const header = source.slice(0, source.indexOf('<mango-panel-spin'))
   assert.match(header, /<slot name="extra"><\/slot>\s*<\/div>\s*<div v-if="subtitle"/)
   assert.match(header, /aria-label="关系线图例"/)
   assert.equal((header.match(/<i class="legend-line /g) || []).length, 4)
   assert.match(source, /grid-template-columns: minmax\(0, 1fr\) auto/)
   for (const name of ['subtitle', 'legend']) {
-    assert.match(source, new RegExp(`\\.mango-relation-flow-${name}\\s*\\{\\s*grid-column: 1 / -1;`))
+    assert.match(
+      source,
+      new RegExp(`\\.mango-relation-flow-${name}\\s*\\{\\s*grid-column: 1 / -1;`)
+    )
   }
-  assert.match(source, /\.mango-relation-flow-legend\s*\{[^}]*flex-wrap: wrap;[^}]*justify-content: flex-start;/)
+  assert.match(
+    source,
+    /\.mango-relation-flow-legend\s*\{[^}]*flex-wrap: wrap;[^}]*justify-content: flex-start;/
+  )
 })
 
 test('drawer uses global gaps and horizontal forms without duplicate section spacing', () => {
@@ -77,11 +86,21 @@ test('template preview keeps bounded tables and responsive summary without neste
     new URL('../../../src/views/data-factory/template/preview/index.vue', import.meta.url),
     'utf8'
   )
-  const preview = fs.readFileSync(new URL(base + 'DataFactoryDependencyPreview.vue', import.meta.url), 'utf8')
-  assert.match(page, /class="mango-entity-rule-table-region"/)
-  assert.match(page, /height: min\(460px, 65vh\)/)
-  assert.match(page, /:scroll="\{ x: entityRuleTableScrollWidth, y: '100%' \}"/)
-  assert.match(page, /\.preview-spin :deep\(> \.mango-panel-spin__content\)/)
+  const rules = fs.readFileSync(
+    new URL(
+      '../../../src/views/data-factory/template/preview/components/EntityRulesDialog.vue',
+      import.meta.url
+    ),
+    'utf8'
+  )
+  const preview = fs.readFileSync(
+    new URL(base + 'DataFactoryDependencyPreview.vue', import.meta.url),
+    'utf8'
+  )
+  assert.match(rules, /class="mango-entity-rule-table-region"/)
+  assert.match(rules, /height: min\(460px, 65vh\)/)
+  assert.match(rules, /:scroll="\{ x: entityRuleTableScrollWidth, y: '100%' \}"/)
+  assert.match(page, /\.mango-preview-spin :deep\(> \.mango-panel-spin__content\)/)
   assert.match(preview, /flex: 1 1 430px;\s*min-width: 0/)
   assert.match(preview, /minmax\(260px, 34%\) minmax\(0, 1fr\)/)
   assert.doesNotMatch(page + preview, /max-width: 1px/)
@@ -89,7 +108,13 @@ test('template preview keeps bounded tables and responsive summary without neste
 
 test('field loading and preview table loading are mutually exclusive', () => {
   const source = fs.readFileSync(new URL(base + 'CaseConfigPanel.vue', import.meta.url), 'utf8')
-  assert.match(source, /<mango-panel-spin :loading="fieldLoading" class="mango-template-editor-spin"/)
-  assert.equal((source.match(/:loading="!fieldLoading && previewLoading === 'form'"/g) || []).length, 2)
+  assert.match(
+    source,
+    /<mango-panel-spin :loading="fieldLoading" class="mango-template-editor-spin"/
+  )
+  assert.equal(
+    (source.match(/:loading="!fieldLoading && previewLoading === 'form'"/g) || []).length,
+    2
+  )
   assert.doesNotMatch(source, /:loading="fieldLoading \|\| previewLoading === 'form'"/)
 })

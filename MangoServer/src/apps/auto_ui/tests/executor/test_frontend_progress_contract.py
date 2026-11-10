@@ -135,93 +135,57 @@ class UiFrontendProgressContractTest(SimpleTestCase):
         )
 
     def test_case_page_consumes_lightweight_node_progress(self):
-        source = (
-                REPOSITORY_ROOT
-                / "mango-console/src/views/uitest/case/details/index.vue"
-        ).read_text(encoding="utf-8")
+        page = (REPOSITORY_ROOT / "mango-console/src/views/uitest/case/details/index.vue").read_text(encoding="utf-8")
+        runtime = (REPOSITORY_ROOT / "mango-console/src/views/uitest/case/details/composables/useCaseRuntimeResults.ts").read_text(encoding="utf-8")
+        self.assertIn("useCaseRuntimeResults", page)
+        self.assertIn("u_page_step_node_progress", runtime)
+        self.assertIn("acceptNode(data.func_args)", runtime)
+        self.assertIn("if (!current()) return", runtime)
 
-        self.assertIn("u_page_step_node_progress", source)
-        self.assertIn("applyCaseNodeProgress", source)
-        self.assertIn("caseExecutionId", source)
 
     def test_case_execution_resets_pending_states_and_only_polls_while_running(self):
-        source = (
-                REPOSITORY_ROOT
-                / "mango-console/src/views/uitest/case/details/index.vue"
-        ).read_text(encoding="utf-8")
+        page = (REPOSITORY_ROOT / "mango-console/src/views/uitest/case/details/index.vue").read_text(encoding="utf-8")
+        reset = page.split("function resetCaseRuntimeState(executionId: string)", 1)[1].split("function refreshCaseRecord", 1)[0]
+        self.assertIn("resetCaseResults(executionId)", reset)
+        self.assertIn("status: 2, error_message: null", reset)
+        self.assertIn("caseSteps.value.some(isPendingExecution)", page)
+        self.assertIn("loadCaseSteps(showLoading, context?.isCurrent)", page)
+        polling = (REPOSITORY_ROOT / "mango-console/src/utils/page-polling.ts").read_text(encoding="utf-8")
+        self.assertIn("[2, 3].includes(Number(record?.status))", polling)
 
-        self.assertIn("function resetCaseRuntimeState()", source)
-        self.assertIn("resetCaseRuntimeState()", source)
-        self.assertIn("status: 2", source)
-        final_handler = source.split("function applyCaseFinalResult", 1)[1].split(
-            "function resetCaseRuntimeState", 1
-        )[0]
-        self.assertIn("error_message: null", final_handler)
-        refresh_handler = source.split("function doRefresh", 1)[1].split(
-            "function handleWebsocketMessage", 1
-        )[0]
-        self.assertIn("item.status === 3", refresh_handler)
-        self.assertNotIn("item.status === 2", refresh_handler)
 
     def test_case_runtime_status_cannot_regress_when_a_stale_list_response_arrives(self):
-        source = (
-                REPOSITORY_ROOT
-                / "mango-console/src/views/uitest/case/details/index.vue"
-        ).read_text(encoding="utf-8")
+        rows = (REPOSITORY_ROOT / "mango-console/src/views/uitest/case/details/step-list.ts").read_text(encoding="utf-8")
+        loader = (REPOSITORY_ROOT / "mango-console/src/views/uitest/case/details/composables/useCaseStepList.ts").read_text(encoding="utf-8")
+        self.assertIn("[0, 1].includes(current.status) ? current.status", rows)
+        self.assertIn("current.status === 3 && incomingTerminal", rows)
+        self.assertIn("current.status === 3 || row.status === 3", rows)
+        self.assertIn("request === sequence", loader)
+        self.assertIn("if (!current()) return", loader)
+        self.assertIn("options.running() ? mergeActiveCaseSteps(incoming, rows.value) : incoming", loader)
 
-        merge_handler = source.split("function mergeActiveCaseStepList", 1)[1].split(
-            "function doRefresh", 1
-        )[0]
-        refresh_handler = source.split("function doRefresh", 1)[1].split(
-            "function handleWebsocketMessage", 1
-        )[0]
-        self.assertIn("[0, 1].includes(currentStatus)", merge_handler)
-        self.assertIn(
-            "currentStatus === 3 && [0, 1].includes(incomingStatus)",
-            merge_handler,
-        )
-        self.assertIn("currentStatus === 3 || incomingStatus === 3", merge_handler)
-        self.assertIn("caseStepsRefreshRequestId", refresh_handler)
-        self.assertIn("requestId !== caseStepsRefreshRequestId", refresh_handler)
-        self.assertIn("caseExecutionActive.value ? mergeActiveCaseStepList(list) : list", refresh_handler)
 
     def test_case_polling_notifies_each_terminal_task_only_once(self):
-        source = (
-                REPOSITORY_ROOT
-                / "mango-console/src/views/uitest/case/details/index.vue"
-        ).read_text(encoding="utf-8")
+        execution = (REPOSITORY_ROOT / "mango-console/src/views/uitest/case/details/composables/useCaseExecution.ts").read_text(encoding="utf-8")
+        notify = execution.split("function notify(job: Job", 1)[1].split("async function poll(job: Job)", 1)[0]
+        self.assertIn("if (!claimExecutorTaskNotification(job.taskId)) return", notify)
+        for kind in ("success", "warning", "error"):
+            self.assertIn(f"Notification.{kind}", notify)
+        self.assertIn("job.handled = true", execution)
+        self.assertIn("notify(job, task)", execution)
 
-        notify_handler = source.split("function notifyCaseTaskTerminal", 1)[1].split(
-            "async function pollCaseExecutorTask", 1
-        )[0]
-        poll_handler = source.split("async function pollCaseExecutorTask", 1)[1].split(
-            "async function resumeActiveCaseTask", 1
-        )[0]
-        self.assertIn("lastNotifiedCaseTaskId === taskId", notify_handler)
-        self.assertIn("Notification.success", notify_handler)
-        self.assertIn("Notification.warning", notify_handler)
-        self.assertIn("Notification.error", notify_handler)
-        self.assertIn("notifyCaseTaskTerminal(finishedTaskId, task)", poll_handler)
 
     def test_case_canvas_prefers_case_result_and_does_not_wait_twice_to_close_live(self):
-        case_source = (
-                REPOSITORY_ROOT
-                / "mango-console/src/views/uitest/case/details/index.vue"
-        ).read_text(encoding="utf-8")
-        step_source = (
-                REPOSITORY_ROOT
-                / "mango-console/src/views/uitest/page-steps/details/index.vue"
-        ).read_text(encoding="utf-8")
+        page = (REPOSITORY_ROOT / "mango-console/src/views/uitest/case/details/index.vue").read_text(encoding="utf-8")
+        live = (REPOSITORY_ROOT / "mango-console/src/views/uitest/case/details/composables/useCaseLiveStream.ts").read_text(encoding="utf-8")
+        step = (REPOSITORY_ROOT / "mango-console/src/views/uitest/page-steps/details/index.vue").read_text(encoding="utf-8")
+        self.assertIn("if (current()) caseLive.finish(caseExecutionId.value)", page)
+        finish = live.split("function finish(completedExecutionId: string)", 1)[1].split("function pause()", 1)[0]
+        self.assertIn("completedExecutionId !== executionId.value", finish)
+        self.assertIn("close()", finish)
+        self.assertNotIn("setTimeout", finish)
+        self.assertIn("props.caseInputMode ? props.caseResult?.status : currentStepRecord.value?.status", step)
 
-        auto_close_handler = case_source.split(
-            "function scheduleCaseLiveAutoClose", 1
-        )[1].split("function mergeActiveCaseStepList", 1)[0]
-        self.assertIn("closeCaseLiveStream()", auto_close_handler)
-        self.assertNotIn("setTimeout", auto_close_handler)
-        self.assertIn(
-            "props.caseInputMode ? props.caseResult?.status : currentStepRecord.value?.status",
-            step_source,
-        )
 
     def test_page_step_element_ai_heal_reuses_shared_panel(self):
         step_source = (
@@ -254,7 +218,10 @@ class UiFrontendProgressContractTest(SimpleTestCase):
             "props.caseInputMode && getElementName(data.selectData?.ele_name) !== '-'",
             step_source,
         )
-        self.assertIn("getUiPageStepsDetailedById(data.selectData.id)", step_source)
+        lookup = step_source.split("async function loadSelectedNodeElement()", 1)[1].split("async function openSelectedElementEditPanel()", 1)[0]
+        self.assertIn("uiCaseAssetId(data.selectData?.id)", lookup)
+        self.assertIn("getUiPageStepsDetailedById(id)", lookup)
+        self.assertIn("if (!current()) return null", lookup)
         self.assertIn("openSelectedElementEditPanel", step_source)
         self.assertIn("runSelectedElementDeepCheck", step_source)
         self.assertIn("openSelectedElementAiHeal", step_source)

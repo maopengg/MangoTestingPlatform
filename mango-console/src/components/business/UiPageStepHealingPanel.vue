@@ -3,13 +3,15 @@
     :visible="visible"
     title="流程自愈"
     page-description="定义步骤目标和可验证状态；安全且高置信的 AI 修复会自动同步，并标记为待检查"
-    width="960px"
+    :width="960"
     @update:visible="$emit('update:visible', $event)"
   >
-    <a-spin :loading="loading" class="mango-step-healing-panel">
+    <div class="mango-step-healing-panel">
+      <a-alert v-if="error" type="error">{{ error }}</a-alert>
+      <template v-for="kind in (['records', 'versions', 'cases', 'nodes'] as const)" :key="kind"></template>
       <a-tabs v-model:active-key="activeTab">
         <a-tab-pane key="config" title="自愈配置">
-          <a-form :model="draft" layout="vertical">
+          <a-form :model="draft" :disabled="saving || resourceLoading.nodes" layout="horizontal">
             <section class="mango-step-healing-section mango-step-healing-section--switch">
               <div class="mango-step-healing-section__head">
                 <div>
@@ -46,6 +48,7 @@
                   v-model="draft.entry_criteria"
                   title="进入条件（可选）"
                   :element-options="elementOptions"
+                  :disabled="saving"
                   :error-message="validation.entryCriteria"
                   @update:model-value="validation.entryCriteria = ''"
                 />
@@ -54,6 +57,7 @@
                   title="成功条件"
                   required
                   :element-options="elementOptions"
+                  :disabled="saving"
                   :error-message="validation.successCriteria"
                   @update:model-value="validation.successCriteria = ''"
                 />
@@ -67,10 +71,7 @@
                   </div>
                   <a-tag>{{ nodeCheckpoints.length }} 个节点</a-tag>
                 </div>
-                <a-empty
-                  v-if="!nodeCheckpoints.length"
-                  description="当前流程暂无已保存节点"
-                />
+  <div v-if="!nodeCheckpoints.length" class="mango-empty-state">{{ resourceLoading.nodes ? '节点加载中…' : '当前流程暂无已保存节点' }}</div>
                 <a-collapse
                   v-else
                   v-model:active-key="expandedCheckpointKeys"
@@ -94,6 +95,7 @@
                         v-model="node.precondition"
                         title="执行前状态（可选）"
                         :element-options="elementOptions"
+                        :disabled="saving"
                         :error-message="nodeValidation[`${node.id}:pre`]"
                         @update:model-value="clearNodeValidation(node.id, 'pre')"
                       />
@@ -101,6 +103,7 @@
                         v-model="node.postcondition"
                         title="执行后状态（可选）"
                         :element-options="elementOptions"
+                        :disabled="saving"
                         :error-message="nodeValidation[`${node.id}:post`]"
                         @update:model-value="clearNodeValidation(node.id, 'post')"
                       />
@@ -193,13 +196,14 @@
             应用修复会影响引用该页面步骤的 {{ referencedCases.length }} 个 Case，请确认后再应用。
           </a-alert>
           <a-table
-            class="mango-step-healing-table"
+            class="mango-step-healing-table mango-native-scroll-table"
             :data="records"
+            :loading="resourceLoading.records"
             :pagination="false"
             :bordered="false"
             size="small"
             row-key="id"
-            :scroll="{ x: 820, y: 420 }"
+            :scroll="{ x: 890, y: 420 }"
           >
             <template #columns>
               <a-table-column title="时间" data-index="create_time" :width="170" :ellipsis="true" :tooltip="true" />
@@ -214,7 +218,7 @@
                   </a-tag>
                 </template>
               </a-table-column>
-              <a-table-column title="操作" :width="140" fixed="right" align="center">
+              <a-table-column title="操作" :width="160" fixed="right" align="center">
                 <template #cell="{ record }">
                   <MangoTableActions :actions="repairRecordActions(record)" />
                 </template>
@@ -224,29 +228,31 @@
         </a-tab-pane>
         <a-tab-pane key="versions" title="版本回滚">
           <a-table
-            class="mango-step-healing-table"
+            class="mango-step-healing-table mango-native-scroll-table"
             :data="versions"
+            :loading="resourceLoading.versions"
             :pagination="false"
             :bordered="false"
             size="small"
             row-key="id"
-            :scroll="{ x: 640, y: 420 }"
+            :scroll="{ x: 670, y: 420 }"
           >
             <template #columns>
               <a-table-column title="版本" data-index="version" :width="100" />
-              <a-table-column title="来源" data-index="source" :ellipsis="true" :tooltip="true" />
+              <a-table-column title="来源" data-index="source" :width="240" :ellipsis="true" :tooltip="true" />
               <a-table-column title="创建时间" data-index="create_time" :width="170" :ellipsis="true" :tooltip="true" />
-              <a-table-column title="操作" :width="120" align="center">
+              <a-table-column title="操作" :width="160" align="center">
                 <template #cell="{ record }">
-                  <MangoTableActions :actions="[{ label: '回滚', onClick: () => rollback(record.version) }]" />
+                  <MangoTableActions :actions="[{ label: '回滚', danger: true, loading: saving, disabled: saving, onClick: () => rollback(record.version) }]" />
                 </template>
               </a-table-column>
             </template>
           </a-table>
         </a-tab-pane>
       </a-tabs>
-    </a-spin>
-    <a-modal v-model:visible="detailVisible" title="流程自愈详情" :footer="false" width="720px">
+    </div>
+    <a-modal v-model:visible="detailVisible" title="流程自愈详情" :footer="false" :width="720" @cancel="detailSequence++; detailLoading = false; selectedDetail = null">
+
       <a-spin :loading="detailLoading">
         <a-descriptions v-if="selectedDetail" :column="2" bordered size="small">
           <a-descriptions-item label="触发原因">{{ triggerText(selectedDetail.trigger) }}</a-descriptions-item>
@@ -260,7 +266,7 @@
         </a-descriptions>
         <div v-if="selectedDetail" class="mango-step-healing-plan">
           <strong>建议动作</strong>
-          <a-empty v-if="!planActions(selectedDetail).length" description="没有可执行建议" />
+          <div v-if="!planActions(selectedDetail).length" class="mango-empty-state">没有可执行建议</div>
           <a-timeline v-else>
             <a-timeline-item v-for="(action, index) in planActions(selectedDetail)" :key="index">
               {{ actionText(action) }}：{{ action.reason }}
@@ -280,7 +286,9 @@
 </template>
 
 <script lang="ts" setup>
-  import { reactive, ref, watch } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, reactive, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import MangoTableActions from '@/components/table/MangoTableActions.vue'
   import type { UiStepConditionGroup, UiStepHealingPolicy } from '@/types/ui-test/case'
@@ -299,28 +307,32 @@
     getUiPageStepsDetailed,
     postUiPageStepsDetailed,
   } from '@/api/uitest/page-steps-detailed'
+  import { useStepHealingWrite } from '@/hooks/use-ui-step-healing-write'
+  import { useLiveWorkbenchScope } from '@/hooks/use-live-workbench-scope'
+  import { liveObject, liveId } from './ui-live-workbench'
+  import { readStepGroup, readStepDetail, stepArray, stepResponse, requiredStepId, type StepRecord, type StepElement, type StepDetail } from './ui-page-step'
+  import { readHealingRecord, type HealingDraft, type HealingCheckpoint, type HealingRecord, type HealingVersion, type HealingAction } from './ui-step-healing'
   import ConditionGroupEditor from './UiStepConditionEditor.vue'
 
   const props = withDefaults(defineProps<{
     visible: boolean
     pageStepId: number | string
-    record: any
-    elementOptions?: any[]
+    record: StepRecord | null
+    elementOptions?: StepElement[]
   }>(), {
     elementOptions: () => [],
   })
   const emit = defineEmits<{ (event: 'update:visible', value: boolean): void; (event: 'changed'): void }>()
   const activeTab = ref('config')
-  const loading = ref(false)
-  const saving = ref(false)
-  const records = ref<any[]>([])
-  const versions = ref<any[]>([])
-  const referencedCases = ref<any[]>([])
+  const { saving, executeLocked } = useStepHealingWrite(() => props.pageStepId)
+  const records = ref<HealingRecord[]>([])
+  const versions = ref<HealingVersion[]>([])
+  const referencedCases = ref<Array<{ id: string | number; name: string }>>([])
   const detailVisible = ref(false)
   const detailLoading = ref(false)
-  const selectedDetail = ref<any>(null)
+  const selectedDetail = ref<HealingRecord | null>(null)
   const expandedCheckpointKeys = ref<string[]>([])
-  const nodeCheckpoints = ref<any[]>([])
+  const nodeCheckpoints = ref<HealingCheckpoint[]>([])
   const nodeValidation = reactive<Record<string, string>>({})
   const defaultPolicy = (): UiStepHealingPolicy => ({
     mode: 'execute_low_risk', total_timeout_seconds: 60, max_model_calls: 2,
@@ -332,7 +344,7 @@
   const supportedConditionTypes = new Set([
     'visible_text', 'url_path', 'page_title', 'element_state',
   ])
-  const draft = reactive<any>({
+  const draft = reactive<HealingDraft>({
     goal: '', healing_enabled: false, healing_policy: defaultPolicy(),
     entry_criteria: emptyGroup(), success_criteria: emptyGroup(),
   })
@@ -357,9 +369,9 @@
     return Number.isFinite(confidence) ? `${Math.round(confidence * 100)}%` : '-'
   }
 
-  function isConditionComplete(condition: any) {
+  function isConditionComplete(condition: UiStepConditionGroup['conditions'][number]) {
     if (!condition?.type || !condition?.matcher) return false
-    if (condition.type === 'element_state') return Number(condition.element_id) > 0
+    if (condition.type === 'element_state') return liveId(condition.element_id) !== null
     if (condition.matcher === 'count_gte') {
       return String(condition.expected ?? '').trim() !== ''
         && condition.count !== null
@@ -370,57 +382,53 @@
     return String(condition.expected ?? '').trim() !== ''
   }
 
-  function conditionCount(group: any) {
-    return Array.isArray(group?.conditions) ? group.conditions.length : 0
+  function conditionCount(group: UiStepConditionGroup | null | undefined) {
+    return group?.conditions?.length ?? 0
   }
 
   function clearNodeValidation(id: number | string, phase: 'pre' | 'post') {
     delete nodeValidation[`${id}:${phase}`]
   }
 
-  function normalizeOptionalGroup(group: any) {
+  function normalizeOptionalGroup(group: UiStepConditionGroup) {
     const normalized = normalizeConditionGroup(group)
     return conditionCount(normalized) ? normalized : {}
   }
 
-  function normalizeConditionGroup(group: any): UiStepConditionGroup {
-    return {
-      operator: group?.operator === 'any' ? 'any' : 'all',
-      conditions: (Array.isArray(group?.conditions) ? group.conditions : [])
-        .filter((condition: any) => supportedConditionTypes.has(condition?.type))
-        .map((condition: any) => cloneLosslessJson(condition)),
-    }
+  function normalizeConditionGroup(value: unknown): UiStepConditionGroup {
+    const group = readStepGroup(value)
+    return { ...group, conditions: group.conditions.filter(condition => supportedConditionTypes.has(condition.type)) }
   }
 
-  function checkpointSignature(node: any) {
+  function checkpointSignature(node: Pick<HealingCheckpoint, 'precondition' | 'postcondition'>) {
     return JSON.stringify({
       precondition: normalizeOptionalGroup(node.precondition),
       postcondition: normalizeOptionalGroup(node.postcondition),
     })
   }
 
-  function nodeTitle(item: any) {
+  function nodeTitle(item: StepDetail) {
     const flowNode = (props.record?.flow_data?.nodes || []).find(
-      (node: any) => String(node?.config?.id) === String(item?.id)
+      (node) => String(node?.config?.id) === String(item?.id)
     )
     return flowNode?.label || item?.ele_name?.name || item?.name || item?.ope_key || `节点 #${item?.id}`
   }
 
-  function syncNodeCheckpoints(items: any[]) {
-    const flowOrder = new Map(
-      (props.record?.flow_data?.nodes || []).map((node: any, index: number) => [
+  function syncNodeCheckpoints(items: StepDetail[]) {
+    const flowOrder = new Map<string, number>(
+      (props.record?.flow_data?.nodes || []).map((node, index) => [
         String(node?.config?.id),
         index,
-      ])
+      ] as [string, number])
     )
     const orderedItems = [...(Array.isArray(items) ? items : [])].sort(
-      (left: any, right: any) =>
+      (left, right) =>
         (flowOrder.get(String(left?.id)) ?? Number.MAX_SAFE_INTEGER) -
         (flowOrder.get(String(right?.id)) ?? Number.MAX_SAFE_INTEGER)
     )
-    nodeCheckpoints.value = orderedItems.map((item: any) => {
+    nodeCheckpoints.value = orderedItems.map((item) => {
       const node = {
-        id: item.id,
+        id: requiredStepId(item.id),
         title: nodeTitle(item),
         precondition: normalizeConditionGroup(item.precondition),
         postcondition: normalizeConditionGroup(item.postcondition),
@@ -441,7 +449,7 @@
       phases.forEach((phase) => {
         const field = phase === 'pre' ? 'precondition' : 'postcondition'
         const conditions = Array.isArray(node[field]?.conditions) ? node[field].conditions : []
-        if (conditions.some((condition: any) => !isConditionComplete(condition))) {
+        if (conditions.some((condition) => !isConditionComplete(condition))) {
           nodeValidation[`${node.id}:${phase}`] = '请补全已添加的条件'
           if (!expandedCheckpointKeys.value.includes(String(node.id))) {
             expandedCheckpointKeys.value.push(String(node.id))
@@ -467,7 +475,7 @@
     const entryConditions = Array.isArray(draft.entry_criteria?.conditions)
       ? draft.entry_criteria.conditions
       : []
-    if (entryConditions.some((condition: any) => !isConditionComplete(condition))) {
+    if (entryConditions.some((condition) => !isConditionComplete(condition))) {
       validation.entryCriteria = '请补全已添加的进入条件'
     }
     const successConditions = Array.isArray(draft.success_criteria?.conditions)
@@ -475,7 +483,7 @@
       : []
     if (!successConditions.length) {
       validation.successCriteria = '请至少添加一条成功条件'
-    } else if (successConditions.some((condition: any) => !isConditionComplete(condition))) {
+    } else if (successConditions.some((condition) => !isConditionComplete(condition))) {
       validation.successCriteria = '请补全已添加的成功条件'
     }
     if (draft.healing_policy?.auto_writeback) {
@@ -491,65 +499,92 @@
     clearValidation()
     Object.assign(draft, {
       goal: props.record?.goal || '', healing_enabled: Boolean(props.record?.healing_enabled),
-      healing_policy: { ...defaultPolicy(), ...(props.record?.healing_policy || {}) },
+      healing_policy: cloneLosslessJson({ ...defaultPolicy(), ...(props.record?.healing_policy || {}) }),
       entry_criteria: normalizeConditionGroup(props.record?.entry_criteria),
       success_criteria: normalizeConditionGroup(props.record?.success_criteria),
     })
   }
-  async function load() {
-    if (!props.pageStepId) return
-    loading.value = true
+  const resourceLoading = reactive({ records: false, versions: false, cases: false, nodes: false })
+  const resourceErrors = reactive({ records: '', versions: '', cases: '', nodes: '' })
+  const error = ref(''), detailError = ref(''), detailTarget = ref<string | number | null>(null)
+  const acceptedActions = reactive(new Set<string>())
+  let session = 0, detailSequence = 0
+  const requests = { records: 0, versions: 0, cases: 0, nodes: 0 }
+  let confirmation: ReturnType<typeof Modal.warning> | null = null
+  function close() {
+    session++; detailSequence++; detailVisible.value = false; selectedDetail.value = null; detailTarget.value = null; detailLoading.value = false
+    error.value = detailError.value = ''
+    for (const kind of ['records', 'versions', 'cases', 'nodes'] as const) { resourceLoading[kind] = false; resourceErrors[kind] = '' }
+    confirmation?.close(); confirmation = null; emit('update:visible', false)
+  }
+  const scope = useLiveWorkbenchScope(() => [props.pageStepId, props.visible], { invalidate: close, resume: () => { if (props.visible) void load() } })
+  async function loadResource(kind: keyof typeof resourceLoading) {
+    const current = scope.capture(), id = props.pageStepId, version = session, sequence = ++requests[kind]
+    const valid = () => current() && props.visible && version === session && sequence === requests[kind]
+    if (!valid() || liveId(id) === null) return
+    resourceLoading[kind] = true; resourceErrors[kind] = ''
     try {
-      const [recordResult, versionResult, caseResult, detailResult] = await Promise.all([
-        getUiPageStepHealRecords(props.pageStepId), getUiPageStepVersions(props.pageStepId),
-        getUiPageStepReferencedCases(props.pageStepId), getUiPageStepsDetailed(props.pageStepId),
-      ])
-      records.value = recordResult.data?.items || []
-      versions.value = versionResult.data || []
-      referencedCases.value = caseResult.data || []
-      syncNodeCheckpoints(detailResult.data || [])
-    } finally { loading.value = false }
+      if (kind === 'records') { const data = liveObject(stepResponse(await getUiPageStepHealRecords(id))); const values = stepArray(data.items ?? []).map(readHealingRecord); if (valid()) records.value = values }
+      if (kind === 'versions') { const values = stepArray(stepResponse(await getUiPageStepVersions(id))).map(value => { const row = liveObject(value); if (!Number.isSafeInteger(row.version)) throw Error('版本格式不正确'); return { version: Number(row.version), source: String(row.source ?? ''), create_time: String(row.create_time ?? '') } }); if (valid()) versions.value = values }
+      if (kind === 'cases') { const values = stepArray(stepResponse(await getUiPageStepReferencedCases(id))).map(value => { const row = liveObject(value); return { id: requiredStepId(row.id), name: String(row.name ?? '') } }); if (valid()) referencedCases.value = values }
+      if (kind === 'nodes') { const values = stepArray(stepResponse(await getUiPageStepsDetailed(id))).map(readStepDetail); if (valid()) syncNodeCheckpoints(values) }
+    } catch (failure) { if (valid()) { resourceErrors[kind] = '加载失败，请重试'; reportLoadError(failure) } }
+    finally { if (valid()) resourceLoading[kind] = false }
+  }
+  function load() { return Promise.allSettled((['records', 'versions', 'cases', 'nodes'] as const).map(loadResource)) }
+  async function write(action: () => Promise<void>): Promise<boolean> {
+    const current = scope.capture(), version = session
+    if (!current() || !props.visible || saving.value) return false
+    error.value = ''
+    return executeLocked(async () => {
+      try { await action(); return current() && version === session }
+      catch { if (current() && version === session) error.value = '操作失败，已接受的步骤会保留，请重试剩余操作'; return false }
+    })
   }
   async function save() {
-    if (!validateDraft()) {
-      Message.warning('请先完成流程自愈的必填配置')
-      return
-    }
-    saving.value = true
-    try {
-      if (draft.healing_enabled) {
-        for (const node of nodeCheckpoints.value) {
-          if (checkpointSignature(node) === node.originalSignature) continue
-          await postUiPageStepsDetailed(
-            {
-              id: node.id,
-              page_step: props.pageStepId,
-              precondition: normalizeOptionalGroup(node.precondition),
-              postcondition: normalizeOptionalGroup(node.postcondition),
-            },
-            props.pageStepId
-          )
-        }
+    if (!validateDraft()) { Message.warning('请先完成流程自愈的必填配置'); return false }
+    if (resourceLoading.nodes || resourceErrors.nodes) { error.value = '请先成功加载节点检查点'; return false }
+    const current = scope.capture(), version = session, id = props.pageStepId, snapshot = cloneLosslessJson(draft)
+    const checkpoints = cloneLosslessJson(nodeCheckpoints.value)
+    return write(async () => {
+      if (snapshot.healing_enabled) for (const node of checkpoints) {
+        if (!current() || version !== session) return
+        const signature = checkpointSignature(node)
+        if (signature === node.originalSignature) continue
+        stepResponse(await postUiPageStepsDetailed({ id: node.id, page_step: id, precondition: normalizeOptionalGroup(node.precondition), postcondition: normalizeOptionalGroup(node.postcondition) }, id))
+        if (!current() || version !== session) return
+        const accepted = nodeCheckpoints.value.find(item => String(item.id) === String(node.id)); if (accepted) accepted.originalSignature = signature
       }
-      await putUiSteps({ id: props.pageStepId, ...cloneLosslessJson(draft) })
-      Message.success('流程自愈配置已保存')
-      emit('changed')
-      emit('update:visible', false)
-    } finally { saving.value = false }
+      if (!current() || version !== session) return
+      stepResponse(await putUiSteps({ id, ...snapshot }))
+      if (!current() || version !== session) return
+      Message.success('流程自愈配置已保存'); emit('changed'); close()
+    })
   }
-  async function applyRecord(record: any) {
-    const confirming = isAutoAppliedReview(record.writeback_status)
-    await postUiPageStepHealApply(record.id)
-    Message.success(confirming ? 'AI 流程修复已确认' : '流程修复建议已应用')
-    await load()
-    emit('changed')
+  async function mutateRecord(record: HealingRecord, reject = false) {
+    const snapshot = cloneLosslessJson(record), key = `${reject ? 'reject' : 'apply'}:${record.id}`, current = scope.capture(), version = session
+    if (acceptedActions.has(key)) return false
+    return write(async () => {
+      stepResponse(await (reject ? postUiPageStepHealReject(snapshot.id) : postUiPageStepHealApply(snapshot.id)))
+      if (!current() || version !== session) return
+      acceptedActions.add(key); emit('changed'); Message.success(reject ? '修复建议已拒绝' : '流程修复已确认')
+      await Promise.allSettled([loadResource('records'), loadResource('versions')])
+    })
   }
-  async function rejectRecord(record: any) { await postUiPageStepHealReject(record.id); Message.success('修复建议已拒绝'); await load() }
+  const applyRecord = (record: HealingRecord) => mutateRecord(record)
+  const rejectRecord = (record: HealingRecord) => mutateRecord(record, true)
   function rollback(version: number) {
-    Modal.warning({ title: '回滚页面步骤', content: `确认回滚到版本 ${version}？`, hideCancel: false,
-      onOk: async () => { await postUiPageStepRollback(props.pageStepId, version); Message.success('回滚成功'); await load(); emit('changed') } })
+    if (saving.value || !scope.available() || !Number.isSafeInteger(version)) return
+    const id = props.pageStepId, current = scope.capture(), window = session
+    confirmation?.close()
+    confirmation = Modal.warning({ title: '回滚页面步骤', content: `确认回滚到版本 ${version}？`, hideCancel: false,
+      onBeforeOk: () => !current() || window !== session ? Promise.resolve(false) : write(async () => {
+        stepResponse(await postUiPageStepRollback(id, version)); if (!current() || window !== session) return
+        Message.success('回滚成功'); emit('changed'); close()
+      }),
+    })
   }
-  function statusText(status: string) { return ({ recovered: '已恢复', suggested: '待审核', failed: '未恢复', rejected: '已拒绝' } as any)[status] || status }
+  function statusText(status: string) { return ({ recovered: '已恢复', suggested: '待审核', failed: '未恢复', rejected: '已拒绝' } as Record<string, string>)[status] || status }
   function statusColor(status: string) { return status === 'recovered' ? 'green' : status === 'failed' ? 'red' : 'orange' }
   function writebackText(status: string) {
     return ({
@@ -562,7 +597,7 @@
     return status === 'applied' ? 'green' : status === 'rolled_back' ? 'gray'
       : isAutoAppliedReview(status) ? 'orange' : 'blue'
   }
-  function canDirectApply(record: any) {
+  function canDirectApply(record: HealingRecord) {
     if (isAutoAppliedReview(record.writeback_status)) return true
     return record.writeback_status === 'pending_review'
       && Array.isArray(record.action_types)
@@ -572,38 +607,40 @@
   function isAutoAppliedReview(status?: string) {
     return ['auto_applied_review', 'auto_applied_pending_review'].includes(status || '')
   }
-  function repairRecordActions(record: any) {
+  function repairRecordActions(record: HealingRecord) {
     return [
       { label: '详情', onClick: () => showDetail(record) },
       {
         label: isAutoAppliedReview(record.writeback_status) ? '确认' : '应用',
+        loading: saving.value, disabled: saving.value || acceptedActions.has(`apply:${record.id}`),
         hidden: !canDirectApply(record),
         onClick: () => applyRecord(record),
       },
       {
-        label: '拒绝',
+        label: '拒绝', disabled: saving.value || acceptedActions.has(`reject:${record.id}`),
         danger: true,
         hidden: record.writeback_status !== 'pending_review',
         onClick: () => rejectRecord(record),
       },
     ]
   }
-  async function showDetail(record: any) {
-    detailVisible.value = true
-    detailLoading.value = true
-    selectedDetail.value = null
-    try {
-      const result = await getUiPageStepHealRecord(record.id)
-      selectedDetail.value = result.data
-    } finally { detailLoading.value = false }
+  async function showDetail(record: HealingRecord) { detailTarget.value = record.id; detailVisible.value = true; return loadDetail() }
+  async function loadDetail() {
+    const current = scope.capture(), version = session, sequence = ++detailSequence, id = detailTarget.value
+    const valid = () => current() && version === session && sequence === detailSequence && detailVisible.value
+    if (!valid() || id === null) return
+    detailLoading.value = true; selectedDetail.value = null; detailError.value = ''
+    try { const value = readHealingRecord(stepResponse(await getUiPageStepHealRecord(id))); if (String(value.id) !== String(id) || (value.page_step != null && String(value.page_step) !== String(props.pageStepId))) throw Error('修复记录不匹配'); if (valid()) selectedDetail.value = value }
+    catch (loadFailure0) { if (valid()) (reportLoadError(loadFailure0, "详情加载失败，请重试", false), detailError.value = '详情加载失败，请重试') }
+    finally { if (valid()) detailLoading.value = false }
   }
-  function planActions(record: any) { return (record.executed_plan || record.proposed_plan || {}).actions || [] }
-  function checkpointText(state: any) { return state?.matched_checkpoints?.join('、') || '未命中' }
+  function planActions(record: HealingRecord) { return (record.executed_plan || record.proposed_plan)?.actions || [] }
+  function checkpointText(state: HealingRecord['before_state']) { return state?.matched_checkpoints?.join('、') || '未命中' }
   function triggerText(trigger: string) {
-    return ({ entry_criteria_mismatch: '进入条件不满足', precondition_mismatch: '节点执行前状态不满足', node_failed: '节点执行失败', postcondition_mismatch: '节点执行后状态不满足', success_criteria_mismatch: '步骤成功条件不满足' } as any)[trigger] || trigger
+    return ({ entry_criteria_mismatch: '进入条件不满足', precondition_mismatch: '节点执行前状态不满足', node_failed: '节点执行失败', postcondition_mismatch: '节点执行后状态不满足', success_criteria_mismatch: '步骤成功条件不满足' } as Record<string, string>)[trigger] || trigger
   }
-  function actionText(action: any) {
-    return ({ retry_node: '重试节点', replace_target: '临时替换目标', insert_action: '临时补充动作', skip_node: '移除失效节点', jump_to_node: '临时跳转节点', abort: '停止执行' } as any)[action.action] || action.action
+  function actionText(action: HealingAction) {
+    return ({ retry_node: '重试节点', replace_target: '临时替换目标', insert_action: '临时补充动作', skip_node: '移除失效节点', jump_to_node: '临时跳转节点', abort: '停止执行' } as Record<string, string>)[action.action] || action.action
   }
   watch(
     () => props.visible,
@@ -611,6 +648,8 @@
       if (value) {
         syncDraft()
         void load()
+      } else {
+        session++; detailSequence++; detailVisible.value = false; selectedDetail.value = null; confirmation?.close(); confirmation = null
       }
     },
     { immediate: true }

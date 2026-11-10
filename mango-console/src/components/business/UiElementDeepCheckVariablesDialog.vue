@@ -67,7 +67,7 @@
               删除
             </a-button>
           </div>
-          <a-empty v-if="!variables.length" description="暂无检测变量，可点击新增变量手动添加" />
+          <div v-if="!variables.length" class="mango-empty-state">暂无检测变量，可点击新增变量手动添加</div>
         </section>
       </div>
     </template>
@@ -75,8 +75,10 @@
 </template>
 
 <script lang="ts" setup>
-  import { reactive, ref, watch } from 'vue'
+  import { onBeforeUnmount, reactive, ref, watch } from 'vue'
   import ModalDialog from '@/components/overlays/ModalDialog.vue'
+  import { liveObject } from './ui-live-workbench'
+  import { useLiveWorkbenchScope } from '@/hooks/use-live-workbench-scope'
 
   type DeepCheckSource = {
     field: string
@@ -94,7 +96,7 @@
 
   const dialogRef = ref<InstanceType<typeof ModalDialog> | null>(null)
   const variableSyntax = '${{...}}'
-  const element = reactive<Record<string, any>>({})
+  const element = reactive({ name: '', category: '' })
   const sources = ref<DeepCheckSource[]>([])
   const variables = ref<DeepCheckVariable[]>([])
   let sequence = 0
@@ -119,7 +121,8 @@
     ['loc3', '第三组定位表达式'],
   ] as const
 
-  function extract(record: Record<string, any>) {
+  function extract(input: unknown) {
+    const record = liveObject(input)
     const matchedSources: DeepCheckSource[] = []
     const keys: string[] = []
     sourceFields.forEach(([field, label]) => {
@@ -135,11 +138,13 @@
     return { matchedSources, keys }
   }
 
-  async function open(record: Record<string, any>): Promise<DeepCheckVariables | null> {
+  async function open(record: unknown): Promise<DeepCheckVariables | null> {
+    cancel()
     const { matchedSources, keys } = extract(record || {})
     if (!matchedSources.length) return {}
-    Object.keys(element).forEach((key) => delete element[key])
-    Object.assign(element, record || {})
+    const detail = liveObject(record)
+    element.name = typeof detail.name === 'string' ? detail.name : ''
+    element.category = typeof detail.category === 'string' ? detail.category : ''
     sources.value = matchedSources
     variables.value = keys.map((key) => ({ id: ++sequence, key, value: '' }))
     return new Promise((resolve) => {
@@ -172,6 +177,8 @@
     resolver?.(null)
     resolver = null
   }
+  onBeforeUnmount(cancel)
+  useLiveWorkbenchScope(() => null, { invalidate() { cancel(); void dialogRef.value?.close() }, resume() {} })
 
   defineExpose({ open })
 </script>

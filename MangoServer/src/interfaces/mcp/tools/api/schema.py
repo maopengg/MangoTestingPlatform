@@ -333,6 +333,13 @@ def register_schema_tools(mcp):
                         "execution": "执行时与默认开启的 ApiAuthConfig 合并为加载范围；授权缓存加载在 ApiPublic 加载之后。",
                         "example": [20, 21],
                     },
+                    "resource_cleanup": {
+                        "type": "list[ApiResourceCleanupRule]", "default": [], "max_items": 10,
+                        "description": "API创建资源的失败安全SQL/ES清理，独立于数据工厂所有权；仅test/dev，单场景且不自动重发创建。",
+                        "schema_tool": "get_api_case_resource_cleanup_schema",
+                        "configuration": "通过update_api_case保存，随Case修订冻结；唯一名称引用${{api_resource_<key>}}。",
+                        "result_tools": ["get_api_case_resource_cleanup_results", "cleanup_api_case_resources"],
+                    },
                     "callback_checks": {
                         "type": "list[CallbackRule]", "default": [], "max_items": 5,
                         "description": "异步回调验证。trigger_step_key=step-步骤ID；Mock须同产品；触发场景只能有一个且关闭失败重试。",
@@ -447,7 +454,7 @@ def register_schema_tools(mcp):
                     "front_func": {
                         "type": "str | null",
                         "default": None,
-                        "description": "场景请求前 Python 函数字符串，默认函数名 func，入参为 (self, request)，返回 ApiExecutionRequest。",
+                        "description": "可选场景前置函数：前置 SQL 后、请求前执行，默认 func(self, request)，返回 ApiExecutionRequest。优先 body_config、变量表达式和已登记数据方法；仅现有配置无法表达的请求计算/编码才用函数，并说明能力缺口。简单/嵌套 JSON、变量替换、JSON 序列化或原样返回不得写函数；不用脚本隐藏前置接口、SQL 或工厂操作。详见 execution_rules.function_usage。",
                     },
                     "ass_jsonpath": {
                         "type": "list[object]",
@@ -520,10 +527,18 @@ def register_schema_tools(mcp):
                     "posterior_func": {
                         "type": "str | null",
                         "default": None,
-                        "description": "场景响应后置：请求成功返回后、断言前执行；Python 函数字符串，默认函数名 func，入参为 (self, response)，返回 ApiExecutionResponse。请求前或请求阶段失败时不会执行，不适合作为兜底清理。",
+                        "description": "可选场景响应后置函数：取得响应后，在提取、后置 SQL/等待之后、文件处理和断言之前执行；默认 func(self, response)，返回 ApiExecutionResponse。仅现有提取/断言无法表达的解码或派生计算才使用；简单取值用 JSONPath/正则，常规验证用断言，不写空转函数。取得响应不等于业务成功；保留原始证据，不改状态/业务字段或吞错刷通过。请求前、请求阶段或前序后处理失败时不会执行，禁止作为失败兜底清理。详见 execution_rules.function_usage。",
                     },
                 },
                 "execution_rules": {
+                    "function_usage": [
+                        "平台现有配置优先：JSON（含嵌套对象/数组）直接填匹配接口类型的 body_config，动态值用变量表达式或已登记数据方法；不得仅为拼装、序列化 JSON 或原样返回请求/响应写函数。",
+                        "前置接口用有序步骤，响应取值用 posterior_response/posterior_response_text，常规验证用断言，造数及清理用获准数据工厂和 SQL；不在函数中隐蔽执行这些操作。",
+                        "仅现有配置不能表达的请求计算/编码或响应解码/派生计算才用 front_func/posterior_func；使用前记录能力缺口、职责、输入输出及副作用，无必要则留空。",
+                        "场景后置不是 finally：前置、请求或前序响应后处理失败时，posterior_func 可能不执行；失败兜底放实际支持的 api_case.posterior_sql 或工厂 cleanup。API 新建关联先由 Case 清理，工厂仅清本轮拥有的数据。",
+                        "需要业务 API 撤销但没有失败安全编排时报告能力缺口，不以场景函数或最后一步冒充兜底；生产禁 SQL/工厂，函数不豁免数据归属、写授权或环境边界。",
+                        "函数不得修改状态码/业务字段、吞异常或伪造结果来通过断言；保留原始响应证据。替换已有冗余脚本须保留类型、动态值和断言强度，回读并完整验证失败清理。",
+                    ],
                     "headers": [
                         "api_case.front_headers 是用例级默认请求头，只保存 ApiHeaders.id 数组。",
                         "api_case_scenario.headers 也是 ApiHeaders.id 数组；只要场景 headers 非空，就会完全覆盖 api_case.front_headers，不会合并。",

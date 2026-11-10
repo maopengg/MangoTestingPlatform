@@ -175,25 +175,25 @@ class PytestCasePublicationTests(SimpleTestCase):
         transition.assert_not_called()
         self.assertNotEqual(response.data['code'], 200)
 
-    def test_rest_requires_publish_permission(self):
+    def test_rest_requires_change_permission(self):
         view = PytestCaseViews()
         view.action = 'set_publication'
         request = SimpleNamespace(method='PUT', path='/api/pytest/case/publication', data={}, query_params={},
                                   user=SimpleNamespace(user_obj=SimpleNamespace(id=9)))
         view.request = request
         with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False):
-            for permissions, expected in (({'pytest.case:change'}, True), ({'pytest.case:change'}, False),
-                                          ({'pytest.case:read'}, False)):
+            for permissions, expected in (({'pytest.case:change'}, True), ({'pytest.case:read'}, False),
+                                          (set(), False)):
                 with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value=permissions):
                     self.assertEqual(MenuActionPermission().has_permission(request, view), expected)
 
-    def test_mcp_requires_publish_permission_and_data_scope(self):
+    def test_mcp_requires_change_permission_and_data_scope(self):
         user = SimpleNamespace(id=9)
         arguments = {'case_id': 1, 'target_status': 'prepublished'}
         with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False), patch(
             'src.interfaces.mcp.authentication.resolve_project_product_ids', return_value={4},
         ), patch.object(ProjectProductScopeService, 'has_project_product', return_value=True):
-            with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'pytest.case:change'}):
+            with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'pytest.case:read'}):
                 self.assertIsNotNone(permission_error(user, 'update_pytest_case_publication_status', arguments))
             with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'pytest.case:change'}):
                 self.assertIsNone(permission_error(user, 'update_pytest_case_publication_status', arguments))

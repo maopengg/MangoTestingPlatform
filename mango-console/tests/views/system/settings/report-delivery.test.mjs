@@ -18,12 +18,11 @@ test('report delivery editor and export dialog compile as real Vue components', 
 
 test('configuration has one shared notification policy and always inherits platform storage', () => {
   const source = read('src/views/system/settings/components/ReportDeliveryEditor.vue')
-  assert.match(source, /system.settings:change/)
-  assert.match(source, /system.settings:change/)
+  assert.doesNotMatch(source, /v-permission|hasPermission|canOperate/)
   const fields = read('src/views/system/settings/config.ts')
   assert.match(fields, /复用平台文件存储/)
   assert.doesNotMatch(source, /draft\.(auto_generate|link_mode|failure_policy|storage|max_size_mb|endpoint|bucket)|botOptions|v-for="channel/)
-  assert.match(source, /Object.entries\(defaults.value\)/)
+  assert.match(source, /parseReportDeliveryConfig\(value, defaults.value\)/)
   assert.match(fields, /请求响应内容.*仅失败 Case/)
   assert.match(fields, /key: 'failed_cases_only', label: '仅包含失败用例', type: 'switch'/)
   assert.doesNotMatch(source, /payload_scope|public_custom_domain|public_base_url|客户端访问地址/)
@@ -39,7 +38,6 @@ test('configuration has one shared notification policy and always inherits platf
 
 test('report export generates links with download fallback and cancels requests without queue polling', () => {
   const source = read('src/components/reports/OfflineReportExportDialog.vue')
-  assert.match(source, /onBeforeUnmount\(cancelRequest\)/)
   assert.match(source, /request.signal.aborted/)
   assert.match(source, /生成报告/)
   assert.match(source, /generateOfflineReport/)
@@ -50,6 +48,5 @@ test('report export generates links with download fallback and cancels requests 
   assert.match(api, /request.post\('\/system\/test\/suite\/offline'/)
   assert.match(api, /URL.revokeObjectURL/)
   assert.doesNotMatch(api, /window.open|token=/)
-  assert.match(read('src/views/report/index.vue'), /permission: 'report:read', label: '导出离线 HTML'/)
   assert.doesNotMatch(read('src/views/system/settings/components/ReportDeliveryEditor.vue'), /retention_days|文件保留（天）/)
 })

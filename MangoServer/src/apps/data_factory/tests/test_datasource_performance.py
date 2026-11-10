@@ -69,6 +69,111 @@ class DatasourcePerformanceTests(SimpleTestCase):
         for permit in [*permits, cleanup]:
             Governor.release(permit)
 
+    def test_hundred_cases_create_verify_cleanup_with_bounded_connections_and_zero_residue(self):
+        import sqlite3
+        import tempfile
+        from pathlib import Path
+        from sqlalchemy import create_engine, text
+        from src.apps.data_factory.services.datasource_pool import DatasourceQueuePool
+        from src.apps.data_factory.services.datasource_connection import GovernedDbapiConnection
+        from src.apps.data_factory.services.datasource_wait import DatasourceWaitService as Waiting
+        from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService as Audit
+        from src.apps.task_center.services.execution.cooperative_executor import CooperativeCaseExecutor, cooperative_sleep
+
+        # 本地物理 SQL + 真实配额算法；仅控制库存储换成原子内存桩，不访问业务库。
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'regression.sqlite'
+            engine = create_engine('sqlite://', poolclass=DatasourceQueuePool, pool_size=2, max_overflow=0,
+                pool_timeout=0, isolation_level='AUTOCOMMIT', creator=lambda: GovernedDbapiConnection.connect(self.target,
+                    lambda: sqlite3.connect(path, check_same_thread=False, timeout=5)))
+            self.addCleanup(engine.dispose)
+            with engine.begin() as connection:
+                connection.execute(text('CREATE TABLE fixture (id INTEGER PRIMARY KEY, value TEXT NOT NULL)'))
+            executor = CooperativeCaseExecutor(10, 'datasource-100-case')
+            self.addCleanup(executor.shutdown)
+            lock = threading.Lock()
+            active = peak = connection_peak = 0
+            waits = []
+            started = time.monotonic()
+
+            def lane():
+                return (DatasourceQueueLaneEnum.CLEANUP if Audit.current_source().get('source_stage') == 'cleanup'
+                        else DatasourceQueueLaneEnum.NORMAL)
+
+            def operation(connection, sql, parameters):
+                nonlocal active, peak, connection_peak
+                with Governor.operation(self.target, physical=True):
+                    with lock:
+                        active += 1
+                        peak = max(peak, active)
+                        state = next(iter(self.store.values.values()))
+                        connection_peak = max(connection_peak, sum(value['slots'] for value in state['permits'].values()
+                                                                  if value['kind'] == 'connection'))
+                    try:
+                        return connection.execute(text(sql), parameters)
+                    finally:
+                        with lock:
+                            active -= 1
+
+            def case(index):
+                with Waiting.owner(None):
+                    try:
+                        with engine.begin() as connection:
+                            operation(connection, 'INSERT INTO fixture VALUES (:id, :value)',
+                                      {'id': index, 'value': f'AUTO_{index}'})
+                        self.assertTrue(connection.closed)
+                        # 此处模拟业务接口阶段，必须不持有数据库连接或操作名额。
+                        cooperative_sleep(0.002)
+                        if index % 9 == 0:
+                            raise RuntimeError('AUTO_CONTROLLED_BUSINESS_FAILURE')
+                        with engine.connect() as connection:
+                            self.assertEqual(operation(connection, 'SELECT value FROM fixture WHERE id=:id',
+                                                       {'id': index}).scalar_one(), f'AUTO_{index}')
+                    except RuntimeError as error:
+                        if str(error) != 'AUTO_CONTROLLED_BUSINESS_FAILURE':
+                            raise
+                    finally:
+                        with Audit.source({'source_stage': 'cleanup'}):
+                            with engine.begin() as connection:
+                                operation(connection, 'DELETE FROM fixture WHERE id=:id', {'id': index})
+                                self.assertEqual(operation(connection, 'SELECT COUNT(*) FROM fixture WHERE id=:id',
+                                                           {'id': index}).scalar_one(), 0)
+                        with lock:
+                            waits.append(Waiting.elapsed())
+
+            # 加速令牌时间，不提高并发/连接预算；同一逻辑秒不因等待者数量重复累加。
+            original_change = Governor.change
+            clock_base = self.store.now
+            def change(*args, **kwargs):
+                with lock:
+                    self.store.now = clock_base + (time.monotonic() - started) * 50
+                return original_change(*args, **kwargs)
+
+            with patch.object(Governor, 'lane', side_effect=lane), \
+                    patch.object(Governor, 'change', side_effect=change), \
+                    patch.object(Governor, 'relieve_connection_pressure'), \
+                    patch('django.db.connections.all', return_value=[]):
+                futures = [executor.submit(case, index) for index in range(1, 101)]
+                for future in futures:
+                    future.result(timeout=30)
+            executor.shutdown()
+            with engine.connect() as connection:
+                self.assertEqual(connection.execute(text('SELECT COUNT(*) FROM fixture')).scalar_one(), 0)
+            self.assertEqual(engine.pool.checkedout(), 0)
+            engine.dispose()
+            state = next(iter(self.store.values.values()))
+            self.assertFalse(state['permits'])
+            self.assertFalse(state['waiters'])
+            self.assertLessEqual(peak, self.policy.mysql.concurrency)
+            self.assertLessEqual(connection_peak, self.policy.mysql.connections)
+            self.assertEqual(len(waits), 100)
+            import logging
+            ordered = sorted(waits)
+            logging.getLogger(__name__).info(
+                'event=datasource_local_regression cases=100 elapsed=%.3f wait_p95=%.3f wait_p99=%.3f '
+                'wait_max=%.3f operations_peak=%s connections_peak=%s residue=0',
+                time.monotonic() - started, ordered[94], ordered[98], ordered[-1], peak, connection_peak)
+
     def test_full_expanded_wait_queue_keeps_waiting_without_sending_or_discarding_registered_requests(self):
         from src.apps.data_factory.schemas.performance import DatasourceGovernorState, DatasourceWaiter
         from src.apps.data_factory.services.datasource_wait import DatasourceWaitService

@@ -7,10 +7,12 @@ const source = fs.readFileSync(
   new URL('../src/views/system/role/index.vue', import.meta.url),
   'utf8'
 )
-const start = source.indexOf('  function collectTreeKeys(')
-const end = source.indexOf('  function onSavePermission(', start)
+const start = source.indexOf('  function expandPermissionTree(')
+const end = source.indexOf('  async function refreshOwnRoutes(', start)
 assert.ok(start > 0 && end > start)
 const js = ts.transpileModule(source.slice(start, end), {}).outputText
+const helpers = {}
+new Function('exports', ts.transpileModule(fs.readFileSync(new URL('../src/views/system/role/role-permissions.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText)(helpers)
 
 function createPermissionState(checkedKeys = ['index.home'], guest = false) {
   const permissionPanel = {
@@ -46,10 +48,12 @@ function createPermissionState(checkedKeys = ['index.home'], guest = false) {
   }
   const handlers = new Function(
     'permissionPanel',
-    'isSelectedGuestRole',
+    'isPermissionReadonly',
     'homePermissionKey',
+    'available',
+    ...Object.keys(helpers).filter(key => key !== 'homePermissionKey'),
     `${js}; return { onPageCheck, onActionCheck };`
-  )(permissionPanel, { value: guest }, 'index.home')
+  )(permissionPanel, { value: guest }, 'index.home', () => true, ...Object.entries(helpers).filter(([key]) => key !== 'homePermissionKey').map(([, value]) => value))
   return { permissionPanel, ...handlers }
 }
 

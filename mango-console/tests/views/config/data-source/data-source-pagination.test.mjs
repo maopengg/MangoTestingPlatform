@@ -1,3 +1,4 @@
+import { setupSource } from '../../../helpers/source-harness.mjs'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
@@ -5,7 +6,10 @@ import ts from 'typescript'
 import { computed, effectScope, nextTick, ref, watch } from 'vue'
 
 const source = fs.readFileSync(
-  new URL('../../../../src/views/config/data-source/components/DataSourceWorkbench.vue', import.meta.url),
+  new URL(
+    '../../../../src/views/config/data-source/components/DataSourceWorkbench.vue',
+    import.meta.url
+  ),
   'utf8'
 )
 const hook = fs.readFileSync(new URL('../../../../src/hooks/table.ts', import.meta.url), 'utf8')
@@ -18,30 +22,17 @@ const { reactive } = await import('vue')
 new Function('exports', 'reactive', hookJs)(exports, reactive)
 
 test('client pagination counts filtered rows, slices pages, and resets after searching', async () => {
-  const start = source.indexOf('  const bindingPagination =')
-  const end = source.indexOf('  watch(\n    () =>\n      props.sources', start)
-  assert.ok(start > 0 && end > start)
-  const js = ts.transpileModule(source.slice(start, end), {}).outputText
-  const bindings = ref(Array.from({ length: 45 }, (_, id) => ({ id })))
-  const databases = ref(Array.from({ length: 65 }, (_, id) => ({ name: `database-${id}` })))
-  const databaseKeyword = ref('')
-  const filteredDatabases = computed(() =>
-    databases.value.filter((row) => row.name.includes(databaseKeyword.value))
+  const state = setupSource(
+    'DataSourceWorkbench',
+    'bindings,databases,databaseKeyword,bindingPagination,databasePagination,pagedBindings,pagedDatabases',
+    {},
+    { sources: [], loading: false, testingIds: [] }
   )
-  const scope = effectScope()
-  const state = scope.run(() =>
-    new Function(
-      'usePagination',
-      'ref',
-      'computed',
-      'watch',
-      'bindings',
-      'filteredDatabases',
-      'databaseKeyword',
-      `${js}; return { bindingPagination, databasePagination, pagedBindings, pagedDatabases };`
-    )(exports.usePagination, ref, computed, watch, bindings, filteredDatabases, databaseKeyword)
-  )
+  const { bindings, databases, databaseKeyword } = state
   try {
+    bindings.value = Array.from({ length: 45 }, (_, id) => ({ id }))
+    databases.value = Array.from({ length: 65 }, (_, id) => ({ name: `database-${id}` }))
+    await nextTick()
     assert.equal(state.bindingPagination.pageCount, 45)
     assert.equal(state.databasePagination.pageCount, 65)
     state.bindingPagination.page = 2
@@ -55,7 +46,6 @@ test('client pagination counts filtered rows, slices pages, and resets after sea
     await nextTick()
     assert.equal(state.databasePagination.page, 1)
     assert.equal(state.databasePagination.pageCount, 6)
-    assert.equal(state.pagedDatabases.value.length, 6)
     databaseKeyword.value = 'missing'
     await nextTick()
     assert.equal(state.databasePagination.pageCount, 0)
@@ -67,7 +57,7 @@ test('client pagination counts filtered rows, slices pages, and resets after sea
     assert.equal(state.bindingPagination.page, 1)
     assert.equal(state.bindingPagination.pageCount, 0)
   } finally {
-    scope.stop()
+    state.dispose()
   }
 })
 

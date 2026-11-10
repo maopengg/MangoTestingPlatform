@@ -199,12 +199,13 @@
 <script lang="ts" setup>
   import { computed, ref, watch } from 'vue'
   import { Scrollbar } from '@/components/Scrollbar'
+  import type { LiveLocator } from './ui-live-workbench'
 
   const props = defineProps<{
     visible: boolean
     loading: boolean
     validating: boolean
-    candidates: any[]
+    candidates: LiveLocator[]
     batch: number
     targetName?: string
     emptyReason?: string
@@ -216,7 +217,7 @@
       event: 'refresh',
       guidance: { location_description: string; surrounding_text: string }
     ): void
-    (event: 'use-many', candidates: any[]): void
+    (event: 'use-many', candidates: LiveLocator[]): void
   }>()
 
   const selectedKeys = ref<string[]>([])
@@ -285,15 +286,15 @@
     }
   )
 
-  function candidateKey(candidate: any) {
+  function candidateKey(candidate: LiveLocator) {
     return String(candidate.candidate_id || `${candidate.exp}:${candidate.loc}`)
   }
 
-  function isSelected(candidate: any) {
+  function isSelected(candidate: LiveLocator) {
     return selectedKeys.value.includes(candidateKey(candidate))
   }
 
-  function toggleCandidate(candidate: any, checked: boolean) {
+  function toggleCandidate(candidate: LiveLocator, checked: boolean) {
     const key = candidateKey(candidate)
     if (!checked) {
       selectedKeys.value = selectedKeys.value.filter((item) => item !== key)
@@ -304,7 +305,7 @@
     selectedKeys.value = [...selectedKeys.value, key]
   }
 
-  function selectedGroupText(candidate: any) {
+  function selectedGroupText(candidate: LiveLocator) {
     const index = selectedCandidates.value.findIndex(
       (item) => candidateKey(item) === candidateKey(candidate)
     )
@@ -316,28 +317,29 @@
   }
 
   function applySelected() {
-    if (!selectedCandidates.value.length) return
+    if (props.loading || props.validating || !selectedCandidates.value.length || selectedCandidates.value.some(item => !item.verified)) return
     emit('use-many', selectedCandidates.value)
   }
 
   function refreshBatch() {
+    if (props.loading || props.validating) return
     emit('refresh', {
       location_description: guidance.value.locationDescription.trim(),
       surrounding_text: guidance.value.surroundingText.trim(),
     })
   }
 
-  function locatorType(exp: any) {
+  function locatorType(exp: unknown) {
     const names: Record<number, string> = { 0: 'XPATH', 2: '通用定位器', 9: 'CSS' }
     return names[Number(exp)] || `类型 ${exp}`
   }
 
-  function validationText(candidate: any) {
+  function validationText(candidate: LiveLocator) {
     if (!candidate.verified) return '验证失败'
     return Number(candidate.count) === 1 ? '唯一匹配' : `匹配 ${candidate.count || 0}`
   }
 
-  function candidateFailureReason(candidate: any) {
+  function candidateFailureReason(candidate: LiveLocator) {
     if (!candidate.validation_done || candidate.verified) return ''
     if (candidate.error_message) return candidate.error_message
     const count = Number(candidate.count || 0)

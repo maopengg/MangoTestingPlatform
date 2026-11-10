@@ -75,7 +75,12 @@ def register_module_coverage_tools(mcp):
             scan_id: int,
             items: list[ModuleCoverageCaseUploadItem],
     ) -> dict:
-        """分批上传 Case。已绑定场景在 item 顶层传 ApiCase ID；deferred 场景在 payload.remark 同时填写暂不处理原因和重新启用条件。"""
+        """分批上传 Case。已绑定场景在 item 顶层传 api_case_id 和 api_case_revision_id。
+
+        历史跨模块复用只保留原 Case 和精确修订，并校验同产品、正式Owner/Consumer及修订中的目标接口步骤；
+        原绑定未固定修订时须明确提交经核对的修订，平台不会选择最新版本。不能复制Case或取消绑定来绕过冲突。
+        deferred 场景在 payload.remark 同时填写暂不处理原因和重新启用条件。
+        """
         normalized_items = [
             item.model_dump(mode="json") if isinstance(item, ModuleCoverageCaseUploadItem) else item
             for item in items
@@ -249,7 +254,7 @@ def register_module_coverage_tools(mcp):
             page: int = 1,
             page_size: int = 20,
     ) -> dict:
-        """按稳定接口身份分页查询，先筛选再分页。analysis_statuses多选completed/pending/gap/deferred/excluded，与接口分析图同口径；仅有图、没有完整场景不算已分析。支持链路、覆盖、方法、变更及ApiInfo筛选。coverage_policy为included/deferred/excluded；后两者仅盘点，不生成图或Case，仅excluded排除分母。"""
+        """按稳定接口身份分页查询，先筛选再分页。analysis_statuses多选completed(已分析)/pending(待分析)/review(版本待复核)/gap(分析不完整)/deferred(暂缓分析)/excluded(已排除)，与接口分析图同口径。analysis_reason说明实际原因，analysis_commit_sha/latest_inventory_commit_sha提供版本对照；状态自动计算，不能手改。仅有图、没有完整场景不算已分析。支持链路、覆盖、方法、变更及ApiInfo筛选。coverage_policy为included/deferred/excluded；后两者仅盘点，不生成图或Case，仅excluded排除分母。"""
         queryset = ApiQuerySelector.module_coverage_interface_snapshot().filter(
             project_product_id=project_product_id,
         ).select_related(
@@ -485,7 +490,10 @@ def register_module_coverage_tools(mcp):
 
     @mcp.tool()
     def update_module_coverage_case_binding(coverage_case_id: int, api_case_id: int) -> dict:
-        """把覆盖 Case 绑定到同项目产品、同模块的已有 ApiCase。"""
+        """绑定同产品、同模块的既有ApiCase；允许重新确认合法的历史跨模块原绑定，不更换冻结修订。
+
+        不新增任意跨模块关系。历史绑定无精确修订时，先核对版本并通过扫描上传显式提交修订，不能自动绑定最新版本。
+        """
         item = ModuleCoverageService.bind_api_case(coverage_case_id, api_case_id)
         return ok(format_module_coverage_case(item), "ApiCase 绑定已更新")
 
@@ -516,13 +524,14 @@ def register_module_coverage_tools(mcp):
 
         AI 分析优先读取与页面同口径的 overview，而非顶层兼容旧指标：
         - project_scan_summary：全部叶子模块的已完整扫描/未完整扫描数量、scan_completion_rate；
-          此项始终按项目/产品统计，不随 module_id 变化，纯接口盘点不算完整链路扫描。
+          与其余概览指标一样随 module_id 限定模块及后代，纯接口盘点不算完整链路扫描。
         - project_inventory_summary：①模块接口盘点进度，inventoried_count/leaf_count与inventory_rate；
           完整模块清单生效即完成，包含inventory_only，不要求图或Case；modules.inventory_completed用于阶段一验收。
         - summary.analysis_rate：②接口业务图和场景分析进度；analyzed_interface_count、pending_analysis_count、
-          analysis_gap_count、deferred_analysis_count分别为已分析/待分析/缺口/暂缓，排除项不进分母。
+          analysis_review_count、analysis_gap_count、deferred_analysis_count分别为已分析/待分析/版本待复核/分析不完整/暂缓，排除项不进分母；版本待复核不等于未扫描。
         - summary.binding_rate：接口录入比例；bound_count/interface_count 为正确绑定 ApiInfo 数/接口数。
-        - summary.interface_coverage_rate：接口覆盖率；全部目标场景有效完成才算已覆盖；
+        - summary.interface_coverage_rate：接口覆盖率；当前接口分析完成且全部目标场景有效完成才算已覆盖；
+          分析未完成但已有有效自动化成果计为部分覆盖，保留Case及绑定，不计入完整覆盖分子；
           同时返回已覆盖、部分覆盖、未覆盖、暂不处理及已排除数量。
         - summary.automation_rate：目标 Case 场景完成率；completed_count/target_count；
           incomplete_case_count 为未完成数，deferred_count 为暂不处理数。

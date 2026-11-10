@@ -50,6 +50,7 @@
       }
 
       function show() {
+        if (!showModal.value) resetLoading()
         showModal.value = true
         return Promise.resolve(true)
       }
@@ -62,6 +63,7 @@
       }
 
       function onConfirm() {
+        if (confirmLoading.value || continuousLoading.value) return
         confirmLoading.value = true
         // 发出 confirm 事件，父组件需要在处理完异步操作后调用 setConfirmLoading(false)
         emit('confirm')
@@ -75,6 +77,7 @@
       }
 
       function onContinuousSubmit() {
+        if (confirmLoading.value || continuousLoading.value) return
         continuousLoading.value = true
         // 发出 continuousSubmit 事件，父组件需要在处理完异步操作后调用 setContinuousLoading(false)
         emit('continuousSubmit')
@@ -172,6 +175,7 @@
     @keydown="handleKeyDown"
     @compositionstart="handleCompositionStart"
     @compositionend="handleCompositionEnd"
+    @cancel="onCancel"
   >
     <Scrollbar wrap-class="mango-modal-dialog__wrap">
       <slot name="content"></slot>

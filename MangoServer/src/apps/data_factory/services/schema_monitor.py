@@ -8,7 +8,7 @@ from mangotools.enums import StatusEnum
 
 from src.apps.data_factory.enums import DataFactoryEntityStatusChangeSourceEnum
 from src.apps.data_factory.exceptions import (
-    DATA_FACTORY_CONFIG_INVALID,
+    DATA_FACTORY_ENTITY_ACTIVATION_INVALID,
     DataFactoryError,
 )
 from src.apps.data_factory.models import (
@@ -65,9 +65,9 @@ class DataFactorySchemaMonitorService:
         """启用前按系统配置选择环境，并以真实表结构为准进行严格校验。"""
         entity = DataFactoryEntity.objects.select_related("datasource_alias").get(id=entity_id)
         if not entity.datasource_alias_id:
-            raise DataFactoryError(DATA_FACTORY_CONFIG_INVALID, value=(entity.name, "未绑定逻辑数据库"))
+            raise DataFactoryError(DATA_FACTORY_ENTITY_ACTIVATION_INVALID, value=(entity.name, "未绑定逻辑数据库"))
         if entity.datasource_alias.status != StatusEnum.SUCCESS.value:
-            raise DataFactoryError(DATA_FACTORY_CONFIG_INVALID, value=(entity.name, "逻辑数据库已停用"))
+            raise DataFactoryError(DATA_FACTORY_ENTITY_ACTIVATION_INVALID, value=(entity.name, "逻辑数据库已停用"))
 
         all_bindings = list(
             DataFactoryDatasourceBinding.objects.select_related(
@@ -75,18 +75,18 @@ class DataFactorySchemaMonitorService:
             ).filter(datasource_alias_id=entity.datasource_alias_id).order_by("id")
         )
         if not all_bindings:
-            raise DataFactoryError(DATA_FACTORY_CONFIG_INVALID, value=(entity.name, "没有可校验的环境数据源绑定"))
+            raise DataFactoryError(DATA_FACTORY_ENTITY_ACTIVATION_INVALID, value=(entity.name, "没有可校验的环境数据源绑定"))
         bindings = cls.filter_validation_bindings(all_bindings)
         if not bindings:
             environments = cls.configured_validation_environments() or []
             environment_text = "、".join(str(item) for item in environments)
-            raise DataFactoryError(DATA_FACTORY_CONFIG_INVALID,
+            raise DataFactoryError(DATA_FACTORY_ENTITY_ACTIVATION_INVALID,
                                    value=(entity.name, f"配置的校验环境（{environment_text}）没有数据源绑定"),
                                    )
 
         expected = cls.entity_signature(entity.id)
         if not expected:
-            raise DataFactoryError(DATA_FACTORY_CONFIG_INVALID, value=(entity.name, "实体字段规则为空，请先同步表结构"))
+            raise DataFactoryError(DATA_FACTORY_ENTITY_ACTIVATION_INVALID, value=(entity.name, "实体字段规则为空，请先同步表结构"))
         checked_bindings = []
         failures = []
         for binding in bindings:
@@ -117,16 +117,26 @@ class DataFactorySchemaMonitorService:
         if failures:
             first = failures[0]
             if first.get("differences"):
-                fields = "、".join(item["field"] for item in first["differences"][:5])
-                detail = f"环境 {first.get('environment')} 的表结构与实体字段不一致，涉及字段：{fields}"
+                fields = '；'.join(cls.format_difference(item) for item in first['differences'][:5])
+                detail = f"环境 {first.get('environment')}（绑定ID {first['binding_id']}）的表结构与实体字段不一致：{fields}"
             else:
                 detail = f"环境 {first.get('environment')} 校验失败：{first.get('error')}"
-            raise DataFactoryError(DATA_FACTORY_CONFIG_INVALID, value=(entity.name, detail))
+            raise DataFactoryError(DATA_FACTORY_ENTITY_ACTIVATION_INVALID, value=(entity.name, detail),
+                                   details={'entity_id': entity.id, 'table': entity.table_name, 'failures': failures})
         return {
             "entity_id": entity.id,
             "checked_binding_ids": checked_bindings,
             "checked_binding_count": len(checked_bindings),
         }
+
+    @classmethod
+    def format_difference(cls, difference):
+        expected, actual = difference.get('expected'), difference.get('actual')
+        if isinstance(expected, (tuple, list)) and isinstance(actual, (tuple, list)):
+            changes = [f'{key}：模型={left}，数据库={right}'
+                       for key, left, right in zip(cls.SIGNATURE_FIELDS[1:], expected, actual) if left != right]
+            return f"字段 {difference['field']}（{'，'.join(changes)}）"
+        return f"字段 {difference['field']}：模型={expected}，数据库={actual}"
 
     @staticmethod
     def describe_key_differences(entity, schema: dict) -> list[dict]:

@@ -1,15 +1,17 @@
+import type { ModuleRecord } from './types'
+
 export const moduleLevelLabels = ['一级模块', '二级模块', '三级模块']
 export const moduleLevelIconLines = [[12], [9, 15], [6, 12, 18]]
 
 export interface ModuleTreeNode {
   key: number
   title: string
-  record: any
+  record: ModuleRecord
   children: ModuleTreeNode[]
   childCount: number
 }
 
-export function buildModuleTree(records: any[]): ModuleTreeNode[] {
+export function buildModuleTree(records: ModuleRecord[]): ModuleTreeNode[] {
   const nodes = new Map<number, ModuleTreeNode>()
   records.forEach((record) =>
     nodes.set(Number(record.id), {
@@ -52,7 +54,7 @@ export function moduleBranchKeys(nodes: ModuleTreeNode[], maxExpandedLevel = Inf
   )
 }
 
-export function moduleCreateDraft(parent?: any) {
+export function moduleCreateDraft(parent?: ModuleRecord) {
   return {
     name: '',
     parent: parent?.id ?? null,

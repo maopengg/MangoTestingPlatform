@@ -1,18 +1,18 @@
 <template>
-  <ModalDialog ref="modalRef" :title="title" :width="width" @confirm="onConfirm" @cancel="onCancel">
+  <ModalDialog modal-class="mango-simple-form-modal" ref="modalRef" :title="title" :width="560" @confirm="onConfirm" @cancel="onCancel">
     <template #content>
       <slot name="summary" />
-      <a-form :model="form">
-        <a-form-item class="mango-form-item__require" label="任务名称">
+      <a-form auto-label-width layout="horizontal" class="mango-simple-form" :model="form">
+        <a-form-item class="mango-form-item__require mango-simple-form-item" label="任务名称">
           <a-input
             v-model="form.executionName"
-            :disabled="!nameEditable"
+            :disabled="!nameEditable || submitting"
             :max-length="128"
             :placeholder="namePlaceholder"
             show-word-limit
           />
         </a-form-item>
-        <a-form-item
+        <a-form-item class="mango-simple-form-item"
           :class="
             environmentSelectable ? 'mango-form-item__require' : 'mango-form-item__no_require'
           "
@@ -21,6 +21,7 @@
           <a-select
             v-if="environmentSelectable && environmentMultiple"
             v-model="form.testEnvs"
+            :disabled="submitting"
             :field-names="fieldNames"
             :options="enumStore.environment_type"
             :placeholder="environmentPlaceholder"
@@ -30,6 +31,7 @@
           <a-select
             v-else-if="environmentSelectable"
             v-model="form.testEnv"
+            :disabled="submitting"
             :field-names="fieldNames"
             :options="enumStore.environment_type"
             :placeholder="environmentPlaceholder"
@@ -52,8 +54,8 @@
             {{ environmentHint || '每个测试环境将分别创建一份测试报告' }}
           </template>
         </a-form-item>
-        <a-form-item v-if="versionSelectable" class="mango-form-item__require" label="执行版本">
-          <a-select v-model="form.executionVersion" class="full-width">
+        <a-form-item v-if="versionSelectable" class="mango-form-item__require mango-simple-form-item" label="执行版本">
+          <a-select v-model="form.executionVersion" :disabled="submitting" class="full-width">
             <a-option
               value="editing"
               data-testid="qa-components-overlays-testexecutionmodal-option-当前编辑态"
@@ -72,9 +74,10 @@
           </a-select>
           <template #extra> 编辑态执行当前配置；预发布固定待审核修订；已发布执行当前正式版本，不跨版本回退 </template>
         </a-form-item>
-        <a-form-item class="mango-form-item__no_require" label="API并发">
+        <a-form-item class="mango-form-item__no_require mango-simple-form-item" label="API并发">
           <a-input-number
             v-model="form.apiConcurrencyLimit"
+            :disabled="submitting"
             :min="1"
             :max="platformLimit"
             :precision="0"
@@ -96,7 +99,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { reactive, ref } from 'vue'
+  import { computed, onDeactivated, reactive, ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { fieldNames } from '@/setting'
   import { useEnum } from '@/store/modules/get-enum'
@@ -145,33 +148,56 @@
   }>()
 
   const enumStore = useEnum()
+  const submitting = ref(false)
+  function environmentId(value: unknown): number | null {
+    if (typeof value !== 'number' && !(typeof value === 'string' && /^\d+$/.test(value))) return null
+    const id = Number(value)
+    return Number.isSafeInteger(id) && id >= 0 ? id : null
+  }
+  const environments = computed(() => (Array.isArray(enumStore.environment_type) ? enumStore.environment_type : []).flatMap((entry: unknown) => {
+    if (!entry || typeof entry !== 'object') return []
+    const row = entry as { key?: unknown; title?: unknown }, id = environmentId(row.key)
+    return id === null ? [] : [{ id, title: typeof row.title === 'string' ? row.title : `环境 ${id}` }]
+  }))
   const modalRef = ref<InstanceType<typeof ModalDialog> | null>(null)
-  const form = reactive<TestExecutionConfig>({
+  const createForm = (): TestExecutionConfig & { testEnvs: number[] } => ({
     executionName: '',
     testEnv: null,
     testEnvs: [],
     apiConcurrencyLimit: null,
     executionVersion: 'editing',
   })
+  const form = reactive(createForm())
 
   function show(value: TestExecutionConfig) {
-    form.executionName = value.executionName || ''
-    form.testEnv = value.testEnv
-    form.testEnvs = Array.isArray(value.testEnvs) ? value.testEnvs.map(Number) : []
+    if (submitting.value) return Promise.resolve(false)
+    Object.assign(form, createForm())
+    form.executionName = typeof value.executionName === 'string' ? value.executionName : ''
+    form.testEnv = environmentId(value.testEnv)
+    form.testEnvs = Array.isArray(value.testEnvs) ? [...new Set(value.testEnvs.map(environmentId).filter((id): id is number => id !== null))] : []
     form.apiConcurrencyLimit = value.apiConcurrencyLimit
     form.executionVersion = value.executionVersion || 'editing'
     return modalRef.value?.show()
   }
 
   function close() {
+    submitting.value = false
+    Object.assign(form, createForm())
     return modalRef.value?.close()
   }
 
   function setConfirmLoading(loading: boolean) {
+    submitting.value = loading
     modalRef.value?.setConfirmLoading(loading)
   }
 
   function onConfirm() {
+    if (submitting.value) return
+    if (!Number.isInteger(props.platformLimit) || props.platformLimit < 1) {
+      Message.error('当前执行容量无效，请重新打开执行配置')
+      setConfirmLoading(false)
+      return
+    }
     const executionName = form.executionName.trim()
     if (!executionName) {
       Message.error('请输入本次执行的任务名称')
@@ -182,9 +208,7 @@
       const selectedTestEnvs = props.environmentMultiple ? form.testEnvs : [form.testEnv]
       const validTestEnvs =
         selectedTestEnvs.length > 0 &&
-        selectedTestEnvs.every((value) =>
-          (enumStore.environment_type || []).some((item: any) => Number(item.key) === Number(value))
-        )
+        selectedTestEnvs.every(value => environmentId(value) !== null && environments.value.some(item => item.id === environmentId(value)))
       if (!validTestEnvs) {
         Message.error('请选择本次执行的测试环境')
         setConfirmLoading(false)
@@ -207,6 +231,12 @@
       setConfirmLoading(false)
       return
     }
+    if (props.versionSelectable && !['editing', 'prepublished', 'published'].includes(form.executionVersion || '')) {
+      Message.error('请选择执行版本')
+      setConfirmLoading(false)
+      return
+    }
+    setConfirmLoading(true)
     emit('confirm', {
       executionName,
       testEnv:
@@ -221,15 +251,16 @@
   }
 
   function onCancel() {
+    close()
     emit('cancel')
   }
+  onDeactivated(onCancel)
 
   defineExpose({ show, close, setConfirmLoading })
 
   function environmentName(value: number) {
     return (
-      (enumStore.environment_type || []).find((item: any) => Number(item.key) === Number(value))
-        ?.title || `环境 ${value}`
+      environments.value.find(item => item.id === value)?.title || `环境 ${value}`
     )
   }
 

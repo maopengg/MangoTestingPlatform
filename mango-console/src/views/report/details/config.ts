@@ -1,6 +1,17 @@
-import { reactive } from 'vue'
+import type { TableColumnData } from '@arco-design/web-vue'
 
-export const evaluationMetricColumns = [
+type ReportColumn = TableColumnData & { key: string; mergeCell?: boolean }
+
+export const caseStatusOptions: Array<{ label: string; value: number | 'all' }> = [
+  { label: '全部', value: 'all' },
+  { label: '失败', value: 0 },
+  { label: '成功', value: 1 },
+  { label: '警告', value: 4 },
+  { label: '进行中', value: 3 },
+  { label: '待开始', value: 2 },
+]
+
+export const evaluationMetricColumns: TableColumnData[] = [
   { title: '评分器', dataIndex: 'grader_key', width: 180, ellipsis: true, tooltip: true },
   { title: '版本', dataIndex: 'version', width: 80 },
   { title: '平均分', dataIndex: 'average_score', width: 100 },
@@ -8,7 +19,7 @@ export const evaluationMetricColumns = [
   { title: '通过率', dataIndex: 'pass_rate_text', width: 100 },
 ]
 
-export const uiColumns: any = reactive([
+export const uiColumns: ReportColumn[] = [
   {
     title: '明细ID',
     dataIndex: '__detailId',
@@ -107,12 +118,12 @@ export const uiColumns: any = reactive([
     dataIndex: 'actions',
     key: 'actions',
     align: 'center',
-    width: 160,
+    width: 120,
     fixed: 'right',
   },
-])
+]
 
-export const apiColumns: any = reactive([
+export const apiColumns: ReportColumn[] = [
   {
     title: '明细ID',
     dataIndex: '__detailId',
@@ -206,11 +217,11 @@ export const apiColumns: any = reactive([
     dataIndex: 'actions',
     key: 'actions',
     align: 'center',
-    width: 160,
+    width: 120,
     fixed: 'right',
   },
-])
-export const pytestColumns: any = reactive([
+]
+export const pytestColumns: ReportColumn[] = [
   {
     title: '明细ID',
     dataIndex: '__detailId',
@@ -294,7 +305,7 @@ export const pytestColumns: any = reactive([
     dataIndex: 'actions',
     key: 'actions',
     align: 'center',
-    width: 160,
+    width: 120,
     fixed: 'right',
   },
-])
+]

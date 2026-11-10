@@ -6,6 +6,7 @@ class DatasourceAuditSourceEnum(BaseEnum):
     METADATA = ('data_source_metadata', '元数据操作')
     RUNTIME = ('data_source_runtime', '运行时数据源操作')
     MCP = ('mcp', 'MCP调用')
+    API_CASE_RESOURCE = ('api_case_resource', 'API创建资源清理')
 
 
 class DatasourceAuditStageEnum(BaseEnum):

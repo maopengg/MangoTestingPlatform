@@ -17,7 +17,7 @@ class WaitUntil:
     interval: float
 
 
-def wait_until(ready, timeout, interval=0.5):
+def wait_until(ready, timeout, interval=0.5, *, on_resume=None):
     """只在明确启用的 Case 线程让出执行权；不跨线程恢复 greenlet。"""
     deadline = time.monotonic() + timeout
     while not ready():
@@ -29,9 +29,19 @@ def wait_until(ready, timeout, interval=0.5):
                 time.sleep(interval)
             else:
                 getcurrent().parent.switch(WaitUntil(ready, deadline, interval))
+                if on_resume is not None:
+                    on_resume()
         else:
             time.sleep(interval)
     return True
+
+
+def cooperative_sleep(seconds):
+    if not _cooperative.get():
+        time.sleep(seconds)
+        return
+    deadline = time.monotonic() + seconds
+    wait_until(lambda: time.monotonic() >= deadline, seconds + 1, interval=min(0.1, max(seconds, 0.001)))
 
 
 class CooperativeCaseExecutor:
@@ -68,7 +78,9 @@ class CooperativeCaseExecutor:
                     else:
                         entry[3] = now + signal.interval
             try:
-                future, callback, args, kwargs = self.queue.get(timeout=0.1)
+                # 有挂起任务时按最近探测时间醒来，不能每轮额外固定等待 100ms。
+                delay = min((max(0, entry[3] - time.monotonic()) for entry in suspended), default=0.1)
+                future, callback, args, kwargs = self.queue.get(timeout=min(0.1, delay))
             except queue.Empty:
                 continue
             if not future.set_running_or_notify_cancel():

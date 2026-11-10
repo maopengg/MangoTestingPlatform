@@ -153,7 +153,7 @@ class ApiQuerySelector:
 
     @staticmethod
     def module_coverage_case():
-        return ModuleCoverageCase.objects.all()
+        return ModuleCoverageCase.objects.select_related('api_case', 'api_case_revision')
 
     @staticmethod
     def module_coverage_case_snapshot():

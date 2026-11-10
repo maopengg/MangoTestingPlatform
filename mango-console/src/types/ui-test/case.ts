@@ -3,17 +3,20 @@ import type { FlowData } from '@/types/components'
 export interface UiCaseFrontCustomItem {
   key: string
   value: unknown
+  test_envs?: Array<number | string>
 }
 
-export interface UiCaseFrontSqlItem {
-  sql: string
+export type UiCaseFrontSqlItem = {
+  sql: string | Record<string, unknown>
   key_list?: string | string[] | null
-  datasource_alias?: number | null
+  datasource_alias?: number | string | null
+  test_envs?: Array<number | string>
 }
 
-export interface UiCasePosteriorSqlItem {
-  sql: string
-  datasource_alias?: number | null
+export type UiCasePosteriorSqlItem = {
+  sql: string | Record<string, unknown>
+  datasource_alias?: number | string | null
+  test_envs?: Array<number | string>
 }
 
 export interface UiCasePayload {
@@ -21,8 +24,8 @@ export interface UiCasePayload {
   name?: string
   front_custom?: UiCaseFrontCustomItem[]
   front_sql?: UiCaseFrontSqlItem[]
-  front_public?: number[]
-  front_auth_config?: number[]
+  front_public?: Array<number | string>
+  front_auth_config?: Array<number | string>
   posterior_sql?: UiCasePosteriorSqlItem[]
   [key: string]: unknown
 }
@@ -53,7 +56,7 @@ export interface UiAuthCacheConfig {
 }
 
 export interface UiAuthConfigPayload {
-  id?: number
+  id?: number | string
   project_product?: number | string | null
   test_env: number | string
   name?: string
@@ -62,11 +65,11 @@ export interface UiAuthConfigPayload {
   refresh_mode?: number
   token_ttl?: number
   expire_notice_minutes?: number
-  page_step?: number | null
-  time_task?: number | null
-  notice_group?: number | null
+  page_step?: number | string | null
+  time_task?: number | string | null
+  notice_group?: number | string | null
   custom_code?: string
-  manual_config?: UiAuthCacheConfig
+  manual_config?: UiAuthCacheConfig | Record<string, unknown>
   auto_auth_config?: Record<string, unknown>
   api_config?: Record<string, unknown>
 }
@@ -87,7 +90,7 @@ export interface UiStepCondition {
   type: 'url_path' | 'page_title' | 'visible_text' | 'element_state'
   matcher: 'equals' | 'contains' | 'starts_with' | 'regex' | 'count_gte' | 'visible' | 'hidden' | 'enabled' | 'editable' | 'checked'
   expected?: unknown
-  element_id?: number
+  element_id?: number | string
   count?: number
 }
 
@@ -113,7 +116,7 @@ export interface UiPageStepsDetailPayload {
   type?: number
   flow_data?: FlowData
   node_id?: string
-  precondition?: UiStepConditionGroup
-  postcondition?: UiStepConditionGroup
+  precondition?: UiStepConditionGroup | Record<string, never>
+  postcondition?: UiStepConditionGroup | Record<string, never>
   [key: string]: unknown
 }

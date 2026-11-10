@@ -1,140 +1,41 @@
-import { FormItem } from '@/types/components'
+import { reactive } from 'vue'
+import type { FormItem } from '@/types/components'
+import type { TableColumnData } from '@arco-design/web-vue'
 import { enableMultiSelectSearch } from '@/utils/search-condition'
 import { createIdSearchValue } from '@/utils/id-search'
-import { reactive, ref } from 'vue'
-import { Message } from '@arco-design/web-vue'
-import { useTable, useTableColumn } from '@/hooks/table'
+import { useTableIndexColumn } from '@/hooks/table'
 import { createUpdateUserCondition, updateTimeColumn, updateUserColumn } from '@/utils/update-user'
 
-const table = useTable()
-
-export const conditionItems: Array<FormItem> = reactive([
-  {
-    key: 'id',
-    label: 'ID',
-    type: 'input',
-    placeholder: '请输入步骤ID',
-    value: createIdSearchValue(),
-    reset: function () {
-      this.value = ''
+export function createConditionItems() {
+  const items: Omit<FormItem, 'disabled'>[] = [
+    {
+      key: 'id',
+      label: 'ID',
+      type: 'input',
+      placeholder: '请输入步骤ID',
+      value: createIdSearchValue(),
     },
-  },
-  {
-    key: 'name',
-    label: '步骤名称',
-    type: 'input',
-    placeholder: '请输入步骤名称',
-    value: ref(''),
-    reset: function () {
-      this.value = ''
+    { key: 'name', label: '步骤名称', type: 'input', placeholder: '请输入步骤名称', value: '' },
+    { key: 'project_product', label: '项目/产品', type: 'cascader', value: null },
+    { key: 'module', label: '模块名称', type: 'select', value: null },
+    {
+      key: 'page_id',
+      label: '所属页面',
+      type: 'select',
+      placeholder: '请选择所属页面',
+      value: [],
+      multiple: true,
+      searchOperator: 'in',
     },
-  },
-  {
-    key: 'project_product',
-    label: '项目/产品',
-    value: ref(''),
-    type: 'cascader',
-    placeholder: '请选择产品',
-    optionItems: [],
-    reset: function () {},
-  },
-  {
-    key: 'module',
-    label: '模块名称',
-    value: ref(''),
-    type: 'select',
-    placeholder: '请选择产品',
-    optionItems: [],
-    reset: function () {},
-  },
-  {
-    key: 'page_id',
-    label: '所属页面',
-    value: ref(''),
-    type: 'select',
-    placeholder: '请选择所属页面',
-    optionItems: [],
-    reset: function () {},
-  },
-  {
-    key: 'status',
-    label: '测试结果',
-    value: ref([]),
-    type: 'select',
-    multiple: true,
-    searchOperator: 'in',
-    placeholder: '请选择步骤测试结果',
-    optionItems: [],
-    reset: function () {},
-  },
-  createUpdateUserCondition(),
-])
-enableMultiSelectSearch(conditionItems)
-export const formItems: FormItem[] = reactive([
-  {
-    label: '项目/产品',
-    key: 'project_product',
-    value: ref(''),
-    placeholder: '请选择项目名称',
-    required: true,
-    type: 'cascader',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '模块名称',
-    key: 'module',
-    value: ref(''),
-    placeholder: '请选择测试模块名称',
-    required: true,
-    type: 'select',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '所属页面',
-    key: 'page',
-    value: ref(''),
-    placeholder: '请选择步骤所属页面',
-    required: true,
-    type: 'select',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '步骤名称',
-    key: 'name',
-    value: ref(''),
-    type: 'input',
-    required: true,
-    placeholder: '请输入页面步骤名称',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-])
-
-export const tableColumns = useTableColumn([
-  table.indexColumn,
+    { key: 'status', label: '测试结果', type: 'select', placeholder: '请选择测试结果', value: [] },
+    createUpdateUserCondition(),
+  ]
+  enableMultiSelectSearch(items)
+  return reactive(items)
+}
+export const TABLE_SCROLL_X = 1830
+export const tableColumns: Array<TableColumnData & { key: string | number }> = [
+  { ...useTableIndexColumn(), align: 'center' },
   {
     title: '所属页面',
     key: 'page',
@@ -157,6 +58,7 @@ export const tableColumns = useTableColumn([
     title: '预估步骤顺序',
     key: 'run_flow',
     dataIndex: 'run_flow',
+    width: 320,
     align: 'left',
     ellipsis: true,
     tooltip: true,
@@ -165,10 +67,11 @@ export const tableColumns = useTableColumn([
     title: '结果',
     key: 'status',
     dataIndex: 'status',
+    align: 'center',
     width: 70,
   },
-  updateUserColumn(),
-  updateTimeColumn(),
+  { ...updateUserColumn(), key: 'update_user', align: 'left', ellipsis: true, tooltip: true },
+  { ...updateTimeColumn(), key: 'update_time', align: 'center' },
   {
     title: '项目/产品',
     key: 'project_product',
@@ -191,22 +94,25 @@ export const tableColumns = useTableColumn([
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
+    align: 'center',
     fixed: 'right',
     width: 160,
   },
-])
+]
 
-export const referencedCaseColumns: any[] = [
+export const referencedCaseColumns: Array<TableColumnData & { key: string | number }> = [
   {
     title: '用例ID',
     key: 'id',
     dataIndex: 'id',
+    align: 'center',
     width: 90,
   },
   {
     title: '用例名称',
     key: 'name',
     dataIndex: 'name',
+    align: 'left',
     width: 260,
     ellipsis: true,
     tooltip: true,
@@ -215,6 +121,7 @@ export const referencedCaseColumns: any[] = [
     title: '负责人',
     key: 'case_people',
     dataIndex: 'case_people',
+    align: 'left',
     width: 120,
     ellipsis: true,
     tooltip: true,
@@ -223,12 +130,14 @@ export const referencedCaseColumns: any[] = [
     title: '结果',
     key: 'status',
     dataIndex: 'status',
+    align: 'center',
     width: 90,
   },
   {
     title: '更新时间',
     key: 'update_time',
     dataIndex: 'update_time',
+    align: 'center',
     width: 180,
   },
   {
@@ -236,6 +145,7 @@ export const referencedCaseColumns: any[] = [
     key: 'project_product',
     dataIndex: 'project_product',
     width: 180,
+    align: 'left',
     ellipsis: true,
     tooltip: true,
   },
@@ -244,6 +154,7 @@ export const referencedCaseColumns: any[] = [
     key: 'module',
     dataIndex: 'module',
     width: 180,
+    align: 'left',
     ellipsis: true,
     tooltip: true,
   },
@@ -252,6 +163,7 @@ export const referencedCaseColumns: any[] = [
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 120,
+    width: 160,
+    align: 'center',
   },
 ]

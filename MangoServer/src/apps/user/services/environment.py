@@ -43,7 +43,7 @@ class UserEnvironmentService:
             normalized = int(environment_id)
         except (TypeError, ValueError) as error:
             raise UserError(USER_TEST_ENVIRONMENT_NOT_FOUND, error=str(error)) from error
-        if normalized not in EnvironmentEnum.get_key_list():
+        if normalized not in {environment.value for environment in EnvironmentEnum}:
             raise UserError(USER_TEST_ENVIRONMENT_NOT_FOUND)
         return normalized
 

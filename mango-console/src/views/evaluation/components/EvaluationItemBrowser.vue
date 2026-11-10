@@ -6,14 +6,11 @@
       >
       <MangoPanelSpin :loading="itemsLoading && !items.length" class="mango-evaluation-items-spin">
         <div class="mango-evaluation-items-list mango-native-scrollbar">
-          <div v-if="listError" class="mango-empty-state"
-            >条目列表加载失败。<a-button
+          <template v-if="listError"><a-button
               size="small"
               :loading="itemsLoading"
               @click="loadItems(true)"
-              >重试</a-button
-            ></div
-          >
+              >重新加载</a-button></template>
           <div v-else-if="!items.length && !itemsLoading" class="mango-empty-state"
             >暂无条目结果</div
           >
@@ -53,7 +50,7 @@
       class="mango-evaluation-item-viewer"
     >
       <a-alert v-if="executionError" type="error"
-        >执行快照加载失败，数据集版本信息暂不可用。<a-button
+        ><a-button
           size="small"
           :loading="executionLoading"
           @click="loadExecution"
@@ -111,12 +108,7 @@
           "
         />
       </template>
-      <div v-else class="mango-empty-state"
-        >{{ detailError ? '条目结果加载失败' : '请选择评测条目'
-        }}<a-button v-if="detailError" size="small" @click="selectItem(selectedId!)"
-          >重试</a-button
-        ></div
-      >
+
     </MangoPanelSpin>
     <EvaluationDrawer
       v-model:visible="snapshotVisible"
@@ -129,14 +121,18 @@
   </div>
 </template>
 <script setup lang="ts">
+import { reportLoadError } from '@/utils/load-error'
+
   import EvaluationDrawer from './EvaluationDrawer.vue'
-  import { computed, onBeforeUnmount, ref, watch } from 'vue'
+  import { computed, ref } from 'vue'
   import { getCaseExecution, getCaseExecutionItems, getCaseExecutionItem } from '@/api/evaluation'
   import useUserStore from '@/store/modules/user'
   import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
   import ItemResultContent from './ItemResultContent.vue'
   import JsonDisplay from '@/components/display/JsonDisplay.vue'
   import { useEvaluationEnums } from './useEvaluationEnums'
+  import { useEvaluationScope } from '../composables/useEvaluationScope'
+  import type { ExecutionRecord, ItemResult, ResultPage } from '../types'
   const props = defineProps<{
     caseId: number
     executionId: number
@@ -144,12 +140,12 @@
     datasetId?: number
     datasetName?: string
   }>()
-  const user = useUserStore()
-  const snapshotVisible = ref(false)
+  const user = useUserStore(),
+    snapshotVisible = ref(false)
   const { title: enumTitle, color: statusColor } = useEvaluationEnums()
-  const execution = ref<any>(),
-    items = ref<any[]>([]),
-    itemDetail = ref<any>(),
+  const execution = ref<ExecutionRecord | null>(null),
+    items = ref<ItemResult[]>([]),
+    itemDetail = ref<ItemResult | null>(null),
     selectedId = ref<number>()
   const itemCount = ref(0),
     page = ref(0),
@@ -162,91 +158,128 @@
   const hasMore = computed(() => page.value * 20 < itemCount.value)
   let generation = 0,
     detailRequest = 0,
-    listRequest = 0
+    listRequest = 0,
+    executionRequest = 0
+  const scope = useEvaluationScope(
+    () => [props.caseId, props.executionId, props.initialItemId],
+    reset,
+    resume
+  )
+  function reset() {
+    ++generation
+    ++detailRequest
+    ++listRequest
+    ++executionRequest
+    items.value = []
+    execution.value = null
+    itemDetail.value = null
+    selectedId.value = undefined
+    snapshotVisible.value = false
+    itemCount.value = 0
+    page.value = 0
+    detailLoading.value = false
+    detailError.value = false
+    itemsLoading.value = false
+    listError.value = false
+    executionLoading.value = false
+    executionError.value = false
+  }
+  function resume() {
+    if (
+      Number.isSafeInteger(props.caseId) &&
+      props.caseId > 0 &&
+      Number.isSafeInteger(props.executionId) &&
+      props.executionId > 0
+    ) {
+      void loadExecution()
+      void loadItems()
+    }
+  }
   async function loadExecution() {
-    const scope = generation
+    if (!scope.isActive()) return false
+    const version = scope.snapshot(),
+      request = ++executionRequest
     executionLoading.value = true
     executionError.value = false
     try {
-      const response: any = await getCaseExecution(props.caseId, props.executionId)
-      if (scope === generation) execution.value = response.data
+      const response: { data?: ExecutionRecord | null } = await getCaseExecution(
+        props.caseId,
+        props.executionId
+      )
+      if (!scope.current(version) || request !== executionRequest) return false
+      execution.value = response.data || null
+      return true
     } catch {
-      if (scope === generation) executionError.value = true
+      if (scope.current(version) && request === executionRequest) executionError.value = true
+      return false
     } finally {
-      if (scope === generation) executionLoading.value = false
+      if (request === executionRequest) executionLoading.value = false
     }
   }
   async function selectItem(id: number) {
+    if (
+      !scope.isActive() ||
+      !Number.isSafeInteger(id) ||
+      id <= 0 ||
+      (detailLoading.value && selectedId.value === id)
+    )
+      return false
     const request = ++detailRequest,
-      scope = generation
+      version = scope.snapshot()
     selectedId.value = id
-    itemDetail.value = undefined
+    itemDetail.value = null
     detailLoading.value = true
     detailError.value = false
     try {
-      const response: any = await getCaseExecutionItem(props.caseId, props.executionId, id)
-      if (scope !== generation || request !== detailRequest) return
-      itemDetail.value = response.data
+      const response: { data?: ItemResult | null } = await getCaseExecutionItem(
+        props.caseId,
+        props.executionId,
+        id
+      )
+      if (!scope.current(version) || request !== detailRequest) return false
+      itemDetail.value = response.data || null
       if (response.data && !items.value.some((item) => item.id === id))
         items.value.unshift(response.data)
-    } catch {
-      if (scope === generation && request === detailRequest) detailError.value = true
+      return true
+    } catch (loadFailure0) {
+      if (scope.current(version) && request === detailRequest) (reportLoadError(loadFailure0, "加载失败，请重试", false), detailError.value = true)
+      return false
     } finally {
-      if (scope === generation && request === detailRequest) detailLoading.value = false
+      if (request === detailRequest) detailLoading.value = false
     }
   }
-  async function loadItems(reset = true) {
-    if (itemsLoading.value && !reset) return
+  async function loadItems(resetList = true) {
+    if (!scope.isActive() || (itemsLoading.value && !resetList) || (!resetList && !hasMore.value))
+      return false
     const request = ++listRequest,
-      scope = generation,
-      nextPage = reset ? 1 : page.value + 1
+      version = scope.snapshot(),
+      nextPage = resetList ? 1 : page.value + 1
     itemsLoading.value = true
     listError.value = false
     try {
-      const response: any = await getCaseExecutionItems(props.caseId, props.executionId, {
-        page: nextPage,
-        pageSize: 20,
-      })
-      if (scope !== generation || request !== listRequest) return
-      const rows = response.data?.items || []
-      const merged = reset ? rows : [...items.value, ...rows]
-      items.value = [...new Map(merged.map((item: any) => [item.id, item])).values()] as any[]
+      const response: ResultPage<ItemResult> = await getCaseExecutionItems(
+        props.caseId,
+        props.executionId,
+        { page: nextPage, pageSize: 20 }
+      )
+      if (!scope.current(version) || request !== listRequest) return false
+      const rows = response.data?.items || [],
+        merged = resetList ? rows : [...items.value, ...rows]
+      items.value = [...new Map(merged.map((item) => [item.id, item])).values()]
       itemCount.value = response.data?.count || 0
       page.value = nextPage
+      itemsLoading.value = false
       const preferred = selectedId.value || props.initialItemId || rows[0]?.id
-      if (reset && preferred) await selectItem(preferred)
-    } catch {
-      if (scope === generation && request === listRequest) listError.value = true
+      if (resetList && preferred) await selectItem(preferred)
+      return true
+    } catch (loadFailure1) {
+      if (scope.current(version) && request === listRequest) (reportLoadError(loadFailure1, "加载失败，请重试", false), listError.value = true)
+      return false
     } finally {
-      if (scope === generation && request === listRequest) itemsLoading.value = false
+      if (request === listRequest) itemsLoading.value = false
     }
   }
-  watch(
-    () => [props.caseId, props.executionId, props.initialItemId, user.selected_environment],
-    async () => {
-      ++generation
-      detailRequest++
-      listRequest++
-      items.value = []
-      execution.value = undefined
-      snapshotVisible.value = false
-      itemDetail.value = undefined
-      selectedId.value = undefined
-      itemCount.value = 0
-      page.value = 0
-      detailLoading.value = false
-      detailError.value = false
-      itemsLoading.value = false
-      if (!props.executionId) return
-      await Promise.allSettled([loadExecution(), loadItems()])
-    },
-    { immediate: true }
-  )
-  onBeforeUnmount(() => {
-    generation++
-    detailRequest++
-    listRequest++
-  })
+  scope.start()
 </script>
 <style scoped>
   .mango-evaluation-item-browser {

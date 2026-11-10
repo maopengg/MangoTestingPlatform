@@ -67,7 +67,10 @@ class GovernedDbapiConnection:
     def connect(cls, target, callback):
         permit = DatasourceGovernorService.acquire(target, kind=DatasourcePermitKindEnum.CONNECTION)
         try:
-            connection = callback()
+            from src.apps.data_factory.services.datasource_timing import DatasourceTimingService as Timing
+            from src.apps.data_factory.enums.performance import DatasourceTimingPhaseEnum as Phase
+            with Timing.measure(Phase.CONNECT):
+                connection = callback()
         except Exception as error:
             # 未拿到可用连接，不进行任何语句重放。
             DatasourceGovernorService.finish_operation(permit, failure=error)

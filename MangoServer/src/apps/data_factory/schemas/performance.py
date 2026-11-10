@@ -79,6 +79,7 @@ class DatasourceInfrastructureIssue(StrictSchema):
     code: int
     message: str = Field(max_length=1000)
     origin: ReportFailureReasonEnum = ReportFailureReasonEnum.PLATFORM
+    request_id: str | None = Field(default=None, max_length=128)
 
     @field_validator('origin', mode='before')
     @classmethod

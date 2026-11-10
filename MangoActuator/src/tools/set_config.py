@@ -95,6 +95,8 @@ class SetConfig:
             cls.set_web_type(0)  # type: ignore
         if not cls.get_web_static_cache_path():  # type: ignore
             cls.set_web_static_cache_path(project_dir.web_static_cache())  # type: ignore
+        if cls.get_web_static_cache_enabled() is None:  # type: ignore
+            cls.set_web_static_cache_enabled(True)  # type: ignore
         if cls.get_is_open() is None:  # type: ignore
             cls.set_is_open(True)  # type: ignore
         if not cls.get_ios_appium_url():  # type: ignore

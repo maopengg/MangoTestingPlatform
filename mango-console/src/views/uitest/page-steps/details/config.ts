@@ -1,16 +1,21 @@
-import { reactive, ref } from 'vue'
+import type { StepField } from '@/components/business/ui-page-step'
 import { Message } from '@arco-design/web-vue'
 
-export const formItemsElementOpe: any = reactive([
+export function isEmptyStepField(value: unknown) {
+  return value == null || value === '' || (Array.isArray(value) && value.length === 0)
+}
+
+export function createNodeFields() {
+const formItemsElementOpe: StepField[] = [
   {
     label: '元素操作',
     key: 'ope_key',
-    value: ref(''),
+    value: '',
     type: 'cascader',
     required: true,
     placeholder: '请选择对元素的操作',
     validator: function () {
-      if (!this.value && this.value !== 0) {
+      if (isEmptyStepField(this.value)) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -20,63 +25,63 @@ export const formItemsElementOpe: any = reactive([
   {
     label: '选择元素',
     key: 'ele_name',
-    value: ref(''),
+    value: '',
     type: 'element-cascader',
     required: true,
     placeholder: '请选择一个元素',
     validator: function () {
-      if (!this.value && this.value !== 0) {
+      if (isEmptyStepField(this.value)) {
         Message.error(this.placeholder || '')
         return false
       }
       return true
     },
   },
-])
-export const formItemsElementAss: any = reactive([
+]
+const formItemsElementAss: StepField[] = [
   {
     label: '断言操作',
     key: 'ope_key',
-    value: ref(''),
+    value: '',
     type: 'cascader',
     required: true,
     placeholder: '请选择断言类型',
     validator: function () {
-      if (!this.value && this.value !== 0) {
+      if (isEmptyStepField(this.value)) {
         Message.error(this.placeholder || '')
         return false
       }
       return true
     },
   },
-])
-export const formItemsElement4: any = reactive([
+]
+const formItemsElement4: StepField[] = [
   {
     label: '判断方法',
     key: 'ope_key',
-    value: ref(''),
+    value: '',
     type: 'cascader',
     required: true,
     placeholder: '请选择判断方法',
     validator: function () {
-      if (!this.value && this.value !== 0) {
+      if (isEmptyStepField(this.value)) {
         Message.error(this.placeholder || '')
         return false
       }
       return true
     },
   },
-])
-export const formItemsElementKey: any = reactive([
+]
+const formItemsElementKey: StepField[] = [
   {
     label: 'key',
     key: 'key',
-    value: ref(''),
+    value: '',
     type: 'input',
     required: true,
     placeholder: '请输入key',
     validator: function () {
-      if (!this.value && this.value !== 0) {
+      if (isEmptyStepField(this.value)) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -86,30 +91,30 @@ export const formItemsElementKey: any = reactive([
   {
     label: 'value',
     key: 'value',
-    value: ref(''),
+    value: '',
     type: 'input',
     required: true,
     placeholder: '请输入value',
     validator: function () {
-      if (!this.value && this.value !== 0) {
+      if (isEmptyStepField(this.value)) {
         Message.error(this.placeholder || '')
         return false
       }
       return true
     },
   },
-])
+]
 
-export const formItemsElementCondition: any = reactive([
+const formItemsElementCondition: StepField[] = [
   {
     label: '期望值',
     key: 'condition_value',
-    value: ref(''),
+    value: '',
     type: 'input',
     required: true,
     placeholder: '请输入期望值',
     validator: function () {
-      if (!this.value && this.value !== 0) {
+      if (isEmptyStepField(this.value)) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -117,30 +122,30 @@ export const formItemsElementCondition: any = reactive([
       return true
     },
   },
-])
-export const formItemsElementCode: any = reactive([
+]
+const formItemsElementCode: StepField[] = [
   {
     label: 'python',
     key: 'func',
-    value: ref(''),
+    value: '',
     type: 'code',
     required: true,
     placeholder: '请输入python代码',
     validator: function () {
-      if (!this.value && this.value !== 0) {
+      if (isEmptyStepField(this.value)) {
         Message.error(this.placeholder || '')
         return false
       }
       return true
     },
   },
-])
-export const formItemsForceWait: any = reactive([
+]
+const formItemsForceWait: StepField[] = [
   {
     label: '等待时长',
     key: 'seconds-ope_value',
     field: 'seconds',
-    value: ref(1),
+    value: 1,
     type: 'input-number',
     required: true,
     min: 0,
@@ -157,4 +162,7 @@ export const formItemsForceWait: any = reactive([
       return true
     },
   },
-])
+]
+
+return { formItemsElementOpe, formItemsElementAss, formItemsElement4, formItemsElementKey, formItemsElementCondition, formItemsElementCode, formItemsForceWait }
+}

@@ -1,6 +1,4 @@
-import { FormItem } from '@/types/components'
-import { reactive, ref } from 'vue'
-import { Message } from '@arco-design/web-vue'
+import type { SourceDraft } from './types'
 
 export const bindingColumns = [
   {
@@ -31,113 +29,47 @@ export const bindingColumns = [
 ]
 export const databaseColumns = [
   { title: '数据库名称', dataIndex: 'name', ellipsis: true, tooltip: true },
-  { title: '操作', slotName: 'query', width: 160, fixed: 'right' as const, align: 'center' as const },
+  {
+    title: '操作',
+    slotName: 'query',
+    width: 160,
+    fixed: 'right' as const,
+    align: 'center' as const,
+  },
 ]
-export const formItems: FormItem[] = reactive([
+export const sourceFormFields: Array<{
+  key: Exclude<keyof SourceDraft, 'extra_config'>
+  label: string
+  placeholder: string
+  required: boolean
+}> = [
+  { key: 'source_category', label: '数据库分类', placeholder: '请选择数据库分类', required: true },
+  { key: 'db_type', label: '数据库类型', placeholder: '请选择数据库类型', required: true },
   {
-    label: '数据库分类',
-    key: 'source_category',
-    value: ref(0),
-    type: 'select',
-    required: true,
-    placeholder: '请选择数据库分类',
-  },
-  {
-    label: '数据库类型',
-    key: 'db_type',
-    value: ref(0),
-    type: 'select',
-    required: true,
-    placeholder: '请选择数据库类型',
-    validator: function () {
-      if (this.value === null || this.value === undefined || this.value === '') {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '数据库别名',
     key: 'display_name',
-    value: ref(''),
-    type: 'input',
-    required: true,
+    label: '数据库别名',
     placeholder: '请输入数据库别名，例如：订单测试库',
-    validator: function () {
-      if (!String(this.value || '').trim()) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '域名',
-    key: 'host',
-    value: ref(''),
-    type: 'input',
     required: true,
-    placeholder: '请输入数据库域名或IP',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
   },
+  { key: 'host', label: '域名', placeholder: '请输入数据库域名或IP', required: true },
+  { key: 'port', label: '端口', placeholder: '请输入数据库端口', required: true },
   {
-    label: '端口',
-    key: 'port',
-    value: '3306',
-    type: 'input',
-    required: true,
-    placeholder: '请输入数据库端口',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '数据库文件',
     key: 'file_path',
-    value: ref(''),
-    type: 'input',
-    required: true,
+    label: '数据库文件',
     placeholder: '请输入服务端已存在的 SQLite 文件路径',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
+    required: true,
   },
+  { key: 'user', label: '用户名', placeholder: '请输入用户名', required: false },
   {
-    label: '用户名',
-    key: 'user',
-    value: ref(''),
-    type: 'input',
-    required: false,
-    placeholder: '请输入用户名',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '密码',
     key: 'password',
-    value: ref(''),
-    type: 'input',
-    required: false,
+    label: '密码',
     placeholder: '无密码可留空；编辑留空则不修改',
+    required: false,
   },
-])
+]
+export const sourceDefaultPorts: Record<number, number> = { 0: 3306, 1: 5432, 10: 6379, 20: 9200 }
+export const connectionStatusLabels: Record<string, string> = {
+  passed: '通过',
+  failed: '失败',
+  skipped: '未执行',
+}

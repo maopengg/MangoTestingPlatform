@@ -137,8 +137,14 @@ class UserCacheService:
         preferences['title'] = '偏好设置'
         items = preferences.setdefault('items', {})
         environment = items.get(cls.KEY_SELECTED_ENVIRONMENT)
-        if environment is None:
-            cls.set_selected_environment(user, user.selected_environment)
+        raw_value = environment.get('value') if isinstance(environment, dict) else user.selected_environment
+        try:
+            normalized = cls._normalize_value('environment', raw_value)
+        except UserError:
+            # 历史偏好失效不应阻断用户资料和业务列表；主动写入仍走严格校验。
+            normalized = None
+        if not isinstance(environment, dict) or type(raw_value) is not type(normalized) or raw_value != normalized:
+            cls.set_selected_environment(user, normalized)
         cls._set_cache_data(user, cache_data)
         return before != cache_data
 

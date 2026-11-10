@@ -1,41 +1,133 @@
 <template>
   <TableBody content-flush>
     <template #header>
-      <TableHeader title="执行记录" :show-filter="true" @search="onSearchRefresh" @reset-search="onReset">
+      <TableHeader
+        title="执行记录"
+        :show-filter="true"
+        @search="onSearchRefresh"
+        @reset-search="onReset"
+      >
         <template #search-content>
           <a-form layout="inline" :model="query" @keyup.enter="onSearchRefresh">
             <a-form-item label="灰度Key">
-              <a-input v-model="query.feature_key" allow-clear placeholder="请输入灰度Key" @blur="onSearchRefresh" @clear="onSearchRefresh" data-testid="qa-views-gray-execution-log-input-请输入灰度key" />
+              <a-input
+                v-model="query.feature_key"
+                allow-clear
+                placeholder="请输入灰度Key"
+                @blur="onSearchRefresh"
+                @clear="onSearchRefresh"
+                data-testid="qa-views-gray-execution-log-input-请输入灰度key"
+              />
             </a-form-item>
             <a-form-item label="目标值">
-              <a-input v-model="query.target_value" allow-clear placeholder="请输入目标值" @blur="onSearchRefresh" @clear="onSearchRefresh" data-testid="qa-views-gray-execution-log-input-请输入目标值" />
+              <a-input
+                v-model="query.target_value"
+                allow-clear
+                placeholder="请输入目标值"
+                @blur="onSearchRefresh"
+                @clear="onSearchRefresh"
+                data-testid="qa-views-gray-execution-log-input-请输入目标值"
+              />
             </a-form-item>
             <a-form-item label="状态">
-              <a-select v-model="query.status" multiple :max-tag-count="1" :options="executionStatusOptions" allow-clear placeholder="请选择状态" @change="onSearchRefresh" data-testid="qa-views-gray-execution-log-select-请选择状态" />
+              <a-select
+                v-model="query.status"
+                multiple
+                :max-tag-count="1"
+                :options="executionStatusOptions"
+                allow-clear
+                placeholder="请选择状态"
+                @change="onSearchRefresh"
+                data-testid="qa-views-gray-execution-log-select-请选择状态"
+              />
             </a-form-item>
             <a-form-item label="配置类型">
-              <a-select v-model="query.config_type" multiple :max-tag-count="1" :options="configTypeOptions" allow-clear placeholder="请选择类型" @change="onSearchRefresh" data-testid="qa-views-gray-execution-log-select-请选择类型" />
+              <a-select
+                v-model="query.config_type"
+                multiple
+                :max-tag-count="1"
+                :options="configTypeOptions"
+                allow-clear
+                placeholder="请选择类型"
+                @change="onSearchRefresh"
+                data-testid="qa-views-gray-execution-log-select-请选择类型"
+              />
             </a-form-item>
             <a-form-item label="用例类型">
-              <a-select v-model="query.case_type" multiple :max-tag-count="1" :options="caseTypeOptions" allow-clear placeholder="请选择用例类型" @change="onSearchRefresh" data-testid="qa-views-gray-execution-log-select-请选择用例类型" />
+              <a-select
+                v-model="query.case_type"
+                multiple
+                :max-tag-count="1"
+                :options="caseTypeOptions"
+                allow-clear
+                placeholder="请选择用例类型"
+                @change="onSearchRefresh"
+                data-testid="qa-views-gray-execution-log-select-请选择用例类型"
+              />
             </a-form-item>
             <a-form-item label="用例名称">
-              <a-input v-model="query.case_name" allow-clear placeholder="请输入用例名称" @blur="onSearchRefresh" @clear="onSearchRefresh" data-testid="qa-views-gray-execution-log-input-请输入用例名称" />
+              <a-input
+                v-model="query.case_name"
+                allow-clear
+                placeholder="请输入用例名称"
+                @blur="onSearchRefresh"
+                @clear="onSearchRefresh"
+                data-testid="qa-views-gray-execution-log-input-请输入用例名称"
+              />
             </a-form-item>
             <a-form-item label="报告ID">
-              <a-input v-model="query.test_suite_id" allow-clear placeholder="请输入测试报告ID" @blur="onSearchRefresh" @clear="onSearchRefresh" data-testid="qa-views-gray-execution-log-input-请输入测试报告id" />
+              <a-input
+                v-model="query.test_suite_id"
+                allow-clear
+                placeholder="请输入测试报告ID"
+                @blur="onSearchRefresh"
+                @clear="onSearchRefresh"
+                data-testid="qa-views-gray-execution-log-input-请输入测试报告id"
+              />
             </a-form-item>
             <a-form-item label="用例ID">
-              <a-input v-model="query.case_id" allow-clear placeholder="请输入用例ID" @blur="onSearchRefresh" @clear="onSearchRefresh" data-testid="qa-views-gray-execution-log-input-请输入用例id" />
+              <a-input
+                v-model="query.case_id"
+                allow-clear
+                placeholder="请输入用例ID"
+                @blur="onSearchRefresh"
+                @clear="onSearchRefresh"
+                data-testid="qa-views-gray-execution-log-input-请输入用例id"
+              />
             </a-form-item>
             <a-form-item label="配置文件">
-              <a-select v-model="query.yaml_file" multiple :max-tag-count="1" :options="yamlOptions" allow-clear allow-search placeholder="请选择配置文件" @change="onSearchRefresh" data-testid="qa-views-gray-execution-log-select-请选择配置文件" />
+              <a-select
+                v-model="query.yaml_file"
+                multiple
+                :max-tag-count="1"
+                :options="yamlOptions"
+                :loading="optionsLoading"
+                allow-clear
+                allow-search
+                placeholder="请选择配置文件"
+                @change="onSearchRefresh"
+                data-testid="qa-views-gray-execution-log-select-请选择配置文件"
+              />
             </a-form-item>
             <a-form-item label="来源分支">
-              <a-input v-model="query.source_branch" allow-clear placeholder="请输入来源分支" @blur="onSearchRefresh" @clear="onSearchRefresh" data-testid="qa-views-gray-execution-log-input-请输入来源分支" />
+              <a-input
+                v-model="query.source_branch"
+                allow-clear
+                placeholder="请输入来源分支"
+                @blur="onSearchRefresh"
+                @clear="onSearchRefresh"
+                data-testid="qa-views-gray-execution-log-input-请输入来源分支"
+              />
             </a-form-item>
             <a-form-item label="目标分支">
-              <a-input v-model="query.target_branch" allow-clear placeholder="请输入目标分支" @blur="onSearchRefresh" @clear="onSearchRefresh" data-testid="qa-views-gray-execution-log-input-请输入目标分支" />
+              <a-input
+                v-model="query.target_branch"
+                allow-clear
+                placeholder="请输入目标分支"
+                @blur="onSearchRefresh"
+                @clear="onSearchRefresh"
+                data-testid="qa-views-gray-execution-log-input-请输入目标分支"
+              />
             </a-form-item>
           </a-form>
         </template>
@@ -45,22 +137,27 @@
     <template #default>
       <TableTabs>
         <template #extra>
-          <a-button
-            size="small"
-            status="danger"
-            :loading="actionLoading === 'cleanup-expired'"
-            @click="onCleanupExpired"
-            data-testid="qa-views-gray-execution-log-button-清理1个月前"
-          >
-            清理1个月前
-          </a-button>
+          <div class="mango-gray-execution-tools">
+
+
+            <a-button
+              size="small"
+              status="danger"
+              :loading="actions.pending.value?.kind === 'cleanup'"
+              :disabled="actionBusy"
+              @click="onCleanupExpired"
+              data-testid="qa-views-gray-execution-log-button-清理1个月前"
+            >
+              清理1个月前
+            </a-button>
+          </div>
         </template>
       </TableTabs>
       <a-table
         :bordered="false"
         :columns="logColumns"
-        :data="table.dataList"
-        :loading="table.tableLoading.value"
+        :data="rows"
+        :loading="listLoading"
         :pagination="false"
         :scroll="{ x: grayPageConfig.scrollX }"
         row-key="id"
@@ -69,13 +166,20 @@
           <a-table-column v-for="item in logColumns" :key="item.key" v-bind="item">
             <template v-if="item.key === 'index'" #cell="{ record }">{{ record.id }}</template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-tag :color="executionStatusColor(record.status)" size="small">{{ statusText(record.status) }}</a-tag>
+              <a-tag :color="executionStatusColor(record.status)" size="small">{{
+                statusText(record.status)
+              }}</a-tag>
             </template>
             <template v-else-if="item.key === 'case'" #cell="{ record }">
               {{ record.case_name || record.case_id || '-' }}
             </template>
             <template v-else-if="item.key === 'merge_request'" #cell="{ record }">
-              <a-link v-if="record.merge_request_url" :href="record.merge_request_url" target="_blank">
+              <a-link
+                v-if="externalUrl(record.merge_request_url)"
+                :href="externalUrl(record.merge_request_url) || undefined"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 {{ record.merge_request_iid || record.merge_request_id || '查看PR' }}
               </a-link>
               <span v-else>-</span>
@@ -94,30 +198,48 @@
   </TableBody>
 
   <BaseSidePanel
-    :visible="detailDrawer.visible"
-    :title="detailDrawer.title"
+    :visible="detail.id !== null"
+    :title="`灰度执行详情 / ${detail.id ?? '-'}`"
     :width="820"
     cancel-button-text="关闭"
-    @update:visible="(value) => (detailDrawer.visible = value)"
-    @cancel="detailDrawer.visible = false"
+    @update:visible="
+      (value) => {
+        if (!value) closeDetail()
+      }
+    "
+    @cancel="closeDetail"
   >
     <template #default>
-      <CodeEditor
-        v-model="detailDrawer.content"
-        readonly
-        placeholder="暂无详情"
-        :code-style="{ height: 'calc(100vh - 190px)' }"
-      />
+      <div class="mango-gray-execution-detail"
+        ><CodeEditor
+          v-model="detail.content"
+          readonly
+          language="json"
+          placeholder="暂无详情"
+          :code-style="{ height: '100%' }"
+      /></div>
     </template>
     <template #footer-buttons>
-      <a-button @click="detailDrawer.visible = false" data-testid="qa-views-gray-execution-log-button-关闭">关闭</a-button>
+      <a-button @click="closeDetail" data-testid="qa-views-gray-execution-log-button-关闭"
+        >关闭</a-button
+      >
     </template>
   </BaseSidePanel>
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, reactive, ref } from 'vue'
-  import { Message, Modal } from '@arco-design/web-vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import {
+    computed,
+    onActivated,
+    onBeforeUnmount,
+    onDeactivated,
+    onMounted,
+    reactive,
+    ref,
+    watch,
+  } from 'vue'
   import TableBody from '@/components/table/TableBody.vue'
   import TableHeader from '@/components/table/TableHeader.vue'
   import TableFooter from '@/components/table/TableFooter.vue'
@@ -125,148 +247,264 @@
   import MangoTableActions from '@/components/table/MangoTableActions.vue'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import CodeEditor from '@/components/editors/CodeEditor.vue'
-  import { usePagination, useTable } from '@/hooks/table'
+  import { usePagination } from '@/hooks/table'
   import { createIdSearchValue } from '@/utils/id-search'
-  import { normalizeMultiSelectSearchParams } from '@/utils/search-condition'
+  import { useRoute } from 'vue-router'
+  import useUserStore from '@/store/modules/user'
+  import { getGrayExecutionLog, getGrayYamlFile } from '@/api/gray'
   import {
-    getGrayExecutionLog,
-    getGrayYamlFile,
-    postGrayExecutionLogCleanupExpired,
-    postGrayExecutionRetryRestore,
-  } from '@/api/gray'
-  import { caseTypeOptions, configTypeOptions, executionStatusOptions, grayPageConfig } from './config'
+    caseTypeOptions,
+    configTypeOptions,
+    executionStatusOptions,
+    executionStatusColors,
+    grayPageConfig,
+  } from './config'
+  import {
+    canRestore,
+    createQuery,
+    executionPage,
+    externalUrl,
+    requestParams as mapParams,
+    yamlOptions as mapOptions,
+  } from './records'
+  import type { ExecutionQuery, ExecutionRow, YamlOption } from './records'
+  import { useExecutionActions } from './composables/useExecutionActions'
 
-  const table = useTable()
-  const pagination = usePagination(onSearch, () => table.tableLoading)
-  const query = reactive<any>({
-    status: [], config_type: [], case_type: [], yaml_file: [],
+  const query: ExecutionQuery = reactive({
+    ...createQuery(),
     test_suite_id: createIdSearchValue('', false),
     case_id: createIdSearchValue('', false),
   })
-  const yamlList = ref<any[]>([])
-  const actionLoading = ref('')
-  const detailDrawer = reactive({ visible: false, title: '', content: '' })
-  const logColumns = computed(() => grayPageConfig.columns)
-  const yamlOptions = computed(() => yamlList.value.map((item) => ({ label: item.name, value: item.id })))
-
-  function cleanParams(params: Record<string, any>) {
-    const result: Record<string, any> = {}
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== '' && value !== null && value !== undefined) {
-        result[key] = value
-      }
-    })
-    return result
-  }
+  const rows = ref<ExecutionRow[]>([]),
+    listLoading = ref(false),
+    listError = ref(false)
+  const optionRows = ref<YamlOption[]>([]),
+    optionsLoading = ref(false),
+    optionsError = ref(false)
+  const pagination = usePagination(onSearch, listLoading)
+  const detail = reactive<{ id: number | null; content: string }>({ id: null, content: '' })
+  const user = useUserStore(),
+    route = useRoute(),
+    viewEpoch = ref(0)
+  let active = true,
+    mounted = false,
+    listSequence = 0,
+    optionSequence = 0
+  const isPageRoute = () => route.fullPath.split('?')[0] === '/gray/execution-log/index'
+  const identityKey = computed(() =>
+    JSON.stringify([
+      route.fullPath,
+      user.userId,
+      user.roleId,
+      user.token,
+      user.selected_environment,
+    ])
+  )
+  const requestKey = computed(() => JSON.stringify(requestParams()))
+  const contextKey = computed(() =>
+    JSON.stringify([identityKey.value, viewEpoch.value, requestKey.value])
+  )
+  const actions = useExecutionActions({
+    contextKey: () => contextKey.value,
+    blocked: () => !active || !isPageRoute(),
+    applied: async () => {
+      invalidateList(false)
+      closeDetail()
+      return onSearch()
+    },
+  })
+  const actionBusy = computed(() => !!actions.pending.value || actions.confirming.value)
+  const logColumns = grayPageConfig.columns
+  const yamlOptions = computed(() => [
+    ...optionRows.value,
+    ...query.yaml_file
+      .filter((id) => !optionRows.value.some((item) => item.value === id))
+      .map((id) => ({ value: id, label: `ID ${id}` })),
+  ])
 
   function requestParams() {
-    return cleanParams(normalizeMultiSelectSearchParams({
-      page: pagination.page,
-      pageSize: pagination.pageSize,
-      feature_key: query.feature_key,
-      target_value: query.target_value,
-      status: query.status,
-      config_type: query.config_type,
-      case_type: query.case_type,
-      case_name: query.case_name,
-      test_suite_id: query.test_suite_id,
-      case_id: query.case_id,
-      yaml_file: query.yaml_file,
-      source_branch: query.source_branch,
-      target_branch: query.target_branch,
-    }, ['status', 'config_type', 'case_type', 'yaml_file']))
+    return mapParams(query, pagination.page, pagination.pageSize)
   }
-
-  async function loadOptions() {
-    const res = await getGrayYamlFile({})
-    yamlList.value = res.data || []
-  }
-
-  async function onSearch() {
-    table.tableLoading.value = true
-    try {
-      const res = await getGrayExecutionLog(requestParams())
-      table.handleSuccess(res)
-      pagination.setTotalSize(res.totalSize || 0)
-    } finally {
-      table.tableLoading.value = false
+  function invalidateList(clear = true) {
+    ++listSequence
+    listLoading.value = false
+    listError.value = false
+    if (clear) {
+      rows.value = []
+      pagination.setTotalSize(0)
     }
   }
-
+  async function loadOptions(): Promise<boolean> {
+    if (!active || !isPageRoute()) return false
+    const sequence = ++optionSequence,
+      identity = identityKey.value,
+      epoch = viewEpoch.value
+    const current = () =>
+      active &&
+      isPageRoute() &&
+      sequence === optionSequence &&
+      identity === identityKey.value &&
+      epoch === viewEpoch.value
+    optionsLoading.value = true
+    optionsError.value = false
+    try {
+      const response = await getGrayYamlFile({})
+      if (!current()) return false
+      optionRows.value = mapOptions(response)
+      return true
+    } catch (loadFailure0) {
+      if (current()) (reportLoadError(loadFailure0, "加载失败，请重试", false), optionsError.value = true)
+      return false
+    } finally {
+      if (current()) optionsLoading.value = false
+    }
+  }
+  async function onSearch(): Promise<boolean> {
+    if (!active || !isPageRoute()) {
+      listLoading.value = false
+      return false
+    }
+    const sequence = ++listSequence,
+      context = contextKey.value,
+      params = requestParams()
+    const current = () =>
+      active && isPageRoute() && sequence === listSequence && context === contextKey.value
+    listLoading.value = true
+    listError.value = false
+    try {
+      const response = await getGrayExecutionLog(params)
+      if (!current()) return false
+      const result = executionPage(response)
+      if (result.rows.length > pagination.pageSize) throw Error('Invalid execution page length')
+      const lastPage = Math.max(1, Math.ceil(result.total / pagination.pageSize))
+      if (pagination.page > lastPage) {
+        pagination.page = lastPage
+        return await onSearch()
+      }
+      rows.value = result.rows
+      pagination.setTotalSize(result.total)
+      return true
+    } catch (loadFailure1) {
+      if (current()) (reportLoadError(loadFailure1, "加载失败，请重试", false), listError.value = true)
+      return false
+    } finally {
+      if (current()) listLoading.value = false
+    }
+  }
   function onSearchRefresh() {
     pagination.page = 1
-    onSearch()
+    void onSearch()
   }
-
   function onReset() {
-    Object.keys(query).forEach((key) => {
-      query[key] = ['status', 'config_type', 'case_type', 'yaml_file'].includes(key) ? [] : undefined
-    })
-    onSearchRefresh()
+    Object.assign(query, createQuery())
+    pagination.page = 1
+    void onSearch()
   }
-
   function statusText(status: number) {
-    return ({ 0: '待执行', 1: '成功', 2: '失败', 3: '已恢复', 4: '恢复失败' } as Record<number, string>)[status] || '-'
+    return executionStatusOptions.find((item) => item.value === status)?.label ?? '-'
   }
-
   function executionStatusColor(status: number) {
-    return ({ 0: 'gray', 1: 'green', 2: 'red', 3: 'blue', 4: 'red' } as Record<number, string>)[status] || 'gray'
+    return executionStatusColors[status] || 'gray'
   }
-
-  function rowActions(record: any) {
-    const actions: any[] = [{  label: '详情', onClick: () => onDetail(record) }]
-    if ([1, 2, 4].includes(record.status)) {
-      actions.push({  label: '恢复', loading: actionLoading.value === `restore-${record.id}`, onClick: () => onRetryRestore(record) })
+  function rowActions(record: ExecutionRow) {
+    return [
+      { label: '详情', onClick: () => onDetail(record) },
+      ...(canRestore(record.status)
+        ? [
+            {
+              label: '恢复',
+              loading:
+                actions.pending.value?.kind === 'restore' && actions.pending.value.id === record.id,
+              disabled: actionBusy.value,
+              onClick: () => onRetryRestore(record),
+            },
+          ]
+        : []),
+    ]
+  }
+  function closeDetail() {
+    detail.id = null
+    detail.content = ''
+  }
+  function onDetail(record: ExecutionRow) {
+    if (!active || !isPageRoute()) return
+    const current = rows.value.find((row) => row.id === record.id)
+    if (current) {
+      detail.id = current.id
+      detail.content = current.detail
     }
-    return actions
   }
-
-  function onDetail(record: any) {
-    detailDrawer.title = '灰度执行详情'
-    detailDrawer.content = JSON.stringify(record, null, 2)
-    detailDrawer.visible = true
+  function onRetryRestore(record: ExecutionRow) {
+    const current = rows.value.find((row) => row.id === record.id)
+    if (current) actions.restore({ id: current.id, status: current.status })
   }
-
-  function onRetryRestore(record: any) {
-    Modal.confirm({
-      title: '恢复灰度',
-      content: `确认根据执行记录 ${record.id} 重新恢复灰度？`,
-      onOk: async () => {
-        actionLoading.value = `restore-${record.id}`
-        try {
-          const res = await postGrayExecutionRetryRestore({ execution_log_id: record.id })
-          if (res.data?.status === 1) {
-            Message.success('恢复成功')
-          } else {
-            Message.error('恢复失败，请在执行记录中查看详情')
-          }
-          await onSearch()
-        } finally {
-          actionLoading.value = ''
-        }
-      },
-    })
-  }
-
   function onCleanupExpired() {
-    Modal.confirm({
-      title: '清理灰度执行记录',
-      content: '确认删除 1 个月前的灰度执行记录？该操作不可恢复。',
-      onOk: async () => {
-        actionLoading.value = 'cleanup-expired'
-        try {
-          const res = await postGrayExecutionLogCleanupExpired({ retention_days: 30 })
-          Message.success(`清理完成，共删除 ${res.data?.deleted_count || 0} 条`)
-          await onSearch()
-        } finally {
-          actionLoading.value = ''
-        }
-      },
-    })
+    actions.cleanupExpired()
   }
-
-  onMounted(async () => {
-    await loadOptions()
-    await onSearch()
+  function invalidatePage() {
+    viewEpoch.value++
+    ++optionSequence
+    optionRows.value = []
+    optionsLoading.value = false
+    optionsError.value = false
+    invalidateList()
+    closeDetail()
+  }
+  watch(
+    requestKey,
+    () => {
+      invalidateList()
+      closeDetail()
+    },
+    { flush: 'sync' }
+  )
+  watch(
+    identityKey,
+    () => {
+      invalidatePage()
+      pagination.page = 1
+      if (mounted && active && isPageRoute()) {
+        void onSearch()
+        void loadOptions()
+      }
+    },
+    { flush: 'sync' }
+  )
+  onMounted(() => {
+    mounted = true
+    void onSearch()
+    void loadOptions()
+  })
+  onDeactivated(() => {
+    active = false
+    invalidatePage()
+  })
+  onActivated(() => {
+    if (active) return
+    active = true
+    if (mounted) {
+      void onSearch()
+      void loadOptions()
+    }
+  })
+  onBeforeUnmount(() => {
+    active = false
+    invalidatePage()
   })
 </script>
+
+<style scoped>
+  .mango-gray-execution-tools {
+    display: flex;
+    align-items: center;
+    gap: var(--m-page-gap);
+  }
+  .mango-gray-execution-error {
+    color: var(--m-danger);
+  }
+  .mango-gray-execution-detail {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+</style>

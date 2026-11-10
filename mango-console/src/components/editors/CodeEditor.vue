@@ -283,6 +283,7 @@
 
   :deep(.tok-className),
   :deep(.tok-typeName),
+  :deep(.tok-propertyName),
   :deep(.tok-labelName) {
     color: var(--m-code-key);
   }

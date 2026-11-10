@@ -2,9 +2,10 @@ import { deleted, get, post, put } from '@/api/http'
 import type { UiPageStepsPayload } from '@/types/ui-test/case'
 import type { FlowData } from '@/types/components'
 
-export function getUiSteps(data: Record<string, unknown>) {
+export function getUiSteps(data: Record<string, unknown>, silentError = false) {
   return get({
     url: '/ui/page/steps',
+    silentError,
     data: () => {
       return data
     },
@@ -20,7 +21,7 @@ export function getUiPageStepReferencedCases(pageStepId: number | string) {
   })
 }
 
-export function deleteUiSteps(id: number | string[] | number[]) {
+export function deleteUiSteps(id: number | string | Array<number | string>) {
   return deleted({
     url: '/ui/page/steps',
     data: () => {
@@ -61,8 +62,8 @@ export function putUiSteps(data: UiPageStepsPayload) {
 }
 
 export function getUiStepsTest(
-  id: any,
-  testObj: number,
+  id: number | string,
+  testObj: number | string,
   workspaceId?: string,
   control: {
     close_after_execution?: boolean
@@ -73,7 +74,9 @@ export function getUiStepsTest(
   pageStepDetailId?: number | string,
   silentError = false
 ) {
-  const normalizedPageStepDetailId = Number(pageStepDetailId)
+  const validDetailId = typeof pageStepDetailId === 'number'
+    ? Number.isSafeInteger(pageStepDetailId) && pageStepDetailId >= 0
+    : typeof pageStepDetailId === 'string' && /^\d+$/.test(pageStepDetailId)
   return get({
     url: '/ui/page/steps/test',
     data: () => {
@@ -82,9 +85,7 @@ export function getUiStepsTest(
         te: testObj,
         workspace_id: workspaceId || undefined,
         page_step_detail_id:
-          Number.isInteger(normalizedPageStepDetailId) && normalizedPageStepDetailId > 0
-            ? normalizedPageStepDetailId
-            : undefined,
+          validDetailId ? pageStepDetailId : undefined,
         ...control,
       }
     },
@@ -94,7 +95,7 @@ export function getUiStepsTest(
 
 export function postUiPageStepOpenBrowser(data: {
   page_step_id: number | string
-  test_env: number
+  test_env: number | string
 }) {
   return post({
     url: '/ui/page/steps/browser/open',

@@ -1,7 +1,7 @@
 import { deleted, get, post, put } from '@/api/http'
 import request from '@/api/axios.config'
 
-export function updateReportDisposition(id: number, data: { is_excluded: boolean; failure_reason: string; failure_description: string }) {
+export function updateReportDisposition(id: number | string, data: { is_excluded: boolean; failure_reason: string; failure_description: string }) {
   return post({ url: 'test/suite/details/disposition', data: () => ({ id, ...data }) })
 }
 
@@ -58,7 +58,7 @@ export function getSystemTestSuiteDetailsExecutionOptions() {
 }
 
 export function getSystemTestSuiteDetailsAllRetry(
-  test_suite_id: number,
+  test_suite_id: number | string,
   testEnv?: number | null,
   apiConcurrencyLimit?: number | null
 ) {
@@ -76,7 +76,7 @@ export function getSystemTestSuiteDetailsAllRetry(
     },
   })
 }
-export function getSystemTestSuiteDetailsRetry(id: number) {
+export function getSystemTestSuiteDetailsRetry(id: number | string) {
   return get({
     url: 'system/test/suite/details/retry',
     data: () => {
@@ -85,7 +85,7 @@ export function getSystemTestSuiteDetailsRetry(id: number) {
   })
 }
 
-export function retryFailedReportCases(testSuiteId: number) {
+export function retryFailedReportCases(testSuiteId: number | string) {
   return post({
     url: 'system/test/suite/details/failed/retry',
     data: () => ({ test_suite_id: testSuiteId }),
@@ -108,9 +108,10 @@ export function getSystemTestSuiteDetailsExecutionTrace(data: object) {
   })
 }
 
-export function getSystemTestSuiteDetailsShare(data: object) {
+export function getSystemTestSuiteDetailsShare(data: object, silentError = false) {
   return get({
     url: 'system/test/suite/details/share',
+    silentError,
     data: () => {
       return data
     },
@@ -145,18 +146,20 @@ export function getSystemTestSuiteDetailsResultOptionsShare(
   })
 }
 
-export function getSystemTestSuiteDetailsSummaryShare(test_suite_id: number | string) {
+export function getSystemTestSuiteDetailsSummaryShare(test_suite_id: number | string, silentError = false) {
   return get({
     url: 'system/test/suite/details/summary/share',
+    silentError,
     data: () => {
       return { test_suite_id: test_suite_id }
     },
   })
 }
 
-export function getSystemTestSuiteDetailsFailureReasonsShare(test_suite_id: number | string) {
+export function getSystemTestSuiteDetailsFailureReasonsShare(test_suite_id: number | string, silentError = false) {
   return get({
     url: 'system/test/suite/details/failure-reasons/share',
+    silentError,
     data: () => {
       return { test_suite_id: test_suite_id }
     },

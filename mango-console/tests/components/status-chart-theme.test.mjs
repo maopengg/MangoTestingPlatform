@@ -22,7 +22,7 @@ test('theme changes refresh donut and legend without changing data, and unregist
   const state = new Function('exports', 'require', 'defineProps', 'window', 'document',
     'getComputedStyle', 'ResizeObserver', `${js}; return { pieChart, chartItems, total }`)(
     exports, key => key === 'vue'
-      ? { computed, ref, watch, onMounted: fn => { mount = fn }, onBeforeUnmount: fn => { unmount = fn } }
+      ? { computed, ref, watch, onMounted: fn => { mount = fn }, onBeforeUnmount: fn => { unmount = fn }, onActivated() {}, onDeactivated() {} }
       : { default: () => chart }, () => props,
     { addEventListener: (name, fn) => handlers.set(name, fn),
       removeEventListener: (name, fn) => { if (handlers.get(name) === fn) handlers.delete(name) } },

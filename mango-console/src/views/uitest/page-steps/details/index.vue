@@ -59,6 +59,19 @@
     </template>
 
     <template #default>
+
+      <a-alert v-if="actionError || flowSave.error.value || elementChecks.error.value || stepDebug.error.value" type="error">{{ actionError || flowSave.error.value || elementChecks.error.value || stepDebug.error.value }}</a-alert>
+
+      <a-spin v-if="stepResources.loading.steps" :size="scaleDensityPixels(16)" tip="加载步骤配置" />
+      <a-spin v-if="stepResources.loading.aliases" :size="scaleDensityPixels(16)" tip="加载逻辑数据源" />
+      <a-spin v-if="stepResources.loading.elements" :size="scaleDensityPixels(16)" tip="加载元素" />
+      <a-spin v-if="stepResources.loading.details" :size="scaleDensityPixels(16)" tip="加载节点" />
+
+
+
+
+
+      <div class="mango-workbench-scroll-x mango-ui-step-layout">
       <div
         :class="[
           'steps-workbench',
@@ -72,18 +85,20 @@
           ref="flowChartRef"
           class="steps-flow-area"
           :flow-data="flowData"
-          :table-data="data.dataList"
+          :table-data="nodeDetails"
           :node-types="nodeTypes"
-          :readonly="caseInputMode"
+          :readonly="caseInputMode || canvasBusy || debugRunning"
+          :context-key="[currentPageStepsId, props.caseId, props.caseStepId, userStore.selected_environment].join(':')"
+          :before-node-delete="onNodeDelete"
           :compact="compact"
           :show-step-detail-action="caseInputMode"
           :show-cache-data-action="caseInputMode"
           :allow-drop="!caseInputMode"
-          :healing-enabled="Boolean(currentStepRecord.healing_enabled)"
-          :healing-goal="currentStepRecord.goal || ''"
+          :healing-enabled="Boolean(currentStepRecord?.healing_enabled)"
+          :healing-goal="currentStepRecord?.goal || ''"
           :healing-pending-review-count="pendingHealingReviewNodes.length"
           :healing-review-confirming="healingReviewConfirming"
-          :result-data="data.result_data"
+          :result-data="runtimeResult"
           :step-control="stepControl"
           :flow-saving="flowSaving"
           :flow-save-status="flowSaveStatus"
@@ -96,14 +111,14 @@
           @node-select="onNodeSelect"
           @flow-change="onFlowChange"
           @edge-delete="onEdgeDelete"
-          @node-delete="onNodeDelete"
+
           @node-duplicate="onNodeDuplicate"
           @canvas-beautify="beautifyCanvas"
           @canvas-save="saveFlow"
           @control-change="onStepControlChange"
           @open-step-detail="emit('openPageStepDetail')"
           @open-cache-data="emit('openCacheData')"
-          @open-step-healing="healingPanelVisible = true"
+          @open-step-healing="openHealing"
           @confirm-healing-review="confirmPendingStepHealing"
         />
 
@@ -170,38 +185,38 @@
                 <div class="node-summary-grid">
                   <div>
                     <span>步骤ID</span>
-                    <strong>{{ data.selectData.id || '-' }}</strong>
+                    <strong>{{ nodeDraft.id ?? '-' }}</strong>
                   </div>
                   <div>
                     <span>类型</span>
-                    <strong>{{ getNodeTypeLabel(data.selectData.type) }}</strong>
+                    <strong>{{ getNodeTypeLabel(nodeDraft.type) }}</strong>
                   </div>
                   <div>
                     <span>方法</span>
-                    <strong>{{ getMethodLabel(data.selectData.ope_key) }}</strong>
+                    <strong>{{ getMethodLabel(nodeDraft.ope_key) }}</strong>
                   </div>
                   <div>
                     <span>参数数</span>
-                    <strong>{{ getConfigParamCount(data.selectData) }}</strong>
+                    <strong>{{ getConfigParamCount(nodeDraft) }}</strong>
                   </div>
                   <div
-                    v-if="getElementName(data.selectData.ele_name) !== '-'"
+                    v-if="getElementName(nodeDraft.ele_name) !== '-'"
                     class="node-summary-wide"
                   >
                     <span>元素名称</span>
-                    <strong>{{ getElementName(data.selectData.ele_name) }}</strong>
+                    <strong>{{ getElementName(nodeDraft.ele_name) }}</strong>
                   </div>
                   <div
-                    v-if="getConditionSummary(data.selectData.condition_value) !== '-'"
+                    v-if="getConditionSummary(nodeDraft.condition_value) !== '-'"
                     class="node-summary-wide"
                   >
                     <span>条件</span>
-                    <strong>{{ getConditionSummary(data.selectData.condition_value) }}</strong>
+                    <strong>{{ getConditionSummary(nodeDraft.condition_value) }}</strong>
                   </div>
                 </div>
-                <div v-if="getConfigParamSummary(data.selectData).length" class="node-param-list">
+                <div v-if="getConfigParamSummary(nodeDraft).length" class="node-param-list">
                   <div
-                    v-for="param in getConfigParamSummary(data.selectData)"
+                    v-for="param in getConfigParamSummary(nodeDraft)"
                     :key="param.key"
                     class="node-param-item"
                   >
@@ -212,12 +227,12 @@
               </section>
 
               <section class="inspector-section node-section-card config-editor">
-                <div v-if="data.formItems.length > 0 || data.type === 2">
+                <div v-if="nodeFields.length > 0 || nodeType === 2">
                   <div class="node-section-head">
                     <div class="mango-section-title">编辑配置</div>
                     <a-space :size="6">
                       <a-button
-                        v-if="data.type === 2 && !configFormReadonly"
+                        v-if="nodeType === 2 && !configFormReadonly"
                         size="mini"
                         @click="addSqlOperation" data-testid="qa-views-uitest-page-steps-details-button-新增操作"
                       >
@@ -227,7 +242,7 @@
                         v-if="!caseInputMode || hasCaseEditableConfigItems"
                         size="mini"
                         type="primary"
-                        :loading="formSaving"
+                        :loading="caseInputMode ? caseNodeInputs.saving.value : formSaving"
                         @click="handleConfigAction"
                       >
                         {{ configActionText }}
@@ -239,6 +254,9 @@
                     message="Case 中仅允许修改节点入参；流程、节点、元素和执行方法均继承页面步骤，不可在此修改。"
                     margin-bottom="8px"
                   />
+                  <a-alert v-if="caseNodeInputs.error.value" type="error">
+                    {{ caseNodeInputs.error.value }}
+                  </a-alert>
                   <TipMessage
                     v-if="conditionTipMessage"
                     :message="conditionTipMessage"
@@ -246,7 +264,7 @@
                   />
 
                   <DataSourceOperationList
-                    v-if="data.type === 2"
+                    v-if="nodeType === 2"
                     ref="dataSourceOperationListRef"
                     :data-list="sqlOperationRows"
                     :datasource-options="datasourceAliasOptions"
@@ -266,7 +284,7 @@
                     :items="visibleFormItems"
                     :operation-options="useSelectValue.getOperationOptions(currentPageType)"
                     :assertion-options="useSelectValue.getAssertionOptions(currentPageType)"
-                    :element-options="data.uiPageName"
+                    :element-options="elementOptions"
                     :element-cascader-options="elementCascaderOptions"
                     :file-options="uiTestFileOptions"
                     :file-loading="uiTestFileLoading"
@@ -276,6 +294,7 @@
                     :get-inherited-value="getCaseInheritedConfigValue"
                     class="node-config-form"
                     @method-change="upDataOpeValue"
+                    @update-field="updateNodeField"
                     @element-change="onElementCascaderChange"
                   >
                     <ExcelAssertionEditor
@@ -304,10 +323,10 @@
                 >
                   <UiStepRuntimeResult
                     frameless
-                    :result="data.selectResultData"
-                    :fallback-ope-key="data.selectData.ope_key"
-                    :fallback-element-name="getElementName(data.selectData.ele_name)"
-                    :fallback-element="data.selectData.ele_name"
+                    :result="selectedRuntimeResult"
+                    :fallback-ope-key="nodeDraft.ope_key"
+                    :fallback-element-name="getElementName(nodeDraft.ele_name)"
+                    :fallback-element="nodeDraft.ele_name"
                   />
                 </a-spin>
               </section>
@@ -320,6 +339,7 @@
             </div>
           </Scrollbar>
         </aside>
+      </div>
       </div>
       <section
         v-if="liveWorkbenchVisible"
@@ -340,6 +360,7 @@
           :project-product-id="currentProjectProductId"
           :step-control="stepControl"
           @stream-ready="handleStepLiveReady"
+          @step-debug-started="stepDebug.acceptWorkspace"
           @element-check-started="handleStepElementCheckStarted"
           @element-check-result="handleStepElementCheckResult"
           @element-saved="handleStepWorkbenchElementSaved"
@@ -357,7 +378,7 @@
   >
     <div class="mango-ui-step-page-elements-panel">
       <PageElements
-        v-if="pageElementsPanel.visible && currentPageId"
+        v-if="pageElementsPanel.visible && currentPageId !== ''"
         :key="String(currentPageId)"
         embedded
         :page-id="currentPageId"
@@ -393,16 +414,18 @@
     </div>
   </BaseSidePanel>
   <UiElementEditPanel
+    :context-key="[currentPageStepsId, selectedNode?.id].join(':')"
     ref="elementEditPanelRef"
     :operation-options="useSelectValue.getOperationOptions(currentPageType)"
     @saved="handleElementSaved"
   />
   <UiElementAiHealPanel
+    :context-key="[currentPageStepsId, selectedNode?.id].join(':')"
     ref="elementAiHealPanelRef"
     :test-env="userStore.selected_environment"
     @applied="handleElementSaved"
   />
-  <UiElementDeepCheckVariablesDialog ref="deepCheckVariablesDialogRef" />
+  <UiElementDeepCheckVariablesDialog :key="[currentPageStepsId, selectedNode?.id].join(':')" ref="deepCheckVariablesDialogRef" />
   <UiElementCheckResultPanel
     v-model:visible="elementCheckResult.visible"
     :title="elementCheckResult.title"
@@ -416,30 +439,27 @@
     :visible="true"
     :page-step-id="currentPageStepsId"
     :record="currentStepRecord"
-    :element-options="data.uiPageName"
+    :element-options="elementOptions"
     @update:visible="healingPanelVisible = $event"
     @changed="doRefreshSteps(currentPageStepsId)"
   />
 </template>
 <script lang="ts" setup>
+import { reportLoadError } from '@/utils/load-error'
+
+  import { scaleDensityPixels } from '@/hooks/useDisplayDensity'
   import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { IconDesktop } from '@arco-design/web-vue/es/icon'
   import FlowChart from './FlowChart.vue'
-  import { FlowData, UINode, UIEdge, UiStepControl } from '@/types/components'
+  import type { UIEdge, UiStepControl } from '@/types/components'
+  import { createNodeDraft, readStepDetail, readStepRecord, readStepFlow, readStepResult, stepResponse, stepArray, defaultStepControl, requiredStepId, readStepFiles, type StepDetail, type StepElement, type StepField, type StepId, type StepRecord, type StepResult, type StepFlow as FlowData, type StepNode as UINode, type StepSql, type StepDatasource, type StepFileOption, type StepCanvasPort } from '@/components/business/ui-page-step'
+  import { cloneLosslessJson } from '@/utils/lossless-json'
   import type { UiPageStepsDetailPayload } from '@/types/ui-test/case'
   import { useRoute } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
-  import {
-    formItemsElement4,
-    formItemsElementAss,
-    formItemsElementCode,
-    formItemsElementCondition,
-    formItemsElementKey,
-    formItemsElementOpe,
-    formItemsForceWait,
-  } from './config'
+  import { createNodeFields, isEmptyStepField } from './config'
   import {
     deleteUiPageStepsDetailed,
     getUiPageStepsDetailed,
@@ -449,16 +469,15 @@
   } from '@/api/uitest/page-steps-detailed'
   import {
     getUiSteps,
-    getUiStepsTest,
     postUiPageStepHealApply,
     postUiPageStepOpenBrowser,
-    putUiSteps,
   } from '@/api/uitest/page-steps'
-  import { putUiCaseStepsDetailed } from '@/api/uitest/case-steps-detailed'
+  import { useCaseNodeInputs } from '@/views/uitest/case/details/composables/useCaseNodeInputs'
+  import { useStepResources } from './composables/useStepResources'
+  import { uiCaseAssetId, uiCaseAssetObject } from '@/components/business/ui-case-step-create'
+  import type { CaseNodeInputContext } from '@/views/uitest/case/details/case-node-inputs'
   import {
     getUiUiElementName,
-    postUiElementCheck,
-    putUiElementDeepCheckApply,
   } from '@/api/uitest/element'
   import { getUserFile } from '@/api/system/file_data'
   import useUserStore from '@/store/modules/user'
@@ -478,18 +497,14 @@
   import UiLiveWorkbenchPanel from '@/components/business/UiLiveWorkbenchPanel.vue'
   import VariableReferencePanel from '@/components/business/VariableReferencePanel.vue'
   import JsonDisplay from '@/components/display/JsonDisplay.vue'
-  import { createUiElementCheckSession } from '@/utils/ui-element-check-session.mjs'
+  import { useElementChecks, type ElementWorkbenchPort } from '@/hooks/use-ui-element-checks'
+  import { liveId, liveObject } from '@/components/business/ui-live-workbench'
   import UiStepRuntimeResult from '@/components/reports/UiStepRuntimeResult.vue'
   import { Scrollbar } from '@/components/Scrollbar'
   import PageElements from '@/views/uitest/page/elements/index.vue'
   import { useUiLiveWorkbench } from '@/hooks/use-ui-live-workbench'
-  import { getExecutionResultLatestResolved } from '@/api/system/execution_result'
-  import { getActiveExecutorTasks, getExecutorTask } from '@/api/system/executor-task'
-  import {
-    clearExecutorTaskObservation,
-    loadExecutorTaskObservation,
-    saveExecutorTaskObservation,
-  } from '@/utils/executor-task-observer.mjs'
+  import { useStepFlowSave } from './composables/useStepFlowSave'
+  import { useStepDebug } from './composables/useStepDebug'
   import {
     buildUiUploadFileCascaderOptions,
     getUiUploadFileValueFromCascader,
@@ -505,36 +520,26 @@
   > | null>(null)
   const liveWorkbenchPanelRef = ref<{
     startStepDebug: (pageStepDetailId?: number | string) => Promise<boolean>
-    checkElementInWorkspace: (
-      record: any,
-      checkMode?: 'normal' | 'deep',
-      runtimeVariables?: Record<string, string>
-    ) => Promise<boolean | string>
+    checkElementInWorkspace: ElementWorkbenchPort['checkElementInWorkspace']
+    acceptElementCheckResult: ElementWorkbenchPort['acceptElementCheckResult']
   } | null>(null)
+  const methodsLoading = ref(false), methodsError = ref('')
+  let methodsSequence = 0
+  async function loadMethods() {
+    const current = stepResources.capture(), sequence = ++methodsSequence
+    methodsLoading.value = true; methodsError.value = ''
+    try { await Promise.all([useSelectValue.getSelectValue(), enumStore.getEnum()]); if (current() && sequence === methodsSequence && selectedNode.value) onNodeClick(selectedNode.value) }
+    catch (loadFailure0) { if (current() && sequence === methodsSequence) (reportLoadError(loadFailure0, "操作和断言定义加载失败，请重试", false), methodsError.value = '操作和断言定义加载失败，请重试') }
+    finally { if (current() && sequence === methodsSequence) methodsLoading.value = false }
+  }
+  const actionError = ref('')
   const elementEditLoading = ref(false)
-  const elementDeepCheckLoading = ref(false)
-  const elementDeepCheckId = ref('')
-  const elementDeepCheckTaskId = ref('')
-  const elementDeepCheckElementId = ref<number | string | null>(null)
-  const elementDeepCheckSession = createUiElementCheckSession()
-  let elementDeepCheckToken: number | null = null
-  let elementDeepCheckTimer: ReturnType<typeof setTimeout> | null = null
-  let elementDeepCheckPollTimer: ReturnType<typeof setTimeout> | null = null
-  let elementDeepCheckPolling = false
+  let elementSelectionVersion = 0
   const elementAiHealLoading = ref(false)
-  const elementCheckApplyLoading = ref(false)
-  const elementCheckApplied = ref(false)
   const healingPanelVisible = ref(false)
   const healingReviewConfirming = ref(false)
-  const elementCheckResult = reactive({
-    visible: false,
-    title: '元素深度检测结果',
-    data: null as any,
-  })
-
-  const flowChartRef = ref()
+  const flowChartRef = ref<StepCanvasPort | null>(null)
   const selectedNode = ref<UINode | null>(null)
-  const configText = ref('')
 
   const flowData = ref<FlowData>({
     nodes: [],
@@ -546,7 +551,7 @@
     after_wait_seconds: 1,
     close_live_after_execution: false,
   })
-  const currentStepRecord = ref<any>({})
+  const currentStepRecord = ref<StepRecord | null>(null)
   const enumStore = useEnum()
   const pageData = usePageData()
   const userStore = useUserStore()
@@ -558,6 +563,7 @@
     sectionRef: liveWorkbenchSectionRef,
     open: openStepLiveWorkbench,
     toggle: toggleStepLiveWorkbench,
+    close: closeStepLiveWorkbench,
   } = useUiLiveWorkbench(() => {
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
@@ -576,8 +582,8 @@
       caseInputMode?: boolean
       caseId?: string | number
       caseStepId?: string | number
-      caseData?: any[]
-      caseResult?: any
+      caseData?: unknown[]
+      caseResult?: unknown
       refreshToken?: number
     }>(),
     {
@@ -596,7 +602,7 @@
   )
   const emit = defineEmits<{
     (event: 'close'): void
-    (event: 'caseDataSaved', value: any[]): void
+    (event: 'caseDataSaved', value: unknown[], context: CaseNodeInputContext): void
     (event: 'openPageStepDetail'): void
     (event: 'openCacheData'): void
   }>()
@@ -616,10 +622,6 @@
     { type: 6, label: '强制等待', color: 'var(--m-node-wait)' },
   ]
 
-  const selectedNodeTypeLabel = computed(() => {
-    if (!selectedNode.value) return ''
-    return nodeTypes.find((item) => item.type === selectedNode.value?.type)?.label || '未知节点'
-  })
   const selectedNodeDescription = computed(() => {
     if (!selectedNode.value) return ''
     const descriptionMap: Record<number, string> = {
@@ -634,16 +636,19 @@
     return descriptionMap[Number(selectedNode.value.type)] || '请配置当前节点的执行信息。'
   })
 
+  function inputStepId(value: unknown) { try { return uiCaseAssetId(value) } catch { return null } }
   const currentPageStepsId = computed(
-    () => props.pageStepsId || route.query.id || pageData.record?.id
+    () => props.pageStepsId !== '' ? inputStepId(props.pageStepsId) ?? '' : Object.prototype.hasOwnProperty.call(route.query, 'id') ? inputStepId(route.query.id) ?? '' : inputStepId(bootstrapStep.value.id) ?? ''
   )
+  const bootstrapStep = computed(() => pageData.record ? uiCaseAssetObject(pageData.record) : {})
+  const bootstrapProduct = computed(() => {
+    const value = bootstrapStep.value.project_product
+    return value && typeof value === 'object' ? uiCaseAssetObject(value).id : value
+  })
   const currentPageId = computed(
-    () =>
-      props.pageId ||
-      route.query.pageId ||
-      currentStepRecord.value?.page?.id ||
-      currentStepRecord.value?.page ||
-      ''
+    () => props.pageId !== '' ? inputStepId(props.pageId) ?? ''
+      : Object.prototype.hasOwnProperty.call(route.query, 'pageId') ? inputStepId(route.query.pageId) ?? ''
+      : inputStepId(currentStepRecord.value?.page?.id) ?? inputStepId(currentStepRecord.value?.page) ?? ''
   )
   const currentPageInfo = computed(() => {
     const page = currentStepRecord.value?.page
@@ -656,28 +661,27 @@
   })
   const currentPageType = computed(() =>
     String(
-      props.pageType ||
-        route.query.pageType ||
-        currentStepRecord.value?.project_product?.ui_client_type ||
+      inputStepId(props.pageType) ??
+        inputStepId(route.query.pageType) ??
+        currentStepRecord.value?.project_product?.ui_client_type ??
         '0'
     )
   )
   const currentProjectProductId = computed(
     () =>
-      currentStepRecord.value?.project_product?.id ||
-      currentStepRecord.value?.project_product ||
-      pageData.record?.project_product?.id ||
-      pageData.record?.project_product ||
+      uiCaseAssetId(currentStepRecord.value?.project_product?.id) ??
+      uiCaseAssetId(currentStepRecord.value?.project_product) ??
+      uiCaseAssetId(bootstrapProduct.value) ??
       ''
   )
   const stepsTitle = computed(() => {
-    const record = currentStepRecord.value || {}
-    const id = record.id || currentPageStepsId.value || '-'
-    const name = record.name || pageData.record?.name || '-'
+    const record = currentStepRecord.value
+    const id = record?.id ?? currentPageStepsId.value ?? '-'
+    const name = record?.name || bootstrapStep.value.name || '-'
     return `页面步骤工作台 / ${id} / ${name}`
   })
   const pendingHealingReviewNodes = computed(() =>
-    (flowData.value.nodes || []).filter((node: any) => {
+    (flowData.value.nodes || []).filter((node) => {
       const config = node?.config || {}
       return config.ai_healed && config.ai_review_status !== 'confirmed'
     })
@@ -686,83 +690,132 @@
     Array.from(
       new Set(
         pendingHealingReviewNodes.value
-          .map((node: any) => node?.config?.ai_heal_record_id)
-          .filter((recordId: any) => recordId !== null && recordId !== undefined && recordId !== '')
+          .map((node) => node?.config?.ai_heal_record_id)
+          .filter((recordId) => recordId !== null && recordId !== undefined && recordId !== '')
           .map(String)
       )
     )
   )
-  const elementCascaderOptions = computed(() => buildElementCascaderOptions(data.uiPageName))
+  const elementCascaderOptions = computed(() => buildElementCascaderOptions(elementOptions.value))
 
-  const data: any = reactive({
-    dataList: [],
-    selectData: {}, // 选择的节点数据
-    uiPageName: [], // 元素名称
-    type: 0, // 点击的节点类型
-    condition: 0, // 上一个节点是否是判断类型
-    conditionId: 0, // 上一个节点是否是判断类型
-    conditionNodeId: '',
-    result_data: { element_result_list: [] }, // 测试结果数据
-    selectResultData: {}, // 选择的节点数据
-    formItems: [], // 表单数据
-    isConditionExpect: true,
-    isAdd: false,
-  })
-  const caseRunning = ref(false)
+  const nodeDetails = ref<StepDetail[]>([])
+  const nodeDraft = ref<StepDetail>(createNodeDraft())
+  const elementOptions = ref<StepElement[]>([])
+  const nodeType = ref(0), hasPreviousCondition = ref(false), previousConditionId = ref<StepId | null>(null), previousConditionNodeId = ref('')
+  const runtimeResult = ref<StepResult>(readStepResult(null)), selectedRuntimeResult = ref<StepResult | null>(null)
+  const nodeFields = ref<StepField[]>([]), requiresBranchValue = ref(false)
   const browserOpening = ref(false)
-  const singleStepRunning = ref(false)
-  const debugRunning = ref(false)
-  const debugCompleted = ref(false)
-  const debugRefreshError = ref(false)
-  const debugStartedAt = ref(0)
-  const debugBaselineResultId = ref<number | string | null>(null)
-  const currentDebugSlotId = ref('')
-  const debugExpectedNodeCount = ref(0)
-  const debugPollFailures = ref(0)
-  const latestResultLoading = ref(false)
   const runtimeResultRenderRevision = ref(0)
-  let debugPollTimer: ReturnType<typeof setTimeout> | null = null
-  const DEBUG_POLL_INTERVAL_MS = 2000
-  const DEBUG_POLL_MAX_BACKOFF_MS = 10000
-  const currentDebugTaskId = ref('')
-  let debugCompletedTimer: ReturnType<typeof setTimeout> | null = null
-  let debugPollRequesting = false
-  const flowSaving = ref(false)
-  const flowSaveStatus = ref<'saved' | 'dirty' | 'saving' | 'error'>('saved')
   const formSaving = ref(false)
   const dataSourceOperationListRef = ref<{ validate: () => boolean } | null>(null)
-  const sqlOperationRows = ref<any[]>([])
-  const datasourceAliasOptions = ref<any[]>([])
+  const sqlOperationRows = ref<StepSql[]>([])
+  const datasourceAliasOptions = ref<StepDatasource[]>([])
   const sqlAssertionDatasourceOptions = computed(() =>
-    datasourceAliasOptions.value.filter((item: any) => [0, 1, 2].includes(Number(item.dbType)))
+    datasourceAliasOptions.value.filter((item) => [0, 1, 2].includes(Number(item.dbType)))
   )
   const configEditing = ref(false)
-  const nodeDuplicating = ref(false)
-  const nodeFormDrafts = reactive(new Map<string, Record<string, any>>())
-  let flowRevision = 0
-  let savedFlowRevision = 0
-  let flowSaveTimer: ReturnType<typeof setTimeout> | null = null
-  let flowSavePromise: Promise<void> | null = null
-  const uiTestFileOptions = ref<any[]>([])
-  const uiTestFileLoading = ref(false)
+  const nodeDuplicating = ref(false), nodeDeleting = ref(false)
+  const canvasBusy = computed(() => formSaving.value || nodeDuplicating.value || nodeDeleting.value || healingReviewConfirming.value || flowSaving.value)
+  const nodeFormDrafts = reactive(new Map<string, Record<string, unknown>>())
+  const caseNodeInputs = useCaseNodeInputs({
+    enabled: () => props.caseInputMode,
+    caseId: () => props.caseId,
+    caseStepId: () => props.caseStepId,
+    pageStepId: () => props.pageStepsId,
+    nodeId: () => nodeDraft.value?.id,
+    selection: () => selectedNode.value?.id,
+    data: () => props.caseData,
+    saved(values, context) {
+      nodeDetails.value = normalizeCaseData(values)
+      if (selectedNode.value) {
+        nodeFormDrafts.delete(selectedNode.value.id)
+        setSelectData(selectedNode.value)
+      }
+      configEditing.value = false
+      emit('caseDataSaved', values, context)
+    },
+  })
+  const uiTestFileOptions = ref<StepFileOption[]>([])
+  const uiTestFileLoading = computed(() => stepResources.loading.files)
   const stepCachePanel = reactive({
     visible: false,
   })
   const pageElementsPanel = reactive({
     visible: false,
   })
+  const stepResources = useStepResources({
+    enabled: () => true,
+    context: () => [props.pageStepsId, props.pageId, props.caseId, props.caseStepId, props.caseInputMode, route.query.id, props.refreshToken],
+    invalidated() {
+      invalidateElementContext()
+      currentStepRecord.value = null
+      flowData.value = { nodes: [], edges: [] }
+      nodeDetails.value = []
+      selectedNode.value = null
+      nodeFormDrafts.clear()
+      datasourceAliasOptions.value = []
+      elementOptions.value = []
+      flowSave.invalidate()
+      stepCachePanel.visible = false
+      pageElementsPanel.visible = false
+      healingPanelVisible.value = false
+      elementCheckResult.visible = false
+      methodsSequence++; methodsLoading.value = false; methodsError.value = ''
+      actionError.value = ''
+      uiTestFileOptions.value = []
+      replaceRuntimeResult(null)
+      nodeDraft.value = createNodeDraft()
+      nodeFields.value = []
+      configEditing.value = false
+      closeStepLiveWorkbench()
+      stepDebug.invalidate()
+
+    },
+    resume: () => { void initializeStep() },
+  })
+  const flowSave = useStepFlowSave({ capture: () => stepResources.capture(), id: () => uiCaseAssetId(currentPageStepsId.value), enabled: () => !props.caseInputMode, flow: () => flowData.value, reconcile: id => { void doRefreshSteps(id) } })
+  const flowSaving = flowSave.saving, flowSaveStatus = flowSave.status, flowRevision = flowSave.revision, savedFlowRevision = flowSave.savedRevision
+  const stepDebug = useStepDebug({ capture: () => stepResources.capture(), id: () => uiCaseAssetId(currentPageStepsId.value), environment: () => liveId(userStore.selected_environment), owner: () => JSON.stringify([userStore.userId, userStore.roleId, userStore.selected_environment]), control: () => stepControl.value, count: () => executableNodeCount.value,
+    ready: async () => !props.caseInputMode && !canvasBusy.value && checkNodeConnections() && checkNodeConfigSaved() && await ensureFlowSavedForRun(), workspace: () => liveWorkbenchVisible.value, startWorkspace: id => liveWorkbenchPanelRef.value?.startStepDebug(id) ?? Promise.resolve(false),
+    result: replaceRuntimeResult, status: value => { if (currentStepRecord.value) currentStepRecord.value.status = value }, refresh: async () => { await doRefreshSteps(currentPageStepsId.value); await doRefresh() },
+  })
+  const caseRunning = stepDebug.submitting, singleStepRunning = stepDebug.singleSubmitting, debugRunning = stepDebug.running, debugCompleted = stepDebug.completed, debugRefreshError = computed(() => Boolean(stepDebug.error.value)), latestResultLoading = stepDebug.resultLoading
+  const elementChecks = useElementChecks({ scope: { available: () => stepResources.capture()(), capture: captureElementContext }, pageId: () => liveId(currentPageId.value), environment: () => liveId(userStore.selected_environment), owner: () => JSON.stringify([userStore.userId, userStore.roleId, userStore.selected_environment]), pageUrl: () => currentPageInfo.value.url,
+    rows: () => elementOptions.value.flatMap(row => row.id == null ? [] : [{ id: row.id, name: row.name }]), liveVisible: () => liveWorkbenchVisible.value, workbench: () => liveWorkbenchPanelRef.value,
+    variables: record => deepCheckVariablesDialogRef.value?.open(record) ?? Promise.resolve(null), applyRuntime: () => {}, refresh: handleElementSaved,
+  })
+  const elementPreparing = ref(false)
+  const elementCheckResult = elementChecks.result, elementCheckApplyLoading = elementChecks.applying, elementCheckApplied = elementChecks.applied, elementDeepCheckLoading = computed(() => elementPreparing.value || elementChecks.busy.value)
+  function invalidateElementContext() {
+    elementSelectionVersion++
+    elementChecks.invalidate()
+  }
+  watch(() => selectedNode.value?.id, invalidateElementContext, { flush: 'sync' })
+  function captureElementContext() {
+    const current = stepResources.capture(), revision = elementSelectionVersion
+    return () => current() && revision === elementSelectionVersion
+  }
+  async function refreshEmbeddedStep() {
+    const current = stepResources.capture()
+    await doRefreshSteps(currentPageStepsId.value)
+    if (!current()) return
+    await loadDatasourceAliases()
+    if (!current()) return
+    await doRefresh()
+  }
   const currentStepCacheData = computed(() =>
-    normalizeRuntimeObject(data.result_data?.cache_data)
+    normalizeRuntimeObject(runtimeResult.value?.cache_data)
   )
   const selectedConfigSaved = computed(() =>
-    Boolean(data.selectData?.id || selectedNode.value?.config?.id)
+    uiCaseAssetId(nodeDraft.value?.id) !== null || uiCaseAssetId(selectedNode.value?.config?.id) !== null
   )
   const hasSelectedNodeElement = computed(() => {
-    if (!data.selectData?.id) return false
-    if (getElementIdFromCascader(data.selectData?.ele_name)) return true
+    if (uiCaseAssetId(nodeDraft.value?.id) === null) return false
+    const elementId = getElementIdFromCascader(nodeDraft.value?.ele_name)
+    if (elementId !== null && elementId !== undefined && elementId !== '') return true
     // Case 缓存只保存页面步骤绑定元素的名称；真正操作时仍按步骤明细 ID
     // 读取最新元素，兼容存量 Case 缓存且避免仅因缺少元素 ID 隐藏操作入口。
-    return props.caseInputMode && getElementName(data.selectData?.ele_name) !== '-'
+    return props.caseInputMode && getElementName(nodeDraft.value?.ele_name) !== '-'
   })
   const selectedNodeSupportsSingleStep = computed(() =>
     [0, 1, 2, 3, 5, 6].includes(Number(selectedNode.value?.type))
@@ -770,10 +823,10 @@
   const configFormReadonly = computed(() => selectedConfigSaved.value && !configEditing.value)
   const configActionText = computed(() => (configFormReadonly.value ? '编辑' : '保存'))
   const hasCaseEditableConfigItems = computed(
-    () => data.type === 2 || data.formItems.some((item: any) => !isCaseInheritedConfigItem(item))
+    () => nodeType.value === 2 || nodeFields.value.some((item) => !isCaseInheritedConfigItem(item))
   )
 
-  function isCaseInheritedConfigItem(item: any) {
+  function isCaseInheritedConfigItem(item) {
     if (!props.caseInputMode) return false
     const key = String(item?.key || '')
     return (
@@ -786,25 +839,25 @@
     )
   }
 
-  function getCaseInheritedConfigValue(item: any) {
+  function getCaseInheritedConfigValue(item) {
     if (String(item?.key || '') === 'ope_key') {
-      return getMethodLabel(item?.value || data.selectData?.ope_key)
+      return getMethodLabel(item?.value || nodeDraft.value?.ope_key)
     }
-    const elementName = getElementName(data.selectData?.ele_name)
+    const elementName = getElementName(nodeDraft.value?.ele_name)
     if (elementName !== '-') return elementName
     return getElementName(item?.value)
   }
 
-  function isConfigItemDisabled(item: any) {
-    if (configFormReadonly.value) return true
+  function isConfigItemDisabled(item) {
+    if (configFormReadonly.value || formSaving.value || caseNodeInputs.saving.value || methodsLoading.value || debugRunning.value) return true
     if (!props.caseInputMode) return false
     return isCaseInheritedConfigItem(item)
   }
   const selectedMethodKey = computed(
     () =>
-      data.formItems.find((item: any) => item.key === 'ope_key')?.value ||
-      data.selectData?.ope_key ||
-      ''
+      String(nodeFields.value.find((item) => item.key === 'ope_key')?.value ||
+      nodeDraft.value?.ope_key ||
+      '')
   )
   const selectedMethodDefinition = computed(() =>
     useSelectValue.findItemByValue(selectedMethodKey.value)
@@ -813,15 +866,15 @@
     String(selectedMethodKey.value || '').startsWith('assert_excel_')
   )
   const excelActualFormItem = computed(() =>
-    data.formItems.find((item: any) => item.key === 'actual-ope_value')
+    nodeFields.value.find((item) => item.key === 'actual-ope_value')
   )
   const excelExpectFormItem = computed(() =>
-    data.formItems.find((item: any) => item.key === 'expect-ope_value')
+    nodeFields.value.find((item) => item.key === 'expect-ope_value')
   )
   const visibleFormItems = computed(() => {
-    if (!isExcelAssertionMethod.value) return data.formItems
-    return data.formItems.filter(
-      (item: any) => !['actual-ope_value', 'expect-ope_value'].includes(item.key)
+    if (!isExcelAssertionMethod.value) return nodeFields.value
+    return nodeFields.value.filter(
+      (item) => !['actual-ope_value', 'expect-ope_value'].includes(item.key)
     )
   })
 
@@ -829,9 +882,13 @@
     const item = field === 'actual' ? excelActualFormItem.value : excelExpectFormItem.value
     if (item) item.value = value
   }
+  function updateNodeField(key: string, value: unknown) {
+    const field = nodeFields.value.find(field => field.key === key)
+    if (field && !isConfigItemDisabled(field)) field.value = cloneDraftValue(value)
+  }
   const selectedMethodRequiresBranchValue = computed(() =>
     (useSelectValue.findItemByValue(selectedMethodKey.value)?.parameter || []).some(
-      (item: any) => item.f === 'expect'
+      (item) => item.f === 'expect'
     )
   )
   const decisionDraft = computed(() => ({
@@ -846,19 +903,19 @@
     return Array.from(ids)
   })
   const conditionTipMessage = computed(() => {
-    if (data.condition) {
-      return data.isAdd
+    if (hasPreviousCondition.value) {
+      return requiresBranchValue.value
         ? '请输入当前分支的判断值；判断成立时将执行该分支。'
         : '上一个判断节点返回 True 时走第一条线，返回 False 时走第二条线。'
     }
-    if (data.type !== 4 || !selectedMethodKey.value) return ''
+    if (nodeType.value !== 4 || !selectedMethodKey.value) return ''
     return selectedMethodRequiresBranchValue.value
       ? '该方法需要判断值。保存判断节点后，请点击每个后续分支节点填写对应的判断值。'
       : '该方法无需填写判断值：成立时走 True 分支，不成立时走 False 分支。'
   })
 
   function openPageElementsPanel() {
-    if (!currentPageId.value) {
+    if (currentPageId.value === '') {
       Message.warning('当前页面步骤未绑定页面')
       return
     }
@@ -878,19 +935,19 @@
     closePageElementsPanel()
   }
   const runtimeResultList = computed(() =>
-    Array.isArray(data.result_data?.element_result_list) ? data.result_data.element_result_list : []
+    Array.isArray(runtimeResult.value?.element_result_list) ? runtimeResult.value.element_result_list : []
   )
   const executableNodeCount = computed(() => {
-    const savedNodeCount = flowData.value.nodes.filter((node) => node.config?.id).length
-    return savedNodeCount || data.dataList.length || 0
+    const savedNodeCount = flowData.value.nodes.filter((node) => node.config?.id != null).length
+    return savedNodeCount || nodeDetails.value.length || 0
   })
   const stepStatusText = computed(() => {
     if (debugRefreshError.value) return '结果刷新异常，正在重试'
     if (debugRunning.value) {
-      return `调试中 · 已回传 ${runtimeResultList.value.length}/${debugExpectedNodeCount.value || '-'}`
+      return `调试中 · 已回传 ${runtimeResultList.value.length}`
     }
     const status = Number(
-      props.caseInputMode ? props.caseResult?.status : currentStepRecord.value?.status
+      props.caseInputMode ? readStepResult(props.caseResult).status : currentStepRecord.value?.status
     )
     if (status === 1) return '成功'
     if (status === 0) return '失败'
@@ -903,7 +960,7 @@
     if (debugRefreshError.value) return 'warning'
     if (debugRunning.value) return 'running'
     const status = Number(
-      props.caseInputMode ? props.caseResult?.status : currentStepRecord.value?.status
+      props.caseInputMode ? readStepResult(props.caseResult).status : currentStepRecord.value?.status
     )
     if (status === 1) return 'done'
     if (status === 0) return 'failed'
@@ -927,87 +984,28 @@
     }
   }
 
-  function clearFlowSaveTimer() {
-    if (!flowSaveTimer) return
-    clearTimeout(flowSaveTimer)
-    flowSaveTimer = null
-  }
-
-  function markFlowSaved(revision = flowRevision) {
-    savedFlowRevision = revision
-    flowSaveStatus.value = flowRevision === savedFlowRevision ? 'saved' : 'dirty'
-  }
-
-  function scheduleFlowSave() {
-    clearFlowSaveTimer()
-    flowSaveTimer = setTimeout(() => {
-      flowSaveTimer = null
-      void persistFlow(false)
-    }, 1000)
-  }
-
-  function persistFlow(manual: boolean): Promise<void> {
-    if (props.caseInputMode) return Promise.resolve()
-    if (!currentPageStepsId.value) return Promise.resolve()
-    if (flowSaving.value && flowSavePromise) {
-      return flowSavePromise.then(() => {
-        if (flowRevision !== savedFlowRevision) return persistFlow(manual)
-      })
-    }
-    clearFlowSaveTimer()
-    const savingRevision = flowRevision
-    flowSaving.value = true
-    flowSaveStatus.value = 'saving'
-    const value = {}
-    value['id'] = currentPageStepsId.value
-    value['flow_data'] = normalizeStepFlowData(flowData.value)
-    flowSavePromise = putUiSteps(value)
-      .then((res) => {
-        if (savingRevision === flowRevision) {
-          markFlowSaved(savingRevision)
-        } else {
-          flowSaveStatus.value = 'dirty'
-          scheduleFlowSave()
-        }
-        if (manual) Message.success(res.msg)
-      })
-      .catch((error) => {
-        flowSaveStatus.value = 'error'
-        console.log(error)
-      })
-      .finally(() => {
-        flowSaving.value = false
-        flowSavePromise = null
-        if (flowSaveStatus.value === 'dirty') scheduleFlowSave()
-      })
-    return flowSavePromise
-  }
-
-  const saveFlow = () => {
-    void persistFlow(true)
-  }
+  const clearFlowSaveTimer = flowSave.cancelTimer, markFlowSaved = flowSave.markSaved, scheduleFlowSave = flowSave.schedule
+  const persistFlow = (_manual = false) => flowSave.persist()
+  const saveFlow = () => { void flowSave.persist() }
 
   async function ensureFlowSavedForRun() {
     if (
       flowSaveStatus.value !== 'saved' ||
-      flowRevision !== savedFlowRevision ||
+      flowRevision.value !== savedFlowRevision.value ||
       flowSaving.value
     ) {
       await persistFlow(false)
     }
-    if (flowSaveStatus.value === 'saved' && flowRevision === savedFlowRevision) return true
+    if (flowSaveStatus.value === 'saved' && flowRevision.value === savedFlowRevision.value) return true
     Message.error('画布尚未保存成功，请点击“重试保存”后再调试')
     return false
   }
 
   function setSelectData(node: UINode) {
-    data.selectData = {
-      precondition: { operator: 'all', conditions: [] },
-      postcondition: { operator: 'all', conditions: [] },
-    }
-    data.dataList.forEach((item: any) => {
+    nodeDraft.value = createNodeDraft()
+    nodeDetails.value.forEach((item) => {
       if (String(item.id) === String(node.config?.id)) {
-        data.selectData = {
+        nodeDraft.value = {
           ...item,
           precondition: item.precondition?.conditions
             ? cloneDraftValue(item.precondition)
@@ -1022,17 +1020,17 @@
   }
 
   function syncSelectedResultData() {
-    const selectedStepId = data.selectData?.id
+    const selectedStepId = nodeDraft.value?.id
     if (selectedStepId === undefined || selectedStepId === null) {
-      data.selectResultData = {}
+      selectedRuntimeResult.value = null
       return
     }
-    data.selectResultData =
-      runtimeResultList.value.find((item: any) => String(item.id) === String(selectedStepId)) || {}
+    selectedRuntimeResult.value =
+      runtimeResultList.value.find((item) => String(item.id) === String(selectedStepId)) || null
   }
 
-  function replaceRuntimeResult(result: any) {
-    data.result_data = result || { element_result_list: [] }
+  function replaceRuntimeResult(result: unknown) {
+    runtimeResult.value = readStepResult(result)
     syncSelectedResultData()
     // 最近结果包含大量条件节点和 Arco 子组件。切换整份结果时主动重挂载结果区，
     // 避免 Vue 在旧结果子树已卸载后继续复用其 DOM。
@@ -1049,36 +1047,35 @@
 
   function doRefresh() {
     if (props.caseInputMode) {
-      data.dataList = normalizeCaseData(props.caseData)
+      nodeDetails.value = normalizeCaseData(props.caseData)
       replaceRuntimeResult(props.caseResult)
       return Promise.resolve()
     }
-    if (!currentPageStepsId.value) return Promise.resolve()
-    return getUiPageStepsDetailed(currentPageStepsId.value)
-      .then((res) => {
-        data.dataList = res.data || []
+    if (currentPageStepsId.value === '') return Promise.resolve(false)
+    return stepResources.read('details', () => getUiPageStepsDetailed(currentPageStepsId.value), (res) => {
+        nodeDetails.value = stepArray(stepResponse(res)).map(readStepDetail)
         if (selectedNode.value) setSelectData(selectedNode.value)
       })
-      .catch(console.log)
   }
 
-  function normalizeCaseData(items: any[] = []) {
-    return (Array.isArray(items) ? items : []).map((item: any) => {
-      const detail: any = {
+  function normalizeCaseData(items: unknown[] = []) {
+    return (Array.isArray(items) ? items : []).map(uiCaseAssetObject).map((item) => {
+      const detail = readStepDetail({
         id: item.page_step_details_id,
         type: item.type,
         ope_key: item.ope_key,
         condition_value: item.condition_value,
         ele_name: item.page_step_details_name ? { name: item.page_step_details_name } : null,
-      }
-      if ([0, 1, 4].includes(Number(item.type))) {
-        detail.ope_value = cloneDraftValue(item.page_step_details_data || [])
+      })
+      if ([0, 1, 4, 6].includes(Number(item.type))) {
+        detail.ope_value = readStepDetail({ ope_value: item.page_step_details_data || [] }).ope_value
       } else if (Number(item.type) === 2) {
-        detail.sql_execute = cloneDraftValue(item.page_step_details_data || [])
+        detail.sql_execute = readStepDetail({ sql_execute: item.page_step_details_data || [] }).sql_execute
       } else if (Number(item.type) === 3) {
-        detail.custom = cloneDraftValue(item.page_step_details_data || [])
+        detail.custom = readStepDetail({ custom: item.page_step_details_data || [] }).custom
       } else if (Number(item.type) === 5) {
-        detail.func = item.page_step_details_data?.[0]?.func || ''
+        const rows = Array.isArray(item.page_step_details_data) ? item.page_step_details_data : []
+        detail.func = rows.length ? String(uiCaseAssetObject(rows[0]).func ?? '') : ''
       }
       return detail
     })
@@ -1094,141 +1091,122 @@
 
   async function loadDatasourceAliases() {
     datasourceAliasOptions.value = []
-    if (!currentProjectProductId.value) return
-    try {
+    const projectProduct = currentProjectProductId.value
+    if (projectProduct === '') return
+    return stepResources.read('aliases', async () => {
       const res = await getDataFactoryDatasourceAlias({
-        project_product: currentProjectProductId.value,
+        project_product: projectProduct,
         status: 1,
         page: 1,
         pageSize: 999,
       })
-      datasourceAliasOptions.value = (res.data || []).map((item: any) => ({
-        label: item.name,
-        value: item.id,
-        dbType: Number(item.db_type),
-      }))
-    } catch (error) {
-      console.log(error)
-    }
+      if (!Array.isArray(res.data)) throw Error('Invalid datasource aliases')
+      return res.data.map(uiCaseAssetObject).map(item => ({ label: String(item.name ?? ''), value: requiredStepId(item.id), dbType: Number(item.db_type) }))
+    }, values => { datasourceAliasOptions.value = values })
   }
 
   function getEleName() {
-    if (!currentPageId.value) return Promise.resolve()
-    return getUiUiElementName(currentPageId.value)
-      .then((res) => {
-        data.uiPageName = Array.isArray(res.data) ? res.data : []
-        if (data.selectData?.id && data.formItems.length) {
-          formFeedback()
-        }
+    const pageId = currentPageId.value
+    if (pageId === '') return Promise.resolve(false)
+    return stepResources.read('elements', () => getUiUiElementName(pageId), (res) => {
+        elementOptions.value = stepArray(stepResponse(res)).map(value => readStepDetail({ ele_name: value }).ele_name).filter((value): value is StepElement => value !== null)
+        if (nodeDraft.value.id !== null && nodeFields.value.length && !configEditing.value) formFeedback()
       })
-      .catch(console.log)
   }
 
-  function buildElementCascaderOptions(elements: any[] = []) {
-    const groups = new Map<string, any[]>()
-    elements.forEach((element: any) => {
-      const category = element?.category || '未分类'
+  function buildElementCascaderOptions(elements: StepElement[] = []) {
+    const groups = new Map<string, Array<{ label: string; value: StepId; expected_event: StepElement['expected_event'] }>>()
+    elements.forEach(element => {
+      if (element.id == null) return
+      const category = element.category || '未分类'
       if (!groups.has(category)) groups.set(category, [])
-      groups.get(category)!.push({
-        label: element.name,
-        value: element.id,
-        expected_event: element.expected_event || {},
-      })
+      groups.get(category)?.push({ label: element.name || '', value: element.id, expected_event: element.expected_event })
     })
-    return Array.from(groups.entries()).map(([category, children]) => ({
-      label: category,
-      value: category,
-      children,
-    }))
+    return Array.from(groups.entries()).map(([category, children]) => ({ label: category, value: category, children }))
   }
 
-  function getElementIdFromCascader(value: any) {
-    if (Array.isArray(value)) return value[value.length - 1]
-    if (typeof value === 'object' && value) return value.id
-    return value
+  function getElementIdFromCascader(value: unknown): StepId | null {
+    if (Array.isArray(value)) return uiCaseAssetId(value[value.length - 1])
+    if (value && typeof value === 'object') return uiCaseAssetId(liveObject(value).id)
+    return uiCaseAssetId(value)
   }
 
-  function getElementCascaderValue(value: any) {
+  function getElementCascaderValue(value: unknown) {
     const elementId = getElementIdFromCascader(value)
-    if (!elementId) return ''
-    const element = data.uiPageName.find((item: any) => String(item.id) === String(elementId))
+    if (elementId == null || elementId === '') return ''
+    const element = elementOptions.value.find((item) => String(item.id) === String(elementId))
     if (!element) return value
     return [element.category || '未分类', element.id]
   }
 
-  function formatElementCascaderLabel(options: any[] = []) {
-    const labels = options
-      .map((item: any) => item?.label)
-      .filter((item: any) => item !== undefined && item !== null && item !== '')
-    return labels.join(' / ')
-  }
-
-  function findExpectedEventByElementValue(value: any) {
+  function findExpectedEventByElementValue(value: unknown) {
     const elementId = getElementIdFromCascader(value)
-    if (!elementId) return {}
+    if (elementId == null || elementId === '') return null
     return (
-      data.uiPageName.find((item: any) => String(item.id) === String(elementId))?.expected_event ||
-      {}
+      elementOptions.value.find((item) => String(item.id) === String(elementId))?.expected_event ||
+      null
     )
   }
 
-  function presetOpeValueValue(presetValues: any[] = [], key: string, fallback: any) {
-    const preset = presetValues.find((item: any) => item?.f === key)
+  function presetOpeValueValue(presetValues: StepDetail['ope_value'] = [], key: string, fallback: unknown) {
+    const preset = presetValues.find((item) => item?.f === key)
     return preset && Object.prototype.hasOwnProperty.call(preset, 'v') ? preset.v : fallback
   }
 
-  function onElementCascaderChange(value: any) {
-    if (data.type !== 0 || configFormReadonly.value) return
+  function onElementCascaderChange(value: unknown) {
+    if (nodeType.value !== 0 || configFormReadonly.value) return
     const expectedEvent = findExpectedEventByElementValue(value)
     if (!expectedEvent?.ope_key) return
-    const opeKeyItem = data.formItems.find((item: any) => item.key === 'ope_key')
+    const opeKeyItem = nodeFields.value.find((item) => item.key === 'ope_key')
     if (!opeKeyItem) return
     opeKeyItem.value = expectedEvent.ope_key
     upDataOpeValue(expectedEvent.ope_key, expectedEvent.ope_value || [])
   }
 
-  function upDataOpeValue(value: any, presetValues: any[] = []) {
-    const inputItem = useSelectValue.findItemByValue(value)
-    for (let i = data.formItems.length - 1; i >= 0; i--) {
-      let key = data.formItems[i].key
+  function upDataOpeValue(value: unknown, presetValues: StepDetail['ope_value'] = []) {
+    const method = typeof value === 'string' ? value : Array.isArray(value) ? String(value[value.length - 1] ?? '') : ''
+    const inputItem = useSelectValue.findItemByValue(method)
+    for (let i = nodeFields.value.length - 1; i >= 0; i--) {
+      let key = nodeFields.value[i].key
       if (!['condition_value', 'ope_key', 'ele_name'].includes(key)) {
-        data.formItems.splice(i, 1)
+        nodeFields.value.splice(i, 1)
       }
     }
-    if (inputItem && data.type === 0) {
-      const requiresElement = (inputItem.parameter || []).some((item: any) =>
+    if (inputItem && nodeType.value === 0) {
+      const requiresElement = (inputItem.parameter || []).some((item) =>
         ['locating', 'actual'].includes(item.f)
       )
-      const elementItemIndex = data.formItems.findIndex((item: any) => item.key === 'ele_name')
+      const elementItemIndex = nodeFields.value.findIndex((item) => item.key === 'ele_name')
       if (!requiresElement && elementItemIndex >= 0) {
-        data.formItems.splice(elementItemIndex, 1)
+        nodeFields.value.splice(elementItemIndex, 1)
       } else if (requiresElement && elementItemIndex < 0) {
-        const operationItemIndex = data.formItems.findIndex((item: any) => item.key === 'ope_key')
-        const elementFormItem = formItemsElementOpe.find((item: any) => item.key === 'ele_name')
+        const operationItemIndex = nodeFields.value.findIndex((item) => item.key === 'ope_key')
+        const elementFormItem = createNodeFields().formItemsElementOpe.find((item) => item.key === 'ele_name')
+        if (!elementFormItem) return
         elementFormItem.value = ''
-        data.formItems.splice(Math.max(0, operationItemIndex + 1), 0, elementFormItem)
+        nodeFields.value.splice(Math.max(0, operationItemIndex + 1), 0, elementFormItem)
       }
     }
-    const label: any = useSelectValue.getTopLevelLabelByValue(value)
+    const label = liveObject(useSelectValue.getTopLevelLabelByValue(method))
     if (String(value || '').startsWith('assert_excel_')) {
       loadUiTestFiles()
     }
     if (inputItem && inputItem.parameter) {
-      inputItem.parameter.forEach((select: any) => {
+      inputItem.parameter.forEach((select) => {
         if (
           select.f === 'locating' &&
-          data.type === 0 &&
-          data.formItems.some((item) => item.key === 'ele_name')
+          nodeType.value === 0 &&
+          nodeFields.value.some((item) => item.key === 'ele_name')
         ) {
           return
         }
         if (
-          !['函数断言', '文件断言', 'sql断言'].includes(label.label) &&
+          !['函数断言', '文件断言', 'sql断言'].includes(String(label.label)) &&
           (select.f === 'actual' || select.f === 'locating') &&
-          !(select.f === 'locating' && data.formItems.some((item) => item.key === 'ele_name')) &&
-          !data.formItems.some((item) => item.key === select.f)
+          !(select.f === 'locating' && nodeFields.value.some((item) => item.key === 'ele_name')) &&
+          !nodeFields.value.some((item) => item.key === select.f)
         ) {
-          data.formItems.push({
+          nodeFields.value.push({
             label: '选择元素',
             key: select.f,
             value: ref(''),
@@ -1236,7 +1214,7 @@
             required: true,
             type: 'element-cascader',
             validator: function () {
-              if (!this.value && this.value !== 0) {
+              if (isEmptyStepField(this.value)) {
                 Message.error(this.placeholder || '')
                 return false
               }
@@ -1244,13 +1222,13 @@
             },
           })
         } else if (
-          select.d === true && data.type === 4
-            ? ['函数断言', '文件断言', 'sql断言'].includes(label.label) &&
+          select.d === true && nodeType.value === 4
+            ? ['函数断言', '文件断言', 'sql断言'].includes(String(label.label)) &&
               select.f !== 'expect' &&
               select.n !== '函数代码'
-            : !data.formItems.some((item) => item.key === select.f)
+            : !nodeFields.value.some((item) => item.key === select.f)
         ) {
-          const isFileParam = isUiUploadFileParam(value, select.f)
+          const isFileParam = isUiUploadFileParam(method, select.f)
           if (isFileParam) {
             loadUiTestFiles()
           }
@@ -1270,7 +1248,7 @@
             required: true,
             placeholder: isFileParam ? '请选择测试文件' : select.p,
             validator: function () {
-              if (!this.value && this.value !== 0) {
+              if (isEmptyStepField(this.value)) {
                 Message.error(this.placeholder || '')
                 return false
               }
@@ -1278,15 +1256,15 @@
               return true
             },
           }
-          data.formItems.push(d)
+          nodeFields.value.push(d)
         }
       })
     }
     if (
       label?.label === 'sql断言' &&
-      !data.formItems.some((item: any) => item.key === 'datasource_alias-ope_value')
+      !nodeFields.value.some((item) => item.key === 'datasource_alias-ope_value')
     ) {
-      data.formItems.push({
+      nodeFields.value.push({
         label: '逻辑数据源',
         key: 'datasource_alias-ope_value',
         value: presetOpeValueValue(presetValues, 'datasource_alias', ''),
@@ -1294,8 +1272,8 @@
         required: true,
         placeholder: '请选择 MySQL、PostgreSQL 或 SQLite 逻辑数据源',
         validator: function () {
-          if (!this.value && this.value !== 0) {
-            Message.error(this.placeholder)
+          if (isEmptyStepField(this.value)) {
+            Message.error(this.placeholder || '请完整填写配置')
             return false
           }
           return true
@@ -1305,76 +1283,31 @@
   }
 
   async function loadUiTestFiles() {
-    uiTestFileLoading.value = true
-    try {
+    const current = stepResources.capture()
+    return stepResources.read('files', async () => {
       await projectInfo.projectProductName()
+      if (!current()) throw Error('Expired file selection')
       const res = await getUserFile({
         page: 1,
         pageSize: 10000,
         type: 0,
       })
-      uiTestFileOptions.value = buildUiUploadFileCascaderOptions(
+      return readStepFiles(buildUiUploadFileCascaderOptions(
         projectInfo.projectProduct,
-        res.data || []
-      )
-    } catch (error) {
-      console.log(error)
-    } finally {
-      uiTestFileLoading.value = false
-    }
+        stepArray(stepResponse(res))
+      ))
+    }, values => { uiTestFileOptions.value = values })
   }
 
-  const onRunCase = async () => {
-    if (userStore.selected_environment == null) {
-      Message.error('请先选择用例执行的环境')
-      return
-    }
-    if (!checkNodeConnections()) return
-    if (!checkNodeConfigSaved()) return
-    if (!(await ensureFlowSavedForRun())) return
-    if (caseRunning.value) return
-    caseRunning.value = true
-    await prepareDebugPolling(executableNodeCount.value)
-    try {
-      if (liveWorkbenchVisible.value) {
-        const started = await liveWorkbenchPanelRef.value?.startStepDebug()
-        if (started) {
-          startDebugPolling()
-        } else {
-          stopDebugPolling()
-        }
-        return
-      }
-      const res = await getUiStepsTest(
-        currentPageStepsId.value,
-        userStore.selected_environment,
-        undefined,
-        stepControl.value
-      )
-      currentDebugSlotId.value = String(res.data?.slot_id || '')
-      currentDebugTaskId.value = String(res.data?.task_id || '')
-      if (currentDebugTaskId.value) {
-        saveExecutorTaskObservation('ui-page-step-debug', currentPageStepsId.value, {
-          taskId: currentDebugTaskId.value,
-          businessType: 'u_page_step',
-        })
-      }
-      Message.loading(res.msg)
-      startDebugPolling()
-    } catch (e) {
-      stopDebugPolling()
-    } finally {
-      caseRunning.value = false
-    }
-  }
-
+  const onRunCase = () => stepDebug.run()
   const onOpenStepBrowser = async () => {
-    if (browserOpening.value) return
-    if (userStore.selected_environment == null) {
+    const current = stepResources.capture(), id = currentPageStepsId.value, environment = userStore.selected_environment
+    if (!current() || browserOpening.value) return
+    if (environment == null) {
       Message.error('请先选择测试环境')
       return
     }
-    if (!currentPageStepsId.value) {
+    if (currentPageStepsId.value === '') {
       Message.warning('当前页面步骤不存在')
       return
     }
@@ -1385,62 +1318,21 @@
     browserOpening.value = true
     try {
       const res = await postUiPageStepOpenBrowser({
-        page_step_id: currentPageStepsId.value,
-        test_env: userStore.selected_environment,
+        page_step_id: id,
+        test_env: environment,
       })
-      Message.success(res.msg || '已通知执行器打开目标页面')
-    } finally {
+      stepResponse(res)
+      if (current()) Message.success(res.msg || '已通知执行器打开目标页面')
+    } catch { if (current()) actionError.value = '打开浏览器失败，请重试' } finally {
       browserOpening.value = false
     }
   }
 
-  const onRunSelectedNode = async () => {
-    if (userStore.selected_environment == null) {
-      Message.error('请先选择用例执行的环境')
-      return
-    }
-    if (!selectedNodeSupportsSingleStep.value) return
-    const detailId = data.selectData?.id || selectedNode.value.config?.id
-    if (!detailId || configEditing.value) {
-      Message.warning('请先保存当前节点配置')
-      return
-    }
-    if (caseRunning.value || debugRunning.value || singleStepRunning.value) return
-    await prepareDebugPolling(1)
-    singleStepRunning.value = true
-    try {
-      if (liveWorkbenchVisible.value) {
-        const started = await liveWorkbenchPanelRef.value?.startStepDebug(detailId)
-        if (started) {
-          startDebugPolling()
-        } else {
-          stopDebugPolling()
-        }
-        return
-      }
-      const res = await getUiStepsTest(
-        currentPageStepsId.value,
-        userStore.selected_environment,
-        undefined,
-        stepControl.value,
-        detailId
-      )
-      currentDebugSlotId.value = String(res.data?.slot_id || '')
-      currentDebugTaskId.value = String(res.data?.task_id || '')
-      if (currentDebugTaskId.value) {
-        saveExecutorTaskObservation('ui-page-step-debug', currentPageStepsId.value, {
-          taskId: currentDebugTaskId.value,
-          businessType: 'u_page_step',
-          meta: { detailId },
-        })
-      }
-      Message.loading(res.msg)
-      startDebugPolling()
-    } catch (error) {
-      stopDebugPolling()
-    }
+  const onRunSelectedNode = () => {
+    const id = uiCaseAssetId(nodeDraft.value.id ?? selectedNode.value?.config?.id)
+    if (id === null || configEditing.value || !selectedNodeSupportsSingleStep.value) return Promise.resolve(false)
+    return stepDebug.run(id)
   }
-
   function handleStepLiveReady() {
     Message.success('实时画面连接成功，可以点击调试')
   }
@@ -1449,294 +1341,46 @@
     await getEleName()
   }
 
-  function doRefreshSteps(pageStepsId: any) {
-    if (!pageStepsId) return Promise.resolve()
-    return getUiSteps({ id: pageStepsId })
-      .then((res) => {
-        currentStepRecord.value = res.data?.[0] || {}
+  function doRefreshSteps(pageStepsId: unknown) {
+    const id = uiCaseAssetId(pageStepsId)
+    if (id === null) return Promise.resolve(false)
+    return stepResources.read('steps', () => getUiSteps({ id }), (res) => {
+        const records = stepArray(stepResponse(res))
+        const record = records.find(item => String(uiCaseAssetObject(item).id) === String(id))
+        if (!record) throw Error('Missing page step')
+        currentStepRecord.value = readStepRecord(record)
         flowData.value = normalizeStepFlowData(currentStepRecord.value.flow_data)
         markFlowSaved()
         syncSelectedResultData()
       })
-      .catch(console.log)
   }
 
+  async function openHealing() {
+    const current = stepResources.capture()
+    if (!current() || props.caseInputMode || canvasBusy.value || debugRunning.value || !checkNodeConfigSaved()) return
+    if (await ensureFlowSavedForRun() && current()) healingPanelVisible.value = true
+  }
   async function confirmPendingStepHealing() {
-    if (!pendingHealingRecordIds.value.length) {
-      Message.warning('待检查节点缺少修复记录，暂时无法确认，请进入修复记录查看详情')
-      return
-    }
-    healingReviewConfirming.value = true
+    const current = stepResources.capture(), id = currentPageStepsId.value, ids = [...pendingHealingRecordIds.value]
+    if (!current() || healingReviewConfirming.value || props.caseInputMode || canvasBusy.value) return
+    if (!ids.length) { Message.warning('待检查节点缺少修复记录，请进入修复记录查看详情'); return }
+    healingReviewConfirming.value = true; actionError.value = ''
     try {
-      for (const recordId of pendingHealingRecordIds.value) {
-        await postUiPageStepHealApply(recordId)
+      for (const recordId of ids) {
+        if (!current()) return
+        stepResponse(await postUiPageStepHealApply(recordId))
+        if (!current()) return
+        flowData.value.nodes.forEach(node => { if (String(node.config?.ai_heal_record_id) === recordId && node.config) node.config.ai_review_status = 'confirmed' })
       }
-      await doRefreshSteps(currentPageStepsId.value)
-      Message.success('AI 流程修复已确认')
-    } finally {
-      healingReviewConfirming.value = false
-    }
+      if (current()) { Message.success('AI 流程修复已确认'); await doRefreshSteps(id) }
+    } catch { if (current()) actionError.value = '确认修复失败，已接受的记录不会重复提交，请重试剩余记录' }
+    finally { healingReviewConfirming.value = false }
   }
 
-  async function loadLatestStepExecutionResult(showLoading = false) {
-    if (!currentPageStepsId.value) return null
-    if (showLoading) latestResultLoading.value = true
-    try {
-      const res = await getExecutionResultLatestResolved({
-        source_type: 'page',
-        target_type: 'ui_page_step',
-        target_id: currentPageStepsId.value,
-        test_env: userStore.selected_environment,
-        page: 1,
-        pageSize: 1,
-      })
-      // 画布默认选中节点会同时切换右侧插槽树，先等待该轮挂载完成，
-      // 避免最新结果在旧组件尚未挂载时触发 Vue 的组件复用分支。
-      await nextTick()
-      replaceRuntimeResult(res.data?.result_data)
-      return res.data || null
-    } finally {
-      if (showLoading) latestResultLoading.value = false
-    }
-  }
-
-  async function prepareDebugPolling(expectedNodeCount: number) {
-    stopDebugPolling({ keepCompleted: false })
-    clearDebugCompletedTimer()
-    try {
-      const res = await getExecutionResultLatestResolved({
-        source_type: 'page',
-        target_type: 'ui_page_step',
-        target_id: currentPageStepsId.value,
-        test_env: userStore.selected_environment,
-        page: 1,
-        pageSize: 1,
-      })
-      debugBaselineResultId.value = res.data?.id || null
-    } catch (error) {
-      debugBaselineResultId.value = null
-    }
-    debugStartedAt.value = Date.now()
-    currentDebugSlotId.value = ''
-    currentDebugTaskId.value = ''
-    debugExpectedNodeCount.value = Math.max(1, Number(expectedNodeCount) || 1)
-    replaceRuntimeResult(null)
-    debugRunning.value = true
-    debugCompleted.value = false
-    debugRefreshError.value = false
-    debugPollFailures.value = 0
-  }
-
-  function scheduleDebugPolling(delay = DEBUG_POLL_INTERVAL_MS) {
-    if (debugPollTimer) clearTimeout(debugPollTimer)
-    if (!debugRunning.value) return
-    debugPollTimer = setTimeout(() => {
-      debugPollTimer = null
-      void pollDebugResult()
-    }, delay)
-  }
-
-  function startDebugPolling() {
-    scheduleDebugPolling(0)
-  }
-
-  async function resumeActiveDebugTask() {
-    if (!currentPageStepsId.value || currentDebugTaskId.value) return
-    try {
-      const observation = loadExecutorTaskObservation(
-        'ui-page-step-debug',
-        currentPageStepsId.value
-      )
-      if (observation?.taskId) {
-        currentDebugTaskId.value = String(observation.taskId)
-        debugRunning.value = true
-        debugCompleted.value = false
-        debugRefreshError.value = false
-        debugExpectedNodeCount.value = Math.max(1, Number(executableNodeCount.value) || 1)
-        startDebugPolling()
-        return
-      }
-      const res = await getActiveExecutorTasks({
-        business_type: 'u_page_step',
-        business_id: currentPageStepsId.value,
-      })
-      const task = (res.data || [])[0]
-      if (!task?.task_id) return
-      currentDebugTaskId.value = String(task.task_id)
-      saveExecutorTaskObservation('ui-page-step-debug', currentPageStepsId.value, {
-        taskId: currentDebugTaskId.value,
-        businessType: 'u_page_step',
-      })
-      debugRunning.value = true
-      debugCompleted.value = false
-      debugRefreshError.value = false
-      debugExpectedNodeCount.value = Math.max(1, Number(executableNodeCount.value) || 1)
-      startDebugPolling()
-    } catch (error) {
-      console.log(error)
-    }
-  }
-
-  function stopDebugPolling(options: { keepCompleted?: boolean } = {}) {
-    if (debugPollTimer) {
-      clearTimeout(debugPollTimer)
-      debugPollTimer = null
-    }
-    debugPollRequesting = false
-    debugRunning.value = false
-    currentDebugSlotId.value = ''
-    debugExpectedNodeCount.value = 0
-    singleStepRunning.value = false
-    debugRefreshError.value = false
-    if (!options.keepCompleted) {
-      debugCompleted.value = false
-      clearDebugCompletedTimer()
-    }
-  }
-
-  async function pollDebugResult() {
-    if (!currentPageStepsId.value) return
-    if (debugPollRequesting) {
-      scheduleDebugPolling(250)
-      return
-    }
-    debugPollRequesting = true
-    try {
-      if (currentDebugTaskId.value) {
-        const taskRes = await getExecutorTask(currentDebugTaskId.value)
-        const task = taskRes.data || {}
-        if (task.progress?.current_node_id) {
-          // 任务事实优先提供当前节点；节点明细结果仍沿用既有结果接口。
-          currentStepRecord.value = { ...currentStepRecord.value, status: 3 }
-        }
-        if (task.terminal) {
-          const finishedTaskId = currentDebugTaskId.value
-          if (task.result?.element_result_list) {
-            replaceRuntimeResult(task.result)
-          }
-          await finishDebugPolling(Boolean(task.result))
-          clearExecutorTaskObservation(
-            'ui-page-step-debug',
-            currentPageStepsId.value,
-            finishedTaskId
-          )
-          currentDebugTaskId.value = ''
-          return
-        }
-      }
-      const res = await getUiSteps({ id: currentPageStepsId.value })
-      debugPollFailures.value = 0
-      debugRefreshError.value = false
-      const record = res.data?.[0] || {}
-      applyRuntimeStepRecord(record)
-      if (await isDebugFinished(record)) {
-        await finishDebugPolling(true)
-      }
-    } catch (error) {
-      debugPollFailures.value += 1
-      debugRefreshError.value = true
-    } finally {
-      debugPollRequesting = false
-      if (debugRunning.value) {
-        const retryDelay = debugRefreshError.value
-          ? Math.min(
-              1000 * 2 ** Math.max(0, debugPollFailures.value - 1),
-              DEBUG_POLL_MAX_BACKOFF_MS
-            )
-          : DEBUG_POLL_INTERVAL_MS
-        scheduleDebugPolling(retryDelay)
-      }
-    }
-  }
-
-  function applyRuntimeStepRecord(record: any) {
-    if (!record?.id) return
-    currentStepRecord.value = record
-    flowData.value = normalizeStepFlowData(record.flow_data || flowData.value)
-  }
-
-  async function finishDebugPolling(resultLoaded = false) {
-    stopDebugPolling({ keepCompleted: true })
-    if (!resultLoaded) {
-      await loadLatestStepExecutionResult()
-    }
-    // 流程自愈报告会在任务收尾阶段原子回写画布和节点明细；两份数据必须
-    // 一起刷新，否则新节点找不到 ope_key，卡片会把节点名称误显示为执行方法。
-    await doRefreshSteps(currentPageStepsId.value)
-    await doRefresh()
-    debugCompleted.value = true
-    clearDebugCompletedTimer()
-    debugCompletedTimer = setTimeout(() => {
-      debugCompleted.value = false
-    }, 1800)
-  }
-
-  function handleStepResultMessage(event: Event) {
-    const message = (event as CustomEvent).detail
-    if (message?.data?.func_name !== 'u_page_steps' || !debugRunning.value) return
-    const result = message?.data?.func_args
-    if (!result || result.case_step_details_id) return
-    if (String(result.id || '') !== String(currentPageStepsId.value || '')) return
-    if (
-      currentDebugSlotId.value &&
-      result.slot_id &&
-      String(result.slot_id) !== currentDebugSlotId.value
-    ) {
-      return
-    }
-    replaceRuntimeResult(result)
-    currentStepRecord.value = {
-      ...currentStepRecord.value,
-      status: result.is_final ? result.status : 3,
-    }
-    if (result.is_final) {
-      void finishDebugPolling(true)
-    }
-  }
-
-  function clearDebugCompletedTimer() {
-    if (debugCompletedTimer) {
-      clearTimeout(debugCompletedTimer)
-      debugCompletedTimer = null
-    }
-  }
-
-  async function isDebugFinished(record: any) {
-    if (!debugRunning.value) return false
-    const total = debugExpectedNodeCount.value
-    const hasFinishedStatus = record.status === 0 || record.status === 1
-    const hasCompleteRuntimeResult = total > 0 && runtimeResultList.value.length >= total
-    if (!hasFinishedStatus && !hasCompleteRuntimeResult) return false
-
-    const latestResult = await loadLatestStepExecutionResult()
-    if (!latestResult?.id) return false
-    if (debugBaselineResultId.value !== null) {
-      return String(latestResult.id) !== String(debugBaselineResultId.value)
-    }
-    return parseTime(latestResult.create_time) >= debugStartedAt.value - 1000
-  }
-
-  function parseTime(value: any) {
-    if (!value) return 0
-    if (typeof value === 'number') return value
-    const text = String(value).replace(' ', 'T')
-    const time = Date.parse(text)
-    return Number.isNaN(time) ? 0 : time
-  }
-
-  // 监听选中节点变化，更新配置文本
-  watch(
-    selectedNode,
-    (node) => {
-      if (node) {
-        configText.value = JSON.stringify(node.config || {}, null, 2)
-      } else {
-        configText.value = ''
-      }
-    },
-    { immediate: true }
-  )
-
+  const loadLatestStepExecutionResult = stepDebug.latest
+  const resumeActiveDebugTask = stepDebug.recover
+  const stopDebugPolling = stepDebug.invalidate
+  const handleStepResultMessage = stepDebug.message
   // 查找指定节点的上一个节点
   const findPreviousNode = (nodeId: string): UINode | null => {
     // 查找连接到当前节点的边
@@ -1754,18 +1398,18 @@
   const onNodeClick = (node: UINode) => {
     captureSelectedNodeDraft()
     setSelectData(node)
-    configEditing.value = !node.config?.id
+    configEditing.value = uiCaseAssetId(node.config?.id) === null
     // 检查上一个节点是否为判断类型（type: 4）
     const previousNode = findPreviousNode(node.id)
-    data.isAdd = false
+    requiresBranchValue.value = false
     if (previousNode && previousNode.type === 4) {
-      data.conditionId = previousNode.config.id
-      data.conditionNodeId = previousNode.id
-      data.condition = true
+      previousConditionId.value = previousNode.config?.id ?? null
+      previousConditionNodeId.value = previousNode.id
+      hasPreviousCondition.value = true
     } else {
-      data.conditionId = 0
-      data.conditionNodeId = ''
-      data.condition = false
+      previousConditionId.value = null
+      previousConditionNodeId.value = ''
+      hasPreviousCondition.value = false
     }
     // 先清空表单项，重新构建基础表单
     changeStatus(node.type)
@@ -1773,10 +1417,10 @@
     const draft = nodeFormDrafts.get(node.id)
     const draftOpeKey = draft?.ope_key
     // 如果有选中的数据，需要处理回显和动态表单项
-    if (Object.keys(data.selectData).length > 0 || draftOpeKey) {
+    if (Object.keys(nodeDraft.value).length > 0 || draftOpeKey) {
       // 先处理操作类型选择，触发动态表单生成
-      const opeKeyItem = data.formItems.find((item: any) => item.key === 'ope_key')
-      const opeKey = draftOpeKey || data.selectData.ope_key
+      const opeKeyItem = nodeFields.value.find((item) => item.key === 'ope_key')
+      const opeKey = draftOpeKey || nodeDraft.value.ope_key
       if (opeKeyItem && opeKey) {
         opeKeyItem.value = opeKey
         // 触发动态表单项生成
@@ -1791,32 +1435,15 @@
     }
   }
 
-  function cloneDraftValue(value: any) {
-    if (value === undefined || value === null) return value
-    if (typeof value !== 'object') return value
-    return JSON.parse(JSON.stringify(value))
-  }
-
-  function textareaModelValue(value: unknown): string {
-    if (value === null || value === undefined) return ''
-    if (typeof value === 'string') return value
-    if (typeof value === 'object') {
-      try {
-        return JSON.stringify(value)
-      } catch {
-        return String(value)
-      }
-    }
-    return String(value)
-  }
+  function cloneDraftValue<T>(value: T): T { return cloneLosslessJson(value) }
 
   function captureSelectedNodeDraft() {
     const nodeId = selectedNode.value?.id
-    if (!nodeId || configFormReadonly.value || (!data.formItems.length && data.type !== 2)) return
+    if (!nodeId || configFormReadonly.value || (!nodeFields.value.length && nodeType.value !== 2)) return
     const draft = Object.fromEntries(
-      data.formItems.map((item: any) => [item.key, cloneDraftValue(item.value)])
+      nodeFields.value.map((item) => [item.key, cloneDraftValue(item.value)])
     )
-    if (data.type === 2) draft.__sql_execute = cloneDraftValue(sqlOperationRows.value)
+    if (nodeType.value === 2) draft.__sql_execute = cloneDraftValue(sqlOperationRows.value)
     nodeFormDrafts.set(nodeId, draft)
   }
 
@@ -1824,9 +1451,9 @@
     const draft = nodeFormDrafts.get(nodeId)
     if (!draft) return
     if (Object.prototype.hasOwnProperty.call(draft, '__sql_execute')) {
-      sqlOperationRows.value = cloneDraftValue(draft.__sql_execute || [])
+      sqlOperationRows.value = readStepDetail({ sql_execute: draft.__sql_execute || [] }).sql_execute
     }
-    data.formItems.forEach((item: any) => {
+    nodeFields.value.forEach((item) => {
       if (Object.prototype.hasOwnProperty.call(draft, item.key)) {
         item.value = cloneDraftValue(draft[item.key])
       }
@@ -1834,56 +1461,57 @@
   }
 
   function changeStatus(event: number) {
-    data.type = event
+    const { formItemsElementOpe, formItemsElementAss, formItemsElement4, formItemsElementKey, formItemsElementCondition, formItemsElementCode, formItemsForceWait } = createNodeFields()
+    nodeType.value = event
     // 清空表单项，重新构建
-    data.formItems = []
-    if (data.condition) {
-      let placeholder: any = null
-      const conditionDraft = nodeFormDrafts.get(data.conditionNodeId)
+    nodeFields.value = []
+    if (hasPreviousCondition.value) {
+      let placeholder: string | null = null
+      const conditionDraft = nodeFormDrafts.get(previousConditionNodeId.value)
       const hasDraftMethod = Boolean(
         conditionDraft && Object.prototype.hasOwnProperty.call(conditionDraft, 'ope_key')
       )
-      const savedCondition = data.dataList.find((item: any) => item.id === data.conditionId)
+      const savedCondition = nodeDetails.value.find((item) => item.id === previousConditionId.value)
       const conditionMethod = hasDraftMethod ? conditionDraft?.ope_key : savedCondition?.ope_key
-      const byValue = useSelectValue.findItemByValue(conditionMethod)
+      const byValue = useSelectValue.findItemByValue(String(conditionMethod ?? ''))
       const conditionParameters = byValue?.parameter || []
-      conditionParameters.forEach((parameter: any) => {
+      conditionParameters.forEach((parameter) => {
         if (parameter.f === 'expect') {
           placeholder = parameter.p
-          data.isAdd = true
+          requiresBranchValue.value = true
         }
       })
-      if (data.isAdd) {
+      if (requiresBranchValue.value) {
         if (placeholder) {
           formItemsElementCondition[0].placeholder = placeholder
         }
-        data.formItems.push(...formItemsElementCondition)
+        nodeFields.value.push(...formItemsElementCondition)
       }
     }
     if (event === 0) {
-      data.formItems.push(...formItemsElementOpe)
+      nodeFields.value.push(...formItemsElementOpe)
       // 元素断言
     } else if (event === 1) {
-      data.formItems.push(...formItemsElementAss)
+      nodeFields.value.push(...formItemsElementAss)
       // sql操作
     } else if (event === 2) {
       sqlOperationRows.value = []
       // 自定义变量
     } else if (event === 3) {
-      data.formItems.push(...formItemsElementKey)
+      nodeFields.value.push(...formItemsElementKey)
       // 条件判断
     } else if (event === 4) {
-      data.formItems.push(...formItemsElement4)
+      nodeFields.value.push(...formItemsElement4)
     } else if (event === 5) {
-      data.formItems.push(...formItemsElementCode)
+      nodeFields.value.push(...formItemsElementCode)
     } else if (event === 6) {
-      data.formItems.push(...formItemsForceWait)
+      nodeFields.value.push(...formItemsForceWait)
     }
   }
 
   function fillDefaultPythonCode() {
-    if (data.type !== 5) return
-    const codeItem = data.formItems.find((item: any) => item.key === 'func')
+    if (nodeType.value !== 5) return
+    const codeItem = nodeFields.value.find((item) => item.key === 'func')
     if (codeItem && !codeItem.value) {
       codeItem.value = PYTHON_CODE_TEMPLATE
     }
@@ -1891,53 +1519,21 @@
 
   // 处理所有表单项的回显
   function formFeedback() {
-    if (data.type === 2) {
-      sqlOperationRows.value = cloneDraftValue(data.selectData?.sql_execute || [])
-      if (!sqlOperationRows.value.length && !configFormReadonly.value) addSqlOperation()
-      return
-    }
-    data.formItems.forEach((it: any) => {
-      let propName: any = data.selectData[it.key]
-      if (it.key === 'key') {
-        propName = data.selectData?.custom ? data.selectData?.custom[0]['key'] : ''
-      } else if (it.key === 'value') {
-        propName = data.selectData?.custom ? data.selectData?.custom[0]['value'] : ''
-      } else if (it.key === 'sql') {
-        propName = data.selectData?.sql_execute ? data.selectData?.sql_execute[0]['sql'] : ''
-      } else if (it.key === 'key_list') {
-        propName = data.selectData?.sql_execute ? data.selectData?.sql_execute[0]['key_list'] : ''
-      }
-      if (
-        (it.key.includes('locating') || it.key.includes('actual') || it.key === 'ele_name') &&
-        it.label !== '函数代码'
-      ) {
-        propName = getElementCascaderValue(data.selectData.ele_name)
-      } else if (it.key.includes('ope_value')) {
-        if (data.selectData.ope_value) {
-          data.selectData.ope_value.forEach((item1: any) => {
-            if ((item1.d || data.type === 6) && it.key.includes(item1.f)) {
-              propName = item1.v
-              if (isUiUploadFileParam(data.selectData.ope_key, item1.f)) {
-                loadUiTestFiles()
-                propName = normalizeUiUploadFileValue(propName, uiTestFileOptions.value)
-              }
-            }
-          })
-        }
-      } else if (typeof propName === 'undefined' && data.selectData.ope_value) {
-        data.selectData.ope_value.forEach((item: any) => {
-          if (item.f === it.key) {
-            propName = item.v
-          }
-        })
-      }
-      if (Array.isArray(propName)) {
-        it.value = propName
-      } else if (typeof propName === 'object' && propName !== null) {
-        it.value = propName.id ? propName?.id : propName?.expect
-      } else {
-        it.value = propName
-      }
+    const detail = nodeDraft.value
+    if (nodeType.value === 2) { sqlOperationRows.value = cloneDraftValue(detail.sql_execute); if (!sqlOperationRows.value.length && !configFormReadonly.value) addSqlOperation(); return }
+    nodeFields.value.forEach(field => {
+      let value: unknown
+      if (field.key === 'ope_key') value = detail.ope_key
+      else if (field.key === 'condition_value') value = typeof detail.condition_value === 'object' && detail.condition_value !== null ? detail.condition_value.expect ?? detail.condition_value.value : detail.condition_value
+      else if (field.key === 'func') value = detail.func
+      else if (field.key === 'key') value = detail.custom[0]?.key ?? ''
+      else if (field.key === 'value') value = detail.custom[0]?.value ?? ''
+      else if (field.key === 'sql') value = detail.sql_execute[0]?.sql ?? ''
+      else if (field.key === 'key_list') value = detail.sql_execute[0]?.key_list ?? ''
+      else value = detail.ope_value.find(item => item.f === field.key.replace('-ope_value', ''))?.v
+      if ((field.key.includes('locating') || field.key === 'actual' || field.key === 'ele_name') && field.label !== '函数代码') value = getElementCascaderValue(detail.ele_name)
+      if (isUiUploadFileParam(detail.ope_key, field.key.replace('-ope_value', ''))) { void loadUiTestFiles(); value = normalizeUiUploadFileValue(value, uiTestFileOptions.value) }
+      field.value = cloneDraftValue(value)
     })
   }
 
@@ -1949,13 +1545,15 @@
   // 流程图数据变化事件
   const onFlowChange = (newFlowData: FlowData) => {
     flowData.value = normalizeStepFlowData(newFlowData)
-    flowRevision += 1
+    flowRevision.value += 1
     flowSaveStatus.value = 'dirty'
     scheduleFlowSave()
   }
 
   async function onNodeDuplicate(sourceNode: UINode) {
-    if (nodeDuplicating.value) return
+    const current = stepResources.capture(), pageStepId = currentPageStepsId.value
+    const sourceDetailId = uiCaseAssetId(sourceNode.config?.id)
+    if (!current() || canvasBusy.value || props.caseInputMode) return
     captureSelectedNodeDraft()
     const sourceDraft = nodeFormDrafts.get(sourceNode.id)
     const nodeId = `${sourceNode.type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
@@ -1973,16 +1571,16 @@
       edges: [...flowData.value.edges],
     })
 
-    if (!sourceNode.config?.id || sourceDraft) {
+    if (sourceNode.config?.id == null || sourceDraft) {
       if (sourceDraft) {
         nodeFormDrafts.set(nodeId, cloneDraftValue(sourceDraft))
       }
       flowData.value = duplicateFlow
-      flowRevision += 1
+      flowRevision.value += 1
       flowSaveStatus.value = 'dirty'
       scheduleFlowSave()
       await nextTick()
-      flowChartRef.value?.selectNode(nodeId)
+      if (current()) flowChartRef.value?.selectNode(nodeId)
       Message.success('节点已复制，请保存副本配置')
       return
     }
@@ -1991,22 +1589,25 @@
     clearFlowSaveTimer()
     Message.loading('正在复制节点')
     try {
-      if (flowSavePromise) await flowSavePromise
+      await flowSave.wait()
+      if (!current()) return
       const res = await postUiPageStepNodeCopy({
-        page_step_id: currentPageStepsId.value,
-        source_detail_id: sourceNode.config.id,
+        page_step_id: pageStepId,
+        source_detail_id: sourceDetailId!,
         node_id: nodeId,
-        flow_data: duplicateFlow,
+        flow_data: cloneDraftValue(duplicateFlow),
       })
+      if (!current()) return
+      stepResponse(res)
       flowData.value = normalizeStepFlowData(res.data.flow_data)
-      flowRevision += 1
-      markFlowSaved(flowRevision)
+      flowRevision.value += 1
+      markFlowSaved(flowRevision.value)
       await doRefresh()
       await nextTick()
-      flowChartRef.value?.selectNode(nodeId)
-      Message.success(res.msg)
-    } catch (error) {
-      console.log(error)
+      if (current()) flowChartRef.value?.selectNode(nodeId)
+      if (current()) Message.success(res.msg)
+    } catch {
+      if (current()) actionError.value = '节点复制失败，请重试'
     } finally {
       nodeDuplicating.value = false
     }
@@ -2016,12 +1617,7 @@
     stepControl.value = { ...value }
   }
 
-  function normalizeStepFlowData(value?: FlowData): FlowData {
-    return {
-      nodes: Array.isArray(value?.nodes) ? value.nodes : [],
-      edges: Array.isArray(value?.edges) ? value.edges : [],
-    }
-  }
+  function normalizeStepFlowData(value?: unknown): FlowData { return readStepFlow(value) }
 
   // 连接线删除事件
   const onEdgeDelete = (edge: UIEdge) => {
@@ -2029,19 +1625,19 @@
   }
 
   // 节点删除事件
-  const onNodeDelete = (node: UINode) => {
-    nodeFormDrafts.delete(node.id)
-    if (selectedNode.value?.id === node.id) {
-      selectedNode.value = null
-    }
-    if (!node.config?.id) {
-      return
-    }
-    deleteUiPageStepsDetailed(node.config.id, currentPageStepsId.value)
-      .then((res) => {
-        Message.success(res.msg)
-      })
-      .catch(console.log)
+  const onNodeDelete = async (node: UINode): Promise<boolean> => {
+    const current = stepResources.capture(), id = uiCaseAssetId(node.config?.id), pageStepId = uiCaseAssetId(currentPageStepsId.value)
+    if (!current() || canvasBusy.value || props.caseInputMode || pageStepId === null) return false
+    nodeDeleting.value = true; actionError.value = ''; clearFlowSaveTimer()
+    try {
+      await flowSave.wait(); if (!current()) return false
+      if (id !== null) stepResponse(await deleteUiPageStepsDetailed(id, pageStepId))
+      if (!current()) return false
+      nodeFormDrafts.delete(node.id); nodeDetails.value = nodeDetails.value.filter(item => String(item.id) !== String(id))
+      if (selectedNode.value?.id === node.id) { selectedNode.value = null; nodeDraft.value = createNodeDraft(); nodeFields.value = [] }
+      Message.success('节点已删除'); return true
+    } catch { if (current()) actionError.value = '节点删除失败，请重试'; return false }
+    finally { nodeDeleting.value = false }
   }
 
   // 检查是否有节点没有进行连接
@@ -2107,7 +1703,7 @@
   }
 
   const checkNodeConfigSaved = (): boolean => {
-    const invalidNodes = flowData.value.nodes.filter((node) => !node.config?.id)
+    const invalidNodes = flowData.value.nodes.filter((node) => node.config?.id == null)
     if (invalidNodes.length) {
       const nodeNames = invalidNodes
         .map((node) => node.label || node.id)
@@ -2148,10 +1744,10 @@
   }
 
   function getDraftNodeDisplayName(node: UINode) {
-    const detail = data.dataList.find((item: any) => String(item.id) === String(node.config?.id))
+    const detail = nodeDetails.value.find((item) => String(item.id) === String(node.config?.id))
     return (
       detail?.ele_name?.name ||
-      useSelectValue.getSelectLabel(detail?.ope_key) ||
+      useSelectValue.getSelectLabel(detail?.ope_key || '') ||
       node.label ||
       node.id
     )
@@ -2167,8 +1763,8 @@
   }
 
   const saveFormData = async () => {
-    if (!selectedNode.value) return
-    if (formSaving.value) return
+    if (!stepResources.capture()() || !selectedNode.value || methodsLoading.value || methodsError.value || nodeDuplicating.value || nodeDeleting.value) return
+    if (formSaving.value || caseNodeInputs.saving.value) return
     const savingNode = selectedNode.value
     const savingNodeId = savingNode.id
 
@@ -2182,46 +1778,44 @@
 
     // 添加必填校验
     if (
-      !data.formItems.every((it: any) =>
+      !nodeFields.value.every((it) =>
         isCaseInheritedConfigItem(it) ? true : it.validator ? it.validator() : true
       )
     ) {
       return
     }
 
-    if (data.type === 2 && !dataSourceOperationListRef.value?.validate()) {
+    if (nodeType.value === 2 && !dataSourceOperationListRef.value?.validate()) {
       Message.warning('请完整填写逻辑数据源和执行内容')
       return
     }
 
+    if (props.caseInputMode) {
+      const value = nodeType.value === 2
+        ? { sql_execute: cloneDraftValue(sqlOperationRows.value) }
+        : getFormItems(nodeFields.value)
+      await caseNodeInputs.save(value)
+      return
+    }
     formSaving.value = true
+    const current = stepResources.capture(), selectionCurrent = captureElementContext(), pageStepId = currentPageStepsId.value
+    const inputSnapshot = cloneDraftValue(nodeType.value === 2 ? { sql_execute: sqlOperationRows.value } : getFormItems(nodeFields.value))
+    const detailSnapshot = cloneDraftValue(nodeDraft.value), typeSnapshot = nodeType.value, flowSnapshot = cloneDraftValue(flowData.value)
     clearFlowSaveTimer()
     try {
-      if (flowSavePromise) await flowSavePromise
-      const value = (
-        data.type === 2
-          ? { sql_execute: cloneDraftValue(sqlOperationRows.value) }
-          : getFormItems(data.formItems)
-      ) as UiPageStepsDetailPayload
-      value['page_step'] = currentPageStepsId.value
-      value['type'] = data.type
-      if (data?.selectData?.id) {
-        value['id'] = data.selectData.id
+      const value: UiPageStepsDetailPayload = { ...inputSnapshot, page_step: pageStepId }
+      value['page_step'] = pageStepId
+      value['type'] = typeSnapshot
+      if (detailSnapshot.id !== null) {
+        value['id'] = detailSnapshot.id
       }
-      value['flow_data'] = normalizeStepFlowData(flowData.value)
+      value['flow_data'] = flowSnapshot
       value['node_id'] = savingNodeId
       value['step_sort'] = 0
-      value['precondition'] = data.selectData.precondition || { operator: 'all', conditions: [] }
-      value['postcondition'] = data.selectData.postcondition || { operator: 'all', conditions: [] }
+      value['precondition'] = detailSnapshot.precondition || { operator: 'all', conditions: [] }
+      value['postcondition'] = detailSnapshot.postcondition || { operator: 'all', conditions: [] }
       value['page_type'] = Number(currentPageType.value)
-      if (props.caseInputMode) {
-        const saved = await saveCaseNodeInputs(value)
-        if (!saved) return
-        nodeFormDrafts.delete(savingNodeId)
-        configEditing.value = false
-        return
-      }
-      if (value.condition_value) {
+      if (value.condition_value !== undefined && value.condition_value !== null && value.condition_value !== '') {
         value['condition_value'] = { expect: value.condition_value }
       }
       if (value.key || value.value) {
@@ -2234,7 +1828,7 @@
         delete value.sql
         delete value.key_list
       }
-      if (data.type === 6) {
+      if (typeSnapshot === 6) {
         value['ope_key'] = null
         value['ope_value'] = [
           { f: 'seconds', v: Number(value['seconds-ope_value']) },
@@ -2242,101 +1836,50 @@
         delete value['seconds-ope_value']
       }
 
-      const res = await postUiPageStepsDetailed(
-        { ...value, ...processOptionData(value) },
-        currentPageStepsId.value
-      )
+      Object.assign(value, processOptionData(value))
+      const fields = ['id', 'type', 'flow_data', 'node_id', 'step_sort', 'precondition', 'postcondition', 'page_type', 'condition_value', 'custom', 'sql_execute', 'func', 'ope_key', 'ope_value', 'ele_name'] as const
+      const payload: UiPageStepsDetailPayload = { page_step: pageStepId, ...Object.fromEntries(fields.filter(key => value[key] !== undefined).map(key => [key, value[key]])) }
+      await flowSave.wait()
+      if (!current()) return
+      const res = await postUiPageStepsDetailed(payload, pageStepId)
+      if (!current()) return
+      stepResponse(res)
       Message.success(res.msg)
       nodeFormDrafts.delete(savingNodeId)
       flowData.value = normalizeStepFlowData(res.data.flow_data)
-      flowRevision += 1
-      markFlowSaved(flowRevision)
+      flowRevision.value += 1
+      markFlowSaved(flowRevision.value)
       const updatedNode = flowData.value.nodes.find((node) => node.id === savingNodeId)
-      if (selectedNode.value?.id === savingNodeId && updatedNode) {
+      if (selectionCurrent() && selectedNode.value?.id === savingNodeId && updatedNode) {
         selectedNode.value = updatedNode
-        data.selectData = {
-          ...data.selectData,
-          ...res.data,
-          id: res.data.id,
-        }
+        nodeDraft.value = readStepDetail({ ...detailSnapshot, ...res.data })
         configEditing.value = false
       }
       await doRefresh()
     } catch (error) {
-      console.log(error)
+      if (current()) actionError.value = '节点保存失败，草稿已保留，请重试'
     } finally {
       formSaving.value = false
-      if (flowRevision !== savedFlowRevision) scheduleFlowSave()
+      if (current() && flowRevision.value !== savedFlowRevision.value) scheduleFlowSave()
     }
   }
 
-  async function saveCaseNodeInputs(value: any) {
-    if (!props.caseStepId || !props.caseId || !data.selectData?.id) {
-      Message.error('未找到 Case 页面步骤或节点信息')
-      return false
-    }
-    const nextCaseData = cloneDraftValue(props.caseData || [])
-    const target = nextCaseData.find(
-      (item: any) => String(item.page_step_details_id) === String(data.selectData.id)
-    )
-    if (!target) {
-      Message.error('Case 节点缓存不存在，请返回用例编排并对该步骤执行“同步数据”')
-      return false
-    }
-    const nodeType = Number(target.type)
-    if ([0, 1, 4, 6].includes(nodeType)) {
-      target.page_step_details_data = (target.page_step_details_data || []).map((param: any) => {
-        const nextParam = cloneDraftValue(param)
-        const dynamicKey = `${param.f}-ope_value`
-        if (Object.prototype.hasOwnProperty.call(value, dynamicKey)) {
-          nextParam.v = value[dynamicKey]
-        } else if (
-          !['locating', 'actual'].includes(param.f) &&
-          Object.prototype.hasOwnProperty.call(value, param.f)
-        ) {
-          nextParam.v = value[param.f]
-        }
-        return nextParam
-      })
-      if (value.condition_value !== undefined) {
-        target.condition_value = { expect: value.condition_value }
-      }
-    } else if (nodeType === 2) {
-      target.page_step_details_data = cloneDraftValue(value.sql_execute || [])
-    } else if (nodeType === 3) {
-      target.page_step_details_data = [{ key: value.key, value: value.value }]
-    } else if (nodeType === 5) {
-      target.page_step_details_data = [{ func: value.func }]
-    }
-    const res = await putUiCaseStepsDetailed(
-      {
-        id: props.caseStepId,
-        case_data: nextCaseData,
-      },
-      Number(props.caseId)
-    )
-    Message.success(res.msg)
-    data.dataList = normalizeCaseData(nextCaseData)
-    setSelectData(selectedNode.value!)
-    emit('caseDataSaved', nextCaseData)
-    return true
-  }
-
-  function processOptionData(value: any) {
-    const extractedValues = []
+  function processOptionData(value: UiPageStepsDetailPayload) {
+    const extractedValues: Array<{ f: string; n: string; p: string; d: boolean; v: unknown; value_type?: string; input_type?: string }> = []
     if (!value.ope_key) {
       return {}
     }
-    const parameter = useSelectValue.findItemByValue(value.ope_key)?.parameter
+    const method = typeof value.ope_key === 'string' ? value.ope_key : ''
+    const parameter = cloneDraftValue(useSelectValue.findItemByValue(method)?.parameter)
     if (!parameter) {
       return {}
     }
     const datasourceAlias = value['datasource_alias-ope_value']
     delete value['datasource_alias-ope_value']
-    const requiresElement = parameter.some((item: any) => ['locating', 'actual'].includes(item.f))
+    const requiresElement = parameter.some((item) => ['locating', 'actual'].includes(item.f))
     for (const key in value) {
       const newKey = key.replace('-ope_value', '')
-      parameter.forEach((item: any) => {
+      parameter.forEach((item) => {
         const isDuplicate = extractedValues.some(
           (existingItem) => existingItem.d === item.d && existingItem.f === item.f
         )
@@ -2348,7 +1891,7 @@
         } else if (key === 'ele_name') {
           value['ele_name'] = getElementIdFromCascader(value[key])
         } else if (newKey && item.f === newKey) {
-          item['v'] = isUiUploadFileParam(value.ope_key, newKey)
+          item['v'] = isUiUploadFileParam(method, newKey)
             ? getUiUploadFileValueFromCascader(value[key], uiTestFileOptions.value)
             : value[key]
           if (!isDuplicate) {
@@ -2358,9 +1901,9 @@
         }
       })
     }
-    if (value['ele_name']) {
-      const locatingItem = parameter.find((item: any) => item.f === 'locating')
-      const hasLocating = extractedValues.some((item: any) => item.f === 'locating')
+    if (uiCaseAssetId(value['ele_name']) !== null) {
+      const locatingItem = parameter.find((item) => item.f === 'locating')
+      const hasLocating = extractedValues.some((item) => item.f === 'locating')
       if (locatingItem && !hasLocating) {
         extractedValues.push(locatingItem)
       }
@@ -2380,37 +1923,34 @@
     }
   }
 
-  function getNodeTypeLabel(type: any) {
-    const enumLabel = enumStore.element_ope?.[type]?.title
+  function getNodeTypeLabel(type: unknown) {
+    const enumLabel = enumStore.element_ope?.find(item => String(item.key) === String(type))?.title
     return enumLabel || nodeTypes.find((item) => item.type === Number(type))?.label || '未知类型'
   }
 
-  function getMethodLabel(value: any) {
-    if (!value) return '-'
-    return useSelectValue.findItemByValue(value)?.label || value
+  function getMethodLabel(value: unknown): string {
+    if (value == null || value === '') return '-'
+    return useSelectValue.findItemByValue(String(value))?.label || String(value)
   }
-
-  function getElementName(value: any) {
-    if (!value) return '-'
-    if (typeof value === 'object') return value.name || value.label || value.id || '-'
-    const element = data.uiPageName.find((item: any) => String(item.id) === String(value))
-    if (element) return element.name || value
-    return value
+  function getElementName(value: unknown): string {
+    if (value == null || value === '') return '-'
+    if (typeof value === 'object') { const row = liveObject(value); return String(row.name || row.label || row.id || '-') }
+    return elementOptions.value.find(item => String(item.id) === String(value))?.name || String(value)
   }
 
   function getSelectedNodeTitle() {
-    const elementName = getElementName(data.selectData?.ele_name)
-    const methodLabel = getMethodLabel(data.selectData?.ope_key)
+    const elementName = getElementName(nodeDraft.value?.ele_name)
+    const methodLabel = getMethodLabel(nodeDraft.value?.ope_key)
     return (
       (elementName !== '-' ? elementName : '') ||
-      data.selectData?.name ||
+      nodeDraft.value?.name ||
       (methodLabel !== '-' ? methodLabel : '') ||
       selectedNode.value?.label ||
       '未命名节点'
     )
   }
 
-  function getConfigParams(item: any) {
+  function getConfigParams(item) {
     if (Array.isArray(item?.ope_value)) return item.ope_value
     if (Array.isArray(item?.custom)) return item.custom
     if (Array.isArray(item?.sql_execute)) return item.sql_execute
@@ -2418,63 +1958,66 @@
     return []
   }
 
-  function getVisibleConfigParams(item: any) {
-    const params = getConfigParams(item)
+  function getVisibleConfigParams(item) {
+    const params = getConfigParams(item).map(liveObject)
     if (item?.type === 0) {
-      return params.filter((param: any) => param?.d)
+      return params.filter((param) => param?.d)
     }
     if (item?.type === 1) {
-      return params.filter((param: any) => param?.f !== 'actual')
+      return params.filter((param) => param?.f !== 'actual')
     }
     return params
   }
 
-  function getConfigParamCount(item: any) {
+  function getConfigParamCount(item) {
     return getVisibleConfigParams(item).length
   }
 
-  function stringifyValue(value: any) {
+  function stringifyValue(value: unknown) {
     if (value === undefined || value === null || value === '') return '-'
     if (Array.isArray(value)) return value.join(', ')
     if (typeof value === 'object') return JSON.stringify(value)
     return String(value)
   }
 
-  function getConfigParamLabel(param: any, index: number) {
+  function getConfigParamLabel(param, index) {
     return param?.n || param?.key || param?.f || param?.name || `参数${index + 1}`
   }
 
-  function getConfigParamValue(param: any) {
+  function getConfigParamValue(param) {
     return stringifyValue(
       param?.v ?? param?.value ?? param?.sql ?? param?.key_list ?? param?.func ?? param?.expect
     )
   }
 
-  function getConfigParamSummary(item: any) {
+  function getConfigParamSummary(item) {
     return getVisibleConfigParams(item)
-      .map((param: any, index: number) => ({
+      .map((param, index) => ({
         key: `${item?.id || 'node'}-${index}`,
         label: getConfigParamLabel(param, index),
         value: getConfigParamValue(param),
       }))
-      .filter((param: any) => param.value !== '-')
+      .filter((param) => param.value !== '-')
       .slice(0, 6)
   }
 
-  function getConditionSummary(value: any) {
-    if (!value) return '-'
+  function getConditionSummary(value: unknown) {
+    if (value == null || value === '') return '-'
     if (typeof value === 'string') return value
-    return stringifyValue(value.expect ?? value.value ?? value)
+    return stringifyValue(liveObject(value).expect ?? liveObject(value).value ?? value)
   }
 
   async function loadSelectedNodeElement() {
-    if (!data.selectData?.id) {
+    const id = uiCaseAssetId(nodeDraft.value?.id), current = captureElementContext()
+    if (id === null) {
       Message.error('未找到页面步骤明细ID')
       return null
     }
-    const res = await getUiPageStepsDetailedById(data.selectData.id)
-    const element = (res.data || [])[0]?.ele_name
-    if (!element?.id) {
+    const res = await getUiPageStepsDetailedById(id)
+    if (!current()) return null
+    const rows = stepArray(stepResponse(res)).map(readStepDetail)
+    const element = rows.find(row => String(row.id) === String(id))?.ele_name
+    if (uiCaseAssetId(element?.id) === null) {
       Message.error('当前节点没有绑定页面元素')
       return null
     }
@@ -2483,246 +2026,47 @@
 
   async function openSelectedElementEditPanel() {
     if (elementEditLoading.value) return
+    const current = captureElementContext()
     elementEditLoading.value = true
     try {
       const element = await loadSelectedNodeElement()
-      if (!element) return
+      if (!element || !current()) return
       elementEditPanelRef.value?.openEdit(element)
     } catch (error) {
       console.log(error)
-      Message.error('元素信息获取失败')
+      if (current()) Message.error('元素信息获取失败')
     } finally {
       elementEditLoading.value = false
     }
   }
 
   async function runSelectedElementDeepCheck() {
+    const current = captureElementContext()
     if (elementDeepCheckLoading.value) return
-    if (userStore.selected_environment == null) {
-      Message.error('请先选择测试环境')
-      return
-    }
-    try {
-      const element = await loadSelectedNodeElement()
-      if (!element) return
-      const runtimeVariables = await deepCheckVariablesDialogRef.value?.open({
-        ...element,
-        page_url: currentPageInfo.value.url,
-      })
-      if (runtimeVariables === null) return
-      elementCheckResult.visible = false
-      elementDeepCheckLoading.value = true
-      elementDeepCheckId.value = ''
-      elementDeepCheckTaskId.value = ''
-      elementDeepCheckElementId.value = element.id
-      elementDeepCheckSession.cancel()
-      elementDeepCheckToken = elementDeepCheckSession.start(element.id)
-      clearElementDeepCheckTimer()
-      elementDeepCheckTimer = setTimeout(() => {
-        if (!elementDeepCheckLoading.value) return
-        if (elementDeepCheckToken != null) {
-          elementDeepCheckSession.cancel(elementDeepCheckToken)
-        }
-        elementDeepCheckToken = null
-        elementDeepCheckLoading.value = false
-        elementDeepCheckId.value = ''
-        elementDeepCheckTaskId.value = ''
-        elementDeepCheckElementId.value = null
-        Message.warning('元素深度检测超时，请确认执行器在线后重试')
-      }, 180000)
-      if (liveWorkbenchVisible.value) {
-        const started = await liveWorkbenchPanelRef.value?.checkElementInWorkspace(
-          element,
-          'deep',
-          runtimeVariables || {}
-        )
-        if (!started) {
-          clearElementDeepCheckTimer()
-          if (elementDeepCheckToken != null) {
-            elementDeepCheckSession.cancel(elementDeepCheckToken)
-          }
-          elementDeepCheckToken = null
-          elementDeepCheckId.value = ''
-          elementDeepCheckTaskId.value = ''
-          elementDeepCheckElementId.value = null
-          elementDeepCheckLoading.value = false
-        } else if (typeof started === 'string' && elementDeepCheckLoading.value) {
-          elementDeepCheckId.value = started
-          if (elementDeepCheckToken != null) {
-            elementDeepCheckSession.bindCheckId(elementDeepCheckToken, started)
-          }
-        }
-        return
-      }
-      const res = await postUiElementCheck({
-        element_id: element.id,
-        test_env: userStore.selected_environment,
-        check_mode: 'deep',
-        runtime_variables: runtimeVariables || {},
-      })
-      elementDeepCheckId.value = String(res.data?.check_id || '')
-      elementDeepCheckTaskId.value = String(res.data?.task_id || '')
-      if (elementDeepCheckTaskId.value) {
-        saveExecutorTaskObservation('ui-step-element-check', element.id, {
-          taskId: elementDeepCheckTaskId.value,
-          businessType: 'u_element_check',
-          meta: { checkId: elementDeepCheckId.value },
-        })
-      }
-      if (elementDeepCheckToken != null) {
-        elementDeepCheckSession.bindCheckId(elementDeepCheckToken, elementDeepCheckId.value)
-      }
-      if (elementDeepCheckTaskId.value) scheduleElementDeepCheckPoll(0)
-      Message.success(res.msg)
-    } catch (error) {
-      console.log(error)
-      clearElementDeepCheckTimer()
-      elementDeepCheckId.value = ''
-      elementDeepCheckTaskId.value = ''
-      elementDeepCheckElementId.value = null
-      if (elementDeepCheckToken != null) {
-        elementDeepCheckSession.cancel(elementDeepCheckToken)
-      }
-      elementDeepCheckToken = null
-      elementDeepCheckLoading.value = false
-    }
+    elementPreparing.value = true
+    try { const element = await loadSelectedNodeElement(); if (element && current()) await elementChecks.start(element, 'deep') }
+    catch { if (current()) actionError.value = '元素深度检测准备失败，请重试' }
+    finally { elementPreparing.value = false }
   }
-
-  function clearElementDeepCheckTimer() {
-    if (elementDeepCheckTimer) {
-      clearTimeout(elementDeepCheckTimer)
-      elementDeepCheckTimer = null
-    }
-    if (elementDeepCheckPollTimer) {
-      clearTimeout(elementDeepCheckPollTimer)
-      elementDeepCheckPollTimer = null
-    }
-    elementDeepCheckPolling = false
-  }
-
-  function scheduleElementDeepCheckPoll(delay = 1000) {
-    if (!elementDeepCheckLoading.value || !elementDeepCheckTaskId.value) return
-    if (elementDeepCheckPollTimer) clearTimeout(elementDeepCheckPollTimer)
-    elementDeepCheckPollTimer = setTimeout(() => {
-      void pollElementDeepCheckResult()
-    }, delay)
-  }
-
-  async function pollElementDeepCheckResult() {
-    if (
-      elementDeepCheckPolling ||
-      !elementDeepCheckLoading.value ||
-      !elementDeepCheckTaskId.value ||
-      !elementDeepCheckElementId.value
-    ) {
-      return
-    }
-    elementDeepCheckPolling = true
-    try {
-      const res = await getExecutorTask(elementDeepCheckTaskId.value)
-      const task = res.data || {}
-      if (!task.terminal) {
-        scheduleElementDeepCheckPoll()
-        return
-      }
-      const result =
-        task.result?.check_id || task.result?.element_id
-          ? task.result
-          : {
-              check_id: elementDeepCheckId.value,
-              element_id: elementDeepCheckElementId.value,
-              element_name: getElementName(data.selectData?.ele_name),
-              check_mode: 'deep',
-              status: 0,
-              check_status: 'invalid',
-              error_message: task.error_message || '执行器任务未返回检测结果',
-            }
-      handleStepElementCheckResult({
-        ...result,
-        executor_task_id: elementDeepCheckTaskId.value,
-      })
-      return
-    } catch (error) {
-      console.log(error)
-    } finally {
-      elementDeepCheckPolling = false
-    }
-    scheduleElementDeepCheckPoll()
-  }
-
-  function handleStepElementCheckResult(result: any) {
-    if (!result) return
-    if (!elementDeepCheckSession.accept(result)) return
-    clearElementDeepCheckTimer()
-    elementDeepCheckLoading.value = false
-    elementDeepCheckId.value = String(result.check_id || elementDeepCheckId.value)
-    const finishedTaskId = elementDeepCheckTaskId.value
-    const finishedElementId = elementDeepCheckElementId.value
-    elementDeepCheckTaskId.value = ''
-    elementDeepCheckElementId.value = null
-    elementDeepCheckToken = null
-    elementCheckApplied.value = false
-    elementCheckResult.data = result
-    elementCheckResult.title = `${
-      result.check_mode === 'deep' ? '元素深度检测结果' : '元素检测结果'
-    } / ${result.element_name || getElementName(data.selectData?.ele_name) || '页面元素'}`
-    elementCheckResult.visible = true
-    if (finishedElementId && finishedTaskId) {
-      clearExecutorTaskObservation(
-        'ui-step-element-check',
-        finishedElementId,
-        finishedTaskId
-      )
-    }
-  }
-
-  function handleStepElementCheckStarted(payload: any) {
-    if (!elementDeepCheckLoading.value || elementDeepCheckToken == null) return
-    if (
-      elementDeepCheckElementId.value &&
-      String(payload?.element_id || '') !== String(elementDeepCheckElementId.value)
-    ) {
-      return
-    }
-    // 工作区在实时组件准备完成后才确定，因此开始事件到达时补充到当前会话。
-    elementDeepCheckSession.cancel(elementDeepCheckToken)
-    elementDeepCheckToken = elementDeepCheckSession.start(
-      payload?.element_id,
-      payload?.workspace_id || ''
-    )
-  }
-
-  async function applyStepElementDeepCheckUpdates() {
-    if (elementCheckApplyLoading.value || elementCheckApplied.value) return
-    const elementId = elementCheckResult.data?.element_id
-    const taskId = String(elementCheckResult.data?.executor_task_id || '')
-    if (!elementId || !taskId) return
-    elementCheckApplyLoading.value = true
-    try {
-      const res = await putUiElementDeepCheckApply({ element_id: elementId, task_id: taskId })
-      elementCheckApplied.value = true
-      const slots = res.data?.applied_slots || []
-      Message.success(slots.length ? `已写入第 ${slots.join('、')} 组定位` : res.msg)
-      await handleElementSaved()
-    } finally {
-      elementCheckApplyLoading.value = false
-    }
-  }
-
+  const handleStepElementCheckResult = elementChecks.workbenchResult
+  const handleStepElementCheckStarted = elementChecks.workbenchStarted
+  const applyStepElementDeepCheckUpdates = elementChecks.apply
   async function openSelectedElementAiHeal() {
+    const environment = userStore.selected_environment
     if (elementAiHealLoading.value) return
-    if (userStore.selected_environment == null) {
+    if (environment == null) {
       Message.error('请先选择测试环境')
       return
     }
     elementAiHealLoading.value = true
+    const current = captureElementContext()
     try {
       const element = await loadSelectedNodeElement()
-      if (!element) return
+      if (!element || !current()) return
       await elementAiHealPanelRef.value?.open(element)
     } catch (error) {
       console.log(error)
-      Message.error('AI自愈信息获取失败')
+      if (current()) Message.error('AI自愈信息获取失败')
     } finally {
       elementAiHealLoading.value = false
     }
@@ -2744,28 +2088,19 @@
     return hasRuntimeValue(value) ? value : {}
   }
 
-  function getElementExpTitle(value: any) {
-    return enumStore.element_exp.find((item: any) => item.key === value)?.title || value || '-'
+  async function initializeStep() {
+    const current = stepResources.capture()
+    const methods = loadMethods()
+    const loaded = await doRefreshSteps(currentPageStepsId.value)
+    if (!current() || !loaded) return
+    await Promise.all([loadDatasourceAliases(), doRefresh(), getEleName(), props.caseInputMode ? Promise.resolve() : loadLatestStepExecutionResult(true)])
+    if (!current()) return
+    if (!props.caseInputMode) await resumeActiveDebugTask()
+    await methods
   }
-
-  onMounted(async () => {
-    // 元素深度检测也会在用例详情嵌入的步骤半屏窗口中触发，
-    // 因此结果监听不能跟随 caseInputMode 关闭；步骤执行消息仍由处理函数按运行态过滤。
+  onMounted(() => {
     window.addEventListener('mango:websocket-message', handleStepResultMessage)
-    await doRefreshSteps(currentPageStepsId.value)
-    await loadDatasourceAliases()
-    await doRefresh()
-    await resumeActiveDebugTask()
-    if (!props.caseInputMode) {
-      await Promise.all([
-        getEleName(),
-        loadLatestStepExecutionResult().catch((error) => {
-          console.log(error)
-          return null
-        }),
-      ])
-    }
-    useSelectValue.getSelectValue()
+    void initializeStep()
   })
 
   watch(
@@ -2776,20 +2111,10 @@
     { deep: true }
   )
 
-  // 外部（如用例详情页同步按钮）请求刷新：重拉页面步骤 flow_data 与配置面板数据
-  watch(
-    () => props.refreshToken,
-    () => {
-      if (props.refreshToken <= 0) return
-      void doRefreshSteps(currentPageStepsId.value)
-      void doRefresh()
-    }
-  )
-
   onBeforeUnmount(() => {
     window.removeEventListener('mango:websocket-message', handleStepResultMessage)
     stopDebugPolling()
-    clearElementDeepCheckTimer()
+
     clearFlowSaveTimer()
   })
 </script>
@@ -2849,7 +2174,18 @@
       )
       var(--steps-right-panel-width);
     gap: var(--steps-panel-gap);
-    overflow-x: auto;
+    min-width: var(--mango-workbench-min-width);
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .mango-ui-step-layout {
+    --mango-workbench-min-width: calc(var(--steps-left-panel-width) + var(--steps-canvas-min-width) + var(--steps-right-panel-width) + var(--steps-panel-gap) * 2);
+    flex: 1 1 auto;
+  }
+
+  .page-steps-workbench-page--compact .mango-ui-step-layout {
+    --mango-workbench-min-width: calc(var(--steps-canvas-min-width) + var(--steps-right-panel-width) + var(--steps-panel-gap));
   }
 
   .steps-live-debug-area {

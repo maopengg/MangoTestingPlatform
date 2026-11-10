@@ -1,22 +1,31 @@
 import type { TableColumnData } from '@arco-design/web-vue'
 import type { FormItem } from '@/types/components'
 import { enableMultiSelectSearch } from '@/utils/search-condition'
+import type { EfficiencyId, EfficiencyOption } from './overview'
+
+export type TaskOptionKey = 'task_ids' | 'task_group_ids'
+export type EfficiencySearchKey = 'test_env' | 'case_type' | TaskOptionKey | 'report_id'
+type ConditionBase = Omit<FormItem, 'key' | 'value' | 'type' | 'optionItems'> & { optionItems: EfficiencyOption[] }
+export type EfficiencyCondition = ConditionBase & (
+  { key: Exclude<EfficiencySearchKey, 'report_id'>; type: 'select'; value: EfficiencyId[] }
+  | { key: 'report_id'; type: 'input'; value: string }
+)
 
 export const sectionOptions = [
   { value: 'queue', label: '当前排队' }, { value: 'timing', label: 'API 耗时分析' },
   { value: 'anomalies', label: '异常线索' },
 ]
 export const rankingOptions = [{ value: 'cases', label: '慢 Case' }, { value: 'reports', label: '慢报告' }]
-export function createConditions(): FormItem[] {
-  const items = [
+export function createConditions(): EfficiencyCondition[] {
+  const items: EfficiencyCondition[] = [
     { key: 'test_env', label: '被测环境', type: 'select', value: [], optionItems: [] },
     { key: 'case_type', label: '自动化类型', type: 'select', value: [], optionItems: [
       { value: 0, label: 'UI自动化' }, { value: 1, label: 'API自动化' }, { value: 2, label: 'Pytest自动化' },
     ] },
     { key: 'task_ids', label: '定时任务', type: 'select', value: [], optionItems: [] },
     { key: 'task_group_ids', label: '任务组', type: 'select', value: [], optionItems: [] },
-    { key: 'report_id', label: '执行报告ID', type: 'input', value: '', placeholder: '请输入执行报告ID' },
-  ] as FormItem[]
+    { key: 'report_id', label: '执行报告ID', type: 'input', value: '', placeholder: '请输入执行报告ID', optionItems: [] },
+  ]
   enableMultiSelectSearch(items)
   return items
 }
@@ -57,7 +66,7 @@ export const efficiencyScrollWidths = Object.fromEntries(
     .map(([key, columns]) => [key, columns.reduce((width, column) => width + Number(column.width || 0), 0)])
 )
 export function duration(value: unknown): string {
-  if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—'
+  if ((typeof value !== 'number' && !(typeof value === 'string' && /^\d+(\.\d+)?$/.test(value))) || !Number.isFinite(Number(value)) || Number(value) < 0) return '—'
   const ms = Number(value)
   if (ms < 1000) return `${Math.round(ms)} ms`
   if (ms < 60000) return `${(ms / 1000).toFixed(2)} 秒`

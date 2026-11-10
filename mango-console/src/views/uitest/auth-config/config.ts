@@ -1,25 +1,27 @@
-import { useTable, useTableColumn } from '@/hooks/table'
+import { useTableIndexColumn, useTableColumn } from '@/hooks/table'
 import { createUpdateUserCondition, updateUserColumn } from '@/utils/update-user'
 import { reactive } from 'vue'
 import type { FormItem } from '@/types/components'
 import { createIdSearchValue } from '@/utils/id-search'
 import { enableMultiSelectSearch } from '@/utils/search-condition'
 
-const table = useTable()
-
-export const conditionItems: FormItem[] = reactive([
-  { key: 'id', label: 'ID', type: 'input', placeholder: '请输入ID', value: createIdSearchValue() },
-  { key: 'name', label: '授权名称', type: 'input', placeholder: '请输入授权名称', value: '' },
+export function createConditionItems(): FormItem[] {
+  const fields: Array<Omit<FormItem, 'disabled'>> = [
+  { key: 'id', label: 'ID', type: 'input', placeholder: '请输入ID', value: createIdSearchValue(), reset() { this.value = '' } },
+  { key: 'name', label: '授权名称', type: 'input', placeholder: '请输入授权名称', value: '', reset() { this.value = '' } },
   { key: 'test_env', label: '被测环境', type: 'select', placeholder: '请选择被测环境', value: [] },
   { key: 'auth_type', label: '授权方式', type: 'select', placeholder: '请选择授权方式', value: [] },
   { key: 'refresh_mode', label: '刷新方式', type: 'select', placeholder: '请选择刷新方式', value: [] },
   { key: 'last_refresh_status', label: '刷新状态', type: 'select', placeholder: '请选择刷新状态', value: [] },
   createUpdateUserCondition(),
-])
-enableMultiSelectSearch(conditionItems)
+  ]
+  const conditionItems = reactive(fields)
+  enableMultiSelectSearch(conditionItems)
+  return conditionItems
+}
 
 export const tableColumns = useTableColumn([
-  table.indexColumn,
+  { ...useTableIndexColumn(), align: 'center' },
   {
     title: '授权名称',
     key: 'name',
@@ -61,7 +63,7 @@ export const tableColumns = useTableColumn([
     width: 180,
   },
   { title: '默认开启', key: 'status', dataIndex: 'status', width: 90 },
-  updateUserColumn(110),
+  { ...updateUserColumn(110), key: 'update_user' },
   { title: '更新时间', key: 'update_time', dataIndex: 'update_time', width: 180 },
   {
     title: '项目/产品',

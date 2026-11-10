@@ -196,6 +196,7 @@ class ApiTestCaseExecutionMixin:
                 report_stopped = True
                 self.api_case_result.status = TaskEnum.STOPPED.value
             if report_stopped:
+                self.run_resource_cleanup()
                 if self.test_suite_details:
                     from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService
                     TestSuiteExecutionResultService.save_stopped_api_recovery(
@@ -203,12 +204,15 @@ class ApiTestCaseExecutionMixin:
                     )
                 return self.api_case_result
             self.run_case_posterior()
+            self.run_resource_cleanup()
             from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
             issues = DatasourceInfrastructureService.current()
             if issues:
                 self.api_case_result.infrastructure_blocked = True
                 self.api_case_result.status = TaskEnum.PROCEED.value
                 self.api_case_result.error_message = DatasourceInfrastructureService.summary(issues)
+                self.trace_recorder.fail_trace(self.api_case_result.error_message,
+                                               summary={'infrastructure_blocked': True})
                 if self.test_suite_details:
                     from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
                     from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService
@@ -256,6 +260,8 @@ class ApiTestCaseExecutionMixin:
             log.api.debug(f'用例测试完成：{self.api_case_result.model_dump_json()}')
             return self.api_case_result
         finally:
+            if not getattr(self, '_resource_cleanup_finished', False):
+                self.run_resource_cleanup()
             if report_stopped:
                 try:
                     self.case_base.case_data_factory.cleanup()
@@ -277,6 +283,39 @@ class ApiTestCaseExecutionMixin:
             self.test_setup.close_mcp_sessions()
             self.test_setup.close_grpc_channels()
             self.test_setup.close_db_connections()
+
+    def run_resource_cleanup(self):
+        manager = getattr(self, 'resource_cleanup_manager', None)
+        if manager is None:
+            return
+        try:
+            manager.cleanup()
+        except Exception as error:
+            from src.apps.auto_api.exceptions import API_RESOURCE_CLEANUP_FAILED
+            from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+            if isinstance(error, MangoServerError):
+                message = error.msg
+            else:
+                reference = DatasourceInfrastructureService.log_reference(error, 'api_resource_case_finalizer')
+                message = AutoApiError(API_RESOURCE_CLEANUP_FAILED,
+                                      value=(f'资源台账访问异常，关联编号 {reference}',)).msg
+            if self.api_case_result.status != TaskEnum.STOPPED.value:
+                self.api_case_result.status = StatusEnum.FAIL.value
+            self.api_case_result.error_message = '；'.join(filter(None, [
+                self.api_case_result.error_message, message]))
+        finally:
+            from src.apps.auto_api.selectors.resource_cleanup import ApiResourceCleanupSelector
+            try:
+                self.api_case_result.resource_cleanup_results = ApiResourceCleanupSelector.trace_summary(manager.trace.id)
+            except Exception as error:
+                from src.apps.auto_api.exceptions import API_RESOURCE_CLEANUP_FAILED
+                from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+                reference = DatasourceInfrastructureService.log_reference(error, 'api_resource_result_read')
+                if self.api_case_result.status != TaskEnum.STOPPED.value:
+                    self.api_case_result.status = StatusEnum.FAIL.value
+                self.api_case_result.error_message = '；'.join(filter(None, [self.api_case_result.error_message,
+                    AutoApiError(API_RESOURCE_CLEANUP_FAILED, value=(f'清理结果尚未读回，关联编号 {reference}',)).msg]))
+            self._resource_cleanup_finished = True
 
     def run_case_posterior(self):
         posterior_step = None
@@ -328,4 +367,5 @@ class ApiTestCaseExecutionMixin:
         try:
             return self._debug_step_with_state(state)
         finally:
+            self.run_resource_cleanup()
             release_mysql_lock(lock_name)

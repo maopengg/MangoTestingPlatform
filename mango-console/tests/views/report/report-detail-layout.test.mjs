@@ -117,12 +117,14 @@ test('layout sizes pass through global density conversion, chart selector and in
   assert.match(descriptor.template.content, /:loading="summaryLoading && !totalCount"/)
 })
 
-test('report layout compiles and keeps guest read-only routes and action boundaries', () => {
+test('report layout compiles and keeps public reads with backend operation authorization', () => {
   const script = compileScript(descriptor, { id: 'report-detail-layout' })
   assert.deepEqual(compileTemplate({ source: descriptor.template.content, filename,
     id: 'report-detail-layout', compilerOptions: { bindingMetadata: script.bindings } }).errors, [])
-  assert.match(source, /const canRetry = computed\(\(\) => !!userStore.token(?:\s*&&[^\n]+)?\)/)
-  assert.match(source, /v-permission="'report:read'"/)
+  assert.match(source, /const canRetry = computed\(\(\) => !reportInfo.value\?\.retained_summary && !summary.value.evaluation_count\)/)
+  assert.doesNotMatch(source, /v-permission=/)
+  assert.match(source, /getSystemTestSuiteDetailsShare\(query, silent\)/)
+  assert.match(source, /enumStore\.getEnumShare\(\)/)
   const guard = readFileSync(new URL('../../../src/router/guard/permission.ts', import.meta.url), 'utf8')
   assert.match(guard, /if \(to.path === '\/report\/system\/details'\)/)
   assert.match(guard, /path: '\/report\/details',[\s\S]*?query: to.query/)

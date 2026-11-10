@@ -2,16 +2,32 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
-const page = readFileSync(new URL('../src/views/system/sql-execution/index.vue', import.meta.url), 'utf8')
-const config = readFileSync(new URL('../src/views/system/sql-execution/config.ts', import.meta.url), 'utf8')
-const factory = readFileSync(new URL('../src/views/data-factory/execution/index.vue', import.meta.url), 'utf8')
-const template = readFileSync(new URL('../src/views/data-factory/template/preview/index.vue', import.meta.url), 'utf8')
-const previewConfig = readFileSync(new URL('../src/views/data-factory/template/preview/config.ts', import.meta.url), 'utf8')
+const page = readFileSync(
+  new URL('../src/views/system/sql-execution/index.vue', import.meta.url),
+  'utf8'
+)
+const config = readFileSync(
+  new URL('../src/views/system/sql-execution/config.ts', import.meta.url),
+  'utf8'
+)
+const factory = ['index.vue', 'components/ExecutionDetailDrawer.vue', 'display.ts']
+  .map((file) =>
+    readFileSync(new URL('../src/views/data-factory/execution/' + file, import.meta.url), 'utf8')
+  )
+  .join('\n')
+const template = readFileSync(
+  new URL('../src/views/data-factory/template/preview/index.vue', import.meta.url),
+  'utf8'
+)
+const previewConfig = readFileSync(
+  new URL('../src/views/data-factory/template/preview/config.ts', import.meta.url),
+  'utf8'
+)
 
 test('统一记录页保留路由并展示跨数据源语义', () => {
   assert.match(page, /title="数据源执行记录"/)
   assert.match(page, /<h4>执行内容<\/h4>/)
-  assert.match(page, /detail\.record\.datasource_type_name/)
+  assert.match(page, /selectedRecord\.datasource_type_name/)
   assert.match(config, /key: 'datasource_type'/)
   assert.match(config, /key: 'database_id'/)
 })

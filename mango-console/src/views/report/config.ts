@@ -1,12 +1,24 @@
-import { FormItem } from '@/types/components'
+import type { FormItem } from '@/types/components'
 import { enableMultiSelectSearch } from '@/utils/search-condition'
 import { createIdSearchValue } from '@/utils/id-search'
-import { reactive, ref } from 'vue'
+import type { Ref } from 'vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 
 const table = useTable()
 
-export const conditionItems = reactive([
+export type ReportSearchId = string | number
+export type ReportSearchKey = 'id' | 'project_product' | 'module' | 'status' | 'tasks_id'
+  | 'tasks__task_group_id' | 'report_source' | 'test_env' | 'execution_scene'
+  | 'execution_scope' | 'case_type' | 'date_range' | 'user'
+export type ReportCondition = Omit<FormItem, 'key' | 'value' | 'type' | 'optionItems'> & {
+  key: ReportSearchKey
+  type: 'input' | 'select' | 'cascader' | 'date-range'
+  value: ReportSearchId | ReportSearchId[] | null | Ref<string>
+  optionItems?: Array<{ value: ReportSearchId; label: string }>
+}
+
+export function createConditionItems(): ReportCondition[] {
+  const items: ReportCondition[] = [
   {
     key: 'id',
     label: 'ID',
@@ -20,7 +32,7 @@ export const conditionItems = reactive([
   {
     key: 'project_product',
     label: '项目/产品',
-    value: ref(''),
+    value: '',
     type: 'cascader',
     placeholder: '请选择项目/产品',
     optionItems: [],
@@ -29,7 +41,7 @@ export const conditionItems = reactive([
   {
     key: 'module',
     label: '模块名称',
-    value: ref(''),
+    value: '',
     type: 'select',
     placeholder: '请选择模块名称',
     optionItems: [],
@@ -38,7 +50,7 @@ export const conditionItems = reactive([
   {
     key: 'status',
     label: '测试结果',
-    value: ref([]),
+    value: [],
     type: 'select',
     multiple: true,
     searchOperator: 'in',
@@ -49,7 +61,7 @@ export const conditionItems = reactive([
   {
     key: 'tasks_id',
     label: '定时任务',
-    value: ref(''),
+    value: '',
     type: 'select',
     placeholder: '请选择定时任务',
     optionItems: [],
@@ -58,7 +70,7 @@ export const conditionItems = reactive([
   {
     key: 'tasks__task_group_id',
     label: '任务组',
-    value: ref([]),
+    value: [],
     type: 'select',
     multiple: true,
     searchOperator: 'in',
@@ -69,7 +81,7 @@ export const conditionItems = reactive([
   {
     key: 'report_source',
     label: '报告来源',
-    value: ref(''),
+    value: '',
     type: 'select',
     placeholder: '请选择报告来源',
     optionItems: [
@@ -83,7 +95,7 @@ export const conditionItems = reactive([
   {
     key: 'test_env',
     label: '测试环境',
-    value: ref(''),
+    value: [],
     type: 'select',
     placeholder: '请选择测试环境',
     optionItems: [],
@@ -92,7 +104,7 @@ export const conditionItems = reactive([
   {
     key: 'execution_scene',
     label: '执行场景',
-    value: ref(''),
+    value: [],
     type: 'select',
     placeholder: '请选择执行场景',
     optionItems: [],
@@ -101,21 +113,21 @@ export const conditionItems = reactive([
   {
     key: 'execution_scope',
     label: '执行范围',
-    value: ref(''),
+    value: [],
     type: 'select',
     placeholder: '请选择执行范围',
     optionItems: [],
     reset: function () {},
   },
   {
-    key: 'case_type', label: '自动化类型', type: 'select', value: ref([]),
+    key: 'case_type', label: '自动化类型', type: 'select', value: [],
     multiple: true, searchOperator: 'in', placeholder: '请选择自动化类型', optionItems: [],
     reset: function () { this.value = [] },
   },
   {
     key: 'date_range',
     label: '执行日期',
-    value: ref([]),
+    value: [],
     type: 'date-range',
     placeholder: '请选择执行日期',
     optionItems: [],
@@ -124,7 +136,7 @@ export const conditionItems = reactive([
   {
     key: 'user',
     label: '执行人',
-    value: ref([]),
+    value: [],
     type: 'select',
     multiple: true,
     searchOperator: 'in',
@@ -132,8 +144,10 @@ export const conditionItems = reactive([
     optionItems: [],
     reset: function () {},
   },
-]) as Array<FormItem>
-enableMultiSelectSearch(conditionItems)
+  ]
+  enableMultiSelectSearch(items)
+  return items
+}
 export const tableColumns = useTableColumn([
   {
     ...table.indexColumn,

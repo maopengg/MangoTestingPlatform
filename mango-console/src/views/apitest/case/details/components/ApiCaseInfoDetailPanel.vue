@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-  import { reactive } from 'vue'
+  import { reactive, onBeforeUnmount, onDeactivated } from 'vue'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import ApiInfoDetails from '@/views/apitest/info/details/index.vue'
 
@@ -34,7 +34,12 @@
     state.visible = true
   }
 
-  defineExpose({ open })
+  function close() {
+    state.visible = false
+  }
+  onBeforeUnmount(close)
+  onDeactivated(close)
+  defineExpose({ open, close })
 </script>
 
 <style scoped>

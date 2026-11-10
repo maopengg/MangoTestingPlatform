@@ -12,7 +12,7 @@
           <a-tag class="mango-api-report__method" color="arcoblue">{{ requestMethod }}</a-tag>
         </div>
         <p>
-          <span>接口 ID：{{ resultData?.id || '-' }}</span>
+          <span>接口 ID：{{ resultData.id ?? '-' }}</span>
           <span v-if="resultData?.test_time">执行时间：{{ resultData.test_time }}</span>
         </p>
       </div>
@@ -210,6 +210,7 @@
 <script lang="ts" setup>
   import { computed, ref, watch } from 'vue'
   import AssertionResult from '@/components/feedback/AssertionResult.vue'
+  import { apiReport } from './api-report'
 
   type EvidenceSection = {
     key: string
@@ -221,16 +222,8 @@
     showToolbar?: boolean
   }
 
-  const props = defineProps({
-    resultData: {
-      type: Object as () => any,
-      required: true,
-    },
-    contained: {
-      type: Boolean,
-      default: false,
-    },
-  })
+  const props = withDefaults(defineProps<{ resultData: unknown; contained?: boolean }>(), { contained: false })
+  const resultData = computed(() => apiReport(props.resultData))
 
   const activeTab = ref('response')
 
@@ -241,22 +234,22 @@
     return true
   }
 
-  const hasResponseJson = (response: any) => response?.json !== null && response?.json !== undefined
+  const hasResponseJson = (response: { json?: unknown }) => response.json !== null && response.json !== undefined
 
-  const cacheData = computed(() => props.resultData?.cache_data || {})
-  const dataFactoryData = computed(() => props.resultData?.data_factory_cache_data)
+  const cacheData = computed(() => resultData.value.cache_data ?? {})
+  const dataFactoryData = computed(() => resultData.value?.data_factory_cache_data)
   const hasDataFactory = computed(() => hasValue(dataFactoryData.value))
 
-  const requestMethod = computed(() => props.resultData?.request?.method || '-')
-  const requestUrl = computed(() => props.resultData?.request?.url || '-')
-  const statusCode = computed(() => props.resultData?.response?.code || '-')
-  const isSnapshot = computed(() => props.resultData?.result_mode === 'snapshot')
+  const requestMethod = computed(() => resultData.value?.request?.method || '-')
+  const requestUrl = computed(() => resultData.value?.request?.url || '-')
+  const statusCode = computed(() => resultData.value.response.code ?? '-')
+  const isSnapshot = computed(() => resultData.value?.result_mode === 'snapshot')
   const failureMessage = computed(
-    () => props.resultData?.error_message || '接口调用失败，请检查响应结果与断言数据。'
+    () => resultData.value?.error_message || '接口调用失败，请检查响应结果与断言数据。'
   )
   const snapshotSummary = computed(() => {
-    const retry = props.resultData?.snapshot_retry || {}
-    const progress = props.resultData?.snapshot_progress || {}
+    const retry = resultData.value?.snapshot_retry || {}
+    const progress = resultData.value?.snapshot_progress || {}
     const parts: string[] = []
     if (progress.done || progress.total) {
       parts.push(`进度 ${progress.done || 0}/${progress.total || '-'}`)
@@ -264,14 +257,14 @@
     if (retry.current || retry.max) {
       parts.push(`重试 ${retry.current || 0}/${retry.max || '-'}`)
     }
-    if (props.resultData?.snapshot_updated_at) {
-      parts.push(`更新于 ${props.resultData.snapshot_updated_at}`)
+    if (resultData.value?.snapshot_updated_at) {
+      parts.push(`更新于 ${resultData.value.snapshot_updated_at}`)
     }
     return parts.join('，') || '当前用例仍在执行'
   })
 
   const responseTime = computed(() => {
-    const value = props.resultData?.response?.time
+    const value = resultData.value?.response?.time
     if (value === null || value === undefined || value === '') return '-'
     const numberValue = Number(value)
     if (Number.isFinite(numberValue)) return `${numberValue.toFixed(2)} 秒`
@@ -279,39 +272,41 @@
   })
 
   const responseType = computed(() => {
-    if (hasValue(props.resultData?.response?.ws_messages)) return 'WebSocket'
-    if (hasValue(props.resultData?.response?.sse_events)) return 'SSE'
-    if (hasResponseJson(props.resultData?.response)) return 'JSON'
-    if (hasValue(props.resultData?.response?.text)) return 'Text'
-    if (hasValue(props.resultData?.response?.headers)) return 'Headers'
+    if (hasValue(resultData.value?.response?.ws_messages)) return 'WebSocket'
+    if (hasValue(resultData.value?.response?.sse_events)) return 'SSE'
+    if (hasResponseJson(resultData.value?.response)) return 'JSON'
+    if (hasValue(resultData.value?.response?.text)) return 'Text'
+    if (hasValue(resultData.value?.response?.headers)) return 'Headers'
     return '-'
   })
 
   const assertionSummary = computed(() => {
-    const list = props.resultData?.ass || []
+    const list = resultData.value?.ass || []
     if (!Array.isArray(list) || list.length === 0) return '暂无'
-    const failed = list.filter((item: any) => item.status !== 1).length
+    const failed = list.filter((item) => item.status !== 1).length
     if (failed > 0) return `${failed} 失败 / ${list.length} 总数`
     return `${list.length} 全部通过`
   })
 
   const statusText = computed(() => {
-    if (props.resultData?.status === 3 || isSnapshot.value) return '执行中'
-    if (props.resultData?.status === 1) return '测试通过'
-    if (props.resultData?.status === 0) return '测试失败'
+    if (resultData.value?.status === 3 || isSnapshot.value) return '执行中'
+    if (resultData.value?.status === 1) return '测试通过'
+    if (resultData.value?.status === 0) return '测试失败'
     return '未测试'
   })
 
   const statusClass = computed(() => {
-    if (props.resultData?.status === 3 || isSnapshot.value)
+    if (resultData.value?.status === 3 || isSnapshot.value)
       return 'mango-api-report__status-card--warning'
-    if (props.resultData?.status === 1) return 'mango-api-report__status-card--success'
-    if (props.resultData?.status === 0) return 'mango-api-report__status-card--danger'
+    if (resultData.value?.status === 1) return 'mango-api-report__status-card--success'
+    if (resultData.value?.status === 0) return 'mango-api-report__status-card--danger'
     return 'mango-api-report__status-card--muted'
   })
 
   const statusCodeClass = computed(() => {
-    const code = Number(props.resultData?.response?.code)
+    const value = resultData.value.response.code
+    if (value === null || value === '') return ''
+    const code = Number(value)
     if (!Number.isFinite(code)) return ''
     if (code >= 200 && code < 400) return 'mango-api-report__metric-value--success'
     if (code >= 400) return 'mango-api-report__metric-value--danger'
@@ -319,8 +314,8 @@
   })
 
   const requestSections = computed<EvidenceSection[]>(() => {
-    const request = props.resultData?.request || {}
-    const response = props.resultData?.response || {}
+    const request = resultData.value?.request || {}
+    const response = resultData.value?.response || {}
     const sections: EvidenceSection[] = [
       {
         key: 'headers',
@@ -364,7 +359,7 @@
   })
 
   const responseSections = computed<EvidenceSection[]>(() => {
-    const response = props.resultData?.response || {}
+    const response = resultData.value?.response || {}
     const responseJsonAvailable = hasResponseJson(response)
     const sections: EvidenceSection[] = [
       {
@@ -432,7 +427,7 @@
   watch(
     () => props.resultData,
     () => {
-      activeTab.value = props.resultData?.status === 0 ? 'response' : 'assertion'
+      activeTab.value = resultData.value?.status === 0 ? 'response' : 'assertion'
     },
     { immediate: true }
   )

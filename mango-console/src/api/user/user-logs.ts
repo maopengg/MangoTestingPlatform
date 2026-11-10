@@ -1,7 +1,7 @@
 import { deleted, get, post, put } from '@/api/http'
 
 export function getUserLogs(data: object) {
-  return get({
+  return get<unknown>({
     url: '/user/user/logs',
     data: () => {
       return data

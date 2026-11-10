@@ -36,7 +36,7 @@ export function putUserRoleList(data: object) {
   })
 }
 
-export function deleteUserRoleList(id: number | string[] | number[]) {
+export function deleteUserRoleList(id: number | string | string[] | number[]) {
   return deleted({
     url: '/user/role',
     data: () => {
@@ -47,7 +47,7 @@ export function deleteUserRoleList(id: number | string[] | number[]) {
   })
 }
 
-export function getUserRolePermission(roleId: number) {
+export function getUserRolePermission(roleId: number | string) {
   return get({
     url: '/user/role/permission',
     data: () => {

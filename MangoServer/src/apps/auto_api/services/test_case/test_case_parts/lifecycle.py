@@ -164,6 +164,16 @@ class ApiTestCaseLifecycleMixin:
         self.test_setup.mcp_session_manager = McpSessionManager(self.trace_recorder)
         self.test_setup.grpc_channel_manager = GrpcChannelManager(self.trace_recorder)
         self.test_setup.trace_recorder = self.trace_recorder
+        self.resource_cleanup_manager = None
+        if getattr(self.api_case, 'resource_cleanup', None):
+            from src.apps.auto_api.services.resource_cleanup import ApiResourceCleanupService, ApiResourceExecutionManager
+            rules = ApiResourceCleanupService.validate_config(
+                self.api_case.resource_cleanup, self.api_case.project_product_id)
+            from src.apps.auto_api.schemas.resource_cleanup import ApiResourceCleanupRule
+            ApiResourceCleanupService.validate_steps([ApiResourceCleanupRule.model_validate(rule) for rule in rules],
+                                                     list(self.get_case_detailed_queryset(self.api_case.id, None)))
+            self.resource_cleanup_manager = ApiResourceExecutionManager(self.api_case, trace, self.test_setup, rules)
+            self.test_setup.resource_cleanup_manager = self.resource_cleanup_manager
 
     def get_trace_source_type(self) -> int:
         if self.trace_source_type is not None:

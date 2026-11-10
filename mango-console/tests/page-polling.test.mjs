@@ -2,7 +2,10 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 import ts from 'typescript'
+import { loadFeedbackModule } from './helpers/load-feedback-modules.mjs'
 import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
+import { evaluationComponent } from './helpers/evaluation-harness.mjs'
+import { flush as flushVue } from './helpers/case-details-harness.mjs'
 
 function load(path, require = () => ({})) {
   const exports = {}
@@ -82,7 +85,7 @@ test('Vue page lifecycle, browser visibility and routes pause and resume the sam
   vue.watch = (_source, fn) => { hooks.routeChange = fn }
   const exports = {}
   const js = ts.transpileModule(fs.readFileSync('src/hooks/use-page-polling.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText
-  new Function('exports', 'require', 'document', js)(exports, name => name === 'vue' ? vue : name === 'vue-router' ? { useRoute: () => route } : { createPagePolling: (fn, available) => createPagePolling(fn, available, clock) }, document)
+  new Function('exports', 'require', 'document', js)(exports, name => name === 'vue' ? vue : name === 'vue-router' ? { useRoute: () => route } : name === '@/utils/load-error' ? loadFeedbackModule(name) : { createPagePolling: (fn, available) => createPagePolling(fn, available, clock) }, document)
   let calls = 0
   const polling = exports.usePagePolling(() => { calls++ })
   hooks.onMounted(); polling.start()
@@ -111,23 +114,24 @@ test('all affected real Vue pages compile after adopting shared polling', () => 
 })
 
 test('evaluation retries a failed final result fetch silently before stopping polling', async () => {
-  const source = fs.readFileSync('src/views/evaluation/components/ExecutionPanel.vue', 'utf8')
-  const start = source.indexOf('  async function loadRecord(')
-  const end = source.indexOf('  async function loadItems(', start)
-  const js = ts.transpileModule(source.slice(start, end), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
-  const record = { value: { id: 1, status: 'running' } }, recordLoading = { value: false }, calls = []
-  let fail = true
-  const run = new Function('props', 'record', 'recordLoading', 'getCaseExecution', 'loadItems', 'pagePolling', 'isTerminal', `let generation = 0; ${js}; return loadRecord`)(
-    { caseId: 1, history: false }, record, recordLoading,
-    async () => ({ data: { id: 1, status: 'completed' } }),
-    async silent => { assert.equal(silent, true); if (fail) throw new Error('final items unavailable') },
-    { start: () => calls.push('retry'), stop: () => calls.push('stop') }, status => status === 'completed'
-  )
-  await assert.rejects(run(1, true))
-  assert.deepEqual(calls, ['retry'])
-  assert.equal(recordLoading.value, false)
-  fail = false
-  await run(1, true)
-  assert.deepEqual(calls, ['retry', 'stop'])
-  assert.equal(recordLoading.value, false)
+  let fail = false, terminal = false
+  const read = async () => ({ data: { id: 1, status: terminal ? 'completed' : 'running' } })
+  const view = evaluationComponent('ExecutionPanel', 'record,recordLoading,itemsLoading', { api: {
+    getLatestCaseExecution: read, getCaseExecution: read,
+    getCaseExecutionItems: async () => { if (fail) throw Error('final items unavailable'); return { data: { items: [], count: 0 } } },
+  } })
+  try {
+    await flushVue()
+    terminal = true; fail = true
+    const starts = view.polling.starts
+    assert.equal(await view.poll(), false)
+    assert.ok(view.polling.starts > starts)
+    assert.equal(view.recordLoading.value, false)
+    assert.equal(view.itemsLoading.value, false)
+    fail = false
+    const stops = view.polling.stops
+    assert.equal(await view.poll(), true)
+    assert.ok(view.polling.stops > stops)
+    assert.equal(view.recordLoading.value, false)
+  } finally { view.dispose() }
 })

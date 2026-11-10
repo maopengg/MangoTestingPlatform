@@ -1,11 +1,8 @@
-import { useTable, useTableColumn } from '@/hooks/table'
-import { FormItem } from '@/types/components'
-import { Message } from '@arco-design/web-vue'
-import { reactive, ref } from 'vue'
+import type { TableColumnData } from '@arco-design/web-vue'
 
-const table = useTable()
-
-export function sortLogicalDatasources<T extends { db_type?: number | string | null }>(rows: T[]): T[] {
+export function sortLogicalDatasources<T extends { db_type?: number | string | null }>(
+  rows: T[]
+): T[] {
   const typeOrder = [0, 1, 2, 3, 4, 10, 20]
   const rank = (value: T['db_type']) => {
     const index = value == null ? -1 : typeOrder.indexOf(Number(value))
@@ -34,40 +31,65 @@ export const schemaColumns = [
   { title: '自增', slotName: 'autoincrement', width: 70, align: 'center' as const },
 ]
 
-export const tableColumns = useTableColumn([
-  table.indexColumn,
+export const bindingColumns: Array<TableColumnData & { key: string }> = [
   {
-    title: '名称',
-    key: 'name',
-    dataIndex: 'name',
-    align: 'left',
-    width: 180,
-  },
-  {
-    title: '分类',
-    key: 'source_category',
-    dataIndex: 'source_category',
-    width: 130,
-  },
-  {
-    title: '数据库类型',
-    key: 'db_type',
-    dataIndex: 'db_type',
-    width: 130,
-  },
-  {
-    title: '描述',
-    key: 'description',
-    dataIndex: 'description',
-    align: 'left',
+    title: '测试环境',
+    key: 'environment',
+    dataIndex: 'environment',
+    width: 160,
     ellipsis: true,
     tooltip: true,
+    align: 'center',
   },
   {
-    title: '状态',
-    key: 'status',
-    dataIndex: 'status',
+    title: '数据库别名',
+    key: 'database_alias',
+    dataIndex: 'database_alias',
+    width: 160,
+    ellipsis: true,
+    tooltip: true,
+    align: 'left',
+  },
+  {
+    title: '数据库配置',
+    key: 'data_source',
+    dataIndex: 'data_source',
+    width: 180,
+    ellipsis: true,
+    tooltip: true,
+    align: 'left',
+  },
+  {
+    title: '域名',
+    key: 'host',
+    dataIndex: 'host',
+    width: 220,
+    ellipsis: true,
+    tooltip: true,
+    align: 'left',
+  },
+  {
+    title: '主库',
+    key: 'database_name',
+    dataIndex: 'database_name',
+    width: 180,
+    ellipsis: true,
+    tooltip: true,
+    align: 'left',
+  },
+  {
+    title: '读取权限',
+    key: 'db_c_status',
+    dataIndex: 'db_c_status',
     width: 100,
+    align: 'center',
+  },
+  {
+    title: '写入权限',
+    key: 'db_rud_status',
+    dataIndex: 'db_rud_status',
+    width: 110,
+    align: 'center',
   },
   {
     title: '操作',
@@ -75,54 +97,23 @@ export const tableColumns = useTableColumn([
     dataIndex: 'actions',
     fixed: 'right',
     width: 160,
+    align: 'center',
   },
-])
-
-export const formItems: FormItem[] = reactive([
-  {
-    label: '名称',
-    key: 'name',
-    value: ref(''),
-    type: 'input',
-    required: true,
-    placeholder: '请输入逻辑数据库名称',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
+]
+export const queryCopy: Record<string, { title: string; label: string; placeholder: string }> = {
+  10: {
+    title: 'Redis查询',
+    label: '查询命令',
+    placeholder: '请输入只读命令，例如：GET user:1 或 HGETALL user:1',
   },
-  {
-    label: '数据库分类',
-    key: 'source_category',
-    value: ref(0),
-    type: 'select',
-    required: true,
-    placeholder: '请选择数据库分类',
+  20: {
+    title: 'Elasticsearch查询',
+    label: 'Query DSL',
+    placeholder: '请输入 Elasticsearch Query DSL JSON',
   },
-  {
-    label: '数据库类型',
-    key: 'db_type',
-    value: ref(0),
-    type: 'select',
-    required: true,
-    placeholder: '请选择数据库类型',
-    validator: function () {
-      if (this.value === null || this.value === undefined || this.value === '') {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
+  default: {
+    title: 'SQL查询',
+    label: '查询SQL',
+    placeholder: '请输入查询SQL，例如：SELECT * FROM table_name LIMIT 20',
   },
-  {
-    label: '描述',
-    key: 'description',
-    value: ref(''),
-    type: 'textarea',
-    required: false,
-    placeholder: '请输入描述',
-  },
-])
+}

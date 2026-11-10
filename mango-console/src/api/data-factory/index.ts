@@ -140,7 +140,7 @@ export function putDataFactoryCaseConfigSort(data: object) {
   return put({ url: '/data-factory/case-config/sort', data: () => data })
 }
 
-export function deleteDataFactoryCaseConfig(id: number | string[] | number[]) {
+export function deleteDataFactoryCaseConfig(id: number | string | string[] | number[]) {
   return deleted({ url: '/data-factory/case-config', data: () => ({ id }) })
 }
 

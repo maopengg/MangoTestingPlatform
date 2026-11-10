@@ -23,8 +23,8 @@ test('fine tuning sends changed independent fields only, never a stale whole tas
 })
 test('task group editing uses the public modal and preserves ordinary edit flow', () => {
   const page = readFileSync('src/views/timing/tasks/index.vue', 'utf8')
-  assert.match(page, /fineTuningRef.value\?\.open\(record\)/)
-  assert.match(page, /if \(!record.task_group\)[\s\S]*?onUpdate\(record\)/)
+  assert.match(page, /fineTuningRef.value\?\.open\(target\)/)
+  assert.match(page, /if \(record.task_group === null\) \{ onUpdate\(record\)/)
   const modal = readFileSync('src/views/timing/tasks/components/TaskFineTuningModal.vue', 'utf8')
   assert.match(modal, /<ModalDialog/)
   assert.match(modal, /fineTuningPatch\(original, form\)/)

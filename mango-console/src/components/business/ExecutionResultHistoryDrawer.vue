@@ -5,8 +5,8 @@
     :footer="false"
     class="execution-result-history-drawer"
     unmount-on-close
-    @update:visible="(value) => emit('update:visible', value)"
-    @cancel="emit('update:visible', false)"
+    @update:visible="updateVisible"
+    @cancel="updateVisible(false)"
   >
     <template #title>
       <div class="execution-result-history__drawer-title">
@@ -33,7 +33,9 @@
         :items="historyItems"
         :selected-id="selectedId"
         :loading="loading"
+        :error-text="listFailed ? '加载执行记录失败' : ''"
         @select="selectResult"
+        @retry="loadList"
       />
       <div v-if="showResultNavigator" class="execution-result-history__navigation">
         <section class="execution-result-history__selector">
@@ -66,7 +68,7 @@
               <template #title="nodeData">
                 <span
                   class="execution-result-history__tree-node"
-                  :class="{ 'is-scenario': nodeData.nodeType === 'scenario' }"
+                  :class="{ 'is-scenario': nodeData['data-result-kind'] === 'scenario' }"
                 >
                   <span class="execution-result-history__tree-node-main">
                     <strong :title="nodeData.title">{{ nodeData.title }}</strong>
@@ -83,12 +85,10 @@
       </div>
       <section class="execution-result-history__detail">
         <mango-panel-spin :loading="detailLoading" class="execution-result-history__spin">
+          <template v-if="detailFailed"></template>
+          <template v-else>
           <slot name="result" :detail="selectedDetail" :error-message="selectedErrorMessage">
-            <a-empty
-              v-if="!selectedDetail"
-              description="请选择执行记录"
-              class="execution-result-history__empty"
-            />
+            <div v-if="!selectedDetail" class="execution-result-history__empty mango-empty-state">请选择执行记录</div>
             <template v-else>
               <a-alert
                 v-if="selectedErrorMessage && !selectedApiResult"
@@ -100,13 +100,10 @@
               <div v-if="selectedApiResult" class="execution-result-history__report">
                 <ApiTestReport :result-data="selectedApiResult" contained />
               </div>
-              <a-empty
-                v-else
-                description="本次执行没有生成测试结果"
-                class="execution-result-history__empty"
-              />
+              <div v-else class="execution-result-history__empty mango-empty-state">本次执行没有生成测试结果</div>
             </template>
           </slot>
+          </template>
         </mango-panel-spin>
       </section>
     </div>
@@ -114,8 +111,11 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, ref, useSlots, watch } from 'vue'
-  import { Message } from '@arco-design/web-vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, shallowRef, useSlots, watch } from 'vue'
+  import { useRoute } from 'vue-router'
+  import useUserStore from '@/store/modules/user'
   import { IconHistory } from '@arco-design/web-vue/es/icon'
   import {
     getExecutionResultDetailResolved,
@@ -129,25 +129,8 @@
   import { useEnum } from '@/store/modules/get-enum'
   import ApiTestReport from '@/components/reports/ApiTestReport.vue'
   import ExecutionHistoryList from '@/components/business/ExecutionHistoryList.vue'
-  import type { ExecutionHistoryItem } from '@/components/business/execution-history'
-
-  type ScenarioOption = {
-    key: string
-    label: string
-    parameterId: number | string | null
-    status: number
-    retryCount: number
-    result: any
-  }
-
-  type StepOption = {
-    key: string
-    label: string
-    status: number
-    total: number
-    passed: number
-    scenarios: ScenarioOption[]
-  }
+  import { historyDetail, historyId, historyObject, historyRecords, historySteps, historyText, reportHistoryDetail } from './execution-history'
+  import type { ExecutionHistoryItem, HistoryDetail, HistoryRecord, HistoryStep as StepOption } from './execution-history'
 
   const props = defineProps<{
     visible: boolean
@@ -167,17 +150,24 @@
   }>()
 
   const enumStore = useEnum()
+  const userStore = useUserStore(), route = useRoute()
   const slots = useSlots()
-  const records = ref<any[]>([])
-  const selectedId = ref<number | string>('')
-  const selectedDetail = ref<any>(null)
+  const records = shallowRef<HistoryRecord[]>([])
+  const selectedId = ref<number | string | null>(null)
+  const selectedDetail = shallowRef<HistoryDetail | null>(null)
   const selectedStepKey = ref('')
   const selectedScenarioKey = ref('')
   const selectedTreeKey = ref('')
   const expandedStepKeys = ref<string[]>([])
   const loading = ref(false)
   const detailLoading = ref(false)
+  const listFailed = ref(false), detailFailed = ref(false)
+  let contextVersion = 0, listRequestToken = 0
   let detailRequestToken = 0
+  let listJob: Promise<void> | null = null
+  let detailJob: { id: string; promise: Promise<void> } | null = null
+  let active = true, disposed = false, dismissed = false
+  const available = () => props.visible && !dismissed && active && !disposed && !document.hidden
   const defaultDrawerWidth = 'min(1300px, calc(100vw - 32px))'
   const drawerTitle = computed(() => {
     const [main, ...context] = String(props.title || '历史执行结果').split(/[：:]/)
@@ -186,9 +176,9 @@
       context: context.join('：').trim(),
     }
   })
-  const detailMode = computed(() => !!props.testSuiteDetailId)
+  const detailMode = computed(() => historyId(props.testSuiteDetailId) !== null)
   const effectiveQuery = computed<ExecutionResultQuery | null>(() => {
-    if (props.caseId) {
+    if (historyId(props.caseId) !== null) {
       return {
         ...(props.query || {}),
         target_type: 'api_case',
@@ -197,13 +187,10 @@
     }
     return props.query || null
   })
-  const selectedErrorMessage = computed(
-    () =>
-      selectedDetail.value?.error_message || selectedDetail.value?.result_data?.error_message || ''
-  )
+  const selectedErrorMessage = computed(() => selectedDetail.value?.error_message || historyText(historyObject(selectedDetail.value?.result_data)?.error_message))
   const stepOptions = computed<StepOption[]>(() => {
     const resultData = selectedDetail.value?.result_data
-    return buildStepOptions(Array.isArray(resultData) ? resultData : resultData?.steps)
+    return slots.result ? [] : historySteps(Array.isArray(resultData) ? resultData : historyObject(resultData)?.steps)
   })
   const selectedStep = computed(
     () => stepOptions.value.find((item) => item.key === selectedStepKey.value) || null
@@ -219,20 +206,20 @@
     stepOptions.value.map((step) => ({
       key: `step:${step.key}`,
       title: step.label,
-      nodeType: 'step',
+      'data-result-kind': 'step',
       status: step.status,
       description: `${step.passed}/${step.total} 个场景通过`,
       children: step.scenarios.map((scenario) => ({
         key: scenario.key,
         title: scenario.label,
-        nodeType: 'scenario',
+        'data-result-kind': 'scenario',
         status: scenario.status,
         description: scenario.retryCount > 0 ? `重试 ${scenario.retryCount} 次` : '',
       })),
     }))
   )
   const directApiResult = computed(() => {
-    const resultData = selectedDetail.value?.result_data
+    const resultData = historyObject(selectedDetail.value?.result_data)
     if (!resultData || stepOptions.value.length) return null
     if (
       selectedDetail.value?.target_type === 'api_info' ||
@@ -256,38 +243,38 @@
       statusColor: statusColor(item.status, item.status_text),
       time: item.update_time || item.create_time || item.trigger_time || '-',
       actor: item.trigger_user_name || '-',
-      latest: Boolean(item.is_case_latest ?? item.is_latest) || index === 0,
+      latest: item.is_case_latest ?? item.is_latest ?? index === 0,
       sourceText: resultSourceText(item),
       sourceColor: resultSourceColor(item),
     }))
   )
 
-  function resultTestSuiteId(item: any) {
-    return item?.test_suite_id || item?.test_suite || ''
+  function resultTestSuiteId(item: HistoryRecord) {
+    return item.test_suite_id ?? item.test_suite
   }
 
-  function isCurrentTestSuite(item: any) {
+  function isCurrentTestSuite(item: HistoryRecord) {
     const testSuiteId = resultTestSuiteId(item)
     return !!(
-      testSuiteId &&
-      props.currentTestSuiteId &&
+      testSuiteId !== null &&
+      historyId(props.currentTestSuiteId) !== null &&
       String(testSuiteId) === String(props.currentTestSuiteId)
     )
   }
 
-  function resultSourceText(item: any) {
+  function resultSourceText(item: HistoryRecord) {
     const testSuiteId = resultTestSuiteId(item)
-    if (testSuiteId) {
+    if (testSuiteId !== null) {
       if (isCurrentTestSuite(item)) return '本测试报告'
-      if (props.currentTestSuiteId) return `其他报告 #${testSuiteId}`
+      if (historyId(props.currentTestSuiteId) !== null) return `其他报告 #${testSuiteId}`
       return `报告 #${testSuiteId}`
     }
     return item?.source_type_name || sourceTypeText(item?.source_type)
   }
 
-  function resultSourceColor(item: any) {
+  function resultSourceColor(item: HistoryRecord) {
     if (isCurrentTestSuite(item)) return 'arcoblue'
-    if (resultTestSuiteId(item)) return 'purple'
+    if (resultTestSuiteId(item) !== null) return 'purple'
     if (item?.source_type === 'mcp') return 'orange'
     return 'gray'
   }
@@ -303,89 +290,124 @@
   }
 
   function openExecutionTrace() {
-    if (!selectedId.value || !selectedDetail.value?.trace_id) return
+    if (!available() || selectedId.value === null || !selectedDetail.value?.trace_id) return
     emit('show-trace', { result_id: selectedId.value })
   }
 
-  async function loadList() {
-    loading.value = true
+  function resetSelection() {
     selectedDetail.value = null
-    try {
-      await enumStore.getEnum()
-      if (!detailMode.value && !effectiveQuery.value) {
-        records.value = []
-        selectedId.value = ''
-        return
-      }
-      const res = detailMode.value
-        ? await getSystemTestSuiteDetailsResultOptionsShare(props.testSuiteDetailId!, 20)
-        : await getExecutionResultList({
-            ...effectiveQuery.value!,
-            page: 1,
-            pageSize: 20,
-          })
-      records.value = res.data || []
-      const latest = records.value[0]
-      selectedId.value = latest?.id || ''
-      if (selectedId.value) await selectResult(selectedId.value)
-    } catch (error: any) {
-      Message.error(error?.msg || error?.message || '加载历史执行结果失败')
-    } finally {
-      loading.value = false
+    selectedStepKey.value = ''
+    selectedScenarioKey.value = ''
+    selectedTreeKey.value = ''
+    expandedStepKeys.value = []
+  }
+
+  function invalidate(clear = true) {
+    contextVersion++
+    listRequestToken++
+    detailRequestToken++
+    listJob = null
+    detailJob = null
+    loading.value = false
+    detailLoading.value = false
+    listFailed.value = false
+    detailFailed.value = false
+    if (clear) {
+      records.value = []
+      selectedId.value = null
+      resetSelection()
     }
   }
 
-  async function selectResult(id: number | string) {
-    const requestToken = detailRequestToken + 1
-    detailRequestToken = requestToken
-    selectedId.value = id
+  function loadList(): Promise<void> {
+    if (!available()) return Promise.resolve()
+    if (listJob) return listJob
+    const scope = contextVersion, token = ++listRequestToken
+    const detailId = historyId(props.testSuiteDetailId)
+    const query = effectiveQuery.value ? { ...effectiveQuery.value } : null
+    const previousId = selectedId.value
+    const previousScenarioKey = selectedScenarioKey.value
+    detailRequestToken++
+    detailJob = null
+    detailLoading.value = false
+    detailFailed.value = false
+    resetSelection()
+    records.value = []
+    selectedId.value = null
+    listFailed.value = false
+    if (detailId === null && !query) return Promise.resolve()
+    loading.value = true
+    const current = () => available() && scope === contextVersion && token === listRequestToken
+    const job = Promise.resolve().then(async () => {
+      try {
+        if (!current()) return
+        // 枚举只补充展示；报告分享复用公开枚举接口，不能触发登录接口。
+        void Promise.resolve().then(() => {
+          if (current()) return detailId !== null ? enumStore.getEnumShare() : enumStore.getEnum()
+        }).catch(() => {})
+        const res = detailId !== null
+          ? await getSystemTestSuiteDetailsResultOptionsShare(detailId, 20)
+          : await getExecutionResultList({ ...query!, page: 1, pageSize: 20 })
+        if (!current()) return
+        records.value = historyRecords(res, detailId !== null ? undefined : query!)
+        const next = records.value.find(item => previousId !== null && String(item.id) === String(previousId)) || records.value[0]
+        // 左侧记录完成后立即解除其 loading，详情有独立的请求状态。
+        if (next) void selectResult(next.id, String(next.id) === String(previousId) ? previousScenarioKey : '')
+      } catch (loadFailure0) {
+        if (current()) {
+          void (reportLoadError(loadFailure0, "加载失败，请重试", false), listFailed.value = true)
+        }
+      } finally {
+        if (current()) loading.value = false
+        if (listJob === job) listJob = null
+      }
+    })
+    listJob = job
+    return job
+  }
+
+  function selectResult(id: number | string, restoreScenarioKey = ''): Promise<void> {
+    if (!available()) return Promise.resolve()
+    const option = records.value.find(item => String(item.id) === String(id))
+    if (!option) return Promise.resolve()
+    if (detailJob?.id === String(id)) return detailJob.promise
+    const scope = contextVersion, token = ++detailRequestToken
+    const detailId = historyId(props.testSuiteDetailId), parameterId = props.preferredParameterId
+    selectedId.value = option.id
+    resetSelection()
+    detailFailed.value = false
     detailLoading.value = true
-    try {
-      const res = detailMode.value
-        ? await getSystemTestSuiteDetailsResultShare(props.testSuiteDetailId!, id)
-        : await getExecutionResultDetailResolved(id)
-      if (detailRequestToken !== requestToken) return
-      selectedDetail.value = detailMode.value
-        ? buildReportDetail(
-            res.data,
-            records.value.find((item) => String(item.id) === String(id))
-          )
-        : res.data || null
-      if (!slots.result) initializeResultSelection()
-    } catch (error: any) {
-      if (detailRequestToken === requestToken) {
-        Message.error(error?.msg || error?.message || '加载执行结果详情失败')
+    const current = () => available() && scope === contextVersion && token === detailRequestToken
+    const promise = Promise.resolve().then(async () => {
+      try {
+        if (!current()) return
+        const res = detailId !== null
+          ? await getSystemTestSuiteDetailsResultShare(detailId, option.id)
+          : await getExecutionResultDetailResolved(option.id)
+        if (!current()) return
+        const detail = detailId !== null ? reportHistoryDetail(res, option, parameterId) : historyDetail(res, option.id)
+        if (detailId === null && (detail.target_type !== option.target_type || String(detail.target_id) !== String(option.target_id))) throw new Error('Invalid history target')
+        selectedDetail.value = detail
+        if (!slots.result) initializeResultSelection(restoreScenarioKey)
+      } catch (loadFailure1) {
+        if (current()) {
+          void (reportLoadError(loadFailure1, "加载失败，请重试", false), detailFailed.value = true)
+        }
+      } finally {
+        if (current()) detailLoading.value = false
+        if (detailJob?.promise === promise) detailJob = null
       }
-    } finally {
-      if (detailRequestToken === requestToken) detailLoading.value = false
-    }
+    })
+    detailJob = { id: String(id), promise }
+    return promise
   }
 
-  function buildReportDetail(payload: any, option: any) {
-    if (!payload) return null
-    const children = Array.isArray(payload.children) ? payload.children : []
-    const result =
-      children.find(
-        (item: any) =>
-          props.preferredParameterId !== undefined &&
-          props.preferredParameterId !== null &&
-          String(item?.parameter_id) === String(props.preferredParameterId)
-      ) ||
-      children[0] ||
-      payload
-    return {
-      ...option,
-      id: option?.id,
-      status: result?.status ?? option?.status,
-      status_name: option?.status_text || option?.status_name,
-      error_message: result?.error_message || payload?.error_message,
-      result_data: result,
-      test_suite: option?.test_suite_id,
-    }
+  function retryDetail() {
+    return selectedId.value !== null ? selectResult(selectedId.value) : Promise.resolve()
   }
 
-  function displayResultLabel(item: any) {
-    const label = item?.label || `记录 ${item?.id || '-'}`
+  function displayResultLabel(item: HistoryRecord) {
+    const label = item.label || `记录 ${item.id}`
     return String(label).replace(/^最新[，,]?\s*/, '')
   }
 
@@ -399,82 +421,13 @@
     if (Number(status) === 4) return 'orange'
     if (Number(status) === 3) return 'arcoblue'
     if (Number(status) === 2) return 'gray'
-    return 'red'
+    return status === 0 ? 'red' : 'gray'
   }
 
   function statusText(status: number | string | null | undefined) {
+    if (status === null || status === undefined || status === '') return '未知'
     if (Number(status) === 4) return '警告'
     return enumStore.task_status?.[Number(status)]?.title || '未知'
-  }
-
-  function aggregateStatus(items: ScenarioOption[]) {
-    if (items.some((item) => Number(item.status) === 0)) return 0
-    if (items.some((item) => Number(item.status) === 3)) return 3
-    if (items.some((item) => Number(item.status) === 4)) return 4
-    if (items.length && items.every((item) => Number(item.status) === 1)) return 1
-    return 2
-  }
-
-  function finalScenarioResult(results: any[]) {
-    return results.reduce((latest, item) => {
-      const latestRetry = Number(latest?.retry_index ?? -1)
-      const itemRetry = Number(item?.retry_index ?? -1)
-      return itemRetry >= latestRetry ? item : latest
-    }, results[0])
-  }
-
-  function buildStepOptions(rawSteps: unknown): StepOption[] {
-    if (!Array.isArray(rawSteps) || rawSteps.length === 0) return []
-    const stepMap = new Map<
-      string,
-      {
-        key: string
-        label: string
-        scenarios: Map<string, { key: string; label: string; results: any[] }>
-      }
-    >()
-    rawSteps.forEach((result: any, index) => {
-      const stepKey = String(result?.id ?? result?.api_info_id ?? `step-${index}`)
-      if (!stepMap.has(stepKey)) {
-        stepMap.set(stepKey, {
-          key: stepKey,
-          label: result?.api_info_name || `步骤 ${result?.id || index + 1}`,
-          scenarios: new Map(),
-        })
-      }
-      const step = stepMap.get(stepKey)!
-      const scenarioKey = String(result?.parameter_id ?? result?.name ?? `scenario-${index}`)
-      if (!step.scenarios.has(scenarioKey)) {
-        step.scenarios.set(scenarioKey, {
-          key: `${stepKey}:${scenarioKey}`,
-          label: result?.name || result?.api_info_name || '默认场景',
-          results: [],
-        })
-      }
-      step.scenarios.get(scenarioKey)!.results.push(result)
-    })
-    return Array.from(stepMap.values()).map((step) => {
-      const scenarios = Array.from(step.scenarios.values()).map((scenario) => {
-        const result = finalScenarioResult(scenario.results)
-        const retryCount = Math.max(scenario.results.length - 1, Number(result?.retry_index || 0))
-        return {
-          key: scenario.key,
-          label: scenario.label,
-          parameterId: result?.parameter_id ?? null,
-          status: Number(result?.status ?? 2),
-          retryCount,
-          result,
-        }
-      })
-      return {
-        key: step.key,
-        label: step.label,
-        status: aggregateStatus(scenarios),
-        total: scenarios.length,
-        passed: scenarios.filter((item) => Number(item.status) === 1).length,
-        scenarios,
-      }
-    })
   }
 
   function preferredScenario(steps: StepOption[]) {
@@ -488,15 +441,17 @@
           props.preferredParameterId !== null &&
           String(item.scenario.parameterId) === String(props.preferredParameterId)
       ) ||
-      scenarios.find((item) => Number(item.scenario.status) === 0) ||
+      scenarios.find((item) => item.scenario.status === 0) ||
       scenarios.find((item) => Number(item.scenario.status) === 4) ||
       scenarios[0] ||
       null
     )
   }
 
-  function initializeResultSelection() {
-    const preferred = preferredScenario(stepOptions.value)
+  function initializeResultSelection(restoreScenarioKey = '') {
+    const restoredStep = stepOptions.value.find(step => step.scenarios.some(scenario => scenario.key === restoreScenarioKey))
+    const restoredScenario = restoredStep?.scenarios.find(scenario => scenario.key === restoreScenarioKey)
+    const preferred = restoredStep && restoredScenario ? { step: restoredStep, scenario: restoredScenario } : preferredScenario(stepOptions.value)
     selectedStepKey.value = preferred?.step.key || ''
     selectedScenarioKey.value = preferred?.scenario.key || ''
     selectedTreeKey.value = preferred?.scenario.key || ''
@@ -504,15 +459,16 @@
   }
 
   function selectTreeNode(keys: Array<string | number>) {
+    if (!available() || detailLoading.value || detailFailed.value) return
     const key = String(keys[0] || '')
     if (!key) return
-    selectedTreeKey.value = key
     if (key.startsWith('step:')) {
       const stepKey = key.replace(/^step:/, '')
       const step = stepOptions.value.find((item) => item.key === stepKey)
       if (!step) return
+      selectedTreeKey.value = key
       const scenario =
-        step.scenarios.find((item) => Number(item.status) === 0) ||
+        step.scenarios.find((item) => item.status === 0) ||
         step.scenarios.find((item) => Number(item.status) === 4) ||
         step.scenarios[0]
       selectedStepKey.value = step.key
@@ -523,16 +479,45 @@
       item.scenarios.some((scenario) => scenario.key === key)
     )
     if (!step) return
+    selectedTreeKey.value = key
     selectedStepKey.value = step.key
     selectedScenarioKey.value = key
   }
 
-  watch(
-    () => props.visible,
-    (visible) => {
-      if (visible) void loadList()
+  function updateVisible(value: boolean) {
+    if (!value) {
+      dismissed = true
+      invalidate()
     }
-  )
+    emit('update:visible', value)
+  }
+
+  watch(() => [props.visible, props.caseId, props.testSuiteDetailId, props.preferredParameterId, JSON.stringify(effectiveQuery.value)], () => {
+    dismissed = false
+    invalidate()
+    if (available()) void loadList()
+  }, { immediate: true, flush: 'sync' })
+
+  watch(() => [userStore.userId, userStore.roleId, userStore.token, userStore.selected_environment, route.fullPath], () => {
+    invalidate()
+    dismissed = true
+    if (props.visible) emit('update:visible', false)
+  }, { flush: 'sync' })
+
+  function onVisibilityChange() {
+    if (document.hidden) invalidate(false)
+    else if (available()) void loadList()
+  }
+  onMounted(() => {
+    document.addEventListener('visibilitychange', onVisibilityChange)
+  })
+  onDeactivated(() => { active = false; invalidate(false) })
+  onActivated(() => { active = true; if (available()) void loadList() })
+  onBeforeUnmount(() => {
+    disposed = true
+    invalidate()
+    document.removeEventListener('visibilitychange', onVisibilityChange)
+  })
 </script>
 
 <style scoped>

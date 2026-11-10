@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 from mangotools.enums import TaskEnum
 
@@ -8,10 +9,9 @@ from src.apps.auto_api.enums.module_coverage import (
 )
 from src.apps.auto_api.exceptions import (
     AutoApiError,
-    QUALITY_COVERAGE_PROJECT_PRODUCT_BINDING_NOT_FOUND,
     MODULE_COVERAGE_ANALYSIS_BLOCKED,
 )
-from src.apps.auto_api.models import ApiCase, ApiCaseRevision
+from src.apps.auto_api.models import ApiCaseRevision
 from src.apps.auto_api.models import (
     ModuleCoverageCase,
     ModuleCoverageCaseSnapshot,
@@ -29,12 +29,15 @@ class ModuleCoverageExecutionMixin:
         }.get(status)
 
     @classmethod
-    def latest_api_case_execution(cls, api_case_id: int) -> tuple[str | None, int | None]:
-        latest = ExecutionResult.objects.filter(
+    def latest_api_case_execution(cls, api_case_id: int, *, revision_id=None) -> tuple[str | None, int | None]:
+        rows = ExecutionResult.objects.filter(
             target_type="api_case",
             target_id=api_case_id,
             status__in=[TaskEnum.SUCCESS.value, TaskEnum.FAIL.value, TaskEnum.WARNING.value],
-        ).order_by("-create_time", "-id").only("status", "revision_id").first()
+        )
+        if revision_id is not None:
+            rows = rows.filter(revision_id=revision_id)
+        latest = rows.order_by("-create_time", "-id").only("status", "revision_id").first()
         if latest is None:
             return None, None
         return cls.execution_result_from_status(latest.status), latest.revision_id
@@ -55,11 +58,17 @@ class ModuleCoverageExecutionMixin:
                 api_case_id=api_case_id,
         ).exists():
             updates["api_case_revision_id"] = revision_id
-        return ModuleCoverageCase.objects.filter(
+        rows = ModuleCoverageCase.objects.filter(
             api_case_id=api_case_id,
             status=ModuleCoverageCaseStatus.COMPLETED,
             removed_at__isnull=True,
-        ).update(**updates)
+        )
+        same_module = rows.filter(module_id=F('api_case__module_id')).update(**updates)
+        cross_module = rows.exclude(module_id=F('api_case__module_id'))
+        # 跨模块历史复用固定修订，别的编辑态/修订执行不能给它补通过结果或换版本。
+        if revision_id:
+            same_module += cross_module.filter(api_case_revision_id=revision_id).update(execution_result=execution_result)
+        return same_module
 
     @classmethod
     def repair_case_target(cls, item: ModuleCoverageCase):
@@ -121,19 +130,21 @@ class ModuleCoverageExecutionMixin:
         cls.repair_case_target(item)
         if cls.interface_analysis_blocked(item):
             raise AutoApiError(MODULE_COVERAGE_ANALYSIS_BLOCKED)
-        api_case = ApiCase.objects.filter(
-            id=api_case_id,
-            project_product_id=item.project_product_id,
-            module_id=item.module_id,
-        ).first()
-        if api_case is None:
-            raise AutoApiError(QUALITY_COVERAGE_PROJECT_PRODUCT_BINDING_NOT_FOUND)
+        from .binding import ModuleCoverageCaseBindingService
+        interface = item.current_snapshot.interface_snapshot if item.current_snapshot_id else None
+        old_revision_id = item.api_case_revision_id if item.api_case_id == api_case_id else None
+        api_case, preserved_revision = ModuleCoverageCaseBindingService.validate(
+            item.project_product_id, item.module_id, api_case_id, old_revision_id,
+            interface=interface, previous=item)
         item.api_case = api_case
-        execution_result, executed_revision_id = cls.latest_api_case_execution(api_case.id)
-        item.api_case_revision = (
-                                     api_case.revisions.filter(id=executed_revision_id).first()
-                                     if executed_revision_id else None
-                                 ) or api_case.revisions.order_by("-revision_no").first()
+        execution_result, executed_revision_id = cls.latest_api_case_execution(api_case.id,
+            **({'revision_id': preserved_revision.id} if api_case.module_id != item.module_id else {}))
+        if api_case.module_id != item.module_id:
+            item.api_case_revision = preserved_revision
+        else:
+            item.api_case_revision = (
+                api_case.revisions.filter(id=executed_revision_id).first() if executed_revision_id else None
+            ) or api_case.revisions.order_by("-revision_no").first()
         item.status = ModuleCoverageCaseStatus.COMPLETED
         item.execution_result = execution_result or ModuleCoverageExecutionResult.NOT_EXECUTED
         item.save(update_fields=[

@@ -6,8 +6,9 @@
 
     <template #default>
       <div class="mango-runtime-center">
-        <a-spin :loading="loading.overview" class="mango-runtime-spin">
-          <section class="mango-section-card mango-runtime-summary">
+        <a-spin :loading="sourceLoading" class="mango-runtime-spin">
+          <template v-if="errors.overview"></template>
+          <section v-else class="mango-section-card mango-runtime-summary">
             <div
               v-for="item in summaryCards"
               :key="item.key"
@@ -20,18 +21,45 @@
           </section>
         </a-spin>
 
+        <section class="mango-section-card mango-runtime-section">
+          <div class="mango-section-title">
+            <div class="mango-section-title__main">
+              <h2>服务运行状态</h2>
+              <span class="mango-runtime-section-note">按服务心跳统计实例，配置项不计作服务。</span>
+            </div>
+          </div>
+          <a-spin :loading="sourceLoading" class="mango-runtime-spin">
+            <template v-if="errors.services"></template>
+            <div v-else-if="services.length" class="mango-runtime-diagnostic-list">
+              <div v-for="service in services" :key="service.id" class="mango-soft-panel mango-runtime-service">
+                <div class="mango-runtime-service-header">
+                  <strong>{{ service.service_name }}</strong>
+                  <span :class="['mango-runtime-status', `mango-runtime-status-${service.status}`]">{{ service.status_name }}</span>
+                </div>
+                <span>{{ serviceInstanceSummary(service) }}</span>
+                <span class="mango-runtime-service-instances" :title="serviceInstanceNames(service)">
+                  {{ serviceInstanceNames(service) === '-' ? '暂无有效实例心跳' : serviceInstanceNames(service) }}
+                </span>
+                <span v-if="service.status === 'online' && service.stale_count" class="mango-runtime-section-note">另有 {{ service.stale_count }} 个实例心跳延迟</span>
+              </div>
+            </div>
+            <div v-else class="mango-empty-state mango-runtime-empty">暂无服务心跳记录</div>
+          </a-spin>
+        </section>
+
         <section class="mango-section-card mango-runtime-section mango-runtime-diagnostics">
           <div class="mango-section-title">
             <div class="mango-section-title__main">
               <h2>配置诊断</h2>
-              <p>{{ diagnosticSummary }}</p>
+              <span class="mango-runtime-section-note">{{ diagnosticSummary }}</span>
             </div>
           </div>
-          <a-spin :loading="loading.diagnostics">
-            <div class="mango-runtime-diagnostic-layout">
+          <a-spin :loading="sourceLoading" class="mango-runtime-spin">
+            <template v-if="errors.diagnostics"></template>
+            <div v-else-if="configurationDiagnostics.length">
               <div class="mango-runtime-diagnostic-list">
                 <div
-                  v-for="item in normalDiagnostics"
+                  v-for="item in configurationDiagnostics"
                   :key="item.key"
                   :class="[
                     'mango-soft-panel',
@@ -41,34 +69,13 @@
                 >
                   <span class="mango-runtime-diagnostic-status">{{ item.status_name }}</span>
                   <div class="mango-runtime-diagnostic-main">
-                    <strong>{{ item.title }}</strong>
-                    <span>{{ item.message }}</span>
+                    <strong :title="item.title">{{ item.title }}</strong>
+                    <span :title="item.message">{{ item.message }}</span>
                   </div>
                 </div>
-              </div>
-              <div class="mango-runtime-diagnostic-worker">
-                <div
-                  v-for="item in apiWorkerDiagnostics"
-                  :key="item.key"
-                  :class="[
-                    'mango-soft-panel',
-                    'mango-runtime-diagnostic',
-                    `mango-runtime-diagnostic-${item.status}`,
-                  ]"
-                >
-                  <span class="mango-runtime-diagnostic-status">{{ item.status_name }}</span>
-                  <div class="mango-runtime-diagnostic-main">
-                    <strong>{{ item.title }}</strong>
-                    <span>{{ item.message }}</span>
-                  </div>
-                </div>
-                <div
-                  v-if="!apiWorkerDiagnostics.length"
-                  class="mango-empty-state mango-runtime-empty"
-                  >暂无 API Worker 诊断</div
-                >
               </div>
             </div>
+            <div v-else class="mango-empty-state mango-runtime-empty">暂无配置诊断项</div>
           </a-spin>
         </section>
 
@@ -76,15 +83,14 @@
           <div class="mango-section-card mango-runtime-section mango-runtime-section-wide">
             <div class="mango-section-title">
               <div class="mango-section-title__main">
-                <h2>服务状态</h2>
-                <p>{{ displayServices.length }} 个服务</p>
+                <h2>服务实例明细</h2>
               </div>
             </div>
             <a-table
               :bordered="false"
               :columns="serviceColumns"
-              :data="displayServices"
-              :loading="loading.services"
+              :data="services"
+              :loading="sourceLoading"
               :pagination="false"
               :scroll="{ x: tableScrollX }"
               row-key="id"
@@ -101,17 +107,17 @@
                   <template v-else-if="item.key === 'instances'" #cell="{ record }">
                     <div class="mango-runtime-node">
                       <span>{{ serviceInstanceSummary(record) }}</span>
-                      <small>{{ serviceInstanceNames(record) }}</small>
+                      <small :title="serviceInstanceNames(record)">{{ serviceInstanceNames(record) }}</small>
                     </div>
                   </template>
                   <template v-else-if="item.key === 'metadata'" #cell="{ record }">
                     <div class="mango-runtime-meta">
-                      <span v-for="meta in serviceMetadata(record)" :key="meta">{{ meta }}</span>
+                      <span v-for="meta in serviceMetadata(record)" :key="meta" :title="meta">{{ meta }}</span>
                     </div>
                   </template>
                   <template v-else-if="item.key === 'actions'" #cell="{ record }">
                     <MangoTableActions
-                      :actions="[{ label: '日志', onClick: () => openLog(record.log_query) }]"
+                      :actions="[{ label: '日志', loading: openingLogId === record.id, disabled: openingLogId !== null, onClick: () => openLog(record) }]"
                     />
                   </template>
                 </a-table-column>
@@ -125,224 +131,105 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, onMounted, reactive, ref } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, onMounted, onActivated, onDeactivated, onBeforeUnmount, reactive, ref, watch } from 'vue'
+  import { useRoute } from 'vue-router'
   import { Message } from '@arco-design/web-vue'
+  import useUserStore from '@/store/modules/user'
+  import usePermissionStore from '@/store/modules/permission'
+  import { useLatestRequest } from '@/hooks/use-latest-request'
   import { getRuntimeOverview } from '@/api/system/runtime-center'
   import MangoTableActions from '@/components/table/MangoTableActions.vue'
-  import { serviceColumns, tableScrollX } from './config'
+  import { serviceColumns, serviceOnlineDiagnosticKeys, tableScrollX } from './config'
+  import { runtimeOverviewData, parseRuntimeSummary, parseRuntimeServices, parseRuntimeDiagnostics, serviceMetadata, serviceInstanceSummary, serviceInstanceNames, runtimeLogUrl } from './runtime-overview'
+  import type { RuntimeService, RuntimeSummary, RuntimeDiagnostic } from './runtime-overview'
 
-  interface RuntimeService {
-    id: number | string
-    service_name: string
-    instance_name: string
-    host_name: string
-    pod_name?: string
-    process_id?: number
-    status: string
-    status_name: string
-    last_seen_at?: string
-    age_seconds?: number
-    metadata?: Record<string, any>
-    log_query?: string
-    online_count?: number
-    stale_count?: number
-    instance_count?: number
-    instances?: RuntimeService[]
-  }
-
-  interface RuntimeDiagnostic {
-    key: string
-    title: string
-    status: string
-    status_name: string
-    message: string
-    suggestion?: string
-  }
-
-  const summary = ref<Record<string, any>>({})
-  const services = ref<RuntimeService[]>([])
-  const diagnostics = ref<RuntimeDiagnostic[]>([])
-  const loading = reactive({
-    overview: false,
-    services: false,
-    diagnostics: false,
+  const route = useRoute(), user = useUserStore(), permission = usePermissionStore(), pagePath = route.path
+  const summary = ref<RuntimeSummary | null>(null), services = ref<RuntimeService[]>([]), diagnostics = ref<RuntimeDiagnostic[]>([])
+  const sourceLoading = ref(false), openingLogId = ref<RuntimeService['id'] | null>(null)
+  const errors = reactive({ overview: '', services: '', diagnostics: '' })
+  const latest = useLatestRequest()
+  let mounted = false, active = true, disposed = false, needsLoad = true, contextVersion = 0
+  let pendingRead: Promise<void> | null = null
+  const available = () => mounted && active && !disposed && route.path === pagePath && document.visibilityState === 'visible'
+  const identity = () => JSON.stringify([route.fullPath, user.userId, user.roleId, user.token, user.selected_environment, permission.permissionKeys])
+  const current = (generation: number, key: string) => available() && generation === contextVersion && key === identity()
+  const summaryCards = computed(() => {
+    const value = summary.value
+    return [
+      { key: 'services', label: '服务健康', value: value ? `${value.healthy_service_count}/${value.total_service_count}` : '-', sub: '在线服务类型' },
+      { key: 'workers', label: 'API Worker', value: value ? `${value.api_worker_count}/${value.api_worker_desired_count}` : '-', sub: value ? `在线 / 期望，线程池 ${value.api_worker_thread_pool_size}` : '在线 / 期望' },
+      { key: 'concurrency', label: 'API 总并发', value: value?.api_total_concurrency ?? '-', sub: '在线实例 x 线程池' },
+      { key: 'pending', label: '待执行任务', value: value?.pending_task_count ?? '-', sub: 'API / UI / Pytest / 定时' },
+      { key: 'errors', label: '系统异常', value: value?.recent_error_count ?? '-', sub: '调度与服务异常' },
+    ]
   })
-
-  const summaryCards = computed(() => [
-    {
-      key: 'services',
-      label: '服务健康',
-      value: `${summary.value.healthy_service_count || 0}/${
-        summary.value.total_service_count || 0
-      }`,
-      sub: '在线服务类型',
-    },
-    {
-      key: 'workers',
-      label: 'API Worker',
-      value: `${summary.value.api_worker_count || 0}/${
-        summary.value.api_worker_desired_count || 5
-      }`,
-      sub: `在线 / 期望，线程池 ${summary.value.api_worker_thread_pool_size || 0}`,
-    },
-    {
-      key: 'concurrency',
-      label: 'API 总并发',
-      value: summary.value.api_total_concurrency || 0,
-      sub: '在线实例 x 线程池',
-    },
-    {
-      key: 'pending',
-      label: '待执行任务',
-      value: summary.value.pending_task_count || 0,
-      sub: 'API / UI / Pytest / 定时',
-    },
-    {
-      key: 'errors',
-      label: '系统异常',
-      value: summary.value.recent_error_count || 0,
-      sub: '调度与服务异常',
-    },
-  ])
-
-  const displayServices = computed(() => normalizeServiceGroups(services.value))
-
-  const diagnosticSummary = computed(() => {
-    const errorCount = diagnostics.value.filter((item) => item.status === 'error').length
-    const warningCount = diagnostics.value.filter((item) => item.status === 'warning').length
-    return `${errorCount} 异常 / ${warningCount} 警告`
-  })
-
-  const apiWorkerDiagnostics = computed(() =>
-    diagnostics.value.filter(
-      (item) => item.key.includes('api_worker') || item.title.includes('API Worker')
-    )
-  )
-
-  const normalDiagnostics = computed(() =>
-    diagnostics.value.filter(
-      (item) => !apiWorkerDiagnostics.value.some((workerItem) => workerItem.key === item.key)
-    )
-  )
-
-  function serviceMetadata(record: RuntimeService) {
-    const metadata = record.metadata || {}
-    const items: string[] = []
-    if (metadata.thread_pool_size !== undefined) items.push(`线程池 ${metadata.thread_pool_size}`)
-    if (metadata.running_count !== undefined) items.push(`执行中 ${metadata.running_count}`)
-    if (metadata.claim_limit !== undefined) items.push(`领取 ${metadata.claim_limit}`)
-    if (metadata.dispatch_batch_size !== undefined)
-      items.push(`批次 ${metadata.dispatch_batch_size}`)
-    if (metadata.port !== undefined) items.push(`端口 ${metadata.port}`)
-    if (metadata.mode !== undefined) items.push(String(metadata.mode))
-    return items.length ? items : ['-']
-  }
-
-  function normalizeServiceGroups(rows: RuntimeService[]) {
-    if (!rows.length) return []
-    const groupedRows = rows.filter(
-      (item) => Array.isArray(item.instances) && item.online_count !== undefined
-    )
-    if (groupedRows.length === rows.length) return rows
-
-    const groups = new Map<string, RuntimeService[]>()
-    rows.forEach((item) => {
-      const serviceName = item.service_name || 'unknown'
-      if (!groups.has(serviceName)) groups.set(serviceName, [])
-      groups.get(serviceName)?.push(item)
+  const configurationDiagnostics = computed(() => diagnostics.value.filter(item => !serviceOnlineDiagnosticKeys.includes(item.key)))
+  const diagnosticSummary = computed(() => `${configurationDiagnostics.value.filter(item => item.status === 'error').length} 异常 / ${configurationDiagnostics.value.filter(item => item.status === 'warning').length} 警告`)
+  function refreshOverview(): Promise<void> {
+    if (!available()) { needsLoad = true; return Promise.resolve() }
+    if (pendingRead) return pendingRead
+    const requestId = latest.beginRequest(), generation = contextVersion, key = identity()
+    const valid = () => latest.isLatestRequest(requestId) && current(generation, key)
+    sourceLoading.value = true; needsLoad = false; Object.assign(errors, { overview: '', services: '', diagnostics: '' })
+    const promise = Promise.resolve().then(async () => {
+      try {
+        if (!valid()) return
+        const data = runtimeOverviewData(await getRuntimeOverview())
+        if (!valid()) return
+        try { summary.value = parseRuntimeSummary(data.summary) }
+        catch (loadFailure0) { summary.value = null; (reportLoadError(loadFailure0, "运行指标加载失败，请重试", false), errors.overview = '运行指标加载失败，请重试') }
+        try { services.value = parseRuntimeServices(data.services) }
+        catch (loadFailure1) { services.value = []; (reportLoadError(loadFailure1, "服务状态加载失败，请重试", false), errors.services = '服务状态加载失败，请重试') }
+        try { diagnostics.value = parseRuntimeDiagnostics(data.diagnostics) }
+        catch (loadFailure2) { diagnostics.value = []; (reportLoadError(loadFailure2, "配置诊断加载失败，请重试", false), errors.diagnostics = '配置诊断加载失败，请重试') }
+      } catch (error) {
+        if (valid()) {
+          reportLoadError(error, '运行状态加载失败，请重试')
+          summary.value = null; services.value = []; diagnostics.value = []
+          Object.assign(errors, { overview: '运行指标加载失败，请重试', services: '服务状态加载失败，请重试', diagnostics: '配置诊断加载失败，请重试' })
+        }
+      } finally { if (valid()) { sourceLoading.value = false; pendingRead = null } }
     })
-
-    return Array.from(groups.entries()).map(([serviceName, items]) =>
-      buildServiceGroup(serviceName, items)
-    )
+    pendingRead = promise
+    return promise
   }
-
-  function buildServiceGroup(serviceName: string, items: RuntimeService[]): RuntimeService {
-    const sortedItems = [...items].sort((prev, next) =>
-      String(next.last_seen_at || '').localeCompare(String(prev.last_seen_at || ''))
-    )
-    const onlineItems = sortedItems.filter((item) => item.status === 'online')
-    const staleItems = sortedItems.filter((item) => item.status === 'stale')
-    const currentItems = onlineItems.length ? onlineItems : staleItems
-    const status = onlineItems.length ? 'online' : staleItems.length ? 'stale' : 'offline'
-    const latestItem = sortedItems[0] || ({} as RuntimeService)
-    const metadataSource = currentItems[0] || latestItem
-    return {
-      id: serviceName,
-      service_name: serviceName,
-      instance_name: serviceName,
-      host_name: latestItem.host_name || '',
-      status,
-      status_name: serviceGroupStatusName(status),
-      last_seen_at: latestItem.last_seen_at,
-      online_count: onlineItems.length,
-      stale_count: staleItems.length,
-      instance_count: currentItems.length,
-      instances: currentItems,
-      metadata: metadataSource.metadata || {},
-      log_query: `service="${serviceName}"`,
-    }
-  }
-
-  function serviceGroupStatusName(status: string) {
-    if (status === 'online') return '正常'
-    if (status === 'stale') return '心跳延迟'
-    return '离线'
-  }
-
-  function serviceInstanceSummary(record: RuntimeService) {
-    if (record.status === 'online') return `在线 ${record.online_count || 0} 个实例`
-    if (record.status === 'stale') return `心跳延迟 ${record.stale_count || 0} 个实例`
-    return '当前无在线实例'
-  }
-
-  function serviceInstanceNames(record: RuntimeService) {
-    const instances = record.instances || []
-    if (!instances.length) return '-'
-    return instances
-      .map((item) => item.pod_name || item.instance_name || item.host_name)
-      .filter(Boolean)
-      .join('、')
-  }
-
-  async function refreshOverview() {
-    loading.overview = true
-    loading.services = true
-    loading.diagnostics = true
+  async function openLog(record: RuntimeService): Promise<void> {
+    if (!available() || openingLogId.value !== null) return
+    const query = record.log_query
+    if (!query) { Message.warning('暂无日志查询条件'); return }
+    const generation = contextVersion, key = identity()
+    const valid = () => current(generation, key)
+    const base = String(import.meta.env.VITE_APP_LOG_PLATFORM_URL || '').trim()
+    openingLogId.value = record.id
     try {
-      const res = await getRuntimeOverview()
-      const data = res.data || {}
-      summary.value = data.summary || {}
-      services.value = data.services || []
-      diagnostics.value = data.diagnostics || []
-    } finally {
-      loading.overview = false
-      loading.services = false
-      loading.diagnostics = false
-    }
+      if (base) {
+        const url = runtimeLogUrl(base, query, window.location.origin)
+        if (!url) { Message.error('日志平台地址无效'); return }
+        window.open(url, '_blank', 'noopener,noreferrer')
+      } else {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable')
+        await navigator.clipboard.writeText(query)
+        if (valid()) Message.success('日志查询条件已复制')
+      }
+    } catch { if (valid()) Message.error(base ? '日志平台打开失败，请重试' : '复制失败，请检查浏览器剪贴板权限后重试') }
+    finally { openingLogId.value = null }
   }
-
-  function openLog(query?: string) {
-    if (!query) {
-      Message.warning('暂无日志查询条件')
-      return
-    }
-    const logPlatformUrl = String(import.meta.env.VITE_APP_LOG_PLATFORM_URL || '').trim()
-    if (logPlatformUrl) {
-      const separator = logPlatformUrl.includes('?') ? '&' : '?'
-      window.open(`${logPlatformUrl}${separator}query=${encodeURIComponent(query)}`, '_blank')
-      return
-    }
-    navigator.clipboard?.writeText(query)
-    Message.success('日志查询条件已复制')
-  }
-
-  onMounted(() => {
-    refreshOverview()
-  })
+  function pause() { contextVersion++; latest.invalidateRequests(); pendingRead = null; sourceLoading.value = false; needsLoad = true }
+  function resume() { if (available() && needsLoad) void refreshOverview() }
+  function visibilityChanged() { if (document.visibilityState === 'visible') resume(); else pause() }
+  watch(identity, () => { pause(); summary.value = null; services.value = []; diagnostics.value = []; Object.assign(errors, { overview: '', services: '', diagnostics: '' }); resume() }, { flush: 'sync' })
+  onMounted(() => { mounted = true; document.addEventListener('visibilitychange', visibilityChanged); resume() })
+  onActivated(() => { active = true; resume() })
+  onDeactivated(() => { active = false; pause() })
+  onBeforeUnmount(() => { disposed = true; pause(); document.removeEventListener('visibilitychange', visibilityChanged) })
 </script>
 
+
 <style scoped lang="less">
+  .mango-runtime-error { padding: var(--m-page-gap); color: var(--m-danger); }
+
   .mango-runtime-center {
     display: flex;
     flex-direction: column;
@@ -403,6 +290,8 @@
     min-width: 0;
   }
 
+  .mango-runtime-node small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
   .mango-runtime-node,
   .mango-runtime-diagnostic-main {
     display: flex;
@@ -418,6 +307,10 @@
   }
 
   .mango-runtime-meta span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     border: 1px solid var(--m-border);
     border-radius: var(--m-radius-sm);
     background: var(--m-surface-soft);
@@ -454,34 +347,52 @@
     color: var(--m-danger);
   }
 
-  .mango-runtime-diagnostic-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(220px, 1fr);
-    gap: var(--m-page-gap);
-  }
-
   .mango-runtime-diagnostic-list {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-auto-rows: 112px;
     gap: var(--m-page-gap);
   }
 
-  .mango-runtime-diagnostic-worker {
-    display: grid;
-    max-height: 232px;
-    grid-auto-rows: 112px;
-    grid-template-columns: 1fr;
+  .mango-runtime-section-note,
+  .mango-runtime-service-instances {
+    color: var(--m-muted);
+    font-size: 12px;
+  }
+
+  .mango-runtime-service {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .mango-runtime-service-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
     gap: 8px;
-    overflow-y: auto;
-    padding-right: 2px;
+  }
+
+  .mango-runtime-service-header strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .mango-runtime-service-header .mango-runtime-status {
+    flex-shrink: 0;
+  }
+
+  .mango-runtime-service-instances {
+    overflow-wrap: anywhere;
   }
 
   .mango-runtime-diagnostic {
     position: relative;
     display: flex;
     min-height: 0;
-    height: 112px;
+    min-height: 112px;
     flex-direction: column;
     align-items: flex-start;
     justify-content: flex-start;
@@ -491,12 +402,10 @@
 
   .mango-runtime-diagnostic-main strong {
     display: block;
-    max-width: calc(100% - 52px);
-    overflow: hidden;
+    max-width: 100%;
     color: var(--m-text);
     font-size: 13px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
 
   .mango-runtime-diagnostic-main span {
@@ -529,20 +438,10 @@
       grid-template-columns: 1fr;
     }
 
-    .mango-runtime-diagnostic-layout {
-      grid-template-columns: 1fr;
-    }
-
     .mango-runtime-diagnostic-list {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .mango-runtime-diagnostic-worker {
-      max-height: none;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      overflow: visible;
-      padding-right: 0;
-    }
   }
 
   @media (max-width: 720px) {
@@ -550,8 +449,7 @@
       grid-template-columns: 1fr;
     }
 
-    .mango-runtime-diagnostic-list,
-    .mango-runtime-diagnostic-worker {
+    .mango-runtime-diagnostic-list {
       grid-template-columns: 1fr;
     }
   }

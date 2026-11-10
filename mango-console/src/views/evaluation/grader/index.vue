@@ -1,9 +1,9 @@
 <template>
   <TableBody plain class="mango-grader-page">
     <template #header
-      ><TableHeader title="评测中心 / 评分器" @search="load" @reset-search="reset"
+      ><TableHeader title="评测中心 / 评分器" @search="onSearch" @reset-search="reset"
         ><template #search-content
-          ><a-form :model="filters" layout="inline" @keyup.enter="load"
+          ><a-form :model="filters" layout="inline" @keyup.enter="onSearch"
             ><a-form-item label="评分器名称"
               ><a-input
                 v-model="filters.search"
@@ -19,11 +19,7 @@
                 allow-clear /></a-form-item></a-form></template></TableHeader
     ></template>
     <template #default>
-      <a-alert v-if="loadError" type="error" class="mango-grader-error"
-        >目录加载失败，请重试。<template #action
-          ><a-button size="small" :loading="loading" @click="load">重试</a-button></template
-        ></a-alert
-      >
+      <template v-if="loadError"><a-button size="small" :loading="loading" @click="load">重新加载</a-button></template>
       <a-table
         class="mango-grader-catalog-table"
         :columns="graderColumns"
@@ -35,8 +31,7 @@
         row-key="grader_key"
       >
         <template #name="{ record }">
-          <a-link v-if="true" @click="show(record)">{{ record.name }}</a-link>
-          <span v-else>{{ record.name }}</span>
+          <a-link @click="show(record)">{{ record.name }}</a-link>
         </template>
         <template #description="{ record }"
           ><span class="mango-grader-catalog-description">{{
@@ -45,18 +40,24 @@
         >
         <template #version="{ record }">{{ formatVersion(record.grader_version) }}</template>
         <template #category="{ record }"
-          ><a-tag size="small" :color="getEnumTagColor(categoryEnumOptions, record.category, enumStore.colors)">{{
-            categoryOptions.find((item) => item.value === record.category)?.label || record.category || '—'
-          }}</a-tag></template
+          ><a-tag
+            size="small"
+            :color="getEnumTagColor(categoryEnumOptions, record.category, enumStore.colors)"
+            >{{
+              categoryOptions.find((item) => item.value === record.category)?.label ||
+              record.category ||
+              '—'
+            }}</a-tag
+          ></template
         >
         <template #actions="{ record }"
           ><MangoTableActions
             :actions="[
-    {
-        label: '详情',
-        onClick: () => show(record),
-    },
-]"
+              {
+                label: '详情',
+                onClick: () => show(record),
+              },
+            ]"
         /></template>
       </a-table>
     </template>
@@ -73,7 +74,7 @@
     <MangoPanelSpin :loading="detailLoading" class="mango-grader-detail">
       <GraderDetail v-if="detail" :detail="detail" />
       <div v-else-if="!detailLoading" class="mango-empty-state"
-        >{{ detailError ? '评分器详情加载失败，请重试。' : '暂无评分器详情'
+        >{{ detailError ? '' : '暂无评分器详情'
         }}<a-button
           v-if="detailError && selectedGrader"
           size="small"
@@ -86,33 +87,45 @@
   </EvaluationDrawer>
 </template>
 <script setup lang="ts">
+import { reportLoadError } from '@/utils/load-error'
+
   import EvaluationDrawer from '../components/EvaluationDrawer.vue'
-  import { computed, onMounted, reactive, ref } from 'vue'
-  import { getGraderCatalog, getGrader } from '@/api/evaluation'
+  import { computed, reactive, ref } from 'vue'
+  import { getGraderCatalog } from '@/api/evaluation'
+  import useUserStore from '@/store/modules/user'
   import GraderDetail from './GraderDetail.vue'
   import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
   import { graderColumns, categoryOptions, categoryEnumOptions, GRADER_SCROLL_X } from './config'
   import { useEnum } from '@/store/modules/get-enum'
   import { getEnumTagColor } from '@/utils/business-format'
   import { formatVersion } from '../components/presentation'
+  import { useEvaluationScope } from '../composables/useEvaluationScope'
+  import { useGraderDetail } from './composables/useGraderDetail'
+  import { createGraderFilters, graderQuery } from './catalog'
+  import type { GraderCatalogEntry } from '../types'
 
-  const enumStore = useEnum()
-  const selectedGrader = ref<any>(),
-    loadError = ref(false),
-    detailError = ref(false)
-  const rows = ref<any[]>([]),
+  const enumStore = useEnum(),
+    user = useUserStore()
+  const rows = ref<GraderCatalogEntry[]>([]),
     loading = ref(false),
-    detail = ref<any>(),
-    visible = ref(false),
-    detailLoading = ref(false)
-  const filters = reactive({ search: '', categories: [] as string[] })
+    loadError = ref(false)
+  const filters = reactive(createGraderFilters())
+  const {
+    selectedGrader,
+    detail,
+    visible,
+    detailLoading,
+    detailError,
+    show: readDetail,
+    close: closeDetail,
+  } = useGraderDetail()
   const pagination = reactive({
     page: 1,
     pageSize: 20,
     pageCount: 0,
     pageSizes: [20, 50],
     showSizePicker: true,
-    onChange: () => undefined,
+    onChange: clampPage,
   })
   const displayedRows = computed(() =>
     rows.value.slice(
@@ -120,52 +133,71 @@
       pagination.page * pagination.pageSize
     )
   )
-  let requestId = 0,
-    detailRequest = 0
+  let requestId = 0
+  const identity = () => JSON.stringify([user.userId, user.roleId, user.token])
+  let loadedIdentity = identity()
+  function invalidate() {
+    ++requestId
+    closeDetail()
+    rows.value = []
+    loading.value = false
+    loadError.value = false
+    pagination.pageCount = 0
+    if (loadedIdentity !== identity()) {
+      loadedIdentity = identity()
+      Object.assign(filters, createGraderFilters())
+      pagination.page = 1
+    }
+  }
+  const scope = useEvaluationScope(
+    () => [],
+    invalidate,
+    () => {
+      void load()
+    }
+  )
+  function clampPage() {
+    pagination.page = Math.max(
+      1,
+      Math.min(pagination.page, Math.ceil(rows.value.length / pagination.pageSize))
+    )
+  }
   async function load() {
-    const request = ++requestId
+    if (!scope.isActive()) return false
+    const request = ++requestId,
+      current = scope.snapshot(),
+      query = graderQuery(filters)
     loading.value = true
     loadError.value = false
     try {
-      const response: any = await getGraderCatalog({
-        search: filters.search || undefined,
-        category__in: filters.categories.length ? filters.categories.join(',') : undefined,
-      })
-      if (request === requestId) {
-        rows.value = response.data?.items || []
-        pagination.pageCount = rows.value.length
-        pagination.page = 1
-      }
-    } catch {
-      if (request === requestId) loadError.value = true
+      const response: { data: { items?: GraderCatalogEntry[] } } = await getGraderCatalog(query)
+      if (request !== requestId || !scope.current(current)) return false
+      rows.value = response.data?.items || []
+      pagination.pageCount = rows.value.length
+      clampPage()
+      return true
+    } catch (loadFailure0) {
+      if (request === requestId && scope.current(current)) (reportLoadError(loadFailure0, "加载失败，请重试", false), loadError.value = true)
+      return false
     } finally {
-      if (request === requestId) loading.value = false
+      if (request === requestId && scope.current(current)) loading.value = false
     }
+  }
+  function onSearch() {
+    pagination.page = 1
+    return load()
   }
   function reset() {
-    filters.search = ''
-    filters.categories = []
-    load()
+    Object.assign(filters, createGraderFilters())
+    return onSearch()
   }
-  async function show(row: any) {
-
-    const request = ++detailRequest
-    selectedGrader.value = row
-    detail.value = undefined
-    detailError.value = false
-    visible.value = true
-    detailLoading.value = true
-    try {
-      const response: any = await getGrader(row.grader_key, row.grader_version)
-      if (request === detailRequest) detail.value = response.data
-    } catch {
-      if (request === detailRequest) detailError.value = true
-    } finally {
-      if (request === detailRequest) detailLoading.value = false
-    }
+  function show(row: Pick<GraderCatalogEntry, 'grader_key' | 'grader_version'>) {
+    if (!scope.isActive()) return Promise.resolve(false)
+    return readDetail(row)
   }
-  onMounted(load)
+  scope.start()
 </script>
+
 <style scoped>
   .mango-grader-catalog-description {
     white-space: nowrap;

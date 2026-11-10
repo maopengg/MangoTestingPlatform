@@ -1,11 +1,19 @@
 <template>
   <aside class="mango-case-info" aria-label="用例信息">
     <h2 class="mango-case-info__heading">用例信息</h2>
-    <div class="mango-case-info__body mango-native-scrollbar" tabindex="0" aria-label="用例基本信息">
+    <div
+      class="mango-case-info__body mango-native-scrollbar"
+      tabindex="0"
+      aria-label="用例基本信息"
+    >
       <dl class="mango-case-info__fields">
         <div v-for="field in fields" :key="field.label" class="mango-case-info__row">
           <dt>{{ field.label }}</dt>
-          <dd v-if="field.label === '状态'"><a-tag size="small" :color="statusColor(record.status)">{{ enumTitle('evaluation_case_status', record.status) }}</a-tag></dd>
+          <dd v-if="field.label === '状态'"
+            ><a-tag size="small" :color="statusColor(record.status)">{{
+              enumTitle('evaluation_case_status', record.status)
+            }}</a-tag></dd
+          >
           <dd v-else>{{ field.value }}</dd>
         </div>
       </dl>
@@ -22,8 +30,9 @@
   import { formatModulePath } from '@/utils/business-format'
   import { formatEvaluationDate, formatVersion } from './presentation'
   import { useEvaluationEnums } from './useEvaluationEnums'
+  import type { EvaluationCaseRecord } from '../types'
 
-  const props = defineProps<{ record: Record<string, any> }>()
+  const props = defineProps<{ record: EvaluationCaseRecord }>()
   const { title: enumTitle, color: statusColor } = useEvaluationEnums()
   const fields = computed(() => [
     { label: '用例 ID', value: props.record.id ?? '—' },
@@ -62,7 +71,9 @@
     overflow: auto;
     padding: var(--m-space-md);
   }
-  .mango-case-info__fields { margin: 0; }
+  .mango-case-info__fields {
+    margin: 0;
+  }
   .mango-case-info__row {
     display: grid;
     grid-template-columns: 72px minmax(0, 1fr);
@@ -70,7 +81,9 @@
     padding-bottom: var(--m-space-md);
     line-height: 1.6;
   }
-  .mango-case-info__row dt { color: var(--m-muted); }
+  .mango-case-info__row dt {
+    color: var(--m-muted);
+  }
   .mango-case-info__row dd {
     margin: 0;
     min-width: 0;

@@ -1,12 +1,12 @@
 <template>
   <a-drawer
-    :visible="visible"
+    :visible="visible && !dismissed"
     :width="drawerWidth"
     :footer="false"
     :closable="false"
     unmount-on-close
     class="mango-diagnostic-markdown-drawer"
-    @update:visible="emit('update:visible', $event)"
+    @update:visible="updateVisible"
   >
     <template #header>
       <div class="mango-diagnostic-markdown__drawer-header">
@@ -36,7 +36,11 @@
 
     <div class="mango-diagnostic-markdown">
       <mango-panel-spin :loading="loading" class="mango-diagnostic-markdown__loading">
-        <div v-if="document" class="mango-diagnostic-markdown__document">
+        <div v-if="errorText" class="mango-empty-state mango-diagnostic-markdown__empty" role="alert">
+          <strong>{{ errorText }}</strong>
+          <a-button size="small" :loading="loading" @click="loadDocument">重试</a-button>
+        </div>
+        <div v-else-if="document" class="mango-diagnostic-markdown__document">
           <div
             class="mango-diagnostic-markdown__reader-layout"
             :class="{ 'mango-diagnostic-markdown__reader-layout--without-outline': !hasOutline }"
@@ -76,17 +80,19 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, ref, watch } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
+  import { useRoute } from 'vue-router'
   import { Message } from '@arco-design/web-vue'
   import { IconClose } from '@arco-design/web-vue/es/icon'
   import { MdCatalog, MdPreview } from 'md-editor-v3'
   import 'md-editor-v3/lib/preview.css'
-  import {
-    getSystemTaskDiagnosticMarkdown,
-    type DiagnosticMarkdownResult,
-  } from '@/api/system/tasks'
+  import { getSystemTaskDiagnosticMarkdown } from '@/api/system/tasks'
   import { getSystemTestSuiteDiagnosticMarkdown } from '@/api/system/test_suite'
   import useAppConfigStore from '@/store/modules/app-config'
+  import { useUserStoreContext } from '@/store/modules/user'
+  import { diagnosticTargetId, isMissingDiagnostic, parseDiagnosticDocument, type DiagnosticDocument } from './diagnostic-markdown'
 
   const props = defineProps<{
     visible: boolean
@@ -98,7 +104,12 @@
   const emit = defineEmits<{ (event: 'update:visible', value: boolean): void }>()
 
   const loading = ref(false)
-  const document = ref<DiagnosticMarkdownResult | null>(null)
+  const errorText = ref(''), dismissed = ref(false)
+  const document = ref<DiagnosticDocument | null>(null)
+  const route = useRoute(), userStore = useUserStoreContext()
+  let active = true, disposed = false, version = 0
+  let pending: { version: number; promise: Promise<void> } | null = null
+  const available = () => !disposed && active && props.visible && !dismissed.value && globalThis.document.visibilityState === 'visible'
   const appStore = useAppConfigStore()
   const drawerWidth = 'min(1280px, calc(100vw - 32px))'
   const previewId = 'mango-diagnostic-markdown-preview'
@@ -115,10 +126,20 @@
   const hasOutline = computed(() => /^#{1,4}\s+\S+/m.test(markdownContent.value))
 
   function closeDrawer() {
+    dismissed.value = true
+    invalidate()
     emit('update:visible', false)
+  }
+  function updateVisible(value: boolean) { if (!value) closeDrawer(); else emit('update:visible', true) }
+  function invalidate() {
+    version += 1
+    document.value = null
+    errorText.value = ''
+    loading.value = false
   }
 
   function downloadDocument() {
+    if (!available()) return
     if (!document.value?.download_url) {
       Message.warning('当前排查文档暂无可用下载地址')
       return
@@ -127,36 +148,59 @@
     anchor.href = document.value.download_url
     anchor.download = document.value.file_name || 'diagnostic.md'
     anchor.rel = 'noopener noreferrer'
-    globalThis.document.body.appendChild(anchor)
-    anchor.click()
-    anchor.remove()
-  }
-
-  async function loadDocument() {
-    if (!props.visible || !props.targetId) return
-    document.value = null
-    loading.value = true
     try {
-      const response = props.targetType === 'scheduled_task'
-        ? await getSystemTaskDiagnosticMarkdown(props.targetId)
-        : await getSystemTestSuiteDiagnosticMarkdown(props.targetId)
-      document.value = response.data || null
-    } catch (error: any) {
-      // 列表中的文档标记可能受缓存影响，打开抽屉时以实时读取结果为准。
-      const errorMessage = error?.msg || error?.message || ''
-      if (!errorMessage.includes('尚未绑定排查报告')) {
-        Message.error(errorMessage || '排查结果加载失败')
-      }
-    } finally {
-      loading.value = false
-    }
+      globalThis.document.body.appendChild(anchor)
+      anchor.click()
+    } catch {
+      Message.error('排查文档下载失败，请重试')
+    } finally { anchor.remove() }
   }
 
-  watch(
-    () => [props.visible, props.targetType, props.targetId, props.documentAvailable],
-    () => loadDocument(),
-    { immediate: true }
-  )
+  function loadDocument(): Promise<void> {
+    if (!available()) return Promise.resolve()
+    const id = diagnosticTargetId(props.targetId), type = props.targetType
+    if (id === null) {
+      errorText.value = '缺少有效对象 ID，无法读取排查结果'
+      return Promise.resolve()
+    }
+    if (pending?.version === version) return pending.promise
+    const currentVersion = version
+    const current = () => available() && version === currentVersion
+    document.value = null
+    errorText.value = ''
+    loading.value = true
+    const promise = Promise.resolve().then(async () => {
+      try {
+        if (!current()) return
+        const response: unknown = type === 'scheduled_task'
+          ? await getSystemTaskDiagnosticMarkdown(id, true)
+          : await getSystemTestSuiteDiagnosticMarkdown(id, true)
+        if (current()) document.value = parseDiagnosticDocument(response, type, id)
+      } catch (error: unknown) {
+        if (current() && !isMissingDiagnostic(error)) (reportLoadError(error, "排查结果加载失败，请重试", false), errorText.value = '排查结果加载失败，请重试')
+      } finally {
+        if (current()) loading.value = false
+        if (pending?.version === currentVersion) pending = null
+      }
+    })
+    pending = { version: currentVersion, promise }
+    return promise
+  }
+
+  function visibilityChanged() {
+    if (globalThis.document.visibilityState === 'visible') void loadDocument()
+    else invalidate()
+  }
+  watch([() => props.visible, () => props.targetType, () => diagnosticTargetId(props.targetId), () => props.documentAvailable], (values, previous) => {
+    if (values[0] === false || (values[0] === true && previous?.[0] !== true)) dismissed.value = false
+    invalidate()
+    void loadDocument()
+  }, { immediate: true, flush: 'sync' })
+  watch(() => [route.fullPath, userStore.userId, userStore.roleId, userStore.token, userStore.selected_environment], closeDrawer, { flush: 'sync' })
+  onMounted(() => globalThis.document.addEventListener('visibilitychange', visibilityChanged))
+  onDeactivated(() => { active = false; invalidate() })
+  onActivated(() => { const resume = !active; active = true; if (resume) void loadDocument() })
+  onBeforeUnmount(() => { disposed = true; active = false; invalidate(); globalThis.document.removeEventListener('visibilitychange', visibilityChanged) })
 </script>
 
 <style scoped lang="less">

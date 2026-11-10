@@ -88,7 +88,6 @@
             <a-switch
               :model-value="isOutputEnabled(record)"
               :disabled="readonly"
-              size="small"
               @change="(value) => changeOutputEnabled(record, value)"
             />
           </template>

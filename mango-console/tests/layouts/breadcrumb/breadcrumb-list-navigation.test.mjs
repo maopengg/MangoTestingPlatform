@@ -1,3 +1,4 @@
+import { loadFeedbackModule } from '../../helpers/load-feedback-modules.mjs'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -30,7 +31,7 @@ new Function('exports', 'require', ts.transpileModule(descriptor.script.content,
 }).outputText)(breadcrumbExports, (name) => {
   if (name === 'vue') return vue
   if (name === 'vue-router') return vueRouter
-  throw new Error(`Unexpected dependency: ${name}`)
+  { if (['@/utils/load-error', '@/utils/api-response'].includes(name)) return loadFeedbackModule(name); throw new Error(`Unexpected dependency: ${name}`) }
 })
 
 const renderer = vue.createRenderer({

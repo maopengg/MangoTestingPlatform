@@ -1,515 +1,356 @@
 <template>
-  <TableBody content-flush>
-    <template #header>
-      <TableHeader title="数据工厂 / 数据库映射" @search="doRefresh" @reset-search="onResetSearch">
-        <template #search-content>
-          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
-            <a-form-item
-              v-for="item of datasourceAliasConditionItems"
-              :key="item.key"
-              :label="item.label"
-            >
-              <template v-if="item.type === 'input'">
-                <a-input
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  allow-clear
-                  @blur="doRefresh"
-                  @clear="doRefresh"
-                />
-              </template>
-              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
-                <ProjectProductSelect
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  @change="doRefresh"
-                />
-              </template>
-              <template v-else-if="item.type === 'select' && item.key === 'db_type'">
-                <a-select
-                  v-model="item.value"
-                  :multiple="item.multiple"
-                  :max-tag-count="item.multiple ? 1 : undefined"
-                  :field-names="enumFieldNames"
-                  :options="enumStore.data_source_type"
-                  :placeholder="item.placeholder"
-                  allow-clear
-                  allow-search
-                  value-key="key"
-                  @change="doRefresh"
-                />
-              </template>
+  <TableBody plain class="mango-detail-workbench-page">
+    <template #header><TableHeader title="数据工厂 / 数据库映射" /></template>
+    <template #default>
+      <ProjectProductNavigationWorkbench
+        ref="navigationRef"
+        contained-body
+        :model-value="selectedProduct"
+        :reset-key="sidebarResetKey"
+        @filter-change="onFilterChange"
+        @search="onSearch"
+        @reset-search="onResetSearch"
+      >
+        <template #search>
+          <a-form :model="{}" layout="inline" @keyup.enter="onSearch">
+            <a-form-item v-for="item of headerConditionItems" :key="item.key" :label="item.label">
+              <a-input
+                v-if="item.type === 'input'"
+                v-model="item.value"
+                :placeholder="item.placeholder"
+                allow-clear
+                @blur="onSearch"
+                @clear="onSearch"
+              />
+              <a-select
+                v-else-if="item.type === 'select'"
+                v-model="item.value"
+                :multiple="item.multiple"
+                :max-tag-count="item.multiple ? 1 : undefined"
+                :field-names="enumFieldNames"
+                :options="item.key === 'db_type' ? enumStore.data_source_type : item.optionItems"
+                :loading="item.key === 'db_type' ? enumsLoading : usersLoading"
+                :placeholder="item.placeholder"
+                allow-clear
+                allow-search
+                @change="onSearch"
+              />
             </a-form-item>
           </a-form>
         </template>
-      </TableHeader>
-    </template>
-
-    <template #default>
-      <TableTabs>
-        <template #extra>
-          <div>
-            <a-space>
-              <a-button size="small" type="primary" @click="openAlias()" data-testid="qa-views-data-factory-datasource-button-新增逻辑源">新增逻辑源</a-button>
-            </a-space></div
+        <template #toolbar>
+          <a-button
+            size="small"
+            type="primary"
+            :disabled="aliasSaving"
+            @click="openAlias()"
+            data-testid="qa-views-data-factory-datasource-button-新增逻辑源"
+            >新增逻辑源</a-button
           >
         </template>
-      </TableTabs>
-      <a-table
-        :scroll="{ x: 1100 }"
-        :columns="datasourceAliasColumns"
-        :data="aliasTable.dataList"
-        :loading="aliasTable.tableLoading.value"
-        :pagination="false"
-        :row-key="'id'"
-      >
-        <template #columns>
-          <a-table-column
-            v-for="item of datasourceAliasColumns"
-            :key="item.key"
-            :align="item.align"
-            :data-index="item.key"
-            :fixed="item.fixed"
-            :ellipsis="item.ellipsis"
-            :tooltip="item.tooltip"
-            :title="item.title"
-            :width="item.width"
-          >
-            <template v-if="item.key === 'index'" #cell="{ record }">
-              {{ record.id }}
-            </template>
-            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ formatProjectProductPath(record?.project_product) }}
-            </template>
-            <template v-else-if="item.key === 'db_type'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.db_type]" size="small">
-                {{ enumTitle(enumStore.data_source_type, record.db_type) }}
-              </a-tag>
-            </template>
-            <template v-else-if="item.key === 'update_user'" #cell="{ record }">
-              {{ record.update_user?.name || record.update_user?.username || '-' }}
-            </template>
-            <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <MangoTableActions
-                :actions="[
-                  { label: '编辑', onClick: () => openAlias(record) },
-                  {
-                    label: '环境绑定',
-                    loading: actionLoading === `binding-${record.id}`,
-                    onClick: () => openBinding(record),
-                  },
-                  {
-                    label: '删除',
-                    danger: true,
-                    loading: actionLoading === `alias-delete-${record.id}`,
-                    onClick: () => removeAlias(record),
-                  },
-                ]"
-              />
-            </template>
-          </a-table-column>
-        </template>
-      </a-table>
-    </template>
-    <template #footer><TableFooter :pagination="pagination" /></template>
-  </TableBody>
 
-  <a-modal
-    v-model:visible="aliasVisible"
-    :on-before-ok="saveAlias"
-    :ok-loading="aliasSaving"
-    :title="aliasForm.id ? '编辑逻辑数据库' : '新增逻辑数据库'"
-    width="680px"
-  >
-    <a-form :model="aliasForm" layout="vertical">
-      <a-form-item label="产品" required>
-        <ProjectProductSelect v-model="aliasForm.project_product" />
-      </a-form-item>
-      <a-form-item label="名称" required><a-input v-model="aliasForm.name" /></a-form-item>
-      <a-form-item label="数据库分类" required>
-        <a-select
-          v-model="aliasForm.source_category"
-          :options="enumStore.data_source_category"
-          :field-names="enumFieldNames"
-          @change="onAliasCategoryChange"
-        />
-      </a-form-item>
-      <a-form-item label="数据库类型" required>
-        <a-select
-          v-model="aliasForm.db_type"
-          :options="aliasSourceTypeOptions"
-          :field-names="enumFieldNames"
-        />
-      </a-form-item>
-      <a-form-item label="描述"><a-textarea v-model="aliasForm.description" /></a-form-item>
-    </a-form>
-  </a-modal>
 
-  <a-drawer
-    v-model:visible="bindingVisible"
-    :title="`${currentAlias?.name || ''} / 环境绑定`"
-    width="900px"
-  >
-    <a-space class="datasource-toolbar">
-      <a-button type="primary" @click="openBindingForm()" data-testid="qa-views-data-factory-datasource-button-新增绑定">新增绑定</a-button>
-      <a-button :loading="bindingLoading" @click="loadBindings" data-testid="qa-views-data-factory-datasource-button-刷新">刷新</a-button>
-    </a-space>
-    <a-table
-      :scroll="{ x: 1100 }"
-      :columns="datasourceBindingColumns"
-      :data="bindingRows"
-      :loading="bindingLoading"
-      :pagination="false"
-      :row-key="'id'"
-    >
-      <template #columns>
-        <a-table-column
-          v-for="item of datasourceBindingColumns"
-          :key="item.key"
-          :align="item.align"
-          :data-index="item.key"
-          :ellipsis="item.ellipsis"
-          :tooltip="item.tooltip"
-          :title="item.title"
-          :width="item.width"
+
+        <a-table
+          class="mango-native-scroll-table"
+          :scroll="{ x: aliasScrollX, y: '100%' }"
+          :columns="datasourceAliasColumns"
+          :data="rows"
+          :loading="listLoading"
+          :pagination="false"
+          :bordered="false"
+          row-key="id"
         >
-          <template v-if="item.key === 'index'" #cell="{ record }">
-            {{ record.id }}
+          <template #columns>
+            <a-table-column
+              v-for="item of datasourceAliasColumns"
+              :key="item.key"
+              :align="item.align"
+              :data-index="item.key"
+              :fixed="item.fixed"
+              :ellipsis="item.ellipsis"
+              :tooltip="item.tooltip"
+              :title="item.title"
+              :width="item.width"
+            >
+              <template v-if="item.key === 'index'" #cell="{ record }">{{ record.id }}</template>
+              <template v-else-if="item.key === 'project_product'" #cell="{ record }">{{
+                formatProjectProductPath(record.project_product)
+              }}</template>
+              <template v-else-if="item.key === 'db_type'" #cell="{ record }">
+                <a-tag :color="enumStore.colors[record.db_type]" size="small">{{
+                  enumStore.data_source_type.find(
+                    (item) => String(item.key) === String(record.db_type)
+                  )?.title ?? record.db_type
+                }}</a-tag>
+              </template>
+              <template v-else-if="item.key === 'update_user'" #cell="{ record }">{{
+                record.update_user?.name || record.update_user?.username || '-'
+              }}</template>
+              <template v-else-if="item.key === 'actions'" #cell="{ record }">
+                <MangoTableActions
+                  :actions="[
+                    {
+                      label: '编辑',
+                      disabled: aliasSaving || isBusy(record.id),
+                      onClick: () => openAlias(record),
+                    },
+                    {
+                      label: '环境绑定',
+                      disabled: aliasSaving || isBusy(record.id),
+                      onClick: () => openBinding(record),
+                    },
+                    {
+                      label: '删除',
+                      danger: true,
+                      loading: deletingIds.has(record.id),
+                      disabled: aliasSaving || bindingWritingIds.size > 0,
+                      onClick: () => removeAlias(record),
+                    },
+                  ]"
+                />
+              </template>
+            </a-table-column>
           </template>
-          <template v-else-if="item.key === 'environment'" #cell="{ record }">
-            <a-tag size="small">
-              {{ enumTitle(enumStore.environment_type, record.environment) }}
-            </a-tag>
-          </template>
-          <template v-else-if="item.key === 'data_source'" #cell="{ record }">
-            {{ displayDataSource(record.data_source || record.database) }}
-          </template>
-          <template v-else-if="item.key === 'update_user'" #cell="{ record }">
-            {{ record.update_user?.name || record.update_user?.username || '-' }}
-          </template>
-          <template v-else-if="item.key === 'db_c_status'" #cell="{ record }">
-            {{ record.db_c_status === 1 ? '允许' : '禁止' }}
-          </template>
-          <template v-else-if="item.key === 'db_rud_status'" #cell="{ record }">
-            {{ record.db_rud_status === 1 ? '允许' : '禁止' }}
-          </template>
-          <template v-else-if="item.key === 'actions'" #cell="{ record }">
-            <MangoTableActions
-              :actions="[
-                { label: '编辑', onClick: () => openBindingForm(record) },
-                {
-                  label: '删除',
-                  danger: true,
-                  loading: actionLoading === `binding-delete-${record.id}`,
-                  onClick: () => removeBinding(record),
-                },
-              ]"
-            />
-          </template>
-        </a-table-column>
-      </template>
-    </a-table>
-  </a-drawer>
-
-  <a-modal
-    v-model:visible="bindingFormVisible"
-    :on-before-ok="saveBinding"
-    :ok-loading="bindingSaving"
-    :title="bindingForm.id ? '编辑绑定' : '新增绑定'"
-    width="680px"
-  >
-    <a-form :model="bindingForm" layout="vertical">
-      <a-form-item label="测试环境" required>
-        <a-select
-          v-model="bindingForm.environment"
-          :options="enumStore.environment_type"
-          :field-names="enumFieldNames"
-          placeholder="请选择测试环境"
-          allow-search
-          value-key="key" data-testid="qa-views-data-factory-datasource-select-请选择测试环境"
-        />
-      </a-form-item>
-      <a-form-item label="数据库配置" required>
-        <a-select
-          v-model="bindingForm.data_source"
-          :options="dataSourceOptions"
-          :field-names="{ value: 'id', label: 'display_name' }"
-          :loading="databaseLoading"
-          placeholder="请选择全局数据库配置"
-          allow-search data-testid="qa-views-data-factory-datasource-select-请选择全局数据库配置"
-        />
-      </a-form-item>
-      <a-form-item label="读取权限"
-        ><a-switch v-model="bindingForm.allowQuery" size="small"
-      /></a-form-item>
-      <a-form-item label="写入权限">
-        <a-switch
-          v-model="bindingForm.allowWrite"
-          :disabled="bindingForm.environment === 2"
-          size="small"
-        />
-      </a-form-item>
-      <DataSourceTargetFields v-model="bindingForm.target" :source-id="bindingForm.data_source"
-        :source-type="dataSourceOptions.find(item => item.id === bindingForm.data_source)?.db_type ?? -1" />
-      <a-form-item label="描述"><a-textarea v-model="bindingForm.description" /></a-form-item>
-    </a-form>
-  </a-modal>
+        </a-table>
+        <template #footer><TableFooter :pagination="pagination" /></template>
+      </ProjectProductNavigationWorkbench>
+    </template>
+  </TableBody>
+  <DatasourceAliasEditor
+    ref="editorRef"
+    :options-loading="enumsLoading"
+    @saved="doRefresh"
+    @saving-change="onAliasSaving"
+  />
+  <DatasourceBindingsDrawer ref="bindingsRef" @writing-change="onBindingWriting" />
 </template>
+<script setup lang="ts">
+import { reportLoadError } from '@/utils/load-error'
 
-<script lang="ts" setup>
-  import DataSourceTargetFields from '@/components/forms/DataSourceTargetFields.vue'
+  import { computed, onMounted, reactive, ref } from 'vue'
+  import { Message, Modal } from '@arco-design/web-vue'
+  import { usePagination } from '@/hooks/table'
   import {
-    deleteDataFactoryDatasourceAlias,
-    deleteDataFactoryDatasourceBinding,
     getDataFactoryDatasourceAlias,
-    getDataFactoryDatasourceBinding,
-    postDataFactoryDatasourceAlias,
-    postDataFactoryDatasourceBinding,
-    putDataFactoryDatasourceAlias,
-    putDataFactoryDatasourceBinding,
+    deleteDataFactoryDatasourceAlias,
   } from '@/api/data-factory'
-  import { getSystemDataSource } from '@/api/system/data_source'
-  import { usePagination, useTable } from '@/hooks/table'
+  import { getUserName } from '@/api/user/user'
   import { useEnum } from '@/store/modules/get-enum'
   import { getFormItems } from '@/utils/datacleaning'
-  import { Message, Modal } from '@arco-design/web-vue'
-  import { computed, onMounted, reactive, ref } from 'vue'
-  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
-  import TableTabs from '@/components/table/TableTabs.vue'
   import { formatProjectProductPath } from '@/utils/business-format'
+  import { setUpdateUserOptions } from '@/utils/update-user'
+  import type { NavigationCreateSource } from '@/utils/navigation-create-defaults'
+  import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
+  import MangoTableActions from '@/components/table/MangoTableActions.vue'
+  import DatasourceAliasEditor from './components/DatasourceAliasEditor.vue'
+  import DatasourceBindingsDrawer from './components/DatasourceBindingsDrawer.vue'
   import {
+    createConditionItems,
     datasourceAliasColumns,
-    datasourceAliasConditionItems,
-    datasourceBindingColumns,
+    aliasScrollX,
+    enumFieldNames,
   } from './config'
-
-  const aliasTable = useTable()
-  const pagination = usePagination(doRefresh, () => aliasTable.tableLoading)
+  import { productId } from './form'
+  import { useDatasourceScope } from './composables/useDatasourceScope'
+  import type { LogicalSource, AliasEditorHandle, BindingsDrawerHandle } from './types'
   const enumStore = useEnum()
-  const enumFieldNames = { value: 'key', label: 'title' }
-  const aliasVisible = ref(false)
-  const bindingVisible = ref(false)
-  const bindingFormVisible = ref(false)
-  const aliasSaving = ref(false)
-  const bindingSaving = ref(false)
-  const bindingLoading = ref(false)
-  const databaseLoading = ref(false)
-  const actionLoading = ref('')
-  const currentAlias = ref<any>(null)
-  const bindingRows = ref<any[]>([])
-  const dataSourceOptions = ref<any[]>([])
-  const aliasForm = reactive<any>({})
-  const bindingForm = reactive<any>({})
-  const aliasSourceTypeOptions = computed(() =>
-    (enumStore.data_source_type || []).filter((item: any) => {
-      return enumStore.data_source_type_category[item.key] === aliasForm.source_category
-    })
+  const conditionItems = createConditionItems()
+  const productCondition = computed(() =>
+    conditionItems.find((item) => item.key === 'project_product')
   )
-
-  function enumTitle(options: any[] = [], value: any) {
-    return options.find((it) => it.key === value)?.title || value
+  const selectedProduct = computed(() => productId(productCondition.value?.value))
+  const headerConditionItems = computed(() =>
+    conditionItems.filter((item) => item.key !== 'project_product')
+  )
+  const rows = ref<LogicalSource[]>([]),
+    listLoading = ref(false),
+    loadError = ref(false)
+  const enumsLoading = ref(false),
+    enumsError = ref(false),
+    usersLoading = ref(false),
+    usersError = ref(false)
+  const pagination = usePagination(doRefresh, listLoading)
+  const navigationRef = ref<NavigationCreateSource | null>(null)
+  const editorRef = ref<AliasEditorHandle | null>(null),
+    bindingsRef = ref<BindingsDrawerHandle | null>(null)
+  const aliasSaving = ref(false),
+    sidebarResetKey = ref(0)
+  const deletingIds = reactive(new Set<number>()),
+    editingIds = reactive(new Set<number>()),
+    bindingWritingIds = reactive(new Set<number>())
+  let listRequest = 0,
+    enumsRequest = 0,
+    usersRequest = 0,
+    context = 0
+  let confirmation: ReturnType<typeof Modal.confirm> | null = null
+  const scope = useDatasourceScope(reset, resume)
+  const isBusy = (id: number) =>
+    deletingIds.has(id) || editingIds.has(id) || bindingWritingIds.has(id)
+  function closeOperations() {
+    ++context
+    editorRef.value?.close()
+    bindingsRef.value?.close()
+    confirmation?.close()
+    confirmation = null
   }
-
-  function displayDataSource(value: any) {
-    if (!value || typeof value !== 'object') return value
-    let technicalName = value.file_path || `${value.host}:${value.port}`
-    if (value.db_type === 20) {
-      const prefix = String(value.extra_config?.path_prefix || '').replace(/^\/+|\/+$/g, '')
-      technicalName = `${value.host}:${value.port}${prefix ? `/${prefix}` : ''}`
+  function reset() {
+    ++listRequest
+    ++enumsRequest
+    ++usersRequest
+    closeOperations()
+    rows.value = []
+    pagination.setTotalSize(0)
+    listLoading.value = false
+    loadError.value = false
+    enumsLoading.value = false
+    enumsError.value = false
+    usersLoading.value = false
+    usersError.value = false
+    setUpdateUserOptions(conditionItems, [])
+  }
+  function resume() {
+    void doRefresh()
+    void loadEnums()
+    void loadUsers()
+  }
+  async function loadEnums() {
+    if (!scope.isActive()) return
+    const request = ++enumsRequest,
+      version = scope.snapshot()
+    enumsLoading.value = true
+    enumsError.value = false
+    try {
+      await enumStore.getEnum()
+    } catch (loadFailure0) {
+      if (request === enumsRequest && scope.current(version)) (reportLoadError(loadFailure0, "加载失败，请重试", false), enumsError.value = true)
+    } finally {
+      if (request === enumsRequest) enumsLoading.value = false
     }
-    const label = value.display_name || technicalName
-    return label === technicalName ? label : `${label} · ${technicalName}`
   }
-
-  function doRefresh() {
-    aliasTable.tableLoading.value = true
-    const query = getFormItems(datasourceAliasConditionItems)
-    getDataFactoryDatasourceAlias({
-      ...query,
-      page: pagination.page,
-      pageSize: pagination.pageSize,
-    }).then((res) => {
-      aliasTable.handleSuccess(res)
-      pagination.setTotalSize((res as any).totalSize)
+  async function loadUsers() {
+    if (!scope.isActive()) return
+    const request = ++usersRequest,
+      version = scope.snapshot()
+    usersLoading.value = true
+    usersError.value = false
+    try {
+      const response = await getUserName()
+      if (request === usersRequest && scope.current(version))
+        setUpdateUserOptions(conditionItems, response.data || [])
+    } catch (loadFailure1) {
+      if (request === usersRequest && scope.current(version)) (reportLoadError(loadFailure1, "加载失败，请重试", false), usersError.value = true)
+    } finally {
+      if (request === usersRequest) usersLoading.value = false
+    }
+  }
+  async function doRefresh() {
+    if (!scope.isActive()) return
+    const request = ++listRequest,
+      version = scope.snapshot(),
+      payload = getFormItems(conditionItems)
+    payload.project_product = selectedProduct.value
+    Object.keys(payload).forEach((key) => {
+      if (payload[key] === '' || payload[key] === null || payload[key] === undefined)
+        delete payload[key]
     })
+    Object.assign(payload, { page: pagination.page, pageSize: pagination.pageSize })
+    listLoading.value = true
+    loadError.value = false
+    try {
+      const response = await getDataFactoryDatasourceAlias(payload)
+      if (request === listRequest && scope.current(version)) {
+        rows.value = response.data || []
+        pagination.setTotalSize(response.totalSize ?? 0)
+      }
+    } catch (loadFailure2) {
+      if (request === listRequest && scope.current(version)) (reportLoadError(loadFailure2, "加载失败，请重试", false), loadError.value = true)
+    } finally {
+      if (request === listRequest) listLoading.value = false
+    }
   }
-
+  function onSearch() {
+    pagination.page = 1
+    return doRefresh()
+  }
+  function onFilterChange({ projectProduct }: { projectProduct: string | number | null }) {
+    closeOperations()
+    if (productCondition.value) productCondition.value.value = projectProduct ?? ''
+    return onSearch()
+  }
   function onResetSearch() {
-    datasourceAliasConditionItems.forEach((it) => {
-      it.value = it.multiple ? [] : ''
+    closeOperations()
+    conditionItems.forEach((item) => {
+      item.value = item.multiple ? [] : ''
     })
-    doRefresh()
+    sidebarResetKey.value++
+    return onSearch()
   }
-
-  function openAlias(record?: any) {
-    Object.keys(aliasForm).forEach((key) => delete aliasForm[key])
-    Object.assign(aliasForm, {
-      id: record?.id,
-      project_product: record?.project_product?.id || record?.project_product || null,
-      name: record?.name || '',
-      source_category: record?.source_category ?? 0,
-      db_type: record?.db_type ?? 0,
-      description: record?.description || '',
-      status: record?.status ?? 1,
-    })
-    aliasVisible.value = true
-  }
-
-  function onAliasCategoryChange() {
-    aliasForm.db_type = aliasSourceTypeOptions.value[0]?.key ?? null
-  }
-
-  async function saveAlias() {
-    if (!aliasForm.project_product || !aliasForm.name || aliasForm.db_type == null) {
-      Message.error('请先填写产品、名称和数据库类型')
-      return false
-    }
-    const request = aliasForm.id ? putDataFactoryDatasourceAlias : postDataFactoryDatasourceAlias
-    aliasSaving.value = true
-    try {
-      const res = await request({ ...aliasForm })
-      Message.success(res.msg)
-      doRefresh()
-      return true
-    } catch (error) {
-      return false
-    } finally {
-      aliasSaving.value = false
+  function onAliasSaving(id: number | null, pending: boolean) {
+    aliasSaving.value = pending
+    if (id !== null) {
+      if (pending) editingIds.add(id)
+      else editingIds.delete(id)
     }
   }
-
-  function removeAlias(record: any) {
-    Modal.confirm({
+  function onBindingWriting(id: number, pending: boolean) {
+    if (pending) bindingWritingIds.add(id)
+    else bindingWritingIds.delete(id)
+  }
+  function openAlias(record?: LogicalSource) {
+    if (!scope.isActive() || aliasSaving.value || (record && isBusy(record.id))) return
+    bindingsRef.value?.close()
+    editorRef.value?.open(record, navigationRef.value?.getCreateDefaults().projectProduct ?? null)
+  }
+  function openBinding(record: LogicalSource) {
+    if (!scope.isActive() || aliasSaving.value || isBusy(record.id)) return
+    editorRef.value?.close()
+    bindingsRef.value?.open(record)
+  }
+  function removeAlias(record: LogicalSource) {
+    if (
+      !scope.isActive() ||
+      confirmation ||
+      aliasSaving.value ||
+      bindingWritingIds.size > 0 ||
+      isBusy(record.id)
+    )
+      return
+    bindingsRef.value?.close()
+    editorRef.value?.close()
+    const id = record.id,
+      name = record.name,
+      version = scope.snapshot(),
+      current = context
+    const dialog = Modal.confirm({
       title: '删除逻辑源',
-      content: `确认删除 ${record.name}？`,
-      onBeforeOk: () => {
-        actionLoading.value = `alias-delete-${record.id}`
-        return deleteDataFactoryDatasourceAlias(record.id)
-          .then(doRefresh)
-          .finally(() => {
-            actionLoading.value = ''
-          })
-      },
-    })
-  }
-
-  function openBinding(alias: any) {
-    currentAlias.value = alias
-    bindingVisible.value = true
-    actionLoading.value = `binding-${alias.id}`
-    loadBindings().finally(() => {
-      actionLoading.value = ''
-    })
-  }
-
-  function loadBindings() {
-    bindingLoading.value = true
-    return getDataFactoryDatasourceBinding({ datasource_alias: currentAlias.value.id })
-      .then((res) => {
-        bindingRows.value = res.data || []
-      })
-      .finally(() => {
-        bindingLoading.value = false
-      })
-  }
-
-  function openBindingForm(record?: any) {
-    Object.keys(bindingForm).forEach((key) => delete bindingForm[key])
-    dataSourceOptions.value = []
-    Object.assign(bindingForm, {
-      id: record?.id,
-      datasource_alias: currentAlias.value.id,
-      environment: record?.environment ?? null,
-      data_source: record?.data_source?.id || record?.database?.id || record?.database || null,
-      target: { database_name: record?.database_name || '', schema_name: record?.schema_name || '', redis_db: record?.redis_db ?? null },
-      allowQuery: record?.db_c_status === 1,
-      allowWrite: record?.db_rud_status === 1,
-      description: record?.description || '',
-    })
-    loadDataSourceOptions(bindingForm.data_source)
-    bindingFormVisible.value = true
-  }
-
-  function loadDataSourceOptions(selectedDataSourceId?: any) {
-    dataSourceOptions.value = []
-    databaseLoading.value = true
-    return getSystemDataSource({ page: 1, pageSize: 999 })
-      .then((res) => {
-        const dbType = currentAlias.value?.db_type
-        const sourceCategory = currentAlias.value?.source_category
-        dataSourceOptions.value = (res.data || []).filter((item: any) => {
-          return (
-            Number(item.source_category) === Number(sourceCategory) &&
-            (dbType == null || Number(item.db_type) === Number(dbType))
-          )
-        })
-        if (
-          selectedDataSourceId &&
-          !dataSourceOptions.value.some(
-            (item: any) => String(item.id) === String(selectedDataSourceId)
-          )
-        ) {
-          bindingForm.data_source = null
+      content: `确认删除 ${name}？`,
+      okText: '删除',
+      cancelText: '取消',
+      okButtonProps: { status: 'danger' },
+      async onBeforeOk() {
+        if (!scope.current(version) || current !== context || isBusy(id)) return false
+        deletingIds.add(id)
+        try {
+          const response = await deleteDataFactoryDatasourceAlias(id)
+          if (scope.current(version) && current === context) {
+            Message.success(response.msg)
+            if (rows.value.length === 1 && rows.value[0].id === id && pagination.page > 1)
+              pagination.page--
+            await doRefresh()
+          }
+          return true
+        } catch {
+          return false
+        } finally {
+          deletingIds.delete(id)
         }
-      })
-      .finally(() => {
-        databaseLoading.value = false
-      })
-  }
-
-  async function saveBinding() {
-    if (bindingForm.environment == null || !bindingForm.data_source) {
-      Message.error('请先选择测试环境和数据库配置')
-      return false
-    }
-    if (bindingForm.environment === 2) bindingForm.allowWrite = false
-    const request = bindingForm.id
-      ? putDataFactoryDatasourceBinding
-      : postDataFactoryDatasourceBinding
-    bindingSaving.value = true
-    try {
-      const res = await request({
-        id: bindingForm.id,
-        datasource_alias: bindingForm.datasource_alias,
-        environment: bindingForm.environment,
-        data_source: bindingForm.data_source,
-        ...bindingForm.target,
-        description: bindingForm.description,
-        db_c_status: bindingForm.allowQuery ? 1 : 0,
-        db_rud_status: bindingForm.allowWrite ? 1 : 0,
-      })
-      Message.success(res.msg)
-      loadBindings()
-      return true
-    } catch (error) {
-      return false
-    } finally {
-      bindingSaving.value = false
-    }
-  }
-
-  function removeBinding(record: any) {
-    Modal.confirm({
-      title: '删除绑定',
-      content: '确认删除该环境绑定？',
-      onBeforeOk: () => {
-        actionLoading.value = `binding-delete-${record.id}`
-        return deleteDataFactoryDatasourceBinding(record.id)
-          .then(loadBindings)
-          .finally(() => {
-            actionLoading.value = ''
-          })
+      },
+      onClose() {
+        if (confirmation === dialog) confirmation = null
       },
     })
+    confirmation = dialog
   }
-
-  onMounted(() => {
-    enumStore.getEnum()
-    doRefresh()
-  })
+  onMounted(resume)
 </script>
-<style scoped>
-  .datasource-toolbar {
-    margin-bottom: 12px;
-  }
-</style>

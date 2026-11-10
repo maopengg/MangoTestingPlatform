@@ -29,9 +29,10 @@ export function startUiLiveStreamSession(streamId: string, readyTicket: string) 
   })
 }
 
-export function closeUiLiveStreamSession(streamId: string) {
+export function closeUiLiveStreamSession(streamId: string, silentError = false) {
   return deleted({
     url: `/ui/live-stream/session/${streamId}`,
+    silentError,
   })
 }
 

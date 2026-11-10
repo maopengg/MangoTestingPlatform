@@ -20,18 +20,21 @@
       <div class="mango-section-title">录制设置</div>
       <div class="mango-step-recorder__settings">
         <label
-          ><span>合并连续输入</span><a-switch v-model="settings.mergeInput" size="small"
+          ><span>合并连续输入</span><a-switch :model-value="settings.mergeInput" @update:model-value="updateSetting('mergeInput', $event)" size="small"
         /></label>
         <label
-          ><span>记录页面滚动</span><a-switch v-model="settings.recordScroll" size="small"
+          ><span>记录页面滚动</span><a-switch :model-value="settings.recordScroll" @update:model-value="updateSetting('recordScroll', $event)" size="small"
         /></label>
         <label
-          ><span>记录页面跳转</span><a-switch v-model="settings.recordNavigation" size="small"
+          ><span>记录页面跳转</span><a-switch :model-value="settings.recordNavigation" @update:model-value="updateSetting('recordNavigation', $event)" size="small"
         /></label>
       </div>
     </section>
 
     <div class="mango-step-recorder__content">
+      <div v-if="methodsLoading || elementsLoading" class="mango-soft-panel" role="status">正在加载操作与元素选项…</div>
+
+
       <div class="mango-step-recorder__toolbar">
         <a-dropdown trigger="click">
           <a-button size="mini" data-testid="qa-components-business-uisteprecorderpanel-button-插入节点">插入节点</a-button>
@@ -109,6 +112,7 @@
           </header>
 
           <UiStepNodeConfigForm
+            :disabled="methodsLoading || saving"
             v-if="item.detail?.type !== 2"
             :items="inlineEditorItems(item)"
             :operation-options="operationOptions"
@@ -118,6 +122,7 @@
             compact
             class="mango-step-recorder__inline-editor"
             @method-change="onInlineMethodChange(item, $event)"
+            @update-field="(key, value) => updateInlineField(item, key, value)"
             @change="syncInlineConfig(item)"
           />
           <div v-else class="mango-step-recorder__sql-grid">
@@ -127,6 +132,7 @@
                 size="small"
                 :model-value="item.detail?.sql_execute?.[0]?.datasource_alias"
                 :options="datasourceAliasOptions"
+                :loading="datasourceLoading"
                 placeholder="请选择逻辑数据源"
                 allow-clear
                 allow-search
@@ -176,14 +182,20 @@
     </footer>
 
     <a-modal
+      modal-class="mango-simple-form-modal"
       v-model:visible="saveVisible"
       title="保存页面步骤"
-      width="560px"
+      :width="560"
       :ok-loading="saving"
-      @ok="saveRecording"
+      :mask-closable="false"
+      :closable="!saving"
+      :esc-to-close="!saving"
+      :on-before-cancel="() => !saving"
+      :on-before-ok="saveRecording"
     >
-      <a-form layout="horizontal" :label-col-props="{ span: 5 }" :wrapper-col-props="{ span: 19 }">
-        <a-form-item label="步骤名称" required
+      <div v-if="saveError" class="mango-step-recorder__error" role="alert">{{ saveError }}</div>
+      <a-form auto-label-width :model="recordingForm" class="mango-simple-form" layout="horizontal" :label-col-props="{ span: 5 }" :wrapper-col-props="{ span: 19 }">
+        <a-form-item class="mango-simple-form-item" label="步骤名称" required
           ><a-input v-model="stepName" :max-length="64"
         /></a-form-item>
       </a-form>
@@ -192,51 +204,62 @@
 </template>
 
 <script lang="ts" setup>
+import { reportLoadError } from '@/utils/load-error'
+
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { postUiPageStepRecordingCommit } from '@/api/uitest/page-steps'
   import { useSelectValueStore } from '@/store/modules/get-ope-value'
   import UiStepNodeConfigForm from '@/components/business/UiStepNodeConfigForm.vue'
   import { getDataFactoryDatasourceAlias } from '@/api/data-factory'
+  import { useLiveWorkbenchScope } from '@/hooks/use-live-workbench-scope'
+  import { cloneLosslessJson } from '@/utils/lossless-json'
+  import { liveId, liveError, recordingSnapshot } from './ui-live-workbench'
+  import type { LiveId, LiveElement, RecordedAction, RecorderSettings, RecorderField, LiveNodeDetail } from './ui-live-workbench'
 
   const props = withDefaults(
     defineProps<{
-      actions: any[]
+      actions: RecordedAction[]
       pageId: string | number
       paused?: boolean
       pageType?: string | number
-      elementOptions?: any[]
+      elementOptions?: LiveElement[]
+      elementsLoading?: boolean
+      elementsError?: string
       projectProductId?: string | number
       testEnv?: string | number
       checkLoading?: boolean
+      recordingSettings?: RecorderSettings
     }>(),
-    { pageType: 0, elementOptions: () => [], projectProductId: '', checkLoading: false }
+    { pageType: 0, elementOptions: () => [], elementsLoading: false, elementsError: '', projectProductId: '', checkLoading: false,
+      recordingSettings: () => ({ mergeInput: true, recordScroll: false, recordNavigation: true }) }
   )
   const checkLoading = computed(() => props.checkLoading)
   const emit = defineEmits<{
     (event: 'reorder', from: number, to: number): void
     (event: 'remove', index: number): void
     (event: 'clear'): void
-    (event: 'update-action', value: any): void
-    (event: 'edit-element', value: any): void
-    (event: 'check-element', value: any): void
+    (event: 'update-action', value: RecordedAction): void
+    (event: 'edit-element', value: RecordedAction): void
+    (event: 'check-element', value: RecordedAction): void
     (event: 'toggle-pause'): void
-    (event: 'saved', value: any): void
-    (event: 'settings-change', value: Record<string, any>): void
+    (event: 'saved', value: unknown, clientIds?: string[]): void
+    (event: 'settings-change', value: RecorderSettings): void
+    (event: 'retry-elements'): void
   }>()
 
   const methodStore = useSelectValueStore()
   const draggingIndex = ref<number | null>(null)
   const saveVisible = ref(false)
   const saving = ref(false)
-  const datasourceAliasOptions = ref<any[]>([])
-  const inlineEditorCache = new Map<string, { signature: string; items: any[] }>()
+  const datasourceAliasOptions = ref<Array<{ label: string; value: LiveId; dbType: number }>>([])
+  const inlineEditorCache = new Map<string, { signature: string; items: RecorderField[] }>()
   const stepName = ref('')
-  const settings = reactive({
-    mergeInput: true,
-    recordScroll: false,
-    recordNavigation: true,
-  })
+  const recordingForm = computed(() => ({ stepName: stepName.value }))
+  const settings = computed(() => props.recordingSettings)
+  function updateSetting(key: keyof RecorderSettings, value: unknown) {
+    emit('settings-change', { ...settings.value, [key]: value === true })
+  }
   const operationOptions = computed(() =>
     methodStore.getOperationOptions(props.pageType)
   )
@@ -244,11 +267,11 @@
     methodStore.getAssertionOptions(props.pageType)
   )
   const elementCascaderOptions = computed(() => {
-    const groups = new Map<string, any[]>()
-    props.elementOptions.forEach((element: any) => {
+    const groups = new Map<string, Array<{ label: string; value: LiveId }>>()
+    props.elementOptions.forEach((element) => {
       const category = element.category || '未分类'
       if (!groups.has(category)) groups.set(category, [])
-      groups.get(category)!.push({ label: element.name, value: element.id })
+      if (element.id != null) groups.get(category)!.push({ label: element.name || String(element.id), value: element.id })
     })
     return Array.from(groups.entries()).map(([label, children]) => ({
       label,
@@ -257,17 +280,30 @@
     }))
   })
 
-  onMounted(async () => {
-    await methodStore.getSelectValue()
-    await loadDatasourceAliases()
+  const datasourceLoading = ref(false), datasourceError = ref(''), methodsLoading = ref(false), methodsError = ref(''), saveError = ref('')
+  let aliasRequest = 0, methodRequest = 0, saveEpoch = 0
+  const scope = useLiveWorkbenchScope(() => [props.pageId, props.projectProductId, props.testEnv], {
+    invalidate() {
+      aliasRequest++; methodRequest++; saveEpoch++
+      datasourceAliasOptions.value = []; datasourceLoading.value = false; methodsLoading.value = false
+      datasourceError.value = ''; methodsError.value = ''; saveError.value = ''
+      saveVisible.value = false; stepName.value = ''; draggingIndex.value = null; inlineEditorCache.clear()
+    },
+    resume() { void loadMethods(); void loadDatasourceAliases() },
   })
-  watch(
-    () => props.projectProductId,
-    () => {
-      void loadDatasourceAliases()
-    }
-  )
-  watch(settings, (value) => emit('settings-change', { ...value }), { deep: true, immediate: true })
+  async function loadMethods() {
+    const current = scope.capture(), request = ++methodRequest
+    if (!current()) return
+    methodsLoading.value = true; methodsError.value = ''
+    try { await methodStore.getSelectValue() }
+    catch (error) { if (current() && request === methodRequest) (reportLoadError(error, "操作选项加载失败", false), methodsError.value = liveError(error, '操作选项加载失败')) }
+    finally { if (current() && request === methodRequest) methodsLoading.value = false }
+  }
+  onMounted(() => { void loadMethods(); void loadDatasourceAliases() })
+  watch(() => props.actions.map(item => item.client_id), ids => {
+    for (const key of inlineEditorCache.keys()) if (!ids.includes(key)) inlineEditorCache.delete(key)
+  })
+  watch(saveVisible, visible => { saveEpoch++; saveError.value = ''; if (visible) stepName.value = '' }, { flush: 'sync' })
 
   function onDragStart(index: number) {
     draggingIndex.value = index
@@ -280,7 +316,7 @@
   function onDragEnd() {
     draggingIndex.value = null
   }
-  function nodeTypeName(type: any) {
+  function nodeTypeName(type: unknown) {
     return (
       (
         {
@@ -294,11 +330,14 @@
       )[Number(type)] || '未配置节点'
     )
   }
-  function selectedElement(item: any) {
-    const elementId = item.detail?.ele_name || item.element_id
-    return props.elementOptions.find((element: any) => String(element.id) === String(elementId))
+  function methodKey(value: LiveNodeDetail['ope_key']): string {
+    return Array.isArray(value) ? value[value.length - 1] || '' : value || ''
   }
-  function elementDisplayName(item: any) {
+  function selectedElement(item: RecordedAction) {
+    const elementId = item.detail?.ele_name ?? item.element_id
+    return props.elementOptions.find((element) => String(element.id) === String(elementId))
+  }
+  function elementDisplayName(item: RecordedAction) {
     if (
       Object.prototype.hasOwnProperty.call(item || {}, 'name') &&
       item.name !== nodeTypeName(item.detail?.type)
@@ -315,20 +354,20 @@
       ''
     )
   }
-  function nodeUsesElement(item: any) {
-    if (item.element || item.element_id || item.detail?.ele_name) return true
-    const method = methodStore.findItemByValue(item.detail?.ope_key)
-    return (method?.parameter || []).some((parameter: any) =>
+  function nodeUsesElement(item: RecordedAction) {
+    if (item.element || liveId(item.element_id) !== null || liveId(item.detail?.ele_name) !== null) return true
+    const method = methodStore.findItemByValue(methodKey(item.detail?.ope_key))
+    return (method?.parameter || []).some((parameter: { f: string; n?: string; v?: unknown; input_type?: string; d?: boolean; p?: string }) =>
       ['locating', 'actual'].includes(parameter.f)
     )
   }
-  function locatorCount(item: any) {
-    const element = item.element || selectedElement(item) || {}
+  function locatorCount(item: RecordedAction) {
+    const element: LiveElement = item.element || selectedElement(item) || {}
     if (Array.isArray(element.locators))
-      return element.locators.filter((locator: any) => locator?.loc).length
-    return ['loc', 'loc2', 'loc3'].filter((key) => element[key]).length
+      return element.locators.filter((locator) => locator?.loc).length
+    return [element.loc, element.loc2, element.loc3].filter(Boolean).length
   }
-  function nodeSummary(item: any) {
+  function nodeSummary(item: RecordedAction) {
     const type = Number(item.detail?.type)
     const parts = [`元素 ${nodeUsesElement(item) ? 1 : 0} 个`]
     const locators = locatorCount(item)
@@ -340,13 +379,13 @@
     } else if (type === 5) {
       parts.push(String(item.detail?.func || '').trim() ? '代码已填写' : '代码未填写')
     } else if (type === 6) {
-      const seconds = item.detail?.ope_value?.find((entry: any) => entry.f === 'seconds')?.v
+      const seconds = item.detail?.ope_value?.find((entry) => entry.f === 'seconds')?.v
       parts.push(`等待 ${seconds ?? 1} 秒`)
     }
     return parts.join(' · ')
   }
-  function createNode(type: number) {
-    const detailMap: Record<number, any> = {
+  function createNode(type: number): RecordedAction {
+    const detailMap: Record<number, LiveNodeDetail> = {
       0: { type: 0, ope_key: '', ope_value: [], ele_name: null },
       1: { type: 1, ope_key: '', ope_value: [], ele_name: null },
       2: { type: 2, sql_execute: [{ datasource_alias: null, sql: '', key_list: '' }] },
@@ -360,7 +399,7 @@
       name: nodeTypeName(type),
       status: 'review',
       category: '未分类',
-      detail: detailMap[type],
+      detail: detailMap[type] || null,
     }
   }
   function insertNode(type: number) {
@@ -368,15 +407,15 @@
     emit('update-action', node)
   }
   function clone<T>(value: T): T {
-    return JSON.parse(JSON.stringify(value))
+    return cloneLosslessJson(value)
   }
-  function elementCascaderValue(elementId: any) {
-    if (!elementId) return ''
-    const element = props.elementOptions.find((item: any) => String(item.id) === String(elementId))
+  function elementCascaderValue(elementId: LiveId | null | undefined) {
+    if (liveId(elementId) === null) return ''
+    const element = props.elementOptions.find((item) => String(item.id) === String(elementId))
     return element ? [element.category || '未分类', element.id] : elementId
   }
-  function buildMethodItems(type: number, detail: any, node?: any) {
-    const items: any[] = [
+  function buildMethodItems(type: number, detail: LiveNodeDetail, node: RecordedAction) {
+    const items: RecorderField[] = [
       {
         label: type === 0 ? '元素操作' : '断言操作',
         key: 'ope_key',
@@ -409,21 +448,21 @@
           placeholder: '请输入元素名称',
         }
       )
-    const method = methodStore.findItemByValue(detail.ope_key)
-    const values = new Map((detail.ope_value || []).map((item: any) => [item.f, item.v]))
-    const requiresElement = (method?.parameter || []).some((item: any) =>
+    const method = methodStore.findItemByValue(methodKey(detail.ope_key))
+    const values = new Map((detail.ope_value || []).map((item) => [item.f, item.v]))
+    const requiresElement = (method?.parameter || []).some((item: { f: string }) =>
       ['locating', 'actual'].includes(item.f)
     )
     if (requiresElement && !node?.element)
       items.push({
         label: '选择元素',
         key: 'ele_name',
-        value: elementCascaderValue(detail.ele_name || node?.element_id),
+        value: elementCascaderValue(detail.ele_name ?? node?.element_id),
         type: 'element-cascader',
         required: true,
         placeholder: '请选择页面元素',
       })
-    ;(method?.parameter || []).forEach((parameter: any) => {
+    ;(method?.parameter || []).forEach((parameter: { f: string; n?: string; v?: unknown; input_type?: string; d?: boolean; p?: string }) => {
       if (['locating', 'actual'].includes(parameter.f)) return
       items.push({
         label: parameter.n || parameter.f,
@@ -437,16 +476,21 @@
     })
     return items
   }
-  function inlineEditorItems(item: any) {
+  function updateInlineField(item: RecordedAction, key: string, value: unknown) {
+    if (methodsLoading.value || saving.value) return
+    const field = inlineEditorItems(item).find(field => field.key === key)
+    if (field) field.value = cloneLosslessJson(value)
+  }
+  function inlineEditorItems(item: RecordedAction) {
     const key = String(item.client_id)
     const type = Number(item.detail?.type)
-    const method = methodStore.findItemByValue(item.detail?.ope_key)
+    const method = methodStore.findItemByValue(methodKey(item.detail?.ope_key))
     const signature = `${type}:${item.detail?.ope_key || ''}:${method?.parameter?.length || 0}:${
-      item.detail?.ele_name || item.element_id || ''
+      item.detail?.ele_name ?? item.element_id ?? ''
     }`
     const cached = inlineEditorCache.get(key)
     if (cached?.signature === signature) return cached.items
-    let items: any[] = []
+    let items: RecorderField[] = []
     if ([0, 1].includes(type)) items = buildMethodItems(type, item.detail || {}, item)
     else if (type === 3)
       items = [
@@ -461,7 +505,7 @@
         {
           label: '变量值',
           key: 'value',
-          value: item.detail?.custom?.[0]?.value || '',
+          value: item.detail?.custom?.[0]?.value ?? '',
           type: 'input',
           required: true,
           placeholder: '请输入变量值',
@@ -484,7 +528,7 @@
           label: '等待时长',
           key: 'seconds-ope_value',
           field: 'seconds',
-          value: item.detail?.ope_value?.find((entry: any) => entry.f === 'seconds')?.v ?? 1,
+          value: item.detail?.ope_value?.find((entry) => entry.f === 'seconds')?.v ?? 1,
           type: 'input-number',
           required: true,
           min: 0,
@@ -494,22 +538,23 @@
           placeholder: '请输入等待秒数',
         },
       ]
-    const reactiveItems = reactive(items) as any[]
+    const reactiveItems = reactive(items)
     inlineEditorCache.set(key, { signature, items: reactiveItems })
     return reactiveItems
   }
-  function onInlineMethodChange(item: any, value: any) {
+  function onInlineMethodChange(item: RecordedAction, value: string | string[]) {
     const next = clone(item)
     next.detail = { ...(next.detail || {}), ope_key: value, ope_value: [] }
     inlineEditorCache.delete(String(item.client_id))
     next.status = isNodeConfigured(next) ? 'ready' : 'review'
     emit('update-action', next)
   }
-  function selectedElementId(value: any) {
-    return Array.isArray(value) ? value[value.length - 1] : value || null
+  function selectedElementId(value: unknown): LiveId | null {
+    return liveId(Array.isArray(value) ? value[value.length - 1] : value)
   }
-  function syncInlineConfig(item: any) {
+  function syncInlineConfig(item: RecordedAction) {
     const next = clone(item)
+    if (!next.detail) return
     const type = Number(next.detail?.type)
     const editorItems = inlineEditorItems(item)
     if ([0, 1].includes(type)) {
@@ -519,27 +564,28 @@
       const recordedElementCategory = editorItems.find(
         (field) => field.key === 'recorded_element_category'
       )?.value
-      if (recordedElementName !== undefined) next.name = recordedElementName
-      if (recordedElementCategory !== undefined) next.category = recordedElementCategory || '未分类'
-      next.detail.ope_key = editorItems.find((field) => field.key === 'ope_key')?.value
+      if (recordedElementName !== undefined) next.name = String(recordedElementName ?? '')
+      if (recordedElementCategory !== undefined) next.category = String(recordedElementCategory || '未分类')
+      const operation = editorItems.find((field) => field.key === 'ope_key')?.value
+      next.detail.ope_key = Array.isArray(operation) ? operation.filter((value): value is string => typeof value === 'string') : String(operation ?? '')
       next.detail.ele_name =
-        selectedElementId(editorItems.find((field) => field.key === 'ele_name')?.value) ||
-        next.detail.ele_name ||
+        selectedElementId(editorItems.find((field) => field.key === 'ele_name')?.value) ??
+        next.detail.ele_name ??
         null
       const selected = selectedElement(next)
-      if (selected && (!next.name || next.name === nodeTypeName(type))) next.name = selected.name
+      if (selected && (!next.name || next.name === nodeTypeName(type))) next.name = selected.name || String(selected.id)
       next.detail.ope_value = editorItems
         .filter((field) => field.field)
-        .map((field) => ({ f: field.field, v: field.value }))
+        .map((field) => ({ f: field.field!, v: field.value }))
     } else if (type === 3) {
       next.detail.custom = [
         {
-          key: editorItems.find((field) => field.key === 'key')?.value || '',
-          value: editorItems.find((field) => field.key === 'value')?.value || '',
+          key: String(editorItems.find((field) => field.key === 'key')?.value ?? ''),
+          value: editorItems.find((field) => field.key === 'value')?.value ?? '',
         },
       ]
     } else if (type === 5) {
-      next.detail.func = editorItems.find((field) => field.key === 'func')?.value || ''
+      next.detail.func = String(editorItems.find((field) => field.key === 'func')?.value ?? '')
     } else if (type === 6) {
       next.detail.ope_value = [
         {
@@ -551,91 +597,102 @@
     next.status = isNodeConfigured(next) ? 'ready' : 'review'
     emit('update-action', next)
   }
-  function updateSqlField(item: any, field: string, value: any) {
+  function updateSqlField(item: RecordedAction, field: 'datasource_alias' | 'sql' | 'key_list', value: unknown) {
     const next = clone(item)
-    const row = { ...(next.detail?.sql_execute?.[0] || {}), [field]: value }
-    next.detail.sql_execute = [row]
+    const row = { datasource_alias: null as LiveId | null, sql: '', key_list: '', ...next.detail?.sql_execute?.[0] }
+    if (field === 'datasource_alias') row.datasource_alias = liveId(value)
+    else row[field] = typeof value === 'string' ? value : ''
+    next.detail = { ...next.detail, sql_execute: [row] }
     next.status = isNodeConfigured(next) ? 'ready' : 'review'
     emit('update-action', next)
   }
-  function isNodeConfigured(item: any) {
+  function isNodeConfigured(item: RecordedAction) {
     const type = Number(item.detail?.type)
     if ([0, 1].includes(type)) {
       if (!item.detail?.ope_key) return false
-      const method = methodStore.findItemByValue(item.detail.ope_key)
-      const requiresElement = (method?.parameter || []).some((parameter: any) =>
+      const method = methodStore.findItemByValue(methodKey(item.detail.ope_key))
+      const requiresElement = (method?.parameter || []).some((parameter: { f: string; n?: string; v?: unknown; input_type?: string; d?: boolean; p?: string }) =>
         ['locating', 'actual'].includes(parameter.f)
       )
-      if (requiresElement && !item.element && !item.element_id && !item.detail?.ele_name)
+      if (requiresElement && !item.element && liveId(item.element_id) === null && liveId(item.detail?.ele_name) === null)
         return false
       if (requiresElement && !String(item.name || '').trim()) return false
       return (method?.parameter || [])
         .filter(
-          (parameter: any) => parameter.d === true && !['locating', 'actual'].includes(parameter.f)
+          (parameter: { f: string; n?: string; v?: unknown; input_type?: string; d?: boolean; p?: string }) => parameter.d === true && !['locating', 'actual'].includes(parameter.f)
         )
-        .every((parameter: any) => {
+        .every((parameter: { f: string; n?: string; v?: unknown; input_type?: string; d?: boolean; p?: string }) => {
           const value = (item.detail?.ope_value || []).find(
-            (entry: any) => entry.f === parameter.f
+            (entry) => entry.f === parameter.f
           )?.v
           return value !== undefined && value !== null && value !== ''
         })
     }
     if (type === 2)
       return Boolean(
-        item.detail?.sql_execute?.[0]?.datasource_alias &&
+        liveId(item.detail?.sql_execute?.[0]?.datasource_alias) !== null &&
           String(item.detail?.sql_execute?.[0]?.sql || '').trim()
       )
     if (type === 3) return Boolean(String(item.detail?.custom?.[0]?.key || '').trim())
     if (type === 5) return Boolean(String(item.detail?.func || '').trim())
     if (type === 6) {
       const seconds = Number(
-        item.detail?.ope_value?.find((entry: any) => entry.f === 'seconds')?.v
+        item.detail?.ope_value?.find((entry) => entry.f === 'seconds')?.v
       )
       return Number.isFinite(seconds) && seconds >= 0 && seconds <= 3600
     }
     return false
   }
   async function loadDatasourceAliases() {
+    const current = scope.capture(), request = ++aliasRequest, productId = liveId(props.projectProductId)
     datasourceAliasOptions.value = []
-    if (!props.projectProductId) return
+    if (!current() || productId === null) return
+    datasourceLoading.value = true; datasourceError.value = ''
     try {
       const res = await getDataFactoryDatasourceAlias({
-        project_product: props.projectProductId,
+        project_product: productId,
         status: 1,
         page: 1,
         pageSize: 999,
       })
-      datasourceAliasOptions.value = (res.data || []).map((item: any) => ({
+      if (!current() || request !== aliasRequest) return
+      datasourceAliasOptions.value = (res.data || []).map((item: { name: string; id: LiveId; db_type: number }) => ({
         label: item.name,
         value: item.id,
         dbType: Number(item.db_type),
       }))
-    } catch (_) {
-      Message.warning('逻辑数据源加载失败，请稍后重试')
-    }
+    } catch (error) {
+      if (current() && request === aliasRequest) (reportLoadError(error, "逻辑数据源加载失败，请重试", false), datasourceError.value = liveError(error, '逻辑数据源加载失败，请重试'))
+    } finally { if (current() && request === aliasRequest) datasourceLoading.value = false }
   }
   async function saveRecording() {
+    if (!scope.available() || !saveVisible.value || saving.value) return false
+    const current = scope.capture(), epoch = saveEpoch
+    const valid = () => current() && saveVisible.value && epoch === saveEpoch
     if (!stepName.value.trim()) {
       Message.warning('请输入步骤名称')
-      return
+      return false
     }
-    const invalid = props.actions.some((item) => item.status === 'review' || !item.detail)
+    const invalid = props.actions.some((item) => item.status === 'review' || !item.detail || !isNodeConfigured(item))
     if (invalid) {
       Message.warning('请先完成待确认节点的配置')
-      return
+      return false
     }
+    if (!props.actions.length) return false
+    const clientIds = props.actions.map(action => action.client_id)
+    const payload = { page_id: props.pageId, name: stepName.value.trim(), nodes: recordingSnapshot(props.actions) }
     saving.value = true
+    saveError.value = ''
     try {
-      const res = await postUiPageStepRecordingCommit({
-        page_id: props.pageId,
-        name: stepName.value.trim(),
-        nodes: props.actions,
-      })
+      const res = await postUiPageStepRecordingCommit(payload)
+      if (!valid()) return false
       Message.success(res.msg || '页面步骤保存成功')
       saveVisible.value = false
-      emit('saved', res.data || {})
-    } catch (error: any) {
-      Message.error(error?.msg || '保存页面步骤失败，录制草稿已保留')
+      emit('saved', res.data || {}, clientIds)
+      return true
+    } catch (error) {
+      if (valid()) saveError.value = liveError(error, '保存页面步骤失败，录制草稿已保留')
+      return false
     } finally {
       saving.value = false
     }
@@ -643,6 +700,7 @@
 </script>
 
 <style scoped>
+  .mango-step-recorder__error { color: var(--m-danger); padding: var(--m-page-gap); }
   .mango-step-recorder {
     display: flex;
     min-height: 0;

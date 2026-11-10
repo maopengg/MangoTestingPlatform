@@ -3,6 +3,7 @@ from django.db.models import F, Q
 from django.utils import timezone
 from pydantic import ValidationError
 from src.apps.auto_api.enums.module_coverage import ModuleCoverageInterfaceCoverageStatus as CoverageStatus, ModuleCoveragePolicy as Policy
+from src.apps.auto_api.enums.module_coverage import ModuleCoverageAnalysisStatus
 
 from src.apps.auto_api.exceptions import (
     AutoApiError, MODULE_COVERAGE_POLICY_INPUT_INVALID,
@@ -18,8 +19,8 @@ from src.apps.user.services.permission import ProjectProductScopeService
 
 class ModuleCoveragePolicyMixin:
     @classmethod
-    def interface_coverage_status(cls, snapshot, target, completed, deferred):
-        if target and completed == target:
+    def interface_coverage_status(cls, snapshot, target, completed, deferred, *, analysis_status):
+        if target and completed == target and analysis_status == ModuleCoverageAnalysisStatus.COMPLETED:
             return CoverageStatus.COVERED
         if not target and deferred:
             return CoverageStatus.DEFERRED

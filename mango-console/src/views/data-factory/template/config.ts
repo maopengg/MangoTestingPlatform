@@ -1,75 +1,82 @@
-import { useTable, useTableColumn } from '@/hooks/table'
+import { useTableIndexColumn, useTableColumn } from '@/hooks/table'
 import { FormItem } from '@/types/components'
 import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
 import { createUpdateUserCondition, updateTimeColumn, updateUserColumn } from '@/utils/update-user'
 import { enableMultiSelectSearch } from '@/utils/search-condition'
 
-const table = useTable()
+export const templateScrollX = 2210
+export const enumFieldNames = { value: 'key', label: 'title' }
+export const statusOptions = [
+  { key: 1, title: '启用' },
+  { key: 0, title: '禁用' },
+]
 
-export const templateConditionItems: Array<FormItem> = reactive([
-  {
-    key: 'id',
-    label: 'ID',
-    type: 'input',
-    placeholder: '请输入ID',
-    value: createIdSearchValue(),
-  },
-  {
-    key: 'project_product',
-    label: '项目/产品',
-    value: ref(''),
-    type: 'cascader',
-    placeholder: '请选择产品',
-  },
-  {
-    key: 'module',
-    label: '模块名称',
-    type: 'select',
-    placeholder: '请选择模块名称',
-    value: ref(''),
-  },
-  {
-    key: 'entity',
-    label: '实体名称',
-    type: 'select',
-    placeholder: '请选择实体名称',
-    value: ref(''),
-  },
-  {
-    key: 'name',
-    label: '场景名称',
-    type: 'input',
-    placeholder: '请输入场景名称',
-    value: ref(''),
-  },
-  {
-    key: 'cleanup_strategy',
-    label: '清理策略',
-    type: 'select',
-    placeholder: '请选择策略',
-    value: ref(''),
-  },
-  {
-    key: 'usage_scope',
-    label: '场景用途',
-    type: 'select',
-    placeholder: '请选择用途',
-    value: ref(''),
-  },
-  {
-    key: 'status',
-    label: '状态',
-    type: 'select',
-    placeholder: '请选择状态',
-    value: ref(''),
-  },
-  createUpdateUserCondition(),
-])
-enableMultiSelectSearch(templateConditionItems)
+export function createConditionItems() {
+  const fields: Array<Omit<FormItem, 'disabled'>> = [
+    {
+      key: 'id',
+      label: 'ID',
+      type: 'input',
+      placeholder: '请输入ID',
+      value: createIdSearchValue(),
+    },
+    {
+      key: 'project_product',
+      label: '项目/产品',
+      value: ref(''),
+      type: 'cascader',
+      placeholder: '请选择产品',
+    },
+    {
+      key: 'module',
+      label: '模块名称',
+      type: 'select',
+      placeholder: '请选择模块名称',
+      value: ref(''),
+    },
+    {
+      key: 'entity',
+      label: '实体名称',
+      type: 'select',
+      placeholder: '请选择实体名称',
+      value: ref(''),
+    },
+    {
+      key: 'name',
+      label: '场景名称',
+      type: 'input',
+      placeholder: '请输入场景名称',
+      value: ref(''),
+    },
+    {
+      key: 'cleanup_strategy',
+      label: '清理策略',
+      type: 'select',
+      placeholder: '请选择策略',
+      value: ref(''),
+    },
+    {
+      key: 'usage_scope',
+      label: '场景用途',
+      type: 'select',
+      placeholder: '请选择用途',
+      value: ref(''),
+    },
+    {
+      key: 'status',
+      label: '状态',
+      type: 'select',
+      placeholder: '请选择状态',
+      value: ref(''),
+    },
+    createUpdateUserCondition(),
+  ]
+  return enableMultiSelectSearch(reactive(fields))
+}
 
 export const templateTableColumns = useTableColumn([
-  table.indexColumn,
+  { ...useTableIndexColumn(), align: 'center' },
   {
     title: '名称',
     key: 'name',
@@ -127,6 +134,8 @@ export const templateTableColumns = useTableColumn([
     dataIndex: 'status',
     width: 90,
   },
+  { ...updateUserColumn(), key: 'update_user', align: 'left' },
+  { ...updateTimeColumn(), key: 'update_time' },
   {
     title: '项目/产品',
     key: 'project_product',
@@ -145,8 +154,6 @@ export const templateTableColumns = useTableColumn([
     ellipsis: true,
     tooltip: true,
   },
-  updateUserColumn(),
-  updateTimeColumn(),
   {
     title: '操作',
     key: 'actions',

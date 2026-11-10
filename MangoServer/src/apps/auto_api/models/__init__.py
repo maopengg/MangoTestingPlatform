@@ -6,11 +6,13 @@ from src.apps.auto_api.models.coverage import ModuleCoverageScan, ModuleCoverage
 from src.apps.auto_api.models.execution import ApiCaseExecutionTrace, ApiCaseExecutionStep
 from src.apps.auto_api.models.mock import ApiMockConfig, ApiMockRequestLog
 from src.apps.auto_api.models.callback import ApiCaseCallbackRun
+from src.apps.auto_api.models.resource_cleanup import ApiCaseExecutionResource
 from src.apps.auto_api.models.protocol import ApiInfoMcpConfig, GrpcServiceDefinition, \
     GrpcMethodDefinition, ApiInfoGrpcConfig
 from src.apps.auto_api.models.version import ApiInfoRevision, ApiInfoRelease, ApiCaseRevision, ApiCaseRelease
 
 __all__ = [
+    'ApiCaseExecutionResource',
     'ApiCaseCallbackRun',
     'ApiInfo',
     'ApiInfoHttpConfig',

@@ -34,14 +34,15 @@
 <script setup lang="ts">
   import { computed } from 'vue'
   import UiElementHealCandidateTable from '@/components/business/UiElementHealCandidateTable.vue'
+  import type { AiCandidate } from './ui-element-ai'
 
   const props = defineProps<{
-    rows: any[]
+    rows: AiCandidate[]
     applyingKey?: string
     emptyText: string
   }>()
   const emit = defineEmits<{
-    (event: 'apply', record: any, rowIndex: number, slot: number): void
+    (event: 'apply', record: AiCandidate, rowIndex: number, slot: number): void
   }>()
 
   const normalizedRows = computed(() => (props.rows || []).map((item, index) => ({
@@ -51,14 +52,14 @@
   const verifiedRows = computed(() => normalizedRows.value.filter((item) => Boolean(item.verified)))
   const failedRows = computed(() => normalizedRows.value.filter((item) => !item.verified))
   const verifiedAiCount = computed(() => verifiedRows.value.filter(
-    (item) => ['ai_accessibility', 'visual_agent'].includes(item.source)
+    (item) => ['ai_accessibility', 'visual_agent'].includes(item.source || '')
   ).length)
   const successText = computed(() => {
     if (verifiedAiCount.value) return `自愈成功：AI候选匹配${verifiedAiCount.value}个`
     if (verifiedRows.value.length) return `自愈成功：找到${verifiedRows.value.length}个可用候选`
     return ''
   })
-  function forwardApply(record: any, rowIndex: number, slot: number) {
+  function forwardApply(record: AiCandidate, rowIndex: number, slot: number) {
     emit('apply', record, rowIndex, slot)
   }
 

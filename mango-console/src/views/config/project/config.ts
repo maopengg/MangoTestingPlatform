@@ -1,61 +1,52 @@
-import { FormItem } from '@/types/components'
+import type { FormItem } from '@/types/components'
+import type { ProjectDraft, ProjectRecord } from './types'
 import { createIdSearchValue } from '@/utils/id-search'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
 import { reactive, ref } from 'vue'
-import { Message } from '@arco-design/web-vue'
-import { useTable, useTableColumn } from '@/hooks/table'
+import { useTableIndexColumn, useTableColumn } from '@/hooks/table'
 import { createUpdateUserCondition, updateUserColumn } from '@/utils/update-user'
-
-const table = useTable()
-export const formItems: FormItem[] = reactive([
-  {
-    label: '项目名称',
-    key: 'name',
-    value: ref(''),
-    placeholder: '请输入项目名称',
-    required: true,
-    type: 'input',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
+export const projectNameField = { label: '项目名称', placeholder: '请输入项目名称' }
+export function createProjectDraft(record?: ProjectRecord): ProjectDraft {
+  return { name: record?.name ?? '' }
+}
+export function createConditionItems() {
+  const fields: Array<Omit<FormItem, 'disabled'>> = [
+    {
+      key: 'id',
+      label: 'ID',
+      type: 'input',
+      placeholder: '请输入项目ID',
+      value: createIdSearchValue(),
+      reset: function () {
+        this.value = ''
+      },
     },
-  },
-])
-export const conditionItems: Array<FormItem> = reactive([
-  {
-    key: 'id',
-    label: 'ID',
-    type: 'input',
-    placeholder: '请输入项目ID',
-    value: createIdSearchValue(),
-    reset: function () {
-      this.value = ''
+    {
+      key: 'name',
+      label: '项目名称',
+      type: 'input',
+      placeholder: '请输入项目名称',
+      value: ref(''),
+      reset: function () {
+        this.value = ''
+      },
     },
-  },
-  {
-    key: 'name',
-    label: '项目名称',
-    type: 'input',
-    placeholder: '请输入项目名称',
-    value: ref(''),
-    reset: function () {
-      this.value = ''
-    },
-  },
-  createUpdateUserCondition(),
-])
+    createUpdateUserCondition(),
+  ]
+  return enableMultiSelectSearch(reactive(fields))
+}
 
 export const tableColumns = useTableColumn([
-  table.indexColumn,
+  { ...useTableIndexColumn(), align: 'center' },
   {
     title: '项目名称',
     key: 'name',
     dataIndex: 'name',
     align: 'left',
+    ellipsis: true,
+    tooltip: true,
   },
-  updateUserColumn(),
+  { ...updateUserColumn(), key: 'update_user' },
   {
     title: '更新时间',
     key: 'update_time',
@@ -73,12 +64,14 @@ export const tableColumns = useTableColumn([
     key: 'status',
     dataIndex: 'status',
     width: 70,
+    align: 'center',
   },
   {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
+    align: 'center',
     width: 160,
   },
 ])

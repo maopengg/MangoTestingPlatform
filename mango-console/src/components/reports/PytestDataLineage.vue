@@ -1,5 +1,6 @@
 <template>
   <section class="mango-pytest-lineage">
+    <a-alert v-if="lineage.malformed" type="warning">部分血缘数据格式异常，已保留可展示的节点与关系。</a-alert>
     <div class="mango-pytest-lineage__summary">
       <span
         >数据工厂 <strong>{{ summary.factories }}</strong></span
@@ -19,13 +20,12 @@
       <svg
         class="mango-pytest-lineage__graph"
         :viewBox="`0 0 ${canvasWidth} ${canvasHeight}`"
-        :style="{ height: `${canvasHeight}px` }"
         role="img"
         aria-label="Pytest 数据血缘关系图"
       >
         <defs>
           <marker
-            id="mango-pytest-lineage-arrow"
+            :id="markerId"
             markerWidth="8"
             markerHeight="8"
             refX="7"
@@ -39,14 +39,14 @@
         <g class="mango-pytest-lineage__lanes">
           <template v-for="lane in lanes" :key="lane.kind">
             <rect :x="lane.x" y="12" :width="nodeWidth" height="32" rx="6" />
-            <text :x="lane.x + 12" y="33">{{ lane.title }}</text>
+            <text :x="lane.x + 12" y="33" font-size="12">{{ lane.title }}</text>
           </template>
         </g>
 
         <g class="mango-pytest-lineage__edges">
           <g v-for="(edge, index) in visibleEdges" :key="`${edge.source}-${edge.target}-${index}`">
-            <path :d="edgePath(edge)" marker-end="url(#mango-pytest-lineage-arrow)" />
-            <text :x="edgeLabelPosition(edge).x" :y="edgeLabelPosition(edge).y">
+            <path :d="edgePath(edge)" :marker-end="`url(#${markerId})`" />
+            <text :x="edgeLabelPosition(edge).x" :y="edgeLabelPosition(edge).y" font-size="10">
               {{ edge.relation || '关联' }}
             </text>
           </g>
@@ -71,10 +71,10 @@
         >
           <rect :width="nodeWidth" :height="nodeHeight" rx="8" />
           <circle cx="16" cy="19" r="5" />
-          <text x="28" y="23" class="mango-pytest-lineage__node-title">
+          <text x="28" y="23" font-size="12" class="mango-pytest-lineage__node-title">
             {{ compactText(node.label || node.entity_type || node.id, 25) }}
           </text>
-          <text x="14" y="47" class="mango-pytest-lineage__node-subtitle">
+          <text x="14" y="47" font-size="10" class="mango-pytest-lineage__node-subtitle">
             {{ nodeSubtitle(node) }}
           </text>
         </g>
@@ -96,36 +96,21 @@
         </div>
         <div>
           <dt>实体标识</dt>
-          <dd>{{ selectedNode.entity_id || '-' }}</dd>
+          <dd>{{ selectedNode.entity_id ?? '-' }}</dd>
         </div>
       </dl>
       <div class="mango-pytest-lineage__snapshot">
         <h4>节点数据快照</h4>
-        <JsonDisplay :data="selectedNode.data ?? {}" />
+        <JsonDisplay :data="selectedNode.data" />
       </div>
     </div>
   </section>
 </template>
 
 <script lang="ts" setup>
-  import { computed, ref, watch } from 'vue'
-
-  type LineageNode = {
-    id: string
-    kind?: string
-    label?: string
-    source?: string
-    entity_type?: string
-    entity_id?: string | number
-    status?: string
-    data?: unknown
-  }
-
-  type LineageEdge = {
-    source: string
-    target: string
-    relation?: string
-  }
+  import { computed, getCurrentInstance, ref, watch } from 'vue'
+  import { readLineage } from './pytest-lineage'
+  import type { LineageNode, LineageEdge } from './pytest-lineage'
 
   type PositionedNode = LineageNode & {
     x: number
@@ -133,9 +118,11 @@
   }
 
   const props = defineProps<{
-    graph: Record<string, any>
+    graph: unknown
   }>()
 
+  const markerId = `mango-pytest-lineage-arrow-${getCurrentInstance()?.uid ?? 'standalone'}`
+  const lineage = computed(() => readLineage(props.graph))
   const canvasWidth = 940
   const nodeWidth = 220
   const nodeHeight = 64
@@ -143,16 +130,8 @@
   const laneX = [24, 360, 696]
   const selectedNodeId = ref('')
 
-  const nodes = computed<LineageNode[]>(() =>
-    Array.isArray(props.graph?.nodes)
-      ? props.graph.nodes.filter((item: unknown) => item && typeof item === 'object')
-      : []
-  )
-  const edges = computed<LineageEdge[]>(() =>
-    Array.isArray(props.graph?.edges)
-      ? props.graph.edges.filter((item: unknown) => item && typeof item === 'object')
-      : []
-  )
+  const nodes = computed(() => lineage.value.nodes)
+  const edges = computed(() => lineage.value.edges)
   const lanes = [
     { kind: 'factory', title: '数据工厂', x: laneX[0] },
     { kind: 'operation', title: 'Repository 操作', x: laneX[1] },
@@ -175,11 +154,11 @@
     )
   )
   const nodePositions = computed(() =>
-    Object.fromEntries(positionedNodes.value.map((node) => [node.id, node]))
+    new Map(positionedNodes.value.map((node) => [node.id, node]))
   )
   const visibleEdges = computed(() =>
     edges.value.filter(
-      (edge) => nodePositions.value[edge.source] && nodePositions.value[edge.target]
+      (edge) => nodePositions.value.has(edge.source) && nodePositions.value.has(edge.target)
     )
   )
   const selectedNode = computed(
@@ -187,15 +166,15 @@
   )
   const summary = computed(() => ({
     factories:
-      Number(props.graph?.summary?.factories) ||
+      lineage.value.summary.factories ??
       nodes.value.filter((node) => lineageLevel(node) === 'factory').length,
     operations:
-      Number(props.graph?.summary?.operations) ||
+      lineage.value.summary.operations ??
       nodes.value.filter((node) => lineageLevel(node) === 'operation').length,
     entities:
-      Number(props.graph?.summary?.entities) ||
+      lineage.value.summary.entities ??
       nodes.value.filter((node) => lineageLevel(node) === 'entity').length,
-    relations: Number(props.graph?.summary?.relations) || edges.value.length,
+    relations: lineage.value.summary.relations ?? edges.value.length,
   }))
 
   function lineageLevel(node: LineageNode) {
@@ -205,8 +184,8 @@
   }
 
   function edgePath(edge: LineageEdge) {
-    const source = nodePositions.value[edge.source]
-    const target = nodePositions.value[edge.target]
+    const source = nodePositions.value.get(edge.source)
+    const target = nodePositions.value.get(edge.target)
     if (!source || !target) return ''
     const forward = target.x >= source.x
     const x1 = source.x + (forward ? nodeWidth : 0)
@@ -218,8 +197,8 @@
   }
 
   function edgeLabelPosition(edge: LineageEdge) {
-    const source = nodePositions.value[edge.source]
-    const target = nodePositions.value[edge.target]
+    const source = nodePositions.value.get(edge.source)
+    const target = nodePositions.value.get(edge.target)
     if (!source || !target) return { x: 0, y: 0 }
     const forward = target.x >= source.x
     const x1 = source.x + (forward ? nodeWidth : 0)
@@ -236,7 +215,7 @@
   }
 
   function nodeSubtitle(node: LineageNode) {
-    const identity = node.entity_id ? ` #${node.entity_id}` : ''
+    const identity = node.entity_id !== null && node.entity_id !== '' ? ` #${node.entity_id}` : ''
     return compactText(`${node.entity_type || kindText(node.kind)}${identity}`, 29)
   }
 
@@ -265,7 +244,7 @@
         selectedNodeId.value = items[0]?.id || ''
       }
     },
-    { immediate: true }
+    { immediate: true, flush: 'sync' }
   )
 </script>
 
@@ -313,6 +292,7 @@
     display: block;
     width: 940px;
     min-width: 940px;
+    height: auto;
   }
 
   .mango-pytest-lineage__lanes rect {
@@ -322,7 +302,6 @@
 
   .mango-pytest-lineage__lanes text {
     fill: var(--m-text-2);
-    font-size: 12px;
     font-weight: 600;
   }
 
@@ -334,7 +313,6 @@
 
   .mango-pytest-lineage__edges text {
     fill: var(--m-muted);
-    font-size: 10px;
     text-anchor: middle;
   }
 
@@ -386,13 +364,11 @@
 
   .mango-pytest-lineage__node-title {
     fill: var(--m-text);
-    font-size: 12px;
     font-weight: 600;
   }
 
   .mango-pytest-lineage__node-subtitle {
     fill: var(--m-muted);
-    font-size: 10px;
   }
 
   .mango-pytest-lineage__detail {

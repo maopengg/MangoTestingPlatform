@@ -52,7 +52,7 @@ export function deleteApiCaseDetailed(id: number | string[] | number[], parentId
   })
 }
 
-export function putApiPutCaseSort(data: Array<{ id: number; case_sort: number }>) {
+export function putApiPutCaseSort(data: Array<{ id: number | string; case_sort: number }>) {
   return put({
     url: '/api/case/detailed/sort',
     data: () => {

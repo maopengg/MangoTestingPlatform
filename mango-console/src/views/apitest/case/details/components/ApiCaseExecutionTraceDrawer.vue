@@ -89,27 +89,34 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, reactive } from 'vue'
+  import { computed, reactive, watch, onBeforeUnmount, onDeactivated } from 'vue'
+  import { createCaseRequestScope } from '../request-scope'
   import { Message } from '@arco-design/web-vue'
   import { getSystemTestSuiteDetailsExecutionTrace } from '@/api/system/test_sute_details'
   import { scaleDensityPixels } from '@/hooks/useDisplayDensity'
   import { useEnum } from '@/store/modules/get-enum'
-  import type { ApiCaseExecutionTraceQuery } from '../types'
+  import type { ApiCaseExecutionTraceQuery, CaseTrace, CaseTraceNode } from '../types'
 
+  const requests = createCaseRequestScope()
   const enumStore = useEnum()
   const state = reactive({
     visible: false,
     loading: false,
-    trace: null as any,
-    nodes: [] as any[],
-    selectedNode: null as any,
+    trace: null as CaseTrace | null,
+    nodes: [] as CaseTraceNode[],
+    selectedNode: null as CaseTraceNode | null,
     expandedNodeIds: [] as string[],
   })
-  const nodeMap = computed(() => new Map(state.nodes.map((node: any) => [String(node.id), node])))
+  const nodeMap = computed(
+    () => new Map(state.nodes.map((node: CaseTraceNode) => [String(node.id), node]))
+  )
   const visibleNodes = computed(() =>
-    state.nodes.filter((node: any) => {
+    state.nodes.filter((node: CaseTraceNode) => {
+      const visited = new Set<string>([String(node.id)])
       let parent = node.parent_step_id ? nodeMap.value.get(String(node.parent_step_id)) : null
       while (parent) {
+        if (visited.has(String(parent.id))) return false
+        visited.add(String(parent.id))
         if (
           parent.step_type === 'retry_round' &&
           !state.expandedNodeIds.includes(String(parent.id))
@@ -124,6 +131,7 @@
 
   async function open(query: ApiCaseExecutionTraceQuery) {
     if (!query.result_id && !query.trace_id && !query.test_suite_detail_id && !query.case_id) return
+    const isCurrent = requests.begin('trace')
     state.visible = true
     state.loading = true
     state.trace = null
@@ -135,30 +143,35 @@
         ...query,
         include_list: true,
       })
+      if (!isCurrent() || !state.visible) return
       state.trace = response.data?.trace || null
       state.nodes = response.data?.nodes || []
       state.selectedNode =
-        state.nodes.find((node: any) => Number(node.status) === 0) || state.nodes[0] || null
+        state.nodes.find((node: CaseTraceNode) => Number(node.status) === 0) ||
+        state.nodes[0] ||
+        null
       if (!state.trace) Message.warning('当前用例暂无执行链路记录，请先执行一次用例')
     } catch (error: any) {
-      Message.error(error?.msg || error?.message || '执行链路查询失败')
+      if (isCurrent()) Message.error(error?.msg || error?.message || '执行链路查询失败')
     } finally {
-      state.loading = false
+      if (isCurrent()) state.loading = false
     }
   }
 
-  function nodeHasChildren(node: any) {
+  function nodeHasChildren(node: CaseTraceNode) {
     return (
       node.step_type === 'retry_round' &&
-      state.nodes.some((item: any) => String(item.parent_step_id || '') === String(node.id))
+      state.nodes.some(
+        (item: CaseTraceNode) => String(item.parent_step_id || '') === String(node.id)
+      )
     )
   }
 
-  function nodeExpanded(node: any) {
+  function nodeExpanded(node: CaseTraceNode) {
     return state.expandedNodeIds.includes(String(node.id))
   }
 
-  function toggleNode(node: any) {
+  function toggleNode(node: CaseTraceNode) {
     if (!nodeHasChildren(node)) return
     const id = String(node.id)
     if (nodeExpanded(node)) {
@@ -169,7 +182,7 @@
     }
   }
 
-  function nodeDepth(node: any) {
+  function nodeDepth(node: CaseTraceNode) {
     let depth = 0
     let parent = node.parent_step_id ? nodeMap.value.get(String(node.parent_step_id)) : null
     while (parent && depth < 3) {
@@ -218,5 +231,18 @@
     return JSON.stringify(value || {}, null, 2)
   }
 
-  defineExpose({ open })
+  function close() {
+    requests.invalidate()
+    state.visible = false
+    state.loading = false
+  }
+  watch(
+    () => state.visible,
+    (visible) => {
+      if (!visible) close()
+    }
+  )
+  onBeforeUnmount(close)
+  onDeactivated(close)
+  defineExpose({ open, close })
 </script>

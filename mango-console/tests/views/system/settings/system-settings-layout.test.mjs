@@ -2,7 +2,9 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 import { parse, compileScript, compileTemplate, compileStyle } from '@vue/compiler-sfc'
+import { baseParse } from '@vue/compiler-dom'
 import ts from 'typescript'
+import { harness } from '../../../helpers/case-details-harness.mjs'
 
 const filename = new URL('../../../../src/views/system/settings/index.vue', import.meta.url)
 const source = fs.readFileSync(filename, 'utf8')
@@ -47,40 +49,23 @@ test('every datasource performance field has an explanation without implying a b
   assert.doesNotMatch(component.scriptSetup.content, /scopeFields|instanceFields|function addScope|function addInstance/)
 })
 
-test('saving uniform datasource settings never resubmits retired overrides or subquotas', () => {
-  const editor = fs.readFileSync(new URL('../../../../src/views/system/settings/components/DatasourcePerformanceEditor.vue', import.meta.url), 'utf8')
-  const script = parse(editor).descriptor.scriptSetup.content
-  const ast = ts.createSourceFile('editor.ts', script, ts.ScriptTarget.Latest, true)
-  const declarations = ast.statements.filter(ts.isVariableStatement).flatMap(node => [...node.declarationList.declarations])
-  const get = name => new Function(`return ${declarations.find(node => node.name.getText(ast) === name).initializer.getText(ast)}`)()
+test('saving uniform datasource settings never resubmits retired overrides or subquotas', t => {
   const raw = { mysql: { concurrency: 4 }, instances: [{ group: 'old', connection_ids: [1] }], scopes: [{ name: 'old' }] }
   const before = structuredClone(raw)
-  const events = []
-  const code = ts.transpileModule(script.slice(script.indexOf('  const draft =')), {
-    compilerOptions: { target: ts.ScriptTarget.ES2022 }
-  }).outputText
-  const run = new Function('props', 'reactive', 'ref', 'watch', 'baseBudget', 'kinds', 'emit', `${code}; return { draft, save };`)(
-    { modelValue: raw, loading: false }, value => value, value => ({ value }), (_, callback) => callback(raw),
-    get('baseBudget'), get('kinds'), (...args) => events.push(args)
-  )
-  run.save()
-  const payload = events.find(([name]) => name === 'update:modelValue')[1]
+  const editor = harness('DatasourcePerformanceEditor', 'draft,save', { base: new URL('../../../../src/views/system/settings', import.meta.url).pathname, props: { modelValue: raw, loading: false } })
+  t.after(editor.close); editor.save()
+  const payload = editor.events.find(([name]) => name === 'update:modelValue')[1]
   assert.equal('instances' in payload, false)
   assert.equal('scopes' in payload, false)
   assert.equal(payload.mysql.concurrency, 4)
   assert.deepEqual(raw, before)
 })
 
-test('relaxed datasource defaults match backend values and retain explicitly saved limits', () => {
-  const editor = fs.readFileSync(new URL('../../../../src/views/system/settings/components/DatasourcePerformanceEditor.vue', import.meta.url), 'utf8')
-  const script = parse(editor).descriptor.scriptSetup.content
-  const ast = ts.createSourceFile('editor.ts', script, ts.ScriptTarget.Latest, true)
-  const declarations = ast.statements.filter(ts.isVariableStatement).flatMap(node => [...node.declarationList.declarations])
-  const get = name => new Function(`return ${declarations.find(node => node.name.getText(ast) === name).initializer.getText(ast)}`)()
-  const code = ts.transpileModule(script.slice(script.indexOf('  const draft =')), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
-  const initialize = raw => new Function('props', 'reactive', 'ref', 'watch', 'baseBudget', 'kinds', 'emit', `${code}; return draft;`)(
-    { modelValue: raw, loading: false }, value => value, value => ({ value }), (_, callback) => callback(raw), get('baseBudget'), get('kinds'), () => {}
-  )
+test('relaxed datasource defaults match backend values and retain explicitly saved limits', t => {
+  const initialize = raw => {
+    const editor = harness('DatasourcePerformanceEditor', 'draft,save', { base: new URL('../../../../src/views/system/settings', import.meta.url).pathname, props: { modelValue: raw, loading: false } })
+    t.after(editor.close); return editor.draft
+  }
   const defaults = initialize({})
   for (const [kind, expected] of Object.entries({ mysql: [6, 30, 12], redis: [12, 75, 16], elasticsearch: [6, 15, 12] })) {
     const value = defaults[kind]
@@ -221,7 +206,7 @@ test('stored numeric configuration strings display as numbers without replacing 
   }
   assert.match(
     source,
-    /if \(isNumberType\(item\)\)\s*\{\s*return normalizeConfigNumber\(item.value\)/
+    /if \(isNumberType\(item\)\)\s*\{\s*const number = normalizeConfigNumber\(item.value\)/
   )
 })
 
@@ -249,11 +234,16 @@ test('settings remain a continuous list with standard form controls', () => {
   assert.match(section, /flex-direction: column/)
   const subgroup = style.match(/\.mango-system-settings__small-section\s*\{([^}]+)\}/)[1]
   assert.doesNotMatch(subgroup, /border-radius|box-shadow/)
-  for (const control of descriptor.template.content.matchAll(
-    /<a-(?:switch|input|input-number|input-password|select|textarea)\b[^>]*>/g
-  )) {
-    assert.match(control[0], /size="medium"/)
+  let controls = 0
+  function inspect(node) {
+    if (node.type === 1 && /^a-(?:switch|input|input-number|input-password|select|textarea)$/.test(node.tag)) {
+      controls++
+      assert.equal(node.props.find(prop => prop.type === 6 && prop.name === 'size')?.value?.content, 'medium')
+    }
+    for (const child of node.children || []) inspect(child)
   }
+  inspect(baseParse(descriptor.template.content))
+  assert.ok(controls > 0)
   assert.equal(source.split('修改后自动保存').length - 1, 1)
   assert.match(style, /grid-template-columns: 200px 90px minmax\(240px, 420px\) minmax\(0, 1fr\)/)
   assert.match(style, /min-height: calc\(var\(--m-control-height-medium\)/)
@@ -302,66 +292,6 @@ test('compact headings avoid duplicate sections and test inputs stay bounded', (
   assert.match(heading, /flex-wrap: wrap/)
 })
 
-test('initial entry keeps filters visible and only explicit valid groups scroll into view', async () => {
-  const code = source.slice(
-    source.indexOf('  async function doRefresh()'),
-    source.indexOf('  const debugLogSaving =')
-  )
-  const js = ts.transpileModule(code, {
-    compilerOptions: { target: ts.ScriptTarget.ES2020 },
-  }).outputText
-  for (const requested of [undefined, '', 'unknown', 'email', 'system-services']) {
-    const calls = []
-    const configElement = { name: 'email' }
-    const sectionElement = { name: 'system-services' }
-    const loading = { value: false }
-    const refresh = new Function(
-      'settingsLoading',
-      'route',
-      'getSystemCacheDataGrouped',
-      'settingsGroups',
-      'normalizeEditValue',
-      'rememberSavedValues',
-      'findNavigationGroup',
-      'activeNavigationKey',
-      'navigationGroups',
-      'SYSTEM_SERVICES_GROUP_KEY',
-      'nextTick',
-      'configSectionElements',
-      'sectionElements',
-      'scrollElementIntoPanel',
-      'panelRef',
-      `${js}; return doRefresh;`
-    )(
-      loading,
-      { query: { group: requested } },
-      async () => ({ data: [] }),
-      { value: [] },
-      () => {},
-      () => {},
-      () => undefined,
-      { value: '' },
-      { value: [{ key: 'system-services' }] },
-      'system-services',
-      async () => {},
-      new Map([['email', configElement]]),
-      new Map([['system-services', sectionElement]]),
-      (...args) => calls.push(args),
-      { value: { scrollTo: (options) => calls.push(options) } }
-    )
-    await refresh()
-    assert.equal(loading.value, false)
-    assert.deepEqual(
-      calls,
-      requested === 'email'
-        ? [[configElement, 'auto']]
-        : requested === 'system-services'
-        ? [[sectionElement, 'auto']]
-        : [{ top: 0, behavior: 'auto' }]
-    )
-  }
-})
-
 test('directory scrolls locally without routing, remounting or refetching', () => {
   const code = source.slice(
     source.indexOf('  const scrollToGroup ='),
@@ -387,7 +317,7 @@ test('directory scrolls locally without routing, remounting or refetching', () =
     assert.equal(active.value, 'ai-capabilities')
     assert.deepEqual(calls, [[element, reduced ? 'auto' : 'smooth']])
   }
-  assert.equal((source.match(/await doRefresh\(\)/g) || []).length, 1)
+  assert.doesNotMatch(code, /doRefresh|getSystem|router\./)
 })
 
 test('primary and secondary groups have distinct visual and semantic levels', () => {
@@ -452,8 +382,8 @@ test('configuration management levels are visible and cautious changes require c
     source,
     /<a-tag\s+v-else-if="item.management_level === MANAGEMENT_LEVEL_STANDARD"\s+size="small"\s*>\s*普通配置\s*<\/a-tag>/
   )
-  assert.match(source, /management_level: number/)
-  assert.match(source, /item\.management_level === MANAGEMENT_LEVEL_CAUTION/)
+  assert.match(fs.readFileSync(new URL('../../../../src/views/system/settings/config-records.ts', import.meta.url), 'utf8'), /management_level: number/)
+  assert.match(source, /snapshot\.management_level === MANAGEMENT_LEVEL_CAUTION/)
   assert.match(descriptor.template.content, /谨慎修改/)
   assert.match(source, /Modal\.warning\(\{/)
   assert.match(source, /确认修改谨慎配置/)

@@ -25,7 +25,7 @@ class ExampleConfigurationTests(unittest.TestCase):
             shutil.copytree(root / 'deploy/nginx', target / 'deploy/nginx')
             shutil.copy2(root / 'deploy/compose.single.json', target / 'deploy/compose.single.json')
             rendered = b.render(target, value)
-            self.assertEqual(rendered['services']['mango-console']['build']['args']['NODE_HEAP_MB'], '6144')
+            self.assertEqual(rendered['services']['mango-console']['build']['args']['NODE_HEAP_MB'], '4096')
 
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
@@ -107,7 +107,8 @@ class ExampleConfigurationTests(unittest.TestCase):
 
 class BuildResourceTests(unittest.TestCase):
     def test_auto_and_explicit_heap_and_swap_budget(self):
-        self.assertEqual(resources.choose_heap('auto', (6800, 5700), 15000), 6144)
+        self.assertEqual(resources.choose_heap('auto', (6800, 5700), 15000), 4096)
+        self.assertEqual(resources.choose_heap('2048', (3000, 1200), 4096, 4096), 2048)
         self.assertEqual(resources.choose_heap('8192', (10000, 0), 16000), 8192)
 
     def test_host_docker_and_cgroup_each_can_reject_insufficient_resources(self):
@@ -213,7 +214,7 @@ class RequiredInputTests(unittest.TestCase):
                 self.assertEqual(example.read_bytes(), before)
 
     def test_internal_ipv4_ipv6_and_domains_are_accepted(self):
-        for address in ('http://172.16.100.47:8000', 'https://platform.example.com', 'http://[2001:db8::1]:8000'):
+        for address in ('http://10.0.0.47:8000', 'https://platform.example.com', 'http://[2001:db8::1]:8000'):
             with self.subTest(address=address), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 example = root / '.env.example'

@@ -6,7 +6,13 @@
         <small>选择后查看对应配置</small>
       </div>
       <a-space size="mini">
-        <a-button size="mini" type="outline" @click="openCompareDrawer" data-testid="qa-views-apitest-case-details-components-apicaseversionpanel-button-版本比对">版本比对</a-button>
+        <a-button
+          size="mini"
+          type="outline"
+          @click="openCompareDrawer"
+          data-testid="qa-views-apitest-case-details-components-apicaseversionpanel-button-版本比对"
+          >版本比对</a-button
+        >
       </a-space>
     </div>
 
@@ -80,7 +86,8 @@
         long
         size="small"
         :loading="creating"
-        @click="createRevisionFromCurrent" data-testid="qa-views-apitest-case-details-components-apicaseversionpanel-button-生成修订"
+        @click="createRevisionFromCurrent"
+        data-testid="qa-views-apitest-case-details-components-apicaseversionpanel-button-生成修订"
       >
         生成修订
       </a-button>
@@ -130,7 +137,8 @@
         long
         size="small"
         :loading="checkingOut"
-        @click="checkoutSelectedRevision" data-testid="qa-views-apitest-case-details-components-apicaseversionpanel-button-迁出到编辑态"
+        @click="checkoutSelectedRevision"
+        data-testid="qa-views-apitest-case-details-components-apicaseversionpanel-button-迁出到编辑态"
       >
         迁出到编辑态
       </a-button>
@@ -150,13 +158,15 @@
         size="small"
         status="danger"
         :loading="deleting"
-        @click="deleteSelectedRevision" data-testid="qa-views-apitest-case-details-components-apicaseversionpanel-button-删除修订"
+        @click="deleteSelectedRevision"
+        data-testid="qa-views-apitest-case-details-components-apicaseversionpanel-button-删除修订"
       >
         删除修订
       </a-button>
     </div>
   </div>
   <ApiVersionCompareDrawer
+    :key="`compare-${caseId}-${compareSession}`"
     v-model:visible="compareDrawerVisible"
     left-title="当前编辑态"
     :left-payload="currentPayload || {}"
@@ -164,18 +174,24 @@
     :load-target-payload="loadApiCaseCompareTarget"
   />
   <ExecutionResultHistoryDrawer
+    :key="`history-${caseId}-${historySession}`"
     v-model:visible="resultHistoryVisible"
     :title="resultHistoryTitle"
     :case-id="caseId"
     :query="resultHistoryQuery"
     @show-trace="(query) => emit('show-trace', query)"
   />
-  <CasePublicationReviewModal ref="publicationReviewRef" @published="onReviewPublished" />
+  <CasePublicationReviewModal
+    v-if="panelActive"
+    :key="caseId"
+    ref="publicationReviewRef"
+    @published="onReviewPublished"
+  />
 </template>
 
 <script lang="ts" setup>
   import CasePublicationReviewModal from '@/components/business/CasePublicationReviewModal.vue'
-  import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+  import { computed, onBeforeUnmount, onMounted, onActivated, onDeactivated, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import ApiVersionCompareDrawer from '@/components/business/ApiVersionCompareDrawer.vue'
   import ExecutionResultHistoryDrawer from '@/components/business/ExecutionResultHistoryDrawer.vue'
@@ -234,8 +250,19 @@
   const selectingVersion = ref(false)
   const compareDrawerVisible = ref(false)
   const resultHistoryVisible = ref(false)
+  const compareSession = ref(0)
+  const historySession = ref(0)
+  const panelActive = ref(true)
+  watch(compareDrawerVisible, (visible) => {
+    if (!visible) compareSession.value++
+  })
+  watch(resultHistoryVisible, (visible) => {
+    if (!visible) historySession.value++
+  })
   const activePopoverKey = ref('')
   let selectionToken = 0
+  let listToken = 0
+  let contextVersion = 0
   let popoverTimer: ReturnType<typeof setTimeout> | null = null
   let popoverCloseTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -260,7 +287,12 @@
       label: getApiCaseRevisionLabel(revision),
     }))
   )
-  const resultHistoryTitle = computed(() => `用例执行历史：${selectedRevision.value ? getApiCaseRevisionLabel(selectedRevision.value) : '当前编辑态'}`)
+  const resultHistoryTitle = computed(
+    () =>
+      `用例执行历史：${
+        selectedRevision.value ? getApiCaseRevisionLabel(selectedRevision.value) : '当前编辑态'
+      }`
+  )
   const resultHistoryQuery = computed(() => ({
     target_type: 'api_case',
     target_id: props.caseId,
@@ -284,13 +316,16 @@
 
   async function refresh() {
     if (!props.caseId) return
+    const token = ++listToken,
+      caseId = props.caseId
     loading.value = true
     try {
-      revisions.value =
-        unwrap<ApiCaseRevisionListItem[]>(await getApiCaseRevisionList(props.caseId)) || []
+      const items = unwrap<ApiCaseRevisionListItem[]>(await getApiCaseRevisionList(caseId)) || []
+      if (token !== listToken || caseId !== props.caseId) return
+      revisions.value = items
       if (!selectedKey.value || selectedKey.value === 'current') selectCurrent()
     } finally {
-      loading.value = false
+      if (token === listToken) loading.value = false
     }
   }
 
@@ -321,14 +356,17 @@
 
   async function createRevisionFromCurrent() {
     if (creating.value) return
+    const caseId = props.caseId,
+      version = contextVersion
     creating.value = true
     try {
       const revision = unwrap<ApiCaseRevisionListItem>(
         await createApiCaseRevision({
-          case_id: Number(props.caseId),
+          case_id: Number(caseId),
           summary: '从当前配置生成修订',
         })
       )
+      if (version !== contextVersion || caseId !== props.caseId) return
       Message.success('已生成修订')
       await refresh()
       const target = revisions.value.find((item) => item.id === revision.id)
@@ -339,6 +377,8 @@
   }
 
   function submitPrepublication() {
+    const caseId = props.caseId,
+      version = contextVersion
     if (!selectedRevision.value || publishing.value) return
     const revision = selectedRevision.value
     Modal.confirm({
@@ -346,9 +386,11 @@
       content: `确认将修订 r${revision.revision_no} 提交审核吗？提交后旧正式版本转为历史版本，用例暂停参与定时执行。`,
       okText: '提交预发布',
       async onBeforeOk() {
+        if (version !== contextVersion || caseId !== props.caseId) return false
         publishing.value = true
         try {
-          await submitApiCasePrepublication(Number(props.caseId), revision.id)
+          await submitApiCasePrepublication(Number(caseId), revision.id)
+          if (version !== contextVersion || caseId !== props.caseId) return true
           Message.success('已提交预发布')
           await refresh()
           emit('published')
@@ -367,6 +409,8 @@
   }
 
   function revertPrepublication() {
+    const caseId = props.caseId,
+      version = contextVersion
     const revision = selectedRevision.value
     if (!revision?.is_prepublished || !revision.is_product_owner || revertingPrepublication.value)
       return
@@ -375,9 +419,11 @@
       content: `确认将修订 r${revision.revision_no} 退回为未发布修订吗？`,
       okText: '确认退回',
       async onBeforeOk() {
+        if (version !== contextVersion || caseId !== props.caseId) return false
         revertingPrepublication.value = true
         try {
-          await revertApiCasePrepublication(Number(props.caseId))
+          await revertApiCasePrepublication(Number(caseId))
+          if (version !== contextVersion || caseId !== props.caseId) return true
           Message.success('已退回未发布')
           await refresh()
           emit('published')
@@ -390,6 +436,8 @@
   }
 
   function unpublishSelected() {
+    const caseId = props.caseId,
+      version = contextVersion
     const revision = selectedRevision.value
     const release = revision?.release
     if (!revision || !release?.is_current || unpublishing.value) return
@@ -399,9 +447,11 @@
       okText: '确认取消',
       okButtonProps: { status: 'danger' },
       async onBeforeOk() {
+        if (version !== contextVersion || caseId !== props.caseId) return false
         unpublishing.value = true
         try {
-          await unpublishApiCaseRelease(Number(props.caseId), release.id)
+          await unpublishApiCaseRelease(Number(caseId), release.id)
+          if (version !== contextVersion || caseId !== props.caseId) return true
           Message.success('已取消发布')
           await refresh()
           emit('published')
@@ -416,17 +466,20 @@
   }
 
   async function checkoutSelectedRevision() {
+    const caseId = props.caseId,
+      version = contextVersion
     if (!selectedRevision.value || checkingOut.value) return
     const revision = selectedRevision.value
     checkingOut.value = true
     let impact: ApiCaseRevisionCheckoutImpact
     try {
       impact = unwrap<ApiCaseRevisionCheckoutImpact>(
-        await getApiCaseRevisionCheckoutImpact(Number(props.caseId), revision.id)
+        await getApiCaseRevisionCheckoutImpact(Number(caseId), revision.id)
       )
     } finally {
       checkingOut.value = false
     }
+    if (version !== contextVersion || caseId !== props.caseId) return
     const blocked = impact.items.filter((item) => item.status === 'blocked')
     if (blocked.length) {
       Message.error(
@@ -444,9 +497,11 @@
         : '迁出后将覆盖当前配置，原版本会永久保留，是否继续？',
       okText: restorable.length ? '恢复依赖并迁出' : '确认迁出',
       async onBeforeOk() {
+        if (version !== contextVersion || caseId !== props.caseId) return false
         checkingOut.value = true
         try {
-          await checkoutApiCaseRevision(Number(props.caseId), revision.id, restorable.length > 0)
+          await checkoutApiCaseRevision(Number(caseId), revision.id, restorable.length > 0)
+          if (version !== contextVersion || caseId !== props.caseId) return true
           Message.success('已迁出到编辑态')
           selectedKey.value = 'current'
           await refresh()
@@ -460,6 +515,8 @@
   }
 
   function deleteSelectedRevision() {
+    const caseId = props.caseId,
+      version = contextVersion
     if (!selectedRevision.value || selectedRevision.value.release || deleting.value) return
     const revision = selectedRevision.value
     Modal.confirm({
@@ -468,9 +525,11 @@
       okText: '确认删除',
       okButtonProps: { status: 'danger' },
       async onBeforeOk() {
+        if (version !== contextVersion || caseId !== props.caseId) return false
         deleting.value = true
         try {
-          await deleteApiCaseRevision(props.caseId, revision.id)
+          await deleteApiCaseRevision(caseId, revision.id)
+          if (version !== contextVersion || caseId !== props.caseId) return true
           Message.success('修订已删除')
           selectCurrent()
           await refresh()
@@ -530,7 +589,8 @@
 
   function pickCaseCompareFields(payload: Record<string, any>, fields: string[]) {
     return fields.reduce<Record<string, any>>((result, field) => {
-      if (field === 'execution_config' && !Object.keys(payload.execution_config || {}).length) return result
+      if (field === 'execution_config' && !Object.keys(payload.execution_config || {}).length)
+        return result
       result[field] = payload?.[field]
       return result
     }, {})
@@ -609,9 +669,37 @@
     activePopoverKey.value = key
   }
 
-  watch(() => props.caseId, refresh)
+  function invalidateContext() {
+    contextVersion++
+    listToken++
+    selectionToken++
+    loading.value = false
+    selectingVersion.value = false
+    compareDrawerVisible.value = false
+    resultHistoryVisible.value = false
+    activePopoverKey.value = ''
+    clearVersionPopoverTimer()
+    clearVersionPopoverCloseTimer()
+  }
+  watch(
+    () => props.caseId,
+    () => {
+      invalidateContext()
+      revisions.value = []
+      selectedKey.value = 'current'
+      void refresh()
+    }
+  )
+  onDeactivated(() => {
+    panelActive.value = false
+    invalidateContext()
+  })
+  onActivated(() => {
+    panelActive.value = true
+  })
   onMounted(refresh)
   onBeforeUnmount(() => {
+    invalidateContext()
     clearVersionPopoverTimer()
     clearVersionPopoverCloseTimer()
   })

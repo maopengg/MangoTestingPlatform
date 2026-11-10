@@ -256,6 +256,10 @@ class DataFactoryCleanupScheduleService:
                 cleanup_status=DataFactoryCleanupStatusEnum.SUCCESS.value).exists():
             remaining = DataFactoryExecutionItem.objects.filter(execution=execution).exclude(cleanup_status=DataFactoryCleanupStatusEnum.SUCCESS.value).count()
             raise DatasourceInfrastructureService.cleanup_error(f'清理任务标记为成功，但仍有 {remaining} 项未验证清理成功。请管理员检查清理明细，本次不能判定通过', execution_id=execution_id)
+        if require_full_cleanup:
+            from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService
+            for item in DataFactoryExecutionItem.objects.filter(execution=execution):
+                DataFactoryCleanupResourceService.resolve_verified(DataFactoryCleanupResourceService.state(item))
 
     @classmethod
     def run_next(cls):

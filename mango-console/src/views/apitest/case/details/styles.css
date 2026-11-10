@@ -603,28 +603,6 @@
   margin-top: 0;
 }
 
-.scenario-allow-failure-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.scenario-protocol-expectation-control {
-  display: flex;
-  width: 100%;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.scenario-protocol-expectation-control .scenario-allow-failure-control__hint {
-  color: var(--m-muted);
-  font-size: 12px;
-}
-
-.scenario-allow-failure-control__hint {
-  color: var(--m-warning);
-}
-
 /* ── 响应式 ──────────────────────────────────────────────────────── */
 @media (max-width: 1px) {
   .api-case-workbench {

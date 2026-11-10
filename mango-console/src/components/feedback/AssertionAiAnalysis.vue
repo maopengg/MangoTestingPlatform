@@ -5,7 +5,7 @@
       AI 分析
     </a-button>
     <a-drawer v-model:visible="visible" :width="'min(960px, 92vw)'"
-      :footer="false" title="断言 AI 分析" class="mango-assertion-analysis-drawer" unmount-on-close>
+      :footer="false" title="断言 AI 分析" class="mango-assertion-analysis-drawer" unmount-on-close @cancel="invalidateAnalysis">
       <div class="mango-assertion-analysis mango-native-scrollbar">
         <div class="mango-assertion-analysis__toolbar">
           <span>本次 {{ assertionData.length }} 条 · {{ failures.length }} 失败 · {{ passed.length }} 通过</span>
@@ -65,16 +65,33 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref, watch } from 'vue'
+  import { computed, ref, watch, onActivated, onDeactivated, onBeforeUnmount } from 'vue'
+  import { useRoute } from 'vue-router'
+  import useUserStore from '@/store/modules/user'
+  import { cloneLosslessJson } from '@/utils/lossless-json'
   import { postAssertionAiAnalysis } from '@/api/system/execution_result'
   import type { AssertionAiAnalysisResult } from '@/api/system/execution_result'
 
-  type AssertionItem = Record<string, any>
+  interface AssertionItem {
+    actual?: unknown
+    expect?: unknown
+    method?: string | null
+    ass_msg?: string | null
+    status?: number | string
+    source_type?: string | null
+    actual_source?: unknown
+  }
   const props = defineProps<{ data?: AssertionItem[] | null }>()
   const visible = ref(false)
   const loading = ref(false)
   const analysis = ref<AssertionAiAnalysisResult | null>(null)
   let requestSequence = 0
+  let active = true
+  const route = useRoute()
+  const user = useUserStore()
+  const contextKey = computed(() => JSON.stringify([
+    route.fullPath, user.userId, user.roleId, user.token, user.selected_environment,
+  ]))
   const assertionData = computed(() => Array.isArray(props.data) ? props.data : [])
   const failures = computed(() => assertionData.value.flatMap((item, index) =>
     item && Number(item.status) === 0 ? [{ item, index }] : []))
@@ -90,35 +107,43 @@
     return `${target}：${failureReason(first.item).replace(/[。；.!?]+$/, '')}${more}。`
   })
 
-  watch(() => props.data, () => {
+  function invalidateAnalysis() {
     requestSequence += 1
     visible.value = false
-    loading.value = false
     analysis.value = null
-  })
+  }
+  watch(() => props.data, invalidateAnalysis, { deep: true, flush: 'sync' })
+  watch(contextKey, invalidateAnalysis, { flush: 'sync' })
+  onDeactivated(() => { active = false; invalidateAnalysis() })
+  onBeforeUnmount(() => { active = false; invalidateAnalysis() })
+  onActivated(() => { active = true })
 
   function open() {
-    if (!hasFailure.value) return
+    if (!active || !hasFailure.value) return
     visible.value = true
     void analyze()
   }
 
   async function analyze() {
-    if (!hasFailure.value || loading.value) return
+    if (!active || !visible.value || !hasFailure.value || loading.value) return
     const sequence = ++requestSequence
+    const context = contextKey.value
+    const current = () => active && visible.value && sequence === requestSequence && context === contextKey.value
     loading.value = true
     analysis.value = null
     try {
-      const response = await postAssertionAiAnalysis(assertionData.value)
-      if (sequence === requestSequence) analysis.value = response.data
+      const snapshot = cloneLosslessJson(assertionData.value.map(item => ({ ...item })))
+      const response = await postAssertionAiAnalysis(snapshot)
+      if (response.code !== 200 || !response.data) throw new Error('Invalid analysis response')
+      if (current()) analysis.value = response.data
     } catch {
-      if (sequence === requestSequence) {
+      if (current()) {
         analysis.value = { available: false, reason: 'AI 分析暂时不可用，请稍后重试',
           summary: '', failed_count: failures.value.length, analyzed_count: 0,
           omitted_count: failures.value.length, items: [] }
       }
     } finally {
-      if (sequence === requestSequence) loading.value = false
+      loading.value = false
     }
   }
 

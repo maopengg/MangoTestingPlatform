@@ -38,6 +38,7 @@ from src.apps.data_factory.models import SqlExecutionRecord
 from src.apps.data_factory.schemas.execution_audit import DatasourceAuditMetadata
 from src.apps.data_factory.enums.audit import DatasourceAuditSourceEnum, DatasourceAuditStageEnum
 from src.apps.data_factory.services.datasource_wait import DatasourceWaitService
+from src.apps.data_factory.services.datasource_timing import DatasourceTimingService as Timing
 from src.apps.system.services.system_config import SystemConfigService
 from src.apps.system.services.runtime_center.system_error_event import SystemErrorEventService
 from src.apps.test_center.enums.data_source import DataSourceTypeEnum
@@ -64,6 +65,7 @@ class SqlExecutionAuditHandle:
     children: list = field(default_factory=list)
     wait_started: float = field(default_factory=DatasourceWaitService.elapsed)
     admission_wait_ms: float = 0.0
+    timing_started: dict = field(default_factory=Timing.snapshot)
 
 
 class SqlExecutionAuditService:
@@ -372,7 +374,8 @@ class SqlExecutionAuditService:
     def measured_duration(cls, handle, duration_ms):
         waited_ms = max(0, (DatasourceWaitService.elapsed() - handle.wait_started) * 1000)
         handle.record.source_detail = {**(handle.record.source_detail or {}),
-                                       'resource_wait_ms': round(waited_ms + handle.admission_wait_ms, 2)}
+                                       'resource_wait_ms': round(waited_ms + handle.admission_wait_ms, 2),
+                                       'timing_ms': Timing.delta(handle.timing_started)}
         return round(max(0, duration_ms - waited_ms), 2)
 
     @classmethod
@@ -400,10 +403,12 @@ class SqlExecutionAuditService:
     @classmethod
     def finish_failure(cls, handle: SqlExecutionAuditHandle, error: Exception, duration_ms: float):
         from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+        error._datasource_audit_request_id = handle.record.request_id
         if isinstance(error, DataFactoryError):
             DatasourceInfrastructureService.annotate(error, request_id=handle.record.request_id,
                                                   database_id=getattr(handle.record, 'database_id', None))
-        DatasourceInfrastructureService.capture(error, result_unknown=True)
+        with cls.scope(handle):
+            DatasourceInfrastructureService.capture(error, result_unknown=True)
         duration_ms = cls.measured_duration(handle, duration_ms)
         record = handle.record
         record.status = 'timeout' if cls.is_timeout(error) else 'fail'

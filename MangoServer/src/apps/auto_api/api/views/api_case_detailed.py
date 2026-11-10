@@ -106,6 +106,20 @@ class ApiCaseDetailedCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
         step = self.model.objects.select_related('case').get(id=request.data.get('id'))
         if not self.has_instance_data_scope_permission(request, step.case):
             return ResponseData.fail(RESPONSE_MSG_0210)
+        if 'api_info' in request.data and 'execution_config' in request.data:
+            serializer = self.serializer(instance=step, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            values = serializer.validated_data
+            api_info = values['api_info']
+            if not self.has_instance_data_scope_permission(request, api_info):
+                return ResponseData.fail(RESPONSE_MSG_0210)
+            revision = values.get('pinned_api_info_revision')
+            result = ApiCaseStepService.update_step(
+                step.id, api_info_id=api_info.id,
+                pinned_api_info_revision_id=revision.id if revision else None,
+                execution_config=values['execution_config'], operator_id=self.get_operator_id(request),
+            )
+            return ResponseData.success(RESPONSE_MSG_0013, result)
         if 'execution_config' not in request.data:
             return super().put(request)
         result = ApiCaseStepService.configure_recovery(

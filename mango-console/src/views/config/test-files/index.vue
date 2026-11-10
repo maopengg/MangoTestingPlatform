@@ -1,5 +1,5 @@
 <template>
-  <TableBody ref="tableBody" plain class="mango-detail-workbench-page">
+  <TableBody plain class="mango-detail-workbench-page">
     <template #header>
       <TableHeader title="测试文件" />
     </template>
@@ -7,29 +7,22 @@
       <ProjectProductNavigationWorkbench
         ref="navigationCreateRef"
         contained-body
-        :model-value="projectProductCondition?.value"
+        :model-value="selectedProduct"
         :reset-key="sidebarResetKey"
         @filter-change="onNavigationFilterChange"
-        @search="doRefresh"
+        @search="onSearch"
         @reset-search="onResetSearch"
       >
         <template #search>
-          <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
+          <a-form layout="inline" :model="{}" @keyup.enter="onSearch">
             <a-form-item v-for="item of headerConditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
                 <a-input
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   allow-clear
-                  @blur="doRefresh"
-                  @clear="doRefresh"
-                />
-              </template>
-              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
-                <ProjectProductSelect
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  @change="doRefresh"
+                  @blur="onSearch"
+                  @clear="onSearch"
                 />
               </template>
               <template v-else-if="item.type === 'select'">
@@ -38,47 +31,41 @@
                   :multiple="item.multiple"
                   :max-tag-count="item.multiple ? 1 : undefined"
                   :placeholder="item.placeholder"
-                  :options="item.key === 'update_user' ? item.optionItems : project.data"
+                  :options="item.optionItems"
+                  :loading="usersLoading"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
                   allow-search
-                  @change="doRefresh"
+                  @change="onSearch"
                 />
-              </template>
-              <template v-if="item.type === 'date'">
-                <a-date-picker v-model="item.value" />
-              </template>
-              <template v-if="item.type === 'time'">
-                <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
-              </template>
-              <template v-if="item.type === 'check-group'">
-                <a-checkbox-group v-model="item.value">
-                  <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
-                    {{ item.label }}
-                  </a-checkbox>
-                </a-checkbox-group>
               </template>
             </a-form-item>
           </a-form>
         </template>
         <template #toolbar>
           <a-space>
-            <div>
-              <a-button  size="small" type="primary" @click="onOpenUploadModal" data-testid="qa-views-config-test-files-button-上传">上传</a-button>
-            </div>
+            <a-button
+              size="small"
+              type="primary"
+              :disabled="uploadPending"
+              @click="onOpenUploadModal"
+              data-testid="qa-views-config-test-files-button-上传"
+              >上传</a-button
+            >
           </a-space>
         </template>
+
+
         <a-table
           :scroll="{ x: tableScrollX, y: '100%' }"
-          class="full-width mango-native-scroll-table"
+          class="mango-test-files-table mango-native-scroll-table"
           :bordered="false"
           :columns="visibleTableColumns"
-          :data="table.dataList"
-          :loading="table.tableLoading.value"
+          :data="rows"
+          :loading="listLoading"
           :pagination="false"
-          :rowKey="rowKey"
-          @selection-change="onSelectionChange"
+          row-key="id"
         >
           <template #columns>
             <a-table-column
@@ -112,13 +99,25 @@
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <MangoTableActions
                   :actions="[
-    {
-        label: '下载',
-        disabled: isDownloadDisabled(record),
-        onClick: () => onDownload(record), },
-    { label: '编辑', onClick: () => onUpdate(record) },
-    { label: '删除', danger: true, onClick: () => onDelete(record) },
-]"
+                    {
+                      label: '下载',
+                      loading: downloadingIds.has(record.id),
+                      disabled: isWriting(record.id),
+                      onClick: () => onDownload(record),
+                    },
+                    {
+                      label: '编辑',
+                      disabled: editorSaving || isBusy(record.id),
+                      onClick: () => onUpdate(record),
+                    },
+                    {
+                      label: '删除',
+                      danger: true,
+                      loading: deletingIds.has(record.id),
+                      disabled: downloadingIds.has(record.id) || editingIds.has(record.id),
+                      onClick: () => onDelete(record),
+                    },
+                  ]"
                 />
               </template>
             </a-table-column>
@@ -130,322 +129,232 @@
       </ProjectProductNavigationWorkbench>
     </template>
   </TableBody>
-  <ModalDialog ref="modalDialogRef" title="编辑" @confirm="onDataForm">
-    <template #content>
-      <a-form :model="formModel">
-        <a-form-item
-          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
-          :label="item.label"
-          v-for="item of formItems"
-          :key="item.key"
-        >
-          <template v-if="item.type === 'input'">
-            <a-input :placeholder="item.placeholder" v-model="item.value" />
-          </template>
-          <template v-else-if="item.type === 'cascader'">
-            <ProjectProductSelect
-              v-model="item.value"
-              :placeholder="item.placeholder"
-            />
-          </template>
-        </a-form-item>
-      </a-form>
-    </template>
-  </ModalDialog>
-  <a-modal v-model:visible="uploadModalVisible" title="上传文件" @cancel="onCancelUpload">
-    <a-form :model="uploadForm">
-      <a-form-item label="文件" required>
-        <a-upload
-          v-model:file-list="uploadFileList"
-          :auto-upload="false"
-          :limit="1"
-          @change="onUploadFileChange"
-          @before-remove="onRemoveUploadFile"
-        />
-      </a-form-item>
-      <a-form-item label="项目/产品" required>
-        <ProjectProductSelect
-          v-model="uploadForm.project_product"
-          :placeholder="'请选择项目产品'"
-        />
-      </a-form-item>
-      <a-form-item label="允许下载">
-        <a-switch v-model="uploadForm.allow_download" />
-      </a-form-item>
-    </a-form>
-    <template #footer>
-      <a-button @click="onCloseUploadModal" data-testid="qa-views-config-test-files-button-取消">取消</a-button>
-      <a-button  type="primary" :loading="uploadLoading" @click="onUploadFile" data-testid="qa-views-config-test-files-button-上传-2">上传</a-button>
-    </template>
-  </a-modal>
+  <TestFileEditor ref="editorRef" @saved="doRefresh" @saving-change="onEditorSaving" />
+  <TestFileUploadDialog
+    ref="uploadRef"
+    @saved="doRefresh"
+    @uploading-change="uploadPending = $event"
+  />
 </template>
+<script setup lang="ts">
+import { reportLoadError } from '@/utils/load-error'
 
-<script lang="ts" setup>
-  import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
+  import { computed, onMounted, reactive, ref } from 'vue'
+  import { usePagination } from '@/hooks/table'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { computed, nextTick, onMounted, reactive, ref } from 'vue'
-  import { tableColumns, conditionItems, formItems, tableScrollX } from './config'
-  import {
-    deleteUserFile,
-    getUserFile,
-    getUserFileDownloadUrl,
-    postUserFile,
-    putUserFile,
-  } from '@/api/system/file_data'
+  import { deleteUserFile, getUserFile, getUserFileDownloadUrl } from '@/api/system/file_data'
+  import { getUserName } from '@/api/user/user'
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
-  import { ModalDialogType } from '@/types/components'
-  import { useProject } from '@/store/modules/get-project'
-  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
-  import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
-  import { formatProjectProductPath, getOptionId } from '@/utils/business-format'
-  import { getUserName } from '@/api/user/user'
   import { setUpdateUserOptions } from '@/utils/update-user'
-  import { prefillNavigationModel, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+  import { formatProjectProductPath } from '@/utils/business-format'
+  import type { NavigationCreateSource } from '@/utils/navigation-create-defaults'
+  import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
+  import MangoTableActions from '@/components/table/MangoTableActions.vue'
+  import TestFileEditor from './components/TestFileEditor.vue'
+  import TestFileUploadDialog from './components/TestFileUploadDialog.vue'
+  import { tableColumns, createConditionItems, tableScrollX } from './config'
+  import { formatFileSize, isAllowDownload, productId } from './file'
+  import { useTestFileScope } from './composables/useTestFileScope'
+  import type { TestFileRecord, TestFileEditorHandle, TestFileUploadHandle } from './types'
 
-  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
-
-  const pagination = usePagination(doRefresh, () => table.tableLoading)
-  const { onSelectionChange } = useRowSelection()
-  const table = useTable()
-  const project = useProject()
-  const rowKey = useRowKey('id')
-  const sidebarResetKey = ref(0)
+  const conditionItems = createConditionItems()
   const projectProductCondition = computed(() =>
     conditionItems.find((item) => item.key === 'project_product')
   )
+  const selectedProduct = computed(() => productId(projectProductCondition.value?.value))
   const headerConditionItems = computed(() =>
     conditionItems.filter((item) => item.key !== 'project_product')
   )
   const visibleTableColumns = tableColumns
-  const formModel = ref({})
-  const modalDialogRef = ref<ModalDialogType | null>(null)
-  const uploadModalVisible = ref(false)
-  const uploadLoading = ref(false)
-  const uploadFile = ref<File | null>(null)
-  const uploadFileList = ref<any[]>([])
-  const uploadForm = reactive({
-    project_product: '' as string | number,
-    allow_download: true,
+  const rows = ref<TestFileRecord[]>([]),
+    listLoading = ref(false),
+    loadError = ref('')
+  const usersLoading = ref(false),
+    usersError = ref(false)
+  const pagination = usePagination(doRefresh, listLoading)
+  const navigationCreateRef = ref<NavigationCreateSource | null>(null)
+  const editorRef = ref<TestFileEditorHandle | null>(null),
+    uploadRef = ref<TestFileUploadHandle | null>(null)
+  const editorSaving = ref(false),
+    uploadPending = ref(false),
+    sidebarResetKey = ref(0)
+  const editingIds = reactive(new Set<number>()),
+    deletingIds = reactive(new Set<number>()),
+    downloadingIds = reactive(new Set<number>())
+  let listRequest = 0,
+    usersRequest = 0,
+    context = 0
+  let confirmation: ReturnType<typeof Modal.confirm> | null = null
+  const scope = useTestFileScope(reset, () => {
+    void doRefresh()
+    void loadUsers()
   })
-  const data = reactive({
-    updateId: 0,
-  })
-  function doRefresh() {
-    let value = getFormItems(conditionItems)
-    value['project_product'] = getOptionId(value['project_product'])
-    if (value['project_product'] === null || value['project_product'] === '') {
-      delete value['project_product']
-    }
-    if (value.update_user === null || value.update_user === '') {
-      delete value.update_user
-    }
-    value['page'] = pagination.page
-    value['pageSize'] = pagination.pageSize
-    value['type'] = 0
-    getUserFile(value)
-      .then((res) => {
-        table.handleSuccess(res)
-        pagination.setTotalSize((res as any).totalSize)
-      })
-      .catch(console.log)
+  const isWriting = (id: number) => editingIds.has(id) || deletingIds.has(id)
+  const isBusy = (id: number) => isWriting(id) || downloadingIds.has(id)
+  function closeOperations() {
+    ++context
+    editorRef.value?.close()
+    uploadRef.value?.close()
+    confirmation?.close()
+    confirmation = null
   }
-  function onNavigationFilterChange({ projectProduct }: { projectProduct: any }) {
-    if (projectProductCondition.value) projectProductCondition.value.value = projectProduct ?? ''
+  function reset() {
+    ++listRequest
+    ++usersRequest
+    closeOperations()
+    rows.value = []
+    pagination.setTotalSize(0)
+    listLoading.value = false
+    usersLoading.value = false
+    loadError.value = ''
+    usersError.value = false
+    setUpdateUserOptions(conditionItems, [])
+  }
+  async function loadUsers() {
+    if (!scope.isActive()) return
+    const request = ++usersRequest,
+      version = scope.snapshot()
+    usersLoading.value = true
+    usersError.value = false
+    try {
+      const response = await getUserName()
+      if (request === usersRequest && scope.current(version))
+        setUpdateUserOptions(conditionItems, response.data || [])
+    } catch (loadFailure0) {
+      if (request === usersRequest && scope.current(version)) (reportLoadError(loadFailure0, "加载失败，请重试", false), usersError.value = true)
+    } finally {
+      if (request === usersRequest) usersLoading.value = false
+    }
+  }
+  async function doRefresh() {
+    if (!scope.isActive()) return
+    const request = ++listRequest,
+      version = scope.snapshot()
+    const payload = getFormItems(conditionItems)
+    payload.project_product = selectedProduct.value
+    Object.keys(payload).forEach((key) => {
+      if (payload[key] === '' || payload[key] === null || payload[key] === undefined)
+        delete payload[key]
+    })
+    Object.assign(payload, { page: pagination.page, pageSize: pagination.pageSize, type: 0 })
+    listLoading.value = true
+    loadError.value = ''
+    try {
+      const response = await getUserFile(payload)
+      if (request !== listRequest || !scope.current(version)) return
+      rows.value = response.data || []
+      pagination.setTotalSize(response.totalSize ?? 0)
+    } catch (loadFailure1) {
+      if (request === listRequest && scope.current(version))
+        void (reportLoadError(loadFailure1, "测试文件加载失败，请重试", false), loadError.value = '测试文件加载失败，请重试')
+    } finally {
+      if (request === listRequest) listLoading.value = false
+    }
+  }
+  function onSearch() {
     pagination.page = 1
-    doRefresh()
+    return doRefresh()
+  }
+  function onNavigationFilterChange({
+    projectProduct,
+  }: {
+    projectProduct: string | number | null
+  }) {
+    closeOperations()
+    if (projectProductCondition.value) projectProductCondition.value.value = projectProduct ?? ''
+    return onSearch()
   }
   function onResetSearch() {
-    conditionItems.forEach((it) => {
-      it.value = it.multiple ? [] : ''
+    closeOperations()
+    conditionItems.forEach((item) => {
+      item.value = item.multiple ? [] : ''
     })
-    sidebarResetKey.value += 1
-    doRefresh()
+    sidebarResetKey.value++
+    return onSearch()
   }
-
-  function onUpdate(item: any) {
-    data.updateId = item.id
-    modalDialogRef.value?.toggle()
-    nextTick(() => {
-      formItems.forEach((it) => {
-        const propName = item[it.key]
-        if (typeof propName === 'object' && propName !== null) {
-          if (propName.name) {
-            it.value = propName.id
-          } else {
-            it.value = propName.id
-          }
-        } else {
-          it.value = propName
-        }
-      })
-    })
+  function onEditorSaving(id: number, pending: boolean) {
+    editorSaving.value = pending
+    if (pending) editingIds.add(id)
+    else editingIds.delete(id)
   }
-
-  function onDelete(record: any) {
-    Modal.confirm({
+  function onUpdate(record: TestFileRecord) {
+    if (scope.isActive() && !editorSaving.value && !isBusy(record.id)) editorRef.value?.open(record)
+  }
+  function onOpenUploadModal() {
+    if (scope.isActive() && !uploadPending.value)
+      uploadRef.value?.open(navigationCreateRef.value?.getCreateDefaults().projectProduct ?? null)
+  }
+  function onDelete(record: TestFileRecord) {
+    if (!scope.isActive() || confirmation || isBusy(record.id)) return
+    const id = record.id,
+      version = scope.snapshot(),
+      current = context
+    const dialog = Modal.confirm({
       title: '提示',
       content: '是否要删除此数据？',
       cancelText: '取消',
       okText: '删除',
-      onBeforeOk: () => {
-        return deleteUserFile(record.id)
-          .then((res) => {
-            Message.success(res.msg)
-          })
-          .catch(console.log)
-          .finally(() => {
-            doRefresh()
-          })
+      okButtonProps: { status: 'danger' },
+      async onBeforeOk() {
+        if (!scope.current(version) || current !== context || isBusy(id)) return false
+        deletingIds.add(id)
+        try {
+          const response = await deleteUserFile(id)
+          if (scope.current(version) && current === context) {
+            Message.success(response.msg)
+            if (rows.value.length === 1 && rows.value[0].id === id && pagination.page > 1)
+              pagination.page--
+            await doRefresh()
+          }
+          return true
+        } catch {
+          return false
+        } finally {
+          deletingIds.delete(id)
+        }
+      },
+      onClose() {
+        if (confirmation === dialog) confirmation = null
       },
     })
+    confirmation = dialog
   }
-
-  function onDataForm() {
-    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      let value = getFormItems(formItems)
-      value['id'] = data.updateId
-      putUserFile(value)
-        .then((res) => {
-          modalDialogRef.value?.toggle()
-          Message.success(res.msg)
-          doRefresh()
-        })
-        .catch((error) => {
-          console.log(error)
-        })
-        .finally(() => {
-          modalDialogRef.value?.setConfirmLoading(false)
-        })
-    }
-  }
-
-  function onOpenUploadModal() {
-    uploadFile.value = null
-    uploadFileList.value = []
-    uploadForm.project_product = ''
-    uploadForm.allow_download = true
-    void prefillNavigationModel(navigationCreateRef.value, uploadForm)
-    uploadModalVisible.value = true
-  }
-
-  function onUploadFileChange(fileList: any[], fileItem: any) {
-    uploadFileList.value = fileList.slice(-1)
-    uploadFile.value = fileItem?.file || uploadFileList.value[0]?.file || null
-  }
-
-  function onRemoveUploadFile() {
-    uploadFile.value = null
-    uploadFileList.value = []
-    return true
-  }
-
-  async function onUploadFile() {
-    if (!uploadFile.value) {
-      Message.error('请选择上传文件')
-      return
-    }
-    if (!uploadForm.project_product && uploadForm.project_product !== '0') {
-      Message.error('请选择项目产品')
-      return
-    }
-
-    uploadLoading.value = true
-    const formData = new FormData()
-    formData.append('test_file', uploadFile.value)
-    formData.append('type', '0')
-    formData.append('name', uploadFile.value.name)
-    formData.append('project_product', String(uploadForm.project_product))
-    formData.append('allow_download', String(uploadForm.allow_download))
+  async function onDownload(record: TestFileRecord) {
+    if (!scope.isActive() || isBusy(record.id)) return
+    const id = record.id,
+      name = record.name,
+      version = scope.snapshot(),
+      current = context
+    downloadingIds.add(id)
     try {
-      const res = await postUserFile(formData)
-      Message.success(res.msg)
-      uploadModalVisible.value = false
-      uploadFile.value = null
-      uploadFileList.value = []
-      uploadForm.project_product = ''
-      uploadForm.allow_download = true
-      doRefresh()
-    } catch (error) {
-      console.log(error)
+      const response = await getUserFileDownloadUrl(id)
+      if (!scope.current(version) || current !== context) return
+      if (name.includes('jpg') || name.includes('png')) window.open(response.data, '_blank')
+      else {
+        const link = document.createElement('a')
+        link.href = response.data
+        link.download = name
+        document.body.appendChild(link)
+        try {
+          link.click()
+        } finally {
+          link.remove()
+        }
+      }
+    } catch {
+      /* 请求层统一展示后端错误，保留重试入口。 */
     } finally {
-      uploadLoading.value = false
+      downloadingIds.delete(id)
     }
   }
-
-  function onCancelUpload() {
-    uploadFile.value = null
-    uploadFileList.value = []
-    uploadForm.project_product = ''
-    uploadForm.allow_download = true
-  }
-
-  function onCloseUploadModal() {
-    uploadModalVisible.value = false
-    onCancelUpload()
-  }
-
-  async function onDownload(record: any) {
-    if (isDownloadDisabled(record)) {
-      Message.warning('当前文件不允许下载')
-      return
-    }
-    const file_name = record.name
-    try {
-      const res = await getUserFileDownloadUrl(record.id)
-      const file_path = res.data
-      if (file_name.includes('jpg') || file_name.includes('png')) {
-        window.open(file_path, '_blank')
-      } else {
-        let aLink = document.createElement('a')
-        aLink.href = file_path
-        aLink.download = file_name
-        Message.loading('文件下载中，请到下载中心查看~')
-        document.body.appendChild(aLink)
-        aLink.click()
-        document.body.removeChild(aLink)
-      }
-    } catch (error) {
-      console.log(error)
-    }
-  }
-
-  function isDownloadDisabled(record: any) {
-    return !isAllowDownload(record)
-  }
-
-  function isAllowDownload(record: any) {
-    const value = record?.allow_download
-    if (typeof value === 'boolean') return value
-    if (typeof value === 'number') return value === 1
-    if (typeof value === 'string') return ['true', '1', 'yes', 'on'].includes(value.toLowerCase())
-    return false
-  }
-
-  function formatFileSize(size: number | string | null | undefined) {
-    const value = Number(size || 0)
-    if (!value) return '-'
-    const units = ['B', 'KB', 'MB', 'GB', 'TB']
-    let current = value
-    for (const unit of units) {
-      if (current < 1024 || unit === units[units.length - 1]) {
-        return unit === 'B' ? `${Math.round(current)} ${unit}` : `${current.toFixed(1)} ${unit}`
-      }
-      current /= 1024
-    }
-    return '-'
-  }
-
   onMounted(() => {
-    nextTick(async () => {
-      project.getProject()
-      getUserName().then((res) => setUpdateUserOptions(conditionItems, res.data || []))
-      doRefresh()
-    })
+    void doRefresh()
+    void loadUsers()
   })
 </script>
 <style scoped>
-  .full-width {
+  .mango-test-files-table {
     width: 100%;
   }
 </style>

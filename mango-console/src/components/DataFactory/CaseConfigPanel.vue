@@ -5,19 +5,22 @@
 
         size="small"
         type="primary"
+        :disabled="!!collectionPending"
         @click="open()"
         data-testid="qa-components-datafactory-caseconfigpanel-button-增加"
         >{{ local ? '选择模板' : '增加' }}</a-button
       >
     </div>
+    <div v-if="collectionOperationError" class="mango-soft-panel" role="alert">{{ collectionOperationError }} <a-button v-if="collectionCanRetry" size="small" :loading="!!collectionPending" @click="retryCollectionOperation()">重试</a-button></div>
+    <div v-if="collectionPending?.kind === 'sort'" class="mango-soft-panel" role="status"><a-spin :size="scaleDensityPixels(16)" /> 正在保存配置顺序…</div>
     <a-table
       :bordered="false"
       :columns="displayColumns"
-      :data="readonly ? configs : caseConfigList"
+      :data="caseConfigList"
       :loading="loading"
       :pagination="false"
       :row-key="'id'"
-      :draggable="readonly || local ? undefined : { type: 'handle', width: 40 }"
+      :draggable="readonly || local || collectionPending ? undefined : { type: 'handle', width: 40 }"
       :scroll="{ x: readonly ? 1000 : 970 }"
       size="small"
       @change="handleChange"
@@ -48,7 +51,7 @@
               {{
                 enumTitle(
                   enumStore.data_factory_cleanup_strategy,
-                  record.cleanup_strategy || record.template?.cleanup_strategy
+                  record.cleanup_strategy ?? record.template?.cleanup_strategy
                 )
               }}
             </a-tag>
@@ -58,7 +61,9 @@
             <a-switch
               v-else
               :beforeChange="(newValue) => switchStatus(newValue, record)"
-              :default-checked="record.status === 1"
+              :model-value="record.status === 1"
+              :loading="collectionPending?.kind === 'status' && String(collectionPending.recordId) === String(record.id)"
+              :disabled="!!collectionPending || local"
             />
           </template>
           <template v-else-if="item.key === 'stage'" #cell="{ record }">
@@ -67,11 +72,12 @@
           <template v-else-if="item.key === 'actions'" #cell="{ record }">
             <MangoTableActions
               :actions="[
-    { label: readonly ? '查看/预览' : '编辑/预览', onClick: () => open(record) },
+    { label: readonly ? '查看/预览' : '编辑/预览', disabled: !!collectionPending, onClick: () => open(record) },
     {
         label: '删除',
         hidden: readonly,
         danger: true,
+        disabled: !!collectionPending,
         loading: deleteLoading === record.id,
         onClick: () => deleteConfig(record),
     },
@@ -85,13 +91,14 @@
 
   <a-drawer
     v-model:visible="visible"
-    :title="readonly ? '查看数据工厂配置' : form.id ? '编辑数据工厂配置' : '新增数据工厂配置'"
+    :title="readonly ? '查看数据工厂配置' : form.id !== null ? '编辑数据工厂配置' : '新增数据工厂配置'"
     width="min(1480px, 96vw)"
     body-class="mango-data-factory-config-body"
     unmount-on-close
   >
     <div class="mango-data-factory-config-drawer">
-      <a-alert v-if="readonlyError" type="error">配置加载失败，请关闭后重试，并确认具备数据工厂模板和实体的查看权限。</a-alert>
+      <a-alert v-if="readonlyError" type="error">配置数据无效，请关闭后重新加载。</a-alert>
+      <a-alert v-if="collectionOperationError && !readonly" type="error">{{ collectionOperationError }}</a-alert>
       <a-form
         :model="form"
         :disabled="readonly"
@@ -109,6 +116,7 @@
               v-model="form.datasource_alias"
               :disabled="readonly"
               :options="datasourceAliasOptions"
+              :loading="editorPending.aliases"
               :field-names="{ value: 'id', label: 'name' }"
               allow-clear
               allow-search
@@ -227,7 +235,7 @@
               ]"
             >
               <div
-                v-if="!form.project_product || !form.datasource_alias || !form.module"
+                v-if="form.project_product == null || form.datasource_alias == null || form.module == null"
                 class="mango-empty-state mango-template-empty"
               >
                 请先选择项目/产品、逻辑数据库和模块名称
@@ -255,7 +263,7 @@
                   size="small"
                   type="primary"
                   :loading="previewLoading === 'form'"
-                  :disabled="!form.template"
+                  :disabled="form.template === null"
                   @click="openRelationPreview"
                   data-testid="qa-components-datafactory-caseconfigpanel-button-预览整体流程"
                 >
@@ -268,7 +276,7 @@
               </a-space>
             </div>
             <mango-panel-spin :loading="fieldLoading" class="mango-template-editor-spin">
-              <div v-if="form.template" class="mango-template-field-stack">
+              <div v-if="form.template !== null" class="mango-template-field-stack">
                 <section
                   :id="getTemplateSectionDomId(MAIN_TEMPLATE_SECTION_KEY)"
                   class="mango-section-card mango-case-config-field-card"
@@ -360,6 +368,7 @@
 
           type="primary"
           :loading="saving"
+          :disabled="!!collectionPending && !saving"
           @click="save()"
           data-testid="qa-components-datafactory-caseconfigpanel-button-确定"
           >确定</a-button
@@ -392,26 +401,31 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+  import { scaleDensityPixels } from '@/hooks/useDisplayDensity'
+  import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
+  import { reportLoadError } from '@/utils/load-error'
   import { useEnum } from '@/store/modules/get-enum'
+  import { useCaseConfigCollection } from './composables/useCaseConfigCollection'
+  import type { FactoryConfigId, FactoryConfigRecord, FactoryConfigSummary } from './case-config-record'
+  import { factoryConfigId, factoryConfigObject } from './case-config-record'
+  import { cloneLosslessJson } from '@/utils/lossless-json'
+  import { emptyFactoryPreview, factorySceneOverrides, readFactoryEditorTemplates, readFactoryFields, readFactoryOverrides, readFactoryPreview, type FactoryEditorDraft, type FactoryEditorItem, type FactoryEditorPreview, type FactoryEditorTemplate, type FactoryPreviewField } from './case-config-editor'
+  import type { FactoryConfigTemplate } from './case-config-record'
+  import { factoryConfigResponse } from './case-config-record'
 
   import DataFactoryRelationFlow from '@/components/DataFactory/DataFactoryRelationFlow.vue'
   import TemplateFieldConfigEditor from '@/components/DataFactory/TemplateFieldConfigEditor.vue'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
   import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
   import {
-    deleteDataFactoryCaseConfig,
-    getDataFactoryCaseConfig,
     getDataFactoryDatasourceAlias,
     getDataFactoryField,
     getDataFactoryTemplate,
-    postDataFactoryCaseConfig,
     postDataFactoryCaseConfigPreview,
-    putDataFactoryCaseConfig,
-    putDataFactoryCaseConfigSort,
   } from '@/api/data-factory'
   import type {
+    DataFactoryAnyFieldOverrides,
     DataFactoryFieldOverrides,
     DataFactoryFieldRule,
     DataFactoryOutputConfig,
@@ -425,7 +439,7 @@
       local?: boolean
       showAddButton?: boolean
       readonly?: boolean
-      configs?: any[]
+      configs?: unknown[]
     }>(),
     {
       caseId: null,
@@ -438,7 +452,8 @@
   )
   const emit = defineEmits<{
     (event: 'count-change', count: number): void
-    (event: 'update:configs', configs: any[]): void
+    (event: 'collection-state', state: FactoryConfigSummary): void
+    (event: 'update:configs', configs: Array<{ id: string; name: string; template: FactoryEditorTemplate; field_overrides: DataFactoryAnyFieldOverrides }>): void
   }>()
 
   const enumStore = useEnum()
@@ -506,41 +521,28 @@
     { title: '执行顺序', key: 'sort', dataIndex: 'sort', width: 80, align: 'center' },
     columns.find(item => item.key === 'actions')!,
   ] : columns)
-  const caseConfigList = ref<any[]>([])
-  const templateList = ref<any[]>([])
-  const datasourceAliasOptions = ref<any[]>([])
+  const templateList = ref<FactoryEditorTemplate[]>([])
+  const datasourceAliasOptions = ref<Array<{ id: FactoryConfigId; name: string }>>([])
   const expandedTemplateItemKeys = ref<string[]>([])
-  const fieldRows = ref<DataFactoryFieldRule[]>([])
-  const itemFieldsMap = ref<Record<string, DataFactoryFieldRule[]>>({})
-  const dependencyTemplateOptions = ref<Record<string, any[]>>({})
+  const fieldRows = ref<FactoryPreviewField[]>([])
+  const itemFieldsMap = ref<Record<string, FactoryPreviewField[]>>({})
+  const dependencyTemplateOptions = ref<Record<string, Array<{ label: string; value: FactoryConfigId }>>>({})
   const templateOutputConfig = ref<DataFactoryOutputConfig>([])
-  const loading = ref(false)
-  const templateLoading = ref(false)
-  const fieldLoading = ref(false)
-  const saving = ref(false)
   const visible = ref(false)
   const relationPreviewVisible = ref(false)
-  const previewLoading = ref<any>(null)
-  const deleteLoading = ref<number | null>(null)
-  const previewResult = ref<any>({})
+  type EditorResource = 'aliases' | 'templates' | 'fields' | 'dependencies' | 'preview'
+  type EditorChannel = 'aliases' | 'templates' | 'selected-template' | 'fields' | 'preview' | `item:${string}` | `dependency:${string}`
+  const editorPending = reactive<Record<EditorResource, boolean>>({ aliases: false, templates: false, fields: false, dependencies: false, preview: false })
+  const templateLoading = computed({ get: () => editorPending.templates, set: (value: boolean) => { editorPending.templates = value } })
+  const fieldLoading = computed({ get: () => editorPending.fields, set: (value: boolean) => { editorPending.fields = value } })
+  const previewLoading = computed({ get: () => editorPending.preview ? 'form' : null, set: (value: 'form' | null) => { editorPending.preview = value !== null } })
+  const editorFailures = ref<Array<{ key: EditorChannel; resource: EditorResource; message: string; retry: () => Promise<boolean> }>>([])
+  const editorRequests = new Map<EditorChannel, number>(), editorActive = new Map<EditorResource, Set<EditorChannel>>()
+  const previewResult = ref<FactoryEditorPreview>(emptyFactoryPreview())
   const previewTimerId = ref<number>()
   const activeTemplateSectionKey = ref(MAIN_TEMPLATE_SECTION_KEY)
 
-  const form = reactive<{
-    id: number | null
-    source_type: number | undefined
-    source_id: string | number | null
-    project_product: string | number | null
-    datasource_alias: string | number | null
-    module: string | number | null
-    template: number | null
-    name: string
-    sort: number
-    field_overrides: any
-    cleanup_strategy: number | null
-    status: number
-    stage: number
-  }>({
+  const form = reactive<FactoryEditorDraft>({
     id: null,
     source_type: props.sourceType,
     source_id: props.caseId,
@@ -555,6 +557,22 @@
     status: 1,
     stage: 1,
   })
+  let closeDeleteConfirmation: (() => void) | null = null
+  const collection = useCaseConfigCollection({
+    caseId: () => props.caseId, sourceType: () => props.sourceType, readonly: () => props.readonly, local: () => props.local, configs: () => props.configs,
+    changed: state => { emit('collection-state', state); if (state.count !== null) emit('count-change', state.count) },
+    invalidated: () => {
+      invalidateEditorRequests()
+      closeDeleteConfirmation?.(); closeDeleteConfirmation = null
+      visible.value = false; relationPreviewVisible.value = false
+      templateLoading.value = false; fieldLoading.value = false; previewLoading.value = null
+      templateList.value = []; datasourceAliasOptions.value = []; fieldRows.value = []; itemFieldsMap.value = {}; dependencyTemplateOptions.value = {}; previewResult.value = emptyFactoryPreview()
+      if (previewTimerId.value) window.clearTimeout(previewTimerId.value)
+    },
+  })
+  const { rows: caseConfigList, loading, loadError: collectionLoadError, operationError: collectionOperationError, pending: collectionPending, load: refresh, retry: retryCollectionOperation, canRetry: collectionCanRetry } = collection
+  const saving = computed(() => collectionPending.value?.kind === 'save')
+  const deleteLoading = computed(() => collectionPending.value?.kind === 'delete' ? collectionPending.value.recordId : null)
 
   const cleanupStrategyOptions = computed(() => [
     { key: null, title: '使用模板默认策略' },
@@ -573,200 +591,124 @@
   const templateNavCount = computed(() =>
     currentTemplate.value ? 1 + selectedTemplateItems.value.length : 0
   )
-  const isSceneOverrideShape = computed(
-    () =>
-      Object.prototype.hasOwnProperty.call(form.field_overrides || {}, '__main__') ||
-      Object.prototype.hasOwnProperty.call(form.field_overrides || {}, '__items__')
-  )
-  const mainCaseOverrides = computed<DataFactoryFieldOverrides>(() =>
-    isSceneOverrideShape.value ? form.field_overrides?.__main__ || {} : form.field_overrides || {}
-  )
+  const mainCaseOverrides = computed(() => factorySceneOverrides(form.field_overrides).__main__)
 
-  function enumTitle(options: any[] = [], value: any) {
-    return options.find((item) => item.key === value)?.title || value || '-'
-  }
-
-  function getTemplateEntityName(template: any) {
-    return (
-      template?.entity?.name ||
-      template?.entity_name ||
-      template?.entity?.id ||
-      template?.entity ||
-      '-'
-    )
-  }
-
-  function getTemplateTableName(template: any) {
-    return template?.entity?.table_name || template?.table_name || '-'
-  }
-
-  function getTemplateItemCount(template: any) {
-    return template?.items?.length || 0
-  }
-
-  function getTemplateCleanupText(template: any) {
-    return enumTitle(
-      enumStore.data_factory_cleanup_strategy,
-      template?.cleanup_strategy ?? form.cleanup_strategy
-    )
-  }
-
-  function getOptionId(value: any) {
-    if (Array.isArray(value)) {
-      return value[value.length - 1] ?? null
+  function enumTitle(options: unknown = [], value: unknown) {
+    if (Array.isArray(options)) {
+      const match = options.find(item => item && typeof item === 'object' && factoryConfigObject(item).key === value)
+      if (match) { const title = factoryConfigObject(match).title; if (typeof title === 'string') return title }
     }
-    return value?.id ?? value
+    return value == null || value === '' ? '-' : String(value)
+  }
+  function getTemplateEntityName(template: FactoryConfigTemplate | undefined | null) { return template?.entity?.name || (template?.entity?.id ?? '-') }
+  function getTemplateTableName(template: FactoryConfigTemplate | undefined | null) { return template?.entity?.table_name || '-' }
+  function getTemplateItemCount(template: FactoryEditorTemplate | undefined | null) { return template?.items.length ?? 0 }
+  function getTemplateCleanupText(template: FactoryConfigTemplate | undefined | null) { return enumTitle(enumStore.data_factory_cleanup_strategy, template?.cleanup_strategy ?? form.cleanup_strategy) }
+
+  function getOptionId(value: unknown): FactoryConfigId | null {
+    if (Array.isArray(value)) return factoryConfigId(value[value.length - 1])
+    return value && typeof value === 'object' ? factoryConfigId(factoryConfigObject(value).id) : factoryConfigId(value)
   }
 
-  function refresh() {
-    if (props.local) {
-      caseConfigList.value = props.configs.map(record => ({ ...record }))
-      emit('count-change', caseConfigList.value.length)
-      return
+  function handleChange(data: FactoryConfigRecord[]) {
+    return collection.sort(data.map(item => item.id))
+  }
+
+  function invalidateEditorRequests() {
+    readonlyRequestVersion++
+    editorRequests.clear(); editorActive.clear(); editorFailures.value = []
+    for (const key of Object.keys(editorPending) as EditorResource[]) editorPending[key] = false
+    if (previewTimerId.value) window.clearTimeout(previewTimerId.value)
+  }
+  async function editorRead<T>(key: EditorChannel, resource: EditorResource, signature: () => string, request: () => Promise<T>, apply: (value: T) => void | Promise<void>): Promise<boolean> {
+    const valid = collection.capture(), revision = readonlyRequestVersion, context = signature(), sequence = (editorRequests.get(key) ?? 0) + 1
+    if (!valid() || !visible.value) return false
+    editorRequests.set(key, sequence)
+    const current = () => valid() && visible.value && revision === readonlyRequestVersion && context === signature() && editorRequests.get(key) === sequence
+    const active = editorActive.get(resource) ?? new Set<EditorChannel>()
+    active.add(key); editorActive.set(resource, active); editorPending[resource] = true
+    editorFailures.value = editorFailures.value.filter(item => item.key !== key)
+    try {
+      const value = await request()
+      if (!current()) return false
+      await apply(value); return current()
+    } catch (failure) {
+      if (current()) {
+        const names = { aliases: '逻辑数据库', templates: '场景模板', fields: '模板字段', dependencies: '依赖模板', preview: '配置预览' }
+        reportLoadError(failure, `${names[resource]}加载失败，请重试`)
+        editorFailures.value = [...editorFailures.value.filter(item => item.key !== key), { key, resource, message: `${names[resource]}加载失败，请重试`, retry: () => current() ? editorRead(key, resource, signature, request, apply) : Promise.resolve(false) }]
+      }
+      return false
+    } finally {
+      if (revision === readonlyRequestVersion && editorRequests.get(key) === sequence) {
+        active.delete(key); editorPending[resource] = active.size > 0
+      }
     }
-    if (props.readonly) return
-    if (!props.caseId || !props.sourceType) {
-      caseConfigList.value = []
-      emit('count-change', 0)
-      return
-    }
-    loading.value = true
-    getDataFactoryCaseConfig({ source_type: props.sourceType, source_id: props.caseId })
-      .then((res) => {
-        caseConfigList.value = res.data || []
-        emit('count-change', caseConfigList.value.length)
-      })
-      .finally(() => {
-        loading.value = false
-      })
   }
-
-  function handleChange(_data: any[]) {
-    if (props.readonly || props.local) return
-    caseConfigList.value = _data.map((item, index) => ({
-      ...item,
-      sort: index,
-    }))
-    putDataFactoryCaseConfigSort({
-      source_type: props.sourceType,
-      case_sort_list: caseConfigList.value.map((item, index) => ({
-        id: item.id,
-        sort: index,
-      })),
-    })
-      .then((res) => {
-        Message.success(res.msg)
-      })
-      .catch(() => {
-        refresh()
-      })
-  }
-
-  function loadDatasourceAliases(projectProduct: any) {
+  function loadDatasourceAliases(projectProduct: unknown) {
     const projectProductId = getOptionId(projectProduct)
-    datasourceAliasOptions.value = []
-    if (!projectProductId) {
-      return Promise.resolve()
-    }
-    return getDataFactoryDatasourceAlias({
-      project_product: projectProductId,
-      status: 1,
-      page: 1,
-      pageSize: 9999,
-    }).then((res) => {
-      datasourceAliasOptions.value = res.data || []
-    })
+    if (projectProductId === null) { datasourceAliasOptions.value = []; return Promise.resolve(false) }
+    return editorRead('aliases', 'aliases', () => JSON.stringify([getOptionId(form.project_product), props.projectProductId]),
+      async () => {
+        const values = factoryConfigResponse(await getDataFactoryDatasourceAlias({ project_product: projectProductId, status: 1, page: 1, pageSize: 9999 }))
+        if (!Array.isArray(values)) throw Error('Invalid datasource aliases')
+        return values.map(value => { const row = factoryConfigObject(value), id = factoryConfigId(row.id); if (id === null || typeof row.name !== 'string') throw Error('Invalid datasource alias'); return { id, name: row.name } })
+      }, values => { datasourceAliasOptions.value = values })
   }
-
   function loadTemplates() {
-    const projectProduct = getOptionId(form.project_product || props.projectProductId)
-    const datasourceAlias = getOptionId(form.datasource_alias)
-    const module = getOptionId(form.module)
-    if (!projectProduct || !datasourceAlias || !module) {
-      templateList.value = []
-      return Promise.resolve()
-    }
-    const query: any = {
-      page: 1,
-      pageSize: 9999,
-      project_product: projectProduct,
-      entity__datasource_alias_id: datasourceAlias,
-      module,
-      usage_scope: TEMPLATE_USAGE_CASE,
-    }
-    templateLoading.value = true
-    return getDataFactoryTemplate(query)
-      .then((res) => {
-        templateList.value = res.data || []
-      })
-      .finally(() => {
-        templateLoading.value = false
+    const projectProduct = getOptionId(form.project_product ?? props.projectProductId), datasourceAlias = getOptionId(form.datasource_alias), module = getOptionId(form.module)
+    if (projectProduct === null || datasourceAlias === null || module === null) { templateList.value = []; return Promise.resolve(false) }
+    return editorRead('templates', 'templates', () => JSON.stringify([form.project_product, form.datasource_alias, form.module]),
+      async () => readFactoryEditorTemplates(factoryConfigResponse(await getDataFactoryTemplate({ page: 1, pageSize: 9999, project_product: projectProduct, entity__datasource_alias_id: datasourceAlias, module, usage_scope: TEMPLATE_USAGE_CASE }))),
+      values => {
+        const selected = templateList.value.find(item => String(item.id) === String(form.template))
+        templateList.value = selected && !values.some(item => String(item.id) === String(selected.id)) ? [...values, selected] : values
       })
   }
 
-  function resetForm(record: any = null) {
-    const template = record?.template || {}
-    form.id = record?.id || null
+  function resetForm(record: FactoryConfigRecord | null = null) {
+    const template = record?.template ?? null
+    form.id = record?.id ?? null
     form.source_type = props.sourceType
     form.source_id = record?.source_id ?? props.caseId
-    form.project_product =
-      template?.project_product?.id || template?.project_product || props.projectProductId || null
-    form.datasource_alias =
-      template?.entity?.datasource_alias?.id || template?.entity?.datasource_alias || null
-    form.module = template?.module?.id || template?.module || null
-    form.template = template?.id || record?.template || null
+    form.project_product = getOptionId(template?.project_product) ?? props.projectProductId ?? null
+    form.datasource_alias = getOptionId(template?.entity?.datasource_alias)
+    form.module = getOptionId(template?.module)
+    form.template = getOptionId(record?.template)
     form.name = props.local ? 'data' : record?.name || ''
     form.sort = record?.sort ?? caseConfigList.value.length
-    form.field_overrides = record?.field_overrides || {}
+    form.field_overrides = readFactoryOverrides(record?.field_overrides)
     form.cleanup_strategy = record ? record.cleanup_strategy ?? null : 1
     form.status = record?.status ?? 1
-    form.stage = record?.stage || 1
-    templateOutputConfig.value = record?.template?.output_config || []
+    form.stage = record?.stage ?? 1
+    templateOutputConfig.value = cloneLosslessJson(record?.template?.output_config ?? [])
     fieldRows.value = []
     itemFieldsMap.value = {}
     expandedTemplateItemKeys.value = []
     activeTemplateSectionKey.value = MAIN_TEMPLATE_SECTION_KEY
-    previewResult.value = {}
+    previewResult.value = emptyFactoryPreview()
   }
 
-  async function open(record: any = null) {
-    if (props.readonly) {
-      if (record) void openReadonly(record)
-      return
-    }
-    readonlyError.value = false
-    resetForm(record)
+  async function open(record: FactoryConfigRecord | null = null) {
+    if (collectionPending.value || !collection.capture()()) return
+    if (props.readonly) { if (record) await openReadonly(record); return }
+    invalidateEditorRequests(); readonlyError.value = false
+    try { resetForm(record) } catch { readonlyError.value = true; visible.value = true; return }
     visible.value = true
-    if (props.local && record?.template) {
-      const request = ++readonlyRequestVersion
-      templateLoading.value = true
-      try {
-        const id = record.template?.id || record.template
-        const response = await getDataFactoryTemplate({ id, page: 1, pageSize: 1 })
-        if (request !== readonlyRequestVersion || !visible.value) return
-        const template = (response.data || []).find((item: any) => Number(item.id) === Number(id))
-        if (!template) { readonlyError.value = true; return }
-        resetForm({ ...record, template })
-      } catch {
-        if (request === readonlyRequestVersion) readonlyError.value = true
-        return
-      } finally { if (request === readonlyRequestVersion) templateLoading.value = false }
+    const current = collection.capture(), revision = readonlyRequestVersion
+    const valid = () => current() && visible.value && revision === readonlyRequestVersion
+    const snapshot = record ? cloneLosslessJson(record) : null
+    if (snapshot) {
+      await loadSelectedTemplate(snapshot)
+      if (!valid()) return
+      if (props.local) return
     }
-    loadDatasourceAliases(form.project_product).then(() => {
-      if (form.project_product && form.datasource_alias && form.module) {
-        loadTemplates().then(() => {
-          if (form.template) {
-            loadFields()
-            scheduleCasePreview()
-          }
-        })
-      } else {
-        templateList.value = []
-      }
-    })
+    await loadDatasourceAliases(form.project_product)
+    if (valid() && form.project_product != null && form.datasource_alias !== null && form.module !== null) await loadTemplates()
   }
 
   function resetTemplateSelection() {
+    dependencyTemplateOptions.value = {}
     form.template = null
     form.field_overrides = {}
     templateOutputConfig.value = []
@@ -774,47 +716,37 @@
     itemFieldsMap.value = {}
     expandedTemplateItemKeys.value = []
     activeTemplateSectionKey.value = MAIN_TEMPLATE_SECTION_KEY
-    previewResult.value = {}
+    previewResult.value = emptyFactoryPreview()
   }
 
-  async function openReadonly(record: any) {
-    const version = ++readonlyRequestVersion
-    resetForm(record)
-    templateList.value = []
-    readonlyError.value = false
+  async function loadSelectedTemplate(record: FactoryConfigRecord): Promise<boolean> {
+    const id = record.template?.id
+    if (id == null) { readonlyError.value = true; return false }
+    return editorRead('selected-template', 'templates', () => String(form.template),
+      async () => {
+        const values = readFactoryEditorTemplates(factoryConfigResponse(await getDataFactoryTemplate({ id, page: 1, pageSize: 1 })))
+        const template = values.find(item => String(item.id) === String(id))
+        if (!template) throw Error('Missing selected template')
+        return template
+      }, async template => {
+        if (props.local || props.readonly) resetForm({ ...record, template })
+        templateList.value = [...templateList.value.filter(item => String(item.id) !== String(id)), template]
+        if (props.readonly) { const alias = template.entity?.datasource_alias; datasourceAliasOptions.value = alias?.id != null ? [{ id: alias.id, name: alias.name }] : [] }
+        const current = collection.capture(), revision = readonlyRequestVersion
+        await loadFields()
+        if (current() && visible.value && revision === readonlyRequestVersion) await loadCasePreview()
+      })
+  }
+  async function openReadonly(record: FactoryConfigRecord) {
+    invalidateEditorRequests(); readonlyError.value = false
+    try { resetForm(record) } catch { readonlyError.value = true; visible.value = true; return }
     visible.value = true
-    templateLoading.value = true
-    fieldLoading.value = true
-    try {
-      const response = await getDataFactoryTemplate({ id: form.template, page: 1, pageSize: 1 })
-      if (version !== readonlyRequestVersion) return
-      const template = (response.data || []).find((item: any) => Number(item.id) === Number(form.template))
-      if (!template) {
-        readonlyError.value = true
-        return
-      }
-      resetForm({ ...record, template })
-      templateList.value = [template]
-      const alias = template.entity?.datasource_alias
-      datasourceAliasOptions.value = alias && typeof alias === 'object' ? [alias] : []
-      const entityId = template.entity?.id || template.entity
-      const fieldResponse = await getDataFactoryField({ entity: entityId })
-      if (version !== readonlyRequestVersion) return
-      fieldRows.value = fieldResponse.data || []
-      await loadItemFields(version)
-      if (version !== readonlyRequestVersion) return
-      if (true) await loadCasePreview()
-    } catch {
-      if (version === readonlyRequestVersion) readonlyError.value = true
-    } finally {
-      if (version === readonlyRequestVersion) {
-        templateLoading.value = false
-        fieldLoading.value = false
-      }
-    }
+    const current = collection.capture(), revision = readonlyRequestVersion
+    if (!await loadSelectedTemplate(cloneLosslessJson(record)) || !current() || !visible.value || revision !== readonlyRequestVersion) return
   }
 
   function onProjectProductChange() {
+    invalidateEditorRequests()
     form.datasource_alias = null
     form.module = null
     resetTemplateSelection()
@@ -824,20 +756,25 @@
   }
 
   function onDatasourceAliasChange() {
+    invalidateEditorRequests()
     resetTemplateSelection()
     templateList.value = []
-    if (form.module) {
+    if (form.module !== null) {
       loadTemplates()
     }
   }
 
   function onModuleChange() {
+    invalidateEditorRequests()
     resetTemplateSelection()
     loadTemplates()
   }
 
   function onTemplateChange() {
-    const template = templateList.value.find((item) => item.id === form.template)
+    invalidateEditorRequests()
+    dependencyTemplateOptions.value = {}
+    form.template = getOptionId(form.template)
+    const template = templateList.value.find((item) => String(item.id) === String(form.template))
     if (!form.name && template?.name) {
       form.name = template.name
     }
@@ -845,82 +782,38 @@
     form.field_overrides = normalizeSceneOverrides(template?.field_overrides || {})
     itemFieldsMap.value = {}
     expandedTemplateItemKeys.value = []
-    previewResult.value = {}
+    previewResult.value = emptyFactoryPreview()
     loadFields()
     scheduleCasePreview()
   }
 
-  function loadFields() {
-    const template = templateList.value.find((item) => item.id === form.template)
-    const entityId = template?.entity?.id || template?.entity
-    if (!entityId) {
-      fieldRows.value = []
-      return
-    }
-    fieldLoading.value = true
-    getDataFactoryField({ entity: entityId })
-      .then((res) => {
-        fieldRows.value = res.data || []
-        preloadDependencyTemplateOptions()
-        return loadItemFields()
-      })
-      .finally(() => {
-        fieldLoading.value = false
-      })
+  async function loadFields() {
+    const template = templateList.value.find(item => String(item.id) === String(form.template)), entityId = template?.entity?.id
+    if (entityId == null) { fieldRows.value = []; return false }
+    const results = await Promise.all([
+      editorRead('fields', 'fields', () => JSON.stringify([form.template, currentTemplate.value?.entity?.id]), async () => readFactoryFields(factoryConfigResponse(await getDataFactoryField({ entity: entityId }))), values => { fieldRows.value = values; preloadDependencyTemplateOptions() }),
+      loadItemFields(),
+    ])
+    return results.every(Boolean)
   }
-
+  function dependencyEntityId(row: DataFactoryFieldRule) { const config = row.generator_config; return config && 'dependency_entity_id' in config ? factoryConfigId(config.dependency_entity_id) : null }
   function loadDependencyTemplateOptions(row: DataFactoryFieldRule) {
-    const dependencyEntityId = (row.generator_config as any)?.dependency_entity_id
-    const projectProduct = getOptionId(form.project_product || props.projectProductId)
-    if (!dependencyEntityId || !projectProduct) {
-      return
-    }
-    const cacheKey = String(dependencyEntityId)
-    if (dependencyTemplateOptions.value[cacheKey]) {
-      return
-    }
-    getDataFactoryTemplate({
-      project_product: projectProduct,
-      entity: dependencyEntityId,
-      page: 1,
-      pageSize: 9999,
-    }).then((res) => {
-      dependencyTemplateOptions.value = {
-        ...dependencyTemplateOptions.value,
-        [cacheKey]: (res.data || []).map((template: any) => ({
-          label: template.name,
-          value: template.id,
-        })),
-      }
-    })
+    const entityId = dependencyEntityId(row), projectProduct = getOptionId(form.project_product ?? props.projectProductId)
+    if (entityId === null || projectProduct === null) return Promise.resolve(false)
+    const cacheKey = String(entityId)
+    if (dependencyTemplateOptions.value[cacheKey]) return Promise.resolve(true)
+    return editorRead(`dependency:${cacheKey}`, 'dependencies', () => JSON.stringify([form.project_product, form.template]),
+      async () => readFactoryEditorTemplates(factoryConfigResponse(await getDataFactoryTemplate({ project_product: projectProduct, entity: entityId, page: 1, pageSize: 9999 }))).map(template => ({ label: template.name, value: template.id })),
+      values => { dependencyTemplateOptions.value = { ...dependencyTemplateOptions.value, [cacheKey]: values } })
   }
+  function preloadDependencyTemplateOptions() { fieldRows.value.filter(row => dependencyEntityId(row) !== null).forEach(row => { void loadDependencyTemplateOptions(row) }) }
 
-  function preloadDependencyTemplateOptions() {
-    fieldRows.value
-      .filter((row: any) => row.generator_config?.dependency_entity_id)
-      .forEach((row) => loadDependencyTemplateOptions(row))
-  }
-
-  function normalizeSceneOverrides(overrides: any): any {
-    if (
-      Object.prototype.hasOwnProperty.call(overrides || {}, '__main__') ||
-      Object.prototype.hasOwnProperty.call(overrides || {}, '__items__')
-    ) {
-      return {
-        __main__: overrides.__main__ || {},
-        __items__: overrides.__items__ || {},
-      }
-    }
-    return {
-      __main__: overrides || {},
-      __items__: {},
-    }
-  }
+  function normalizeSceneOverrides(overrides: DataFactoryAnyFieldOverrides) { return factorySceneOverrides(overrides) }
 
   function updateMainCaseOverrides(value: DataFactoryFieldOverrides) {
     form.field_overrides = {
       __main__: value,
-      __items__: form.field_overrides?.__items__ || {},
+      __items__: factorySceneOverrides(form.field_overrides).__items__,
     }
     scheduleCasePreview()
   }
@@ -929,16 +822,16 @@
     templateOutputConfig.value = value
   }
 
-  function getItemCaseKey(item: any) {
-    return String(item.id || item.name || item.child_template)
+  function getItemCaseKey(item: FactoryEditorItem) {
+    return String(item.id ?? (item.name || item.child_template))
   }
 
-  function getItemTemplateName(item: any) {
+  function getItemTemplateName(item: FactoryEditorItem) {
     return item.name || item.child_template_detail?.name || item.child_template || '-'
   }
 
-  function getItemTemplateMeta(item: any) {
-    const template = item.child_template_detail || {}
+  function getItemTemplateMeta(item: FactoryEditorItem) {
+    const template = item.child_template_detail
     return `${getTemplateEntityName(template)} / ${getTemplateTableName(template)}`
   }
 
@@ -960,7 +853,7 @@
     scrollToTemplateSection(MAIN_TEMPLATE_SECTION_KEY)
   }
 
-  function scrollToTemplateItem(item: any) {
+  function scrollToTemplateItem(item: FactoryEditorItem) {
     const key = getItemCaseKey(item)
     if (!expandedTemplateItemKeys.value.includes(key)) {
       expandedTemplateItemKeys.value = [...expandedTemplateItemKeys.value, key]
@@ -968,35 +861,35 @@
     scrollToTemplateSection(key)
   }
 
-  function isItemExpanded(item: any) {
+  function isItemExpanded(item: FactoryEditorItem) {
     return expandedTemplateItemKeys.value.includes(getItemCaseKey(item))
   }
 
-  function toggleItemExpanded(item: any) {
+  function toggleItemExpanded(item: FactoryEditorItem) {
     const key = getItemCaseKey(item)
     expandedTemplateItemKeys.value = isItemExpanded(item)
       ? expandedTemplateItemKeys.value.filter((itemKey) => itemKey !== key)
       : [...expandedTemplateItemKeys.value, key]
   }
 
-  function getItemCaseOverrides(item: any): DataFactoryFieldOverrides {
-    return form.field_overrides?.__items__?.[getItemCaseKey(item)] || {}
+  function getItemCaseOverrides(item: FactoryEditorItem): DataFactoryFieldOverrides {
+    return factorySceneOverrides(form.field_overrides).__items__[getItemCaseKey(item)] || {}
   }
 
-  function updateItemCaseOverrides(item: any, value: DataFactoryFieldOverrides) {
+  function updateItemCaseOverrides(item: FactoryEditorItem, value: DataFactoryFieldOverrides) {
     form.field_overrides = {
       __main__: mainCaseOverrides.value,
       __items__: {
-        ...(form.field_overrides?.__items__ || {}),
+        ...(factorySceneOverrides(form.field_overrides).__items__),
         [getItemCaseKey(item)]: value,
       },
     }
     scheduleCasePreview()
   }
 
-  function getItemPreviewFields(item: any) {
+  function getItemPreviewFields(item: FactoryEditorItem) {
     const itemKey = getItemCaseKey(item)
-    const itemPreview = (previewResult.value?.items || []).find((previewItem: any) =>
+    const itemPreview = (previewResult.value?.items || []).find((previewItem) =>
       [previewItem.id, previewItem.name, previewItem.template?.id]
         .filter((value) => value !== undefined && value !== null && value !== '')
         .some((value) => String(value) === itemKey)
@@ -1011,160 +904,81 @@
     }
   }
 
-  function loadItemFields(version?: number) {
-    const tasks = selectedTemplateItems.value.map((item: any) => {
-      const entityId = item.child_template_detail?.entity?.id || item.child_template_detail?.entity
-      if (!entityId) {
-        return Promise.resolve()
-      }
-      return getDataFactoryField({ entity: entityId }).then((res) => {
-        if (version !== undefined && version !== readonlyRequestVersion) return
-        itemFieldsMap.value = {
-          ...itemFieldsMap.value,
-          [String(item.id)]: res.data || [],
-        }
-      })
-    })
-    return Promise.all(tasks)
+  async function loadItemFields() {
+    const results = await Promise.all(selectedTemplateItems.value.map(item => {
+      const entityId = item.child_template_detail?.entity?.id
+      if (entityId == null) return Promise.resolve(true)
+      const key = getItemCaseKey(item)
+      return editorRead(`item:${key}`, 'fields', () => JSON.stringify([form.template, selectedTemplateItems.value.find(value => getItemCaseKey(value) === key)?.child_template_detail?.entity?.id]),
+        async () => readFactoryFields(factoryConfigResponse(await getDataFactoryField({ entity: entityId }))), values => { itemFieldsMap.value = { ...itemFieldsMap.value, [String(item.id)]: values } })
+    }))
+    return results.every(Boolean)
   }
 
   async function save() {
-    if (props.readonly) return false
-    if (!form.template) {
-      Message.error('请选择场景模板')
-      return false
-    }
-    if (!form.name) {
-      Message.error('请填写数据名称')
-      return false
-    }
-    if (!props.local && !props.caseId) {
-      Message.error('用例ID不能为空')
-      return false
-    }
+    if (!visible.value || props.readonly || collectionPending.value || !collection.capture()()) return false
+    if (form.template === null) { Message.error('请选择场景模板'); return false }
+    if (!form.name) { Message.error('请填写数据名称'); return false }
+    if (!props.local && factoryConfigId(props.caseId) === null) { Message.error('用例ID不能为空'); return false }
     if (props.local) {
       const template = currentTemplate.value
       if (!template) return false
-      emit('update:configs', [{ id: 'local', name: 'data', template, field_overrides: form.field_overrides }])
+      emit('update:configs', cloneLosslessJson([{ id: 'local', name: 'data', template, field_overrides: form.field_overrides }]))
       visible.value = false
       return true
     }
-    saving.value = true
-    const payload = {
-      id: form.id,
-      source_type: props.sourceType,
-      source_id: props.caseId,
-      template: form.template,
-      name: form.name,
-      sort: form.sort,
+    const revision = readonlyRequestVersion
+    const result = await collection.save({
+      id: form.id, template: form.template, name: form.name, sort: form.sort,
       field_overrides: form.field_overrides,
-      cleanup_strategy: (form.cleanup_strategy as any) === '' ? null : form.cleanup_strategy,
-      status: form.status,
-      stage: form.stage,
-    }
-    try {
-      const res = payload.id
-        ? await putDataFactoryCaseConfig(payload)
-        : await postDataFactoryCaseConfig(payload)
-      Message.success(res.msg)
-      visible.value = false
-      refresh()
-      return true
-    } catch (error) {
-      return false
-    } finally {
-      saving.value = false
-    }
-  }
-
-  function switchStatus(newValue: boolean, record: any) {
-    if (props.local) return Promise.resolve(false)
-    return new Promise<boolean>((resolve, reject) => {
-      putDataFactoryCaseConfig({
-        id: record.id,
-        source_type: props.sourceType,
-        source_id: props.caseId,
-        template: record.template?.id || record.template,
-        name: record.name,
-        sort: record.sort,
-        field_overrides: record.field_overrides || {},
-        cleanup_strategy: record.cleanup_strategy ?? null,
-        status: newValue ? 1 : 0,
-        stage: record.stage || 1,
-      })
-        .then((res) => {
-          Message.success(res.msg)
-          refresh()
-          resolve(res.code === 200)
-        })
-        .catch(reject)
+      cleanup_strategy: form.cleanup_strategy === null ? null : form.cleanup_strategy,
+      status: form.status, stage: form.stage,
     })
+    if (result.accepted && result.current() && revision === readonlyRequestVersion && visible.value) visible.value = false
+    return result.accepted && result.current()
   }
 
-  function deleteConfig(record: any) {
-    Modal.confirm({
-      title: '提示',
-      content: '确定要删除这个数据工厂配置吗？',
-      cancelText: '取消',
-      okText: '删除',
-      onBeforeOk: () => {
-        if (props.local) {
-          emit('update:configs', [])
-          return true
-        }
-        deleteLoading.value = record.id
-        return deleteDataFactoryCaseConfig(record.id)
-          .then((res) => {
-            Message.success(res.msg)
-            refresh()
-          })
-          .finally(() => {
-            deleteLoading.value = null
-          })
+  function switchStatus(newValue: boolean, record: FactoryConfigRecord) {
+    return collection.status(record.id, newValue)
+  }
+
+  function deleteConfig(record: FactoryConfigRecord) {
+    const current = collection.capture(), id = record.id
+    if (props.readonly || collectionPending.value || closeDeleteConfirmation || !current()) return
+    let open = true
+    const close = () => { if (!open) return; open = false; closeDeleteConfirmation = null; shell.close() }
+    const shell = Modal.confirm({
+      title: '提示', content: '确定要删除这个数据工厂配置吗？', cancelText: '取消', okText: '删除',
+      onCancel: close,
+      onBeforeOk: async () => {
+        if (!open || !current()) { close(); return false }
+        if (props.local) { emit('update:configs', []); close(); return true }
+        const result = await collection.remove(id, current)
+        if (result.accepted && result.current()) { close(); return true }
+        return false
       },
     })
+    closeDeleteConfirmation = close
   }
 
   function scheduleCasePreview() {
+    if (!visible.value || !collection.capture()()) return
+    const current = collection.capture(), revision = readonlyRequestVersion
     if (previewTimerId.value) {
       window.clearTimeout(previewTimerId.value)
     }
     previewTimerId.value = window.setTimeout(() => {
-      loadCasePreview()
+      if (current() && visible.value && revision === readonlyRequestVersion) void loadCasePreview()
     }, 360)
   }
 
   function loadCasePreview() {
-    const version = readonlyRequestVersion
     const templateId = form.template
-    if (!templateId) {
-      previewResult.value = {}
-      return
-    }
-    previewLoading.value = 'form'
-    return postDataFactoryCaseConfigPreview({
-      source_type: props.sourceType,
-      source_id: props.caseId,
-      template_id: templateId,
-      field_overrides: form.field_overrides || {},
-      preview_mode: 'configuration',
-    })
-      .then((res) => {
-        if ((props.readonly || props.local) && version !== readonlyRequestVersion) return
-        previewResult.value = res.data || {}
-      })
-      .finally(() => {
-        if ((props.readonly || props.local) && version !== readonlyRequestVersion) return
-        previewLoading.value = null
-      })
+    if (templateId === null) { previewResult.value = emptyFactoryPreview(); return Promise.resolve(false) }
+    const payload = { source_type: props.sourceType, source_id: props.caseId, template_id: templateId, field_overrides: cloneLosslessJson(form.field_overrides), preview_mode: 'configuration' }
+    return editorRead('preview', 'preview', () => JSON.stringify([form.template, form.field_overrides]),
+      async () => readFactoryPreview(factoryConfigResponse(await postDataFactoryCaseConfigPreview(payload))), values => { previewResult.value = values })
   }
-
-  watch(
-    () => [props.caseId, props.sourceType, props.readonly],
-    () => {
-      refresh()
-    }
-  )
 
   watch(
     () => props.projectProductId,
@@ -1172,33 +986,14 @@
       if (!visible.value) {
         return
       }
-      form.project_product = props.projectProductId || null
+      form.project_product = props.projectProductId ?? null
       onProjectProductChange()
     }
   )
 
-  watch(() => props.configs, () => { if (props.local) refresh() }, { deep: true })
 
-  watch(visible, next => {
-    if (!next && (props.readonly || props.local)) {
-      readonlyRequestVersion += 1
-      templateLoading.value = false
-      fieldLoading.value = false
-      previewLoading.value = null
-      relationPreviewVisible.value = false
-    }
-  })
-
-  onMounted(() => {
-    refresh()
-  })
-
-  onBeforeUnmount(() => {
-    readonlyRequestVersion += 1
-    if (previewTimerId.value) {
-      window.clearTimeout(previewTimerId.value)
-    }
-  })
+  watch(visible, next => { if (!next) { invalidateEditorRequests(); relationPreviewVisible.value = false } }, { flush: 'sync' })
+  onBeforeUnmount(() => invalidateEditorRequests())
 
   defineExpose({
     open,

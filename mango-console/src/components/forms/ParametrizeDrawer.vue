@@ -1,9 +1,28 @@
 <template>
-  <a-drawer :visible="visible" :width="1080" unmountOnClose @cancel="handleCancel" @ok="handleOk">
+  <a-drawer
+    :visible="visible"
+    :width="1080"
+    :ok-loading="saving"
+    :closable="!saving"
+    :mask-closable="!saving"
+    :cancel-button-props="{ disabled: saving }"
+    unmountOnClose
+    @cancel="handleCancel"
+    @ok="handleOk"
+  >
     <template #title> 用例套件</template>
+    <slot name="feedback" />
     <div>
       <a-space>
-        <a-button size="mini" type="primary" @click.stop="addTestSuite" data-testid="qa-components-forms-parametrizedrawer-button-增加测试套"> 增加测试套</a-button>
+        <a-button
+          :disabled="saving"
+          size="mini"
+          type="primary"
+          @click.stop="addTestSuite"
+          data-testid="qa-components-forms-parametrizedrawer-button-增加测试套"
+        >
+          增加测试套</a-button
+        >
       </a-space>
       <a-collapse :bordered="false" :default-active-key="[0]">
         <a-collapse-item
@@ -13,10 +32,22 @@
         >
           <template #extra>
             <a-space>
-              <a-button size="mini" type="primary" @click.stop="addParametrizeRow(item)" data-testid="qa-components-forms-parametrizedrawer-button-增加一行">
+              <a-button
+                :disabled="saving"
+                size="mini"
+                type="primary"
+                @click.stop="addParametrizeRow(item)"
+                data-testid="qa-components-forms-parametrizedrawer-button-增加一行"
+              >
                 增加一行
               </a-button>
-              <a-button size="mini" status="danger" @click.stop="removeTestSuite(index)" data-testid="qa-components-forms-parametrizedrawer-button-删除">
+              <a-button
+                :disabled="saving"
+                size="mini"
+                status="danger"
+                @click.stop="removeTestSuite(index)"
+                data-testid="qa-components-forms-parametrizedrawer-button-删除"
+              >
                 删除
               </a-button>
             </a-space>
@@ -30,6 +61,7 @@
                 class="mango-parametrize-name-tooltip"
               >
                 <a-input
+                  :disabled="saving"
                   :model-value="item.name"
                   class="mango-parametrize-name-input"
                   placeholder="请输入套件名称"
@@ -57,6 +89,7 @@
                   class="mango-parametrize-control-tooltip"
                 >
                   <a-select
+                    :disabled="saving"
                     :model-value="getParamEnvironmentValue(items)"
                     :options="environmentOptions"
                     :field-names="fieldNames"
@@ -74,6 +107,7 @@
                   class="mango-parametrize-control-tooltip"
                 >
                   <a-input
+                    :disabled="saving"
                     :model-value="items.key"
                     placeholder="请输入key"
                     data-testid="qa-components-forms-parametrizedrawer-input-请输入key"
@@ -95,7 +129,7 @@
                 >
                   <a-input
                     :model-value="items.value === null ? '' : items.value"
-                    :disabled="items.value === null"
+                    :disabled="saving || items.value === null"
                     :placeholder="items.value === null ? '当前值为空值 null' : '请输入value'"
                     @update:model-value="
                       (val) => {
@@ -107,16 +141,24 @@
                 </a-tooltip>
               </label>
               <a-radio-group
+                :disabled="saving"
                 :model-value="items.value === null ? 'null' : 'string'"
                 type="button"
                 size="small"
                 class="mango-parametrize-value-type-switch"
                 @change="(value) => changeValueType(items, value)"
               >
-                <a-radio value="string" data-testid="qa-components-forms-parametrizedrawer-radio-字符串">文本值</a-radio>
-                <a-radio value="null" data-testid="qa-components-forms-parametrizedrawer-radio-null">空值 null</a-radio>
+                <a-radio
+                  value="string"
+                  data-testid="qa-components-forms-parametrizedrawer-radio-字符串"
+                  >文本值</a-radio
+                >
+                <a-radio value="null" data-testid="qa-components-forms-parametrizedrawer-radio-null"
+                  >空值 null</a-radio
+                >
               </a-radio-group>
               <a-button
+                :disabled="saving"
                 size="small"
                 status="danger"
                 type="text"
@@ -153,6 +195,7 @@
       type: Array,
       default: () => [],
     },
+    saving: { type: Boolean, default: false },
     showEnvironment: {
       type: Boolean,
       default: false,
@@ -182,6 +225,7 @@
   )
 
   const addTestSuite = () => {
+    if (props.saving) return
     parametrizeData.value.push({
       name: '',
       parametrize: [{ key: '', value: '', test_envs: [] }],
@@ -189,17 +233,21 @@
   }
 
   const addParametrizeRow = (item) => {
+    if (props.saving) return
     item.parametrize.push({ key: '', value: '', test_envs: [] })
   }
   const removeTestSuite = (index) => {
+    if (props.saving) return
     parametrizeData.value.splice(index, 1)
   }
 
   const removeParametrizeRow = (item, index) => {
+    if (props.saving) return
     item.parametrize.splice(index, 1)
   }
 
   const changeValueType = (item, value) => {
+    if (props.saving) return
     item.value = value === 'null' ? null : ''
     handleParamChange()
   }
@@ -221,16 +269,19 @@
   }
 
   const changeParamEnvironment = (item, value) => {
+    if (props.saving) return
     item.test_envs = normalizeEnvironmentValues(normalizeEnvironmentSelectChange(value))
     handleParamChange()
   }
 
   const handleNameChange = () => {
+    if (props.saving) return
     parametrizeData.value = [...parametrizeData.value]
     emit('update:initialData', JSON.parse(JSON.stringify(parametrizeData.value)))
   }
 
   const handleParamChange = () => {
+    if (props.saving) return
     parametrizeData.value = [...parametrizeData.value]
     emit('update:initialData', JSON.parse(JSON.stringify(parametrizeData.value)))
   }
@@ -238,6 +289,7 @@
   const hasParamValue = (param) => Boolean(param.key)
 
   const handleOk = () => {
+    if (props.saving) return
     let hasValidData = false
 
     for (const suite of parametrizeData.value) {
@@ -260,6 +312,7 @@
   }
 
   const handleCancel = () => {
+    if (props.saving) return
     emit('cancel')
   }
 </script>

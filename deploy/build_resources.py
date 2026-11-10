@@ -30,7 +30,7 @@ def cgroup_budget(root=Path('/sys/fs/cgroup')):
 
 def choose_heap(value, available=None, daemon_total=None, container_budget=None):
     if value == 'auto':
-        heap = 6144
+        heap = 4096
     elif value.isdigit() and 512 <= int(value) <= 65536:
         heap = int(value)
     else:
@@ -59,8 +59,8 @@ def main():
         print(f'前端构建 Node 堆上限：{heap}MB（仅构建使用，不是运行容器内存）', file=sys.stderr)
         if memory is not None and memory[0] < heap + 1536:
             print('物理可用内存偏少，构建可能使用 Swap、耗时增加。', file=sys.stderr)
-        if heap < 6144:
-            print('提示：当前堆上限低于已验证的 6144MB，大型前端构建仍可能耗尽堆内存。', file=sys.stderr)
+        if heap < 2048:
+            print('提示：当前堆上限低于本地构建验证的 2048MB，前端构建仍可能耗尽堆内存。', file=sys.stderr)
         print(heap)
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         parser.exit(1, str(error) + '\n')

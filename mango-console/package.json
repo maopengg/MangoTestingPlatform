@@ -1,6 +1,6 @@
 {
   "name": "mango-console",
-  "version": "7.2.3",
+  "version": "7.2.4",
   "scripts": {
     "dev": "vite --mode dev --host",
     "test": "vite --mode test --host",
@@ -17,6 +17,8 @@
     "test:ui-element-check-session": "node --test tests/utils/ui-element-check-session.test.mjs",
     "theme:audit": "node scripts/theme-audit.mjs",
     "table:audit": "node scripts/table-scroll-audit.mjs",
+    "modal:audit": "node scripts/simple-modal-layout-audit.mjs",
+    "loading-feedback:audit": "node scripts/load-error-feedback-audit.mjs",
     "navigation:audit": "node scripts/navigation-columns-audit.mjs",
     "search:audit": "node scripts/search-multiselect-audit.mjs",
     "responsive:audit": "node scripts/responsive-layout-audit.mjs",
@@ -98,6 +100,7 @@
     "@vue/compiler-sfc": "^3.2.31",
     "autoprefixer": "^10.4.0",
     "dotenv": "^12.0.4",
+    "esbuild": "0.15.18",
     "eslint": "^7.30.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-define-config": "^1.0.9",

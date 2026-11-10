@@ -1,3 +1,4 @@
+import { loadFeedbackModule } from './helpers/load-feedback-modules.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
@@ -26,7 +27,7 @@ function harness() {
     require(name) {
       if (name === '@arco-design/web-vue') return { Modal: { warning: config => prompts.push(config) } }
       if (name === './system-error-reporter') return { reportFrontendError: (...args) => reports.push(args) }
-      throw new Error(`Unexpected dependency: ${name}`)
+      { if (['@/utils/load-error', '@/utils/api-response'].includes(name)) return loadFeedbackModule(name); throw new Error(`Unexpected dependency: ${name}`) }
     },
   })
   exports.setupAssetLoadRecovery({ onError: listener => { routeError = listener } })

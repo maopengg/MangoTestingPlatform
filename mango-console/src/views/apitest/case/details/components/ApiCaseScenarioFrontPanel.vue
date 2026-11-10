@@ -9,7 +9,7 @@
     <a-tab-pane key="10" title="前置数据库">
       <div class="m-2">
         <DataSourceOperationList
-          :data-list="item.front_sql"
+          :data-list="draft.front_sql"
           :datasource-options="datasourceOptions"
           :environment-options="environmentOptions"
           :project-product-id="projectProductId"
@@ -24,7 +24,7 @@
     <a-tab-pane key="11" title="前置函数">
       <div class="m-2">
         <CodeEditor
-          v-model="item.front_func"
+          v-model="draft.front_func"
           :readonly="editLocked"
           :line-height="280"
           :code-style="{ width: '100%' }"
@@ -38,10 +38,10 @@
         <DataFactoryCaseConfigPanel
           v-if="active"
           ref="factoryPanel"
-          :case-id="item.id"
+          :case-id="draft.id"
           :project-product-id="String(projectProductId || '')"
           :source-type="3"
-          @count-change="emit('count-change', item.id, $event)"
+          @count-change="emit('count-change', draft.id, $event)"
         />
       </div>
     </a-tab-pane>
@@ -49,7 +49,8 @@
 </template>
 
 <script setup lang="ts">
-  /* eslint-disable vue/no-mutating-props */
+  import { useApiCaseScenarioDraft } from '../composables/useApiCaseScenarioDraft'
+  import type { ApiCaseScenario, ScenarioPatch } from '../types'
   import { computed, ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { useApiCaseParameterSave } from '../composables/useApiCaseAutoSave'
@@ -59,7 +60,7 @@
 
   const props = withDefaults(
     defineProps<{
-      item: any
+      item: ApiCaseScenario
       activeKey: string
       active: boolean
       editLocked: boolean
@@ -75,18 +76,26 @@
   )
   const emit = defineEmits<{
     (event: 'change', value: string): void
+    (event: 'patch', patch: ScenarioPatch): void
     (event: 'count-change', id: number, count: number): void
   }>()
   const factoryPanel = ref<InstanceType<typeof DataFactoryCaseConfigPanel> | null>(null)
-  const putApiCaseDetailedParameter = useApiCaseParameterSave()
+  const persistParameter = useApiCaseParameterSave()
+  const { draft, save: putApiCaseDetailedParameter } = useApiCaseScenarioDraft(
+    () => props.item,
+    (patch) => emit('patch', patch),
+    persistParameter,
+    () => props.editLocked
+  )
   const canAdd = computed(() => ['10', '12'].includes(props.activeKey))
 
   async function save(field: 'front_sql' | 'front_func') {
+    const scenario = draft.value
     if (props.editLocked) return
     try {
       const response = await putApiCaseDetailedParameter({
-        id: props.item.id,
-        [field]: props.item[field],
+        id: scenario.id,
+        [field]: scenario[field],
       })
       if (response) Message.success(response.msg)
     } catch (error: any) {
@@ -96,17 +105,17 @@
   function addItem() {
     if (props.editLocked) return
     if (props.activeKey === '10')
-      props.item.front_sql.push({ key: '', value: '', datasource_alias: null, test_envs: [] })
+      draft.value.front_sql.push({ key: '', value: '', datasource_alias: null, test_envs: [] })
     if (props.activeKey === '12') factoryPanel.value?.open()
   }
   function removeSql(index: number) {
     if (props.editLocked) return
-    props.item.front_sql.splice(index, 1)
+    draft.value.front_sql.splice(index, 1)
     void save('front_sql')
   }
   function updateSql(index: number, value: any) {
     if (props.editLocked) return
-    props.item.front_sql[index] = value
+    draft.value.front_sql[index] = value
     void save('front_sql')
   }
   function saveSql() {

@@ -4,12 +4,12 @@
       <div class="mango-pytest-report__title-block">
         <span class="mango-pytest-report__eyebrow">Pytest 执行明细</span>
         <div class="mango-pytest-report__title-row">
-          <h2>{{ resultData?.name || '未命名 Pytest 用例' }}</h2>
+          <h2 :title="report.name">{{ report.name || '未命名 Pytest 用例' }}</h2>
           <a-tag color="arcoblue" size="small">{{ evidenceTypeText }}</a-tag>
           <a-tag :color="statusColor" size="small">{{ statusText }}</a-tag>
         </div>
         <div class="mango-pytest-report__title-subrow">
-          <p>{{ resultData?.fullName || resultData?.description || '-' }}</p>
+          <p :title="report.fullName || report.description">{{ report.fullName || report.description || '-' }}</p>
           <div class="mango-pytest-report__title-metrics">
             <span><small>开始</small>{{ startTime }}</span>
           </div>
@@ -48,23 +48,23 @@
             <summary class="mango-pytest-report__result-row">
               <span class="mango-pytest-report__result-index">{{ index + 1 }}</span>
               <span class="mango-pytest-report__method">
-                {{ evidence.request?.method || 'HTTP' }}
+                {{ evidence.method || 'HTTP' }}
               </span>
               <span class="mango-pytest-report__result-main">
-                <strong :title="evidence.request?.url || evidence.context">
-                  {{ evidence.request?.url || evidence.context || `HTTP 请求 ${index + 1}` }}
+                <strong :title="evidence.url || evidence.context">
+                  {{ evidence.url || evidence.context || `HTTP 请求 ${index + 1}` }}
                 </strong>
-                <small v-if="evidence.request?.url && evidence.context">
+                <small v-if="evidence.url && evidence.context">
                   {{ evidence.context }}
                 </small>
               </span>
               <span class="mango-pytest-report__result-meta">
                 <a-tag v-if="evidence.phase" size="small">{{ evidence.phase }}</a-tag>
-                <a-tag :color="httpCodeColor(evidence.response?.status)" size="small">
-                  {{ evidence.response?.status ?? '-' }}
+                <a-tag :color="httpCodeColor(evidence.status)" size="small">
+                  {{ evidence.status ?? '-' }}
                 </a-tag>
                 <span class="mango-pytest-report__result-duration">
-                  {{ formatElapsed(evidence.response?.elapsed_ms) }}
+                  {{ formatElapsed(evidence.elapsed) }}
                 </span>
                 <i class="mango-pytest-report__result-chevron" aria-hidden="true"></i>
               </span>
@@ -115,11 +115,11 @@
               </span>
               <span class="mango-pytest-report__result-meta">
                 <a-tag v-if="operation.phase" size="small">{{ operation.phase }}</a-tag>
-                <a-tag :color="operationStatusColor(operation.result?.status)" size="small">
-                  {{ operationStatusText(operation.result?.status) }}
+                <a-tag :color="operationStatusColor(operation.status)" size="small">
+                  {{ operationStatusText(operation.status) }}
                 </a-tag>
                 <span class="mango-pytest-report__result-duration">
-                  {{ formatElapsed(operation.result?.duration_ms) }}
+                  {{ formatElapsed(operation.duration) }}
                 </span>
                 <i class="mango-pytest-report__result-chevron" aria-hidden="true"></i>
               </span>
@@ -240,7 +240,7 @@
       >
         <div class="mango-pytest-report__log-layout">
           <article
-            v-if="resultData?.statusDetails?.message"
+            v-if="report.statusDetails.message"
             class="mango-pytest-report__evidence-card"
           >
             <div class="mango-pytest-report__section-head">
@@ -249,10 +249,10 @@
                 <p>Pytest / Allure 捕获的失败消息。</p>
               </div>
             </div>
-            <pre>{{ resultData.statusDetails.message }}</pre>
+            <pre>{{ report.statusDetails.message }}</pre>
           </article>
           <article
-            v-if="resultData?.statusDetails?.trace"
+            v-if="report.statusDetails.trace"
             class="mango-pytest-report__evidence-card"
           >
             <div class="mango-pytest-report__section-head">
@@ -261,7 +261,7 @@
                 <p>异常堆栈和代码定位。</p>
               </div>
             </div>
-            <pre>{{ resultData.statusDetails.trace }}</pre>
+            <pre>{{ report.statusDetails.trace }}</pre>
           </article>
           <article
             v-for="attachment in logAttachments"
@@ -278,8 +278,8 @@
           </article>
           <div
             v-if="
-              !resultData?.statusDetails?.message &&
-              !resultData?.statusDetails?.trace &&
+              !report.statusDetails.message &&
+              !report.statusDetails.trace &&
               !logAttachments.length
             "
             class="mango-empty-state"
@@ -311,12 +311,9 @@
 <script lang="ts" setup>
   import { computed, ref, watch } from 'vue'
   import PytestDataLineage from './PytestDataLineage.vue'
-
-  type Attachment = {
-    name: string
-    type?: string
-    source?: string
-  }
+  import { readPytestReport, reportObject, reportStatus, reportText } from './pytest-report'
+  import { readLineage } from './pytest-lineage'
+  import type { ReportAttachment as Attachment, ReportStep } from './pytest-report'
 
   type CollectedAttachment = Attachment & {
     key: string
@@ -324,33 +321,30 @@
     context: string
   }
 
-  type LabelItem = {
-    name: string
-    value: string
-  }
-
   type HttpEvidence = {
     context: string
     phase: string
-    request: Record<string, any>
-    response: Record<string, any>
+    request: Record<string, unknown>
+    response: Record<string, unknown>
+    method: string
+    url: string
+    status: number | string | null
+    elapsed: number | string | null
     available: boolean
   }
 
   type UiOperationEvidence = {
     context: string
     phase: string
-    input: Record<string, any>
-    result: Record<string, any>
+    input: Record<string, unknown>
+    result: Record<string, unknown>
+    status: string
+    duration: number | string | null
     available: boolean
   }
 
-  const props = defineProps({
-    resultData: {
-      type: Object as () => any,
-      required: true,
-    },
-  })
+  const props = defineProps<{ resultData: unknown }>()
+  const report = computed(() => readPytestReport(props.resultData))
 
   const activeTab = ref('http')
   const httpAttachmentNames = [
@@ -391,14 +385,11 @@
     w_ele_screenshot: '元素截图',
   }
 
-  const attachments = computed<Attachment[]>(() => props.resultData?.attachments || [])
+  const attachments = computed(() => report.value.attachments)
   const collectedAttachments = computed<CollectedAttachment[]>(() => {
     const result: CollectedAttachment[] = []
-    const append = (items: unknown, phase: string, context: string) => {
-      if (!Array.isArray(items)) return
-      items.forEach((item, index) => {
-        if (!item || typeof item !== 'object') return
-        const attachment = item as Attachment
+    const append = (items: Attachment[], phase: string, context: string) => {
+      items.forEach((attachment, index) => {
         result.push({
           ...attachment,
           key: `${phase}-${context}-${attachment.name || 'attachment'}-${result.length}-${index}`,
@@ -407,31 +398,21 @@
         })
       })
     }
-    const walk = (steps: any[], phase: string, parentContext = '') => {
-      if (!Array.isArray(steps)) return
-      steps.forEach((step) => {
-        if (!step || typeof step !== 'object') return
-        const stepName = String(step.name || '未命名步骤')
-        const context = parentContext ? `${parentContext} / ${stepName}` : stepName
-        append(step.attachments, phase, context)
-        walk(step.steps, phase, context)
-      })
-    }
-
-    append(props.resultData?.attachments, '用例', '')
-    walk(props.resultData?.steps, '步骤')
-    walk(props.resultData?.fixtures?.befores, '前置')
-    walk(props.resultData?.fixtures?.afters, '清理')
+    append(attachments.value, '用例', '')
+    report.value.steps.forEach(step => append(step.attachments, step.phase || '步骤', step.context))
     return result
   })
-  const labels = computed<LabelItem[]>(() => props.resultData?.labels || [])
-  const lineageGraph = computed<Record<string, any>>(() => {
+  const labels = computed(() => report.value.labels)
+  const lineageGraph = computed(() => {
     const attachment = [...attachments.value].reverse().find((item) => item.name === '数据血缘')
     const graph = parseSource(attachment?.source)
-    return isRecord(graph) ? graph : {}
+    return graph
   })
   const hasLineage = computed(
-    () => Array.isArray(lineageGraph.value.nodes) && lineageGraph.value.nodes.length > 0
+    () => {
+      const graph = readLineage(lineageGraph.value)
+      return graph.nodes.length > 0 || graph.malformed
+    }
   )
   const httpEvidence = computed<HttpEvidence[]>(() => {
     const stepEvidence: HttpEvidence[] = []
@@ -446,6 +427,7 @@
           phase,
           request: isRecord(request) ? request : requestFromStepName(step?.name),
           response: isRecord(response) ? response : {},
+          ...httpMetadata(isRecord(request) ? request : requestFromStepName(step.name), isRecord(response) ? response : {}),
           available: isRecord(request) || isRecord(response),
         })
       }
@@ -453,21 +435,15 @@
     if (stepEvidence.length) return stepEvidence
 
     if (!httpAttachmentNames.some((name) => Boolean(attachmentValue(name)))) return []
+    const request = { method: attachmentValue('请求方法'), url: attachmentValue('请求URL'), headers: parsedAttachment('请求头') }
+    const response = { status: attachmentValue('HTTP状态码'), elapsed_ms: attachmentValue('响应时长(ms)'), headers: parsedAttachment('响应头'), body: parsedAttachment('响应数据') }
     return [
       {
         context: '接口调用',
         phase: '',
-        request: {
-          method: attachmentValue('请求方法'),
-          url: attachmentValue('请求URL'),
-          headers: parsedAttachment('请求头'),
-        },
-        response: {
-          status: attachmentValue('HTTP状态码'),
-          elapsed_ms: attachmentValue('响应时长(ms)'),
-          headers: parsedAttachment('响应头'),
-          body: parsedAttachment('响应数据'),
-        },
+        request,
+        response,
+        ...httpMetadata(request, response),
         available: true,
       },
     ]
@@ -486,6 +462,8 @@
         phase,
         input: isRecord(input) ? input : {},
         result: isRecord(result) ? result : {},
+        status: reportText(reportObject(result)?.status),
+        duration: scalar(reportObject(result)?.duration_ms),
         available: isRecord(input) || isRecord(result),
       })
     })
@@ -519,20 +497,9 @@
     hiddenLabels.value.map((item) => `${item.name}：${item.value}`).join('  ·  ')
   )
 
-  const statusText = computed(() => {
-    if (props.resultData?.status === 1 || props.resultData?.status === 'passed') return '测试通过'
-    if (props.resultData?.status === 0 || props.resultData?.status === 'failed') return '测试失败'
-    if (props.resultData?.status === 'skipped') return '已跳过'
-    return '未测试'
-  })
-
-  const statusColor = computed(() => {
-    if (props.resultData?.status === 1 || props.resultData?.status === 'passed') return 'green'
-    if (props.resultData?.status === 0 || props.resultData?.status === 'failed') return 'red'
-    return 'gray'
-  })
-
-  const startTime = computed(() => formatTimestamp(props.resultData?.start))
+  const statusText = computed(() => reportStatus(report.value.status).text)
+  const statusColor = computed(() => reportStatus(report.value.status).color)
+  const startTime = computed(() => formatTimestamp(report.value.start))
 
   const logAttachments = computed(() =>
     attachments.value.filter((item) => logAttachmentNames.includes(item.name))
@@ -542,8 +509,8 @@
     return attachments.value.find((item) => item.name === name)?.source || ''
   }
 
-  function parseSource(value?: string) {
-    if (!value) return {}
+  function parseSource(value?: string): unknown {
+    if (!value) return null
     try {
       return JSON.parse(value)
     } catch {
@@ -555,14 +522,13 @@
     return parseSource(attachmentValue(name))
   }
 
-  function parsedStepAttachment(step: any, name: string) {
+  function parsedStepAttachment(step: ReportStep, name: string) {
     const attachment = findStepAttachment(step, name)
     return parseSource(attachment?.source)
   }
 
-  function findStepAttachment(step: any, name: string): Attachment | null {
-    if (!Array.isArray(step?.attachments)) return null
-    return step.attachments.find((item: Attachment) => item?.name === name) || null
+  function findStepAttachment(step: ReportStep, name: string): Attachment | null {
+    return step.attachments.find(item => item.name === name) || null
   }
 
   function requestFromStepName(stepName: unknown) {
@@ -570,30 +536,24 @@
     return match ? { method: match[1], url: match[2] } : {}
   }
 
-  function walkSteps(steps: any[], visit: (step: any) => void) {
-    if (!Array.isArray(steps)) return
-    steps.forEach((step) => {
-      if (!step || typeof step !== 'object') return
-      visit(step)
-      walkSteps(step.steps, visit)
-    })
+  function walkEvidenceSteps(visit: (step: ReportStep, phase: string) => void) {
+    report.value.steps.forEach(step => visit(step, step.phase))
   }
 
-  function walkEvidenceSteps(visit: (step: any, phase: string) => void) {
-    const walk = (steps: any[], phase: string) => {
-      walkSteps(steps, (step) => visit(step, phase))
-    }
-    walk(props.resultData?.steps || [], '')
-    walk(props.resultData?.fixtures?.befores || [], '前置')
-    walk(props.resultData?.fixtures?.afters || [], '清理')
+  function isRecord(value: unknown): value is Record<string, unknown> {
+    return reportObject(value) !== null
   }
 
-  function isRecord(value: unknown): value is Record<string, any> {
-    return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+  function scalar(value: unknown): number | string | null {
+    return typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value)) ? value : null
+  }
+
+  function httpMetadata(request: Record<string, unknown>, response: Record<string, unknown>) {
+    return { method: reportText(request.method), url: reportText(request.url), status: scalar(response.status), elapsed: scalar(response.elapsed_ms) }
   }
 
   function formatElapsed(value: unknown) {
-    if (value === null || value === undefined || value === '') return '-'
+    if (scalar(value) === null || (typeof value === 'string' && !value.trim())) return '-'
     const numberValue = Number(value)
     return Number.isFinite(numberValue) ? `${numberValue.toFixed(2)} ms` : '-'
   }
@@ -622,7 +582,7 @@
       .replace(/^UI\s*操作\s*·\s*/i, '')
       .split('·')[0]
       .trim()
-    return String(item.input?.operation || contextMethod || 'unknown')
+    return reportText(item.input.operation) || contextMethod || 'unknown'
   }
 
   function operationName(item: UiOperationEvidence, index: number) {
@@ -632,12 +592,14 @@
   }
 
   function operationTarget(item: UiOperationEvidence) {
-    const namedElement = item.input?.named_elements?.[0]?.name
+    const namedElement = Array.isArray(item.input.named_elements) ? reportObject(item.input.named_elements[0])?.name : undefined
+    const args = Array.isArray(item.input.arguments) ? item.input.arguments : []
+    const kwargs = reportObject(item.input.keyword_arguments)
     const value =
       namedElement ??
-      item.input?.arguments?.[0] ??
-      item.input?.keyword_arguments?.locator ??
-      item.input?.keyword_arguments?.text ??
+      args[0] ??
+      kwargs?.locator ??
+      kwargs?.text ??
       ''
     if (value === null || typeof value === 'object') return ''
     return String(value)
@@ -721,34 +683,26 @@
   }
 
   function formatTimestamp(value: unknown) {
+    if (scalar(value) === null || (typeof value === 'string' && !value.trim())) return '-'
     const timestamp = Number(value)
     if (!Number.isFinite(timestamp)) return '-'
     const date = new Date(timestamp)
+    if (!Number.isFinite(date.getTime())) return '-'
     const pad = (num: number) => String(num).padStart(2, '0')
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(
       date.getHours()
     )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
   }
 
-  watch(
-    () => props.resultData,
-    () => {
-      if (hasUiEvidence.value) {
-        activeTab.value = 'ui'
-      } else if (hasApiEvidence.value) {
-        activeTab.value = 'http'
-      } else if (hasLineage.value) {
-        activeTab.value = 'lineage'
-      } else if (collectedAttachments.value.length) {
-        activeTab.value = 'attachments'
-      } else if (logAttachments.value.length) {
-        activeTab.value = 'logs'
-      } else {
-        activeTab.value = 'raw'
-      }
-    },
-    { immediate: true }
-  )
+  const availableTabs = computed(() => [
+    ...(hasUiEvidence.value ? ['ui'] : []), ...(hasApiEvidence.value ? ['http'] : []),
+    ...(hasLineage.value ? ['lineage'] : []), ...(collectedAttachments.value.length ? ['attachments'] : []), 'logs', 'raw',
+  ])
+  watch([() => props.resultData, () => report.value.uuid, () => availableTabs.value.join('|')], (next, previous) => {
+    const sameReport = previous && (next[0] === previous[0] || (next[1] && next[1] === previous[1]))
+    if (sameReport && availableTabs.value.includes(activeTab.value)) return
+    activeTab.value = hasUiEvidence.value ? 'ui' : hasApiEvidence.value ? 'http' : hasLineage.value ? 'lineage' : collectedAttachments.value.length ? 'attachments' : logAttachments.value.length || report.value.statusDetails.message || report.value.statusDetails.trace ? 'logs' : 'raw'
+  }, { immediate: true, flush: 'sync' })
 </script>
 
 <style scoped lang="less">

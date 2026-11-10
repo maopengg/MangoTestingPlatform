@@ -85,9 +85,9 @@
   import '@vue-flow/core/dist/theme-default.css'
 
   interface PreviewNode {
-    template_id?: number | null
+    template_id?: number | string | null
     template_name?: string
-    entity_id?: number | null
+    entity_id?: number | string | null
     entity_name?: string
     table_name?: string
     alias?: string

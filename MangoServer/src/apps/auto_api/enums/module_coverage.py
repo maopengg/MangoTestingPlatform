@@ -71,9 +71,10 @@ class ModuleCoverageResolutionStatus(models.TextChoices):
 class ModuleCoverageAnalysisStatus(models.TextChoices):
     COMPLETED = "completed", "已分析"
     PENDING = "pending", "待分析"
-    GAP = "gap", "分析缺口"
+    REVIEW = "review", "版本待复核"
+    GAP = "gap", "分析不完整"
     DEFERRED = "deferred", "暂缓分析"
-    EXCLUDED = "excluded", "排除分析"
+    EXCLUDED = "excluded", "已排除"
 
 
 class ModuleCoverageApiInfoBindingStatus(models.TextChoices):

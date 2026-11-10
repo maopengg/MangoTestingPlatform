@@ -7,6 +7,8 @@
     @cancel="visible = false"
   >
     <a-spin :loading="loading" class="mango-ui-element-edit-spin">
+
+      <div v-if="saveError" class="mango-ui-element-identity-warning" role="alert">{{ saveError }}</div>
       <a-form
         :model="form"
         layout="horizontal"
@@ -47,14 +49,14 @@
             </a-form-item>
           </div>
           <div class="mango-ui-element-identity-status">
-            <a-spin v-if="identityCheck.loading" size="small" />
+            <a-spin v-if="identityCheck.loading" :size="scaleDensityPixels(16)" />
             <template v-if="mode === 'edit'">
               <a-tag color="blue" size="small">编辑</a-tag>
               <span>
                 当前为编辑模式，将更新元素 #{{ form.id }}；修改名称或分类不会创建新元素
               </span>
               <span
-                v-if="identityCheck.record?.id && String(identityCheck.record.id) !== String(form.id)"
+                v-if="identityCheck.record?.id != null && String(identityCheck.record.id) !== String(form.id)"
                 class="mango-ui-element-identity-warning"
               >
                 当前页面存在同名同分类元素 #{{ identityCheck.record.id }}，保存后可能形成重复数据
@@ -90,7 +92,7 @@
               <span>两个字段均可选；没有定位表达式时，将组合基本信息和下方描述直接识别元素</span>
             </div>
             <a-button
-              v-if="checkable && mode === 'edit' && form.id"
+              v-if="checkable && mode === 'edit' && form.id != null"
               size="small"
               :loading="checking"
               :disabled="checking"
@@ -285,7 +287,15 @@
 </template>
 
 <script setup lang="ts">
+import { reportLoadError } from '@/utils/load-error'
+
+  import { scaleDensityPixels } from '@/hooks/useDisplayDensity'
   import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+  import { cloneLosslessJson } from '@/utils/lossless-json'
+  import { useLiveWorkbenchScope } from '@/hooks/use-live-workbench-scope'
+  import { readElementEditor, readElementEvent } from './ui-element-editor'
+  import type { ElementEditorDraft, ElementEventParameter, ElementOperation } from './ui-element-editor'
+  import { liveId, liveError, liveObject, readLiveResult } from './ui-live-workbench'
   import { Message } from '@arco-design/web-vue'
   import { IconQuestionCircle } from '@arco-design/web-vue/es/icon'
   import { fieldNames } from '@/setting'
@@ -300,10 +310,11 @@
   } from '@/api/uitest/element'
 
   const props = withDefaults(defineProps<{
-    operationOptions?: any[]
+    operationOptions?: unknown[]
     checkable?: boolean
     checkLoadingKey?: string
     checkLoading?: boolean
+    contextKey?: string | number
   }>(), {
     operationOptions: () => [],
     checkable: false,
@@ -312,25 +323,33 @@
   })
 
   const emit = defineEmits<{
-    (event: 'saved', record: any): void
-    (event: 'check', record: any, checkMode: 'normal' | 'deep'): void
+    (event: 'saved', record: unknown): void
+    (event: 'check', record: ElementEditorDraft, checkMode: 'normal' | 'deep'): void
   }>()
 
   const enumStore = useEnum()
   const visible = ref(false)
+  let disposed = false, windowVersion = 0, readSequence = 0
+  watch(visible, value => { if (!value) { windowVersion++; clearIdentityCheckTimer(); resetIdentityCheck() } }, { flush: 'sync' })
+  const scope = useLiveWorkbenchScope(() => props.contextKey, {
+    invalidate() { visible.value = false; clearIdentityCheckTimer(); resetIdentityCheck() },
+    resume() {},
+  })
+  const captureWindow = () => { const version = windowVersion, current = scope.capture(); return () => current() && !disposed && visible.value && version === windowVersion }
   const loading = ref(false)
+  const readError = ref('')
+  let readTargetId: string | number | null = null
   const saving = ref(false)
+  const saveError = ref('')
   const continuousSaving = ref(false)
   const mode = ref<'create' | 'edit'>('create')
-  const form = reactive<Record<string, any>>({
-    expected_event: { ope_key: '', ope_value: [] },
-  })
-  const expectedEventParams = ref<any[]>([])
+  const form: ElementEditorDraft = reactive(readElementEditor())
+  const expectedEventParams = ref<ElementEventParameter[]>([])
   const identityCheck = reactive({
     status: 'idle' as 'idle' | 'pending' | 'checking' | 'existing' | 'new' | 'error',
     loading: false,
     key: '',
-    record: null as any,
+    record: null as ElementEditorDraft | null,
     matchCount: 0,
     error: '',
   })
@@ -349,10 +368,10 @@
     locatorGroups().filter((item) => hasLocatorType(item.exp) && hasLocatorExpression(item.loc)).length
   )
   const checking = computed(
-    () => props.checkLoading || String(props.checkLoadingKey || '') === String(form.id || '')
+    () => props.checkLoading || String(props.checkLoadingKey || '') === String(form.id ?? '')
   )
 
-  function normalizeDescriptionFields(record: Record<string, any>) {
+  function normalizeDescriptionFields(record: ElementEditorDraft) {
     let positive = String(record.location_description || '').trim()
     let exclusion = String(record.surrounding_text || '').trim()
     const marker = exclusion.match(/[，；。\n](?:排除|不是)/)
@@ -366,14 +385,20 @@
     return { positive, exclusion }
   }
 
-  function resetForm(record: Record<string, any> = {}) {
+  function resetForm(input: unknown = {}) {
+    const record = readElementEditor(input)
+    windowVersion++
+    readSequence++
+    saveError.value = ''
+    readError.value = ''
+    loading.value = false
     const descriptions = normalizeDescriptionFields(record)
     const hasStructuredDescription = Boolean(
       descriptions.positive || descriptions.exclusion
     )
     Object.assign(form, {
       id: record.id,
-      page: record.page?.id ?? record.page ?? '',
+      page: record.page,
       name: record.name ?? '',
       category: record.category ?? '未分类',
       exp: record.exp ?? null,
@@ -393,7 +418,7 @@
       surrounding_text: descriptions.exclusion,
       // 旧 prompt 仅作兼容；没有结构化描述时会迁移到正向识别线索。
       prompt: hasStructuredDescription ? record.prompt ?? '' : '',
-      expected_event: normalizeExpectedEvent(record.expected_event),
+      expected_event: readElementEvent(record.expected_event),
       latest_match_count: record.latest_match_count ?? null,
       latest_element_text: record.latest_element_text ?? '',
       latest_runtime_time: record.latest_runtime_time ?? '',
@@ -402,23 +427,13 @@
     buildExpectedEventParams(form.expected_event.ope_key, form.expected_event.ope_value)
   }
 
-  function normalizeExpectedEvent(value: any) {
-    if (!value || typeof value !== 'object' || !value.ope_key) {
-      return { ope_key: '', ope_value: [] }
-    }
-    return {
-      ope_key: value.ope_key,
-      ope_value: Array.isArray(value.ope_value) ? value.ope_value : [],
-    }
-  }
-
-  function normalizeNumber(value: any) {
+  function normalizeNumber(value: unknown) {
     if (value === '' || value === undefined || value === null) return null
     return Number(value)
   }
 
   function identityKey() {
-    const page = String(form.page || '').trim()
+    const page = String(form.page ?? '').trim()
     const name = String(form.name || '').trim()
     const category = String(form.category || '').trim()
     return page && name && category ? `${page}\u0000${name}\u0000${category}` : ''
@@ -442,7 +457,7 @@
 
   async function runIdentityCheck(force = false): Promise<boolean> {
     const key = identityKey()
-    if (!key) {
+    if (!visible.value || disposed || !key) {
       resetIdentityCheck()
       return false
     }
@@ -452,6 +467,9 @@
     if (identityCheck.loading && identityCheck.key === key && identityCheckTask) {
       return identityCheckTask
     }
+    const current = captureWindow()
+    const pageId = liveId(form.page)
+    if (pageId === null) return false
     const version = ++identityCheckVersion
     identityCheck.status = 'checking'
     identityCheck.loading = true
@@ -462,20 +480,20 @@
     const task = (async () => {
       try {
         const res = await getUiElementIdentity({
-          page_id: form.page,
+          page_id: pageId,
           name: String(form.name || '').trim(),
           category: String(form.category || '').trim(),
-          ...(form.id ? { current_id: form.id } : {}),
+          ...(form.id != null ? { current_id: form.id } : {}),
         })
-        if (version !== identityCheckVersion || key !== identityKey()) return false
-        identityCheck.record = res.data?.element || null
+        if (!current() || version !== identityCheckVersion || key !== identityKey()) return false
+        identityCheck.record = res.data?.element ? readElementEditor(res.data.element) : null
         identityCheck.matchCount = Number(res.data?.match_count || 0)
         identityCheck.status = res.data?.exists ? 'existing' : 'new'
         return true
-      } catch (error: any) {
-        if (version !== identityCheckVersion) return false
+      } catch (error) {
+        if (!current() || version !== identityCheckVersion) return false
         identityCheck.status = 'error'
-        identityCheck.error = error?.msg || '元素名称和分类校验失败，请稍后重试'
+        identityCheck.error = liveError(error, '元素名称和分类校验失败，请稍后重试')
         return false
       } finally {
         if (version === identityCheckVersion) identityCheck.loading = false
@@ -513,6 +531,8 @@
   )
 
   onBeforeUnmount(() => {
+    disposed = true
+    windowVersion++
     clearIdentityCheckTimer()
     identityCheckVersion += 1
   })
@@ -544,22 +564,23 @@
     return true
   }
 
-  function findOperationByValue(options: any[], value: string): any {
-    for (const item of options || []) {
-      if (item?.value === value) return item
-      const child = findOperationByValue(item?.children || [], value)
+  function findOperationByValue(options: unknown[], value: string): ElementOperation | null {
+    for (const valueItem of options || []) {
+      const item = liveObject(valueItem)
+      if (item.value === value) return item as unknown as ElementOperation
+      const child = findOperationByValue(Array.isArray(item.children) ? item.children : [], value)
       if (child) return child
     }
     return null
   }
 
-  function buildExpectedEventParams(opeKey: string, presetValues: any[] = []) {
+  function buildExpectedEventParams(opeKey: string, presetValues: ElementEventParameter[] = []) {
     const operation = findOperationByValue(props.operationOptions, opeKey)
-    const presetMap = new Map((presetValues || []).map((item: any) => [item.f, item]))
+    const presetMap = new Map((presetValues || []).map((item) => [item.f, item]))
     expectedEventParams.value = (operation?.parameter || [])
-      .filter((item: any) => item?.d === true)
-      .map((item: any) => {
-        const preset = presetMap.get(item.f) as any
+      .filter((item) => item?.d === true)
+      .map((item) => {
+        const preset = presetMap.get(item.f)
         return {
           ...item,
           v: preset && Object.prototype.hasOwnProperty.call(preset, 'v') ? preset.v : item.v,
@@ -606,7 +627,7 @@
       expected_event: form.expected_event?.ope_key
         ? {
             ope_key: form.expected_event.ope_key,
-            ope_value: expectedEventParams.value.map((item: any) => ({
+            ope_value: expectedEventParams.value.map((item) => ({
               f: item.f,
               n: item.n,
               p: item.p,
@@ -621,11 +642,12 @@
   function locatorRuntimeGroup(group: number) {
     const groups = form.latest_runtime_snapshot?.locator_groups
     if (!Array.isArray(groups)) return null
-    return groups.find((item: any, index: number) => Number(item?.group || index + 1) === group) || null
+    return groups.find((item, index) => Number(item?.group || index + 1) === group) || null
   }
 
-  function applyRuntimeResult(result: any) {
-    if (!result || String(result.element_id || '') !== String(form.id || '')) return
+  function applyRuntimeResult(input: unknown) {
+    const result = readLiveResult(input)
+    if (!visible.value || disposed || liveId(form.id) === null || String(result.element_id ?? '') !== String(form.id ?? '')) return
     const groups = Array.isArray(result.locator_groups) ? result.locator_groups : []
     const selectedElement = result.selected_result?.elements?.[0] || result.elements?.[0] || {}
     form.latest_match_count = selectedElement.ele_quantity ?? groups[0]?.count ?? null
@@ -638,13 +660,13 @@
     }
   }
 
-  function openCreate(pageId: string | number, category = '未分类', defaults: Record<string, any> = {}) {
+  function openCreate(pageId: string | number, category = '未分类', defaults: unknown = {}) {
     mode.value = 'create'
-    resetForm({ page: pageId, is_iframe: 0, category, ...defaults })
+    resetForm({ page: pageId, is_iframe: 0, category, ...cloneLosslessJson(liveObject(defaults)) })
     visible.value = true
   }
 
-  async function openEdit(record: Record<string, any>) {
+  async function openEdit(record: unknown) {
     mode.value = 'edit'
     resetForm(record)
     visible.value = true
@@ -652,53 +674,61 @@
 
   async function openEditById(id: string | number) {
     mode.value = 'edit'
+    resetForm({ id })
+    readTargetId = id
     visible.value = true
+    const current = captureWindow()
+    const sequence = ++readSequence
     loading.value = true
     try {
       const res = await getUiElement({ id, page: 1, pageSize: 1 })
+      if (!current() || sequence !== readSequence) return
       const record = (res.data || [])[0]
-      if (!record) {
-        Message.error('未找到元素数据')
-        return
-      }
+      if (!record || liveId(record.id) === null || String(record.id) !== String(id)) throw Error('未找到对应元素数据')
       resetForm(record)
     } catch (error) {
-      console.log(error)
-      Message.error('元素数据获取失败')
+      if (current() && sequence === readSequence) (reportLoadError(error, "元素数据获取失败，请重试", false), readError.value = liveError(error, '元素数据获取失败，请重试'))
     } finally {
-      loading.value = false
+      if (sequence === readSequence) loading.value = false
     }
   }
+  function retryRead() { if (readTargetId !== null && !loading.value) void openEditById(readTargetId) }
 
   async function save(continuous: boolean) {
+    if (saving.value || continuousSaving.value || loading.value || readError.value || disposed || !visible.value) return
     if (!validate()) return
     const loadingRef = continuous ? continuousSaving : saving
     if (loadingRef.value) return
     loadingRef.value = true
+    const current = captureWindow()
+    saveError.value = ''
     try {
       clearIdentityCheckTimer()
       if (mode.value === 'create' && !(await runIdentityCheck(true))) {
+        if (!current()) return
         Message.error('请等待元素名称和分类校验成功后再保存')
         return
       }
-      const payload = buildPayload()
+      if (!current()) return
+      const payload = cloneLosslessJson(buildPayload())
       const targetId = mode.value === 'edit' ? form.id : identityCheck.record?.id
-      if (mode.value === 'edit' && !targetId) {
+      if (mode.value === 'edit' && (targetId == null || targetId === '')) {
         Message.error('当前编辑元素缺少ID，请关闭后重新打开')
         return
       }
-      if (targetId) payload.id = targetId
-      else delete payload.id
-      const res = targetId ? await putUiElement(payload) : await postUiElement(payload)
+      const updating = targetId != null && targetId !== ''
+      const submitted = updating ? { ...payload, id: targetId } : payload
+      const res = updating ? await putUiElement(submitted) : await postUiElement(submitted)
+      if (!current()) return
       Message.success(res.msg)
-      emit('saved', res.data || payload)
+      emit('saved', res.data || submitted)
       if (mode.value === 'create' && continuous) {
         resetForm({ page: form.page, is_iframe: 0 })
       } else {
         visible.value = false
       }
     } catch (error) {
-      console.log(error)
+      if (current()) saveError.value = liveError(error, '元素保存失败，请重试')
     } finally {
       loadingRef.value = false
     }

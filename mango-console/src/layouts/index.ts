@@ -150,7 +150,17 @@ const DensityAvatar = defineComponent({
 
 function install(app: App) {
   setupArcoTableDefaults()
-  app.use(ArcoVue)
+  // 预构建循环依赖可能让批量 install 捕获未初始化的 TreeSelect；从已就绪的公开导出注册。
+  const arcoPlugins = new Set(
+    Object.values(ArcoVue).filter(
+      (component) =>
+        component &&
+        typeof component === 'object' &&
+        'install' in component &&
+        typeof component.install === 'function'
+    )
+  )
+  for (const plugin of arcoPlugins) app.use(plugin as any)
   app.use(ArcoVueIcon)
   app.use(ArcoTreeSelect)
   // 精确使用模板标签名覆盖表格入口，让 JS 数字宽度与全局 rem 密度保持同一比例。

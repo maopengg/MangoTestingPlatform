@@ -51,18 +51,43 @@
               />
             </a-form-item>
             <a-form-item v-if="activeTab === 'interfaces'" label="覆盖策略">
-              <a-select v-model="filters.coverage_policy" allow-clear placeholder="全部策略" :options="enumStore.module_coverage_policy" :field-names="{value: 'key', label: 'title'}" />
+              <a-select
+                v-model="filters.coverage_policy"
+                allow-clear
+                placeholder="全部策略"
+                :options="enumStore.module_coverage_policy"
+                :field-names="{ value: 'key', label: 'title' }"
+              />
             </a-form-item>
             <template v-if="activeTab === 'interfaces'">
-              <a-form-item v-for="item in interfaceSearchSelects" :key="item.key" :label="item.label">
-                <a-select v-model="filters[item.key]" multiple allow-clear :max-tag-count="1"
-                  :placeholder="item.label" :options="item.options" />
+              <a-form-item
+                v-for="item in interfaceSearchSelects"
+                :key="item.key"
+                :label="item.label"
+              >
+                <a-select
+                  v-model="filters[item.key]"
+                  multiple
+                  allow-clear
+                  :max-tag-count="1"
+                  :placeholder="item.label"
+                  :options="item.options"
+                />
               </a-form-item>
               <a-form-item label="处理原因">
-                <a-input v-model="filters.coverage_reason" allow-clear placeholder="处理原因关键词" />
+                <a-input
+                  v-model="filters.coverage_reason"
+                  allow-clear
+                  placeholder="处理原因关键词"
+                />
               </a-form-item>
               <a-form-item label="ApiInfo编号">
-                <a-input-number v-model="filters.api_info_id" :min="1" :precision="0" placeholder="ApiInfo 编号" />
+                <a-input-number
+                  v-model="filters.api_info_id"
+                  :min="1"
+                  :precision="0"
+                  placeholder="ApiInfo 编号"
+                />
               </a-form-item>
             </template>
             <a-form-item v-if="activeTab === 'cases'" label="当前状态">
@@ -137,6 +162,7 @@
           @interface="openOverviewInterface"
         />
         <div v-else class="mango-module-coverage__content">
+          <template v-if="rowsError"><a-button size="small" :loading="loading" @click="loadRows">重新加载</a-button></template>
           <StickyHorizontalTable :scroll-x="tableScrollX">
             <a-table
               class="mango-native-scroll-table"
@@ -249,9 +275,7 @@
                 ></template
               >
               <template #api_case="{ record }">
-                <a-link
-                  v-if="record.api_case"
-                  @click="openApiCase(record.api_case)"
+                <a-link v-if="record.api_case" @click="openApiCase(record.api_case)"
                   >#{{ record.api_case }} {{ record.api_case_name }}</a-link
                 >
                 <span v-else>{{
@@ -290,12 +314,15 @@
               </template>
               <template #coverage_status="{ record }">
                 <a-tag size="small" :color="tagColor(record.coverage_status)">{{
-                  coverageProgressLabels[record.coverage_status] || label(record.coverage_status)
+                  coverageProgressLabels[record.coverage_status || ''] ||
+                  label(record.coverage_status)
                 }}</a-tag>
               </template>
               <template #coverage_policy="{ record }">
                 <a-tag size="small" :color="tagColor(record.coverage_policy)">{{
-                  enumStore.module_coverage_policy.find(option => option.key === record.coverage_policy)?.title || record.coverage_policy
+                  enumStore.module_coverage_policy.find(
+                    (option) => option.key === record.coverage_policy
+                  )?.title || record.coverage_policy
                 }}</a-tag>
               </template>
               <template #resolution_status="{ record }">
@@ -306,7 +333,13 @@
                 </a-tooltip>
               </template>
               <template #analysis_status="{ record }">
-                <a-tag size="small" :color="tagColor(record.analysis_status)">{{ interfaceSearchSelects[0].options.find(item => item.value === record.analysis_status)?.label || '未核实' }}</a-tag>
+                <a-tooltip :content="record.analysis_reason || '暂无具体分析说明'">
+                <a-tag size="small" :color="tagColor(record.analysis_status)">{{
+                  interfaceSearchSelects[0].options.find(
+                    (item) => item.value === record.analysis_status
+                  )?.label || '未核实'
+                }}</a-tag>
+                </a-tooltip>
               </template>
               <template #lifecycle_status="{ record }">
                 <a-tag size="small" :color="tagColor(record.lifecycle_status)">{{
@@ -322,10 +355,7 @@
                       : label(record.api_info_binding_status))
                   "
                 >
-                  <a-link
-                    v-if="record.api_info_id"
-                    @click="openApiInfo(record.api_info_id)"
-                  >
+                  <a-link v-if="record.api_info_id" @click="openApiInfo(record.api_info_id)">
                     ApiInfo #{{ record.api_info_id }}
                   </a-link>
                   <a-tag v-else size="small" :color="tagColor(record.api_info_binding_status)">
@@ -372,117 +402,15 @@
     </template>
   </TableBody>
 
-  <a-drawer v-model:visible="detailVisible" title="模块覆盖 Case" width="820px" unmount-on-close>
-    <a-spin :loading="detailLoading">
-      <a-descriptions v-if="detail.id" :column="2" bordered size="small">
-        <a-descriptions-item label="当前状态" :span="2">{{
-          label(detail.status)
-        }}</a-descriptions-item>
-        <a-descriptions-item label="来源Key" :span="2">{{ detail.source_key }}</a-descriptions-item>
-        <a-descriptions-item label="仓库/分支" :span="2"
-          >{{ detail.repository_key }} / {{ detail.branch }}</a-descriptions-item
-        >
-        <a-descriptions-item label="接口" :span="2"
-          >{{ detail.method }} {{ detail.url }}</a-descriptions-item
-        >
-        <a-descriptions-item label="Case标题" :span="2">{{ detail.name }}</a-descriptions-item>
-        <a-descriptions-item label="测试场景" :span="2">{{
-          detail.payload?.test_scenario || '-'
-        }}</a-descriptions-item>
-        <a-descriptions-item label="核心断言" :span="2">{{
-          detail.payload?.core_assertion || detail.payload?.scenario_assertion || '-'
-        }}</a-descriptions-item>
-        <a-descriptions-item label="测试归属">{{
-          detail.test_ownership || '-'
-        }}</a-descriptions-item>
-        <a-descriptions-item label="测试层级">
-          {{ enumTitle(enumStore.api_case_scenario_layer, detail.scenario_layer) }}
-        </a-descriptions-item>
-        <a-descriptions-item label="验证类型">
-          {{ enumTitle(enumStore.api_case_scenario_type, detail.scenario_type) }}
-        </a-descriptions-item>
-        <a-descriptions-item label="执行场景">
-          {{ enumTitles(enumStore.api_case_scenario_tag, detail.scenario_tags) }}
-        </a-descriptions-item>
-        <a-descriptions-item label="前置条件" :span="2">{{
-          detail.payload?.preconditions || '-'
-        }}</a-descriptions-item>
-        <a-descriptions-item label="数据策略" :span="2">{{
-          detail.payload?.data_strategy || '-'
-        }}</a-descriptions-item>
-        <a-descriptions-item label="清理策略" :span="2">{{
-          detail.payload?.cleanup_strategy || '-'
-        }}</a-descriptions-item>
-        <a-descriptions-item label="ApiCase">{{
-          detail.api_case ? `#${detail.api_case} ${detail.api_case_name || ''}` : '未绑定'
-        }}</a-descriptions-item>
-        <a-descriptions-item label="Commit">{{
-          shortCommit(detail.current_commit)
-        }}</a-descriptions-item>
-        <a-descriptions-item
-          :label="detail.status === 'deferred' ? '暂不处理原因' : '备注'"
-          :span="2"
-          >{{ detail.payload?.remark || '-' }}</a-descriptions-item
-        >
-      </a-descriptions>
-      <h4>代码证据</h4>
-      <pre class="mango-code-panel mango-module-coverage__evidence">{{
-        pretty(detail.payload?.code_evidence)
-      }}</pre>
-      <div class="mango-module-coverage__drawer-actions">
-        <a-button
-
-          size="small"
-          @click="historyDrawer?.open(detail.id)"
-          >扫描历史</a-button
-        >
-        <a-button size="small" @click="locateDetailFlow">定位到接口图</a-button>
-        <a-button
-          v-if="detail.api_case"
-
-          size="small"
-          type="primary"
-          @click="openApiCase(detail.api_case)"
-          >打开 ApiCase</a-button
-        >
-      </div>
-    </a-spin>
-  </a-drawer>
-
-  <a-modal
-    v-model:visible="bindingVisible"
-    title="绑定已有 ApiCase"
-    width="540px"
-    :ok-loading="bindingLoading"
-    @ok="saveBinding"
-  >
-    <a-form layout="horizontal" :model="bindingForm">
-      <a-form-item label="ApiCase" required>
-        <a-select
-          v-model="bindingForm.apiCaseId"
-          allow-search
-          :options="apiCaseOptions"
-          :field-names="{ value: 'key', label: 'title' }"
-        />
-      </a-form-item>
-    </a-form>
-  </a-modal>
-
+  <CoverageCaseDetailDrawer
+    ref="detailDrawer"
+    @history="historyDrawer?.open($event)"
+    @locate="locateDetailFlow"
+    @case="openApiCase"
+  />
+  <CoverageBindingModal ref="bindingModal" @saved="reloadAll" />
+  <CoveragePolicyModal ref="policyModal" @saved="reloadAll" />
   <CaseFlowDrawer ref="flowDrawer" />
-  <a-modal v-model:visible="policyVisible" title="编辑覆盖策略"
-    :width="560" :ok-loading="policyLoading" :on-before-ok="saveCoveragePolicy" :mask-closable="!policyLoading"
-    :closable="!policyLoading" :esc-to-close="!policyLoading" :cancel-button-props="{ disabled: policyLoading }">
-    <a-form :model="policyForm" layout="horizontal">
-      <a-form-item label="当前接口">#{{ policyForm.id }} · {{ policyForm.name }}</a-form-item>
-      <a-form-item label="覆盖策略" required>
-        <a-select v-model="policyForm.policy" :options="enumStore.module_coverage_policy" :field-names="{value: 'key', label: 'title'}" :disabled="policyLoading" />
-      </a-form-item>
-      <a-form-item label="处理原因" :required="policyForm.policy !== 'included'">
-        <a-textarea v-model="policyForm.reason" :max-length="2000" show-word-limit placeholder="暂不处理或排除覆盖时必填，说明依据及后续处理条件" :disabled="policyLoading" />
-      </a-form-item>
-      <a-form-item label="处理说明">{{ coveragePolicyHelp[policyForm.policy] }}</a-form-item>
-    </a-form>
-  </a-modal>
   <CaseDiffDrawer ref="diffDrawer" />
   <CaseHistoryDrawer ref="historyDrawer" />
   <ScanDetailDrawer ref="scanDrawer" />
@@ -521,9 +449,18 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, defineAsyncComponent, reactive, ref } from 'vue'
-  import { Message, Modal } from '@arco-design/web-vue'
+import { reportLoadError } from '@/utils/load-error'
 
+  import {
+    computed,
+    defineAsyncComponent,
+    onActivated,
+    onBeforeUnmount,
+    onDeactivated,
+    reactive,
+    ref,
+  } from 'vue'
+  import { Modal } from '@arco-design/web-vue'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
   import { useEnum } from '@/store/modules/get-enum'
@@ -536,20 +473,17 @@
   import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
   import { usePagination } from '@/hooks/table'
   import { formatModulePath, formatProjectProductPath } from '@/utils/business-format'
-  import { getApiCaseName } from '@/api/apitest/case'
   import {
     archiveCoverageCases,
-    bindCoverageApiCase,
-    getCoverageCaseDetail,
     getCoverageCases,
     getCoverageInterfaces,
     getCoverageScans,
     getCoverageOverview,
-    updateCoverageInterfacePolicy,
   } from '@/api/apitest/module-coverage'
   import type {
     CoverageOverview as CoverageOverviewData,
     CoverageModuleOverview,
+    PageResult,
   } from '@/api/apitest/module-coverage'
   import CoverageOverview from './components/CoverageOverview.vue'
   import CaseDiffDrawer from './components/CaseDiffDrawer.vue'
@@ -557,6 +491,9 @@
   import CaseHistoryDrawer from './components/CaseHistoryDrawer.vue'
   import InterfaceHistoryDrawer from './components/InterfaceHistoryDrawer.vue'
   import ScanDetailDrawer from './components/ScanDetailDrawer.vue'
+  import CoverageCaseDetailDrawer from './components/CoverageCaseDetailDrawer.vue'
+  import CoverageBindingModal from './components/CoverageBindingModal.vue'
+  import CoveragePolicyModal from './components/CoveragePolicyModal.vue'
   import {
     caseColumns,
     apiInfoBindingOptions,
@@ -566,7 +503,6 @@
     tableScrollXByTab,
     interfaceStatusOptions,
     interfaceSearchSelects,
-    coveragePolicyHelp,
     coverageProgressLabels,
     labels,
     executionResultTagColor,
@@ -577,415 +513,305 @@
     tagColor,
     validityOptions,
   } from './config'
-
-
+  import { coverageQuery, createCoverageFilters } from './query'
+  import type { CoverageRecord, CoverageTab } from './types'
   const ApiInfoDetails = defineAsyncComponent(
     () => import('@/views/apitest/info/details/index.vue')
   )
   const ApiCaseDetails = defineAsyncComponent(
     () => import('@/views/apitest/case/details/index.vue')
   )
-  const assetPanel = reactive({ visible: false, kind: 'info', id: 0 })
+  const assetPanel = reactive<{ visible: boolean; kind: 'info' | 'case'; id: number }>({
+    visible: false,
+    kind: 'info',
+    id: 0,
+  })
   const assetPanelTitle = computed(() =>
     assetPanel.kind === 'info'
       ? `接口管理详情 / ApiInfo #${assetPanel.id}`
       : `API 用例详情 / Case #${assetPanel.id}`
   )
   const enumStore = useEnum()
-  const projectProductId = ref<number>()
-  const moduleId = ref<number>()
-  const moduleIds = ref<Array<string | number>>([])
-  const activeTab = ref('overview')
-  const overview = ref<CoverageOverviewData>()
-  const overviewLoading = ref(false)
-  const overviewError = ref(false)
-  let overviewRequest = 0
-  let overviewScope = ''
-  let rowsRequest = 0
-  const rows = ref<any[]>([])
-  const loading = ref(false)
-  const policyVisible = ref(false)
-  const policyLoading = ref(false)
-  const policyForm = reactive({ id: 0, name: '', policy: 'included', reason: '' })
-  const filters = reactive<any>({
-    repository_key: '',
-    branch: '',
-    name: '',
-    interface_name: '',
-    status: undefined,
-    change_status: undefined,
-    coverage_validity: undefined,
-    interface_status: undefined,
-    api_info_binding_status: undefined,
-    coverage_policy: undefined,
-    resolution_statuses: [],
-    analysis_statuses: [],
-    coverage_statuses: [],
-    sync_actions: [],
-    methods: [],
-    coverage_reason: '',
-    api_info_id: undefined,
-    scenario_layer: undefined,
-    scenario_type: undefined,
-    scenario_tag: undefined,
-  })
+  const projectProductId = ref<number>(),
+    moduleId = ref<number>(),
+    moduleIds = ref<Array<string | number>>([])
+  const activeTab = ref<CoverageTab>('overview'),
+    filters = reactive(createCoverageFilters())
+  const overview = ref<CoverageOverviewData>(),
+    overviewLoading = ref(false),
+    overviewError = ref(false)
+  const rows = ref<CoverageRecord[]>([]),
+    loading = ref(false),
+    rowsError = ref(false)
   const pagination = usePagination(loadRows, () => loading)
-  const detailVisible = ref(false)
-  const detailLoading = ref(false)
-  const detail = reactive<any>({})
-  const bindingVisible = ref(false)
-  const bindingLoading = ref(false)
-  const bindingForm = reactive<any>({
-    coverageCaseId: undefined,
-    moduleId: undefined,
-    apiCaseId: undefined,
-  })
-  const apiCaseOptions = ref<any[]>([])
+  let pageActive = true,
+    scopeVersion = 0,
+    overviewRequest = 0,
+    rowsRequest = 0,
+    overviewScope = ''
+  let archiveConfirmation: ReturnType<typeof Modal.warning> | null = null
+  const archivingIds = reactive(new Set<number>())
+  const detailDrawer = ref<InstanceType<typeof CoverageCaseDetailDrawer>>()
+  const bindingModal = ref<InstanceType<typeof CoverageBindingModal>>()
+  const policyModal = ref<InstanceType<typeof CoveragePolicyModal>>()
   const flowDrawer = ref<InstanceType<typeof CaseFlowDrawer>>()
   const diffDrawer = ref<InstanceType<typeof CaseDiffDrawer>>()
   const historyDrawer = ref<InstanceType<typeof CaseHistoryDrawer>>()
   const scanDrawer = ref<InstanceType<typeof ScanDetailDrawer>>()
   const interfaceHistoryDrawer = ref<InstanceType<typeof InterfaceHistoryDrawer>>()
-
-  const activeColumns = computed(() => {
-    if (activeTab.value === 'interfaces') return interfaceColumns
-    if (activeTab.value === 'cases') return caseColumns
-    return scanColumns
-  })
-  const tableScrollX = computed(() => {
-    return tableScrollXByTab[activeTab.value] || tableScrollXByTab.scans
-  })
-
-  const label = (value: string) => labels[value] || value || '-'
+  const activeColumns = computed(() =>
+    activeTab.value === 'interfaces'
+      ? interfaceColumns
+      : activeTab.value === 'cases'
+      ? caseColumns
+      : scanColumns
+  )
+  const tableScrollX = computed(() => tableScrollXByTab[activeTab.value] || tableScrollXByTab.scans)
+  const label = (value?: string) => (value ? labels[value] || value : '-')
   const shortCommit = (value?: string) => (value ? value.slice(0, 12) : '-')
-  const pretty = (value: unknown) => JSON.stringify(value || [], null, 2)
   const enumTitle = (options: Array<{ key: string | number; title: string }>, value: unknown) =>
     options.find((item) => String(item.key) === String(value))?.title || '-'
-  const enumTitles = (
-    options: Array<{ key: string | number; title: string }>,
-    values?: Array<string | number>
-  ) => (values?.length ? values.map((value) => enumTitle(options, value)).join('、') : '-')
-  const enumTagColor = (
-    options: Array<{ key: string | number; title: string }>,
-    value: unknown
-  ) => {
-    const index = options.findIndex((item) => String(item.key) === String(value))
-    return enumStore.colors[index >= 0 ? index : 0]
+  const enumTagColor = (options: Array<{ key: string | number; title: string }>, value: unknown) =>
+    enumStore.colors[
+      Math.max(
+        0,
+        options.findIndex((item) => String(item.key) === String(value))
+      )
+    ]
+  function query(tab = activeTab.value) {
+    return coverageQuery(
+      tab,
+      filters,
+      {
+        projectProduct: projectProductId.value,
+        module: moduleId.value,
+        moduleIds: moduleIds.value,
+      },
+      pagination.page,
+      pagination.pageSize
+    )
   }
-
+  function closeWindows() {
+    detailDrawer.value?.close()
+    bindingModal.value?.close()
+    policyModal.value?.close()
+    flowDrawer.value?.close()
+    diffDrawer.value?.close()
+    historyDrawer.value?.close()
+    scanDrawer.value?.close()
+    interfaceHistoryDrawer.value?.close()
+    assetPanel.visible = false
+    archiveConfirmation?.close()
+    archiveConfirmation = null
+  }
   function resetRowScope() {
-    rowsRequest += 1
+    ++rowsRequest
     rows.value = []
+    pagination.setTotalSize(0)
+    loading.value = false
+  }
+  function invalidateScope() {
+    ++scopeVersion
+    ++overviewRequest
+    resetRowScope()
+    overviewLoading.value = false
+    closeWindows()
   }
   async function loadRows() {
-    resetRowScope()
+    if (!pageActive) return
     if (activeTab.value === 'overview') return loadOverview()
-    const request = rowsRequest
+    const request = ++rowsRequest,
+      params = query(),
+      tab = activeTab.value
     loading.value = true
+    rowsError.value = false
     try {
-      const query: Record<string, unknown> = {
-        project_product: projectProductId.value,
-        repository_key: filters.repository_key || undefined,
-        branch: filters.branch || undefined,
-        page: pagination.page,
-        pageSize: pagination.pageSize,
-      }
-      applyModuleFilter(query)
-      let response: any
-      if (activeTab.value === 'interfaces') {
-        query.name = filters.name || undefined
-        query.status = filters.interface_status
-        query.api_info_binding_status = filters.api_info_binding_status
-        query.coverage_policy = filters.coverage_policy
-        for (const [field, key] of Object.entries({ analysis_status__in: 'analysis_statuses', resolution_status__in: 'resolution_statuses', coverage_status__in: 'coverage_statuses', sync_action__in: 'sync_actions', method__in: 'methods' })) {
-          if (filters[key].length) query[field] = filters[key].join(',')
-        }
-        query.coverage_reason = filters.coverage_reason || undefined
-        query.api_info_id = filters.api_info_id || undefined
-        query.include_removed = filters.interface_status === 'removed' ? true : undefined
-        response = await getCoverageInterfaces(query)
-      } else if (activeTab.value === 'cases') {
-        Object.assign(query, {
-          name: filters.name || undefined,
-          interface_name: filters.interface_name || undefined,
-          status: filters.status,
-          change_status: filters.change_status,
-          coverage_validity: filters.coverage_validity,
-          scenario_layer: filters.scenario_layer,
-          scenario_type: filters.scenario_type,
-          scenario_tag: filters.scenario_tag,
-          include_removed: true,
-        })
-        response = await getCoverageCases(query)
-      } else response = await getCoverageScans(query)
-      if (request === rowsRequest) {
-        rows.value = response.data?.items || []
-        pagination.setTotalSize(response.data?.count || 0)
-      }
+      const response = await (tab === 'interfaces'
+        ? getCoverageInterfaces(params)
+        : tab === 'cases'
+        ? getCoverageCases(params)
+        : getCoverageScans(params))
+      if (!pageActive || request !== rowsRequest) return
+      const result: PageResult<CoverageRecord> = response.data
+      rows.value = result?.items || []
+      pagination.setTotalSize(result?.count || 0)
+    } catch (loadFailure0) {
+      if (pageActive && request === rowsRequest) (reportLoadError(loadFailure0, "加载失败，请重试", false), rowsError.value = true)
     } finally {
       if (request === rowsRequest) loading.value = false
     }
   }
-
-  async function reloadAll() {
-    if (activeTab.value === 'overview') return loadOverview()
-    await loadRows()
+  function reloadAll() {
+    return activeTab.value === 'overview' ? loadOverview() : loadRows()
   }
-
   async function loadOverview() {
-    const request = ++overviewRequest
+    if (!pageActive || activeTab.value !== 'overview') return
+    const request = ++overviewRequest,
+      params = query('overview'),
+      scope = JSON.stringify(params)
     overviewLoading.value = true
     overviewError.value = false
-    const query: Record<string, unknown> = {
-      project_product: projectProductId.value,
-      repository_key: filters.repository_key || undefined,
-      branch: filters.branch || undefined,
-    }
-    applyModuleFilter(query)
-    const scope = JSON.stringify(query)
     if (scope !== overviewScope) overview.value = undefined
     overviewScope = scope
     try {
-      const response = await getCoverageOverview(query)
-      if (request === overviewRequest) overview.value = response.data
-    } catch {
-      if (request === overviewRequest) overviewError.value = true
+      const response = await getCoverageOverview(params)
+      if (pageActive && request === overviewRequest) overview.value = response.data
+    } catch (loadFailure0) {
+      if (pageActive && request === overviewRequest) (reportLoadError(loadFailure0, "加载失败，请重试", false), overviewError.value = true)
     } finally {
       if (request === overviewRequest) overviewLoading.value = false
     }
   }
-
-  function drillOverview(row: CoverageModuleOverview, tab: string, query: Record<string, string[]> = {}) {
-    const descendants = new Set([row.id])
-    const modules = overview.value?.modules || []
+  function resetTabFilters() {
+    resetRowScope()
+    const { repository_key, branch } = filters
+    Object.assign(filters, createCoverageFilters(), { repository_key, branch })
+    pagination.page = 1
+  }
+  function onTabChange() {
+    invalidateScope()
+    resetTabFilters()
+    void reloadAll()
+  }
+  function search() {
+    invalidateScope()
+    pagination.page = 1
+    void reloadAll()
+  }
+  function resetFilters() {
+    Object.assign(filters, createCoverageFilters())
+    search()
+  }
+  function onNavigationFilterChange(filter: {
+    projectProduct: string | number | null
+    module: string | number | null
+    moduleIds?: Array<string | number>
+  }) {
+    invalidateScope()
+    projectProductId.value =
+      filter.projectProduct == null ? undefined : Number(filter.projectProduct)
+    moduleId.value = filter.module == null ? undefined : Number(filter.module)
+    moduleIds.value = [...(filter.moduleIds || [])]
+    pagination.page = 1
+    void reloadAll()
+  }
+  function drillOverview(
+    row: CoverageModuleOverview,
+    tab: CoverageTab,
+    drillQuery: Record<string, string[]> = {}
+  ) {
+    const descendants = new Set([row.id]),
+      modules = overview.value?.modules || []
     let previousSize = 0
     while (descendants.size !== previousSize) {
       previousSize = descendants.size
-      for (const item of modules) {
-        if (item.parent_id && descendants.has(item.parent_id)) descendants.add(item.id)
-      }
+      for (const item of modules)
+        if (item.parent_id != null && descendants.has(item.parent_id)) descendants.add(item.id)
     }
+    invalidateScope()
     projectProductId.value = row.project_product_id
     moduleId.value = row.id
     moduleIds.value = [...descendants]
     activeTab.value = tab
     resetTabFilters()
-    if (query.analysis_statuses) filters.analysis_statuses = query.analysis_statuses
-    if (query.coverage_statuses) filters.coverage_statuses = query.coverage_statuses
-    reloadAll()
-  }
-
-  function openOverviewInterface(id: number) {
-    openInterfaceFlow({ id })
-  }
-
-  function applyModuleFilter(query: Record<string, unknown>) {
-    if (moduleIds.value.length) query.module__in = moduleIds.value.join(',')
-    else if (moduleId.value) query.module = moduleId.value
-  }
-
-  async function onNavigationFilterChange(filter: {
-    projectProduct: any
-    module: any
-    moduleIds?: Array<string | number>
-  }) {
-    resetRowScope()
-    projectProductId.value = filter.projectProduct || undefined
-    moduleId.value = filter.module || undefined
-    moduleIds.value = filter.moduleIds || []
-    pagination.page = 1
-    await reloadAll()
-  }
-
-  function onTabChange() {
-    resetTabFilters()
-    reloadAll()
-  }
-  function resetTabFilters() {
-    resetRowScope()
-    pagination.page = 1
-    Object.assign(filters, {
-      analysis_statuses: [], resolution_statuses: [], coverage_statuses: [], sync_actions: [], methods: [], coverage_reason: '', api_info_id: undefined,
-      name: '',
-      interface_name: '',
-      status: undefined,
-      change_status: undefined,
-      coverage_validity: undefined,
-      interface_status: undefined,
-      api_info_binding_status: undefined,
-      coverage_policy: undefined,
-      scenario_layer: undefined,
-      scenario_type: undefined,
-      scenario_tag: undefined,
-    })
-  }
-  function search() {
-    pagination.page = 1
-    reloadAll()
-  }
-  function resetFilters() {
-    Object.assign(filters, {
-      analysis_statuses: [], resolution_statuses: [], coverage_statuses: [], sync_actions: [], methods: [], coverage_reason: '', api_info_id: undefined,
-      repository_key: '',
-      branch: '',
-      name: '',
-      interface_name: '',
-      status: undefined,
-      change_status: undefined,
-      coverage_validity: undefined,
-      interface_status: undefined,
-      api_info_binding_status: undefined,
-      coverage_policy: undefined,
-      scenario_layer: undefined,
-      scenario_type: undefined,
-      scenario_tag: undefined,
-    })
-    search()
+    if (drillQuery.analysis_statuses) filters.analysis_statuses = [...drillQuery.analysis_statuses]
+    if (drillQuery.coverage_statuses) filters.coverage_statuses = [...drillQuery.coverage_statuses]
+    void reloadAll()
   }
   function openApiCase(id: number) {
-    if (!id)
-    return;
-    Object.assign(assetPanel, { visible: true, kind: 'case', id })
+    if (id) Object.assign(assetPanel, { visible: true, kind: 'case', id })
   }
-
   function openApiInfo(id: number) {
-    if (!id)
-    return;
-    Object.assign(assetPanel, { visible: true, kind: 'info', id })
+    if (id) Object.assign(assetPanel, { visible: true, kind: 'info', id })
   }
-
-  function openInterfaceFlow(row: any, caseId?: number) {
-    flowDrawer.value?.open(row, caseId)
+  function openInterfaceFlow(row: CoverageRecord, caseId?: number) {
+    return flowDrawer.value?.open(row, caseId)
   }
-
-  function locateDetailFlow() {
-    const row = { ...detail }
-    detailVisible.value = false
+  function openOverviewInterface(id: number) {
+    return openInterfaceFlow({ id })
+  }
+  function locateDetailFlow(row: CoverageRecord) {
+    detailDrawer.value?.close()
     activeTab.value = 'interfaces'
-    pagination.page = 1
-    loadRows()
-    openInterfaceFlow(row, detail.id)
+    resetTabFilters()
+    void loadRows()
+    void openInterfaceFlow(row, row.id)
   }
-
-  async function openDetail(row: any) {
-    detailVisible.value = true
-    detailLoading.value = true
-    try {
-      Object.assign(detail, (await getCoverageCaseDetail(row.id)).data || {})
-    } finally {
-      detailLoading.value = false
-    }
+  function openDetail(row: CoverageRecord) {
+    return detailDrawer.value?.open(row.id)
   }
-
-  async function openBinding(row: any) {
-
-    Object.assign(bindingForm, {
-      coverageCaseId: row.id,
-      moduleId: row.module?.id,
-      apiCaseId: row.api_case || undefined,
-    })
-    apiCaseOptions.value = (await getApiCaseName(bindingForm.moduleId)).data || []
-    bindingVisible.value = true
+  function openBinding(row: CoverageRecord) {
+    return bindingModal.value?.open(row)
   }
-
-  async function saveBinding() {
-
-    if (!bindingForm.apiCaseId) {
-      Message.warning('请选择 ApiCase')
-      return false
-    }
-    bindingLoading.value = true
-    try {
-      await bindCoverageApiCase(bindingForm.coverageCaseId, bindingForm.apiCaseId)
-      bindingVisible.value = false
-      Message.success('绑定成功')
-      await reloadAll()
-      return true
-    } finally {
-      bindingLoading.value = false
-    }
+  function openCoveragePolicy(row: CoverageRecord) {
+    policyModal.value?.open(row)
   }
-
-  function archiveRow(row: any) {
-    Modal.warning({
+  function archiveRow(row: CoverageRecord) {
+    if (!pageActive || archiveConfirmation || archivingIds.has(row.id)) return
+    const id = row.id,
+      version = scopeVersion
+    const dialog = Modal.warning({
       title: '归档模块覆盖 Case',
       content: `确认归档「${row.name}」？绑定的 ApiCase 不会被删除。`,
       hideCancel: false,
-      onBeforeOk: async () => {
-        await archiveCoverageCases([row.id])
-        await reloadAll()
+      okButtonProps: { status: 'danger' },
+      async onBeforeOk() {
+        if (!pageActive || version !== scopeVersion || archivingIds.has(id)) return false
+        archivingIds.add(id)
+        try {
+          await archiveCoverageCases([id])
+          if (pageActive && version === scopeVersion) await reloadAll()
+          return true
+        } catch {
+          return false
+        } finally {
+          archivingIds.delete(id)
+        }
+      },
+      onClose() {
+        if (archiveConfirmation === dialog) archiveConfirmation = null
       },
     })
+    archiveConfirmation = dialog
   }
-
-  const caseActions = (row: any) => [
-    {  label: '详情', onClick: () => openDetail(row) },
+  const caseActions = (row: CoverageRecord) => [
+    { label: '详情', onClick: () => openDetail(row) },
+    { label: '定位流程', onClick: () => openInterfaceFlow(row, row.id) },
+    { label: '差异', onClick: () => diffDrawer.value?.open(row.id) },
+    { label: row.api_case ? '重新绑定' : '绑定Case', onClick: () => openBinding(row) },
     {
-
-      label: '定位流程',
-      onClick: () => openInterfaceFlow(row, row.id),
-    },
-    {
-
-      label: '差异',
-      onClick: () => diffDrawer.value?.open(row.id),
-    },
-    {  label: row.api_case ? '重新绑定' : '绑定Case', onClick: () => openBinding(row) },
-    {
-
       label: '归档',
       danger: true,
+      loading: archivingIds.has(row.id),
       onClick: () => archiveRow(row),
     },
   ]
-  const scanActions = (row: any) => [
-    {
-
-      label: '详情',
-      onClick: () => scanDrawer.value?.open(row.id),
-    },
+  const scanActions = (row: CoverageRecord) => [
+    { label: '详情', onClick: () => scanDrawer.value?.open(row.id) },
   ]
-  function openCoveragePolicy(row: any) {
-    if (policyLoading.value) return
-    Object.assign(policyForm, { id: Number(row.id), name: row.interface_name || row.url || '', policy: row.coverage_policy || 'included', reason: row.coverage_reason || '' })
-    policyVisible.value = true
-  }
-  async function saveCoveragePolicy() {
-    if (policyLoading.value) return false
-    if (policyForm.policy !== 'included' && !policyForm.reason.trim()) {
-      Message.warning('暂不处理或排除覆盖时请填写处理原因')
-      return false
-    }
-    policyLoading.value = true
-    try {
-      await updateCoverageInterfacePolicy([policyForm.id], policyForm.policy, policyForm.reason.trim())
-      Message.success('覆盖策略已更新')
-      await reloadAll()
-      return true
-    } catch {
-      return false
-    } finally {
-      policyLoading.value = false
-    }
-  }
-  const interfaceActions = (row: any) => [
+  const interfaceActions = (row: CoverageRecord) => [
     { label: '编辑', onClick: () => openCoveragePolicy(row) },
-    {
-
-      label: '查看全景',
-      onClick: () => openInterfaceFlow(row),
-    },
-    {
-
-      label: '扫描历史',
-      onClick: () => interfaceHistoryDrawer.value?.open(row.id),
-    },
+    { label: '查看全景', onClick: () => openInterfaceFlow(row) },
+    { label: '扫描历史', onClick: () => interfaceHistoryDrawer.value?.open(row.id) },
   ]
-  const rowActions = (row: any) => {
-    if (activeTab.value === 'interfaces') return interfaceActions(row)
-    if (activeTab.value === 'cases') return caseActions(row)
-    return scanActions(row)
+  const rowActions = (row: CoverageRecord) =>
+    activeTab.value === 'interfaces'
+      ? interfaceActions(row)
+      : activeTab.value === 'cases'
+      ? caseActions(row)
+      : scanActions(row)
+  function deactivate() {
+    pageActive = false
+    invalidateScope()
   }
+  onDeactivated(deactivate)
+  onBeforeUnmount(deactivate)
+  onActivated(() => {
+    if (!pageActive) {
+      pageActive = true
+      void reloadAll()
+    }
+  })
 </script>
 
 <style lang="less" scoped>
@@ -1001,12 +827,6 @@
     min-height: 0;
     flex-direction: column;
     gap: var(--m-page-gap);
-  }
-  .mango-module-coverage__evidence {
-    min-height: 180px;
-    max-height: 340px;
-    overflow: auto;
-    white-space: pre-wrap;
   }
   .mango-module-coverage__deferred-reason {
     display: block;
@@ -1042,12 +862,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-  .mango-module-coverage__drawer-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--m-page-gap);
-    margin-top: var(--m-page-gap);
   }
   .mango-module-coverage__coverage-cell {
     display: grid;

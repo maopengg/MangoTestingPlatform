@@ -8,6 +8,7 @@ from django.test import SimpleTestCase
 from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.management.commands.backfill_module_coverage_snapshot_links import Command
 from src.apps.auto_api.models import (
+    ApiCase, ApiCaseRevision,
     ModuleCoverageCase, ModuleCoverageCaseSnapshot, ModuleCoverageInterfaceSnapshot,
     ModuleCoverageModuleInterface, ModuleCoverageScan,
 )
@@ -38,6 +39,8 @@ class ModuleCoverageTargetLinkTests(SimpleTestCase):
                                   branch='main', interface_source_key=source, interface_source_key_hash=source_hash,
                                   api_case_id=6592, api_case_revision_id=8828,
                                   status='completed', execution_result='passed', coverage_validity='pending_review')
+        case.api_case = ApiCase(id=6592, project_product_id=1, module_id=2)
+        case.api_case_revision = ApiCaseRevision(id=8828, api_case_id=6592)
         snapshot = ModuleCoverageCaseSnapshot(id=13, scan=scan, coverage_case=case, payload=payload)
         case.current_snapshot = snapshot
         case.save = Mock()

@@ -1,5 +1,11 @@
-export const capacityColumns = [
-  { title: '执行器', key: 'executor', dataIndex: 'executor_name', width: 210 },
+import type { TableColumnData } from '@arco-design/web-vue'
+
+interface CapacityColumn extends TableColumnData {
+  key: 'executor' | 'online' | 'engine' | 'calibration' | 'safe_capacity' | 'available_capacity' | 'valid_until'
+}
+
+export const capacityColumns: CapacityColumn[] = [
+  { title: '执行器', key: 'executor', dataIndex: 'executor_name', width: 210, ellipsis: true, tooltip: true },
   { title: '状态', key: 'online', dataIndex: 'online', width: 90, align: 'center' },
   { title: '性能引擎', key: 'engine', dataIndex: 'engine', width: 120, align: 'center' },
   { title: '容量策略', key: 'calibration', dataIndex: 'calibration_status', width: 120, align: 'center' },

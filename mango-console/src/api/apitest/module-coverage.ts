@@ -13,6 +13,7 @@ export interface CoverageOverviewCounts {
   analyzed_interface_count: number
   pending_analysis_count: number
   analysis_gap_count: number
+  analysis_review_count?: number
   deferred_analysis_count: number
   analysis_rate: number | null
   excluded_interface_count?: number

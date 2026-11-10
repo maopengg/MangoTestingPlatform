@@ -182,7 +182,10 @@ class ApiCaseRevisionEditingMixin:
         api_case.callback_checks = deepcopy(case_payload.get('callback_checks') or [])
         for rule in api_case.callback_checks:
             rule['trigger_step_key'] = restored_step_keys[rule['trigger_step_key']]
-        api_case.save(update_fields=['callback_checks'])
+        api_case.resource_cleanup = deepcopy(case_payload.get('resource_cleanup') or [])
+        for rule in api_case.resource_cleanup:
+            rule['trigger_step_key'] = restored_step_keys[rule['trigger_step_key']]
+        api_case.save(update_fields=['callback_checks', 'resource_cleanup'])
         from src.apps.auto_api.services.api_case.mutation import ApiCaseAggregateMutationService
         ApiCaseAggregateMutationService.rebuild_case_flow(api_case.id)
         api_case.refresh_from_db()

@@ -28,29 +28,14 @@
                   @clear="onSearchRefresh"
                 />
               </template>
-              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
-                <ProjectProductSelect
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  @change="onSearchProjectProductChange"
-                />
-              </template>
-              <template v-else-if="item.type === 'select' && item.key === 'module'">
-                <ProductModuleSelect
-                  v-model="item.value"
-                  :project-product-id="getConditionValue('project_product')"
-                  :placeholder="item.placeholder"
-                  :auto-clear="false"
-                  @change="onSearchRefresh"
-                />
-              </template>
               <template v-else-if="item.type === 'select' && item.key === 'case_people'">
                 <a-select
                   v-model="item.value"
                   :multiple="item.multiple"
                   :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
-                  :options="data.userList"
+                  :options="list.users.value"
+                  :loading="list.usersLoading.value"
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
@@ -64,7 +49,8 @@
                   :multiple="item.multiple"
                   :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
-                  :options="data.userList"
+                  :options="list.users.value"
+                  :loading="list.usersLoading.value"
                   :placeholder="item.placeholder"
                   allow-clear
                   allow-search
@@ -78,6 +64,7 @@
                   :multiple="item.multiple"
                   :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
+                  :loading="enumsLoading"
                   :options="enumStore.task_status"
                   :placeholder="item.placeholder"
                   allow-clear
@@ -92,6 +79,7 @@
                   :multiple="item.multiple"
                   :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
+                  :loading="enumsLoading"
                   :options="enumStore.case_level"
                   :placeholder="item.placeholder"
                   allow-clear
@@ -106,6 +94,7 @@
                   :multiple="item.multiple"
                   :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
+                  :loading="enumsLoading"
                   :options="enumStore.api_case_scenario_layer"
                   :placeholder="item.placeholder"
                   allow-clear
@@ -120,6 +109,7 @@
                   :multiple="item.multiple"
                   :max-tag-count="item.multiple ? 1 : undefined"
                   :field-names="fieldNames"
+                  :loading="enumsLoading"
                   :options="enumStore.api_case_scenario_type"
                   :placeholder="item.placeholder"
                   allow-clear
@@ -132,6 +122,7 @@
                 <a-select
                   v-model="item.value"
                   :field-names="fieldNames"
+                  :loading="enumsLoading"
                   :options="enumStore.api_case_scenario_tag"
                   :placeholder="item.placeholder"
                   allow-clear
@@ -153,72 +144,37 @@
               <a-button
                 size="small"
                 status="success"
-                :loading="caseRunning"
-                @click="onConcurrency('批量执行')" data-testid="qa-views-uitest-case-button-批量执行"
+                :loading="actions.pending.value?.kind === 'batch-run'"
+                :disabled="!!actions.pending.value"
+                @click="actions.batchRun(selectedRowKeys)" data-testid="qa-views-uitest-case-button-批量执行"
                 >批量执行
               </a-button>
             </div>
-            <div>
-              <a-button  size="small" status="warning" @click="handleClick" data-testid="qa-views-uitest-case-button-设为定时任务">设为定时任务</a-button>
-              <a-modal v-model:visible="data.visible" @cancel="handleCancel" @ok="handleOk">
-                <template #title> 设为定时任务</template>
-                <a-form :model="data">
-                  <a-form-item class="mango-form-item__require" label="项目产品">
-                    <ProjectProductSelect
-                      v-model="data.scheduledProjectProduct"
-                      placeholder="请选择项目产品"
-                      @change="onScheduledProjectProductChange"
-                    />
-                  </a-form-item>
-                  <a-form-item label="模块">
-                    <ProductModuleSelect
-                      v-model="data.scheduledModule"
-                      :auto-clear="false"
-                      :disabled="!getOptionId(data.scheduledProjectProduct)"
-                      :project-product-id="data.scheduledProjectProduct"
-                      :selectable-level="0"
-                      show-all-option
-                      placeholder="请选择模块分类（可选）"
-                      @change="onScheduledModuleChange"
-                    />
-                  </a-form-item>
-                  <a-form-item class="mango-form-item__require" label="定时任务">
-                    <a-select
-                      v-model="data.value"
-                      :disabled="!getOptionId(data.scheduledProjectProduct)"
-                      :field-names="fieldNames"
-                      :loading="data.scheduledNameLoading"
-                      :options="data.scheduledName"
-                      allow-clear
-                      allow-search
-                      placeholder="请选择定时任务进行绑定"
-                      value-key="key"
-                      data-testid="qa-views-uitest-case-select-请选择定时任务进行绑定"
-                    />
-                  </a-form-item>
-                </a-form>
-              </a-modal>
-            </div>
+            <a-button size="small" status="warning" :disabled="!!actions.pending.value" @click="openTaskBinding" data-testid="qa-views-uitest-case-button-设为定时任务">设为定时任务</a-button>
             <div>
               <a-button  size="small" type="primary" @click="onAdd" data-testid="qa-views-uitest-case-button-新增">新增</a-button>
             </div>
             <div>
-              <a-button  size="small" status="danger" @click="onDelete(null)" data-testid="qa-views-uitest-case-button-批量删除">批量删除</a-button>
+              <a-button  size="small" status="danger" :disabled="!!actions.pending.value" @click="actions.remove(selectedRowKeys)" :loading="actions.pending.value?.kind === 'delete'" data-testid="qa-views-uitest-case-button-批量删除">批量删除</a-button>
             </div>
           </a-space>
             </template>
           </TableTabs>
         </template>
 
+
+
+
+      <a-alert v-if="actions.error.value" type="error">{{ actions.error.value }}</a-alert>
       <a-table
         class="mango-native-scroll-table"
         :bordered="false"
         :columns="visibleTableColumns"
         :data="batchSelectableDataList"
-        :loading="table.tableLoading.value"
+        :loading="list.loading.value"
         :pagination="false"
         :row-selection="{ selectedRowKeys, showCheckedAll }"
-        :rowKey="rowKey"
+        row-key="id"
         :scroll="{ x: 2000, y: '100%' }"
         @selection-change="onUiCaseSelectionChange"
       >
@@ -263,7 +219,7 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'case_people'" #cell="{ record }">
-              {{ record.case_people.name }}
+              {{ record.case_people?.name || '-' }}
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-tag :color="enumStore.status_colors[record.status]" size="small"
@@ -286,686 +242,158 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
-                :actions="[
-    { label: '执行', loading: caseRunning, onClick: () => onCaseRun(record.id) },
-    { label: '步骤', onClick: () => onClick(record) },
-    { label: '套件', onClick: () => clickSuite(record) },
-    { label: '编辑', onClick: () => onUpdate(record) },
-    { label: '复制', onClick: () => caseCody(record) },
-    {
-        hidden: record.publication_status !== 'unpublished',
-        label: '提交预发布',
-        loading: publicationActionCaseId === record.id,
-        onClick: () => onPublicationChange(record, 'prepublished'),
-    },
-    {
-        hidden: record.publication_status !== 'prepublished' || !record.is_product_owner,
-        label: '通过发布',
-        loading: publicationActionCaseId === record.id,
-        onClick: () => onPublicationChange(record, 'published'),
-    },
-    {
-        hidden: record.publication_status === 'unpublished' || !record.is_product_owner,
-        label: '退回未发布', danger: true,
-        loading: publicationActionCaseId === record.id,
-        onClick: () => onPublicationChange(record, 'unpublished'),
-    },
-    { label: '删除', danger: true, onClick: () => onDelete(record) },
-]"
+                :actions="caseActions(record)"
               />
             </template>
           </a-table-column>
         </template>
       </a-table>
-      <ParametrizeDrawer
-        v-model:initial-data="data.row.parametrize"
-        show-environment
-        :visible="data.drawerVisible"
-        @cancel="data.drawerVisible = false"
-        @ok="drawerOk"
-      />
         <template #footer>
           <TableFooter :pagination="pagination" />
         </template>
       </ProjectProductNavigationWorkbench>
     </template>
   </TableBody>
-  <CasePublicationReviewModal ref="publicationReviewRef" @published="doRefresh()" />
-  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
-    <template #content>
-      <a-form :model="formModel">
-        <a-form-item
-          v-for="item of formItems"
-          :key="item.key"
-          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
-          :label="item.label"
-        >
-          <template v-if="item.type === 'input'">
-            <a-input v-model="item.value" :placeholder="item.placeholder" />
-          </template>
-          <template v-else-if="item.type === 'cascader'">
-            <ProjectProductSelect
-              v-model="item.value"
-              :placeholder="item.placeholder"
-              @change="onFormProjectProductChange"
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'module'">
-            <ProductModuleSelect
-              v-model="item.value"
-              :project-product-id="getFormItemValue('project_product')"
-              :placeholder="item.placeholder"
-              :auto-clear="false"
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'case_people'">
-            <a-select
-              v-model="item.value"
-              :multiple="item.multiple"
-              :max-tag-count="item.multiple ? 1 : undefined"
-              :field-names="fieldNames"
-              :options="data.userList"
-              :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              value-key="key"
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'level'">
-            <a-select
-              v-model="item.value"
-              :multiple="item.multiple"
-              :max-tag-count="item.multiple ? 1 : undefined"
-              :field-names="fieldNames"
-              :options="enumStore.case_level"
-              :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              value-key="key"
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'scenario_layer'">
-            <a-select
-              v-model="item.value"
-              :multiple="item.multiple"
-              :max-tag-count="item.multiple ? 1 : undefined"
-              :field-names="fieldNames"
-              :options="enumStore.api_case_scenario_layer"
-              :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              value-key="key"
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'scenario_type'">
-            <a-select
-              v-model="item.value"
-              :multiple="item.multiple"
-              :max-tag-count="item.multiple ? 1 : undefined"
-              :field-names="fieldNames"
-              :options="enumStore.api_case_scenario_type"
-              :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              value-key="key"
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'scenario_tags'">
-            <a-select
-              v-model="item.value"
-              :field-names="fieldNames"
-              :options="enumStore.api_case_scenario_tag"
-              :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              multiple
-              value-key="key"
-            />
-          </template>
-          <template v-else-if="item.type === 'textarea'">
-            <a-textarea
-              v-model="item.value"
-              :placeholder="item.placeholder"
-              :auto-size="{ minRows: 3, maxRows: 5 }"
-            />
-          </template>
-        </a-form-item>
-      </a-form>
-    </template>
-  </ModalDialog>
+  <CasePublicationReviewModal ref="publicationReviewRef" @published="saved()" />
+  <UiCaseMetadataEditor ref="metadataEditorRef" :user-options="list.users.value" :users-loading="list.usersLoading.value" :users-error="list.usersError.value" :enums-loading="enumsLoading" :enums-error="enumsError" @retry-users="list.loadUsers()" @retry-enums="loadEnums()" @saved="saved()" />
+  <UiCaseSuiteEditor ref="suiteEditorRef" @saved="saved()" />
+  <UiCaseTaskBindingModal ref="taskBindingRef" @saved="saved()" />
 </template>
+<script setup lang="ts">
+import { reportLoadError } from '@/utils/load-error'
 
-<script lang="ts" setup>
-  import { usePagePolling, isPendingExecution } from '@/hooks/use-page-polling'
-  import CasePublicationReviewModal from '@/components/business/CasePublicationReviewModal.vue'
-  import { usePagination, useRowKey, useTable } from '@/hooks/table'
-  import { useProjectLockedRowSelection } from '@/hooks/use-project-locked-row-selection'
-  import { ModalDialogType } from '@/types/components'
-  import { Message, Modal } from '@arco-design/web-vue'
-  import { computed, onMounted, ref, nextTick, reactive, onUnmounted } from 'vue'
-  import { fieldNames } from '@/setting'
-  import { getFormItems } from '@/utils/datacleaning'
+  import { computed, onMounted, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
-  import { useLatestRequest } from '@/hooks/use-latest-request'
-  import { usePageData } from '@/store/page-data'
-  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
-  import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
-  import ExecutionSceneTagGrid from '@/components/display/ExecutionSceneTagGrid.vue'
-  import {
-    formatProjectProductPath,
-    formatModulePath,
-    getItemValue,
-    getOptionId,
-    setItemValue,
-  } from '@/utils/business-format'
-  import { conditionItems, formItems, tableColumns, publicationTabs } from './config'
-  import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
-  import {
-    deleteUiCase,
-    getUiCase,
-    getUiCaseRun,
-    postUiCase,
-    postUiCaseCopy,
-    putUiCase,
-    putUiCasePublication,
-    postUiRunCaseBatch,
-  } from '@/api/uitest/case'
-  import { getSystemTasksName } from '@/api/system/tasks'
-  import { postSystemTasksBatchSetCases } from '@/api/system/tasks_details'
-  import { getUserName } from '@/api/user/user'
+  import { Message } from '@arco-design/web-vue'
+  import { usePagination } from '@/hooks/table'
+  import { usePagePolling, isPendingExecution } from '@/hooks/use-page-polling'
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
-  import { prefillNavigationFormItems, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+  import { usePageData } from '@/store/page-data'
+  import { fieldNames } from '@/setting'
+  import { getFormItems } from '@/utils/datacleaning'
+  import { getItemValue, setItemValue, formatProjectProductPath, formatModulePath } from '@/utils/business-format'
+  import type { NavigationCreateSource } from '@/utils/navigation-create-defaults'
+  import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
+  import ExecutionSceneTagGrid from '@/components/display/ExecutionSceneTagGrid.vue'
+  import CasePublicationReviewModal from '@/components/business/CasePublicationReviewModal.vue'
+  import UiCaseMetadataEditor from './components/UiCaseMetadataEditor.vue'
+  import UiCaseSuiteEditor from './components/UiCaseSuiteEditor.vue'
+  import UiCaseTaskBindingModal from './components/UiCaseTaskBindingModal.vue'
+  import { createSearchItems, tableColumns, publicationTabs } from './config'
+  import { caseListQuery, caseOptionId, type CaseId, type UiCaseRow } from './case-list-records'
+  import { useUiCaseList } from './composables/useUiCaseList'
+  import { useUiCaseActions } from './composables/useUiCaseActions'
+  import { useCaseListScope } from './composables/useCaseListScope'
 
+  const route = useRoute(), router = useRouter(), userStore = useUserStore(), enumStore = useEnum()
   const navigationCreateRef = ref<NavigationCreateSource | null>(null)
-
-  const enumStore = useEnum()
-
-  const userStore = useUserStore()
-  const router = useRouter()
-  const route = useRoute()
-  const { beginRequest, isLatestRequest } = useLatestRequest()
-  const activePublicationStatus = ref('all')
-
-  function switchPublicationTab(key: string | number) {
-    activePublicationStatus.value = String(key)
-    pagination.page = 1
-    selectedRowKeys.value = []
-    doRefresh(null, false, true)
-  }
-
-  const modalDialogRef = ref<ModalDialogType | null>(null)
+  const metadataEditorRef = ref<InstanceType<typeof UiCaseMetadataEditor> | null>(null)
+  const suiteEditorRef = ref<InstanceType<typeof UiCaseSuiteEditor> | null>(null)
+  const taskBindingRef = ref<InstanceType<typeof UiCaseTaskBindingModal> | null>(null)
   const publicationReviewRef = ref<InstanceType<typeof CasePublicationReviewModal> | null>(null)
-  const table = useTable()
-  const pagination = usePagination(doRefresh, () => table.tableLoading)
-  const {
-    selectedRowKeys,
-    showCheckedAll,
-    selectableDataList: batchSelectableDataList,
-    onSelectionChange: onUiCaseSelectionChange,
-    validateSingleProject,
-  } = useProjectLockedRowSelection<any>(
-    () => table.dataList,
-    (row) => row?.project_product?.project
-  )
-  const sidebarResetKey = ref(0)
-  const sidebarModuleIds = ref<Array<string | number>>([])
-  const headerConditionItems = computed(() =>
-    conditionItems.filter((item) => !['project_product', 'module'].includes(item.key))
-  )
-  const visibleTableColumns = tableColumns
-  const rowKey = useRowKey('id')
-  const formModel = ref({})
-
-  const data: any = reactive({
-    isAdd: false,
-    updateId: 0,
-    actionTitle: '新增',
-    userList: [],
-    moduleList: [],
-    systemStatus: [],
-    scheduledName: [],
-    scheduledNameLoading: false,
-    scheduledProjectProduct: null,
-    scheduledModule: '__all__',
-    value: null,
-    visible: false,
-    drawerVisible: false,
-    row: {},
+  const conditionItems = createSearchItems(), visibleTableColumns = tableColumns
+  const headerConditionItems = computed(() => conditionItems.filter(item => !['project_product', 'module'].includes(String(item.key))))
+  const activePublicationStatus = ref('all'), sidebarResetKey = ref(0), sidebarModuleIds = ref<CaseId[]>([])
+  const selectedRowKeys = ref<CaseId[]>([]), showCheckedAll = true, enumsLoading = ref(false), enumsError = ref('')
+  let enumSequence = 0, routeKey = ''
+  const pagination = usePagination(() => { selectedRowKeys.value = []; actions.closeConfirmation(); return list.load(true) }, () => list.loading)
+  function closeWindows() { metadataEditorRef.value?.close(); suiteEditorRef.value?.close(); taskBindingRef.value?.close(); publicationReviewRef.value?.invalidate() }
+  const scope = useCaseListScope({
+    invalidate(clear) { enumSequence++; enumsLoading.value = false; closeWindows(); actions.invalidate(); list.invalidate(clear); selectedRowKeys.value = [] },
+    resume() { applyRouteFilters(); void list.load(false); void list.loadUsers(); if (enumsError.value) void loadEnums() },
   })
-  const caseRunning = ref(false)
-  const publicationActionCaseId = ref<number | null>(null)
-
-  const pagePolling = usePagePolling(() => doRefresh(null, false, false), () => {
-    if (table.tableLoading.value) pagePolling.start()
-    beginRequest()
-    table.tableLoading.value = false
+  const query = () => caseListQuery(getFormItems(conditionItems), activePublicationStatus.value, sidebarModuleIds.value, pagination.page, pagination.pageSize)
+  const list = useUiCaseList({ available: scope.available, capture: scope.capture, query, total: pagination.setTotalSize, page: value => { pagination.page = value }, loaded() {
+    const ids = new Set(list.rows.value.map(row => String(row.id)))
+    selectedRowKeys.value = selectedRowKeys.value.filter(id => ids.has(String(id)))
+    if (list.rows.value.some(isPendingExecution)) pagePolling.start(); else pagePolling.stop()
+  } })
+  const actions = useUiCaseActions({ available: scope.available, capture: scope.capture, environment: () => userStore.selected_environment, rows: () => list.rows.value, filterKey: () => JSON.stringify(query()),
+    beforeWrite: () => list.invalidateRows(), committed: async (kind, ids, target) => {
+      selectedRowKeys.value = []; list.invalidateRows()
+      const selected = new Set(ids.map(String))
+      if (kind === 'delete') { list.rows.value = list.rows.value.filter(row => !selected.has(String(row.id))); pagination.setTotalSize(Math.max(0, pagination.pageCount - selected.size)) }
+      if (kind === 'publication' && target) list.rows.value = list.rows.value.map(row => selected.has(String(row.id)) ? { ...row, publication_status: target } : row)
+      if (kind === 'run' || kind === 'batch-run') { list.rows.value = list.rows.value.map(row => selected.has(String(row.id)) ? { ...row, status: 2 } : row); pagePolling.start() }
+      await list.load(false)
+    },
   })
-
-  function clearPollingTimer() { pagePolling.stop() }
-
-  function getConditionValue(key: string) {
-    return getItemValue(conditionItems, key)
+  const pagePolling = usePagePolling(context => list.load(false, context.isCurrent), () => list.invalidateRows())
+  const selectedRows = computed(() => list.rows.value.filter(row => selectedRowKeys.value.some(id => String(id) === String(row.id))))
+  const batchSelectableDataList = computed(() => {
+    const project = selectedRows.value[0]?.project_product?.project?.id
+    return list.rows.value.map(row => ({ ...row, disabled: project != null && row.project_product?.project?.id != null && String(project) !== String(row.project_product.project.id) }))
+  })
+  function onUiCaseSelectionChange(keys: CaseId[]) {
+    const wanted = new Set(keys.map(String)), rows = list.rows.value.filter(row => wanted.has(String(row.id)))
+    const project = selectedRows.value[0]?.project_product?.project?.id ?? rows[0]?.project_product?.project?.id
+    selectedRowKeys.value = rows.filter(row => project == null || String(row.project_product?.project?.id) === String(project)).map(row => row.id)
+    if (selectedRowKeys.value.length !== keys.length) Message.warning('一次批量执行只能选择同一项目下的用例')
   }
-
-  function getFormItemValue(key: string) {
-    return getItemValue(formItems, key)
+  function getConditionValue(key: string) { return getItemValue(conditionItems, key) }
+  function doRefresh() { return list.load(true) }
+  function saved() { if (!scope.available()) return; list.invalidateRows(); void list.load(false) }
+  function onSearchRefresh() { pagination.page = 1; selectedRowKeys.value = []; actions.closeConfirmation(); publicationReviewRef.value?.invalidate(); return list.load(true) }
+  function switchPublicationTab(key: string | number) { activePublicationStatus.value = String(key); return onSearchRefresh() }
+  function onNavigationFilterChange(value: { projectProduct: unknown; module: unknown; moduleIds?: CaseId[] }) {
+    setItemValue(conditionItems, 'project_product', caseOptionId(value.projectProduct))
+    setItemValue(conditionItems, 'module', value.module === '__all__' ? null : caseOptionId(value.module))
+    sidebarModuleIds.value = [...(value.moduleIds ?? [])]; return onSearchRefresh()
   }
-
-  function onSearchProjectProductChange(value: any) {
-    setItemValue(conditionItems, 'module', null)
-    doRefresh(value, true, true)
-  }
-
-  function onFormProjectProductChange() {
-    setItemValue(formItems, 'module', null)
-  }
-
-  function onSearchRefresh() {
-    doRefresh(null, false, true)
-  }
-
-  function onNavigationFilterChange({
-    projectProduct,
-    module,
-    moduleIds,
-  }: {
-    projectProduct: any
-    module: any
-    moduleIds?: Array<string | number>
-  }) {
-    setItemValue(conditionItems, 'project_product', projectProduct ?? null)
-    setItemValue(conditionItems, 'module', module ?? null)
-    sidebarModuleIds.value = moduleIds || []
-    pagination.page = 1
-    selectedRowKeys.value = []
-    doRefresh(null, false, true)
-  }
-
-  function doRefresh(projectProductId: any = null, bool_ = false, showLoading = false) {
-    const requestId = beginRequest()
-    if (showLoading) {
-      table.tableLoading.value = true
-    }
-    let value = getFormItems(conditionItems)
-    if (activePublicationStatus.value !== 'all') value.publication_status = activePublicationStatus.value
-    if (sidebarModuleIds.value.length) value['module__in'] = sidebarModuleIds.value.join(',')
-    if (!Array.isArray(value.scenario_tags) || !value.scenario_tags.length) {
-      delete value.scenario_tags
-    }
-    if (value.update_user === null || value.update_user === '') {
-      delete value.update_user
-    }
-    value['page'] = pagination.page
-    value['pageSize'] = pagination.pageSize
-    if (projectProductId && bool_) {
-      value['project_product'] = projectProductId
-    }
-    return getUiCase(value)
-      .then((res) => {
-        if (!isLatestRequest(requestId)) return
-        table.handleSuccess(res)
-        pagination.setTotalSize((res as any).totalSize)
-        const hasRunningItem =
-          res.data && Array.isArray(res.data) && res.data.some(isPendingExecution)
-
-        if (hasRunningItem) pagePolling.start()
-        else pagePolling.stop()
-      })
-      .catch(console.log)
-      .finally(() => {
-        if (isLatestRequest(requestId)) table.tableLoading.value = false
-      })
-  }
-
   function onResetSearch() {
-    pagination.page = 1
-    sidebarModuleIds.value = []
-    conditionItems.forEach((it) => {
-      if (it.key === 'project_product' || it.key === 'module') {
-        it.value = null
-      } else if (it.reset) {
-        it.reset()
-      } else {
-        it.value = it.multiple ? [] : ''
-      }
-    })
-    sidebarResetKey.value += 1
-    doRefresh(null, false, true)
+    for (const item of conditionItems) { if (['project_product', 'module'].includes(String(item.key))) item.value = null; else if (item.reset) item.reset(); else item.value = item.multiple ? [] : '' }
+    sidebarModuleIds.value = []; sidebarResetKey.value++; return onSearchRefresh()
   }
-
-  function getEnumTitle(options: any[] | null, value: any) {
-    return options?.find((item: any) => Number(item.key) === Number(value))?.title || '-'
+  function getEnumTitle(options: unknown, value: unknown): string {
+    if (!Array.isArray(options)) return '-'
+    const row = options.find(item => item && typeof item === 'object' && String(item.key) === String(value))
+    return typeof row?.title === 'string' ? row.title : '-'
   }
-
-  function onAdd() {
-    data.actionTitle = '添加'
-    data.isAdd = true
-    modalDialogRef.value?.toggle()
-    formItems.forEach((it: any) => {
-      if (it.reset) {
-        it.reset()
-      } else {
-        it.value = it.multiple ? [] : ''
-      }
-    })
-    void prefillNavigationFormItems(navigationCreateRef.value, formItems, () => data.isAdd)
-  }
-
-  function onDelete(record: any) {
-    const batch = record === null
-    if (batch) {
-      if (selectedRowKeys.value.length === 0) {
-        Message.error('请选择要删除的数据')
-        return
-      }
-    }
-    Modal.confirm({
-      title: '提示',
-      content: '是否要删除此用例？',
-      cancelText: '取消',
-      okText: '删除',
-      onBeforeOk: () => {
-        return deleteUiCase(batch ? selectedRowKeys.value : record.id)
-          .then((res) => {
-            Message.success(res.msg)
-          })
-          .catch(console.log)
-          .finally(() => {
-            doRefresh()
-            if (batch) {
-              selectedRowKeys.value = []
-            }
-          })
-      },
-    })
-  }
-
-  function onPublicationChange(record: any, target: 'prepublished' | 'published' | 'unpublished') {
-    if (target === 'published') {
-      if (record.publication_status !== 'prepublished') {
-        Message.warning('只有预发布状态的用例可以进入发布审核')
-        return
-      }
-      void publicationReviewRef.value?.open('ui', [Number(record.id)])
-      return
-    }
-    if (target !== 'unpublished' && record.status !== 1) {
-      Message.warning('用例必须执行通过后才能提交预发布或正式发布')
-      return
-    }
-    const title = target === 'prepublished' ? '提交预发布' : '退回未发布'
-    Modal.confirm({
-      title,
-      content: target === 'prepublished' ? '提交后由项目产品负责人审核，预发布用例不参与定时执行。确认提交吗？'
-        : '退回后该用例不再参与定时执行。确认退回吗？',
-      cancelText: '取消',
-      okText: title,
-      okButtonProps: target === 'unpublished' ? { status: 'danger' } : undefined,
-      onBeforeOk: async () => {
-        publicationActionCaseId.value = record.id
-        try {
-          const res = await putUiCasePublication(record.id, target)
-          Message.success(res.msg)
-          doRefresh()
-          return true
-        } finally {
-          publicationActionCaseId.value = null
-        }
-      },
-    })
-  }
-
-  function onUpdate(item: any) {
-    data.actionTitle = '编辑'
-    data.isAdd = false
-    data.updateId = item.id
-    modalDialogRef.value?.toggle()
-    nextTick(() => {
-      formItems.forEach((it) => {
-        const propName = item[it.key]
-        if (it.key === 'scenario_layer' && (propName === undefined || propName === null)) {
-          it.value = 0
-        } else if (Array.isArray(propName)) {
-          it.value = propName
-        } else if (typeof propName === 'object' && propName !== null) {
-          it.value = propName.id
-        } else {
-          it.value = propName
-        }
-      })
-    })
-  }
-
-  const onCaseRun = async (param) => {
-    if (userStore.selected_environment == null) {
-      Message.error('请先选择用例执行的环境')
-      return
-    }
-    if (caseRunning.value) return
-    caseRunning.value = true
+  async function loadEnums() {
+    if (!scope.available()) return
+    const valid = scope.capture(), request = ++enumSequence, current = () => valid() && request === enumSequence
+    enumsLoading.value = true; enumsError.value = ''
     try {
-      const res = await getUiCaseRun(param, userStore.selected_environment)
-      Message.loading(res.msg)
-    } catch (e) {
-    } finally {
-      caseRunning.value = false
-      doRefresh()
+      await enumStore.getEnum()
+      if (current() && !(['task_status', 'case_level', 'api_case_scenario_layer', 'api_case_scenario_type'] as const).every(key => enumStore[key]?.length)) (reportLoadError(undefined, "枚举选项加载失败，请重试", false), (reportLoadError(undefined, "枚举选项加载失败，请重试", false), enumsError.value = '枚举选项加载失败，请重试'))
     }
+    catch (loadFailure0) { if (current()) (reportLoadError(loadFailure0, "枚举选项加载失败，请重试", false), enumsError.value = '枚举选项加载失败，请重试') }
+    finally { if (request === enumSequence) enumsLoading.value = false }
   }
-
-  function onConcurrency(name: string) {
-    if (userStore.selected_environment == null) {
-      Message.error('请先选择用例执行的环境')
-      return
-    }
-    if (selectedRowKeys.value.length === 0) {
-      Message.error('请选择要' + name + '的用例数据')
-      return
-    }
-    if (!validateSingleProject()) return
-    Modal.confirm({
-      title: '提示',
-      content: '确定要' + name + '这些用例吗？批量执行会生成多个浏览器来执行用例',
-      cancelText: '取消',
-      okText: '执行',
-      onBeforeOk: () => {
-        return postUiRunCaseBatch(selectedRowKeys.value, userStore.selected_environment)
-          .then((res) => {
-            Message.success(res.msg)
-            selectedRowKeys.value = []
-            doRefresh()
-          })
-          .catch(console.log)
-      },
-    })
+  function applyRouteFilters() {
+    if (routeKey === route.fullPath) return
+    routeKey = route.fullPath
+    const status = route.query.publication_status
+    activePublicationStatus.value = typeof status === 'string' && publicationTabs.some(tab => tab.key === status) ? status : 'all'
+    try { setItemValue(conditionItems, 'project_product', caseOptionId(route.query.project_product)) } catch { setItemValue(conditionItems, 'project_product', null) }
+    setItemValue(conditionItems, 'module', null); sidebarModuleIds.value = []; pagination.page = 1
   }
-
-  const handleClick = () => {
-    if (selectedRowKeys.value.length === 0) {
-      Message.error('请选择要添加定时任务的用例')
-      return
-    }
-    data.scheduledProjectProduct = null
-    data.scheduledModule = '__all__'
-    data.scheduledName = []
-    data.value = null
-    data.visible = true
+  function onAdd() {
+    const defaults = navigationCreateRef.value?.getCreateDefaults()
+    metadataEditorRef.value?.open(null, { projectProduct: defaults?.projectProduct ?? null, module: defaults?.module === '__all__' ? null : defaults?.module ?? null })
   }
-  const handleOk = () => {
-    if (!getOptionId(data.scheduledProjectProduct)) {
-      Message.warning('请选择项目产品')
-      return
-    }
-    if (!data.value) {
-      Message.warning('请选择定时任务')
-      return
-    }
-    postSystemTasksBatchSetCases(selectedRowKeys.value, data.value, 0)
-      .then((res) => {
-        Message.success(res.msg)
-        data.visible = false
-        doRefresh()
-      })
-      .catch(console.log)
+  function onUpdate(row: UiCaseRow) { metadataEditorRef.value?.open(row) }
+  function clickSuite(row: UiCaseRow) { suiteEditorRef.value?.open(row) }
+  function openTaskBinding() { if (!selectedRowKeys.value.length) { Message.warning('请选择要添加定时任务的用例'); return }; taskBindingRef.value?.open([...selectedRowKeys.value]) }
+  function onClick(row: UiCaseRow) { usePageData().setRecord(row); return router.push({ path: '/uitest/case/details', query: { id: String(row.id) } }) }
+  function review(row: UiCaseRow) {
+    // 公共发布审核仍为安全整数协议；不将长字符串ID静默截断后审核另一条资产。
+    const id = Number(row.id)
+    if (!Number.isSafeInteger(id) || id <= 0) { Message.error('当前用例标识无法用于发布审核，请检查数据'); return }
+    void publicationReviewRef.value?.open('ui', [id])
   }
-  const handleCancel = () => {
-    data.visible = false
+  function caseActions(row: UiCaseRow) {
+    const pending = actions.pending.value, busy = pending !== null, matching = pending?.ids.some(id => String(id) === String(row.id))
+    return [
+      { label: '执行', loading: matching && pending?.kind === 'run', disabled: busy, onClick: () => actions.run(row.id) },
+      { label: '步骤', onClick: () => onClick(row) }, { label: '套件', onClick: () => clickSuite(row) }, { label: '编辑', onClick: () => onUpdate(row) },
+      { label: '复制', loading: matching && pending?.kind === 'copy', disabled: busy, onClick: () => actions.copy(row.id) },
+      { label: '提交预发布', hidden: row.publication_status !== 'unpublished', loading: matching && pending?.kind === 'publication', disabled: busy, onClick: () => actions.publication(row.id, 'prepublished') },
+      { label: '通过发布', hidden: row.publication_status !== 'prepublished', disabled: busy, onClick: () => review(row) },
+      { label: '退回未发布', hidden: row.publication_status === 'unpublished', danger: true, loading: matching && pending?.kind === 'publication', disabled: busy, onClick: () => actions.publication(row.id, 'unpublished') },
+      { label: '删除', danger: true, loading: matching && pending?.kind === 'delete', disabled: busy, onClick: () => actions.remove([row.id]) },
+    ]
   }
-
-  function onDataForm() {
-    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      let value = getFormItems(formItems)
-      value['scenario_tags'] = value['scenario_tags'] || []
-      if (data.isAdd) {
-        value['front_custom'] = []
-        value['front_sql'] = []
-        value['posterior_sql'] = []
-        value['front_public'] = []
-        value['front_auth_config'] = []
-        value['scenario_layer'] = value['scenario_layer'] ?? 0
-        postUiCase(value)
-          .then((res) => {
-            modalDialogRef.value?.toggle()
-            Message.success(res.msg)
-            doRefresh()
-          })
-          .catch((error) => {
-            console.log(error)
-          })
-          .finally(() => {
-            modalDialogRef.value?.setConfirmLoading(false)
-          })
-      } else {
-        value['id'] = data.updateId
-        putUiCase(value)
-          .then((res) => {
-            modalDialogRef.value?.toggle()
-            Message.success(res.msg)
-            doRefresh()
-          })
-          .catch((error) => {
-            console.log(error)
-          })
-          .finally(() => {
-            modalDialogRef.value?.setConfirmLoading(false)
-          })
-      }
-    } else {
-      modalDialogRef.value?.setConfirmLoading(false)
-    }
-  }
-
-  function getNickName() {
-    getUserName()
-      .then((res) => {
-        data.userList = res.data
-      })
-      .catch(console.log)
-  }
-
-  function onClick(record: any) {
-    const pageData = usePageData()
-    pageData.setRecord(record)
-    router.push({
-      path: '/uitest/case/details',
-      query: {
-        id: parseInt(record.id, 10),
-      },
-    })
-  }
-
-  function clickSuite(record: any) {
-    data.row = JSON.parse(JSON.stringify(record))
-
-    if (
-      !data.row.parametrize ||
-      !Array.isArray(data.row.parametrize) ||
-      data.row.parametrize.length === 0
-    ) {
-      data.row.parametrize = [
-        {
-          name: '',
-          parametrize: [{ key: '', value: '', test_envs: [] }],
-        },
-      ]
-    }
-
-    data.drawerVisible = true
-  }
-
-  function drawerOk(paramData: any) {
-    data.drawerVisible = false
-
-    const hasValidData = paramData.some(
-      (suite: any) => suite.name || suite.parametrize.some((param: any) => param.key || param.value)
-    )
-
-    let value = {
-      id: data.row.id,
-      parametrize: hasValidData ? paramData : [],
-    }
-
-    putUiCase(value)
-      .then((res) => {
-        Message.success(res.msg)
-        doRefresh()
-      })
-      .catch(console.log)
-  }
-
-  function caseCody(record: any) {
-    postUiCaseCopy(record.id)
-      .then((res) => {
-        Message.success(res.msg)
-        doRefresh()
-      })
-      .catch(console.log)
-  }
-
-  function scheduledName(projectProductId: number | string, moduleId?: number | string | null) {
-    data.scheduledNameLoading = true
-    getSystemTasksName(projectProductId, moduleId, 0)
-      .then((res) => {
-        data.scheduledName = res.data
-      })
-      .catch(console.log)
-      .finally(() => {
-        data.scheduledNameLoading = false
-      })
-  }
-
-  function onScheduledProjectProductChange(value: any) {
-    const projectProductId = getOptionId(value)
-    data.scheduledModule = '__all__'
-    data.value = null
-    data.scheduledName = []
-    if (projectProductId) scheduledName(projectProductId)
-  }
-
-  function onScheduledModuleChange(value: any) {
-    const projectProductId = getOptionId(data.scheduledProjectProduct)
-    const selectedModuleId = getOptionId(value)
-    const moduleId = selectedModuleId === '__all__' ? null : selectedModuleId
-    data.value = null
-    data.scheduledName = []
-    if (projectProductId) scheduledName(projectProductId, moduleId)
-  }
-
-  onMounted(() => {
-    const routeStatus = route.query.publication_status
-    if (typeof routeStatus === 'string' && publicationTabs.some((tab) => tab.key === routeStatus)) {
-      activePublicationStatus.value = routeStatus
-    }
-    if (route.query.project_product) {
-      setItemValue(conditionItems, 'project_product', Number(route.query.project_product))
-    }
-    nextTick(async () => {
-      await getNickName()
-      doRefresh()
-    })
-  })
-  onUnmounted(() => {
-    clearPollingTimer()
-  })
+  onMounted(() => { applyRouteFilters(); void list.loadUsers(); void loadEnums(); void list.load(true) })
 </script>

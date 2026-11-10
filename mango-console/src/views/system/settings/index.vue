@@ -8,9 +8,10 @@
       </TableHeader>
     </template>
     <template #default>
-      <div v-if="settingsLoading" class="mango-system-settings__loading">
+      <div v-if="settingsLoading && settingsGroups.length === 0" class="mango-system-settings__loading">
         <a-spin :loading="true" tip="正在加载系统配置..." />
       </div>
+      <template v-else-if="settingsError && settingsGroups.length === 0"></template>
       <div v-else class="mango-system-settings">
         <div class="mango-system-settings__layout">
           <nav class="mango-system-settings__tabs" aria-label="配置分组目录">
@@ -39,6 +40,8 @@
             class="mango-system-settings__panel"
             @scroll.passive="handlePanelScroll"
           >
+
+
             <div class="mango-system-settings__level-filter">
               <div
                 class="mango-system-settings__level-options"
@@ -94,6 +97,7 @@
                       <a-switch
                         :model-value="settingsData.isDebug"
                         :loading="debugLogSaving"
+                        :disabled="settingsLoading"
                         aria-label="调试日志"
                         size="medium"
                         @change="doPostSystemSetDebugLog"
@@ -107,6 +111,7 @@
                       <a-switch
                         :model-value="switchValue(guestProjectDataScopeConfig)"
                         :loading="backendServiceConfigLoading.GUEST_CAN_VIEW_ALL_PROJECT_DATA"
+                        :disabled="settingsLoading"
                         size="medium"
                         aria-label="允许游客查看所有项目数据"
                         @change="(value) => handleBackendServiceSwitchChange(guestProjectDataScopeConfig!, value)"
@@ -125,6 +130,7 @@
                           <a-button
                             size="small"
                             :loading="methodCacheRefreshLoading[item.type]"
+                            :disabled="settingsLoading"
                             @click="handleMethodCacheRefresh(item)"
                             data-testid="qa-views-system-settings-button-刷新缓存"
                           >
@@ -133,6 +139,7 @@
                           <a-button
                             size="small"
                             :loading="methodCacheViewLoading[item.cacheKey]"
+                            :disabled="settingsLoading"
                             @click="handleMethodCacheView(item)"
                             data-testid="qa-views-system-settings-button-查看缓存"
                           >
@@ -163,6 +170,7 @@
                       v-if="group.key === 'cache_performance'"
                       size="small"
                       :loading="runtimeCacheClearLoading"
+                      :disabled="settingsLoading"
                       @click="handleRuntimeCacheClear"
                     >
                       立即清理统计缓存
@@ -181,8 +189,8 @@
                       :key="item.key"
                       class="mango-system-settings__item"
                     >
-                      <ReportDeliveryEditor v-if="item.key === 'REPORT_DELIVERY_CONFIG'" v-model="item.value" :loading="itemSaving(item)" @save="saveItem(group, item)" />
-                      <DatasourcePerformanceEditor v-else-if="item.key === 'DATASOURCE_PERFORMANCE_POLICY'" v-model="item.value" :management-level="item.management_level" :runtime-status="item.runtime_status" :notice="item.performance_notice" :loading="itemSaving(item)" @save="saveItem(group, item)" />
+                      <ReportDeliveryEditor v-if="item.key === 'REPORT_DELIVERY_CONFIG'" v-model="item.value" :loading="itemSaving(item) || settingsLoading" @save="saveItem(group, item)" />
+                      <DatasourcePerformanceEditor v-else-if="item.key === 'DATASOURCE_PERFORMANCE_POLICY'" v-model="item.value" :management-level="item.management_level" :runtime-status="item.runtime_status" :notice="item.performance_notice" :loading="itemSaving(item) || settingsLoading" @save="saveItem(group, item)" />
                       <div v-else class="mango-system-settings__row">
                         <div class="mango-system-settings__label-wrap">
                           <span class="mango-system-settings__label">{{ itemLabel(item) }}</span>
@@ -207,6 +215,7 @@
                             v-if="isSwitchType(item)"
                             :model-value="switchValue(item)"
                             :loading="itemSaving(item)"
+                            :disabled="settingsLoading"
                             size="medium"
                             :aria-label="itemLabel(item)"
                             @change="(value) => handleSwitchChange(group, item, value)"
@@ -215,13 +224,14 @@
                             v-else-if="isEnvironmentDisplayNames(item)"
                             v-model="item.value"
                             :options="enumStore.environment_type_defaults"
-                            :loading="itemSaving(item)"
+                            :loading="itemSaving(item) || settingsLoading || enumsLoading"
                             @save="saveItem(group, item)"
                           />
-                          <EvaluationAiProfilesEditor v-else-if="item.key === 'EVALUATION_AI_PROFILES'" v-model="item.value" :loading="itemSaving(item)" @save="saveItem(group, item)" />
+                          <EvaluationAiProfilesEditor v-else-if="item.key === 'EVALUATION_AI_PROFILES'" v-model="item.value" :loading="itemSaving(item) || settingsLoading" @save="saveItem(group, item)" />
                           <a-cascader
                             v-else-if="item.key === API_DEFAULT_ASSERTION_CHECKS_KEY"
-                            v-model="item.value"
+                            :model-value="conditionControlValue(item)"
+                            @update:model-value="(value) => item.value = value"
                             size="medium"
                             multiple
                             allow-clear
@@ -231,33 +241,35 @@
                             :check-strictly="false"
                             :max-tag-count="2"
                             :options="defaultAssertionOptions"
-                            :disabled="itemSaving(item)"
-                            :loading="itemSaving(item)"
+                            :disabled="itemSaving(item) || settingsLoading"
+                            :loading="itemSaving(item) || enumsLoading"
                             placeholder="先选择协议类型，再选择默认断言场景"
                             :aria-label="itemLabel(item)"
                             @change="saveItem(group, item)"
                           />
                           <a-select
                             v-else-if="item.key === API_TRANSIENT_RETRY_CONDITIONS_KEY"
-                            v-model="item.value"
+                            :model-value="conditionControlValue(item)"
+                            @update:model-value="(value) => item.value = value"
                             size="medium"
                             multiple
                             allow-clear
                             :max-tag-count="2"
                             :options="enumStore.api_transient_retry_condition"
                             :field-names="{ value: 'key', label: 'title' }"
-                            :disabled="itemSaving(item)"
-                            :loading="itemSaving(item)"
+                            :disabled="itemSaving(item) || settingsLoading"
+                            :loading="itemSaving(item) || enumsLoading"
                             placeholder="选择触发条件；留空表示不自动重试"
                             :aria-label="itemLabel(item)"
                             @change="saveItem(group, item)"
                           />
                           <a-select
                             v-else-if="isDataFactoryValidationEnvironments(item)"
-                            v-model="item.value"
+                            :model-value="environmentControlValue(item)"
+                            @update:model-value="(value) => item.value = value"
                             :options="environmentOptions"
                             :field-names="fieldNames"
-                            :loading="itemSaving(item)"
+                            :loading="itemSaving(item) || enumsLoading"
                             multiple
                             allow-clear
                             :max-tag-count="2"
@@ -269,11 +281,12 @@
                           />
                           <a-input-number
                             v-else-if="isNumberType(item)"
-                            v-model="item.value"
+                            :model-value="numberControlValue(item)"
+                            @update:model-value="(value) => item.value = value"
                             :precision="item.value_type === VALUE_TYPE_INT ? 0 : undefined"
                             :min="numberMin(item)"
                             :max="numberMax(item)"
-                            :disabled="itemSaving(item)"
+                            :disabled="itemSaving(item) || settingsLoading"
                             :placeholder="getPlaceholder(item)"
                             size="medium"
                             :aria-label="itemLabel(item)"
@@ -282,8 +295,9 @@
                           />
                           <a-textarea
                             v-else-if="isLongTextType(item)"
-                            v-model="item.value"
-                            :disabled="itemSaving(item)"
+                            :model-value="textControlValue(item)"
+                            @update:model-value="(value) => item.value = value"
+                            :disabled="itemSaving(item) || settingsLoading"
                             :placeholder="getPlaceholder(item)"
                             allow-clear
                             auto-size
@@ -294,8 +308,9 @@
                           />
                           <a-input-password
                             v-else-if="item.is_secret"
-                            v-model="item.value"
-                            :disabled="itemSaving(item)"
+                            :model-value="textControlValue(item)"
+                            @update:model-value="(value) => item.value = value"
+                            :disabled="itemSaving(item) || settingsLoading"
                             :placeholder="secretPlaceholder(item)"
                             allow-clear
                             size="medium"
@@ -305,8 +320,9 @@
                           />
                           <a-input
                             v-else
-                            v-model="item.value"
-                            :disabled="itemSaving(item)"
+                            :model-value="textControlValue(item)"
+                            @update:model-value="(value) => item.value = value"
+                            :disabled="itemSaving(item) || settingsLoading"
                             :placeholder="getPlaceholder(item)"
                             allow-clear
                             size="medium"
@@ -314,6 +330,7 @@
                             class="mango-system-settings__input"
                             @blur="saveItem(group, item)"
                           />
+                          <span v-if="itemValueError(item)" role="alert" class="mango-system-settings__test-result--error">{{ itemValueError(item) }}</span>
                           <span
                             v-if="itemSaving(item)"
                             class="mango-system-settings__help"
@@ -348,13 +365,14 @@
                                 v-model="testRecipient"
                                 aria-label="测试收件邮箱"
                                 placeholder="测试收件邮箱"
-                                :disabled="emailTestLoading"
+                                :disabled="emailTestLoading || settingsLoading"
                                 size="medium"
                                 @press-enter="handleEmailTest(group)"
                               />
                               <a-button
                                 size="medium"
                                 :loading="emailTestLoading"
+                                :disabled="settingsLoading"
                                 @click="handleEmailTest(group)"
                               >
                                 发送测试邮件
@@ -364,6 +382,7 @@
                               v-else-if="group.key === AI_VISION_GROUP_KEY"
                               size="medium"
                               :loading="visionTestLoading"
+                              :disabled="settingsLoading"
                               @click="handleVisionTest(group)"
                               data-testid="qa-views-system-settings-button-测试视觉模型"
                               >测试视觉模型</a-button
@@ -372,6 +391,7 @@
                               v-else
                               size="medium"
                               :loading="aiTestLoading"
+                              :disabled="settingsLoading"
                               @click="handleAiTest(group)"
                               data-testid="qa-views-system-settings-button-测试文本模型"
                               >测试文本模型</a-button
@@ -408,18 +428,22 @@
         :title="cacheDrawer.title"
         width="50%"
         unmount-on-close
+        @cancel="closeCacheDrawer"
       >
-        <div class="mango-system-settings__cache-json">
-          <JsonDisplay
-            :data="cacheDrawer.data"
-            :default-expanded="false"
-            :show-drawer-button="false"
-          />
-        </div>
+        <MangoPanelSpin :loading="cacheDrawerLoading" class="mango-system-settings__cache-loading">
+          <div class="mango-system-settings__cache-json">
+            <template v-if="cacheDrawerError"></template>
+            <JsonDisplay v-else
+              :data="cacheDrawer.data"
+              :default-expanded="false"
+              :show-drawer-button="false"
+            />
+          </div>
+        </MangoPanelSpin>
         <template #footer>
           <a-button
             size="small"
-            @click="cacheDrawer.visible = false"
+            @click="closeCacheDrawer"
             data-testid="qa-views-system-settings-button-关闭"
             >关闭</a-button
           >
@@ -430,19 +454,29 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, nextTick, onMounted, onActivated, onDeactivated, onBeforeUnmount, reactive, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import { Message, Modal } from '@arco-design/web-vue'
   import { fieldNames } from '@/setting'
   import { useEnum } from '@/store/modules/get-enum'
   import usePlatformBrandingStore from '@/store/modules/platform-branding'
+  import useUserStore from '@/store/modules/user'
+  import usePermissionStore from '@/store/modules/permission'
   import { useMenuIcon } from '@/hooks/useMenuIcon'
   import { postSystemAiTest } from '@/api/system/ai'
   import JsonDisplay from '@/components/display/JsonDisplay.vue'
+  import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
   import EnvironmentNameOverrides from './components/EnvironmentNameOverrides.vue'
   import EvaluationAiProfilesEditor from './components/EvaluationAiProfilesEditor.vue'
   import ReportDeliveryEditor from './components/ReportDeliveryEditor.vue'
   import DatasourcePerformanceEditor from './components/DatasourcePerformanceEditor.vue'
+  import { copySettingsCache, settingsSuccess, settingsTestResult, settingsDebugStatus } from './settings-response'
+  import type { SettingsCacheValue, SettingsTestResult } from './settings-response'
+  import { copyConfigGroups } from './config-records'
+  import type { ConfigItem, ConfigGroup } from './config-records'
+  import { copyEvaluationAiProfiles } from './evaluation-profiles'
   import {
     getSystemCacheDataGrouped,
     getSystemCacheDataKeyValue,
@@ -505,6 +539,67 @@
   const DATA_CAPABILITIES_GROUP_KEY = 'data-capabilities'
   const AI_CAPABILITIES_GROUP_KEY = 'ai-capabilities'
   const route = useRoute()
+  const user = useUserStore()
+  const permission = usePermissionStore()
+  const pagePath = route.path
+  let saveContextVersion = 0
+  let cacheViewVersion = 0
+  let settingsReadVersion = 0
+  let enumReadVersion = 0
+  let pageMounted = false
+  let needsSettings = true
+  let needsEnums = true
+  let pendingSettings: Promise<void> | null = null
+  let pendingEnums: Promise<void> | null = null
+  const pendingServiceWrites = new Set<Promise<unknown>>()
+  let pageActive = true
+  let disposed = false
+  const pendingConfirmations = new Set<() => void>()
+  const saveIdentity = () => JSON.stringify([
+    route.path, route.fullPath, user.userId, user.roleId, user.token,
+    user.selected_environment, permission.permissionKeys,
+  ])
+  const pageAvailable = () => !disposed && pageActive && route.path === pagePath &&
+    document.visibilityState === 'visible'
+  const savesAvailable = () => pageAvailable() &&
+    (!pageMounted || (settingsReady.value && !settingsLoading.value))
+  const invalidateSaves = () => {
+    saveContextVersion++
+    settingsReadVersion++
+    enumReadVersion++
+    if (pendingSettings || pendingSaves.size || pendingServiceWrites.size) needsSettings = true
+    if (pendingEnums) needsEnums = true
+    pendingSettings = null
+    pendingEnums = null
+    settingsLoading.value = false
+    enumsLoading.value = false
+    for (const cancel of [...pendingConfirmations]) cancel()
+    clearTransientResults()
+  }
+  const saveVisibilityChanged = () => {
+    if (document.visibilityState !== 'visible') invalidateSaves()
+    else resumeSettings()
+  }
+  watch(saveIdentity, () => {
+    invalidateSaves()
+    settingsGroups.value = []
+    lastSavedValues.clear()
+    settingsReady.value = false
+    settingsError.value = ''
+    enumsError.value = ''
+    testRecipient.value = ''
+    settingsData.isDebug = false
+    needsSettings = true
+    needsEnums = true
+    resumeSettings()
+  }, { flush: 'sync' })
+  onActivated(() => { pageActive = true; resumeSettings() })
+  onDeactivated(() => { pageActive = false; invalidateSaves() })
+  onBeforeUnmount(() => {
+    disposed = true
+    invalidateSaves()
+    document.removeEventListener('visibilitychange', saveVisibilityChanged)
+  })
   const { resolveMenuIcon } = useMenuIcon()
   const navigationIcons: Record<string, { paths: string[]; fallback: string }> = {
     [SYSTEM_SERVICES_GROUP_KEY]: {
@@ -532,26 +627,6 @@
   function resolveNavigationIcon(key: string) {
     const mapping = navigationIcons[key]
     return mapping ? resolveMenuIcon(mapping.paths, mapping.fallback) : 'icon-settings'
-  }
-
-  interface ConfigItem {
-    id: number
-    key: string
-    describe: string
-    value: any
-    value_type: number
-    is_secret: boolean
-    management_level: number
-    has_value: boolean
-    placeholder?: string
-    runtime_status?: any[]
-    performance_notice?: string
-  }
-
-  interface ConfigGroup {
-    key: string
-    title: string
-    items: ConfigItem[]
   }
 
   interface NavigationGroup {
@@ -646,13 +721,18 @@
     buildDefaultAssertionOptions(enumStore.api_default_assertion_check || [])
   )
   const settingsLoading = ref(true)
+  const settingsReady = ref(false)
+  const settingsError = ref('')
+  const enumsLoading = ref(false)
+  const enumsError = ref('')
   const aiTestLoading = ref(false)
   const visionTestLoading = ref(false)
   const emailTestLoading = ref(false)
   const runtimeCacheClearLoading = ref(false)
   const testRecipient = ref('')
-  const testResults = reactive<Record<string, { status: boolean; message: string }>>({})
+  const testResults = reactive<Record<string, SettingsTestResult>>({})
   const pendingSaves = new Map<string, Promise<boolean>>()
+  const pendingSaveValues = new Map<string, string>()
   const itemSaveLoading = reactive<Record<string, boolean>>({})
   const lastSavedValues = new Map<string, string>()
   const methodCacheRefreshLoading = reactive<Record<string, boolean>>({})
@@ -683,11 +763,35 @@
   const settingsData = reactive({
     isDebug: false,
   })
-  const cacheDrawer = reactive({
+  const cacheDrawer: { visible: boolean; title: string; data: SettingsCacheValue } = reactive({
     visible: false,
     title: '缓存数据',
-    data: null as any,
+    data: null,
   })
+  const cacheDrawerLoading = ref(false)
+  const cacheDrawerError = ref('')
+  const cacheDrawerTarget = ref<(typeof methodCacheItems)[number] | null>(null)
+  const closeCacheDrawer = () => {
+    cacheViewVersion++
+    cacheDrawer.visible = false
+    cacheDrawer.data = null
+    cacheDrawerLoading.value = false
+    cacheDrawerError.value = ''
+    cacheDrawerTarget.value = null
+  }
+  function clearTransientResults() {
+    for (const key of Object.keys(testResults)) delete testResults[key]
+    closeCacheDrawer()
+  }
+  const captureSettingsContext = () => {
+    const version = saveContextVersion, identity = saveIdentity()
+    return () => savesAvailable() && version === saveContextVersion && identity === saveIdentity()
+  }
+  function trackSettingsWrite<T>(request: Promise<T>): Promise<T> {
+    const tracked = request.finally(() => pendingServiceWrites.delete(tracked))
+    pendingServiceWrites.add(tracked)
+    return tracked
+  }
 
   const visibleGroups = computed(() => {
     const groups = settingsGroups.value
@@ -862,7 +966,7 @@
   const isIntegerSwitchType = (item: ConfigItem) => integerSwitchKeys.includes(item.key)
   const isSwitchType = (item: ConfigItem) => isBoolType(item) || isIntegerSwitchType(item)
   const isLongTextType = (item: ConfigItem) =>
-    [VALUE_TYPE_LIST, VALUE_TYPE_DICT, VALUE_TYPE_JSON].includes(item.value_type)
+    item.value_type !== null && [VALUE_TYPE_LIST, VALUE_TYPE_DICT, VALUE_TYPE_JSON].includes(item.value_type)
   const itemLabel = (item: ConfigItem) => {
     if (item.key === 'MOCK_CALLBACK_ENABLED') return '启用 Case 回调验证'
     if (isSystemDomain(item)) return '访问地址'
@@ -876,7 +980,7 @@
   }
   const secretPlaceholder = (item: ConfigItem) =>
     item.has_value ? '已配置，留空表示不修改' : getPlaceholder(item)
-  const isEnabledValue = (value: any) => [true, 1, '1', 'true', 'True'].includes(value)
+  const isEnabledValue = (value: unknown) => value === true || value === 1 || value === '1' || value === 'true' || value === 'True'
   const switchValue = (item: ConfigItem) => isEnabledValue(item.value)
   const setSwitchValue = (item: ConfigItem, value: boolean | string | number) => {
     item.value = isEnabledValue(value)
@@ -898,48 +1002,39 @@
     matchesConfigLevel(selectedLevel.value, item.management_level)
   const matchesBackend = (): boolean => selectedLevel.value === 'all'
 
-  const normalizeEnvironmentList = (value: any): number[] => {
+  const normalizeEnvironmentList = (value: unknown): number[] => {
     let environments = value
-    if (typeof environments === 'string') {
-      try {
-        environments = JSON.parse(environments)
-      } catch {
-        environments = []
+    if (environments === null || environments === undefined || environments === '') return []
+    if (typeof environments === 'string') environments = JSON.parse(environments)
+    if (!Array.isArray(environments)) throw new Error('Invalid validation environments')
+    return [...new Set(environments.map(value => {
+      if (!(typeof value === 'number' || (typeof value === 'string' && /^\d+$/.test(value)))) {
+        throw new Error('Invalid validation environment')
       }
-    }
-    if (!Array.isArray(environments)) return []
-    const validValues = new Set(environmentOptions.value.map((option: any) => Number(option.key)))
-    return Array.from(
-      new Set(
-        environments
-          .map((environment) => Number(environment))
-          .filter((environment) => validValues.has(environment))
-      )
-    ).sort((left, right) => left - right)
+      const environment = Number(value)
+      if (!Number.isSafeInteger(environment) || environment < 0) throw new Error('Invalid validation environment')
+      return environment
+    }))].sort((left, right) => left - right)
+  }
+
+  const parseStructuredSetting = (value: unknown): unknown => {
+    if (typeof value !== 'string') return value
+    try { return JSON.parse(value) }
+    catch { return value }
   }
 
   const normalizeEditValue = (item: ConfigItem) => {
     if (item.key === API_DEFAULT_ASSERTION_CHECKS_KEY) return normalizeRetryConditions(item.value)
     if (item.key === API_TRANSIENT_RETRY_CONDITIONS_KEY) return normalizeRetryConditions(item.value)
-    if (['REPORT_DELIVERY_CONFIG', 'DATASOURCE_PERFORMANCE_POLICY'].includes(item.key)) {
-      if (typeof item.value !== 'string') return { ...(item.value || {}) }
-      try { return JSON.parse(item.value) } catch { return {} }
-    }
-    if (item.key === 'EVALUATION_AI_PROFILES') return Array.isArray(item.value) ? item.value : []
-    if (isEnvironmentDisplayNames(item)) {
-      let names = item.value || {}
-      if (typeof names === 'string') {
-        try {
-          names = JSON.parse(names)
-        } catch {
-          names = {}
-        }
-      }
-      return names && typeof names === 'object' && !Array.isArray(names) ? { ...names } : {}
+    if (['REPORT_DELIVERY_CONFIG', 'DATASOURCE_PERFORMANCE_POLICY', 'EVALUATION_AI_PROFILES',
+      'ENVIRONMENT_DISPLAY_NAMES'].includes(item.key)) {
+      return parseStructuredSetting(item.value)
     }
     if (isDataFactoryValidationEnvironments(item)) {
-      const environments = normalizeEnvironmentList(item.value)
-      return environments.length ? environments : null
+      try {
+        const environments = normalizeEnvironmentList(item.value)
+        return environments.length ? environments : null
+      } catch { return item.value }
     }
     if (isAiTimeout(item)) {
       const timeout = Number(item.value)
@@ -951,7 +1046,8 @@
       return switchValue(item)
     }
     if (isNumberType(item)) {
-      return normalizeConfigNumber(item.value)
+      const number = normalizeConfigNumber(item.value)
+      return number === undefined && item.value != null && item.value !== '' ? item.value : number
     }
     if (isLongTextType(item) && typeof item.value !== 'string') {
       return JSON.stringify(item.value, null, 2)
@@ -959,12 +1055,39 @@
     return item.value
   }
 
+  const textControlValue = (item: ConfigItem): string =>
+    typeof item.value === 'string' ? item.value : ''
+  const numberControlValue = (item: ConfigItem): number | undefined =>
+    typeof item.value === 'number' && Number.isFinite(item.value) ? item.value : undefined
+  const conditionControlValue = (item: ConfigItem): string[] => normalizeRetryConditions(item.value)
+  const environmentControlValue = (item: ConfigItem): number[] =>
+    Array.isArray(item.value) ? item.value.filter((value): value is number => typeof value === 'number') : []
+
+  const itemValueError = (item: ConfigItem): string => {
+    if (!isSwitchType(item) && isNumberType(item) && item.value != null &&
+      (typeof item.value !== 'number' || !Number.isFinite(item.value) ||
+        (item.value_type === VALUE_TYPE_INT && !Number.isInteger(item.value)))) {
+      return '数值配置格式异常，请重新输入'
+    }
+    if (isDataFactoryValidationEnvironments(item)) {
+      try { normalizeEnvironmentList(item.value) }
+      catch { return '验证环境配置格式异常，请重新选择' }
+    }
+    return ''
+  }
+
   const normalizePayloadValue = (item: ConfigItem) => {
     if (item.key === API_DEFAULT_ASSERTION_CHECKS_KEY) return normalizeRetryConditions(item.value)
     if (item.key === API_TRANSIENT_RETRY_CONDITIONS_KEY) return normalizeRetryConditions(item.value)
     if (isEnvironmentDisplayNames(item)) {
+      if (!item.value || typeof item.value !== 'object' || Array.isArray(item.value)) {
+        throw new Error('Invalid environment name configuration')
+      }
       return Object.fromEntries(
-        Object.entries(item.value).map(([key, value]) => [key, String(value).trim()])
+        Object.entries(item.value).map(([key, value]) => {
+          if (typeof value !== 'string') throw new Error('Invalid environment name')
+          return [key, value.trim()]
+        })
       )
     }
     if (isDataFactoryValidationEnvironments(item)) {
@@ -994,7 +1117,10 @@
   const rememberSavedValues = (groups: ConfigGroup[]) => {
     lastSavedValues.clear()
     groups.forEach((group) => {
-      group.items.forEach((item) => lastSavedValues.set(item.key, serializedItemValue(item)))
+      group.items.forEach((item) => {
+        try { lastSavedValues.set(item.key, serializedItemValue(item)) }
+        catch { lastSavedValues.delete(item.key) }
+      })
     })
   }
 
@@ -1057,86 +1183,144 @@
     return true
   }
 
-  const persistItem = async (group: ConfigGroup, item: ConfigItem): Promise<boolean> => {
-    if (item.is_secret && item.has_value && [null, undefined, ''].includes(item.value)) return true
-    const nextValue = serializedItemValue(item)
-    if (lastSavedValues.get(item.key) === nextValue) return true
-    const previousValue = lastSavedValues.get(item.key)
+  const persistItem = async (
+    group: ConfigGroup,
+    item: ConfigItem,
+    snapshot: ConfigItem,
+    nextValue: string,
+    current: () => boolean
+  ): Promise<boolean> => {
+    if (!current()) return false
+    if (snapshot.is_secret && snapshot.has_value && (snapshot.value === null || snapshot.value === undefined || snapshot.value === '')) return true
+    if (lastSavedValues.get(snapshot.key) === nextValue) return true
+    const previousValue = lastSavedValues.get(snapshot.key)
+    const unchanged = () => {
+      try { return serializedItemValue(item) === nextValue }
+      catch { return false }
+    }
+    const restoreIfUnchanged = () => {
+      if (current() && unchanged()) restoreSavedValue(item, previousValue)
+    }
     if (!validateGroup(group)) {
-      restoreSavedValue(item, previousValue)
+      restoreIfUnchanged()
       return false
     }
     if (
-      item.management_level === MANAGEMENT_LEVEL_CAUTION &&
-      !(await confirmCautionLevelChange(item))
+      snapshot.management_level === MANAGEMENT_LEVEL_CAUTION &&
+      !(await confirmCautionLevelChange(snapshot, current))
     ) {
-      restoreSavedValue(item, previousValue)
+      restoreIfUnchanged()
       return false
     }
-    itemSaveLoading[item.key] = true
+    if (!current()) return false
     try {
-      const res = await putSystemCacheData([
-        {
-          id: item.id,
-          key: item.key,
-          value: normalizePayloadValue(item),
-        },
-      ])
-      lastSavedValues.set(item.key, nextValue)
-      if (item.key === 'PLATFORM_NAME' || item.key === 'PLATFORM_NAME_EN') {
+      const res = await trackSettingsWrite(putSystemCacheData([
+        { id: snapshot.id, key: snapshot.key, value: snapshot.value },
+      ]))
+      if (!current()) return false
+      if (res.code !== 200) throw new Error('Configuration save failed')
+      lastSavedValues.set(snapshot.key, nextValue)
+      if (snapshot.key === 'PLATFORM_NAME' || snapshot.key === 'PLATFORM_NAME_EN') {
         usePlatformBrandingStore().apply({
-          [item.key === 'PLATFORM_NAME' ? 'platform_name' : 'platform_name_en']: String(item.value),
+          [snapshot.key === 'PLATFORM_NAME' ? 'platform_name' : 'platform_name_en']: String(snapshot.value),
         })
       }
       item.has_value = true
-      if (item.key === 'EVALUATION_AI_PROFILES') {
-        item.value = item.value.map((profile: any) => ({ ...profile, api_key: profile.api_key ? '__KEEP_SECRET__' : '' }))
-        lastSavedValues.set(item.key, serializedItemValue(item))
+      if (snapshot.key === 'EVALUATION_AI_PROFILES') {
+        const masked = copyEvaluationAiProfiles(snapshot.value).map((profile) => ({
+          ...profile, api_key: profile.api_key ? '__KEEP_SECRET__' : '',
+        }))
+        if (unchanged()) item.value = masked
+        lastSavedValues.set(snapshot.key, JSON.stringify(masked))
       }
-      if (isEnvironmentDisplayNames(item)) {
+      if (isEnvironmentDisplayNames(snapshot)) {
         try {
           await enumStore.getEnum(true)
         } catch {
-          Message.warning('名称已保存，枚举刷新失败，请刷新页面后查看')
+          if (current()) Message.warning('名称已保存，枚举刷新失败，请刷新页面后查看')
         }
       }
-      Message.success(res.msg || `${itemLabel(item)}已保存`)
+      if (current()) Message.success(res.msg || `${itemLabel(snapshot)}已保存`)
       return true
-    } catch (error) {
-      restoreSavedValue(item, previousValue)
-      console.error(error)
+    } catch {
+      restoreIfUnchanged()
       return false
-    } finally {
-      itemSaveLoading[item.key] = false
     }
   }
 
-  const confirmCautionLevelChange = (item: ConfigItem): Promise<boolean> =>
-    new Promise((resolve) => {
-      Modal.warning({
-        title: '确认修改谨慎配置',
-        content: `“${itemLabel(item)}”会影响系统运行或数据生命周期，请确认已了解影响后再保存。`,
-        okText: '确认修改',
-        cancelText: '取消',
-        hideCancel: false,
-        onOk: () => resolve(true),
-        onCancel: () => resolve(false),
-      })
-    })
+  const confirmCautionLevelChange = (
+    item: ConfigItem,
+    current: () => boolean
+  ): Promise<boolean> => new Promise((resolve) => {
+    let settled = false
+    let dialog: ReturnType<typeof Modal.warning> | null = null
+    const finish = (approved: boolean) => {
+      if (settled) return
+      settled = true
+      pendingConfirmations.delete(cancel)
+      resolve(approved && current())
+    }
+    const cancel = () => { finish(false); dialog?.close() }
+    pendingConfirmations.add(cancel)
+    try { dialog = Modal.warning({
+      title: '确认修改谨慎配置',
+      content: `“${itemLabel(item)}”会影响系统运行或数据生命周期，请确认已了解影响后再保存。`,
+      okText: '确认修改',
+      cancelText: '取消',
+      hideCancel: false,
+      onOk: () => finish(true),
+      onCancel: () => finish(false),
+      onClose: () => finish(false),
+    }) } catch { finish(false) }
+  })
 
   const saveItem = (group: ConfigGroup, item: ConfigItem): Promise<boolean> => {
+    if (!savesAvailable()) return Promise.resolve(false)
+    const version = saveContextVersion, identity = saveIdentity()
+    const current = () => savesAvailable() && version === saveContextVersion && identity === saveIdentity()
+    const formatError = itemValueError(item)
+    if (formatError) { Message.warning(formatError); return Promise.resolve(false) }
+    let nextValue: string
+    try { nextValue = serializedItemValue(item) }
+    catch { Message.warning('配置格式异常，请检查后重试'); return Promise.resolve(false) }
     const pending = pendingSaves.get(item.key)
-    if (pending) return pending
-    const promise = persistItem(group, item).finally(() => pendingSaves.delete(item.key))
+    const pendingKey = JSON.stringify([version, identity, nextValue])
+    if (pending && pendingSaveValues.get(item.key) === pendingKey) return pending
+    // Queue fixed snapshots so a pending save cannot drop or approve a later edit.
+    const snapshot: ConfigItem = { ...item, value: JSON.parse(nextValue) }
+    const validationGroup = settingsGroups.value.find(candidate =>
+      candidate.items.some(candidate => candidate.key === item.key)
+    ) || group
+    const groupSnapshot: ConfigGroup = {
+      ...validationGroup,
+      items: validationGroup.items.map((candidate) => ({
+        ...candidate, value: candidate === item ? snapshot.value : candidate.value,
+      })),
+    }
+    itemSaveLoading[item.key] = true
+    const promise = Promise.resolve(pending).then(() =>
+      persistItem(groupSnapshot, item, snapshot, nextValue, current)
+    ).catch(() => {
+      if (current()) Message.error('配置保存失败，请重试')
+      return false
+    }).finally(() => {
+      if (pendingSaves.get(item.key) === promise) {
+        pendingSaves.delete(item.key)
+        pendingSaveValues.delete(item.key)
+        itemSaveLoading[item.key] = false
+      }
+    })
     pendingSaves.set(item.key, promise)
+    pendingSaveValues.set(item.key, pendingKey)
     return promise
   }
 
-  const saveBeforeTest = async (group: ConfigGroup) => {
+  const saveBeforeTest = async (group: ConfigGroup, current = captureSettingsContext()) => {
     for (const item of group.items) {
+      if (!current()) return false
       const pending = pendingSaves.get(item.key)
       if (pending && !(await pending)) return false
-      if (!(await saveItem(group, item))) return false
+      if (!current() || !(await saveItem(group, item))) return false
     }
     return true
   }
@@ -1150,65 +1334,38 @@
     await saveItem(group, item)
   }
 
-  const handleAiTest = async (group: ConfigGroup) => {
-    if (aiTestLoading.value) return
-    aiTestLoading.value = true
-    delete testResults.ai
+  const handleModelTest = async (group: ConfigGroup, capability: 'text' | 'vision') => {
+    const current = captureSettingsContext()
+    const loading = capability === 'text' ? aiTestLoading : visionTestLoading
+    const key = capability === 'text' ? 'ai' : AI_VISION_GROUP_KEY
+    const label = capability === 'text' ? '文本模型' : '视觉模型'
+    if (!current() || loading.value) return
+    loading.value = true
+    delete testResults[key]
     try {
-      if (!(await saveBeforeTest(group))) {
-        testResults.ai = { status: false, message: '配置未保存成功，请检查后重试测试。' }
+      if (!(await saveBeforeTest(group, current))) {
+        if (current()) testResults[key] = { status: false, message: '配置未保存成功，请检查后重试测试。' }
         return
       }
-      const res = await postSystemAiTest('text')
-      testResults.ai = {
-        status: Boolean(res.data?.status),
-        message: res.data?.message || res.msg,
-      }
-      if (res.data?.status) {
-        Message.success(res.data.message || res.msg)
-      } else {
-        Message.error(res.data?.message || '文本模型测试失败')
-      }
-    } catch (error) {
-      testResults.ai = { status: false, message: '文本模型测试失败，请检查模型配置或网络连接。' }
-      console.error(error)
+      if (!current()) return
+      const response = await postSystemAiTest(capability)
+      if (!current()) return
+      const result = settingsTestResult(response)
+      testResults[key] = result
+      if (result.status) Message.success(result.message || `${label}测试成功`)
+      else Message.error(result.message || `${label}测试失败`)
+    } catch {
+      if (current()) testResults[key] = { status: false, message: `${label}测试失败，请检查配置或网络连接后重试。` }
     } finally {
-      aiTestLoading.value = false
+      loading.value = false
     }
   }
-
-  const handleVisionTest = async (group: ConfigGroup) => {
-    if (visionTestLoading.value) return
-    visionTestLoading.value = true
-    delete testResults[AI_VISION_GROUP_KEY]
-    try {
-      if (!(await saveBeforeTest(group))) {
-        testResults[AI_VISION_GROUP_KEY] = {
-          status: false,
-          message: '配置未保存成功，请检查后重试测试。',
-        }
-        return
-      }
-      const res = await postSystemAiTest('vision')
-      testResults[AI_VISION_GROUP_KEY] = {
-        status: Boolean(res.data?.status),
-        message: res.data?.message || res.msg,
-      }
-      if (res.data?.status) Message.success(res.data.message || res.msg)
-      else Message.error(res.data?.message || '视觉模型测试失败')
-    } catch (error) {
-      testResults[AI_VISION_GROUP_KEY] = {
-        status: false,
-        message: '视觉模型测试失败，请检查当前生效的模型是否支持图片输入。',
-      }
-      console.error(error)
-    } finally {
-      visionTestLoading.value = false
-    }
-  }
+  const handleAiTest = (group: ConfigGroup) => handleModelTest(group, 'text')
+  const handleVisionTest = (group: ConfigGroup) => handleModelTest(group, 'vision')
 
   const handleEmailTest = async (group: ConfigGroup) => {
-    if (emailTestLoading.value) return
+    const current = captureSettingsContext()
+    if (!current() || emailTestLoading.value) return
     const recipient = testRecipient.value.trim()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
       Message.warning('请输入有效的测试收件邮箱')
@@ -1217,61 +1374,72 @@
     emailTestLoading.value = true
     delete testResults.email
     try {
-      if (!(await saveBeforeTest(group))) {
-        testResults.email = { status: false, message: '配置未保存成功，请检查后重试测试。' }
+      if (!(await saveBeforeTest(group, current))) {
+        if (current()) testResults.email = { status: false, message: '配置未保存成功，请检查后重试测试。' }
         return
       }
-      const res = await postSystemEmailTest(recipient)
-      testResults.email = {
-        status: Boolean(res.data?.status),
-        message: res.data?.message || res.msg,
-      }
-    } catch (error) {
-      testResults.email = { status: false, message: '测试邮件发送失败，请检查邮箱配置或网络连接。' }
+      if (!current()) return
+      const response = await postSystemEmailTest(recipient)
+      if (current()) testResults.email = settingsTestResult(response)
+    } catch {
+      if (current()) testResults.email = { status: false, message: '测试邮件发送失败，请检查邮箱配置或网络连接。' }
     } finally {
       emailTestLoading.value = false
     }
   }
 
   const handleRuntimeCacheClear = async () => {
-    if (runtimeCacheClearLoading.value) return
+    const current = captureSettingsContext()
+    if (!current() || runtimeCacheClearLoading.value) return
     runtimeCacheClearLoading.value = true
     try {
-      const res = await postSystemRuntimeCacheClear()
-      Message.success(res.msg || '页面统计缓存已清理')
+      const response = await postSystemRuntimeCacheClear()
+      if (!current()) return
+      Message.success(settingsSuccess(response).message || '页面统计缓存已清理')
+    } catch {
+      if (current()) Message.error('统计缓存清理失败，请重试')
     } finally {
       runtimeCacheClearLoading.value = false
     }
   }
 
   const handleMethodCacheRefresh = async (item: (typeof methodCacheItems)[number]) => {
-    methodCacheRefreshLoading[item.type] = true
+    const current = captureSettingsContext(), type = item.type
+    if (!current() || methodCacheRefreshLoading[type]) return
+    methodCacheRefreshLoading[type] = true
     try {
-      const res = await postSystemMethodCacheRefresh(item.type)
-      const refreshResult = res.data?.[item.type]
-      if (refreshResult?.status === false) {
-        Message.warning(refreshResult.message || res.msg)
-      } else {
-        Message.success(refreshResult?.message || res.msg)
-      }
-    } catch (error) {
-      console.error(error)
+      const response = await postSystemMethodCacheRefresh(type)
+      if (!current()) return
+      const result = settingsTestResult(response, type)
+      if (result.status) Message.success(result.message || '缓存已刷新')
+      else Message.warning(result.message || '缓存刷新失败，请重试')
+    } catch {
+      if (current()) Message.error('缓存刷新失败，请重试')
     } finally {
-      methodCacheRefreshLoading[item.type] = false
+      methodCacheRefreshLoading[type] = false
     }
   }
 
   const handleMethodCacheView = async (item: (typeof methodCacheItems)[number]) => {
-    methodCacheViewLoading[item.cacheKey] = true
+    const current = captureSettingsContext(), cacheKey = item.cacheKey
+    if (!current() || methodCacheViewLoading[cacheKey]) return
+    const version = ++cacheViewVersion
+    const valid = () => current() && version === cacheViewVersion && cacheDrawer.visible
+    methodCacheViewLoading[cacheKey] = true
+    cacheDrawerTarget.value = item
+    cacheDrawer.title = `${item.label}：${cacheKey}`
+    cacheDrawer.data = null
+    cacheDrawer.visible = true
+    cacheDrawerError.value = ''
+    cacheDrawerLoading.value = true
     try {
-      const res = await getSystemCacheDataKeyValue(item.cacheKey)
-      cacheDrawer.title = `${item.label}：${item.cacheKey}`
-      cacheDrawer.data = res.data ?? null
-      cacheDrawer.visible = true
-    } catch (error) {
-      console.error(error)
+      const response = await getSystemCacheDataKeyValue(cacheKey)
+      if (valid()) cacheDrawer.data = copySettingsCache(settingsSuccess(response).data)
+    } catch (loadFailure0) {
+      if (valid()) (reportLoadError(loadFailure0, "缓存读取失败，请重试", false), cacheDrawerError.value = '缓存读取失败，请重试')
     } finally {
-      methodCacheViewLoading[item.cacheKey] = false
+      methodCacheViewLoading[cacheKey] = false
+      if (valid()) cacheDrawerLoading.value = false
     }
   }
 
@@ -1279,75 +1447,126 @@
     item: ConfigItem,
     value: boolean | string | number
   ) => {
-    const enabled = isEnabledValue(value)
-    backendServiceConfigLoading[item.key] = true
+    const current = captureSettingsContext(), enabled = isEnabledValue(value)
+    const id = item.id, key = item.key
+    if (!current() || backendServiceConfigLoading[key]) return
+    backendServiceConfigLoading[key] = true
     try {
-      const res = await putSystemCacheData([
-        {
-          id: item.id,
-          key: item.key,
-          value: enabled,
-        },
-      ])
+      const response = await trackSettingsWrite(putSystemCacheData([{ id, key, value: enabled }]))
+      if (!current()) return
+      const result = settingsSuccess(response)
       item.value = enabled
       item.has_value = true
-      Message.success(res.msg)
-    } catch (error) {
-      console.error(error)
+      lastSavedValues.set(key, JSON.stringify(enabled))
+      Message.success(result.message || '配置已保存')
+    } catch {
+      if (current()) Message.error('配置保存失败，请重试')
     } finally {
-      backendServiceConfigLoading[item.key] = false
+      backendServiceConfigLoading[key] = false
     }
   }
 
-  async function doRefresh() {
-    settingsLoading.value = true
-    const requestedGroup = typeof route.query.group === 'string' ? route.query.group : ''
-    try {
-      const res = await getSystemCacheDataGrouped()
-      await enumStore.getEnum(true)
-      settingsGroups.value = res.data || []
-      settingsGroups.value.forEach((group) => {
-        group.items.forEach((item) => {
-          item.value = normalizeEditValue(item)
-        })
-      })
-      rememberSavedValues(settingsGroups.value)
-      const requestedNavigationGroup = findNavigationGroup(requestedGroup)
-      activeNavigationKey.value =
-        requestedNavigationGroup?.key || navigationGroups.value[0]?.key || SYSTEM_SERVICES_GROUP_KEY
-    } catch (error) {
-      console.error(error)
-    } finally {
-      settingsLoading.value = false
-      await nextTick()
-      const configElement = configSectionElements.get(requestedGroup)
-      const navigationElement = sectionElements.get(requestedGroup)
-      const targetElement = configElement || navigationElement
-      if (requestedGroup && targetElement) {
-        scrollElementIntoPanel(targetElement, 'auto')
-      } else {
-        panelRef.value?.scrollTo({ top: 0, behavior: 'auto' })
+  function resumeSettings() {
+    if (!pageMounted || !pageAvailable()) return
+    if (needsSettings) void doRefresh()
+    if (needsEnums) void loadSettingsEnums()
+  }
+
+  function loadSettingsEnums(): Promise<void> {
+    if (!pageAvailable()) { needsEnums = true; return Promise.resolve() }
+    if (pendingEnums) return pendingEnums
+    const version = ++enumReadVersion, context = saveContextVersion, identity = saveIdentity()
+    const valid = () => pageAvailable() && version === enumReadVersion && context === saveContextVersion && identity === saveIdentity()
+    enumsLoading.value = true
+    enumsError.value = ''
+    needsEnums = false
+    const promise = Promise.resolve().then(async () => {
+      try {
+        if (!valid()) return
+        await enumStore.getEnum(true)
+      } catch (loadFailure1) {
+        if (valid()) { (reportLoadError(loadFailure1, "配置选项加载失败，请重试", false), enumsError.value = '配置选项加载失败，请重试'); needsEnums = true }
+      } finally {
+        if (valid()) { enumsLoading.value = false; pendingEnums = null }
       }
-    }
+    })
+    pendingEnums = promise
+    return promise
+  }
+
+  function doRefresh(): Promise<void> {
+    if (!pageAvailable()) { needsSettings = true; return Promise.resolve() }
+    if (pendingSettings) return pendingSettings
+    const version = ++settingsReadVersion, context = saveContextVersion, identity = saveIdentity()
+    const valid = () => pageAvailable() && version === settingsReadVersion && context === saveContextVersion && identity === saveIdentity()
+    const requestedGroup = typeof route.query.group === 'string' ? route.query.group : ''
+    const shouldScroll = !settingsReady.value
+    settingsLoading.value = true
+    settingsError.value = ''
+    needsSettings = false
+    const promise = Promise.resolve().then(async () => {
+      try {
+        // A paused write may already have reached the server; reconcile only after it settles.
+        await Promise.allSettled([...pendingSaves.values(), ...pendingServiceWrites])
+        if (!valid()) return
+        const response = await getSystemCacheDataGrouped()
+        if (!valid()) return
+        const groups = copyConfigGroups(response)
+        groups.forEach(group => group.items.forEach(item => { item.value = normalizeEditValue(item) }))
+        const previous = new Map(settingsGroups.value.flatMap(group => group.items.map(item => [item.key, item] as const)))
+        const saved = new Map(lastSavedValues)
+        rememberSavedValues(groups)
+        for (const group of groups) {
+          for (const item of group.items) {
+            const old = previous.get(item.key)
+            if (!old || old.id !== item.id) continue
+            let dirty = true
+            try { dirty = serializedItemValue(old) !== saved.get(old.key) } catch { /* Preserve invalid local edits for correction. */ }
+            if (dirty || lastSavedValues.get(item.key) === saved.get(item.key)) item.value = old.value
+          }
+        }
+        settingsGroups.value = groups
+        settingsReady.value = true
+        if (shouldScroll) {
+          const requestedNavigationGroup = findNavigationGroup(requestedGroup)
+          activeNavigationKey.value = requestedNavigationGroup?.key || navigationGroups.value[0]?.key || SYSTEM_SERVICES_GROUP_KEY
+          await nextTick()
+          if (!valid()) return
+          const targetElement = configSectionElements.get(requestedGroup) || sectionElements.get(requestedGroup)
+          if (requestedGroup && targetElement) scrollElementIntoPanel(targetElement, 'auto')
+          else panelRef.value?.scrollTo({ top: 0, behavior: 'auto' })
+        }
+      } catch (loadFailure2) {
+        if (valid()) { (reportLoadError(loadFailure2, "系统配置加载失败，请重试", false), settingsError.value = '系统配置加载失败，请重试'); needsSettings = true }
+      } finally {
+        if (valid()) { settingsLoading.value = false; pendingSettings = null }
+      }
+    })
+    pendingSettings = promise
+    return promise
   }
 
   const debugLogSaving = ref(false)
-  async function doPostSystemSetDebugLog(isDebug: boolean) {
-    if (debugLogSaving.value) return
+  async function doPostSystemSetDebugLog(isDebug: boolean | string | number) {
+    const current = captureSettingsContext(), enabled = isEnabledValue(isDebug)
+    if (!current() || debugLogSaving.value) return
     debugLogSaving.value = true
     try {
-      const res = await postSystemSetDebugLog(isDebug)
-      settingsData.isDebug = res.data.is_debug
-      Message.success(res.msg)
-    } catch (error) {
-      console.error(error)
+      const response = await trackSettingsWrite(postSystemSetDebugLog(enabled))
+      if (!current()) return
+      settingsData.isDebug = settingsDebugStatus(response)
+      Message.success(settingsSuccess(response).message || '调试日志配置已保存')
+    } catch {
+      if (current()) Message.error('调试日志配置保存失败，请重试')
     } finally {
       debugLogSaving.value = false
     }
   }
 
-  onMounted(async () => {
-    await doRefresh()
+  onMounted(() => {
+    pageMounted = true
+    document.addEventListener('visibilitychange', saveVisibilityChanged)
+    resumeSettings()
   })
 </script>
 
@@ -1626,6 +1845,12 @@
     align-items: center;
     gap: var(--m-space-sm);
     flex: 0 0 auto;
+  }
+
+  .mango-system-settings__cache-loading {
+    display: block;
+    width: 100%;
+    min-height: 160px;
   }
 
   .mango-system-settings__cache-json {

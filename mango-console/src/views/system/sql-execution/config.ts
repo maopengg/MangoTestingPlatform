@@ -1,111 +1,129 @@
 import { reactive, ref } from 'vue'
 import { FormItem } from '@/types/components'
-import { useTable, useTableColumn } from '@/hooks/table'
+import { useTableIndexColumn, useTableColumn } from '@/hooks/table'
 import { createIdSearchValue } from '@/utils/id-search'
 import { enableMultiSelectSearch } from '@/utils/search-condition'
 
-const table = useTable()
 export const tableScrollX = 2450
+export const SQL_EXECUTION_OPTION_KEYS = {
+  datasource_type: 'datasource_type_options',
+  project_product_id: 'project_product_options',
+  source_type: 'source_type_options',
+  source_stage: 'source_stage_options',
+  test_env: 'environment_options',
+  datasource_alias_id: 'datasource_alias_options',
+  status: 'status_options',
+  is_slow: 'slow_options',
+} as const
+export const SQL_STATUS_TITLES: Record<string, string> = {
+  running: '执行中', success: '成功', fail: '失败', timeout: '超时', rolled_back: '已回滚',
+}
+export const SQL_STATUS_COLORS: Record<string, string> = {
+  running: 'blue', success: 'green', fail: 'red', timeout: 'orange', rolled_back: 'gray',
+}
 
-export const conditionItems: Array<FormItem> = reactive([
-  { key: 'datasource_type', label: '数据源类型', type: 'select', placeholder: '请选择类型', value: ref([]) },
-  { key: 'database_id', label: '连接ID', type: 'input', placeholder: '请输入连接ID', value: createIdSearchValue('', false) },
-  {
-    key: 'id',
-    label: '记录ID',
-    type: 'input',
-    placeholder: '请输入记录ID',
-    value: createIdSearchValue(),
-  },
-  {
-    key: 'project_product_id',
-    label: '项目产品',
-    type: 'select',
-    placeholder: '请选择项目产品',
-    value: ref(''),
-  },
-  {
-    key: 'source_type',
-    label: '来源类型',
-    type: 'select',
-    placeholder: '请选择来源类型',
-    value: ref(''),
-  },
-  {
-    key: 'source_id',
-    label: '来源ID',
-    type: 'input',
-    placeholder: '请输入Case或资产ID',
-    value: createIdSearchValue('', false),
-  },
-  {
-    key: 'source_stage',
-    label: '执行阶段',
-    type: 'select',
-    placeholder: '请选择执行阶段',
-    value: ref(''),
-  },
-  {
-    key: 'test_env',
-    label: '测试环境',
-    type: 'select',
-    placeholder: '请选择测试环境',
-    value: ref(''),
-  },
-  {
-    key: 'datasource_alias_id',
-    label: '逻辑数据源',
-    type: 'select',
-    placeholder: '请选择逻辑数据源',
-    value: ref(''),
-  },
-  {
-    key: 'status',
-    label: '执行状态',
-    type: 'select',
-    placeholder: '请选择执行状态',
-    value: ref(''),
-  },
-  {
-    key: 'is_slow',
-    label: '性能状态',
-    type: 'select',
-    placeholder: '请选择性能状态',
-    value: ref(''),
-  },
-  {
-    key: 'duration_min',
-    label: '最小耗时',
-    type: 'input',
-    placeholder: '毫秒',
-    value: ref(''),
-  },
-  {
-    key: 'duration_max',
-    label: '最大耗时',
-    type: 'input',
-    placeholder: '毫秒',
-    value: ref(''),
-  },
-  {
-    key: 'sql_keyword',
-    label: '执行内容',
-    type: 'input',
-    placeholder: '请输入执行内容关键字',
-    value: ref(''),
-  },
-  {
-    key: 'create_time',
-    label: '执行时间',
-    type: 'range',
-    placeholder: '请选择执行时间',
-    value: ref([]),
-  },
-])
-enableMultiSelectSearch(conditionItems)
+export function createConditionItems(): FormItem[] {
+  const conditionItems: FormItem[] = reactive([
+    { key: 'datasource_type', label: '数据源类型', type: 'select', placeholder: '请选择类型', value: ref([]) },
+    { key: 'database_id', label: '连接ID', type: 'input', placeholder: '请输入连接ID', value: createIdSearchValue('', false) },
+    {
+      key: 'id',
+      label: '记录ID',
+      type: 'input',
+      placeholder: '请输入记录ID',
+      value: createIdSearchValue(),
+    },
+    {
+      key: 'project_product_id',
+      label: '项目产品',
+      type: 'select',
+      placeholder: '请选择项目产品',
+      value: ref(''),
+    },
+    {
+      key: 'source_type',
+      label: '来源类型',
+      type: 'select',
+      placeholder: '请选择来源类型',
+      value: ref(''),
+    },
+    {
+      key: 'source_id',
+      label: '来源ID',
+      type: 'input',
+      placeholder: '请输入Case或资产ID',
+      value: createIdSearchValue('', false),
+    },
+    {
+      key: 'source_stage',
+      label: '执行阶段',
+      type: 'select',
+      placeholder: '请选择执行阶段',
+      value: ref(''),
+    },
+    {
+      key: 'test_env',
+      label: '测试环境',
+      type: 'select',
+      placeholder: '请选择测试环境',
+      value: ref(''),
+    },
+    {
+      key: 'datasource_alias_id',
+      label: '逻辑数据源',
+      type: 'select',
+      placeholder: '请选择逻辑数据源',
+      value: ref(''),
+    },
+    {
+      key: 'status',
+      label: '执行状态',
+      type: 'select',
+      placeholder: '请选择执行状态',
+      value: ref(''),
+    },
+    {
+      key: 'is_slow',
+      label: '性能状态',
+      type: 'select',
+      placeholder: '请选择性能状态',
+      value: ref(''),
+    },
+    {
+      key: 'duration_min',
+      label: '最小耗时',
+      type: 'input',
+      placeholder: '毫秒',
+      value: ref(''),
+    },
+    {
+      key: 'duration_max',
+      label: '最大耗时',
+      type: 'input',
+      placeholder: '毫秒',
+      value: ref(''),
+    },
+    {
+      key: 'sql_keyword',
+      label: '执行内容',
+      type: 'input',
+      placeholder: '请输入执行内容关键字',
+      value: ref(''),
+    },
+    {
+      key: 'create_time',
+      label: '执行时间',
+      type: 'range',
+      placeholder: '请选择执行时间',
+      value: ref([]),
+    },
+  ])
+  enableMultiSelectSearch(conditionItems)
+  return conditionItems
+}
 
 export const tableColumns = useTableColumn([
-  table.indexColumn,
+  { ...useTableIndexColumn(), align: 'center' },
   { title: '数据源类型', key: 'datasource_type_name', dataIndex: 'datasource_type_name', width: 150, ellipsis: true, tooltip: true },
   { title: '执行时间', key: 'create_time', dataIndex: 'create_time', width: 170 },
   {

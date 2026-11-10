@@ -42,7 +42,7 @@
 
       <section class="step-healing-panel">
         <div class="step-healing-summary">
-          <button class="step-healing-summary__main" type="button" @click="emit('openStepHealing')">
+          <button class="step-healing-summary__main" type="button" :disabled="readonly" @click="emit('openStepHealing')">
             <span class="flow-panel-title">流程自愈</span>
             <span class="flow-panel-subtitle">
               {{ healingEnabled ? (healingGoal || '已启用，点击查看配置') : '未启用，点击配置目标和条件' }}
@@ -73,11 +73,12 @@
                 type="primary"
                 status="warning"
                 :loading="healingReviewConfirming"
+                :disabled="readonly"
                 @click="emit('confirmHealingReview')"
               >
                 确认修复
               </a-button>
-              <a-button size="small" type="text" @click="emit('openStepHealing')">
+              <a-button size="small" type="text" :disabled="readonly" @click="emit('openStepHealing')">
                 查看配置
               </a-button>
             </a-space>
@@ -97,7 +98,7 @@
                 v-for="nodeType in nodeTypes"
                 :key="nodeType.type"
                 class="node-type-card"
-                draggable="true"
+                :draggable="!readonly"
                 @dragstart="onDragStart($event, nodeType.type.toString())"
               >
                 <span class="color-dot" :style="{ backgroundColor: nodeType.color }"></span>
@@ -236,11 +237,13 @@
                   <button
                     v-if="!readonly"
                     class="node-delete"
+                    :disabled="Boolean(deletingNodeId)"
+                    :aria-busy="deletingNodeId === id"
                     type="button"
                     title="删除节点"
                     @click.stop="deleteNodeById(id)" data-testid="qa-views-uitest-page-steps-details-flowchart-button-删除节点"
                   >
-                    ×
+                    {{ deletingNodeId === id ? '…' : '×' }}
                   </button>
                 </template>
                 <template #after>
@@ -303,13 +306,13 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+  import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { Handle, ConnectionMode, Position as FlowPosition, useVueFlow } from '@vue-flow/core'
   import type {
     Connection,
     Edge,
-    Node,
+    Node as VueNode,
     NodeDragEvent,
     NodeMouseEvent,
     EdgeMouseEvent,
@@ -317,12 +320,15 @@
   import type {
     Connector,
     ConnectorPosition,
-    FlowData,
     Position,
     UiStepControl,
     UIEdge,
-    UINode,
   } from '@/types/components'
+  import { readStepFlow, readStepConfig, type StepFlow as FlowData, type StepNode as UINode, type StepDetail, type StepResult, type StepNodeConfig } from '@/components/business/ui-page-step'
+  import { cloneLosslessJson } from '@/utils/lossless-json'
+  import { liveObject } from '@/components/business/ui-live-workbench'
+  import { useLiveWorkbenchScope } from '@/hooks/use-live-workbench-scope'
+  type Node = VueNode<{ uiType: number; label: string; config: StepNodeConfig; color: string }> & { dimensions?: { width: number; height: number } }
   import { useEnum } from '@/store/modules/get-enum'
   import { useSelectValueStore } from '@/store/modules/get-ope-value'
   import UiFlowCanvas from '@/components/display/UiFlowCanvas.vue'
@@ -339,19 +345,21 @@
   const useSelectValue = useSelectValueStore()
 
   interface Props {
+    contextKey?: string
+    beforeNodeDelete?: (node: UINode) => Promise<boolean>
     flowData?: FlowData
     readonly?: boolean
     compact?: boolean
     showStepDetailAction?: boolean
     showCacheDataAction?: boolean
     allowDrop?: boolean
-    tableData: any[]
+    tableData: StepDetail[]
     nodeTypes: Array<{ type: number; label: string; color: string }>
     healingEnabled?: boolean
     healingGoal?: string
     healingPendingReviewCount?: number
     healingReviewConfirming?: boolean
-    resultData?: any
+    resultData?: StepResult | null
     flowSaving?: boolean
     flowSaveStatus?: 'saved' | 'dirty' | 'saving' | 'error'
     debugStatusText?: string
@@ -414,8 +422,8 @@
   }>()
 
   const flowId = `ui-step-flow-${Math.random().toString(36).slice(2)}`
-  const flowNodes = ref<Node[]>([])
-  const flowEdges = ref<Edge[]>([])
+  const flowNodes = shallowRef<Node[]>([])
+  const flowEdges = shallowRef<Edge[]>([])
   const flowCanvasRef = ref<HTMLElement | null>(null)
   const controlState = ref<UiStepControl>({
     ...defaultStepControl(),
@@ -424,6 +432,7 @@
   const selectedNodeId = ref('')
   const shortcutNodeId = ref('')
   const copiedNodeId = ref('')
+  const deletingNodeId = ref('')
   const activePopoverNodeId = ref('')
   const decisionMethodDrafts = ref<Record<string, string>>({})
   const lastEmittedSignature = ref('')
@@ -448,7 +457,7 @@
   )
   const flowIssueSummary = computed(() => {
     const unsaved = legacyNodes.value.filter(
-      (node) => !node.config?.id || props.draftNodeIds.includes(node.id)
+      (node) => node.config?.id == null || props.draftNodeIds.includes(node.id)
     ).length
     const isolated =
       legacyNodes.value.length <= 1
@@ -458,7 +467,7 @@
             return !connections.inputs.length && !connections.outputs.length
           }).length
     const decisionIncomplete = legacyNodes.value.filter((node) => {
-      if (!isDecisionNode(node.type) || !node.config?.id) return false
+      if (!isDecisionNode(node.type) || node.config?.id == null) return false
       return getNodeConnections(node.id).outputs.length === 0
     }).length
     return { unsaved, isolated, decisionIncomplete }
@@ -470,6 +479,9 @@
     return '已自动保存'
   })
 
+  let syncVersion = 0
+  const scope = useLiveWorkbenchScope(() => props.contextKey, { invalidate() { syncVersion++; copiedNodeId.value = shortcutNodeId.value = activePopoverNodeId.value = ''; decisionMethodDrafts.value = {}; clearNodePopoverTimer(); clearNodePopoverCloseTimer(); if (canvasResizeTimer !== null) clearTimeout(canvasResizeTimer); canvasResizeTimer = null }, resume: scheduleCanvasFit })
+  watch(() => props.stepControl, value => { if (value && JSON.stringify(value) !== JSON.stringify(controlState.value)) controlState.value = { ...value } }, { deep: true })
   watch(
     () => props.flowData,
     (newData) => {
@@ -480,6 +492,7 @@
       }
       lastEmittedSignature.value = incomingSignature
       syncingFromProps = true
+      const current = scope.capture(), sequence = ++syncVersion
       flowNodes.value = normalized.nodes.map(toVueNode)
       flowEdges.value = normalized.edges
         .map((edge) => toVueEdge(edge, normalized.edges))
@@ -489,6 +502,7 @@
         ? previousSelectedNodeId
         : flowNodes.value[0]?.id || ''
       nextTick(() => {
+        if (!current() || sequence !== syncVersion) return
         syncingFromProps = false
         if (flowNodes.value.length) {
           fitView({ padding: 0.35, maxZoom: UI_FLOW_INITIAL_MAX_ZOOM, duration: 200 })
@@ -565,7 +579,7 @@
     window.addEventListener('resize', scheduleCanvasFit)
     nextTick(() => {
       const canvas = flowCanvasRef.value
-      if (!canvas || typeof ResizeObserver === 'undefined') return
+      if (!scope.available() || !canvas || typeof ResizeObserver === 'undefined') return
       const rect = canvas.getBoundingClientRect()
       canvasWidth = rect.width
       canvasHeight = rect.height
@@ -598,12 +612,14 @@
   })
 
   function scheduleCanvasFit() {
+    const current = scope.capture()
+    if (!current()) return
     if (canvasResizeTimer) {
       clearTimeout(canvasResizeTimer)
     }
     canvasResizeTimer = setTimeout(() => {
       canvasResizeTimer = null
-      if (!flowNodes.value.length) return
+      if (!current() || !flowNodes.value.length) return
       fitView({
         padding: 0.28,
         maxZoom: UI_FLOW_RESPONSIVE_MAX_ZOOM,
@@ -614,7 +630,7 @@
 
   function handleDuplicateShortcut(event: KeyboardEvent) {
     if (
-      props.readonly ||
+      !scope.available() || props.readonly ||
       event.repeat ||
       event.altKey ||
       event.shiftKey ||
@@ -673,17 +689,12 @@
   }
 
   function activateNodeShortcut(nodeId: string) {
-    if (props.readonly || !getLegacyNode(nodeId)) return
+    if (!scope.available() || props.readonly || !getLegacyNode(nodeId)) return
     shortcutNodeId.value = nodeId
     selectedNodeId.value = nodeId
   }
 
-  function normalizeFlowData(data?: FlowData): FlowData {
-    return {
-      nodes: Array.isArray(data?.nodes) ? data!.nodes : [],
-      edges: Array.isArray(data?.edges) ? data!.edges : [],
-    }
-  }
+  function normalizeFlowData(value?: FlowData): FlowData { return readStepFlow(value) }
 
   function defaultStepControl(): UiStepControl {
     return {
@@ -722,6 +733,7 @@
   }
 
   function notifyDataChange() {
+    if (!scope.available() || props.readonly) return
     const data = legacyFlowData.value
     const signature = getFlowSignature(data)
     if (signature === lastEmittedSignature.value) return
@@ -733,12 +745,12 @@
     return {
       id: node.id,
       type: 'uiStepNode',
-      position: node.position || { x: 0, y: 0 },
+      position: { ...(node.position || { x: 0, y: 0 }) },
       dimensions: { width: UI_FLOW_NODE_WIDTH, height: UI_FLOW_NODE_HEIGHT },
       data: {
         uiType: node.type,
         label: node.label,
-        config: node.config || {},
+        config: readStepConfig(node.config),
         color: getColor(node.type),
       },
     }
@@ -753,7 +765,7 @@
       },
       type: Number(node.data?.uiType ?? 0),
       label: String(node.data?.label || getNodeTypeLabel(Number(node.data?.uiType ?? 0))),
-      config: (node.data?.config || {}) as Record<any, any>,
+      config: readStepConfig(node.data?.config),
     }
   }
 
@@ -803,7 +815,7 @@
     )
   }
 
-  function normalizeHandlePosition(value: any, fallback: ConnectorPosition): ConnectorPosition {
+  function normalizeHandlePosition(value: unknown, fallback: ConnectorPosition): ConnectorPosition {
     return value === 'top' || value === 'right' || value === 'bottom' || value === 'left'
       ? value
       : fallback
@@ -815,8 +827,8 @@
 
   function getStepDataByNodeId(nodeId: string) {
     const node = getLegacyNode(nodeId)
-    if (!node?.config?.id) return null
-    return props.tableData.find((item: any) => item.id === node.config?.id) || null
+    if (node?.config?.id == null) return null
+    return props.tableData.find(item => String(item.id) === String(node.config?.id)) || null
   }
 
   function getNodeTitle(nodeId: string) {
@@ -838,7 +850,7 @@
     const node = getLegacyNode(nodeId)
     const step = getStepDataByNodeId(nodeId)
     if (Number(node?.type) === 6) {
-      const seconds = (step?.ope_value || []).find((item: any) => item?.f === 'seconds')?.v
+      const seconds = (step?.ope_value || []).find((item) => item?.f === 'seconds')?.v
       return seconds === undefined || seconds === null ? '强制等待' : `等待 ${seconds} 秒`
     }
     return useSelectValue.getSelectLabel(step?.ope_key) || node?.label || '待配置'
@@ -880,7 +892,7 @@
           ? toInfoRows({
               步骤类型: step.type !== undefined ? getNodeTypeLabel(Number(step.type)) : '',
               执行方法: useSelectValue.getSelectLabel(step?.ope_key) || step?.ope_key,
-              条件值: step.condition_value?.expect ?? step.condition_value,
+              条件值: liveObject(step.condition_value).expect ?? step.condition_value,
               自定义变量: formatCustomVariables(step.custom),
               SQL配置: formatSqlExecute(step.sql_execute),
               操作参数: formatOperationValues(step.ope_value),
@@ -911,9 +923,9 @@
 
   function getNodeResultByNodeId(nodeId: string) {
     const step = getStepDataByNodeId(nodeId)
-    if (!step?.id) return null
+    if (step?.id == null) return null
     return (
-      [...resultList.value].reverse().find((item: any) => String(item?.id) === String(step.id)) ||
+      [...resultList.value].reverse().find((item) => String(item?.id) === String(step.id)) ||
       null
     )
   }
@@ -932,54 +944,54 @@
     return getNodeByStepId(lastResult.next_node_id)?.id || ''
   }
 
-  function getResultStatusText(result: any) {
+  function getResultStatusText(result: StepResult | null) {
     if (!result) return '未测试'
     if (result.status === 1) return '通过'
     if (result.status === 0) return '失败'
     return '未测试'
   }
 
-  function formatSleep(value: any) {
+  function formatSleep(value: unknown) {
     if (value === null || value === undefined || value === '') return '-'
     return `${value} 秒`
   }
 
-  function getElementRows(result: any) {
-    if (Array.isArray(result?.elements) && result.elements.length) return result.elements
+  function getElementRows(result: StepResult | null) {
+    if (result?.elements?.length) return result.elements
     if (result?.ele_name) return [result.ele_name]
     if (result?.loc) return [{ loc: result.loc }]
     return []
   }
 
-  function getElementExpText(value: any) {
+  function getElementExpText(value: unknown) {
     if (Array.isArray(value)) return value.map(getElementExpText).filter(Boolean).join(' / ')
-    return enumStore.element_exp?.find((item: any) => item.key === value)?.title || value || '-'
+    return enumStore.element_exp?.find((item) => item.key === value)?.title || value || '-'
   }
 
-  function formatOperationValues(values: any) {
+  function formatOperationValues(values: unknown) {
     if (!Array.isArray(values)) return ''
     const rows = values
-      .filter((item: any) => item?.d || item?.v !== undefined)
+      .filter((item) => item?.d || item?.v !== undefined)
       .map(
-        (item: any) =>
+        (item) =>
           `${item.n || item.f || '参数'}=${formatInfoValue(item.v ?? item.value ?? '')}`
       )
       .filter((item: string) => !item.endsWith('='))
     return rows.join('\n')
   }
 
-  function formatCustomVariables(values: any) {
+  function formatCustomVariables(values: unknown) {
     if (!Array.isArray(values)) return ''
     return values
-      .map((item: any) => `${item.key || '变量'}=${formatInfoValue(item.value)}`)
+      .map((item) => `${item.key || '变量'}=${formatInfoValue(item.value)}`)
       .filter((item: string) => !item.endsWith('='))
       .join('\n')
   }
 
-  function formatSqlExecute(values: any) {
+  function formatSqlExecute(values: unknown) {
     if (!Array.isArray(values)) return ''
     return values
-      .map((item: any) =>
+      .map((item) =>
         [
           item.key_list ? `缓存变量=${formatInfoValue(item.key_list)}` : '',
           item.sql ? `SQL=${formatInfoValue(item.sql)}` : '',
@@ -991,14 +1003,14 @@
       .join('\n')
   }
 
-  function getResultElementText(result: any) {
+  function getResultElementText(result: StepResult | null) {
     return getElementRows(result)
-      .map((item: any) => item?.element_text)
+      .map((item) => item?.element_text)
       .filter(Boolean)
       .join('\n')
   }
 
-  function toInfoRows(record: Record<string, any>) {
+  function toInfoRows(record: Record<string, unknown>) {
     return Object.entries(record)
       .map(([label, rawValue]) => {
         const cleanedValue = pruneEmptyValue(rawValue)
@@ -1012,7 +1024,7 @@
       .filter(Boolean) as Array<{ label: string; value: string; multiline: boolean }>
   }
 
-  function pruneEmptyValue(value: any): any {
+  function pruneEmptyValue(value: unknown): unknown {
     if (isEmptyInfoValue(value)) return null
     if (Array.isArray(value)) {
       const items = value
@@ -1020,7 +1032,7 @@
         .filter((item) => !isEmptyInfoValue(item))
       return items.length ? items : null
     }
-    if (typeof value === 'object') {
+    if (value !== null && typeof value === 'object') {
       const entries = Object.entries(value)
         .map(([key, item]) => [key, pruneEmptyValue(item)])
         .filter(([, item]) => !isEmptyInfoValue(item))
@@ -1029,30 +1041,32 @@
     return value
   }
 
-  function isEmptyInfoValue(value: any) {
+  function isEmptyInfoValue(value: unknown) {
     if (value === null || value === undefined || value === '') return true
     if (Array.isArray(value)) return value.length === 0
-    if (typeof value === 'object') return Object.keys(value).length === 0
+    if (value !== null && typeof value === 'object') return Object.keys(value).length === 0
     return false
   }
 
-  function formatInfoValue(value: any) {
+  function formatInfoValue(value: unknown) {
     if (value === undefined) return '-'
     if (value === null) return 'null'
-    if (typeof value === 'object') {
+    if (value !== null && typeof value === 'object') {
       return JSON.stringify(value, null, 2)
     }
     return String(value)
   }
 
   function startNodePopoverTimer(nodeId: string) {
+    const current = scope.capture()
+    if (!current()) return
     clearNodePopoverTimer()
     clearNodePopoverCloseTimer()
     if (activePopoverNodeId.value && activePopoverNodeId.value !== nodeId) {
       activePopoverNodeId.value = ''
     }
     popoverTimer = setTimeout(() => {
-      activePopoverNodeId.value = nodeId
+      if (current()) activePopoverNodeId.value = nodeId
       popoverTimer = null
     }, 1000)
   }
@@ -1107,20 +1121,20 @@
   function isExpectDecisionNode(nodeId: string) {
     const node = getLegacyNode(nodeId)
     if (!isDecisionNode(node?.type)) return false
-    const step = node?.config?.id
-      ? props.tableData.find((item: any) => item.id === node.config?.id)
+    const step = node?.config?.id != null
+      ? props.tableData.find((item) => String(item.id) === String(node.config?.id))
       : null
     const hasDraft = Object.prototype.hasOwnProperty.call(decisionMethodDrafts.value, nodeId)
     const opeKey = hasDraft ? decisionMethodDrafts.value[nodeId] : step?.ope_key
     const parameter = useSelectValue.findItemByValue(opeKey)?.parameter || []
-    return parameter.some((item: any) => item.f === 'expect')
+    return parameter.some((item) => item.f === 'expect')
   }
 
   function getDecisionBranchValue(edge: UIEdge) {
     const targetNode = getLegacyNode(edge.target.node_id)
-    if (!targetNode?.config?.id) return ''
-    const targetStep = props.tableData.find((item: any) => item.id === targetNode.config?.id)
-    const value = targetStep?.condition_value?.expect ?? targetStep?.condition_value
+    if (targetNode?.config?.id == null) return ''
+    const targetStep = props.tableData.find((item) => String(item.id) === String(targetNode.config?.id))
+    const value = liveObject(targetStep?.condition_value).expect ?? targetStep?.condition_value
     if (value === null || value === undefined || value === '') return ''
     return typeof value === 'object' ? JSON.stringify(value) : String(value)
   }
@@ -1162,7 +1176,7 @@
 
   function getNodeConfigStatus(nodeId: string) {
     const node = getLegacyNode(nodeId)
-    if (!node?.config?.id || props.draftNodeIds.includes(nodeId)) return 'unsaved'
+    if (node?.config?.id == null || props.draftNodeIds.includes(nodeId)) return 'unsaved'
     const connections = getNodeConnections(nodeId)
     if (legacyNodes.value.length > 1 && !connections.inputs.length && !connections.outputs.length) {
       return 'isolated'
@@ -1189,7 +1203,7 @@
     return '未测试'
   }
 
-  function getNodeByStepId(stepId: any) {
+  function getNodeByStepId(stepId: unknown) {
     return legacyNodes.value.find((node) => String(node.config?.id) === String(stepId))
   }
 
@@ -1234,6 +1248,7 @@
       edge.labelStyle = runtimeEdge.labelStyle
       edge.labelBgStyle = runtimeEdge.labelBgStyle
     })
+    flowEdges.value = [...flowEdges.value]
     nextTick(() => {
       syncingFromProps = false
     })
@@ -1259,20 +1274,21 @@
 
   function onDragStart(event: DragEvent, type: string) {
     event.dataTransfer?.setData('application/mango-flow', type)
-    event.dataTransfer!.effectAllowed = 'move'
+    if (!event.dataTransfer || props.readonly || !scope.available()) return
+    event.dataTransfer.effectAllowed = 'move'
   }
 
   function onDragOver(event: DragEvent) {
-    if (!props.allowDrop || props.readonly) return
+    if (!scope.available() || !props.allowDrop || props.readonly) return
     event.preventDefault()
-    event.dataTransfer!.dropEffect = 'move'
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
   }
 
   function onDrop(event: DragEvent) {
-    if (!props.allowDrop || props.readonly) return
+    if (!scope.available() || !props.allowDrop || props.readonly) return
     event.preventDefault()
     const type = event.dataTransfer?.getData('application/mango-flow')
-    if (!type) return
+    if (!type || !props.nodeTypes.some(item => String(item.type) === type)) return
     const nodeType = parseInt(type, 10)
     const id = `${type}-${Date.now()}`
     const pointerPosition = screenToFlowCoordinate({ x: event.clientX, y: event.clientY })
@@ -1304,7 +1320,7 @@
   }
 
   function onConnect(connection: Connection) {
-    if (props.readonly || !connection.source || !connection.target) return
+    if (!scope.available() || props.readonly || !connection.source || !connection.target) return
     const source: Connector = {
       node_id: connection.source,
       position: normalizeHandlePosition(connection.sourceHandle, 'bottom'),
@@ -1323,7 +1339,7 @@
       ...toVueEdge(tempEdge),
       label: getDecisionEdgeLabel(tempEdge, legacyEdges.value.concat(tempEdge)),
     }
-    flowEdges.value = flowEdges.value.concat(edge)
+    flowEdges.value = [...flowEdges.value, edge]
   }
 
   function isValidConnection(source: Connector, target: Connector): boolean {
@@ -1399,6 +1415,7 @@
   }
 
   function onNodeDragStop(event: NodeDragEvent) {
+    if (!scope.available() || props.readonly) return
     const node = flowNodes.value.find((item) => item.id === event.node.id)
     if (node) {
       node.position = constrainPosition(node.position)
@@ -1419,10 +1436,16 @@
     }
   }
 
-  function deleteNodeById(nodeId: string) {
-    if (props.readonly) return
+  async function deleteNodeById(nodeId: string) {
+    if (!scope.available() || props.readonly || deletingNodeId.value) return
     const node = getLegacyNode(nodeId)
     if (!node) return
+    const current = scope.capture()
+    deletingNodeId.value = nodeId
+    try { if (props.beforeNodeDelete && !(await props.beforeNodeDelete(cloneLosslessJson(node)))) return }
+    catch { if (current()) Message.error('节点删除失败，请重试'); return }
+    finally { deletingNodeId.value = '' }
+    if (!current()) return
     if (Object.prototype.hasOwnProperty.call(decisionMethodDrafts.value, nodeId)) {
       const nextDrafts = { ...decisionMethodDrafts.value }
       delete nextDrafts[nodeId]
@@ -1443,9 +1466,12 @@
       }
     }
     emit('nodeDelete', node)
+    await nextTick()
+    if (current()) notifyDataChange()
   }
 
   function beautifyLayout() {
+    if (!scope.available() || props.readonly) return
     if (flowNodes.value.length === 0) return
     const nodes = legacyNodes.value
     const edges = legacyEdges.value
@@ -1519,7 +1545,8 @@
       position: constrainPosition(nodePositions.get(node.id) || node.position),
     }))
     flowEdges.value = arrangedEdges.map((edge) => toVueEdge(edge, arrangedEdges))
-    nextTick(() => fitView({ padding: 0.35, maxZoom: UI_FLOW_INITIAL_MAX_ZOOM, duration: 200 }))
+    const current = scope.capture()
+    nextTick(() => { if (current()) fitView({ padding: 0.35, maxZoom: UI_FLOW_INITIAL_MAX_ZOOM, duration: 200 }) })
   }
 
   function compareNodePosition(left: UINode, right: UINode) {

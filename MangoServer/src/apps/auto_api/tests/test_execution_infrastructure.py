@@ -23,6 +23,27 @@ class ApiInfrastructureTests(SimpleTestCase):
         runtime.update_test_case_detailed_unfinished.assert_not_called()
         runtime.case_base.case_posterior_main.assert_called_once()
         runtime.test_setup.close_db_connections.assert_called_once()
+        runtime.trace_recorder.fail_trace.assert_called_with(result.error_message,
+                                                           summary={'infrastructure_blocked': True})
+
+    def test_reconciled_cleanup_finishes_success_without_masking_business_failure(self):
+        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
+        for status in (TaskEnum.SUCCESS.value, TaskEnum.FAIL.value):
+            runtime = self.runtime()
+            def cleanup():
+                error = TimeoutError()
+                error._datasource_audit_request_id = 'AUTO_DELETE'
+                Infrastructure.capture(error, result_unknown=True)
+                Infrastructure.resolve_verified_requests(['AUTO_DELETE'])
+                runtime.api_case_result.status = status
+            runtime.case_base.case_posterior_main.side_effect = cleanup
+            result = runtime.test_case()
+            self.assertEqual(result.status, status)
+            self.assertFalse(getattr(result, 'infrastructure_blocked', False))
+            if status == TaskEnum.SUCCESS.value:
+                runtime.trace_recorder.finish_trace.assert_called_once()
+            else:
+                runtime.trace_recorder.fail_trace.assert_called_once()
 
     def test_business_success_with_unsettled_cleanup_is_not_reported_pass_or_fail(self):
         runtime = self.runtime()

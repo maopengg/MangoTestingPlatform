@@ -101,7 +101,10 @@ test('connection query changes reuse the page and do not reload the connection l
 
 test('route reuse is explicitly enabled for the data source workbench', () => {
   const main = fs.readFileSync(new URL('../../../../src/layouts/Main.vue', import.meta.url), 'utf8')
-  const routes = fs.readFileSync(new URL('../../../../src/router/index.ts', import.meta.url), 'utf8')
+  const routes = fs.readFileSync(
+    new URL('../../../../src/router/index.ts', import.meta.url),
+    'utf8'
+  )
   assert.match(main, /:key="getRouteViewKey\(route\)"/)
   assert.match(
     routes,
@@ -111,22 +114,26 @@ test('route reuse is explicitly enabled for the data source workbench', () => {
 
 test('URL connection changes update the reused workbench selection', async () => {
   const source = fs.readFileSync(
-    new URL('../../../../src/views/config/data-source/components/DataSourceWorkbench.vue', import.meta.url),
+    new URL(
+      '../../../../src/views/config/data-source/components/DataSourceWorkbench.vue',
+      import.meta.url
+    ),
     'utf8'
   )
   const start = source.indexOf('  watch(\n    () => route.query.data_source_id,')
   assert.ok(start >= 0)
-  const end = source.indexOf('  watch(\n    [selectedId', start)
+  const end = source.indexOf('  watch(\n    () => selected.value', start)
   const js = ts.transpileModule(source.slice(start, end), {}).outputText
   const route = reactive({ query: { data_source_id: '1' } })
   const selectedId = ref(1)
   const scope = effectScope()
   scope.run(() =>
-    new Function('watch', 'route', 'props', 'selectedId', js)(
+    new Function('watch', 'route', 'props', 'selectedId', 'firstSourceId', js)(
       watch,
       route,
       { sources: [{ id: 1 }, { id: 2 }] },
-      selectedId
+      selectedId,
+      ref(1)
     )
   )
   try {
@@ -135,7 +142,7 @@ test('URL connection changes update the reused workbench selection', async () =>
     assert.equal(selectedId.value, 2)
     route.query.data_source_id = 'unknown'
     await nextTick()
-    assert.equal(selectedId.value, 2)
+    assert.equal(selectedId.value, 1)
     route.query.data_source_id = '1'
     await nextTick()
     assert.equal(selectedId.value, 1)

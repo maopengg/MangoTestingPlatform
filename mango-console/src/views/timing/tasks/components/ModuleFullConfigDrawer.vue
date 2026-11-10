@@ -292,16 +292,17 @@
     </template>
   </div>
   <a-modal
+    modal-class="mango-simple-form-modal"
     v-model:visible="batchVisible"
     title="批量新增任务组"
-    :width="760"
+    :width="560"
     :mask-closable="false"
     :on-before-ok="confirmBatchCreate"
     :ok-loading="batchSaving"
     unmount-on-close
   >
-    <a-form :model="batchForm" class="mango-task-group-batch-form" layout="vertical">
-      <a-form-item label="模块" required class="mango-task-group-batch-form__wide">
+    <a-form auto-label-width :model="batchForm" class="mango-task-group-batch-form mango-simple-form" layout="horizontal">
+      <a-form-item label="模块" required class="mango-task-group-batch-form__wide mango-simple-form-item">
         <a-select
           v-model="batchForm.module_ids"
           multiple
@@ -312,7 +313,7 @@
           placeholder="可选择一级、二级或三级模块"
         />
       </a-form-item>
-      <a-form-item label="定时策略" required>
+      <a-form-item class="mango-simple-form-item" label="定时策略" required>
         <a-select
           v-model="batchForm.timing_strategies"
           multiple
@@ -323,7 +324,7 @@
           placeholder="请选择定时策略"
         />
       </a-form-item>
-      <a-form-item label="测试环境" required>
+      <a-form-item class="mango-simple-form-item" label="测试环境" required>
         <a-select
           v-model="batchForm.test_envs"
           multiple
@@ -334,7 +335,7 @@
           @change="clearInvalidBatchScenes"
         />
       </a-form-item>
-      <a-form-item label="用例类型">
+      <a-form-item class="mango-simple-form-item" label="用例类型">
         <a-select
           v-model="batchForm.case_types"
           multiple
@@ -345,7 +346,7 @@
           placeholder="留空表示全部类型"
         />
       </a-form-item>
-      <a-form-item label="执行场景" required>
+      <a-form-item class="mango-simple-form-item" label="执行场景" required>
         <a-select
           v-model="batchForm.execution_scenes"
           multiple
@@ -355,7 +356,7 @@
           placeholder="请选择执行场景"
         />
       </a-form-item>
-      <a-form-item label="负责人" required>
+      <a-form-item class="mango-simple-form-item" label="负责人" required>
         <a-select
           v-model="batchForm.case_people"
           allow-search
@@ -364,7 +365,7 @@
           placeholder="请选择负责人"
         />
       </a-form-item>
-      <a-form-item label="API 并发">
+      <a-form-item class="mango-simple-form-item" label="API 并发">
         <a-input-number
           v-model="batchForm.api_concurrency_limit"
           :min="1"
@@ -372,7 +373,7 @@
           placeholder="留空使用平台默认并发"
         />
       </a-form-item>
-      <a-form-item label="通知组">
+      <a-form-item class="mango-simple-form-item" label="通知组">
         <a-select
           v-model="batchForm.notice_group"
           allow-clear
@@ -380,7 +381,7 @@
           placeholder="可选"
         />
       </a-form-item>
-      <a-form-item label="任务状态">
+      <a-form-item class="mango-simple-form-item" label="任务状态">
         <a-space>
           <span>启用</span>
           <a-switch v-model="batchForm.status" :checked-value="1" :unchecked-value="0" />

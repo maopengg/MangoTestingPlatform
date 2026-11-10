@@ -9,4 +9,5 @@ RUNTIME_KV_POLICIES = {
     'request_dedup': {'ttl': 300, 'persistent': False, 'sensitive': False, 'max_bytes': 65536},
     'executor_state': {'ttl': 90, 'persistent': False, 'sensitive': False, 'max_bytes': 65536},
     'actuator_config': {'ttl': 60, 'persistent': False, 'sensitive': True, 'max_bytes': 65536},
+    'mcp_confirmation': {'ttl': 600, 'persistent': False, 'sensitive': True, 'max_bytes': 8192},
 }

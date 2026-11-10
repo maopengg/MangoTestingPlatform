@@ -30,7 +30,7 @@
         allow-search
         allow-clear
         placeholder="请选择页面元素"
-        @update:model-value="field(index, 'element_id', $event ? Number($event) : undefined)"
+        @update:model-value="field(index, 'element_id', $event)"
       >
         <a-option
           v-for="element in selectableElementOptions"
@@ -43,7 +43,7 @@
       </a-select>
       <div v-else-if="item.type === 'visible_text' && item.matcher === 'count_gte'" class="mango-step-condition__variable">
         <a-input
-          :model-value="String(item.expected || '')"
+          :model-value="String(item.expected ?? '')"
           :disabled="disabled"
           placeholder="目标文本"
           @update:model-value="field(index, 'expected', $event)"
@@ -58,21 +58,24 @@
       </div>
       <a-input
         v-else
-        :model-value="String(item.expected || '')"
+        :model-value="String(item.expected ?? '')"
         :disabled="disabled"
         placeholder="预期值"
         @update:model-value="field(index, 'expected', $event)"
       />
       <a-button size="mini" status="danger" :disabled="disabled" @click="remove(index)">删除</a-button>
     </div>
-    <a-empty v-if="!normalizedModelValue.conditions.length" description="暂未配置条件" />
+    <div v-if="!normalizedModelValue.conditions.length" class="mango-empty-state">暂未配置条件</div>
     <div v-if="errorMessage" class="mango-step-condition__error">{{ errorMessage }}</div>
   </section>
 </template>
 
 <script lang="ts" setup>
   import { computed } from 'vue'
-  import type { UiStepConditionGroup } from '@/types/ui-test/case'
+  import type { UiStepCondition, UiStepConditionGroup } from '@/types/ui-test/case'
+  import { liveId } from './ui-live-workbench'
+  import { cloneLosslessJson } from '@/utils/lossless-json'
+  import type { StepElement } from './ui-page-step'
   const props = withDefaults(
     defineProps<{
       modelValue?: UiStepConditionGroup
@@ -80,7 +83,7 @@
       disabled?: boolean
       required?: boolean
       errorMessage?: string
-      elementOptions?: any[]
+      elementOptions?: StepElement[]
     }>(),
     {
       modelValue: () => ({ operator: 'all', conditions: [] }),
@@ -97,25 +100,33 @@
   }))
   const selectableElementOptions = computed(() =>
     props.elementOptions
-      .filter((element: any) => Number(element?.id) > 0)
-      .map((element: any) => ({
-        value: Number(element.id),
+      .filter(element => liveId(element.id) !== null)
+      .map(element => ({
+        value: element.id!,
         label: `${element.category || '未分类'} / ${element.name || `元素 #${element.id}`}`,
       }))
   )
-  function update(conditions: any[]) { emit('update:modelValue', { ...normalizedModelValue.value, conditions }) }
-  function updateOperator(value: string | number | boolean) { emit('update:modelValue', { ...normalizedModelValue.value, operator: String(value) as 'all' | 'any' }) }
+  function update(conditions: UiStepCondition[]) { emit('update:modelValue', { ...normalizedModelValue.value, conditions: cloneLosslessJson(conditions) }) }
+  function updateOperator(value: string | number | boolean) { emit('update:modelValue', { ...normalizedModelValue.value, operator: value === 'any' ? 'any' : 'all' }) }
   function add() { update([...normalizedModelValue.value.conditions, { type: 'visible_text', matcher: 'contains', expected: '' }]) }
   function remove(index: number) { update(normalizedModelValue.value.conditions.filter((_, row) => row !== index)) }
-  function field(index: number, key: string, value: unknown) { update(normalizedModelValue.value.conditions.map((item, row) => row === index ? { ...item, [key]: value } : item)) }
-  const matcherMap: Record<string, Array<{ value: string; label: string }>> = {
+  function field(index: number, key: 'matcher' | 'element_id' | 'count' | 'expected', value: unknown) {
+    const items = cloneLosslessJson(normalizedModelValue.value.conditions), item = items[index]
+    if (!item || props.disabled) return
+    if (key === 'expected') item.expected = cloneLosslessJson(value)
+    if (key === 'element_id') item.element_id = liveId(value) ?? undefined
+    if (key === 'count') item.count = typeof value === 'number' && Number.isFinite(value) ? value : undefined
+    if (key === 'matcher') { const option = matcherOptions(item.type).find(option => option.value === value); if (!option) return; item.matcher = option.value }
+    update(items)
+  }
+  const matcherMap: Record<string, Array<{ value: UiStepCondition['matcher']; label: string }>> = {
     url_path: [{ value: 'contains', label: '包含' }, { value: 'equals', label: '等于' }, { value: 'starts_with', label: '开头是' }, { value: 'regex', label: '正则' }],
     page_title: [{ value: 'contains', label: '包含' }, { value: 'equals', label: '等于' }, { value: 'starts_with', label: '开头是' }, { value: 'regex', label: '正则' }],
     visible_text: [{ value: 'contains', label: '包含' }, { value: 'equals', label: '等于' }, { value: 'starts_with', label: '开头是' }, { value: 'regex', label: '正则' }, { value: 'count_gte', label: '出现次数不少于' }],
     element_state: [{ value: 'visible', label: '可见' }, { value: 'hidden', label: '隐藏' }, { value: 'enabled', label: '可操作' }, { value: 'editable', label: '可编辑' }, { value: 'checked', label: '已选中' }],
   }
   function matcherOptions(type: string) { return matcherMap[type] || matcherMap.visible_text }
-  function updateType(index: number, type: string) {
+  function updateType(index: number, type: UiStepCondition['type']) {
     const matcher = matcherOptions(type)[0].value
     update(normalizedModelValue.value.conditions.map((item, row) => row === index
       ? { type, matcher, expected: '', element_id: undefined, count: undefined }

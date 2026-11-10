@@ -1,12 +1,12 @@
 <template>
-  <ModalDialog ref="modal" class="mango-runtime-parameters-dialog" title="填写运行变量" :width="720" confirm-text="执行"
+  <ModalDialog modal-class="mango-simple-form-modal" ref="modal" class="mango-runtime-parameters-dialog" title="填写运行变量" :width="560" confirm-text="执行"
     @confirm="confirm" @cancel="finish(null)">
     <template #content>
       <div class="mango-runtime-parameters">
         <div class="mango-runtime-parameters__hint">全部选填，仅本次运行生效；留空沿用原有替换逻辑，不修改接口和全局变量。</div>
-        <a-form class="mango-runtime-parameters__form" :model="{}" layout="horizontal"
+        <a-form auto-label-width class="mango-runtime-parameters__form mango-simple-form" :model="{}" layout="horizontal"
           :label-col-props="{ span: 9 }" :wrapper-col-props="{ span: 15 }">
-          <a-form-item v-for="row in rows" :key="row.name">
+          <a-form-item class="mango-simple-form-item" v-for="row in rows" :key="row.name">
             <template #label>
               <span class="mango-runtime-parameters__label" :title="formatVariable(row.name)">{{ formatVariable(row.name) }}</span>
             </template>
@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-  import { onBeforeUnmount, ref, watch } from 'vue'
+  import { onBeforeUnmount, onDeactivated, ref, watch } from 'vue'
   import ModalDialog from '@/components/overlays/ModalDialog.vue'
   import { getApiInfoExecutionParameters } from '@/api/apitest/info'
 
@@ -46,9 +46,10 @@
   async function prepare(targets: Target[]): Promise<Record<string, unknown> | null> {
     finish(null)
     const version = ++requestVersion
+    const snapshot = targets.map(target => ({ ...target }))
     const variables = new Set<string>()
-    for (let index = 0; index < targets.length; index += 3) {
-      const responses = await Promise.all(targets.slice(index, index + 3).map(target => getApiInfoExecutionParameters(target)))
+    for (let index = 0; index < snapshot.length; index += 3) {
+      const responses = await Promise.all(snapshot.slice(index, index + 3).map(target => getApiInfoExecutionParameters(target)))
       if (version !== requestVersion) return null
       for (const response of responses) {
         for (const name of response.data.variables) variables.add(name)
@@ -61,9 +62,11 @@
       void modal.value?.show()
     })
   }
-  onBeforeUnmount(() => { requestVersion++; finish(null) })
+  function cancel() { requestVersion++; finish(null) }
+  onBeforeUnmount(cancel)
+  onDeactivated(cancel)
   watch(() => modal.value?.showModal, shown => { if (shown === false && pending) finish(null) })
-  defineExpose({ prepare })
+  defineExpose({ prepare, cancel })
 </script>
 
 <style scoped>

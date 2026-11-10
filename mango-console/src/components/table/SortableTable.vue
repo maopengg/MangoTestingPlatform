@@ -1,5 +1,6 @@
 <template>
   <a-popover
+    v-model:popup-visible="popupVisible"
     class="mango-sortable-table-popover"
     trigger="click"
     @popup-visible-change="onPopVisibleChange"
@@ -9,7 +10,7 @@
         <a-checkbox v-model="allChecked" @change="onAllChange" data-testid="qa-components-table-sortabletable-checkbox-全选"> 全选</a-checkbox>
         <a-button type="text" @click="onReset" data-testid="qa-components-table-sortabletable-button-重置"> 重置</a-button>
       </div>
-      <div id="sortColumnWrapper" class="mango-sortable-table-list">
+      <div ref="sortColumnWrapper" class="mango-sortable-table-list">
         <div v-for="item of innerTableProps" :key="item.key" class="mango-column-item">
           <a-checkbox v-model="item.checked" :label="item.title" @change="onChange">
             {{ item.title }}
@@ -28,7 +29,7 @@
 
 <script lang="ts">
   import { TablePropsType } from '@/types/components'
-  import { defineComponent, PropType, reactive, ref, toRef, nextTick } from 'vue'
+  import { defineComponent, PropType, reactive, ref, toRef, nextTick, onDeactivated, onBeforeUnmount } from 'vue'
   import Sortable from 'sortablejs'
   import { cloneDeep, isUndefined } from 'lodash-es'
 
@@ -42,6 +43,21 @@
     },
     emits: ['update'],
     setup(props, { emit }) {
+      const sortColumnWrapper = ref<HTMLElement | null>(null)
+      const popupVisible = ref(false)
+      let sortable: Sortable | null = null
+      let popupGeneration = 0
+      function disposeSortable() {
+        popupGeneration += 1
+        sortable?.destroy()
+        sortable = null
+      }
+      function closePopup() {
+        popupVisible.value = false
+        disposeSortable()
+      }
+      onDeactivated(closePopup)
+      onBeforeUnmount(closePopup)
       const tempTableProps = toRef(props, 'columns')
       const originColumns = cloneDeep<TablePropsType[]>(tempTableProps.value!)
       const tempArray =
@@ -87,16 +103,22 @@
       }
 
       function onPopVisibleChange(visible: boolean) {
+        popupVisible.value = visible
+        disposeSortable()
         if (visible) {
+          const generation = popupGeneration
           nextTick(() => {
-            new Sortable(document.getElementById('sortColumnWrapper') as HTMLElement, {
+            if (generation !== popupGeneration || !sortColumnWrapper.value) return
+            sortable = new Sortable(sortColumnWrapper.value, {
               handle: '.mango-handle-icon',
               animation: 150,
               dataIdAttr: '',
               onEnd({ newIndex, oldIndex }) {
+                if (generation !== popupGeneration) return
                 if (isUndefined(newIndex) || isUndefined(oldIndex)) {
                   return
                 }
+                if (newIndex < 0 || oldIndex < 0 || newIndex >= innerTableProps.length || oldIndex >= innerTableProps.length) return
                 const originItem = innerTableProps[oldIndex]
                 if (newIndex > oldIndex) {
                   innerTableProps.splice(newIndex + 1, 0, originItem)
@@ -113,6 +135,8 @@
       }
 
       return {
+        popupVisible,
+        sortColumnWrapper,
         innerTableProps,
         isIndeterminate,
         allChecked,

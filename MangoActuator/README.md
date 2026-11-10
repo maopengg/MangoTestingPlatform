@@ -8,7 +8,7 @@ MangoActuator 是芒果测试平台的统一执行器。同一套核心代码可
 
 ```text
 MangoActuator/
-├── desktop_main.py            # 带 tkinter 图形界面的桌面入口
+├── desktop_main.py            # 带 Flet 图形界面的桌面入口
 ├── headless_main.py           # 不带桌面界面的服务入口
 ├── README.md
 ├── assets/                   # 图标、图片等静态资源
@@ -28,7 +28,7 @@ MangoActuator/
 
 | 文件 | 用途 |
 | --- | --- |
-| `requirements/desktop.txt` | Windows tkinter 桌面基础依赖 |
+| `requirements/desktop.txt` | Windows/macOS Flet 桌面基础依赖 |
 | `requirements/desktop-local.txt` | 桌面端内部包 |
 | `requirements/linux.txt` | Linux、macOS、容器基础依赖 |
 | `requirements/linux-local.txt` | 无桌面 UI 的服务型执行器内部包 |
@@ -47,7 +47,7 @@ Windows PowerShell 对应的 Python 路径为 `.venv\Scripts\python.exe`。
 
 ## Windows 桌面执行器
 
-安装 tkinter 桌面端基础依赖和内部包：
+安装 Flet 桌面端基础依赖和内部包：
 
 ```powershell
 .venv\Scripts\python.exe -m pip install -r requirements/desktop.txt
@@ -68,6 +68,28 @@ powershell -ExecutionPolicy Bypass -File scripts/build_windows_tk.ps1
 ```
 
 产物输出到 `dist/`，临时构建文件输出到 `runtime/pyinstaller/`。Windows 生成单文件 `.exe`，macOS 生成 `.app` 应用包。
+
+桌面默认入口使用 `src/flet_pages/`，包含页面外壳、配置表单、主题、异步事件桥和托盘。
+Flet 版本固定为 `0.28.3`，与 Python 3.10 及当前 PyInstaller 构建配套；桌面客户端随包发布。
+macOS 将桌面客户端放在应用包的 `Contents/Helpers/`，使用独立的应用标识与芒果图标，
+后台启动器不显示 Dock 图标，不依赖用户目录里的通用 `Flet.app`。构建后会重新进行本地签名。
+运行时只保留与构建机一致的原生架构，不再重复携带 Flet 压缩包；Intel 与 Apple Silicon 需分别构建。
+Flet 的 Python 模块按实际导入收集，避免全量收集未使用的扩展组件。
+验收需运行产物 `--self-check` 并实际打开登录窗口；导入自检不能替代桌面启动验证。
+更新平台 Logo 后，在 macOS 运行 `.venv/bin/python scripts/generate_desktop_icons.py`，
+从前端 SVG 按实际图形边界居中生成 `assets/app_icon.icns`、`assets/app_icon.ico` 与界面共用的
+透明背景 `assets/platform_logo.png`，再重新打包。
+后台服务继续运行于独立 asyncio 线程，页面通过有界事件批次接收日志和运行状态。
+窗口关闭时优先隐藏到托盘；明确退出时停止后台服务并关闭连接。
+`src/tk_pages/` 暂留作过渡参考，默认启动和打包均不再加载 Tkinter。
+
+桌面样式沿用测试平台 Web 的紧凑 SaaS 后台规范：浅色侧栏、蓝色操作与选中态、
+弱边框分区和固定底部状态栏，连接状态与版本统一在底部展示。视觉常量与公共表单、卡片、按钮统一在
+`src/flet_pages/theme.py` 中维护；正文使用 13 号系统中文字体，输入控件高 36 逻辑像素，
+卡片间距 8、内边距 12。默认窗口为 1120 × 760，主窗口最小 960 × 640。
+概览与 WEB 配置在空间足够时双栏展示，窄窗口自动单栏；实时日志仅内容区滚动，筛选和开关保持可见。
+选择框统一使用 `src/flet_pages/select.py`，菜单项为 32 逻辑像素，长菜单限制高度并内部滚动；
+选中项显示浅蓝底和勾选，不再使用旧版 DropdownM2 的大行高。
 
 ## Linux、macOS 基础环境
 

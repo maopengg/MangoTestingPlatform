@@ -169,22 +169,25 @@
   import CodeEditor from '@/components/editors/CodeEditor.vue'
   import KeyValueEditor from '@/components/forms/KeyValueEditor.vue'
   import { fieldNames } from '@/setting'
+  import type { StepField, StepElement } from './ui-page-step'
+  import { cloneLosslessJson } from '@/utils/lossless-json'
+  interface NodeChoice { label?: string; value: string | number; children?: NodeChoice[] }
 
   const props = withDefaults(
     defineProps<{
-      items: any[]
-      operationOptions?: any[]
-      assertionOptions?: any[]
-      elementOptions?: any[]
-      elementCascaderOptions?: any[]
-      fileOptions?: any[]
+      items: StepField[]
+      operationOptions?: NodeChoice[]
+      assertionOptions?: NodeChoice[]
+      elementOptions?: StepElement[]
+      elementCascaderOptions?: NodeChoice[]
+      fileOptions?: NodeChoice[]
       fileLoading?: boolean
-      datasourceOptions?: any[]
+      datasourceOptions?: NodeChoice[]
       disabled?: boolean
       compact?: boolean
-      isItemDisabled?: (item: any) => boolean
-      isItemInherited?: (item: any) => boolean
-      getInheritedValue?: (item: any) => string
+      isItemDisabled?: (item: StepField) => boolean
+      isItemInherited?: (item: StepField) => boolean
+      getInheritedValue?: (item: StepField) => string
       fieldPrefix?: string
     }>(),
     {
@@ -204,40 +207,42 @@
     }
   )
   const emit = defineEmits<{
-    (event: 'method-change', value: any): void
-    (event: 'element-change', value: any): void
+    (event: 'method-change', value: unknown): void
+    (event: 'element-change', value: unknown): void
+    (event: 'update-field', key: string, value: unknown): void
     (event: 'change'): void
   }>()
   const model = {}
 
-  function setValue(item: any, value: any) {
-    item.value = value
+  function setValue(item: StepField, value: unknown) {
+    if (isDisabled(item) || isInherited(item)) return
+    emit('update-field', item.key, cloneLosslessJson(value))
     emit('change')
   }
-  function controlKey(item: any, controlType: string) {
+  function controlKey(item: StepField, controlType: string) {
     return `${props.fieldPrefix}:${String(item.key)}:${controlType}`
   }
-  function fieldAttrs(item: any) {
+  function fieldAttrs(item: StepField) {
     const field = String(item.key).replace(/[^a-zA-Z0-9_-]/g, '-')
     const prefix = String(props.fieldPrefix || 'node').replace(/[^a-zA-Z0-9_-]/g, '-')
     return { id: `mango-ui-step-${prefix}-${field}`, name: String(item.key) }
   }
-  function isDisabled(item: any) {
+  function isDisabled(item: StepField) {
     return props.disabled || Boolean(props.isItemDisabled?.(item))
   }
-  function isInherited(item: any) {
+  function isInherited(item: StepField) {
     return Boolean(props.isItemInherited?.(item))
   }
-  function inheritedValue(item: any) {
+  function inheritedValue(item: StepField) {
     return props.getInheritedValue?.(item) || '-'
   }
-  function formatElementLabel(options: any[] = []) {
+  function formatElementLabel(options: Array<{ label?: string }> = []) {
     return options
       .map((item) => item?.label)
       .filter(Boolean)
       .join(' / ')
   }
-  function textareaValue(value: any) {
+  function textareaValue(value: unknown) {
     if (value === undefined || value === null) return ''
     if (typeof value === 'string') return value
     try {

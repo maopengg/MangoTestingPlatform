@@ -1,15 +1,17 @@
+import { loadFeedbackModule } from './helpers/load-feedback-modules.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import ts from 'typescript'
-import { reactive, ref } from 'vue'
+import { reactive } from 'vue'
 import { parse } from '@vue/compiler-sfc'
+import { config as apiAuthConfig } from './helpers/auth-config-harness.mjs'
 
-function loadUtils(filename) {
+function loadUtils(filename, modules = {}) {
   const exports = {}
-  new Function('exports', ts.transpileModule(readFileSync(filename, 'utf8'), {
+  new Function('exports', 'require', ts.transpileModule(readFileSync(filename, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-  }).outputText)(exports)
+  }).outputText)(exports, id => { if (!(id in modules)) { if (['@/utils/load-error', '@/utils/api-response'].includes(id)) return loadFeedbackModule(id); throw Error('Unexpected utility dependency '+id); } return modules[id] })
   return exports
 }
 const { enableMultiSelectSearch } = loadUtils('src/utils/search-condition.ts')
@@ -17,15 +19,7 @@ const { getFormItems } = loadUtils('src/utils/datacleaning.ts')
 const uiSource = readFileSync('src/views/uitest/auth-config/index.vue', 'utf8')
 
 test('API authorization name search serializes and resets with the existing search controls', () => {
-  const source = readFileSync('src/views/apitest/auth-config/config.ts', 'utf8')
-  const start = source.indexOf('export const conditionItems')
-  const end = source.indexOf('export const formItems')
-  const code = ts.transpileModule(source.slice(start, end).replaceAll('export ', ''), {
-    compilerOptions: { target: ts.ScriptTarget.ES2022 },
-  }).outputText
-  const conditions = new Function('reactive', 'ref', 'createIdSearchValue', 'createUpdateUserCondition', 'enableMultiSelectSearch', code + ';return conditionItems')(
-    reactive, ref, () => '', () => ({ key: 'update_user', type: 'select', value: [] }), enableMultiSelectSearch,
-  )
+  const conditions = apiAuthConfig.createConditionItems()
   assert.deepEqual(conditions.slice(0, 2).map(item => item.key), ['id', 'name'])
   const name = conditions.find(item => item.key === 'name')
   assert.equal(name.label, '授权名称')
@@ -35,24 +29,32 @@ test('API authorization name search serializes and resets with the existing sear
   name.reset()
   assert.equal(name.value, '')
   const page = readFileSync('src/views/apitest/auth-config/index.vue', 'utf8')
-  assert.match(page, /clearEmptyFilter\(value, 'name'\)/)
-  assert.match(page, /function onSearchRefresh\(\)\s*\{\s*pagination.page = 1/)
+  assert.match(page, /for \(const key of Object.keys\(value\)\) clearEmptyFilter\(value, key\)/)
+  assert.match(page, /function onSearchRefresh\(\)\s*\{\s*selectedRowKeys.value = \[\]\s*pagination.page = 1/)
   assert.match(page, /function onResetSearch\(\)[\s\S]*?pagination.page = 1[\s\S]*?doRefresh\(true\)/)
 })
 
 function loadConfig(kind) {
+  if (kind === 'apitest') return apiAuthConfig
   const source = readFileSync(`src/views/${kind}/auth-config/config.ts`, 'utf8')
-  const start = source.indexOf(`export const ${kind === 'uitest' ? 'conditionItems' : 'tableColumns'}`)
-  const code = ts.transpileModule(source.slice(start).replaceAll('export ', ''), {
-    compilerOptions: { target: ts.ScriptTarget.ES2022 },
-  }).outputText
-  return new Function('reactive', 'createIdSearchValue', 'createUpdateUserCondition', 'enableMultiSelectSearch',
-    'useTableColumn', 'table', 'updateUserColumn', code +
-    `;return {tableColumns, tableScrollX${kind === 'uitest' ? ', conditionItems' : ''}}`)(
-      reactive, () => '', () => ({ key: 'update_user', type: 'select', value: [] }), enableMultiSelectSearch,
-      columns => columns, { indexColumn: { key: 'index', width: 100 } }, () => ({ width: 110 }),
-    )
+  const exports = {}, modules = {
+    vue: { reactive }, '@/utils/id-search': { createIdSearchValue: () => '' },
+    '@/utils/update-user': { createUpdateUserCondition: () => ({ key: 'update_user', type: 'select', value: [] }), updateUserColumn: () => ({ key:'update_user',width:110 }) },
+    '@/utils/search-condition': { enableMultiSelectSearch }, '@/hooks/table': { useTableIndexColumn: () => ({ key:'index',width:100 }), useTableColumn: columns => columns },
+  }
+  new Function('exports','require',ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(exports,id=>{
+    if (!(id in modules)) { if (['@/utils/load-error', '@/utils/api-response'].includes(id)) return loadFeedbackModule(id); throw Error('Unexpected UI config dependency '+id) }
+    return modules[id]
+  })
+  return { ...exports, conditionItems: exports.createConditionItems() }
 }
+
+test('UI search configurations belong to each page instance and reset without leaking selections', () => {
+  const config=loadConfig('uitest'),first=config.createConditionItems(),second=config.createConditionItems()
+  first.find(item=>item.key==='name').value='Example';first.find(item=>item.key==='test_env').value.push(0)
+  assert.equal(second.find(item=>item.key==='name').value,'');assert.deepEqual(second.find(item=>item.key==='test_env').value,[])
+  first.forEach(item=>item.reset?.());assert.equal(first.find(item=>item.key==='name').value,'');assert.deepEqual(first.find(item=>item.key==='test_env').value,[])
+})
 
 test('API and UI both place readable authorization names before environment', () => {
   for (const kind of ['apitest', 'uitest']) {
@@ -104,16 +106,19 @@ test('UI query omits empty filters, preserves zero and resets pagination with se
   const methods = ast.statements.filter(node => ts.isFunctionDeclaration(node) && names.has(node.name.text))
     .map(node => node.getText(ast)).join('\n')
   const code = ts.transpileModule(methods, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
-  const query = { project_product: '' }
-  const pagination = { page: 4 }
-  const functions = new Function('conditionItems', 'getFormItems', 'query', 'getOptionId', 'pagination', 'sidebarResetKey', 'doRefresh',
-    code + ';return {normalizeQuery,onReset}')(conditionItems, getFormItems, query, value => value,
-      pagination, { value: 0 }, () => {})
-  assert.deepEqual(functions.normalizeQuery(), {})
+  const query = { project_product: null }
+  const pagination = { page: 4, pageSize: 20 }
+  const json = { cloneLosslessJson: value => JSON.parse(JSON.stringify(value)) }
+  const editor = loadUtils('src/views/uitest/auth-config/auth-editor-records.ts', { '@/utils/lossless-json': json })
+  const dto = loadUtils('src/views/uitest/auth-config/auth-list-records.ts', { '@/utils/lossless-json': json, './auth-editor-records': editor })
+  const functions = new Function('conditionItems', 'getFormItems', 'query', 'uiAuthListQuery', 'pagination', 'sidebarResetKey', 'doRefresh', 'closeConfirmations',
+    code + ';return {normalizeQuery,onReset}')(conditionItems, getFormItems, query, dto.uiAuthListQuery,
+      pagination, { value: 0 }, () => {}, () => {})
+  assert.deepEqual(functions.normalizeQuery(), {page:4,pageSize:20})
   conditionItems.find(item => item.key === 'test_env').value = [0, 3]
   conditionItems.find(item => item.key === 'auth_type').value = [0]
-  assert.deepEqual(functions.normalizeQuery(), { test_env__in: '0,3', auth_type__in: '0' })
+  assert.deepEqual(functions.normalizeQuery(), { page:4,pageSize:20,test_env__in: '0,3', auth_type__in: '0' })
   functions.onReset()
   assert.equal(pagination.page, 1)
-  assert.deepEqual(functions.normalizeQuery(), {})
+  assert.deepEqual(functions.normalizeQuery(), {page:1,pageSize:20})
 })

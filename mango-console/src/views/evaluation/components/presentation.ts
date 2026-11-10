@@ -1,3 +1,5 @@
+import type { ParameterSchema } from '../types'
+
 export const fieldLabels: Record<string, string> = {
   objective: '测评目标', scope: '覆盖范围', exclusions: '不覆盖的能力', score_interpretation: '分数含义', assessment: '测评说明', answering: '回答生成配置', retrieval: '实际召回记忆', classification: '判定类别', answer_quote: '答案引用', reference_quote: '参考证据引用', answer_model: '回答模型快照',
   question: '问题', query: '查询内容', answer: '答案', expected_answer: '期望答案', input_data: '输入', expected_output: '期望输出', actual_output: '实际输出',
@@ -34,7 +36,7 @@ export function formatEvaluationDate(value: unknown): string {
   return match ? `${match[1]} ${match[2]}` : text
 }
 export const valueType = (value: unknown) => value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value
-export function dataSummary(value: any): string {
+export function dataSummary(value: unknown): string {
   if (value == null) return '未设置'
   if (Array.isArray(value)) return value.length ? value.map(dataSummary).join('；') : '空列表'
   if (typeof value === 'object') return Object.entries(value).map(([key, item]) => `${fieldTitle(key)}：${dataSummary(item)}`).join('；') || '空对象'
@@ -42,9 +44,17 @@ export function dataSummary(value: any): string {
   return String(value)
 }
 export const schemaColumns = [{ title: '字段名称', slotName: 'field', width: 240, ellipsis: true, tooltip: true }, { title: '类型', dataIndex: 'type', width: 100, align: 'center' }, { title: '必填', slotName: 'required', width: 70, align: 'center' }, { title: '说明与约束', dataIndex: 'description', width: 320, ellipsis: true, tooltip: true }]
-export function schemaRows(schema: any, prefix = ''): any[] {
+export interface SchemaRow {
+  key: string
+  label: string
+  path: string
+  type: string
+  required: boolean
+  description: string
+}
+export function schemaRows(schema: ParameterSchema | null | undefined, prefix = ''): SchemaRow[] {
   if (!schema || typeof schema !== 'object') return []
-  return Object.entries(schema.properties || {}).flatMap(([key, spec]: [string, any]) => {
+  return Object.entries(schema.properties || {}).flatMap(([key, spec]) => {
     const path = prefix ? `${prefix}.${key}` : key
     const hints = [spec.description, spec.enum && `可选：${spec.enum.join('、')}`, spec.minimum != null && `最小 ${spec.minimum}`, spec.maximum != null && `最大 ${spec.maximum}`, spec.default !== undefined && `默认：${dataSummary(spec.default)}`].filter(Boolean)
     return [{ key: path, label: fieldTitle(key), path, type: spec.type || (spec.anyOf ? '多种类型' : '任意'), required: (schema.required || []).includes(key), description: hints.join('；') || '—' }, ...schemaRows(spec, path), ...schemaRows(spec.items, `${path}[]`)]

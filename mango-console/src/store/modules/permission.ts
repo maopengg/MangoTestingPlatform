@@ -47,12 +47,13 @@ const usePermissionStore = defineStore('permission-route', {
     },
   },
   actions: {
-    async getRoutes() {
+    async getRoutes(isCurrent: () => boolean = () => true) {
       try {
         const res = await post({
           url: getMenuListByRoleId,
           data: {},
         })
+        if (!isCurrent()) return []
         const routeData = Array.isArray(res.data) ? res.data : res.data?.menus || []
         this.permissionKeys = Array.isArray(res.data?.permissions) ? res.data.permissions : []
         this.isSuperAdmin = !!res.data?.is_super_admin
@@ -72,9 +73,10 @@ const usePermissionStore = defineStore('permission-route', {
       this.permissionKeys = []
       this.isSuperAdmin = false
     },
-    async initPermissionRoute(force = false) {
+    async initPermissionRoute(force = false, isCurrent: () => boolean = () => true) {
       // 加载路由
-      const accessRoutes = await this.getRoutes()
+      const accessRoutes = await this.getRoutes(isCurrent)
+      if (!isCurrent()) return
       const mapRoutes = mapTwoLevelRouter(accessRoutes)
       if (force) {
         removePermissionRoutes.forEach((removeRoute) => removeRoute())

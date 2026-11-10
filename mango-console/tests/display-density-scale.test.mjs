@@ -1,3 +1,4 @@
+import { loadFeedbackModule } from './helpers/load-feedback-modules.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
@@ -16,7 +17,7 @@ runInNewContext(outputText, {
     if (name === '@/store/types') return {
       DisplayDensity: { AUTO: 'auto', COMPACT: 'compact', STANDARD: 'standard', COMFORTABLE: 'comfortable' },
     }
-    throw new Error(`Unexpected dependency: ${name}`)
+    { if (['@/utils/load-error', '@/utils/api-response'].includes(name)) return loadFeedbackModule(name); throw new Error(`Unexpected dependency: ${name}`) }
   },
 })
 

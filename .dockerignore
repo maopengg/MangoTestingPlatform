@@ -9,6 +9,7 @@
 !skill/**
 
 mango-console/node_modules/
+mango-console/.npm/
 mango-console/dist/
 MangoServer/.venv/
 MangoServer/runtime/

@@ -49,11 +49,32 @@ function collectVueFiles(directory) {
   })
 }
 
+export function findInvalidSpinSizes(source, filename = '') {
+  const { descriptor, errors } = parse(source, { filename })
+  if (errors.length) throw new Error(`Unable to parse ${filename}`)
+  if (!descriptor.template) return []
+  const findings = [], offset = descriptor.template.loc.start.line - 1
+  function visit(node) {
+    if (node.type === 1 && ['a-spin', 'mango-panel-spin', 'Spin', 'MangoPanelSpin'].includes(node.tag)) {
+      for (const prop of node.props) {
+        const staticSize = prop.type === 6 && prop.name === 'size'
+        const stringBinding = prop.type === 7 && prop.name === 'bind' && prop.arg?.content === 'size'
+          && /^(['"]).*\1$/.test(prop.exp?.content.trim() || '')
+        if (staticSize || stringBinding) findings.push({ line: prop.loc.start.line + offset, tag: node.tag, message: 'Spin size must be a bound number, not a string' })
+      }
+    }
+    for (const child of node.children || []) visit(child)
+  }
+  visit(baseParse(descriptor.template.content))
+  return findings
+}
+
 export function auditLoading(root = process.cwd()) {
   const files = collectVueFiles(path.join(root, 'src'))
   const findings = files.flatMap((file) => {
     const filename = path.relative(root, file).split(path.sep).join('/')
-    return findNestedLoading(readFileSync(file, 'utf8'), filename).map((issue) => ({ filename, ...issue }))
+    const source = readFileSync(file, 'utf8')
+    return [...findNestedLoading(source, filename), ...findInvalidSpinSizes(source, filename)].map((issue) => ({ filename, ...issue }))
   })
   return { scanned: files.length, findings }
 }
@@ -62,7 +83,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const { scanned, findings } = auditLoading()
   console.log(`Mango nested loading audit\nScanned Vue files: ${scanned}\nIssues: ${findings.length}`)
   for (const issue of findings) {
-    console.log(`- ${issue.filename}:${issue.line} ${issue.parent} → ${issue.expression} (${issue.tag})`)
+    console.log(`- ${issue.filename}:${issue.line} ${issue.message || `${issue.parent} → ${issue.expression}`} (${issue.tag})`)
   }
   if (findings.length) process.exitCode = 1
 }

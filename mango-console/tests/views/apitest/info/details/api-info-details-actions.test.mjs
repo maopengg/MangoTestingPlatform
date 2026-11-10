@@ -42,9 +42,8 @@ assert.ok(
   'the single run action must stay in toolbar'
 )
 
-const responsePanelStart = source.indexOf('<aside class="api-response-panel">')
-const responsePanelEnd = source.indexOf('</aside>', responsePanelStart)
-const responsePanelSource = source.slice(responsePanelStart, responsePanelEnd)
+assert.ok(source.includes('<ApiInfoResponsePanel'), 'response display stays in a dedicated component')
+const responsePanelSource = fs.readFileSync(new URL('../../../../../src/views/apitest/info/details/components/ApiInfoResponsePanel.vue', import.meta.url), 'utf8')
 assert.ok(
   !responsePanelSource.includes('@click="onRunCase"'),
   'response panel must only display results and must not duplicate the run action'

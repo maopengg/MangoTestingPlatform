@@ -224,6 +224,10 @@ class ApiTestCaseParameterMixin:
                             trace=self.trace_recorder.trace,
                             user_id=self.user_id,
                         )
+                    manager = getattr(self, 'resource_cleanup_manager', None)
+                    if manager is not None:
+                        manager.activate(case_detailed.id, parameter.id, retries=retry,
+                                         scenarios=len(list(self.get_parameters_for_step(case_detailed))))
                     request_model = case_parameter.front_main(request_model)
                     self.trace_recorder.finish_step(front_step, {
                         'method': request_model.method,
@@ -495,7 +499,8 @@ class ApiTestCaseParameterMixin:
                             parent_step_id=retry_parent_id,
                         )
                         self.raise_if_report_stopped()
-                        time.sleep(retry_wait_seconds)
+                        from src.apps.task_center.services.execution.cooperative_executor import cooperative_sleep
+                        cooperative_sleep(retry_wait_seconds)
                         self.raise_if_report_stopped()
                         self.trace_recorder.finish_step(wait_step, {
                             'waited_seconds': retry_wait_seconds,

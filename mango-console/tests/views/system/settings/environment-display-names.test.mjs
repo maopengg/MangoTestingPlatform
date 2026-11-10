@@ -9,7 +9,7 @@ test('environment name settings are editable and refresh enum titles after savin
   const store = fs.readFileSync(new URL('../../../../src/store/modules/get-enum.ts', import.meta.url), 'utf8')
   assert.match(settings, /<EnvironmentNameOverrides[\s\S]*?v-model="item.value"/)
   assert.match(settings, /groupKeys: \['system', 'email'\]/)
-  assert.match(settings, /if \(isEnvironmentDisplayNames\(item\)\) \{\s*try \{\s*await enumStore.getEnum\(true\)/)
+  assert.match(settings, /if \(isEnvironmentDisplayNames\(snapshot\)\) \{\s*try \{\s*await enumStore.getEnum\(true\)/)
   assert.match(settings, /await enumStore.getEnum\(true\)/)
   assert.match(store, /'environment_type_defaults'/)
   assert.match(store, /this.environment_type_defaults.length > 0/)
@@ -17,7 +17,7 @@ test('environment name settings are editable and refresh enum titles after savin
 
 test('environment titles are resolved by enum key rather than display position', () => {
   const source = fs.readFileSync(new URL('../../../../src/views/config/test-object/index.vue', import.meta.url), 'utf8')
-  const expression = source.match(/enumStore\.environment_type\.find\([^\n]+?\)\?\.title/)[0]
+  const expression = source.match(/enumStore\.environment_type\.find\([\s\S]*?\)\?\.title/)[0]
   const evaluate = new Function('enumStore', 'record', `return ${expression}`)
   const context = {
     environment_type: [

@@ -35,9 +35,9 @@ test('global header has checkbox track but data row has only key and value track
 })
 
 test('request panel keeps selection, rollback and local loading and compiles', () => {
-  assert.match(source, /v-model="item.headers"/)
+  assert.match(source, /v-model="draft.headers"/)
   assert.match(source, /@change="saveHeaders"/)
-  assert.match(source, /props.item.headers = persistedHeaders/)
+  assert.match(source, /scenario.headers = persistedHeaders/)
   assert.match(source, /:loading="headersSaving"/)
   const { descriptor, errors } = parse(source, { filename })
   assert.deepEqual(errors, [])

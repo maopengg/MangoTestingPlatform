@@ -6,7 +6,9 @@
     :footer="false"
     unmount-on-close
   >
-    <div class="mango-ui-baseline-detail">
+
+    <MangoPanelSpin :loading="loading">
+    <div v-if="detail" class="mango-ui-baseline-detail">
       <section
         v-for="section in detailSections"
         :key="section.title"
@@ -45,20 +47,34 @@
         </a-collapse>
       </section>
     </div>
+    <div v-else class="mango-empty-state">暂无基线详情</div>
+    </MangoPanelSpin>
   </a-drawer>
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
-  import { Message } from '@arco-design/web-vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, onBeforeUnmount, ref, watch } from 'vue'
+  import { useLiveWorkbenchScope } from '@/hooks/use-live-workbench-scope'
+  import { cloneLosslessJson } from '@/utils/lossless-json'
+  import { liveId, liveObject, liveError } from './ui-live-workbench'
+  import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
+  import type { BaselineEvidence } from './ui-element-ai'
   import { getUiElementAiSnapshotDetail } from '@/api/uitest/element'
   import JsonDisplay from '@/components/display/JsonDisplay.vue'
   import UiStructuredDataView from '@/components/display/UiStructuredDataView.vue'
 
   const visible = ref(false)
+  let disposed = false
+  onBeforeUnmount(() => { disposed = true; visible.value = false; detail.value = null; sequence++ })
   const loading = ref(false)
-  const detail = ref<any>({})
-  const title = computed(() => `基线详情 / 快照 #${detail.value?.id || '-'}`)
+  const detail = ref<BaselineEvidence | null>(null)
+  const error = ref('')
+  let sequence = 0, target: { id: string | number; elementId: string | number } | null = null
+  const scope = useLiveWorkbenchScope(() => null, { invalidate() { sequence++; visible.value = false; detail.value = null; target = null; loading.value = false; error.value = '' }, resume() {} })
+  watch(visible, value => { if (!value) { sequence++; loading.value = false } }, { flush: 'sync' })
+  const title = computed(() => `基线详情 / 快照 #${detail.value?.id ?? '-'}`)
 
   const detailSections = computed(() => {
     const item = detail.value || {}
@@ -102,7 +118,7 @@
           { label: '元素类型', value: formatValue(item.element_type) },
           { label: '可访问名称', value: formatValue(item.element_name) },
           { label: '占位符', value: formatValue(item.element_placeholder) },
-          { label: '元素值', value: item.element_value ? formatValue(item.element_value) : '未采集（安全策略）' },
+          { label: '元素值', value: item.element_value != null ? formatValue(item.element_value) : '未采集（安全策略）' },
         ],
       },
     ]
@@ -127,27 +143,26 @@
   })
 
   async function open(snapshotId: string | number, elementId: string | number) {
-    if (!snapshotId || !elementId || loading.value) return false
-    loading.value = true
+    const current = scope.capture(), request = ++sequence
+    if (!current() || liveId(snapshotId) === null || liveId(elementId) === null || disposed) return false
+    target = { id: snapshotId, elementId }; detail.value = null; error.value = ''; visible.value = true; loading.value = true
     try {
-      const res = await getUiElementAiSnapshotDetail({ snapshot_id: snapshotId, element_id: elementId })
-      detail.value = res.data || {}
-      visible.value = true
+      const response: unknown = await getUiElementAiSnapshotDetail({ snapshot_id: snapshotId, element_id: elementId })
+      if (!current() || request !== sequence || !visible.value || disposed) return false
+      const envelope = liveObject(response), data = liveObject(envelope.data)
+      if ((envelope.code != null && envelope.code !== 200) || String(data.id) !== String(snapshotId) || (liveId(data.element_id ?? data.element) !== null && String(data.element_id ?? data.element) !== String(elementId))) throw Error('详情数据与当前记录不匹配')
+      detail.value = cloneLosslessJson(data) as BaselineEvidence
       return true
-    } catch (error) {
-      console.log(error)
-      Message.error('基线详情获取失败')
-      return false
-    } finally {
-      loading.value = false
-    }
+    } catch (reason) { if (current() && request === sequence) (reportLoadError(reason, "基线详情获取失败，请重试", false), error.value = liveError(reason, '基线详情获取失败，请重试')); return false }
+    finally { if (current() && request === sequence) loading.value = false }
   }
-  function formatValue(value: any) { return value == null || value === '' ? '-' : String(value) }
-  function expressionTypeLabel(value: any) {
+  function retry() { if (target) void open(target.id, target.elementId) }
+  function formatValue(value: unknown) { return value == null || value === '' ? '-' : String(value) }
+  function expressionTypeLabel(value: unknown) {
     const labels: Record<number, string> = { 0: 'XPATH', 2: '通用定位器', 3: '文本', 4: '占位符', 9: 'CSS', 11: 'DESCRIPTION', 12: 'BOUNDS', 14: 'RESOURCE_ID' }
     return labels[Number(value)] || formatValue(value)
   }
-  function sourceLabel(value: any) {
+  function sourceLabel(value: unknown) {
     return ({ 0: '元素检测', 1: '页面步骤', 2: 'UI Case' } as Record<number, string>)[Number(value)] || formatValue(value)
   }
 
@@ -155,6 +170,7 @@
 </script>
 
 <style scoped>
+  .mango-ui-evidence-error { color: var(--m-danger); padding: var(--m-page-gap); }
   .mango-ui-baseline-detail { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   .mango-ui-baseline-detail__section { padding: 12px; border: 1px solid var(--m-border); border-radius: var(--m-radius-lg); background: var(--m-surface); }
   .mango-ui-baseline-detail__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }

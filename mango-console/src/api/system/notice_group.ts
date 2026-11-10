@@ -53,6 +53,7 @@ export function putSystemNoticePutStatus(id: number, status: number) {
 export function getSystemNoticeTest(id: number) {
   return get({
     url: 'system/notice/test',
+    silentError: true,
     data: () => {
       return {
         id: id,
@@ -61,7 +62,7 @@ export function getSystemNoticeTest(id: number) {
   })
 }
 
-export function getSystemNoticeName(project_product_id: number) {
+export function getSystemNoticeName(project_product_id: number | string) {
   return get({
     url: 'system/notice/name',
     data: () => {

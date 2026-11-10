@@ -26,6 +26,36 @@ from ..helper_parts.execution import (
 
 def register_case_execution_tools(mcp):
     @mcp.tool()
+    def get_api_case_resource_cleanup_schema() -> dict:
+        """获取API创建资源清理规则格式。通过update_api_case.resource_cleanup保存，随Case修订冻结。
+
+        仅test/dev。先创建Case与步骤；触发步骤单场景且不重试。创建请求的唯一名称需引用
+        ${{api_resource_<key>}}；身份来源为本轮租户、创建人缓存。响应ID、groupId及版本分别映射。
+        SQL只接受已保存的表/字段规则，不接受自由SQL。自动清理失败会使Case不能通过；重试只处理原台账。
+        """
+        from src.apps.auto_api.schemas.resource_cleanup import ApiResourceCleanupRules
+        return ok(ApiResourceCleanupRules.model_json_schema())
+
+    @mcp.tool()
+    def get_api_case_resource_cleanup_results(case_id: int, trace_id: str | None = None, resource_id: int | None = None,
+                                             page: int = 1, page_size: int = 10) -> dict:
+        """分页查询API资源清理台账；resource_id可读取单项冻结规则和所有权证据，不返回凭据或业务响应正文。"""
+        from src.apps.auto_api.selectors.resource_cleanup import ApiResourceCleanupSelector
+        return ok(ApiResourceCleanupSelector.results(user=current_user(), case_id=case_id, trace_id=trace_id, resource_id=resource_id,
+                                                     page=page, page_size=page_size))
+
+    @mcp.tool()
+    def cleanup_api_case_resources(case_id: int, resource_id: int, preview: bool = True) -> dict:
+        """预览或重试指定原执行资源清理，默认仅预览；preview=false才清理。
+
+        原执行必须已结束或有进程替换证据。只使用原冻结的环境、规则及所有权证据，
+        不重新执行业务创建，不按名称前缀发现目标，不修改历史业务断言为通过。
+        """
+        from src.apps.auto_api.services.resource_cleanup import ApiResourceCleanupRetryService
+        return ok(ApiResourceCleanupRetryService.retry(user=current_user(), case_id=case_id,
+                                                       resource_id=resource_id, preview=preview))
+
+    @mcp.tool()
     def run_api_case(
             case_id: int,
             test_env_id: int | None = None,

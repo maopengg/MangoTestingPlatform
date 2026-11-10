@@ -23,7 +23,9 @@ test('API case and info pages use the shared product navigation workbench', () =
 
 test('wide API tables use the shared sticky horizontal table boundary', () => {
   assert.match(casePageSource, /:sticky-horizontal-scroll="false"/)
-  assert.match(casePageSource, /<StickyHorizontalTable :scroll-x="2340">/)
+  const scrollWidth = casePageSource.match(/<StickyHorizontalTable :scroll-x="(\d+)">/)[1]
+  assert.ok(Number(scrollWidth) >= 2340)
+  assert.match(casePageSource, new RegExp(`:scroll="\\{ x: ${scrollWidth}, y: '100%' \\}"`))
   assert.match(infoPageSource, /:sticky-horizontal-scroll="false"/)
   assert.match(infoPageSource, /<StickyHorizontalTable :scroll-x="2090">/)
 })

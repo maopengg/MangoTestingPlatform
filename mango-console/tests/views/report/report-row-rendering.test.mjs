@@ -2,26 +2,20 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import test from 'node:test'
-import { computed, createSSRApp, h } from 'vue'
+import { createSSRApp, h, toRaw } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
-import ts from 'typescript'
+import { harness } from '../../helpers/case-details-harness.mjs'
 
 const { Table } = createRequire(import.meta.url)('@arco-design/web-vue')
 const root = new URL('../../../src/views/report/details/', import.meta.url)
-const helpers = {}
-new Function('exports', ts.transpileModule(readFileSync(new URL('report-rows.ts', root), 'utf8'), {
-  compilerOptions: { module: ts.ModuleKind.CommonJS },
-}).outputText)(helpers)
-
 function flatRows(component, cases) {
-  const source = readFileSync(new URL(component, root), 'utf8')
-  const { descriptor } = parse(source)
-  const body = descriptor.scriptSetup.content.replace(/^\s*import[^\n]+$/gm, '')
-  const code = ts.transpileModule(body, {}).outputText
-  return new Function('computed', 'defineProps', 'defineEmits', 'reportRecords', 'caseResultRows',
-    `${code};return flatRows.value`)(computed, () => ({ cases, enumStore: {} }), () => () => {},
-      helpers.reportRecords, helpers.caseResultRows)
+  const instance = harness(component, 'flatRows', {
+    filename: new URL(component, root).pathname, props: { cases },
+  })
+  const rows = instance.flatRows.value
+  instance.close()
+  return rows
 }
 
 async function renderTable(data, warnHandler = () => {}) {
@@ -44,7 +38,7 @@ for (const component of ['ApiCaseTable.vue', 'UiCaseTable.vue', 'PytestCaseTable
       const rows = flatRows(component, input)
       assert.equal(rows.length, 1)
       assert.equal(rows[0].children, undefined)
-      assert.equal(rows[0].__sourceRecord, input[0])
+      assert.equal(toRaw(rows[0].__sourceRecord), input[0])
       assert.match(await renderTable(rows), /用例/)
       assert.equal(JSON.stringify(input), before)
     }
@@ -62,7 +56,7 @@ for (const component of ['ApiCaseTable.vue', 'UiCaseTable.vue', 'PytestCaseTable
     assert.equal(rows[2].status, 4)
     assert.equal(new Set(rows.map(row => row.__rowKey)).size, 3)
     for (const row of rows) assert.equal(row.children, undefined)
-    assert.equal(rows[0].__sourceRecord.children[0], input[0].children[0])
+    assert.equal(toRaw(rows[0].__sourceRecord.children[0]), input[0].children[0])
     const html = await renderTable(rows)
     assert.match(html, /场景A/)
     assert.match(html, /场景B/)

@@ -1,31 +1,38 @@
+import type { ProductRecord, ProductOption } from './types'
+import type { FormItem } from '@/types/components'
 export interface ProductGroup {
   id: string
   name: string
-  products: any[]
+  products: ProductRecord[]
   total: number
 }
 
-export function productEditorProjectOptions(options: any[], currentProject?: { id: number | string; name: string } | null) {
+export function productEditorProjectOptions(
+  options: ProductOption[],
+  currentProject?: { id: number | string; name: string } | null
+) {
   if (currentProject?.id == null) return options
   const matched = options.some((option) => String(option.key) === String(currentProject.id))
   if (!matched) return [...options, { key: currentProject.id, title: currentProject.name }]
   return options.map((option) =>
-    String(option.key) === String(currentProject.id) ? { ...option, key: currentProject.id } : option
+    String(option.key) === String(currentProject.id)
+      ? { ...option, key: currentProject.id }
+      : option
   )
 }
 
 /** 逐页读取权限范围内的完整数据；不把当前页误当成产品总览。 */
 export async function loadAllProducts(
-  request: (params: object) => Promise<any>,
+  request: (params: object) => Promise<{ data: ProductRecord[]; totalSize?: number | string }>,
   isCurrent = () => true
 ) {
-  const records = new Map<string, any>()
+  const records = new Map<string, ProductRecord>()
   let page = 1
   while (isCurrent()) {
     const response = await request({ page, pageSize: 100 })
     if (!isCurrent()) return []
     if (!Array.isArray(response.data)) throw new Error('产品列表响应格式异常')
-    const rows: any[] = response.data
+    const rows: ProductRecord[] = response.data
     const previousSize = records.size
     rows.forEach((row) => records.set(String(row.id), row))
     const total = response.totalSize == null ? NaN : Number(response.totalSize)
@@ -38,7 +45,11 @@ export async function loadAllProducts(
   return []
 }
 
-export function groupProducts(products: any[], projects: any[], conditions: any[]): ProductGroup[] {
+export function groupProducts(
+  products: ProductRecord[],
+  projects: ProductOption[],
+  conditions: FormItem[]
+): ProductGroup[] {
   const groups = new Map<string, ProductGroup>()
   projects
     .filter((project) => project.key != null)
@@ -74,8 +85,15 @@ export function groupProducts(products: any[], projects: any[], conditions: any[
           .some((id) => id.trim() === String(product.id))
       const values = (Array.isArray(value) ? value : [value]).map(String)
       if (item.key === 'owners')
-        return (product.owners || []).some((owner: any) => values.includes(String(owner.id)))
-      const actual = item.key === 'update_user' ? product.update_user?.id : product[item.key]
+        return (product.owners || []).some((owner) => values.includes(String(owner.id)))
+      const actual =
+        item.key === 'update_user'
+          ? product.update_user?.id
+          : item.key === 'ui_client_type'
+          ? product.ui_client_type
+          : item.key === 'api_client_type'
+          ? product.api_client_type
+          : undefined
       return values.includes(String(actual))
     })
     if (

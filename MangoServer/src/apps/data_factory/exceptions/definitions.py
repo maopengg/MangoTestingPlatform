@@ -274,6 +274,9 @@ DATA_FACTORY_ENTITY_UNAVAILABLE = ErrorDefinition(
     code=34167,
     message='数据工厂实体“{}”已停用（来源：{}，原因：{}，时间：{}）',
 )
+DATA_FACTORY_ENTITY_ACTIVATION_INVALID = ErrorDefinition(
+    code=34197, message='数据模型“{}”启用校验失败：{}。请按数据模型校验环境核对并同步表结构后重试',
+)
 DATA_FACTORY_CASE_AUTO_CLEANUP_FAILED = ErrorDefinition(
     code=34168,
     message='用例数据工厂自动清理失败：{}',

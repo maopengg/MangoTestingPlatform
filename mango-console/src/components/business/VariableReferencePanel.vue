@@ -22,11 +22,12 @@
 </template>
 
 <script lang="ts" setup>
-  import { getCurrentInstance, ref } from 'vue'
+  import { getCurrentInstance, onDeactivated, ref } from 'vue'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import VariableReferencePage from '@/views/help/variable/index.vue'
 
   const visible = ref(false)
+  onDeactivated(() => { visible.value = false })
   const panelId = `mango-variable-reference-panel-${getCurrentInstance()?.uid ?? 'default'}`
 </script>
 
@@ -38,7 +39,7 @@
   .mango-variable-reference-panel {
     height: 100%;
     min-height: 0;
-    padding: 8px;
+    padding: 0;
     background: var(--m-bg);
   }
 </style>

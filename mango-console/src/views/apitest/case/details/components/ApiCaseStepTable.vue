@@ -4,7 +4,7 @@
     :columns="columns"
     :data="data"
     :loading="loading"
-    :draggable="{ type: 'handle', width: 40 }"
+    :draggable="editLocked || executionActive ? undefined : { type: 'handle', width: 40 }"
     :pagination="false"
     :row-class="rowClass"
     :scroll="{ x: 760 }"
@@ -14,7 +14,7 @@
     <template #columns>
       <a-table-column
         v-for="item of columns"
-        :key="item.key"
+        :key="item.key || item.dataIndex"
         :align="item.align"
         :data-index="item.dataIndex"
         :ellipsis="item.ellipsis"
@@ -70,16 +70,15 @@
     (event: 'refresh', value: any): void
     (event: 'api-info', value: any): void
     (event: 'delete', value: any): void
-    (event: 'recovery', value: any): void
+    (event: 'edit', value: any): void
   }>()
 
   function rowActions(record: any) {
     return [
       {
-        label: '执行时机',
-        overflow: true,
+        label: '编辑',
         disabled: props.editLocked || props.executionActive,
-        onClick: () => emit('recovery', record),
+        onClick: () => emit('edit', record),
       },
       {
         label: '调试',

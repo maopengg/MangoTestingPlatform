@@ -33,7 +33,7 @@ class MockRequestDecryptionService:
         version = str(settings.VERSION)
         if version and settings.SECRET_KEY.endswith(version):
             prefix = settings.SECRET_KEY[:-len(version)]
-            keys.extend(f'{prefix}{old_version}' for old_version in ('7.1.1', '7.2.0', '7.2.1', '7.2.2'))
+            keys.extend(f'{prefix}{old_version}' for old_version in ('7.1.1', '7.2.0', '7.2.1', '7.2.2', '7.2.3'))
         for key in dict.fromkeys(keys):
             if not key:
                 continue

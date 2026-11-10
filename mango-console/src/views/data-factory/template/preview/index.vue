@@ -1,83 +1,120 @@
 <template>
-  <TableBody class="template-preview-page mango-detail-workbench-page">
+  <TableBody class="mango-template-preview-page mango-detail-workbench-page">
     <template #header>
       <div class="mango-detail-toolbar">
         <div class="mango-detail-heading">
           <div class="mango-detail-title">{{ previewTitle }}</div>
-          <div class="mango-detail-subtitle">
-            {{ canDebugText }}
-          </div>
+          <div class="mango-detail-subtitle"> {{ canDebugText }} </div>
         </div>
         <a-space class="mango-detail-actions" wrap>
-          <a-button  size="small" type="primary" :loading="saving" @click="saveTemplateConfig" data-testid="qa-views-data-factory-template-preview-button-保存字段配置">
+          <a-button
+            size="small"
+            type="primary"
+            :loading="saving"
+            :disabled="writeBusy || templateLoading || templateForm.id === null"
+            @click="saveTemplateConfig"
+            data-testid="qa-views-data-factory-template-preview-button-保存字段配置"
+          >
             保存字段配置
           </a-button>
-          <a-button size="small" @click="postUpdateVisible = true">
+          <a-button size="small" @click="postUpdatesRef?.open()">
             配置插入后回写
             <a-badge :count="templateForm.post_insert_updates?.length || 0" :max-count="99" />
           </a-button>
-          <a-button size="small" :disabled="!templateForm.id" @click="openCleanupResources">
+          <a-button
+            size="small"
+            :disabled="templateForm.id === null || writeBusy"
+            @click="openCleanupResources"
+          >
             关联ES清理
             <a-badge :count="templateForm.cleanup_resources?.length || 0" />
           </a-button>
           <a-button
             size="small"
-            :disabled="!templateForm.entity"
-            :loading="entityRuleLoading"
+            :disabled="templateForm.entity === null"
             @click="openRootEntityRules"
             data-testid="qa-views-data-factory-template-preview-button-查看实体规则"
           >
             查看实体规则
           </a-button>
-          <a-button  size="small" :loading="syncLoading" @click="confirmSyncTemplateFields" data-testid="qa-views-data-factory-template-preview-button-同步实体规则">
+          <a-button
+            size="small"
+            :loading="syncLoading"
+            :disabled="writeBusy || templateLoading || templateForm.id === null"
+            @click="confirmSyncTemplateFields"
+            data-testid="qa-views-data-factory-template-preview-button-同步实体规则"
+          >
             同步实体规则
           </a-button>
           <a-button
             size="small"
             status="success"
-            :disabled="!templateForm.id || previewLoading"
+            :disabled="templateForm.id === null || previewLoading || writeBusy || templateLoading"
             :loading="debugLoading"
-            @click="debugRun" data-testid="qa-views-data-factory-template-preview-button-调试运行"
+            @click="debugRun"
+            data-testid="qa-views-data-factory-template-preview-button-调试运行"
           >
             调试运行
           </a-button>
           <VariableReferencePanel />
-          <a-button class="mango-back-button" size="small" @click="goBack" data-testid="qa-views-data-factory-template-preview-button-返回">返回</a-button>
+          <a-button
+            class="mango-back-button"
+            size="small"
+            @click="goBack"
+            data-testid="qa-views-data-factory-template-preview-button-返回"
+            >返回</a-button
+          >
         </a-space>
       </div>
     </template>
 
     <template #default>
+
+
+
+
+
       <mango-panel-spin
         :loading="initialPageLoading"
-        class="preview-spin mango-workbench-scroll-x scene-config-workbench-scroll"
+        class="mango-preview-spin mango-workbench-scroll-x mango-scene-config-workbench-scroll"
         tip="模板配置加载中..."
       >
-        <div v-if="templateForm.entity" class="scene-config-workbench">
-          <mango-panel-spin :loading="scenePanelLoading" class="scene-items-spin" tip="编排数据加载中...">
-            <aside class="scene-items-card">
-              <div class="scene-items-header">
+        <div v-if="templateForm.entity !== null" class="mango-scene-config-workbench">
+          <mango-panel-spin
+            :loading="scenePanelLoading"
+            class="mango-scene-items-spin"
+            tip="编排数据加载中..."
+          >
+            <aside class="mango-scene-items-card">
+              <div class="mango-scene-items-header">
                 <div>
-                  <div class="scene-items-title">场景编排</div>
-                  <div class="scene-items-subtitle">点击模板查看局部依赖，拖动调整子模板创建顺序</div>
+                  <div class="mango-scene-items-title">场景编排</div>
+                  <div class="mango-scene-items-subtitle"
+                    >点击模板查看局部依赖，拖动调整子模板创建顺序</div
+                  >
                 </div>
                 <a-tag
                   size="small"
                   :color="sceneAutoSaveMeta.color"
-                  class="scene-save-status"
+                  class="mango-scene-save-status"
                   @click="retrySceneAutoSave"
                 >
                   {{ sceneAutoSaveMeta.text }}
                 </a-tag>
-                <a-button size="small" type="primary" long @click="addSceneItem" data-testid="qa-views-data-factory-template-preview-button-添加关联模板"
+                <a-button
+                  size="small"
+                  type="primary"
+                  long
+                  @click="addSceneItem"
+                  data-testid="qa-views-data-factory-template-preview-button-添加关联模板"
                   >添加关联模板</a-button
                 >
               </div>
-              <div class="scene-items-list">
+              <div class="mango-scene-items-list">
                 <div
                   :class="[
-                    'scene-root-card',
-                    { 'scene-item-card-active': activeSceneNodeKey === 'root' },
+                    'mango-scene-root-card',
+                    { 'mango-scene-item-card-active': activeSceneNodeKey === 'root' },
                   ]"
                   @click="activeSceneNodeKey = 'root'"
                   role="button"
@@ -86,73 +123,96 @@
                   @keydown.enter="activeSceneNodeKey = 'root'"
                   @keydown.space.prevent="activeSceneNodeKey = 'root'"
                 >
-                  <div class="scene-root-label">主模板</div>
-                  <div class="scene-root-name" :title="templateForm.name || pageRecord?.name">{{
-                    templateForm.name || pageRecord?.name || '-'
-                  }}</div>
-                  <div class="scene-root-meta">场景入口，优先创建</div>
+                  <div class="mango-scene-root-label">主模板</div>
+                  <div
+                    class="mango-scene-root-name"
+                    :title="templateForm.name || pageRecord?.name"
+                    >{{ templateForm.name || pageRecord?.name || '-' }}</div
+                  >
+                  <div class="mango-scene-root-meta">场景入口，优先创建</div>
                 </div>
                 <div
                   v-for="(item, index) in templateForm.items || []"
                   :key="item._key || item.id || index"
                   :class="[
-                    'scene-item-card',
-                    { 'scene-item-card-active': activeSceneNodeKey === getSceneItemFocusKey(item) },
-                    { 'scene-item-card-dragging': draggingSceneItemKey === getSceneItemKey(item) },
+                    'mango-scene-item-card',
+                    {
+                      'mango-scene-item-card-active':
+                        activeSceneNodeKey === getSceneItemFocusKey(item),
+                    },
+                    {
+                      'mango-scene-item-card-dragging':
+                        draggingSceneItemKey === getSceneItemKey(item),
+                    },
                   ]"
-                  draggable="true"
+                  :draggable="!sceneEditLocked"
                   @click="activeSceneNodeKey = getSceneItemFocusKey(item)"
                   @dragstart="onSceneItemDragStart(item)"
                   @dragover.prevent
                   @drop="onSceneItemDrop(item)"
                   @dragend="onSceneItemDragEnd"
                 >
-                  <div class="scene-item-drag" title="拖动排序">::</div>
-                  <div class="scene-item-content">
+                  <div class="mango-scene-item-drag" title="拖动排序">::</div>
+                  <div class="mango-scene-item-content">
                     <a-select
                       v-model="item.child_template"
                       :options="sceneSelectOptions"
                       :loading="sceneOptionsLoading"
+                      :disabled="sceneEditLocked"
                       :filter-option="false"
                       :field-names="{ value: 'id', label: 'name' }"
                       allow-search
                       allow-clear
                       placeholder="选择关联模板"
-                      @popup-visible-change="(visible) => visible && loadSceneTemplateOptions('', 1)"
+                      @popup-visible-change="
+                        (visible) => visible && loadSceneTemplateOptions('', 1)
+                      "
                       @search="(keyword) => loadSceneTemplateOptions(keyword, 1)"
                       @dropdown-reach-bottom="loadMoreSceneTemplateOptions"
-                      @change="() => onSceneItemTemplateChange(item)" data-testid="qa-views-data-factory-template-preview-select-选择关联模板"
+                      @change="() => onSceneItemTemplateChange(item)"
+                      data-testid="qa-views-data-factory-template-preview-select-选择关联模板"
                     >
                       <template #footer v-if="sceneOptionsFailed">
-                        <a-button type="text" size="small" :loading="sceneOptionsLoading" @click="loadSceneTemplateOptions(sceneOptionsKeyword, sceneOptionsPage)">加载失败，点击重试</a-button>
+                        <a-button
+                          type="text"
+                          size="small"
+                          :loading="sceneOptionsLoading"
+                          :disabled="sceneEditLocked"
+                          @click="loadSceneTemplateOptions(sceneOptionsKeyword, sceneOptionsPage)"
+                          >重试</a-button
+                        >
                       </template>
                     </a-select>
                     <a-input
                       v-model="item.name"
+                      :disabled="sceneEditLocked"
                       placeholder="关联名称"
-                      @blur="() => onSceneItemNameBlur(item)" data-testid="qa-views-data-factory-template-preview-input-关联名称"
+                      @blur="() => onSceneItemNameBlur(item)"
+                      data-testid="qa-views-data-factory-template-preview-input-关联名称"
                     />
-                    <div class="scene-item-footer">
-                      <span class="scene-item-hint">共享主场景上下文</span>
+                    <div class="mango-scene-item-footer">
+                      <span class="mango-scene-item-hint">共享主场景上下文</span>
                       <a-button
                         size="mini"
                         status="danger"
                         type="text"
-                        @click="removeSceneItem(index)" data-testid="qa-views-data-factory-template-preview-button-移除"
+                        @click="removeSceneItem(index)"
+                        data-testid="qa-views-data-factory-template-preview-button-移除"
                       >
                         移除
                       </a-button>
                     </div>
                   </div>
                 </div>
-                <div v-if="!templateForm.items?.length" class="mango-empty-state scene-empty">
+                <div v-if="!templateForm.items?.length" class="mango-empty-state mango-scene-empty">
                   暂未添加关联模板
                 </div>
               </div>
             </aside>
           </mango-panel-spin>
-          <section class="scene-preview-panel">
+          <section class="mango-scene-preview-panel">
             <DataFactoryDependencyPreview
+              :inert="sceneEditLocked ? '' : undefined"
               :dependency-tree="previewResult.dependency_tree"
               :post-insert-updates="previewResult.post_insert_updates || []"
               :can-debug-run="previewResult.can_debug_run"
@@ -165,7 +225,7 @@
               :dependency-template-options="dependencyTemplateOptions"
               :load-dependency-template-options="loadDependencyTemplateOptions"
               :focus-node-key="activeSceneNodeKey"
-              :flow-loading="previewLoading"
+              :flow-loading="previewLoading || navigating"
               :field-loading="fieldPanelLoading"
               editable-root
               field-table-scroll-y="100%"
@@ -179,207 +239,20 @@
     </template>
   </TableBody>
 
-  <a-modal v-model:visible="debugVisible" title="调试结果" width="760px" :footer="false">
-    <a-space v-if="debugResult" direction="vertical" fill>
-      <a-alert v-if="debugResult.execution_no" type="success"
-        >执行编号：{{ debugResult.execution_no }}</a-alert
-      >
-      <JsonDisplay :data="debugResult.context || debugResult" />
-      <a-button
-        v-if="debugResult.execution_id"
-        :loading="debugCleanupLoading"
-        status="danger"
-        @click="debugCleanup" data-testid="qa-views-data-factory-template-preview-button-清理调试数据"
-        >清理调试数据</a-button
-      >
-    </a-space>
-  </a-modal>
+  <DebugResultDialog ref="debugRef" @busy-change="onDebugBusyChange" />
 
-  <a-modal
-    v-model:visible="entityRuleVisible"
-    :title="`${entityRuleRecord?.name || ''} 字段规则`"
-    width="1180px"
-    :footer="false"
-  >
-    <div class="entity-rule-toolbar">
-      <a-tag color="arcoblue">当前表：{{ entityRuleRecord?.table_name || '-' }}</a-tag>
-    </div>
-    <div class="mango-entity-rule-table-region">
-    <a-table
-      class="mango-native-scroll-table"
-      size="small"
-      :columns="entityRuleColumns"
-      :data="entityRuleRows"
-      :loading="entityRuleLoading"
-      :pagination="false"
-      :scroll="{ x: entityRuleTableScrollWidth, y: '100%' }"
-      row-key="id"
-    >
-      <template #columns>
-        <a-table-column
-          v-for="item of entityRuleColumns"
-          :key="item.key"
-          :align="item.align"
-          :data-index="item.key"
-          :fixed="item.fixed"
-          :ellipsis="item.ellipsis"
-          :tooltip="item.tooltip"
-          :title="item.title"
-          :width="item.width"
-        >
-          <template v-if="item.key === 'generator_type'" #cell="{ record }">
-            <a-select
-              :model-value="generatorTypeTitle(record.generator_type)"
-              :options="[generatorTypeTitle(record.generator_type)]"
-              disabled
-              :title="generatorTypeTitle(record.generator_type)"
-              :aria-label="`${record.name} 生成方式（只读）`"
-            />
-          </template>
-          <template v-else-if="item.key === 'generator_config'" #cell="{ record }">
-            <a-tooltip :content="getGeneratorDisplay(record).text">
-              <a-select
-                v-if="getGeneratorDisplay(record).enum"
-                :model-value="getGeneratorDisplay(record).text"
-                :options="[getGeneratorDisplay(record).text]"
-                disabled
-                :aria-label="`${record.name} 枚举配置（只读）`"
-              />
-              <a-input
-                v-else
-                :model-value="getGeneratorDisplay(record).text"
-                readonly
-                :disabled="getGeneratorDisplay(record).automatic"
-                :aria-label="`${record.name} 生成配置（只读）`"
-              />
-            </a-tooltip>
-          </template>
-          <template
-            v-else-if="['nullable', 'primary_key', 'autoincrement', 'db_type', 'platform_type'].includes(item.key)"
-            #cell="{ record }"
-          >
-            <DataFactoryFieldTag :record="record" :field="item.key" />
-          </template>
-        </a-table-column>
-      </template>
-    </a-table>
-    </div>
-  </a-modal>
+  <EntityRulesDialog ref="entityRulesRef" />
 
-  <a-modal
-    v-model:visible="postUpdateVisible"
-    title="插入后回写"
-    width="920px"
-    :footer="false"
-  >
-    <a-alert type="info" class="post-update-alert">
-      适用于两张表互相引用的场景。全部数据创建完成后，系统会把来源记录的真实字段值写入目标记录，并且只更新本次执行创建的那一条数据。
-    </a-alert>
-    <div class="post-update-list">
-      <section
-        v-for="(item, index) in templateForm.post_insert_updates || []"
-        :key="`${item.target_node}-${item.target_field}-${index}`"
-        class="post-update-rule"
-      >
-        <header class="post-update-rule-header">
-          <div>
-            <span class="post-update-rule-title">回写规则 {{ index + 1 }}</span>
-            <span class="post-update-rule-summary">{{ getPostUpdateSummary(item) }}</span>
-          </div>
-          <a-button  size="mini" type="text" status="danger" @click="removePostInsertUpdate(index)">
-            删除规则
-          </a-button>
-        </header>
-
-        <div class="post-update-mapping">
-          <div class="post-update-side post-update-source">
-            <div class="post-update-side-title">取值来源</div>
-            <label class="post-update-field">
-              <span>来源节点</span>
-              <a-select
-                v-model="item.source_node"
-                :options="sceneNodeOptions"
-                placeholder="选择已创建的数据节点"
-                allow-search
-                @change="handlePostUpdateSourceNodeChange(item)"
-              />
-            </label>
-            <label class="post-update-field">
-              <span>来源字段</span>
-              <a-select
-                v-model="item.source_field"
-                :options="getPostUpdateSourceFieldOptions(item)"
-                placeholder="选择要取出的字段"
-                allow-search
-                @change="handlePostUpdateFieldChange(item)"
-              />
-            </label>
-          </div>
-
-          <div class="post-update-direction" aria-hidden="true">
-            <span>写入</span>
-            <strong>→</strong>
-          </div>
-
-          <div class="post-update-side post-update-target">
-            <div class="post-update-side-title">写入目标</div>
-            <label class="post-update-field">
-              <span>目标节点</span>
-              <a-select
-                v-model="item.target_node"
-                :options="sceneNodeOptions"
-                placeholder="选择要更新的数据节点"
-                allow-search
-                @change="handlePostUpdateTargetNodeChange(item)"
-              />
-            </label>
-            <label class="post-update-field">
-              <span>目标字段</span>
-              <a-select
-                v-model="item.target_field"
-                :options="getPostUpdateTargetFieldOptions(item.target_node)"
-                placeholder="仅显示可安全回写字段"
-                allow-search
-                @change="handlePostUpdateFieldChange(item)"
-              />
-            </label>
-          </div>
-        </div>
-
-        <a-alert
-          :type="getPostUpdateValidation(item, index).type"
-          class="post-update-validation"
-        >
-          {{ getPostUpdateValidation(item, index).message }}
-        </a-alert>
-
-        <details class="post-update-advanced">
-          <summary>高级设置与执行详情</summary>
-          <div class="post-update-advanced-content">
-            <label class="post-update-order-field">
-              <span>执行顺序</span>
-              <a-input-number v-model="item.sort" :min="0" placeholder="数字越小越先执行" />
-            </label>
-            <div class="post-update-order-tip">存在多条回写规则时，数字越小越先执行。</div>
-            <div
-              v-if="previewResult.post_insert_updates?.[index]?.valid"
-              class="post-update-sql"
-            >
-              {{ previewResult.post_insert_updates[index].sql_template }}
-            </div>
-          </div>
-        </details>
-      </section>
-      <div v-if="!templateForm.post_insert_updates?.length" class="mango-empty-state">
-        <div>暂未配置回写规则</div>
-        <div class="post-update-empty-tip">例如：评分创建后，将评分 ID 写入状态表的当前评分结果字段。</div>
-      </div>
-    </div>
-    <a-space>
-      <a-button size="small" type="primary" @click="addPostInsertUpdate">添加回写规则</a-button>
-      <a-button size="small" :loading="previewLoading" @click="loadPreview">检查全部规则</a-button>
-    </a-space>
-  </a-modal>
+  <PostUpdatesDialog
+    ref="postUpdatesRef"
+    :nodes="postUpdateNodes"
+    :model-value="templateForm.post_insert_updates"
+    :checks="previewResult.post_insert_updates || []"
+    :loading="previewLoading"
+    :disabled="sceneEditLocked"
+    @update:model-value="updatePostUpdates"
+    @check="loadPreview"
+  />
   <MangoJsonEditDrawer
     v-model:visible="cleanupResourceVisible"
     v-model="cleanupResourceJson"
@@ -392,17 +265,37 @@
 </template>
 
 <script lang="ts" setup>
+import { reportLoadError } from '@/utils/load-error'
+
   import DataFactoryDependencyPreview from '@/components/DataFactory/DataFactoryDependencyPreview.vue'
-  import DataFactoryFieldTag from '@/components/display/DataFactoryFieldTag.vue'
-  import JsonDisplay from '@/components/display/JsonDisplay.vue'
+  import EntityRulesDialog from './components/EntityRulesDialog.vue'
+  import type {
+    EntityRulesHandle,
+    TemplateRecord,
+    TemplateDraft,
+    SceneItem,
+    TemplateSummary,
+    Overrides,
+    OutputItem,
+    FieldRecord,
+    PreviewResult,
+    EditableNode,
+    PostUpdate,
+    PreviewNode,
+    DebugHandle,
+    JsonValue,
+    PostUpdatesHandle,
+    PostUpdateNode,
+  } from './types'
+  import { createDraft, clone, optionId, normalizeLoadedItems } from './form'
+  import { useTemplateScope } from '../composables/useTemplateScope'
+  import DebugResultDialog from './components/DebugResultDialog.vue'
+  import PostUpdatesDialog from './components/PostUpdatesDialog.vue'
   import VariableReferencePanel from '@/components/business/VariableReferencePanel.vue'
   import MangoJsonEditDrawer from '@/components/editors/MangoJsonEditDrawer.vue'
   import {
     getDataFactoryField,
-    getDataFactoryEntity,
     getDataFactoryTemplate,
-    postDataFactoryTemplateDebugCleanup,
-    postDataFactoryTemplateDebugRun,
     postDataFactoryTemplatePreview,
     postDataFactoryTemplateSyncFields,
     putDataFactoryTemplate,
@@ -411,10 +304,9 @@
   import useUserStore from '@/store/modules/user'
   import { usePageData } from '@/store/page-data'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { computed, onMounted, reactive, ref, watch } from 'vue'
-  import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
-  import { entityRuleColumns, entityRuleTableScrollWidth, cleanupResourceDescription, cleanupResourceExample } from './config'
-  import { getGeneratorDisplay } from './generatorDisplay'
+  import { computed, onMounted, reactive, ref, watch, shallowRef, Ref } from 'vue'
+  import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
+  import { cleanupResourceDescription, cleanupResourceExample } from './config'
 
   const route = useRoute()
   const router = useRouter()
@@ -429,65 +321,73 @@
   const previewLoading = ref(false)
   const firstPreviewReady = ref(false)
   const editableFieldsReady = ref(false)
-  const previewResult = ref<any>({})
+  const previewResult = shallowRef<PreviewResult>({})
   const debugLoading = ref(false)
-  const debugVisible = ref(false)
-  const debugResult = ref<any>({})
-  const debugCleanupLoading = ref(false)
+  const navigating = ref(false)
+  const debugRef = ref<DebugHandle | null>(null)
   const saving = ref(false)
   const syncLoading = ref(false)
-  const entityRuleLoading = ref(false)
-  const entityRuleVisible = ref(false)
-  const postUpdateVisible = ref(false)
+  const entityRulesRef = ref<EntityRulesHandle | null>(null)
+  const postUpdatesRef = ref<PostUpdatesHandle | null>(null)
   const cleanupResourceVisible = ref(false)
   const cleanupResourceJson = ref('[]')
   const cleanupResourceSaving = ref(false)
-  const entityRuleRecord = ref<any>(null)
-  const entityRuleRows = ref<any[]>([])
   const sceneAutoSaving = ref(false)
   const sceneAutoSaveStatus = ref<'idle' | 'saving' | 'saved' | 'error'>('idle')
-  const sceneSavedItemOverrides = ref<Record<string, Record<string, any>>>({})
+  const sceneSavedItemOverrides = ref<Record<string, Overrides>>({})
   const savedFieldConfigSignature = ref('')
-  const fieldRows = ref<any[]>([])
-  const sceneTemplateOptions = ref<any[]>([])
+  const fieldRows: Ref<FieldRecord[]> = ref([])
+  const sceneTemplateOptions = ref<TemplateSummary[]>([])
   const sceneOptionsKeyword = ref('')
   const sceneOptionsPage = ref(0)
   const sceneOptionsHasMore = ref(false)
   const sceneOptionsFailed = ref(false)
   let sceneOptionsRequest = 0
   const sceneSelectOptions = computed(() => {
-    const selected = (templateForm.items || []).map((item: any) => item.child_template_detail).filter(Boolean)
-    return [...new Map([...selected, ...sceneTemplateOptions.value].map((item: any) => [String(item.id), item])).values()]
+    const selected = (templateForm.items || [])
+      .map((item) => item.child_template_detail)
+      .filter((item): item is TemplateSummary => item != null)
+    return [
+      ...new Map(
+        [...selected, ...sceneTemplateOptions.value].map((item) => [String(item.id), item])
+      ).values(),
+    ]
   })
-  const itemFieldsMap = ref<Record<string, any[]>>({})
-  const dependencyTemplateOptions = ref<Record<string, any[]>>({})
+  const itemFieldsMap = ref<Record<string, FieldRecord[]>>({})
+  const dependencyTemplateOptions = ref<
+    Record<string, Array<{ label: string; value: string | number }>>
+  >({})
   const draggingSceneItemKey = ref('')
   const activeSceneNodeKey = ref('root')
-  const templateForm = reactive<any>({
-    id: null,
-    field_overrides: {},
-    output_config: [],
-    post_insert_updates: [],
-    cleanup_resources: [],
-    items: [],
+  const templateForm: TemplateDraft = reactive(createDraft())
+  const pageRecord = computed<TemplateRecord | null>(() => pageData.record ?? null)
+  const previewContext = computed(() => {
+    const record = pageRecord.value
+    const context = record?.preview_context
+    const target = optionId(route.query.template_id)
+    return context &&
+      (target === null || String(target) === String(context.template_id ?? record?.id))
+      ? context
+      : {}
   })
-  const pageRecord = computed<any>(() => pageData.record || {})
-  const previewContext = computed<any>(() => pageRecord.value?.preview_context || {})
-  const templateId = computed(() => route.query.template_id || previewContext.value.template_id)
+  const templateId = computed(() =>
+    optionId(route.query.template_id ?? previewContext.value.template_id)
+  )
   const previewTitle = computed(() => {
-    const id = templateForm.id || templateId.value || '-'
-    const name = templateForm.name || pageRecord.value?.name || '-'
+    const id = templateForm.id ?? templateId.value ?? '-'
+    const cachedName = String(pageRecord.value?.id) === String(id) ? pageRecord.value?.name : ''
+    const name = templateForm.name || cachedName || '-'
     return `场景模板配置 / ${id} / ${name}`
   })
   const editableNodeConfigs = computed(() => {
-    const configs: Record<string, any> = {
+    const configs: Record<string, EditableNode> = {
       root: {
         fields: fieldRows.value,
         fieldOverrides: templateForm.field_overrides || {},
         outputConfig: templateForm.output_config || [],
       },
     }
-    ;(templateForm.items || []).forEach((item: any) => {
+    ;(templateForm.items || []).forEach((item) => {
       configs[`item:${getSceneItemKey(item)}`] = {
         fields: itemFieldsMap.value[getSceneItemKey(item)] || [],
         fieldOverrides: item.field_overrides || {},
@@ -496,26 +396,27 @@
     })
     return configs
   })
-  const sceneNodeOptions = computed(() => [
+  const postUpdateNodes = computed<PostUpdateNode[]>(() => [
     {
-      label: `主模板：${templateForm.name || '-'}${
-        previewResult.value?.entity?.table_name
-          ? `｜${previewResult.value.entity.table_name}`
-          : ''
-      }`,
       value: 'root',
+      label: `主模板：${templateForm.name || '-'}`,
+      fields: fieldRows.value,
+      overrides: templateForm.field_overrides,
     },
-    ...(templateForm.items || [])
-      .filter((item: any) => item.child_template && (item.id || item.name))
-      .map((item: any) => ({
-        label: `关联模板：${item.name || getSceneTemplateName(item.child_template)}${
-          item.child_template_detail?.entity?.table_name
-            ? `｜${item.child_template_detail.entity.table_name}`
-            : ''
-        }`,
-        value: `item:${item.id || item.name}`,
+    ...templateForm.items
+      .filter((item) => item.child_template !== null && (item.id != null || item.name))
+      .map((item) => ({
+        value: `item:${item.id ?? item.name}`,
+        label: `关联模板：${item.name || getSceneTemplateName(item.child_template)}`,
+        fields: itemFieldsMap.value[getSceneItemKey(item)] || [],
+        overrides: { ...item.child_template_detail?.field_overrides, ...item.field_overrides },
       })),
   ])
+  function updatePostUpdates(rules: PostUpdate[]) {
+    if (sceneEditLocked.value) return
+    templateForm.post_insert_updates = clone(rules)
+    previewResult.value = { ...previewResult.value, post_insert_updates: [] }
+  }
   const canDebugText = computed(() => {
     if (!previewResult.value.dependency_tree) {
       return '维护字段覆盖配置，并查看依赖实体关系'
@@ -554,9 +455,117 @@
       sceneItemFieldsLoading.value ||
       dependencyTemplateLoading.value ||
       previewLoading.value ||
-      !firstPreviewReady.value ||
-      !editableFieldsReady.value
+      (!firstPreviewReady.value && !previewError.value) ||
+      (!editableFieldsReady.value && !fieldsError.value)
   )
+
+  const templateError = ref(false),
+    fieldsError = ref(false),
+    previewError = ref(false),
+    dependencyError = ref(false),
+    enumError = ref(false),
+    enumLoading = ref(false)
+  const writeBusy = computed(
+    () =>
+      saving.value ||
+      syncLoading.value ||
+      cleanupResourceSaving.value ||
+      sceneAutoSaving.value ||
+      debugLoading.value
+  )
+  const sceneEditLocked = computed(
+    () =>
+      saving.value ||
+      syncLoading.value ||
+      cleanupResourceSaving.value ||
+      debugLoading.value ||
+      templateLoading.value
+  )
+  let generation = 0,
+    templateRequest = 0,
+    fieldRequest = 0,
+    previewRequest = 0,
+    itemFieldsRequest = 0,
+    dependencyRequest = 0,
+    enumsRequest = 0
+  let sceneSaveTask: Promise<boolean> | null = null
+  let arrangementQueued = false
+  let confirmation: ReturnType<typeof Modal.confirm> | null = null
+  const scope = useTemplateScope(
+    invalidate,
+    () => {
+      void reloadPageData()
+    },
+    false
+  )
+  const currentContext = () => ({ generation, version: scope.snapshot() })
+  const isCurrent = (context: { generation: number; version: number }) =>
+    context.generation === generation && scope.current(context.version)
+  function invalidate() {
+    ++generation
+    ++templateRequest
+    ++fieldRequest
+    ++previewRequest
+    ++itemFieldsRequest
+    ++sceneOptionsRequest
+    ++dependencyRequest
+    ++enumsRequest
+    arrangementQueued = false
+    confirmation?.close()
+    confirmation = null
+    entityRulesRef.value?.close()
+    debugRef.value?.close()
+    cleanupResourceVisible.value = false
+    postUpdatesRef.value?.close()
+    Object.assign(templateForm, createDraft())
+    fieldRows.value = []
+    previewResult.value = {}
+    sceneTemplateOptions.value = []
+    itemFieldsMap.value = {}
+    dependencyTemplateOptions.value = {}
+    templateLoading.value = false
+    fieldLoading.value = false
+    sceneOptionsLoading.value = false
+    sceneItemFieldsLoading.value = false
+    dependencyTemplateLoading.value = false
+    previewLoading.value = false
+    enumLoading.value = false
+    templateError.value = false
+    fieldsError.value = false
+    previewError.value = false
+    dependencyError.value = false
+    enumError.value = false
+    sceneOptionsPage.value = 0
+    sceneOptionsHasMore.value = false
+    sceneOptionsFailed.value = false
+    firstPreviewReady.value = false
+    editableFieldsReady.value = false
+    savedFieldConfigSignature.value = ''
+    sceneSavedItemOverrides.value = {}
+    sceneAutoSaveStatus.value = 'idle'
+    activeSceneNodeKey.value = 'root'
+  }
+  async function loadEnums() {
+    if (!scope.isActive()) return
+    const context = currentContext(),
+      request = ++enumsRequest
+    enumLoading.value = true
+    enumError.value = false
+    try {
+      await enumStore.getEnum()
+    } catch (loadFailure0) {
+      if (request === enumsRequest && isCurrent(context)) (reportLoadError(loadFailure0, "加载失败，请重试", false), enumError.value = true)
+    } finally {
+      if (request === enumsRequest) enumLoading.value = false
+    }
+  }
+  function resumeArrangement() {
+    if (arrangementQueued && !writeBusy.value && scope.isActive()) void autoSaveSceneItems()
+  }
+  function onDebugBusyChange(value: boolean) {
+    debugLoading.value = value
+    if (!value) resumeArrangement()
+  }
 
   function buildPreviewPayload() {
     return {
@@ -569,327 +578,358 @@
     }
   }
 
-  function resetTemplateForm(record: any) {
-    Object.keys(templateForm).forEach((key) => delete templateForm[key])
-    Object.assign(templateForm, {
-      id: record?.id || templateId.value,
-      project_product: record?.project_product?.id || record?.project_product || null,
-      module: record?.module?.id || record?.module || null,
-      entity: record?.entity?.id || record?.entity || null,
-      name: record?.name || '',
-      description: record?.description || '',
-      cleanup_strategy: record?.cleanup_strategy ?? 1,
-      is_default: record?.is_default || false,
-      config_status: record?.config_status ?? 0,
-      status: record?.status || 1,
-      field_overrides: previewContext.value.overrides || record?.field_overrides || {},
-      output_config: previewContext.value.output_config || record?.output_config || [],
-      post_insert_updates: record?.post_insert_updates || [],
-      cleanup_resources: record?.cleanup_resources || [],
-      items: normalizeLoadedItems(record?.items || []),
-    })
-    snapshotSceneItemOverrides(record?.items || [])
+  function resetTemplateForm(record: TemplateRecord | null) {
+    const draft = createDraft(record, templateId.value)
+    const context = previewContext.value
+    if (String(record?.id) === String(templateId.value)) {
+      if (context.overrides) draft.field_overrides = clone(context.overrides)
+      if (context.output_config) draft.output_config = clone(context.output_config)
+    }
+    Object.assign(templateForm, draft)
+    snapshotSceneItemOverrides(draft.items)
     snapshotFieldConfig()
   }
 
-  function loadTemplate() {
-    const cached =
-      pageRecord.value?.id &&
-      String(pageRecord.value.id) === String(templateId.value) &&
-      pageRecord.value.project_product &&
-      pageRecord.value.module &&
-      pageRecord.value.entity &&
-      Object.prototype.hasOwnProperty.call(pageRecord.value, 'field_overrides')
-        ? pageRecord.value
-        : null
-    if (cached) {
-      resetTemplateForm(cached)
-      return Promise.resolve(cached)
+  async function loadTemplate(): Promise<boolean> {
+    if (!scope.isActive() || templateId.value === null) {
+      templateError.value = true
+      return false
     }
+    const context = currentContext(),
+      request = ++templateRequest,
+      id = templateId.value
     templateLoading.value = true
-    return getDataFactoryTemplate({ id: templateId.value, page: 1, pageSize: 1 }, 30000)
-      .then((res) => {
-        const record = (res.data || [])[0]
-        resetTemplateForm(record || {})
-        return record
-      })
-      .finally(() => {
-        templateLoading.value = false
-      })
+    templateError.value = false
+    try {
+      const response = await getDataFactoryTemplate({ id, page: 1, pageSize: 1 }, 30000)
+      if (request !== templateRequest || !isCurrent(context)) return false
+      const record: TemplateRecord | null = response.data?.[0] ?? null
+      if (!record || String(record.id) !== String(id)) {
+        templateError.value = true
+        return false
+      }
+      resetTemplateForm(record)
+      return true
+    } catch (loadFailure1) {
+      if (request === templateRequest && isCurrent(context)) (reportLoadError(loadFailure1, "加载失败，请重试", false), templateError.value = true)
+      return false
+    } finally {
+      if (request === templateRequest) templateLoading.value = false
+    }
   }
 
-  function reloadPageData() {
-    sceneOptionsRequest += 1
-    sceneOptionsLoading.value = false
-    sceneTemplateOptions.value = []
-    sceneOptionsPage.value = 0
-    sceneOptionsHasMore.value = false
-    sceneOptionsFailed.value = false
-    previewResult.value = {}
-    dependencyTemplateOptions.value = {}
-    itemFieldsMap.value = {}
-    firstPreviewReady.value = false
+  async function reloadPageData() {
+    if (!scope.isActive()) return
+    invalidate()
+    void loadEnums()
+    const context = currentContext()
+    if (!(await loadTemplate()) || !isCurrent(context)) return
+    await Promise.all([loadPreview(), loadEditableFieldDefinitions()])
+  }
+
+  async function loadEditableFieldDefinitions() {
+    if (!scope.isActive()) return
+    const context = currentContext()
     editableFieldsReady.value = false
-    return loadTemplate()
-      .then(() => Promise.all([loadPreview(), loadEditableFieldDefinitions()]))
+    fieldsError.value = false
+    await Promise.all([loadTemplateFields(), loadSceneItemFields()])
+    if (isCurrent(context)) editableFieldsReady.value = true
   }
 
-  function loadEditableFieldDefinitions() {
-    editableFieldsReady.value = false
-    return Promise.all([loadTemplateFields(), loadSceneItemFields()]).finally(() => {
-      editableFieldsReady.value = true
-    })
-  }
-
-  function loadTemplateFields() {
-    if (!templateForm.entity) {
+  async function loadTemplateFields() {
+    if (!scope.isActive()) return
+    const request = ++fieldRequest,
+      context = currentContext(),
+      entity = templateForm.entity
+    if (entity === null) {
       fieldRows.value = []
-      return Promise.resolve()
+      return
     }
     fieldLoading.value = true
-    return getDataFactoryField({ entity: templateForm.entity })
-      .then((res) => {
-        fieldRows.value = res.data || []
-        return preloadDependencyTemplateOptions()
-      })
-      .finally(() => {
-        fieldLoading.value = false
-      })
+    fieldsError.value = false
+    try {
+      const response = await getDataFactoryField({ entity })
+      if (request !== fieldRequest || !isCurrent(context)) return
+      fieldRows.value = response.data || []
+      await preloadDependencyTemplateOptions()
+    } catch (loadFailure2) {
+      if (request === fieldRequest && isCurrent(context)) (reportLoadError(loadFailure2, "加载失败，请重试", false), fieldsError.value = true)
+    } finally {
+      if (request === fieldRequest) fieldLoading.value = false
+    }
   }
 
-  function loadPreview() {
-    if (!templateId.value) {
-      Message.error('场景模板不存在，请返回后重试')
+  async function loadPreview() {
+    if (!scope.isActive()) return
+    const request = ++previewRequest,
+      context = currentContext()
+    if (templateId.value === null) {
+      previewError.value = true
       firstPreviewReady.value = true
-      return Promise.resolve()
+      return
     }
+    const payload = clone(buildPreviewPayload()),
+      signature = JSON.stringify(payload)
     previewLoading.value = true
-    return postDataFactoryTemplatePreview(buildPreviewPayload())
-      .then((res) => {
-        previewResult.value = res.data || {}
-      })
-      .finally(() => {
+    previewError.value = false
+    try {
+      const response = await postDataFactoryTemplatePreview(payload)
+      if (request === previewRequest && isCurrent(context)) {
+        if (signature === JSON.stringify(buildPreviewPayload()))
+          previewResult.value = response.data || {}
+        else {
+          void loadPreview()
+          return
+        }
+      }
+    } catch (loadFailure3) {
+      if (request === previewRequest && isCurrent(context)) (reportLoadError(loadFailure3, "加载失败，请重试", false), previewError.value = true)
+    } finally {
+      if (request === previewRequest) {
         previewLoading.value = false
         firstPreviewReady.value = true
-      })
+      }
+    }
   }
 
   function debugRun() {
-    if (hasUnsavedFieldConfig()) {
+    if (!scope.isActive() || writeBusy.value || templateForm.id === null || templateLoading.value)
+      return Promise.resolve(false)
+    if (hasUnsavedFieldConfig() || sceneAutoSaveStatus.value === 'error' || arrangementQueued) {
       Message.warning('请先保存字段和插入后回写配置，再调试运行')
-      return
+      return Promise.resolve(false)
     }
-    debugLoading.value = true
-    postDataFactoryTemplateDebugRun({
-      template_id: templateId.value,
-      overrides: templateForm.field_overrides || {},
-      test_env: route.query.test_env || userStore.selected_environment,
-    })
-      .then((res) => {
-        debugResult.value = res.data || {}
-        debugVisible.value = true
-      })
-      .finally(() => {
-        debugLoading.value = false
-      })
+    return (
+      debugRef.value?.run(
+        templateForm.id,
+        templateForm.field_overrides,
+        optionId(route.query.test_env ?? userStore.selected_environment)
+      ) ?? Promise.resolve(false)
+    )
   }
 
-  function saveTemplateConfig() {
-    if (!templateForm.id) {
-      Message.error('场景模板不存在，请返回后重试')
-      return
-    }
-    saving.value = true
-    putDataFactoryTemplate({
+  async function saveTemplateConfig(): Promise<boolean> {
+    if (!scope.isActive() || writeBusy.value || templateForm.id === null || templateLoading.value)
+      return false
+    const context = currentContext(),
+      signature = buildFieldConfigSignature(),
+      arrangement = clone(templateForm.items)
+    const payload = clone({
       id: templateForm.id,
-      field_overrides: templateForm.field_overrides || {},
-      output_config: templateForm.output_config || [],
-      post_insert_updates: templateForm.post_insert_updates || [],
+      field_overrides: templateForm.field_overrides,
+      output_config: templateForm.output_config,
+      post_insert_updates: templateForm.post_insert_updates,
       items: normalizeSceneItems(),
     })
-      .then((res) => {
-        if (Number(res.data?.config_status) === 0) {
-          Message.warning('配置已保存，待校验后可执行；请在模板列表完成校验')
-        } else {
-          Message.success(res.msg)
-        }
-        resetTemplateForm(res.data || templateForm)
-        snapshotFieldConfig()
-        loadSceneItemFields().then(loadPreview)
-      })
-      .finally(() => {
-        saving.value = false
-      })
+    saving.value = true
+    try {
+      const response = await putDataFactoryTemplate(payload)
+      if (!isCurrent(context)) return false
+      templateForm.config_status = response.data?.config_status ?? templateForm.config_status
+      const unchanged = signature === buildFieldConfigSignature()
+      mergeSavedSceneItems(response.data?.items ?? payload.items, arrangement)
+      sceneAutoSaveStatus.value = 'saved'
+      // A saved snapshot must not declare edits made during the request as saved.
+      if (unchanged) snapshotFieldConfig()
+      else savedFieldConfigSignature.value = signature
+      snapshotSceneItemOverrides(response.data?.items ?? payload.items)
+      if (Number(response.data?.config_status) === 0)
+        Message.warning('配置已保存，待校验后可执行；请在模板列表完成校验')
+      else Message.success(response.msg)
+      await Promise.all([loadSceneItemFields(), loadPreview()])
+      return true
+    } catch {
+      return false
+    } finally {
+      saving.value = false
+      resumeArrangement()
+    }
   }
 
   function openCleanupResources() {
-    cleanupResourceJson.value = JSON.stringify(templateForm.cleanup_resources || [], null, 2)
+    if (!scope.isActive() || writeBusy.value || templateForm.id === null) return
+    cleanupResourceJson.value = JSON.stringify(templateForm.cleanup_resources, null, 2)
     cleanupResourceVisible.value = true
   }
 
   async function saveCleanupResources(value: string) {
-    let rules: unknown
+    if (
+      !scope.isActive() ||
+      writeBusy.value ||
+      !cleanupResourceVisible.value ||
+      templateForm.id === null
+    )
+      return false
+    let rules: JsonValue[]
     try {
-      rules = JSON.parse(value)
-      if (!Array.isArray(rules)) throw new Error()
+      const parsed: unknown = JSON.parse(value)
+      if (!Array.isArray(parsed)) throw Error('array-required')
+      rules = parsed
     } catch {
       Message.error('请填写 JSON 数组，清空规则请使用 []')
-      return
+      return false
     }
+    const context = currentContext(),
+      id = templateForm.id
     cleanupResourceSaving.value = true
     try {
-      const response = await putDataFactoryTemplate({ id: templateForm.id, cleanup_resources: rules })
-      templateForm.cleanup_resources = response.data?.cleanup_resources || rules
+      const response = await putDataFactoryTemplate({ id, cleanup_resources: rules })
+      if (!isCurrent(context)) return false
+      templateForm.cleanup_resources = clone(response.data?.cleanup_resources ?? rules)
       cleanupResourceVisible.value = false
       Message.success('关联ES清理规则已保存，仅对后续执行生效')
+      return true
     } catch {
-      // 公共请求层展示后端校验原因；保留抽屉内容供用户修正。
+      return false
     } finally {
       cleanupResourceSaving.value = false
+      resumeArrangement()
     }
   }
 
-  function syncTemplateFields() {
-    if (!templateForm.id) {
-      Message.error('场景模板不存在，请返回后重试')
-      return
+  async function syncTemplateFields(): Promise<boolean> {
+    if (!scope.isActive() || writeBusy.value || templateForm.id === null || templateLoading.value)
+      return false
+    const context = currentContext(),
+      signature = buildFieldConfigSignature()
+    const payload = {
+      id: templateForm.id,
+      test_env: optionId(route.query.test_env ?? userStore.selected_environment),
     }
     syncLoading.value = true
-    return postDataFactoryTemplateSyncFields({
-      id: templateForm.id,
-      test_env: route.query.test_env || userStore.selected_environment,
-    })
-      .then((res) => {
-        templateForm.field_overrides = res.data?.field_overrides || {}
-        templateForm.items = (templateForm.items || []).map((item: any) => ({
-          ...item,
-          field_overrides: {},
-        }))
-        snapshotSceneItemOverrides(templateForm.items || [])
+    try {
+      const response = await postDataFactoryTemplateSyncFields(payload)
+      if (!isCurrent(context)) return false
+      if (
+        String(payload.test_env) !==
+        String(optionId(route.query.test_env ?? userStore.selected_environment))
+      ) {
+        Message.warning('执行环境已变更，请重新同步实体规则')
+        return false
+      }
+      if (signature === buildFieldConfigSignature()) {
+        templateForm.field_overrides = clone(response.data?.field_overrides ?? {})
+        templateForm.items = templateForm.items.map((item) => ({ ...item, field_overrides: {} }))
+        snapshotSceneItemOverrides(templateForm.items)
         snapshotFieldConfig()
-        Message.success(res.msg)
-        return loadTemplateFields().then(loadPreview)
-      })
-      .finally(() => {
-        syncLoading.value = false
-      })
+      }
+      Message.success(response.msg)
+      await Promise.all([loadTemplateFields(), loadPreview()])
+      return true
+    } catch {
+      return false
+    } finally {
+      syncLoading.value = false
+      resumeArrangement()
+    }
   }
 
   function confirmSyncTemplateFields() {
-    if (!templateForm.id) {
-      Message.error('场景模板不存在，请返回后重试')
-      return
-    }
-    Modal.confirm({
+    if (!scope.isActive() || confirmation || writeBusy.value || templateForm.id === null) return
+    const context = currentContext()
+    const dialog = Modal.confirm({
       title: '同步实体规则',
       content: '同步后会清空当前场景模板字段覆盖，使用实体字段规则作为默认生成方式，确认继续？',
       okText: '确认同步',
       cancelText: '取消',
-      onBeforeOk: () => syncTemplateFields(),
+      onBeforeOk: () => (isCurrent(context) ? syncTemplateFields() : Promise.resolve(false)),
+      onClose() {
+        if (confirmation === dialog) confirmation = null
+      },
     })
+    confirmation = dialog
   }
 
   function openRootEntityRules() {
-    if (!templateForm.entity) {
+    if (
+      templateForm.entity === null ||
+      templateForm.entity === undefined ||
+      templateForm.entity === ''
+    ) {
       Message.warning('当前场景模板未绑定数据实体')
       return
     }
-    entityRuleVisible.value = true
-    entityRuleLoading.value = true
-    entityRuleRecord.value = null
-    entityRuleRows.value = []
-    Promise.all([
-      getDataFactoryEntity({ id: templateForm.entity, page: 1, pageSize: 1 }),
-      getDataFactoryField({ entity: templateForm.entity }),
-    ])
-      .then(([entityRes, fieldRes]) => {
-        entityRuleRecord.value = (entityRes.data || [])[0] || null
-        entityRuleRows.value = fieldRes.data || []
-        if (!entityRuleRecord.value) {
-          Message.warning('数据实体不存在或已被删除')
-        }
-      })
-      .finally(() => {
-        entityRuleLoading.value = false
-      })
+    entityRulesRef.value?.open(templateForm.entity)
   }
 
-  function generatorTypeTitle(value: any) {
-    return (
-      (enumStore.data_factory_generator_type || []).find(
-        (item: any) => Number(item.key) === Number(value)
-      )?.title || value || '-'
-    )
-  }
-
-  function loadDependencyTemplateOptions(row: any) {
-    const dependencyEntityId = row.generator_config?.dependency_entity_id
-    const projectProduct = templateForm.project_product
-    if (!dependencyEntityId || !projectProduct) {
-      return Promise.resolve()
-    }
-    const cacheKey = String(dependencyEntityId)
-    if (dependencyTemplateOptions.value[cacheKey]) {
-      return Promise.resolve()
-    }
-    return getDataFactoryTemplate({
-      project_product: projectProduct,
-      entity: dependencyEntityId,
-      page: 1,
-      pageSize: 9999,
-    }).then((res) => {
+  async function loadDependencyTemplateOptions(row: FieldRecord) {
+    const entity = row.generator_config?.dependency_entity_id,
+      product = templateForm.project_product
+    if (!scope.isActive() || entity == null || product === null) return
+    const key = String(entity),
+      context = currentContext()
+    if (dependencyTemplateOptions.value[key]) return
+    try {
+      const response = await getDataFactoryTemplate({
+        project_product: product,
+        entity,
+        page: 1,
+        pageSize: 9999,
+      })
+      if (!isCurrent(context)) return
       dependencyTemplateOptions.value = {
         ...dependencyTemplateOptions.value,
-        [cacheKey]: (res.data || []).map((template: any) => ({
-          label: template.name,
-          value: template.id,
+        [key]: (response.data || []).map((item: TemplateSummary) => ({
+          label: item.name || String(item.id),
+          value: item.id,
         })),
       }
-    })
+    } catch (loadFailure4) {
+      if (isCurrent(context)) (reportLoadError(loadFailure4, "加载失败，请重试", false), dependencyError.value = true)
+    }
   }
 
-  function preloadDependencyTemplateOptions() {
-    const tasks = fieldRows.value
-      .filter((row: any) => row.generator_config?.dependency_entity_id)
-      .map((row) => loadDependencyTemplateOptions(row))
-    if (!tasks.length) {
-      return Promise.resolve([])
-    }
+  async function preloadDependencyTemplateOptions() {
+    if (!scope.isActive()) return
+    const request = ++dependencyRequest,
+      context = currentContext()
     dependencyTemplateLoading.value = true
-    return Promise.all(tasks).finally(() => {
-      dependencyTemplateLoading.value = false
-    })
+    dependencyError.value = false
+    try {
+      await Promise.all(
+        fieldRows.value
+          .filter((row) => row.generator_config?.dependency_entity_id != null)
+          .map(loadDependencyTemplateOptions)
+      )
+    } finally {
+      if (request === dependencyRequest && isCurrent(context))
+        dependencyTemplateLoading.value = false
+    }
   }
 
   function loadSceneTemplateOptions(keyword = '', page = 1) {
-    if (!templateForm.project_product) {
+    if (!scope.isActive()) return Promise.resolve()
+    if (templateForm.project_product === null) {
       sceneTemplateOptions.value = []
       return Promise.resolve()
     }
     const requestId = ++sceneOptionsRequest
+    const context = currentContext()
     const productId = templateForm.project_product
     sceneOptionsKeyword.value = keyword
     sceneOptionsPage.value = page
     sceneOptionsFailed.value = false
     sceneOptionsLoading.value = true
-    return getDataFactoryTemplate({
-      project_product: productId,
-      ...(keyword.trim() ? { name: keyword.trim() } : {}),
-      page,
-      pageSize: 30,
-    }, 30000)
+    return getDataFactoryTemplate(
+      {
+        project_product: productId,
+        ...(keyword.trim() ? { name: keyword.trim() } : {}),
+        page,
+        pageSize: 30,
+      },
+      30000
+    )
       .then((res) => {
-        if (requestId !== sceneOptionsRequest) return
+        if (requestId !== sceneOptionsRequest || !isCurrent(context)) return
         const rows = res.data || []
-        const candidates = rows.filter(
-          (item: any) => String(item.id) !== String(templateForm.id)
-        )
-        sceneTemplateOptions.value = page === 1 ? candidates : [...sceneTemplateOptions.value, ...candidates]
+        const candidates = rows.filter((item) => String(item.id) !== String(templateForm.id))
+        sceneTemplateOptions.value =
+          page === 1 ? candidates : [...sceneTemplateOptions.value, ...candidates]
         sceneOptionsHasMore.value = page * 30 < res.totalSize
       })
-      .catch(() => {
-        if (requestId !== sceneOptionsRequest) return
-        sceneOptionsFailed.value = true
+      .catch((loadFailure5) => {
+        if (requestId !== sceneOptionsRequest || !isCurrent(context)) return
+        void (reportLoadError(loadFailure5, "加载失败，请重试", false), sceneOptionsFailed.value = true)
       })
       .finally(() => {
         if (requestId === sceneOptionsRequest) sceneOptionsLoading.value = false
@@ -902,35 +942,21 @@
     }
   }
 
-  function normalizeLoadedItems(items: any[]) {
-    return (items || [])
-      .map((item: any, index: number) => ({
-        id: item.id,
-        _key: item.id || `new-${Date.now()}-${index}`,
-        child_template: item.child_template?.id || item.child_template || null,
-        child_template_detail: item.child_template_detail,
-        name: item.name || item.child_template_detail?.name || '',
-        sort: item.sort ?? index * 10,
-        field_overrides: item.field_overrides || {},
-      }))
-      .sort((left: any, right: any) => Number(left.sort || 0) - Number(right.sort || 0))
-  }
-
   function normalizeSceneItems() {
     return (templateForm.items || [])
-      .map((item: any, index: number) => ({
+      .map((item: SceneItem, index: number) => ({
         id: typeof item.id === 'number' ? item.id : undefined,
         child_template: item.child_template,
         name: item.name || getSceneTemplateName(item.child_template) || `关联模板${index + 1}`,
         sort: index * 10,
-        field_overrides: item.field_overrides || {},
+        field_overrides: clone(item.field_overrides || {}),
       }))
-      .filter((item: any) => item.child_template)
+      .filter((item) => item.child_template !== null)
   }
 
   function normalizeSceneArrangementItems() {
     return (templateForm.items || [])
-      .map((item: any, index: number) => {
+      .map((item: SceneItem, index: number) => {
         const key = getSceneItemKey(item)
         return {
           id: typeof item.id === 'number' ? item.id : undefined,
@@ -940,12 +966,12 @@
           field_overrides: sceneSavedItemOverrides.value[key] || {},
         }
       })
-      .filter((item: any) => item.child_template)
+      .filter((item) => item.child_template !== null)
   }
 
-  function snapshotSceneItemOverrides(items: any[]) {
-    const next: Record<string, Record<string, any>> = {}
-    normalizeLoadedItems(items).forEach((item: any) => {
+  function snapshotSceneItemOverrides(items: SceneItem[]) {
+    const next: Record<string, Overrides> = {}
+    normalizeLoadedItems(items).forEach((item) => {
       next[getSceneItemKey(item)] = item.field_overrides || {}
     })
     sceneSavedItemOverrides.value = next
@@ -957,10 +983,10 @@
       output_config: templateForm.output_config || [],
       post_insert_updates: templateForm.post_insert_updates || [],
       item_field_overrides: (templateForm.items || [])
-        .filter((item: any) => Object.keys(item.field_overrides || {}).length)
-        .map((item: any) => ({
+        .filter((item) => Object.keys(item.field_overrides || {}).length)
+        .map((item) => ({
           key: item.id || item.child_template || item._key,
-          field_overrides: item.field_overrides || {},
+          field_overrides: clone(item.field_overrides || {}),
         })),
     })
   }
@@ -970,220 +996,33 @@
   }
 
   function hasUnsavedFieldConfig() {
-    return savedFieldConfigSignature.value && savedFieldConfigSignature.value !== buildFieldConfigSignature()
+    return Boolean(
+      savedFieldConfigSignature.value &&
+        savedFieldConfigSignature.value !== buildFieldConfigSignature()
+    )
   }
 
-  function getSceneItemKey(item: any) {
-    return String(item.id || item._key || item.name)
+  function getSceneItemKey(item: SceneItem) {
+    return String(item.id ?? item._key ?? item.name)
   }
 
-  function getSceneItemFocusKey(item: any) {
+  function getSceneItemFocusKey(item: SceneItem) {
     return `item:${getSceneItemKey(item)}`
   }
 
-  function getSceneTemplateName(templateId: any) {
+  function getSceneTemplateName(templateId: string | number | null) {
     return (
-      sceneSelectOptions.value.find((item: any) => String(item.id) === String(templateId))
-        ?.name || ''
+      sceneSelectOptions.value.find((item) => String(item.id) === String(templateId))?.name || ''
     )
   }
 
-  function getSceneTemplateEntity(templateId: any) {
-    const template = sceneSelectOptions.value.find(
-      (item: any) => String(item.id) === String(templateId)
-    )
-    return template?.entity?.id || template?.entity
-  }
-
-  function getSceneItemByNode(node: string) {
-    if (!node || node === 'root') {
-      return null
-    }
-    const reference = String(node).replace(/^item:/, '')
-    return (templateForm.items || []).find(
-      (item: any) => String(item.id) === reference || String(item.name) === reference
-    )
-  }
-
-  function getPostUpdateNodeFields(node: string) {
-    if (!node) {
-      return []
-    }
-    if (node === 'root') {
-      return fieldRows.value || []
-    }
-    const sceneItem = getSceneItemByNode(node)
-    return sceneItem ? itemFieldsMap.value[getSceneItemKey(sceneItem)] || [] : []
-  }
-
-  function getPostUpdateNodeOverrides(node: string) {
-    if (!node || node === 'root') {
-      return templateForm.field_overrides || {}
-    }
-    const sceneItem = getSceneItemByNode(node)
-    return {
-      ...(sceneItem?.child_template_detail?.field_overrides || {}),
-      ...(sceneItem?.field_overrides || {}),
-    }
-  }
-
-  function getEffectiveGeneratorType(node: string, field: any) {
-    return getPostUpdateNodeOverrides(node)?.[field.name]?.generator_type ?? field.generator_type
-  }
-
-  function getPostUpdateField(node: string, fieldName: string) {
-    return getPostUpdateNodeFields(node).find((field: any) => field.name === fieldName)
-  }
-
-  function formatPostUpdateFieldOption(node: string, field: any) {
-    const tags = []
-    if (field.primary_key) tags.push('主键')
-    if (field.autoincrement) tags.push('自增')
-    if (field.nullable) tags.push('可空')
-    if (getEffectiveGeneratorType(node, field) === 0) tags.push('已跳过')
-    if (field.platform_type) tags.push(field.platform_type)
-    const businessName = field.label && field.label !== field.name ? `${field.label}｜` : ''
-    return `${businessName}${field.name}${tags.length ? ` · ${tags.join(' · ')}` : ''}`
-  }
-
-  function getPostUpdateTargetFieldOptions(node: string) {
-    return getPostUpdateNodeFields(node)
-      .filter(
-        (field: any) =>
-          field.nullable &&
-          !field.primary_key &&
-          getEffectiveGeneratorType(node, field) === 0
-      )
-      .map((field: any) => ({
-        label: formatPostUpdateFieldOption(node, field),
-        value: field.name,
-      }))
-  }
-
-  function getPostUpdateSourceFieldOptions(item: any) {
-    const targetField = getPostUpdateField(item.target_node, item.target_field)
-    return getPostUpdateNodeFields(item.source_node)
-      .filter(
-        (field: any) => !targetField || field.platform_type === targetField.platform_type
-      )
-      .map((field: any) => ({
-        label: formatPostUpdateFieldOption(item.source_node, field),
-        value: field.name,
-      }))
-  }
-
-  function getPostUpdateNodeLabel(node: string) {
-    return sceneNodeOptions.value.find((option: any) => option.value === node)?.label || '未选择节点'
-  }
-
-  function getPostUpdateFieldLabel(node: string, fieldName: string) {
-    const field = getPostUpdateField(node, fieldName)
-    if (!field) return fieldName || '未选择字段'
-    return field.label && field.label !== field.name
-      ? `${field.label}（${field.name}）`
-      : field.name
-  }
-
-  function getPostUpdateSummary(item: any) {
-    if (!item.source_node || !item.source_field || !item.target_node || !item.target_field) {
-      return '请选择取值来源和写入目标'
-    }
-    return `将 ${getPostUpdateNodeLabel(item.source_node)} 的 ${getPostUpdateFieldLabel(
-      item.source_node,
-      item.source_field
-    )} 写入 ${getPostUpdateNodeLabel(item.target_node)} 的 ${getPostUpdateFieldLabel(
-      item.target_node,
-      item.target_field
-    )}`
-  }
-
-  function clearPostUpdatePreview() {
-    previewResult.value = {
-      ...previewResult.value,
-      post_insert_updates: [],
-    }
-  }
-
-  function selectOnlyPostUpdateOption(item: any, key: string, options: any[]) {
-    if (!options.some((option: any) => option.value === item[key])) {
-      item[key] = options.length === 1 ? options[0].value : ''
-    }
-  }
-
-  function handlePostUpdateSourceNodeChange(item: any) {
-    selectOnlyPostUpdateOption(item, 'source_field', getPostUpdateSourceFieldOptions(item))
-    clearPostUpdatePreview()
-  }
-
-  function handlePostUpdateTargetNodeChange(item: any) {
-    selectOnlyPostUpdateOption(
-      item,
-      'target_field',
-      getPostUpdateTargetFieldOptions(item.target_node)
-    )
-    selectOnlyPostUpdateOption(item, 'source_field', getPostUpdateSourceFieldOptions(item))
-    clearPostUpdatePreview()
-  }
-
-  function handlePostUpdateFieldChange(item: any) {
-    selectOnlyPostUpdateOption(item, 'source_field', getPostUpdateSourceFieldOptions(item))
-    clearPostUpdatePreview()
-  }
-
-  function getPostUpdateValidation(item: any, index: number) {
-    if (!item.source_node || !item.source_field || !item.target_node || !item.target_field) {
-      return { type: 'warning', message: '请完整选择来源节点、来源字段、目标节点和目标字段。' }
-    }
-    const targetField = getPostUpdateField(item.target_node, item.target_field)
-    const sourceField = getPostUpdateField(item.source_node, item.source_field)
-    if (!targetField || !sourceField) {
-      return { type: 'error', message: '所选字段已不存在，请重新选择。' }
-    }
-    if (
-      !targetField.nullable ||
-      targetField.primary_key ||
-      getEffectiveGeneratorType(item.target_node, targetField) !== 0
-    ) {
-      return {
-        type: 'error',
-        message: '目标字段必须可空、不能是主键，并且需要在字段规则中配置为“跳过”。',
-      }
-    }
-    if (sourceField.platform_type !== targetField.platform_type) {
-      return {
-        type: 'error',
-        message: `字段类型不一致：来源为 ${sourceField.platform_type}，目标为 ${targetField.platform_type}。`,
-      }
-    }
-    const checkedResult = previewResult.value.post_insert_updates?.[index]
-    if (checkedResult?.valid === false) {
-      return { type: 'error', message: checkedResult.message || '后端检查未通过，请调整配置。' }
-    }
-    if (checkedResult?.valid) {
-      return { type: 'success', message: '检查通过，将按本次 execution 生成的目标主键安全回写。' }
-    }
-    return { type: 'info', message: '配置完整，请点击“检查全部规则”确认可执行 SQL。' }
-  }
-
-  function addPostInsertUpdate() {
-    const item = {
-      target_node: 'root',
-      target_field: '',
-      source_node: sceneNodeOptions.value[1]?.value || '',
-      source_field: '',
-      sort: (templateForm.post_insert_updates?.length || 0) * 10,
-    }
-    templateForm.post_insert_updates = [...(templateForm.post_insert_updates || []), item]
-    handlePostUpdateTargetNodeChange(item)
-    handlePostUpdateSourceNodeChange(item)
-  }
-
-  function removePostInsertUpdate(index: number) {
-    templateForm.post_insert_updates.splice(index, 1)
-    loadPreview()
+  function getSceneTemplateEntity(templateId: string | number | null) {
+    const template = sceneSelectOptions.value.find((item) => String(item.id) === String(templateId))
+    return optionId(template?.entity)
   }
 
   function addSceneItem() {
+    if (sceneEditLocked.value) return
     const nextIndex = templateForm.items?.length || 0
     templateForm.items = [
       ...(templateForm.items || []),
@@ -1199,6 +1038,7 @@
   }
 
   function removeSceneItem(index: number) {
+    if (sceneEditLocked.value) return
     const removedKey = getSceneItemFocusKey(templateForm.items[index])
     templateForm.items.splice(index, 1)
     if (activeSceneNodeKey.value === removedKey) {
@@ -1207,27 +1047,29 @@
     autoSaveSceneItems()
   }
 
-  function reorderSceneItems(data: any[]) {
-    templateForm.items = (data || []).map((item: any, index: number) => ({
+  function reorderSceneItems(data: SceneItem[]) {
+    if (sceneEditLocked.value) return
+    templateForm.items = (data || []).map((item: SceneItem, index: number) => ({
       ...item,
       sort: index * 10,
     }))
     autoSaveSceneItems()
   }
 
-  function onSceneItemDragStart(item: any) {
+  function onSceneItemDragStart(item: SceneItem) {
     draggingSceneItemKey.value = getSceneItemKey(item)
   }
 
-  function onSceneItemDrop(targetItem: any) {
+  function onSceneItemDrop(targetItem: SceneItem) {
+    if (sceneEditLocked.value) return
     const sourceKey = draggingSceneItemKey.value
     const targetKey = getSceneItemKey(targetItem)
     if (!sourceKey || sourceKey === targetKey) {
       return
     }
     const items = [...(templateForm.items || [])]
-    const sourceIndex = items.findIndex((item: any) => getSceneItemKey(item) === sourceKey)
-    const targetIndex = items.findIndex((item: any) => getSceneItemKey(item) === targetKey)
+    const sourceIndex = items.findIndex((item) => getSceneItemKey(item) === sourceKey)
+    const targetIndex = items.findIndex((item) => getSceneItemKey(item) === targetKey)
     if (sourceIndex < 0 || targetIndex < 0) {
       return
     }
@@ -1240,8 +1082,12 @@
     draggingSceneItemKey.value = ''
   }
 
-  function onSceneItemTemplateChange(item: any) {
-    item.child_template_detail = sceneSelectOptions.value.find((option: any) => String(option.id) === String(item.child_template)) || null
+  function onSceneItemTemplateChange(item: SceneItem) {
+    if (sceneEditLocked.value) return
+    item.child_template_detail =
+      sceneSelectOptions.value.find(
+        (option) => String(option.id) === String(item.child_template)
+      ) || null
     if (!item.name) {
       item.name = getSceneTemplateName(item.child_template)
     }
@@ -1249,97 +1095,118 @@
     autoSaveSceneItems()
   }
 
-  function onSceneItemNameBlur(item: any) {
-    if (!item.child_template) {
+  function onSceneItemNameBlur(item: SceneItem) {
+    if (sceneEditLocked.value) return
+    if (item.child_template === null) {
       return
     }
     autoSaveSceneItems()
   }
 
-  function loadSceneItemFields() {
+  async function loadSceneItemFields() {
+    if (!scope.isActive()) return
+    const context = currentContext(),
+      request = ++itemFieldsRequest,
+      items = clone(templateForm.items)
     sceneItemFieldsLoading.value = true
-    const tasks = (templateForm.items || []).map((item: any) => {
-      const entityId =
-        getSceneTemplateEntity(item.child_template) ||
-        item.child_template_detail?.entity?.id ||
-        item.child_template_detail?.entity
-      if (!entityId) {
-        return Promise.resolve()
-      }
-      const key = getSceneItemKey(item)
-      return getDataFactoryField({ entity: entityId }).then((res) => {
-        itemFieldsMap.value = {
-          ...itemFieldsMap.value,
-          [key]: res.data || [],
-        }
-      })
-    })
-    return Promise.all(tasks).finally(() => {
-      sceneItemFieldsLoading.value = false
-    })
+    try {
+      const entries = await Promise.all(
+        items.map(async (item) => {
+          const entity =
+            getSceneTemplateEntity(item.child_template) ??
+            optionId(item.child_template_detail?.entity)
+          const fields = entity === null ? [] : (await getDataFactoryField({ entity })).data || []
+          return [getSceneItemKey(item), fields] as const
+        })
+      )
+      if (request === itemFieldsRequest && isCurrent(context))
+        itemFieldsMap.value = Object.fromEntries(entries)
+    } catch (loadFailure6) {
+      if (request === itemFieldsRequest && isCurrent(context)) (reportLoadError(loadFailure6, "加载失败，请重试", false), fieldsError.value = true)
+    } finally {
+      if (request === itemFieldsRequest) sceneItemFieldsLoading.value = false
+    }
   }
 
-  function updateSceneItemOverrides(key: string, value: Record<string, any>) {
+  function updateSceneItemOverrides(key: string, value: Overrides) {
+    if (sceneEditLocked.value) return
     const itemKey = key.replace(/^item:/, '')
-    const item = (templateForm.items || []).find((row: any) => getSceneItemKey(row) === itemKey)
+    const item = (templateForm.items || []).find((row) => getSceneItemKey(row) === itemKey)
     if (!item) {
       return
     }
-    item.field_overrides = value
+    item.field_overrides = clone(value)
     loadPreview()
   }
 
-  function mergeSavedSceneItems(savedItems: any[], keepFieldDirty = false) {
-    const loadedItems = normalizeLoadedItems(savedItems)
-    let validIndex = 0
-    const previousActiveKey = activeSceneNodeKey.value
-    templateForm.items = (templateForm.items || []).map((item: any) => {
-      if (!item.child_template) {
-        return item
-      }
-      const saved = loadedItems[validIndex]
-      validIndex += 1
-      if (!saved) {
-        return item
-      }
-      const previousFocusKey = getSceneItemFocusKey(item)
-      const nextItem = {
-        ...saved,
-        field_overrides: item.field_overrides || {},
-      }
-      if (previousActiveKey === previousFocusKey) {
-        activeSceneNodeKey.value = getSceneItemFocusKey(nextItem)
-      }
-      return nextItem
+  function mergeSavedSceneItems(savedItems: SceneItem[], sentItems: SceneItem[]) {
+    const sent = sentItems.filter((item) => item.child_template !== null)
+    savedItems.forEach((saved, index) => {
+      const source = sent[index]
+      if (!source) return
+      const item = templateForm.items.find(
+        (candidate) =>
+          candidate._key === source._key && candidate.child_template === source.child_template
+      )
+      if (!item) return
+      const previousFocus = getSceneItemFocusKey(item),
+        previousKey = getSceneItemKey(item)
+      item.id = saved.id ?? item.id
+      item.child_template_detail = saved.child_template_detail
+        ? clone(saved.child_template_detail)
+        : item.child_template_detail
+      const nextKey = getSceneItemKey(item)
+      sceneSavedItemOverrides.value[nextKey] = clone(
+        saved.field_overrides ?? source.field_overrides
+      )
+      if (previousKey !== nextKey) delete sceneSavedItemOverrides.value[previousKey]
+      if (activeSceneNodeKey.value === previousFocus)
+        activeSceneNodeKey.value = getSceneItemFocusKey(item)
     })
-    snapshotSceneItemOverrides(savedItems)
-    if (!keepFieldDirty) {
-      snapshotFieldConfig()
-    }
   }
 
-  function autoSaveSceneItems() {
-    if (!templateForm.id) {
-      return Promise.resolve()
-    }
+  function autoSaveSceneItems(): Promise<boolean> {
+    if (!scope.isActive() || templateForm.id === null || templateLoading.value)
+      return Promise.resolve(false)
+    arrangementQueued = true
+    if (sceneSaveTask) return sceneSaveTask
+    if (writeBusy.value) return Promise.resolve(false)
+    const context = currentContext(),
+      id = templateForm.id
     sceneAutoSaving.value = true
     sceneAutoSaveStatus.value = 'saving'
-    const keepFieldDirty = hasUnsavedFieldConfig()
-    return putDataFactoryTemplate({
-      id: templateForm.id,
-      items: normalizeSceneArrangementItems(),
-    })
-      .then((res) => {
-        mergeSavedSceneItems(res.data?.items || [], keepFieldDirty)
-        sceneAutoSaveStatus.value = 'saved'
-        loadSceneItemFields().then(loadPreview).catch(() => undefined)
-      })
-      .catch(() => {
-        sceneAutoSaveStatus.value = 'error'
-      })
-      .finally(() => {
+    sceneSaveTask = (async () => {
+      try {
+        while (arrangementQueued && isCurrent(context)) {
+          arrangementQueued = false
+          const items = clone(templateForm.items),
+            fieldSignature = buildFieldConfigSignature(),
+            wasDirty = hasUnsavedFieldConfig()
+          const payload = clone({ id, items: normalizeSceneArrangementItems() })
+          const response = await putDataFactoryTemplate(payload)
+          if (!isCurrent(context)) return false
+          const untouchedFields = fieldSignature === buildFieldConfigSignature()
+          mergeSavedSceneItems(response.data?.items ?? payload.items, items)
+          if (!wasDirty && untouchedFields) snapshotFieldConfig()
+        }
+        if (isCurrent(context)) {
+          sceneAutoSaveStatus.value = 'saved'
+          await Promise.all([loadSceneItemFields(), loadPreview()])
+        }
+        return true
+      } catch {
+        if (isCurrent(context)) {
+          sceneAutoSaveStatus.value = 'error'
+          arrangementQueued = false
+        }
+        return false
+      } finally {
         sceneAutoSaving.value = false
-      })
+        sceneSaveTask = null
+        resumeArrangement()
+      }
+    })()
+    return sceneSaveTask
   }
 
   function retrySceneAutoSave() {
@@ -1349,33 +1216,29 @@
     autoSaveSceneItems()
   }
 
-  function debugCleanup() {
-    debugCleanupLoading.value = true
-    postDataFactoryTemplateDebugCleanup({ execution_id: debugResult.value.execution_id })
-      .then((res) => {
-        Message.success(res.msg)
-      })
-      .finally(() => {
-        debugCleanupLoading.value = false
-      })
-  }
-
-  function openDependencyTemplate(node: any) {
-    if (!node?.template_id) {
-      return
-    }
+  async function openDependencyTemplate(node: PreviewNode) {
+    if (!scope.isActive() || navigating.value || node.template_id == null || !confirmLeave())
+      return false
+    navigating.value = true
     pageData.setRecord({
       id: node.template_id,
       name: node.template_name,
       entity: node.entity_id,
     })
-    router.push({
-      path: '/data-factory/template/preview',
-      query: {
-        template_id: node.template_id,
-        test_env: route.query.test_env || userStore.selected_environment,
-      },
-    })
+    try {
+      await router.push({
+        path: '/data-factory/template/preview',
+        query: {
+          template_id: node.template_id,
+          test_env: route.query.test_env ?? userStore.selected_environment,
+        },
+      })
+      return true
+    } catch {
+      return false
+    } finally {
+      navigating.value = false
+    }
   }
 
   function goBack() {
@@ -1383,33 +1246,46 @@
   }
 
   onMounted(() => {
-    enumStore.getEnum()
-    reloadPageData()
+    void reloadPageData()
   })
-
   watch(
     () => route.query.template_id,
     () => {
-      reloadPageData()
-    }
+      if (scope.isActive()) void reloadPageData()
+    },
+    { flush: 'sync' }
+  )
+  watch(
+    () => [route.query.test_env, userStore.selected_environment],
+    () => {
+      confirmation?.close()
+      confirmation = null
+      debugRef.value?.close()
+      entityRulesRef.value?.close()
+    },
+    { flush: 'sync' }
   )
 
-  onBeforeRouteLeave(() => {
-    if (!hasUnsavedFieldConfig()) {
+  function confirmLeave() {
+    if (!hasUnsavedFieldConfig() && !arrangementQueued && !sceneAutoSaving.value) {
       return true
     }
     return window.confirm('当前字段配置尚未保存，确认离开吗？')
-  })
+  }
+  onBeforeRouteLeave(confirmLeave)
+  onBeforeRouteUpdate(
+    (to) => String(to.query.template_id) === String(route.query.template_id) || confirmLeave()
+  )
 </script>
 
 <style scoped>
-  .template-preview-page :deep(> .arco-card-body) {
+  .mango-template-preview-page :deep(> .arco-card-body) {
     display: flex;
     flex-direction: column;
     min-height: 0;
   }
 
-  .preview-spin {
+  .mango-preview-spin {
     display: block;
     box-sizing: border-box;
     width: 100%;
@@ -1418,225 +1294,26 @@
     padding-top: var(--m-page-gap);
   }
 
-  .entity-rule-toolbar {
-    margin-bottom: var(--m-page-gap);
-  }
-
-  .mango-entity-rule-table-region {
-    height: min(460px, 65vh);
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .post-update-alert {
-    margin-bottom: var(--m-page-gap);
-  }
-
-  .post-update-list {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: var(--m-page-gap);
-    gap: 10px;
-  }
-
-  .post-update-rule {
-    min-width: 0;
-    padding: 12px;
-    border: 1px solid var(--m-border);
-    border-radius: var(--m-radius-md);
-    background: var(--m-surface-soft);
-  }
-
-  .post-update-rule-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    min-width: 0;
-    margin-bottom: 10px;
-    gap: 12px;
-  }
-
-  .post-update-rule-header > div {
-    display: flex;
-    flex: 1;
-    align-items: baseline;
-    min-width: 0;
-    gap: 10px;
-  }
-
-  .post-update-rule-title {
-    flex: none;
-    color: var(--m-text);
-    font-weight: 600;
-  }
-
-  .post-update-rule-summary {
-    overflow: hidden;
-    color: var(--m-muted);
-    font-size: 12px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .post-update-mapping {
-    display: grid;
-    align-items: stretch;
-    min-width: 0;
-    gap: 10px;
-    grid-template-columns: minmax(0, 1fr) 54px minmax(0, 1fr);
-  }
-
-  .post-update-side {
-    display: grid;
-    min-width: 0;
-    padding: 10px;
-    border: 1px solid var(--m-border);
-    border-radius: var(--m-radius-sm);
-    background: var(--m-surface);
-    gap: 8px;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-
-  .post-update-side-title {
-    color: var(--m-text);
-    font-weight: 600;
-    grid-column: 1 / -1;
-  }
-
-  .post-update-source .post-update-side-title {
-    color: var(--m-warning);
-  }
-
-  .post-update-target .post-update-side-title {
-    color: var(--m-primary);
-  }
-
-  .post-update-field,
-  .post-update-order-field {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .post-update-field > span,
-  .post-update-order-field > span {
-    color: var(--m-text-2);
-    font-size: 12px;
-  }
-
-  .post-update-field :deep(.arco-select-view),
-  .post-update-order-field :deep(.arco-input-wrapper) {
-    width: 100%;
-  }
-
-  .post-update-direction {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--m-muted);
-    flex-direction: column;
-    font-size: 12px;
-    gap: 2px;
-  }
-
-  .post-update-direction strong {
-    color: var(--m-warning);
-    font-size: 22px;
-    font-weight: 500;
-    line-height: 1;
-  }
-
-  .post-update-validation {
-    margin-top: 10px;
-  }
-
-  .post-update-advanced {
-    margin-top: 8px;
-    color: var(--m-text-2);
-    font-size: 12px;
-  }
-
-  .post-update-advanced summary {
-    width: fit-content;
-    color: var(--m-primary);
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .post-update-advanced-content {
-    display: grid;
-    align-items: end;
-    margin-top: 8px;
-    padding: 10px;
-    border-radius: var(--m-radius-sm);
-    background: var(--m-surface);
-    gap: 8px 12px;
-    grid-template-columns: 160px minmax(0, 1fr);
-  }
-
-  .post-update-order-tip {
-    padding-bottom: 7px;
-    color: var(--m-muted);
-  }
-
-  .post-update-sql {
-    overflow-x: auto;
-    padding: 8px;
-    border: 1px solid var(--m-border);
-    border-radius: var(--m-radius-sm);
-    background: var(--m-code-bg);
-    color: var(--m-code-text);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    grid-column: 1 / -1;
-    white-space: nowrap;
-  }
-
-  .post-update-empty-tip {
-    margin-top: 4px;
-    color: var(--m-muted);
-    font-size: 12px;
-  }
-
-  @media (max-width: 900px) {
-    .post-update-mapping {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .post-update-direction strong {
-      transform: rotate(90deg);
-    }
-  }
-
-  .scene-config-workbench {
-    display: grid;
-    height: 100%;
-    min-height: 0;
-    gap: var(--m-page-gap);
-    grid-template-columns: 300px minmax(0, 1fr);
-  }
-
-  .scene-config-workbench-scroll {
+  .mango-scene-config-workbench-scroll {
     --mango-workbench-min-width: 980px;
   }
 
-  .scene-config-workbench-scroll .scene-config-workbench {
+  .mango-scene-config-workbench-scroll .mango-scene-config-workbench {
     min-width: var(--mango-workbench-min-width);
   }
 
-  .scene-items-spin {
+  .mango-scene-items-spin {
     display: block;
     height: 100%;
     min-height: 0;
   }
 
-  .scene-items-spin :deep(> .mango-panel-spin__content) {
+  .mango-scene-items-spin :deep(> .mango-panel-spin__content) {
     height: 100%;
     min-height: 0;
   }
 
-  .scene-items-card {
+  .mango-scene-items-card {
     display: flex;
     overflow: hidden;
     flex-direction: column;
@@ -1650,7 +1327,7 @@
     background: var(--m-surface);
   }
 
-  .scene-items-header {
+  .mango-scene-items-header {
     display: flex;
     align-items: flex-start;
     flex-direction: column;
@@ -1658,21 +1335,21 @@
     gap: var(--m-page-gap);
   }
 
-  .scene-items-title {
+  .mango-scene-items-title {
     color: var(--m-text);
     font-size: 15px;
     font-weight: 600;
     line-height: 22px;
   }
 
-  .scene-items-subtitle {
+  .mango-scene-items-subtitle {
     margin-top: 2px;
     color: var(--m-muted);
     font-size: 12px;
     line-height: 18px;
   }
 
-  .scene-items-list {
+  .mango-scene-items-list {
     display: flex;
     overflow: auto;
     flex-direction: column;
@@ -1684,7 +1361,7 @@
     gap: var(--m-page-gap);
   }
 
-  .scene-item-card {
+  .mango-scene-item-card {
     display: grid;
     flex-shrink: 0;
     padding: var(--m-card-padding);
@@ -1697,7 +1374,7 @@
     transition: border-color 0.2s ease, background 0.2s ease, opacity 0.2s ease;
   }
 
-  .scene-root-card {
+  .mango-scene-root-card {
     flex-shrink: 0;
     padding: var(--m-card-padding);
     border: 1px solid var(--m-border);
@@ -1707,34 +1384,34 @@
     transition: border-color 0.2s ease, background 0.2s ease;
   }
 
-  .scene-root-card:hover,
-  .scene-item-card:hover {
+  .mango-scene-root-card:hover,
+  .mango-scene-item-card:hover {
     border-color: color-mix(in srgb, var(--m-primary) 28%, var(--m-border));
     background: var(--m-surface);
   }
 
-  .scene-root-card:focus-visible {
+  .mango-scene-root-card:focus-visible {
     outline: 2px solid var(--m-primary);
     outline-offset: 2px;
   }
 
-  .scene-item-card-active {
+  .mango-scene-item-card-active {
     border-color: var(--m-primary);
     background: color-mix(in srgb, var(--m-primary) 7%, var(--m-surface));
   }
 
-  .scene-item-card-dragging {
+  .mango-scene-item-card-dragging {
     opacity: 0.55;
   }
 
-  .scene-root-label,
-  .scene-root-meta {
+  .mango-scene-root-label,
+  .mango-scene-root-meta {
     color: var(--m-muted);
     font-size: 12px;
     line-height: 18px;
   }
 
-  .scene-root-name {
+  .mango-scene-root-name {
     overflow: hidden;
     margin-top: 4px;
     color: var(--m-text);
@@ -1745,11 +1422,11 @@
     white-space: nowrap;
   }
 
-  .scene-root-meta {
+  .mango-scene-root-meta {
     margin-top: 4px;
   }
 
-  .scene-item-drag {
+  .mango-scene-item-drag {
     display: flex;
     align-self: stretch;
     align-items: center;
@@ -1761,20 +1438,20 @@
     user-select: none;
   }
 
-  .scene-item-content {
+  .mango-scene-item-content {
     min-width: 0;
   }
 
-  .scene-item-content :deep(.arco-select),
-  .scene-item-content :deep(.arco-input-wrapper) {
+  .mango-scene-item-content :deep(.arco-select),
+  .mango-scene-item-content :deep(.arco-input-wrapper) {
     width: 100%;
   }
 
-  .scene-item-content :deep(.arco-input-wrapper) {
+  .mango-scene-item-content :deep(.arco-input-wrapper) {
     margin-top: 8px;
   }
 
-  .scene-item-footer {
+  .mango-scene-item-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1782,7 +1459,7 @@
     margin-top: 8px;
   }
 
-  .scene-item-hint {
+  .mango-scene-item-hint {
     overflow: hidden;
     color: var(--m-muted);
     font-size: 12px;
@@ -1791,12 +1468,12 @@
     white-space: nowrap;
   }
 
-  .scene-preview-panel {
+  .mango-scene-preview-panel {
     min-width: 0;
     min-height: 0;
   }
 
-  .preview-spin :deep(> .mango-panel-spin__content) {
+  .mango-preview-spin :deep(> .mango-panel-spin__content) {
     height: 100%;
     min-height: 0;
   }

@@ -1,203 +1,64 @@
-import { FormItem } from '@/types/components'
+import { reactive } from 'vue'
+import type { FormItem } from '@/types/components'
+import type { TableColumnData } from '@arco-design/web-vue'
 import { enableMultiSelectSearch } from '@/utils/search-condition'
 import { createIdSearchValue } from '@/utils/id-search'
-import { reactive, ref } from 'vue'
-import { Message } from '@arco-design/web-vue'
-import { useTable, useTableColumn } from '@/hooks/table'
+import { useTableIndexColumn } from '@/hooks/table'
 import { createUpdateUserCondition, updateTimeColumn, updateUserColumn } from '@/utils/update-user'
 
-const table = useTable()
-
-export const conditionItems: FormItem[] = reactive([
-  {
-    key: 'id',
-    label: 'ID',
-    type: 'input',
-    placeholder: '请输入参数ID',
-    value: createIdSearchValue(),
-    reset: function () {
-      this.value = ''
+export function createConditionItems() {
+  const items: Omit<FormItem, 'disabled'>[] = [
+    {
+      key: 'id',
+      label: 'ID',
+      type: 'input',
+      placeholder: '请输入参数ID',
+      value: createIdSearchValue(),
     },
-  },
-  {
-    key: 'project_product',
-    label: '项目/产品',
-    value: ref(''),
-    type: 'cascader',
-    placeholder: '请选择产品',
-    optionItems: [],
-    reset: function () {},
-  },
-  {
-    key: 'type',
-    label: '类型',
-    value: ref(''),
-    type: 'select',
-    placeholder: '请选择类型',
-    optionItems: [],
-    reset: function () {},
-  },
-  {
-    key: 'test_envs',
-    label: '被测环境',
-    value: ref([]),
-    type: 'select',
-    placeholder: '请选择被测环境',
-    optionItems: [],
-    reset: function () {
-      this.value = []
+    { key: 'project_product', label: '项目/产品', type: 'cascader', value: null },
+    { key: 'type', label: '类型', type: 'select', placeholder: '请选择类型', value: [] },
+    {
+      key: 'test_envs',
+      label: '被测环境',
+      type: 'select',
+      placeholder: '请选择被测环境',
+      value: [],
     },
-  },
-  {
-    key: 'name',
-    label: '参数名称',
-    type: 'input',
-    placeholder: '请输入参数名称',
-    value: ref(''),
-    reset: function () {
-      this.value = ''
-    },
-  },
-  {
-    key: 'key',
-    label: 'key',
-    type: 'input',
-    placeholder: '请输入key',
-    value: ref(''),
-    reset: function () {
-      this.value = ''
-    },
-  },
-  {
-    key: 'value',
-    label: 'value',
-    type: 'input',
-    placeholder: '请输入value',
-    value: ref(''),
-    reset: function () {
-      this.value = ''
-    },
-  },
-  createUpdateUserCondition(),
-])
-enableMultiSelectSearch(conditionItems)
-export const formItems: FormItem[] = reactive([
-  {
-    label: '项目/产品',
-    key: 'project_product',
-    value: ref(''),
-    placeholder: '请选择项目名称',
-    required: true,
-    type: 'cascader',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '类型',
-    key: 'type',
-    value: ref(''),
-    type: 'select',
-    required: true,
-    placeholder: '请选择对应类型，注意不同类型的加载顺序',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '被测环境',
-    key: 'test_envs',
-    value: ref(''),
-    type: 'select',
-    required: false,
-    placeholder: '请选择被测环境',
-    validator: function () {
-      return true
-    },
-    reset: function () {
-      this.value = ''
-    },
-  },
-  {
-    label: '参数名称',
-    key: 'name',
-    value: ref(''),
-    type: 'input',
-    required: true,
-    placeholder: '请输入名称',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: 'key',
-    key: 'key',
-    value: ref(''),
-    type: 'input',
-    required: true,
-    placeholder:
-      '请输入缓存key；SQL变量多值可用英文逗号分隔，如 id,name；代码变量key仅作标识，不参与变量注入',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '逻辑数据库',
-    key: 'datasource_alias',
-    value: ref(''),
-    type: 'select',
-    required: false,
-    placeholder: '请选择逻辑数据库',
-    reset: function () {
-      this.value = ''
-    },
-  },
-  {
-    label: 'value',
-    key: 'value',
-    value: ref(''),
-    type: 'textarea',
-    required: true,
-    placeholder: '自定义变量请输入变量值，SQL变量请输入查询一行数据的语句',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-])
-
-export const tableColumns = useTableColumn([
-  table.indexColumn,
+    { key: 'name', label: '参数名称', type: 'input', placeholder: '请输入参数名称', value: '' },
+    { key: 'key', label: 'key', type: 'input', placeholder: '请输入 key', value: '' },
+    { key: 'value', label: 'value', type: 'input', placeholder: '请输入 value', value: '' },
+    createUpdateUserCondition(),
+  ]
+  enableMultiSelectSearch(items)
+  return reactive(items)
+}
+export const TABLE_SCROLL_X = 2020
+export const codeVariableExample = `def variable(context):
+    """
+    函数名字和参数不可以改。
+    必须返回 dict。
+    dict 的 key 会作为变量 key，value 会作为变量值。
+    UI 执行时可以通过 \${tenant_id}、\${user_id} 引用。
+    """
+    return {
+        "tenant_id": "14",
+        "user_id": 123
+    }`
+export const tableColumns: Array<TableColumnData & { key: string | number }> = [
+  { ...useTableIndexColumn(), align: 'center' },
   {
     title: '被测环境',
     key: 'test_env',
     dataIndex: 'test_env',
-    width: 100,
+    width: 140,
+    align: 'center',
   },
   {
     title: '类型',
     key: 'type',
     dataIndex: 'type',
     width: 120,
+    align: 'center',
   },
   {
     title: '参数名称',
@@ -242,6 +103,9 @@ export const tableColumns = useTableColumn([
     align: 'center',
     width: 100,
   },
+
+  { ...updateUserColumn(), key: 'update_user', align: 'left', ellipsis: true, tooltip: true },
+  { ...updateTimeColumn(), key: 'update_time', align: 'center' },
   {
     title: '项目/产品',
     key: 'project_product',
@@ -251,8 +115,6 @@ export const tableColumns = useTableColumn([
     ellipsis: true,
     tooltip: true,
   },
-  updateUserColumn(),
-  updateTimeColumn(),
   {
     title: '操作',
     key: 'actions',
@@ -261,4 +123,4 @@ export const tableColumns = useTableColumn([
     align: 'center',
     width: 160,
   },
-])
+]

@@ -13,7 +13,7 @@
           <a-tag :color="resultStatusColor" size="large">{{ resultStatusText }}</a-tag>
         </div>
         <p>
-          <span v-if="resultData?.test_time">执行时间：{{ resultData.test_time }}</span>
+          <span v-if="resultData.test_time !== null && resultData.test_time !== ''">执行时间：{{ resultData.test_time }}</span>
           <span>测试对象：{{ resultData?.test_object || '-' }}</span>
         </p>
       </div>
@@ -136,190 +136,89 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
+  import { computed, ref, watch, onMounted, onBeforeUnmount, onDeactivated } from 'vue'
+  import { useRoute } from 'vue-router'
+  import { useUserStoreContext } from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
   import { useArtifactUrl } from '@/hooks/use-artifact-url'
   import { useSelectValueStore } from '@/store/modules/get-ope-value'
   import UiStepRuntimeResult from '@/components/reports/UiStepRuntimeResult.vue'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import JsonDisplay from '@/components/display/JsonDisplay.vue'
+  import { normalizeUiReport, type UiRuntimeView } from './ui-report'
 
-  const props = defineProps({
-    resultData: {
-      type: Object as () => any,
-      required: true,
-    },
-  })
-
+  const props = defineProps<{ resultData: unknown }>()
+  const resultData = computed(() => normalizeUiReport(props.resultData))
   const enumStore = useEnum()
   const useSelectValue = useSelectValueStore()
+  const route = useRoute()
+  const user = useUserStoreContext()
   const cachePanelVisible = ref(false)
-
-  const stepList = computed(() => normalizeStepList(props.resultData))
-  const timelineRows = computed(() =>
-    stepList.value.flatMap((step: any, stepIndex: number) =>
-      runtimeResultRows(step).map((runtime: any, runtimeIndex: number) => ({
-        step,
-        runtime,
-        stepIndex,
-        runtimeIndex,
-      }))
-    )
-  )
-  const operationTotal = computed(() => timelineRows.value.length)
-  const passedCount = computed(() => timelineRows.value.filter((item: any) => item.runtime?.status === 1).length)
-  const failedCount = computed(() => timelineRows.value.filter((item: any) => item.runtime?.status === 0).length)
-  const pendingCount = computed(() =>
-    timelineRows.value.filter((item: any) => item.runtime?.status !== 0 && item.runtime?.status !== 1).length
-  )
-  const passRate = computed(() => {
-    if (!operationTotal.value) return 0
-    return Math.round((passedCount.value / operationTotal.value) * 100)
+  const closeCachePanel = () => { cachePanelVisible.value = false }
+  watch([
+    () => props.resultData, () => route.fullPath, () => user.userId, () => user.roleId,
+    () => user.token, () => user.selected_environment,
+  ], closeCachePanel, { flush: 'sync' })
+  function visibilityChanged() { if (globalThis.document?.visibilityState === 'hidden') closeCachePanel() }
+  onMounted(() => globalThis.document?.addEventListener('visibilitychange', visibilityChanged))
+  onDeactivated(closeCachePanel)
+  onBeforeUnmount(() => {
+    closeCachePanel()
+    globalThis.document?.removeEventListener('visibilitychange', visibilityChanged)
   })
-  const firstFailedStep = computed(() => stepList.value.find((item: any) => item.status === 0))
+  const stepList = computed(() => resultData.value.steps)
+  const timelineRows = computed(() => stepList.value.flatMap((step, stepIndex) =>
+    step.runtimeRows.map((runtime, runtimeIndex) => ({ step, runtime, stepIndex, runtimeIndex }))
+  ))
+  interface TimelineRow { step: UiRuntimeView; runtime: UiRuntimeView; stepIndex: number; runtimeIndex: number }
+  const operationTotal = computed(() => timelineRows.value.length)
+  const passedCount = computed(() => timelineRows.value.filter(item => item.runtime.status === 1).length)
+  const failedCount = computed(() => timelineRows.value.filter(item => item.runtime.status === 0).length)
+  const pendingCount = computed(() => operationTotal.value - passedCount.value - failedCount.value)
+  const passRate = computed(() => operationTotal.value ? Math.round(passedCount.value / operationTotal.value * 100) : 0)
+  const firstFailedStep = computed(() => stepList.value.find(item => item.status === 0))
   const firstFailedPicturePath = computed(() => firstFailedStep.value?.picture_path || '')
   const firstFailedPictureUrl = useArtifactUrl(firstFailedPicturePath)
-  const resultStatusType = computed(() => stepStatusType(props.resultData?.status))
-  const resultStatusText = computed(() => {
-    if (props.resultData?.status === 1) return '测试通过'
-    if (props.resultData?.status === 0) return '测试失败'
-    return '未测试'
-  })
-  const resultStatusColor = computed(() => statusColor(props.resultData?.status))
+  const resultStatusType = computed(() => resultData.value.status === 1 ? 'success' : resultData.value.status === 0 ? 'danger' : 'muted')
+  const resultStatusText = computed(() => resultData.value.status === 1 ? '测试通过' : resultData.value.status === 0 ? '测试失败' : '未测试')
+  const resultStatusColor = computed(() => statusColor(resultData.value.status))
   const resultStatusClass = computed(() => `mango-ui-report__progress-card--${resultStatusType.value}`)
-
-  type RuntimeSection = {
-    key: string
-    title: string
-    description: string
-    data: unknown
-  }
-
-  const hasValue = (value: unknown) => {
+  const hasValue = (value: unknown): boolean => {
     if (value === null || value === undefined || value === '') return false
     if (Array.isArray(value)) return value.length > 0
-    if (typeof value === 'object') return Object.keys(value as Record<string, unknown>).length > 0
+    if (typeof value === 'object') return Object.keys(value).length > 0
     return true
   }
-
-  const runtimeSections = computed<RuntimeSection[]>(() => {
-    const sections: RuntimeSection[] = [
-      {
-        key: 'cache',
-        title: '缓存数据',
-        description: '本次 UI 执行过程中写入或读取的缓存上下文。',
-        data: props.resultData?.cache_data,
-      },
-      {
-        key: 'factory',
-        title: '数据工厂',
-        description: '数据工厂生成或注入到 UI 执行器的上下文。',
-        data: props.resultData?.data_factory_cache_data,
-      },
-    ]
-    return sections.filter((item) => hasValue(item.data))
-  })
-
-  function stepName(item: any) {
-    return (
-      item?.name ||
-      item?.ele_name?.name ||
-      useSelectValue.getSelectLabel(item?.ope_key) ||
-      enumStore.element_ope?.[item?.type]?.title ||
-      '未命名步骤'
-    )
+  const runtimeSections = computed(() => [
+    { key: 'cache', title: '缓存数据', description: '本次 UI 执行过程中写入或读取的缓存上下文。', data: resultData.value.cache_data },
+    { key: 'factory', title: '数据工厂', description: '数据工厂生成或注入到 UI 执行器的上下文。', data: resultData.value.data_factory_cache_data },
+  ].filter(item => hasValue(item.data)))
+  function operationLabel(item: UiRuntimeView): string {
+    const label: unknown = useSelectValue.getSelectLabel(item.ope_key)
+    return typeof label === 'string' && label ? label : enumStore.element_ope?.find(option => option.key === item.type)?.title || '-'
   }
-
-  function operationLabel(item: any) {
-    return (
-      useSelectValue.getSelectLabel(item?.ope_key) ||
-      enumStore.element_ope?.[item?.type]?.title ||
-      '-'
-    )
+  function stepName(item: UiRuntimeView): string {
+    const label = operationLabel(item)
+    return item.name || item.elementName || (label === '-' ? '未命名步骤' : label)
   }
-
-  function stepStatusType(status: any) {
-    if (status === 1) return 'success'
-    if (status === 0) return 'danger'
-    return 'muted'
+  function stepStatusText(status: number | null): string {
+    return status === 1 ? '通过' : status === 0 ? '失败' : '未测试'
   }
-
-  function stepStatusText(status: any) {
-    if (status === 1) return '通过'
-    if (status === 0) return '失败'
-    return '未测试'
+  function statusColor(status: number | null) {
+    return status === 1 ? 'green' : status === 0 ? 'red' : 'gray'
   }
-
-  function statusColor(status: any) {
-    if (status === 1) return 'green'
-    if (status === 0) return 'red'
-    return 'gray'
+  const timelineDotColor = statusColor
+  function timelineLabel(item: UiRuntimeView, _index: number): string {
+    return String(item.stop_time ?? item.test_time ?? '').match(/\d{2}:\d{2}:\d{2}/)?.[0] || ''
   }
-
-  function timelineDotColor(status: any) {
-    if (status === 1) return 'green'
-    if (status === 0) return 'red'
-    return 'gray'
+  function elementRows(item: UiRuntimeView) { return item.elements }
+  function timelineRowKey(row: TimelineRow, _index: number): string {
+    return `${row.stepIndex}-${row.runtimeIndex}-${row.runtime.id ?? row.runtime.page_step_details_id ?? ''}`
   }
-
-  function timelineLabel(item: any, index: number) {
-    const time = item?.stop_time || item?.test_time || ''
-    const match = String(time).match(/\d{2}:\d{2}:\d{2}/)
-    return match?.[0] || ''
+  function runtimeResultName(runtime: UiRuntimeView, step: UiRuntimeView, index: number): string {
+    const label = operationLabel(runtime)
+    return runtime.name || runtime.elementName || (label === '-' ? `${stepName(step)}-${index + 1}` : label)
   }
-
-  function elementRows(item: any) {
-    if (Array.isArray(item?.elements) && item.elements.length) return item.elements
-    if (Array.isArray(item?.element_result) && item.element_result.length) return item.element_result
-    if (Array.isArray(item?.element_list) && item.element_list.length) return item.element_list
-    if (Array.isArray(item?.element) && item.element.length) return item.element
-    if (item?.ele_name) return [item.ele_name]
-    if (item?.loc) {
-      return [
-        {
-          name: item.name,
-          exp: item.exp,
-          loc: item.loc,
-          sub: item.sub,
-          ele_quantity: item.ele_quantity,
-          element_text: item.element_text,
-        },
-      ]
-    }
-    return []
-  }
-
-  function normalizeStepList(data: any) {
-    if (Array.isArray(data?.steps) && data.steps.length) return data.steps
-    if (Array.isArray(data?.element_result_list) && data.element_result_list.length) {
-      return data.element_result_list
-    }
-    if (Array.isArray(data?.children) && data.children.length) return data.children
-    return []
-  }
-
-  function runtimeResultRows(item: any) {
-    if (Array.isArray(item?.element_result_list) && item.element_result_list.length) {
-      return item.element_result_list
-    }
-    if (Array.isArray(item?.children) && item.children.length) {
-      return item.children
-    }
-    return [item]
-  }
-
-  function timelineRowKey(row: any, index: number) {
-    return String(
-      row?.runtime?.id ??
-        row?.runtime?.page_step_details_id ??
-        `${row?.step?.id || row.stepIndex}-${row?.runtime?.name || index}`
-    )
-  }
-
-  function runtimeResultName(runtime: any, step: any, index: number) {
-    return runtime?.name || runtime?.ele_name?.name || stepName(runtime) || `${stepName(step)}-${index + 1}`
-  }
-
 </script>
 
 <style scoped lang="less">

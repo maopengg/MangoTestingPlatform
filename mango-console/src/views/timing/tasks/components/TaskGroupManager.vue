@@ -1,5 +1,8 @@
 <template>
   <div class="mango-task-group-manager">
+    <template v-if="enumsError"></template>
+    <a-spin v-else-if="enumsLoading" :size="scaleDensityPixels(16)"><span class="mango-task-group-manager__metadata">正在加载选项…</span></a-spin>
+    <a-alert v-if="operationError" type="error">{{ operationError }}</a-alert>
     <a-table
       :data="rows"
       :loading="loading"
@@ -12,7 +15,7 @@
         <a-table-column title="ID" data-index="id" :width="80" align="center" />
         <a-table-column title="任务组名称" data-index="name" :width="180" ellipsis tooltip>
           <template #cell="{ record }">
-            <a-link @click="emit('filter-tasks', record)">{{ record.name }}</a-link>
+            <a-link @click="filterTasks(record)">{{ record.name }}</a-link>
           </template>
         </a-table-column>
         <a-table-column title="子任务" :width="120" align="center">
@@ -86,6 +89,8 @@
         <a-table-column title="是否开启" :width="90" align="center">
           <template #cell="{ record }">
             <a-switch
+              :loading="switchIds.has(record.id)"
+              :disabled="busy(record.id)"
               :model-value="record.status === 1"
               :before-change="(value) => changeGroupSwitch(record, 'status', value)"
             />
@@ -94,6 +99,8 @@
         <a-table-column title="是否通知" :width="90" align="center">
           <template #cell="{ record }">
             <a-switch
+              :loading="switchIds.has(record.id)"
+              :disabled="busy(record.id)"
               :model-value="record.is_notice === 1"
               :before-change="(value) => changeGroupSwitch(record, 'is_notice', value)"
             />
@@ -102,8 +109,9 @@
         <a-table-column title="失败通知" :width="90" align="center">
           <template #cell="{ record }">
             <a-switch
+              :loading="switchIds.has(record.id)"
               :model-value="record.is_notice === 1 && record.fail_notice === 1"
-              :disabled="record.is_notice !== 1"
+              :disabled="record.is_notice !== 1 || busy(record.id)"
               :before-change="(value) => changeGroupSwitch(record, 'fail_notice', value)"
             />
           </template>
@@ -132,17 +140,19 @@
     {
         label: '触发',
         loading: triggeringIds.has(record.id),
+        disabled: busy(record.id),
         onClick: () => triggerGroup(record),
     },
     {
         label: '重发报告',
-        loading: noticeLoadingIds.has(record.id) || (noticeSending && noticeGroup?.id === record.id),
+        loading: noticeLoadingIds.has(record.id) || (noticeSending && sendingGroupId === record.id),
+        disabled: busy(record.id),
         onClick: () => openResendNotice(record),
     },
     { label: '查看', onClick: () => openDetail(record) },
-    { label: '导出离线 HTML', onClick: () => { offlineExport.sourceId = record.id; offlineExport.visible = true; } },
-    { label: '编辑', onClick: () => openEdit(record) },
-    { label: '删除', danger: true, onClick: () => deleteGroup(record) },
+    { label: '导出离线 HTML', onClick: () => openOfflineReport(record) },
+    { label: '编辑', disabled: busy(record.id), onClick: () => openEdit(record) },
+    { label: '删除', danger: true, disabled: busy(record.id), loading: deletingIds.has(record.id), onClick: () => deleteGroup(record) },
 ]"
             />
           </template>
@@ -153,6 +163,7 @@
   </div>
 
   <a-modal
+    modal-class="mango-simple-form-modal"
     v-model:visible="noticeVisible"
     title="重新发送任务组汇总通知"
     :width="560"
@@ -162,12 +173,16 @@
     :closable="!noticeSending"
     ok-text="发送"
     @before-ok="confirmResendNotice"
+    @cancel="closeNotice"
   >
-    <a-form :model="{}" layout="horizontal">
-      <a-form-item label="任务组">{{ noticeGroup?.name }}</a-form-item>
-      <a-form-item label="最近执行" required>
+    <a-alert v-if="noticeError" type="error">{{ noticeError }}</a-alert>
+    <a-form auto-label-width class="mango-simple-form" :model="{}" layout="horizontal">
+      <a-form-item class="mango-simple-form-item" label="任务组">{{ noticeGroup?.name }}</a-form-item>
+      <a-form-item class="mango-simple-form-item" label="最近执行" required>
         <a-select
           v-model="noticeExecutionId"
+          :loading="noticeLoading"
+          :disabled="noticeLoading || noticeSending"
           :options="noticeExecutions.map((item) => ({
             value: item.id,
             label: `${optionTitle(enumStore.environment_type, item.test_env)} · ${String(item.planned_at).replace('T', ' ').slice(0, 19)}`,
@@ -175,821 +190,206 @@
           placeholder="请选择被测环境对应的最近一次执行"
         />
       </a-form-item>
-      <a-form-item label="原通知组">
+      <a-form-item class="mango-simple-form-item" label="原通知组">
         {{ noticeExecutions.find((item) => item.id === noticeExecutionId)?.notice_group__name || '未配置' }}
       </a-form-item>
     </a-form>
     <a-alert>按所选批次全部子报告的当前结果发送到原通知组，不重新执行任务；全部通过也可发送。</a-alert>
   </a-modal>
 
-  <a-modal
-    v-model:visible="editorVisible"
-    :title="editingId ? '编辑任务组' : '新增任务组'"
-    width="min(760px, calc(100vw - 32px))"
-    class="mango-task-group-editor-modal"
-    body-class="mango-task-group-editor-body"
-    :mask-closable="false"
-  >
-    <mango-panel-spin :loading="editorLoading" class="mango-task-group-editor__spin">
-      <a-form :model="form" layout="horizontal" class="mango-task-group-editor">
-        <div class="mango-task-group-editor__configuration">
-        <section class="mango-task-group-editor__section">
-          <header class="mango-task-group-editor__section-header">
-            <div>
-              <strong>基础信息</strong>
-              <span>设置任务组名称及所属项目产品</span>
-            </div>
-          </header>
-          <div class="mango-task-group-editor__grid">
-            <a-form-item label="任务组名称" required>
-              <a-input v-model="form.name" :max-length="64" placeholder="例如：WEB前端－测试回归" />
-            </a-form-item>
-            <a-form-item label="项目/产品" required>
-              <ProjectProductSelect
-                v-model="form.project_product_id"
-                :disabled="editingId !== null"
-                placeholder="请选择项目/产品"
-                @change="onEditorProductChange"
-              />
-            </a-form-item>
-            <a-form-item label="子任务名称模板" class="mango-task-group-editor__wide">
-              <a-input
-                v-model="form.task_name_template"
-                disabled
-                title="子任务名称由系统按任务组名称和模块完整路径自动生成"
-              />
-            </a-form-item>
-          </div>
-        </section>
+  <TaskGroupEditorDialog ref="groupEditorRef" @saved="refreshGroups" />
 
-        <section class="mango-task-group-editor__section">
-          <header class="mango-task-group-editor__section-header">
-            <div>
-              <strong>公共执行规则</strong>
-              <span>调度、环境、场景、用例类型和通知统一同步；负责人仅作为新子任务默认值</span>
-            </div>
-          </header>
-          <div class="mango-task-group-editor__grid">
-            <a-form-item label="定时策略" required>
-              <a-select
-                v-model="form.timing_strategies"
-                multiple
-                allow-search
-                :max-tag-count="1"
-                :field-names="fieldNames"
-                :options="timingOptions"
-                placeholder="请选择定时策略"
-              />
-            </a-form-item>
-            <a-form-item label="测试环境" required>
-              <a-select
-                v-model="form.test_envs"
-                multiple
-                :max-tag-count="1"
-                :field-names="fieldNames"
-                :options="enumStore.environment_type"
-                placeholder="请选择测试环境"
-                @change="onEnvironmentChange"
-              />
-            </a-form-item>
-            <a-form-item label="用例类型">
-              <a-select
-                v-model="form.case_types"
-                multiple
-                :max-tag-count="1"
-                :field-names="fieldNames"
-                :options="caseTypeOptions"
-                placeholder="留空表示全部类型"
-              />
-            </a-form-item>
-            <a-form-item label="执行场景" required>
-              <a-select
-                v-model="form.execution_scenes"
-                multiple
-                :max-tag-count="1"
-                :field-names="fieldNames"
-                :options="mutuallyExclusiveSceneOptions"
-                placeholder="请选择执行场景"
-              />
-            </a-form-item>
-            <a-form-item label="默认负责人" required>
-              <a-select
-                v-model="form.case_people"
-                allow-search
-                :field-names="fieldNames"
-                :options="userOptions"
-                placeholder="请选择负责人"
-              />
-            </a-form-item>
-            <a-form-item label="是否开启">
-              <a-switch v-model="form.status" :checked-value="1" :unchecked-value="0" />
-            </a-form-item>
-            <a-form-item label="发送通知">
-              <a-switch v-model="form.is_notice" :checked-value="1" :unchecked-value="0" />
-            </a-form-item>
-            <a-form-item label="失败通知">
-              <a-switch v-model="form.fail_notice" :checked-value="1" :unchecked-value="0" />
-            </a-form-item>
-            <a-form-item label="通知组">
-              <a-select
-                v-model="form.notice_group"
-                allow-clear
-                :options="noticeOptions"
-                placeholder="可先选择，开启通知后生效"
-              />
-            </a-form-item>
-            <a-form-item v-if="!editingId" label="报告保留策略">
-              <a-select v-model="form.new_task_report_retention_policy" :field-names="fieldNames"
-                :options="enumStore.report_retention_policy" />
-            </a-form-item>
-          </div>
-        </section>
-
-        </div>
-        <section class="mango-task-group-editor__section mango-task-group-editor__modules">
-          <header class="mango-task-group-editor__section-header">
-            <div>
-              <strong>拆分模块</strong>
-              <span>每个选中模块生成一条“模块全量”定时任务</span>
-            </div>
-            <a-tag size="small">已选择 {{ form.module_ids.length }} 个</a-tag>
-          </header>
-          <div v-if="!form.project_product_id" class="mango-task-group-editor__module-empty">
-            请先选择项目/产品，再选择需要拆分的模块
-          </div>
-          <div v-else class="mango-task-group-editor__tree">
-            <a-tree
-              v-model:expanded-keys="expandedModuleKeys"
-              :checked-keys="form.module_ids"
-              :data="selectableModuleTree"
-              :loading="!editorLoading && moduleLoading"
-              checkable
-              check-strictly
-              block-node
-              @check="onModuleCheck"
-            />
-          </div>
-          <div v-if="form.project_product_id" class="mango-task-group-editor__module-help">
-            选中上级模块后将覆盖其整个子树，下级模块无需重复选择。
-          </div>
-        </section>
-      </a-form>
-    </mango-panel-spin>
-    <template #footer>
-      <a-space :size="12" class="mango-modal-dialog-footer-actions">
-        <a-button @click="editorVisible = false">取消</a-button>
-        <a-button  type="primary" :loading="previewLoading" @click="openPreview">
-          预览并保存
-        </a-button>
-      </a-space>
-    </template>
-  </a-modal>
-
-  <a-modal
-    v-model:visible="previewVisible"
-    title="任务组拆分预览"
-    width="min(960px, calc(100vw - 32px))"
-    :mask-closable="false"
-    :ok-loading="saveLoading"
-    ok-text="确认保存"
-    cancel-text="返回修改"
-    :on-before-ok="saveGroup"
-  >
-    <a-space class="mango-task-group-preview__summary">
-      <a-tag color="green">新增 {{ preview.create_count || 0 }}</a-tag>
-      <a-tag color="blue">更新 {{ preview.update_count || 0 }}</a-tag>
-      <a-tag color="orange">移除 {{ preview.remove_count || 0 }}</a-tag>
-    </a-space>
-    <a-table
-      :data="preview.rows || []"
-      :pagination="false"
-      :scroll="{ x: 760, y: 420 }"
-      class="mango-native-scroll-table"
-      row-key="module_id"
-    >
-      <template #columns>
-        <a-table-column title="变更" :width="90" align="center">
-          <template #cell="{ record }">
-            <a-tag :color="previewActionColor(record.action)" size="small">
-              {{ previewActionText(record.action) }}
-            </a-tag>
-          </template>
-        </a-table-column>
-        <a-table-column title="模块" data-index="module_full_path" :width="300" ellipsis tooltip />
-        <a-table-column title="定时任务名称" data-index="task_name" :width="360" ellipsis tooltip />
-      </template>
-    </a-table>
-  </a-modal>
-
-  <a-drawer
-    v-model:visible="detailVisible"
-    title="任务组详情"
-    width="min(1100px, calc(100vw - 24px))"
-    :footer="false"
-  >
-    <a-spin :loading="detailLoading" class="mango-task-group-detail__spin">
-      <div v-if="detail.id" class="mango-task-group-detail">
-        <div class="mango-soft-panel mango-task-group-detail__summary">
-          <strong>{{ detail.name }}</strong>
-          <span>{{ detail.enabled_task_count }}/{{ detail.module_count }} 个子任务启用</span>
-          <a-tag :color="syncColor(detail.sync_status)" size="small">
-            {{ syncText(detail.sync_status) }}
-          </a-tag>
-        </div>
-        <a-table
-          :data="detail.members || []"
-          :pagination="false"
-          :scroll="{ x: 900, y: 'calc(100vh - 220px)' }"
-          class="mango-native-scroll-table"
-          row-key="id"
-        >
-          <template #columns>
-            <a-table-column title="模块" :width="320" ellipsis tooltip>
-              <template #cell="{ record }">{{ record.module.full_path }}</template>
-            </a-table-column>
-            <a-table-column title="任务ID" data-index="task_id" :width="90" align="center" />
-            <a-table-column title="任务名称" data-index="task_name" :width="320" ellipsis tooltip />
-            <a-table-column title="单独启用" :width="100" align="center">
-              <template #cell="{ record }">
-                <a-switch
-                  :model-value="record.child_enabled"
-                  :before-change="(value) => changeMemberStatus(record, value)"
-                />
-              </template>
-            </a-table-column>
-            <a-table-column title="同步状态" :width="110" align="center">
-              <template #cell="{ record }">
-                <a-tag :color="syncColor(record.sync_status)" size="small">
-                  {{ syncText(record.sync_status) }}
-                </a-tag>
-              </template>
-            </a-table-column>
-          </template>
-        </a-table>
-      </div>
-    </a-spin>
-  </a-drawer>
+  <TaskGroupDetailDrawer ref="groupDetailRef" @changed="refreshGroups" />
   <OfflineReportExportDialog v-model:visible="offlineExport.visible" source-kind="group" :source-id="offlineExport.sourceId" select-report />
 </template>
 
 <script lang="ts" setup>
-  import { computed, reactive, ref, watch } from 'vue'
-  import { useRouter } from 'vue-router'
+import { reportLoadError } from '@/utils/load-error'
 
-  import TaskRecentResults from './TaskRecentResults.vue'
-  import OfflineReportExportDialog from '@/components/reports/OfflineReportExportDialog.vue'
-  import type { TaskGroupRecentResult } from '@/api/system/tasks'
-  import { Message, Modal } from '@arco-design/web-vue'
-  import { fieldNames } from '@/setting'
-  import { useEnum } from '@/store/modules/get-enum'
-  import { usePagination } from '@/hooks/table'
-  import { getUserModuleTree } from '@/api/system/module'
-  import { getSystemTimingList } from '@/api/system/time'
-  import { getSystemNoticeName } from '@/api/system/notice_group'
-  import { getUserName } from '@/api/user/user'
-  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
-  import {
-    createScheduledTaskGroup,
-    deleteScheduledTaskGroup,
-    getScheduledTaskGroupDetail,
-    getScheduledTaskGroups,
-    previewScheduledTaskGroup,
-    updateScheduledTaskGroup,
-    updateScheduledTaskGroupMemberStatus,
-    triggerScheduledTaskGroup,
-    getLatestTaskGroupExecutions,
-    resendTaskGroupNotice,
-  } from '@/api/system/tasks'
-  import ExecutionSceneTagGrid from '@/components/display/ExecutionSceneTagGrid.vue'
-  import { formatProjectProductPath, getOptionId } from '@/utils/business-format'
+import { scaleDensityPixels } from '@/hooks/useDisplayDensity'
+import { onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { Message, Modal } from '@arco-design/web-vue'
+import TaskRecentResults from './TaskRecentResults.vue'
+import TaskGroupEditorDialog from './TaskGroupEditorDialog.vue'
+import TaskGroupDetailDrawer from './TaskGroupDetailDrawer.vue'
+import OfflineReportExportDialog from '@/components/reports/OfflineReportExportDialog.vue'
+import ExecutionSceneTagGrid from '@/components/display/ExecutionSceneTagGrid.vue'
+import { useEnum } from '@/store/modules/get-enum'
+import useUserStore from '@/store/modules/user'
+import usePermissionStore from '@/store/modules/permission'
+import { usePagination } from '@/hooks/table'
+import { deleteScheduledTaskGroup, getScheduledTaskGroupDetail, updateScheduledTaskGroup, triggerScheduledTaskGroup, getLatestTaskGroupExecutions, resendTaskGroupNotice } from '@/api/system/tasks'
+import { formatProjectProductPath } from '@/utils/business-format'
+import { readTaskEditorOptions, taskEditorResponse, type TaskEditorId } from '../task-editor-records'
+import { taskListId } from '../task-list-records'
+import { readTaskGroupEditorDetail, taskGroupPayload } from '../task-group-editor-records'
+import { taskGroupSyncText as syncText, taskGroupSyncColor as syncColor } from '../task-group-detail-records'
+import { taskGroupSummary, taskGroupQuery, readTaskGroupUpdate, readGroupTriggerResult, readGroupNoticeExecutions, type TaskGroupFilters, type TaskGroupSummary, type TaskGroupListRecord, type GroupRecentResult, type GroupNoticeExecution } from '../task-group-list-records'
+import { useTaskGroupList } from '../composables/useTaskGroupList'
 
-  const DEFAULT_TASK_NAME_TEMPLATE = '【${{任务组名称}}】${{模块名称}}'
-
-  const props = defineProps<{ projectProductId: number | null; filters: Record<string, any> }>()
-  const emit = defineEmits<{ (event: 'filter-tasks', record: any): void }>()
-  const enumStore = useEnum()
-  const router = useRouter()
-
-  function openGroupReport(result: TaskGroupRecentResult) {
-    router.push({ path: '/report/index', query: { group_execution_id: result.group_execution_id } })
-  }
-  const loading = ref(false)
-  const offlineExport = reactive({ visible: false, sourceId: 0 })
-  const triggeringIds = reactive(new Set<number>())
-  const triggerConfirmingIds = new Set<number>()
-  const noticeLoadingIds = reactive(new Set<number>())
-  const noticeVisible = ref(false)
-  const noticeSending = ref(false)
-  const noticeGroup = ref<any>(null)
-  const noticeExecutions = ref<any[]>([])
-  const noticeExecutionId = ref<number | null>(null)
-  const rows = ref<any[]>([])
-  const editorVisible = ref(false)
-  const editorLoading = ref(false)
-  const previewVisible = ref(false)
-  const previewLoading = ref(false)
-  const saveLoading = ref(false)
-  const detailVisible = ref(false)
-  const detailLoading = ref(false)
-  const editingId = ref<number | null>(null)
-  const moduleTree = ref<any[]>([])
-  const expandedModuleKeys = ref<Array<string | number>>([])
-  const moduleLoading = ref(false)
-  const timingOptions = ref<any[]>([])
-  const userOptions = ref<any[]>([])
-  const noticeOptions = ref<any[]>([])
-  const detail = reactive<Record<string, any>>({})
-  const preview = reactive<Record<string, any>>({ rows: [] })
-  const pagination = usePagination(load, loading)
-
-  const form = reactive({
-    name: '',
-    project_product_id: null as number | null,
-    module_ids: [] as number[],
-    timing_strategies: [] as number[],
-    test_envs: [] as number[],
-    case_types: [] as number[],
-    execution_scenes: [] as string[],
-    new_task_report_retention_policy: 'all',
-    case_people: null as number | null,
-    status: 0,
-    is_notice: 0,
-    fail_notice: 0,
-    notice_group: null as number | null,
-    task_name_template: DEFAULT_TASK_NAME_TEMPLATE,
+const props = defineProps<{ projectProductId: TaskEditorId | null; filters: TaskGroupFilters }>()
+const emit = defineEmits<{ (event: 'filter-tasks', record: TaskGroupSummary): void; (event: 'changed'): void }>()
+const route = useRoute(), router = useRouter(), enumStore = useEnum(), user = useUserStore(), permission = usePermissionStore(), pagePath = route.path
+let mounted = false, active = true, disposed = false, paused = false, contextVersion = 0, enumVersion = 0, noticeVersion = 0
+const identity = () => JSON.stringify([route.path, route.fullPath, user.userId, user.roleId, user.token, user.selected_environment, permission.permissionKeys])
+const contextKey = () => JSON.stringify([identity(), props.projectProductId])
+const available = () => mounted && active && !disposed && route.path === pagePath && document.visibilityState === 'visible'
+function capture() { const version = contextVersion, key = contextKey(); return () => available() && version === contextVersion && key === contextKey() }
+const pagination = usePagination(load, () => list.loading)
+const list = useTaskGroupList({ available, capture, query: () => taskGroupQuery(props.projectProductId, props.filters, pagination.page, pagination.pageSize), pagination })
+const { rows, loading, error: listError } = list
+const enumsLoading = ref(false), enumsError = ref(''), operationError = ref('')
+const groupEditorRef = ref<InstanceType<typeof TaskGroupEditorDialog> | null>(null), groupDetailRef = ref<InstanceType<typeof TaskGroupDetailDrawer> | null>(null)
+const offlineExport = reactive<{ visible: boolean; sourceId: TaskEditorId }>({ visible: false, sourceId: 0 })
+const pendingGroups = reactive(new Set<string>()), triggeringIds = reactive(new Set<TaskEditorId>()), deletingIds = reactive(new Set<TaskEditorId>()), switchIds = reactive(new Set<TaskEditorId>())
+const confirmations = new Map<string, { close: () => void; valid: () => boolean }>()
+const noticeLoadingIds = reactive(new Set<TaskEditorId>()), noticeVisible = ref(false), noticeSending = ref(false), noticeLoading = ref(false), noticeError = ref('')
+const noticeGroup = ref<TaskGroupSummary | null>(null), noticeExecutions = ref<GroupNoticeExecution[]>([]), noticeExecutionId = ref<TaskEditorId | null>(null), sendingGroupId = ref<TaskEditorId | null>(null)
+const busy = (id: TaskEditorId) => pendingGroups.has(String(id))
+function acquire(id: TaskEditorId) { if (busy(id)) return false; pendingGroups.add(String(id)); return true }
+function release(id: TaskEditorId) { pendingGroups.delete(String(id)) }
+function optionTitle(options: unknown, value: TaskEditorId) {
+  try { return readTaskEditorOptions(options ?? []).find(item => String(item.key) === String(value))?.title ?? String(value) }
+  catch { return String(value) }
+}
+function load() { return list.load() }
+function refreshGroups() { if (available()) emit('changed'); list.invalidate(); return load() }
+async function loadEnums() {
+  if (!available()) return
+  const version = ++enumVersion, current = capture(); enumsLoading.value = true; enumsError.value = ''
+  try { await enumStore.getEnum() }
+  catch (loadFailure0) { if (version === enumVersion && current()) (reportLoadError(loadFailure0, "任务组选项加载失败，请重试", false), enumsError.value = '任务组选项加载失败，请重试') }
+  finally { if (version === enumVersion) enumsLoading.value = false }
+}
+function refreshAfterWrite(key: string) { if (key === identity() && available()) { list.invalidate(); void load() } }
+function openCreate(moduleId?: TaskEditorId | null) { if (available()) return groupEditorRef.value?.openCreate({ projectProduct: props.projectProductId, module: moduleId ?? null }) }
+function openEdit(record: TaskGroupSummary) { if (available() && !busy(record.id)) return groupEditorRef.value?.openEdit(record.id) }
+function openDetail(record: TaskGroupSummary) { if (available()) return groupDetailRef.value?.open(record.id) }
+function openOfflineReport(record: TaskGroupSummary) { if (available()) Object.assign(offlineExport, { sourceId: taskListId(record.id), visible: true }) }
+function filterTasks(record: TaskGroupSummary) { if (available()) emit('filter-tasks', taskGroupSummary(record)) }
+function openGroupReport(result: GroupRecentResult | undefined) {
+  if (available() && result) return router.push({ path: '/report/index', query: { group_execution_id: result.group_execution_id } })
+}
+async function changeGroupSwitch(record: TaskGroupListRecord, field: 'status' | 'is_notice' | 'fail_notice', enabled: boolean): Promise<boolean> {
+  if (!available() || (field === 'fail_notice' && record.is_notice !== 1) || !acquire(record.id)) return false
+  const id = taskListId(record.id), key = identity(), current = capture()
+  switchIds.add(id); operationError.value = ''; let committed = false
+  try {
+    const { draft } = readTaskGroupEditorDetail(await getScheduledTaskGroupDetail(id), id)
+    if (!current()) return false
+    draft[field] = enabled ? 1 : 0
+    if (field === 'is_notice' && !enabled) draft.fail_notice = 0
+    const response = await updateScheduledTaskGroup(taskGroupPayload(draft, id))
+    taskEditorResponse(response); committed = true
+    const updated = readTaskGroupUpdate(response, id)
+    if (current()) { list.replace(updated); Message.success('任务组配置已更新') }
+    return true
+  } catch { if (current()) operationError.value = committed ? '任务组配置已提交，但返回数据异常，请重新加载核对' : '任务组配置更新失败，请重试'; return false }
+  finally { switchIds.delete(id); release(id); if (committed) refreshAfterWrite(key) }
+}
+function closeConfirmation(id: TaskEditorId) {
+  const key = String(id), entry = confirmations.get(key)
+  confirmations.delete(key); entry?.close()
+}
+function confirmOperation(record: TaskGroupSummary, kind: 'trigger' | 'delete') {
+  const target = taskGroupSummary(record), id = target.id, key = String(id)
+  if (!available() || busy(id) || confirmations.has(key)) return
+  const context = capture(); let open = true
+  const current = () => open && context() && confirmations.get(key)?.valid === current
+  const shell = Modal.confirm({
+    title: kind === 'trigger' ? '触发任务组' : '删除任务组',
+    content: kind === 'trigger' ? `确认立即触发任务组“${target.name}”中的全部定时任务吗？本次将生成执行报告并开始执行。` : `删除后将同时删除“${target.name}”及其生成的定时任务，历史执行报告和触发记录仍会保留。确认继续吗？`,
+    okText: kind === 'trigger' ? '确认触发' : '删除', cancelText: '取消', ...(kind === 'delete' ? { okButtonProps: { status: 'danger' as const } } : {}),
+    onCancel: () => { if (current()) closeConfirmation(id) },
+    onBeforeOk: () => kind === 'trigger' ? executeGroupTrigger(id, current) : executeGroupDelete(id, current),
   })
-
-  const caseTypeOptions = computed(() =>
-    (enumStore.test_case_type || []).map((item: any) => ({
-      ...item,
-      disabled: [3, 4].includes(Number(item.key)),
-    }))
-  )
-  const allSceneOptions = computed(() =>
-    (enumStore.automation_execution_scene || []).filter(
-      (item: any) =>
-        ![
-          'unclassified',
-          'effectiveness_test',
-          'temporary_validation',
-          'performance_test',
-        ].includes(String(item.key))
-    )
-  )
-  const productionScenes = [
-    'stability_monitoring',
-    'production_inspection',
-    'production_regression',
-  ]
-  const selectableSceneOptions = computed(() => {
-    if (!form.test_envs.length) return allSceneOptions.value
-    const hasProduction = form.test_envs.map(Number).includes(2)
-    const hasOther = form.test_envs.map(Number).some((value) => value !== 2)
-    if (hasProduction && hasOther) return allSceneOptions.value
-    return allSceneOptions.value.filter((item: any) =>
-      hasProduction
-        ? productionScenes.includes(String(item.key))
-        : String(item.key) !== 'stability_monitoring'
-    )
-  })
-  function hasStabilitySceneConflict(scenes: string[]) {
-    return scenes.includes('stability_monitoring') &&
-      scenes.some((scene) => ['production_inspection', 'production_regression'].includes(scene))
-  }
-  const mutuallyExclusiveSceneOptions = computed(() =>
-    selectableSceneOptions.value.map((item: any) => ({
-      ...item,
-      disabled: !form.execution_scenes.includes(String(item.key)) &&
-        hasStabilitySceneConflict([...form.execution_scenes, String(item.key)]),
-    }))
-  )
-  const moduleParentMap = computed(() => {
-    const result = new Map<number, number | null>()
-    const visit = (items: any[], parentId: number | null = null) => {
-      items.forEach((item) => {
-        const id = Number(item.key)
-        result.set(id, parentId)
-        visit(item.children || [], id)
-      })
+  confirmations.set(key, { valid: current, close: () => { open = false; shell.close() } })
+}
+function triggerGroup(record: TaskGroupSummary) { confirmOperation(record, 'trigger') }
+async function executeGroupTrigger(groupId: TaskEditorId, current: () => boolean): Promise<boolean> {
+  if (!current() || !acquire(groupId)) return false
+  const key = identity(); triggeringIds.add(groupId); operationError.value = ''; let committed = false
+  try {
+    const response = await triggerScheduledTaskGroup(groupId)
+    taskEditorResponse(response); committed = true
+    const result = readGroupTriggerResult(response)
+    if (current()) {
+      if (result.failed_count) Message.warning(`已触发任务组：生成 ${result.generated_count} 个执行报告，${result.failed_count} 个子任务生成失败，请查看定时触发记录`)
+      else Message.success(`已触发任务组：生成 ${result.generated_count} 个执行报告`)
+      closeConfirmation(groupId)
     }
-    visit(moduleTree.value)
-    return result
-  })
-  const selectableModuleTree = computed(() => {
-    const selected = new Set(form.module_ids.map(Number))
-    const decorate = (items: any[], ancestorSelected = false): any[] =>
-      items.map((item) => {
-        const currentSelected = selected.has(Number(item.key))
-        return {
-          ...item,
-          disableCheckbox: Boolean(item.disableCheckbox || ancestorSelected),
-          children: decorate(item.children || [], ancestorSelected || currentSelected),
-        }
-      })
-    return decorate(moduleTree.value)
-  })
-
-  watch(
-    () => props.projectProductId,
-    () => {
-      pagination.page = 1
-      void load()
-    },
-    { immediate: true }
-  )
-  watch(
-    () => props.filters,
-    () => {
-      pagination.page = 1
-      void load()
-    },
-    { deep: true }
-  )
-
-  function optionTitle(options: any[], value: any) {
-    const option = (options || []).find(
-      (item: any) => String(item.key ?? item.value) === String(value)
-    )
-    return option?.title ?? option?.label ?? value
+    return true
+  } catch { if (current()) operationError.value = committed ? '触发已提交，但返回结果异常，请查看触发记录核对' : '任务组触发失败，请重试'; return false }
+  finally { triggeringIds.delete(groupId); release(groupId); if (committed) refreshAfterWrite(key) }
+}
+async function executeGroupDelete(id: TaskEditorId, current: () => boolean): Promise<boolean> {
+  if (!current() || !acquire(id)) return false
+  const key = identity(); deletingIds.add(id); operationError.value = ''; let committed = false
+  try {
+    taskEditorResponse(await deleteScheduledTaskGroup(id)); committed = true
+    if (current()) { closeConfirmation(id); Message.success('任务组已删除') }
+    return true
+  } catch { if (current()) operationError.value = '任务组删除失败，请重试'; return false }
+  finally {
+    deletingIds.delete(id); release(id)
+    if (committed) { if (key === identity() && available()) emit('changed'); refreshAfterWrite(key) }
   }
-  function syncText(value: string) {
-    return (
-      { pending: '待同步', synced: '已同步', failed: '同步失败', archived: '已归档' }[value] ||
-      value
-    )
-  }
-  function syncColor(value: string) {
-    return { pending: 'orange', synced: 'green', failed: 'red', archived: 'gray' }[value] || 'gray'
-  }
-  function previewActionText(value: string) {
-    return { create: '新增', update: '更新', remove: '移除' }[value] || value
-  }
-  function previewActionColor(value: string) {
-    return { create: 'green', update: 'blue', remove: 'orange' }[value] || 'gray'
-  }
-  function cleanFilters() {
-    const filters: Record<string, any> = {
-      project_product_id: props.projectProductId,
-      module_ids: props.filters.navigation_module_ids || [],
-      name: props.filters.name,
-      test_envs: props.filters.test_envs,
-      case_types: props.filters.case_types,
-      execution_scenes: props.filters.execution_scenes,
-      status: props.filters.status,
-      is_notice: props.filters.is_notice,
-      sync_status: props.filters.sync_status,
-      page: pagination.page,
-      pageSize: pagination.pageSize,
-    }
-    return Object.fromEntries(
-      Object.entries(filters).filter(([, value]) =>
-        Array.isArray(value)
-          ? value.length > 0
-          : value !== '' && value !== null && value !== undefined
-      )
-    )
-  }
-  async function load() {
-    loading.value = true
-    try {
-      await enumStore.getEnum()
-      const response = await getScheduledTaskGroups(cleanFilters())
-      rows.value = response.data?.items || []
-      pagination.setTotalSize(response.data?.count || 0)
-    } finally {
-      loading.value = false
-    }
-  }
-  function resetForm() {
-    Object.assign(form, {
-      name: '',
-      project_product_id: props.projectProductId,
-      module_ids: [],
-      timing_strategies: [],
-      test_envs: [],
-      case_types: [],
-      execution_scenes: [],
-      new_task_report_retention_policy: 'all',
-      case_people: null,
-      status: 0,
-      is_notice: 0,
-      fail_notice: 0,
-      notice_group: null,
-      task_name_template: DEFAULT_TASK_NAME_TEMPLATE,
-    })
-    editingId.value = null
-  }
-  function flattenKeys(items: any[]): Array<string | number> {
-    return items.flatMap((item) => [item.key, ...flattenKeys(item.children || [])])
-  }
-  function normalizeModuleIds(values: Array<string | number>) {
-    const selected = new Set(values.map(Number))
-    return [...selected].filter((id) => {
-      let parentId = moduleParentMap.value.get(id) ?? null
-      while (parentId !== null) {
-        if (selected.has(parentId)) return false
-        parentId = moduleParentMap.value.get(parentId) ?? null
-      }
-      return true
-    })
-  }
-  function onModuleCheck(checkedKeys: Array<string | number>) {
-    form.module_ids = normalizeModuleIds(checkedKeys)
-  }
-  async function loadCommonEditorOptions() {
-    const [timing, users] = await Promise.all([getSystemTimingList(), getUserName()])
-    timingOptions.value = timing.data || []
-    userOptions.value = users.data || []
-  }
-  async function loadProductEditorOptions(projectProductId: number | null) {
-    moduleTree.value = []
-    noticeOptions.value = []
-    expandedModuleKeys.value = []
-    if (!projectProductId) return
-    moduleLoading.value = true
-    try {
-      const [modules, notices] = await Promise.all([
-        getUserModuleTree(projectProductId),
-        getSystemNoticeName(projectProductId),
-      ])
-      moduleTree.value = modules.data || []
-      expandedModuleKeys.value = flattenKeys(moduleTree.value)
-      form.module_ids = normalizeModuleIds(form.module_ids)
-      noticeOptions.value = notices.data || []
-    } finally {
-      moduleLoading.value = false
-    }
-  }
-  async function onEditorProductChange(value: any) {
-    const projectProductId = Number(getOptionId(value))
-    form.project_product_id =
-      Number.isInteger(projectProductId) && projectProductId > 0 ? projectProductId : null
-    form.module_ids = []
-    form.notice_group = null
-    await loadProductEditorOptions(form.project_product_id)
-  }
-  async function openCreate(moduleId?: string | number | null) {
-    resetForm()
-    const initialProductId = form.project_product_id
-    editorVisible.value = true
-    editorLoading.value = true
-    try {
-      await Promise.all([
-        loadCommonEditorOptions(),
-        loadProductEditorOptions(form.project_product_id),
-      ])
-      if (editingId.value === null && form.project_product_id === initialProductId && moduleId != null
-        && flattenKeys(moduleTree.value).some((id) => String(id) === String(moduleId))) {
-        form.module_ids = [Number(moduleId)]
-      }
-    } finally {
-      editorLoading.value = false
-    }
-  }
-  function fillFromDetail(data: any) {
-    Object.assign(form, {
-      name: data.name,
-      project_product_id: data.project_product?.id,
-      module_ids: (data.members || []).map((item: any) => Number(item.module.id)),
-      timing_strategies: (data.timing_strategies || []).map((item: any) => Number(item.id)),
-      test_envs: [...(data.test_envs || [])],
-      case_types: [...(data.case_types || [])],
-      execution_scenes: [...(data.execution_scenes || [])],
-      case_people: getOptionId(data.case_people),
-      status: Number(data.status),
-      is_notice: Number(data.is_notice),
-      fail_notice: Number(data.fail_notice),
-      notice_group: getOptionId(data.notice_group),
-      task_name_template: DEFAULT_TASK_NAME_TEMPLATE,
-    })
-  }
-  async function openEdit(record: any) {
-    editingId.value = Number(record.id)
-    editorVisible.value = true
-    editorLoading.value = true
-    try {
-      const [response] = await Promise.all([
-        getScheduledTaskGroupDetail(record.id),
-        loadCommonEditorOptions(),
-      ])
-      fillFromDetail(response.data)
-      await loadProductEditorOptions(Number(response.data.project_product?.id) || null)
-    } finally {
-      editorLoading.value = false
-    }
-  }
-  function validateForm() {
-    if (!form.name.trim()) return '请输入任务组名称'
-    if (!form.project_product_id) return '请选择项目/产品'
-    if (!form.timing_strategies.length) return '请选择定时策略'
-    if (!form.test_envs.length) return '请选择测试环境'
-    if (!form.execution_scenes.length) return '请选择执行场景'
-    if (hasStabilitySceneConflict(form.execution_scenes)) return '稳定性监测不能与生产巡检、生产回归同时选择，请分开配置任务组'
-    if (!form.case_people) return '请选择负责人'
-    if (!form.module_ids.length) return '请至少选择一个拆分模块'
-    return ''
-  }
-  function payload() {
-    const { new_task_report_retention_policy, ...values } = JSON.parse(JSON.stringify(form))
-    return {
-      ...(editingId.value ? { id: editingId.value } : {}),
-      ...values,
-      ...(!editingId.value ? { new_task_report_retention_policy } : {}),
-      project_product_id: Number(form.project_product_id),
-      task_name_template: DEFAULT_TASK_NAME_TEMPLATE,
-    }
-  }
-  async function openPreview() {
-    const error = validateForm()
-    if (error) {
-      Message.error(error)
-      return
-    }
-    previewLoading.value = true
-    try {
-      const response = await previewScheduledTaskGroup(payload())
-      Object.assign(preview, response.data || { rows: [] })
-      previewVisible.value = true
-    } finally {
-      previewLoading.value = false
-    }
-  }
-  async function saveGroup() {
-    saveLoading.value = true
-    try {
-      const response = editingId.value
-        ? await updateScheduledTaskGroup(payload())
-        : await createScheduledTaskGroup(payload())
-      Message.success(response.msg)
-      previewVisible.value = false
-      editorVisible.value = false
-      await load()
-      return true
-    } catch (error) {
-      console.log(error)
-      return false
-    } finally {
-      saveLoading.value = false
-    }
-  }
-  async function openDetail(record: any) {
-    detailVisible.value = true
-    detailLoading.value = true
-    try {
-      const response = await getScheduledTaskGroupDetail(record.id)
-      Object.assign(detail, response.data || {})
-    } finally {
-      detailLoading.value = false
-    }
-  }
-  async function changeGroupSwitch(
-    record: any,
-    field: 'status' | 'is_notice' | 'fail_notice',
-    value: boolean
-  ) {
-    try {
-      const response = await getScheduledTaskGroupDetail(record.id)
-      const data = response.data
-      const changes: Record<string, number> = { [field]: value ? 1 : 0 }
-      if (field === 'is_notice' && !value) changes.fail_notice = 0
-      const updateResponse = await updateScheduledTaskGroup({
-        ...data,
-        id: record.id,
-        project_product_id: data.project_product.id,
-        module_ids: data.members.map((item: any) => item.module.id),
-        timing_strategies: data.timing_strategies.map((item: any) => item.id),
-        case_people: data.case_people.id,
-        notice_group: data.notice_group?.id ?? null,
-        ...changes,
-      })
-      Object.assign(record, updateResponse.data?.item || changes)
-      Message.success('任务组配置已更新')
-      return true
-    } catch (error) {
-      console.log(error)
-      return false
-    }
-  }
-  async function changeMemberStatus(member: any, value: boolean) {
-    try {
-      const response = await updateScheduledTaskGroupMemberStatus(
-        Number(detail.id),
-        Number(member.id),
-        value
-      )
-      Object.assign(member, response.data || {})
-      detail.enabled_task_count = (detail.members || []).filter(
-        (item: any) => item.effective_enabled
-      ).length
-      Message.success('子任务状态已更新')
-      await load()
-      return true
-    } catch (error) {
-      console.log(error)
-      return false
-    }
-  }
-  function triggerGroup(record: any) {
-    const groupId = record.id
-    if (triggeringIds.has(groupId) || triggerConfirmingIds.has(groupId)) return
-    triggerConfirmingIds.add(groupId)
-    Modal.confirm({
-      title: '触发任务组',
-      content: `确认立即触发任务组“${record.name}”中的全部定时任务吗？本次将生成执行报告并开始执行。`,
-      okText: '确认触发',
-      cancelText: '取消',
-      onBeforeOk: () => executeGroupTrigger(groupId),
-      onOk: () => triggerConfirmingIds.delete(groupId),
-      onCancel: () => triggerConfirmingIds.delete(groupId),
-    })
-  }
-
-  async function executeGroupTrigger(groupId: number) {
-    if (triggeringIds.has(groupId)) return false
-    triggeringIds.add(groupId)
-    try {
-      const response = await triggerScheduledTaskGroup(groupId)
-      const result = response.data
-      if (result.failed_count) {
-        Message.warning(`已触发任务组：生成 ${result.generated_count} 个执行报告，${result.failed_count} 个子任务生成失败，请查看定时触发记录`)
-      } else {
-        Message.success(`已触发任务组：生成 ${result.generated_count} 个执行报告`)
-      }
-      return true
-    } catch (error) {
-      console.log(error)
-      return false
-    } finally {
-      triggeringIds.delete(groupId)
-    }
-  }
-
-  async function openResendNotice(record: any) {
-    if (noticeLoadingIds.size || noticeSending.value || noticeVisible.value) return
-    noticeLoadingIds.add(record.id)
-    try {
-      const response = await getLatestTaskGroupExecutions(record.id)
-      const executions = response.data || []
-      if (!executions.length) {
-        Message.warning('该任务组暂无执行批次')
-        return
-      }
-      noticeGroup.value = record
-      noticeExecutions.value = executions
-      noticeExecutionId.value = executions[0].id
-      noticeVisible.value = true
-    } catch (error) {
-      console.log(error)
-    } finally {
-      noticeLoadingIds.delete(record.id)
-    }
-  }
-
-  async function confirmResendNotice() {
-
-    if (noticeSending.value || !noticeGroup.value || !noticeExecutionId.value) return false
-    noticeSending.value = true
-    try {
-      const response = await resendTaskGroupNotice(noticeGroup.value.id, noticeExecutionId.value)
-      Message.success(response.msg)
-      return true
-    } catch (error) {
-      console.log(error)
-      return false
-    } finally {
-      noticeSending.value = false
-    }
-  }
-
-  function deleteGroup(record: any) {
-    Modal.confirm({
-      title: '删除任务组',
-      content: `删除后将同时删除“${record.name}”及其生成的定时任务，历史执行报告和触发记录仍会保留。确认继续吗？`,
-      okText: '删除',
-      okButtonProps: { status: 'danger' },
-      cancelText: '取消',
-      onBeforeOk: async () => {
-        try {
-          const response = await deleteScheduledTaskGroup(record.id)
-          Message.success(response.msg)
-          await load()
-          return true
-        } catch (error) {
-          console.log(error)
-          return false
-        }
-      },
-    })
-  }
-  function onEnvironmentChange() {
-    const allowed = new Set(selectableSceneOptions.value.map((item: any) => String(item.key)))
-    form.execution_scenes = form.execution_scenes.filter((value) => allowed.has(String(value)))
-  }
-  function applyFilters() {
-    pagination.page = 1
-    void load()
-  }
-  defineExpose({ applyFilters, load, openCreate })
+}
+function deleteGroup(record: TaskGroupSummary) { confirmOperation(record, 'delete') }
+function closeNotice() {
+  noticeVersion++; noticeVisible.value = false; noticeGroup.value = null; noticeExecutions.value = []; noticeExecutionId.value = null
+  noticeLoadingIds.clear(); noticeLoading.value = false; noticeError.value = ''
+}
+async function loadNoticeExecutions() {
+  if (!available() || !noticeVisible.value || !noticeGroup.value || noticeSending.value) return
+  const id = noticeGroup.value.id, version = ++noticeVersion, valid = capture()
+  const current = () => valid() && version === noticeVersion && noticeVisible.value && noticeGroup.value?.id === id
+  noticeLoadingIds.clear(); noticeLoadingIds.add(id); noticeLoading.value = true; noticeError.value = ''; noticeExecutions.value = []; noticeExecutionId.value = null
+  try {
+    const executions = readGroupNoticeExecutions(await getLatestTaskGroupExecutions(id))
+    if (!current()) return
+    if (!executions.length) { closeNotice(); Message.warning('该任务组暂无执行批次'); return }
+    noticeExecutions.value = executions; noticeExecutionId.value = executions[0].id
+  } catch (loadFailure1) { if (current()) (reportLoadError(loadFailure1, '执行批次加载失败，请重试'), noticeError.value = '') }
+  finally { if (version === noticeVersion) { noticeLoadingIds.delete(id); noticeLoading.value = false } }
+}
+async function openResendNotice(record: TaskGroupSummary) {
+  if (!available() || noticeLoading.value || noticeSending.value || noticeVisible.value || busy(record.id)) return
+  closeNotice(); noticeGroup.value = taskGroupSummary(record); noticeVisible.value = true; await loadNoticeExecutions()
+}
+async function confirmResendNotice(): Promise<boolean> {
+  if (!available() || !noticeVisible.value || noticeLoading.value || noticeSending.value || !noticeGroup.value || noticeExecutionId.value === null) return false
+  const execution = noticeExecutions.value.find(item => String(item.id) === String(noticeExecutionId.value))
+  if (!execution || !acquire(noticeGroup.value.id)) return false
+  const groupId = noticeGroup.value.id, executionId = execution.id, version = noticeVersion, valid = capture()
+  const current = () => valid() && version === noticeVersion && noticeVisible.value && noticeGroup.value?.id === groupId
+  noticeSending.value = true; sendingGroupId.value = groupId; noticeError.value = ''
+  try {
+    taskEditorResponse(await resendTaskGroupNotice(groupId, executionId))
+    if (current()) { closeNotice(); Message.success('报告通知已发送') }
+    return true
+  } catch (loadFailure0) { if (current()) (reportLoadError(loadFailure0, "加载失败，请重试", false), noticeError.value = '报告通知发送失败，请重试'); return false }
+  finally { noticeSending.value = false; sendingGroupId.value = null; release(groupId) }
+}
+function closeWindows() {
+  closeNotice(); groupEditorRef.value?.close(); groupDetailRef.value?.close(); offlineExport.visible = false
+  for (const id of [...confirmations.keys()]) closeConfirmation(id)
+}
+function invalidate(clear = false) {
+  contextVersion++; enumVersion++; closeWindows(); list.invalidate(clear); enumsLoading.value = false
+  if (clear) { operationError.value = ''; enumsError.value = ''; pagination.page = 1 }
+}
+function applyFilters() { pagination.page = 1; list.invalidate(); return load() }
+function resume() { if (!available()) return Promise.resolve([]); paused = false; return Promise.allSettled([loadEnums(), load()]) }
+function visibilityChanged() { if (available()) { if (paused) void resume() } else { paused = true; invalidate() } }
+watch(contextKey, () => { invalidate(true); if (available()) void resume() }, { flush: 'sync' })
+watch(() => props.filters, () => { pagination.page = 1; list.invalidate(); if (available()) void load() }, { deep: true })
+onMounted(() => { mounted = true; document.addEventListener('visibilitychange', visibilityChanged); void resume() })
+onActivated(() => { active = true; if (paused) void resume() })
+onDeactivated(() => { active = false; paused = true; invalidate() })
+onBeforeUnmount(() => { disposed = true; invalidate(true); document.removeEventListener('visibilitychange', visibilityChanged) })
+defineExpose({ applyFilters, load, openCreate })
 </script>
 
 <style scoped>
@@ -1007,175 +407,6 @@
     white-space: nowrap;
   }
 
-  .mango-task-group-editor__spin,
-  .mango-task-group-detail__spin {
-    display: block;
-    width: 100%;
-  }
+  .mango-task-group-manager__metadata { color: var(--m-muted); font-size: 12px; }
 
-  :global(.arco-modal-body.mango-task-group-editor-body) {
-    box-sizing: border-box;
-    height: min(760px, calc(100dvh - 144px));
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .mango-task-group-editor__spin,
-  .mango-task-group-editor__spin :deep(> .mango-panel-spin__content) {
-    height: 100%;
-    min-height: 0;
-  }
-
-  .mango-task-group-editor {
-    display: grid;
-    grid-template-rows: minmax(0, auto) minmax(120px, 1fr);
-    height: 100%;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .mango-task-group-editor__configuration {
-    min-height: 0;
-    overflow: auto;
-    overscroll-behavior: contain;
-  }
-
-  .mango-task-group-editor__section {
-    padding: var(--m-space-md) 0 var(--m-space-xs);
-    border-bottom: 1px solid var(--m-border);
-  }
-
-  .mango-task-group-editor__section:first-child {
-    padding-top: 0;
-  }
-
-  .mango-task-group-editor__section:last-child {
-    border-bottom: 0;
-  }
-
-  .mango-task-group-editor__section-header {
-    display: flex;
-    min-height: 28px;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 10px;
-    flex-shrink: 0;
-  }
-
-  .mango-task-group-editor__section-header > div,
-  .mango-task-group-editor__section-header > strong {
-    display: flex;
-    align-items: center;
-  }
-
-  .mango-task-group-editor__section-header strong {
-    color: var(--m-text);
-    font-size: 15px;
-    font-weight: 600;
-  }
-
-  .mango-task-group-editor__section-header span {
-    margin-left: 10px;
-    color: var(--m-muted);
-    font-size: 13px;
-    font-weight: 400;
-  }
-
-  .mango-task-group-editor__grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: var(--m-space-lg);
-  }
-
-  .mango-task-group-editor__grid :deep(.arco-form-item) {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: center;
-    margin-bottom: var(--m-space-sm);
-  }
-
-  .mango-task-group-editor__grid :deep(.arco-form-item-label-col) {
-    display: flex;
-    width: 112px;
-    max-width: 112px;
-    flex: 0 0 112px;
-    align-items: center;
-    justify-content: flex-end;
-    padding-right: var(--m-space-sm);
-  }
-
-  .mango-task-group-editor__grid :deep(.arco-form-item-wrapper-col) {
-    min-width: 0;
-    width: 0;
-    max-width: none;
-    flex: 1 1 0;
-  }
-
-  .mango-task-group-editor__grid :deep(.arco-form-item-content-flex) {
-    width: 100%;
-  }
-
-  .mango-task-group-editor__wide {
-    grid-column: 1 / -1;
-  }
-
-  .mango-task-group-editor__modules {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
-
-  .mango-task-group-editor__tree {
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
-    border: 1px solid var(--m-border);
-    border-radius: var(--m-radius);
-    background: var(--m-surface-soft);
-    padding: var(--m-space-sm) var(--m-card-padding);
-    overscroll-behavior: contain;
-  }
-
-  .mango-task-group-editor__module-empty {
-    display: flex;
-    flex: 1;
-    min-height: 0;
-    align-items: center;
-    justify-content: center;
-    border: 1px dashed var(--m-border);
-    border-radius: var(--m-radius);
-    color: var(--m-muted);
-  }
-
-  .mango-task-group-editor__module-help {
-    flex-shrink: 0;
-    margin-top: 6px;
-    color: var(--m-muted);
-    font-size: 12px;
-  }
-
-  @media (max-width: 600px) {
-    .mango-task-group-editor__grid {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
-
-  .mango-task-group-preview__summary {
-    margin-bottom: var(--m-page-gap);
-  }
-
-  .mango-task-group-detail {
-    display: flex;
-    height: calc(100vh - 100px);
-    min-height: 0;
-    flex-direction: column;
-    gap: var(--m-page-gap);
-  }
-
-  .mango-task-group-detail__summary {
-    display: flex;
-    align-items: center;
-    gap: var(--m-page-gap);
-  }
 </style>

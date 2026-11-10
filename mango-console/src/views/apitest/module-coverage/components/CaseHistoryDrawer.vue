@@ -1,86 +1,83 @@
 <template>
   <a-drawer v-model:visible="visible" title="Case 扫描历史" width="900px" unmount-on-close>
-    <a-spin :loading="loading" class="mango-coverage-history__spin">
-      <a-table
-        :data="rows"
-        :columns="columns"
-        :pagination="false"
-        :scroll="{ x: 940 }"
-        row-key="id"
-      >
-        <template #commit_sha="{ record }">{{ shortCommit(record.commit_sha) }}</template>
-        <template #sync_action="{ record }">
-          <a-tag size="small" :color="tagColor(record.sync_action)">{{
-            label(record.sync_action)
-          }}</a-tag>
-        </template>
-      </a-table>
-      <a-pagination
-        v-if="total > pageSize"
-        v-model:current="page"
-        :page-size="pageSize"
-        :total="total"
-        size="small"
-        class="mango-coverage-history__pagination"
-        @change="loadRows"
-      />
-    </a-spin>
+    <template v-if="failed"><a-button size="small" :loading="loading" @click="loadRows">重新加载</a-button></template>
+    <a-table
+      :data="rows"
+      :loading="loading"
+      :columns="columns"
+      :pagination="false"
+      :scroll="{ x: caseSnapshotScrollX }"
+      row-key="id"
+    >
+      <template #commit_sha="{ record }">{{ shortCommit(record.commit_sha) }}</template>
+      <template #sync_action="{ record }">
+        <a-tag size="small" :color="tagColor(record.sync_action)">{{
+          label(record.sync_action)
+        }}</a-tag>
+      </template>
+    </a-table>
+    <a-pagination
+      v-if="total > pageSize"
+      v-model:current="page"
+      :page-size="pageSize"
+      :total="total"
+      size="small"
+      class="mango-coverage-history__pagination"
+      @change="loadRows"
+    />
   </a-drawer>
 </template>
 
 <script lang="ts" setup>
+import { reportLoadError } from '@/utils/load-error'
+
   import { ref } from 'vue'
-  import type { TableColumnData } from '@arco-design/web-vue'
   import { getCoverageCaseSnapshots } from '@/api/apitest/module-coverage'
-  import { labels, tagColor } from '../config'
-
-  const columns: TableColumnData[] = [
-    { title: '快照ID', dataIndex: 'id', width: 90, align: 'center' },
-    { title: '扫描ID', dataIndex: 'scan', width: 90, align: 'center' },
-    { title: 'Commit', dataIndex: 'commit_sha', slotName: 'commit_sha', width: 150 },
-    {
-      title: '变更状态',
-      dataIndex: 'sync_action',
-      slotName: 'sync_action',
-      width: 120,
-      align: 'center',
-    },
-    { title: '创建时间', dataIndex: 'create_time', width: 190 },
-    { title: '内容哈希', dataIndex: 'content_hash', width: 300, ellipsis: true, tooltip: true },
-  ]
-  const visible = ref(false)
-  const loading = ref(false)
-  const coverageCaseId = ref<number>()
-  const rows = ref<any[]>([])
-  const page = ref(1)
-  const pageSize = 10
-  const total = ref(0)
-
-  const label = (value: string) => labels[value] || value || '-'
+  import { caseSnapshotColumns as columns, caseSnapshotScrollX, labels, tagColor } from '../config'
+  import { useCoveragePanelScope } from '../composables/useCoveragePanelScope'
+  import type { CoverageSnapshot } from '../types'
+  const visible = ref(false),
+    loading = ref(false),
+    failed = ref(false),
+    coverageCaseId = ref<number>(),
+    rows = ref<CoverageSnapshot[]>([])
+  const page = ref(1),
+    pageSize = 10,
+    total = ref(0)
+  const { begin, current, close } = useCoveragePanelScope(visible, () => {
+    loading.value = false
+  })
+  const label = (value?: string) => (value ? labels[value] || value : '-')
   const shortCommit = (value?: string) => (value ? value.slice(0, 12) : '-')
-
   async function loadRows() {
-    if (!coverageCaseId.value) return
+    if (!visible.value || !coverageCaseId.value) return
+    const token = begin(),
+      id = coverageCaseId.value,
+      requestedPage = page.value
     loading.value = true
+    failed.value = false
     try {
-      const response = await getCoverageCaseSnapshots(coverageCaseId.value, page.value, pageSize)
-      rows.value = response.data?.items || []
-      total.value = response.data?.count || 0
+      const response = await getCoverageCaseSnapshots(id, requestedPage, pageSize)
+      if (current(token)) {
+        rows.value = response.data?.items || []
+        total.value = response.data?.count || 0
+      }
+    } catch (loadFailure0) {
+      if (current(token)) (reportLoadError(loadFailure0, "加载失败，请重试", false), failed.value = true)
     } finally {
-      loading.value = false
+      if (current(token)) loading.value = false
     }
   }
-
-  async function open(id: number) {
+  function open(id: number) {
     coverageCaseId.value = id
     page.value = 1
+    rows.value = []
+    total.value = 0
     visible.value = true
-    await loadRows()
+    return loadRows()
   }
-
-  defineExpose({ open })
+  defineExpose({ open, close })
 </script>
-
 <style lang="less" scoped>
   .mango-coverage-history__spin {
     display: block;

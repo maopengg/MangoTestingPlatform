@@ -1,7 +1,7 @@
 import { deleted, get, post, put } from '@/api/http'
 
 export function getSystemTime(data: object) {
-  return get({
+  return get<unknown>({
     url: 'system/time',
     data: () => {
       return data
@@ -27,7 +27,7 @@ export function putSystemTime(data: object) {
   })
 }
 
-export function deleteSystemTime(id: number | string[] | number[]) {
+export function deleteSystemTime(id: number | string | string[] | number[]) {
   return deleted({
     url: 'system/time',
     data: () => {

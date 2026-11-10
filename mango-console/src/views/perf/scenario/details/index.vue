@@ -1,7 +1,7 @@
 <template>
   <TableBody plain class="mango-detail-workbench-page mango-perf-page">
     <template #header>
-      <TableHeader :title="`性能场景 / ${form.name || '配置'}`">
+      <TableHeader :title="`性能场景 / ${id || '-'} / ${form.name || '-'}`">
         <template #header-extra>
           <a-space>
             <a-button  status="success" size="small" :loading="executing" @click="openExecuteDialog"
@@ -16,6 +16,12 @@
       </TableHeader>
     </template>
     <template #default>
+      <a-alert v-if="!id" type="error" class="mango-perf-read-error">场景 ID 无效，请返回列表重新进入。</a-alert>
+
+      <a-alert v-if="refreshBeforeWrite" type="warning" class="mango-perf-read-error">
+        保存期间离开了当前页面，请重新加载以确认保存结果。
+        <template #action><a-button size="small" :loading="loading" :disabled="saving" @click="retryDetails">重新加载</a-button></template>
+      </a-alert>
       <a-spin :loading="loading" class="mango-perf-detail-spin">
         <div class="mango-perf-config-workbench">
           <div class="mango-perf-editor-grid">
@@ -30,6 +36,7 @@
                     >查看用例详情</a-button
                   >
                 </div>
+
                 <a-form layout="horizontal" :model="form" auto-label-width>
                   <a-form-item label="已发布 Case" required>
                     <a-select
@@ -196,195 +203,44 @@
     </template>
   </TableBody>
 
-  <ModalDialog ref="loadDialogRef" title="编辑负载配置" :width="720" @confirm="commitLoadConfig">
-    <template #content>
-      <a-form ref="loadFormRef" :model="loadEditor.form" layout="horizontal" auto-label-width>
-        <a-form-item field="profile" label="压测方案" required
-          :rules="[{ required: true, message: '请选择压测方案' }]">
-          <a-select v-model="loadEditor.form.profile" :options="loadProfileOptions" @change="selectLoadProfile" />
-        </a-form-item>
-        <a-alert type="info" class="mango-perf-profile-hint">{{ loadProfileHint }}</a-alert>
-        <a-form-item
-          field="name"
-          label="配置名称"
-          required
-          :rules="[{ required: true, message: '请输入配置名称' }]"
-          ><a-input v-model="loadEditor.form.name" placeholder="例如：短稳态负载"
-        /></a-form-item>
-        <a-form-item
-          v-if="showFixedDuration"
-          field="duration_seconds"
-          :label="loadEditor.form.profile === 'fixed_iterations' ? '截止时间' : '持续时间'"
-          required
-          :rules="[{ required: true, message: '请输入持续时间' }]"
-          ><a-input-number v-model="loadEditor.form.duration_seconds" :min="1"
-            ><template #suffix>秒</template></a-input-number
-          ></a-form-item
-        >
-        <a-form-item
-          v-if="!isRateProfile"
-          field="target_users"
-          :label="loadEditor.form.profile === 'spike' ? '峰值并发' : '目标并发'"
-          required
-          :rules="[{ required: true, message: '请输入目标并发用户数' }]"
-          ><a-input-number v-model="loadEditor.form.target_users" :min="1"
-        /></a-form-item>
-        <a-form-item v-if="loadEditor.form.profile === 'fixed_iterations'" field="total_iterations" label="Case 执行次数" required
-          :rules="[{ required: true, message: '请输入 Case 执行次数' }]">
-          <a-input-number v-model="loadEditor.form.total_iterations" :min="1" />
-        </a-form-item>
-        <template v-if="loadEditor.form.profile === 'staircase'">
-          <a-form-item label="每阶增加并发" field="step_users" required :rules="[{ required: true, message: '请输入每阶增加并发' }]">
-            <a-input-number v-model="loadEditor.form.step_users" :min="1" />
-          </a-form-item>
-          <a-form-item label="阶梯间隔" field="step_interval_seconds" required :rules="[{ required: true, message: '请输入阶梯间隔' }]">
-            <a-input-number v-model="loadEditor.form.step_interval_seconds" :min="1"><template #suffix>秒/阶</template></a-input-number>
-          </a-form-item>
-          <a-form-item label="峰值保持"><a-input-number v-model="loadEditor.form.hold_seconds" :min="0"><template #suffix>秒</template></a-input-number></a-form-item>
-        </template>
-        <template v-if="loadEditor.form.profile === 'linear_ramp' || loadEditor.form.profile === 'spike'">
-          <a-form-item label="起始并发" field="start_users" required :rules="[{ required: true, message: '请输入起始并发' }]">
-            <a-input-number v-model="loadEditor.form.start_users" :min="loadEditor.form.profile === 'spike' ? 1 : 0" />
-          </a-form-item>
-          <a-form-item v-if="loadEditor.form.profile === 'spike'" label="基线时间" field="baseline_seconds" required :rules="[{ required: true, message: '请输入基线时间' }]">
-            <a-input-number v-model="loadEditor.form.baseline_seconds" :min="1"><template #suffix>秒</template></a-input-number>
-          </a-form-item>
-          <a-form-item label="爬坡时间" field="ramp_seconds" required :rules="[{ required: true, message: '请输入爬坡时间' }]">
-            <a-input-number v-model="loadEditor.form.ramp_seconds" :min="1"><template #suffix>秒</template></a-input-number>
-          </a-form-item>
-          <a-form-item label="峰值保持"><a-input-number v-model="loadEditor.form.hold_seconds" :min="0"><template #suffix>秒</template></a-input-number></a-form-item>
-          <a-form-item v-if="loadEditor.form.profile === 'spike'" label="恢复时间" field="recovery_seconds" required :rules="[{ required: true, message: '请输入恢复时间' }]">
-            <a-input-number v-model="loadEditor.form.recovery_seconds" :min="1"><template #suffix>秒</template></a-input-number>
-          </a-form-item>
-        </template>
-        <template v-if="isRateProfile">
-          <a-form-item
-            field="target_rate"
-            label="目标速率"
-            required
-            :rules="[{ required: true, message: '请输入目标速率' }]"
-            ><a-input-number v-model="loadEditor.form.target_rate" :min="1"
-          /></a-form-item>
-          <a-form-item label="速率单位"
-            ><a-select
-              v-model="loadEditor.form.rate_time_unit"
-              :options="[
-                { label: 'Case 启动/秒', value: 'second' },
-                { label: 'Case 启动/分钟', value: 'minute' },
-              ]"
-          /></a-form-item>
-          <a-form-item label="预分配 VU"
-            ><a-input-number v-model="loadEditor.form.preallocated_vus" :min="1"
-          /></a-form-item>
-          <a-form-item label="最大 VU"
-            ><a-input-number v-model="loadEditor.form.max_vus" :min="1"
-          /></a-form-item>
-        </template>
-        <a-form-item label="迭代间等待">
-          <a-input-group>
-            <a-input-number v-model="loadEditor.form.user_wait_min_ms" :min="0" :max="3600000" :precision="0" placeholder="最小 ms" />
-            <span class="mango-perf-input-separator">至</span>
-            <a-input-number v-model="loadEditor.form.user_wait_max_ms" :min="0" :max="3600000" :precision="0" placeholder="最大 ms" />
-          </a-input-group>
-        </a-form-item>
-        <a-alert type="info" class="mango-perf-profile-hint">预计运行 {{ editedDuration }} 秒；执行器 {{ form.default_executor_count || 1 }} 个。定量任务按完整 Case 迭代计数，不等于 HTTP 请求数。</a-alert>
-      </a-form>
-    </template>
-  </ModalDialog>
+  <LoadConfigurationDialog
+    ref="loadDialogRef"
+    :context-key="String(executionContextVersion)"
+    :context-version="executionContextVersion"
+    :is-context-current="isExecutionContextCurrent"
+    :executor-count="Number(form.default_executor_count || 1)"
+    @confirm="commitLoadConfig"
+  />
 
-  <ModalDialog ref="executeDialogRef" title="执行性能场景" :width="680" @confirm="execute">
-    <template #content>
-      <a-form ref="executeFormRef" :model="executeForm" layout="horizontal" auto-label-width>
-        <a-form-item
-          field="test_env"
-          label="测试环境"
-          required
-          :rules="[{ required: true, message: '请选择测试环境' }]"
-          ><a-select
-            v-model="executeForm.test_env"
-            :options="enumStore.environment_type"
-            :field-names="fieldNames"
-            placeholder="请选择目标环境"
-            @change="loadExecutorCandidates"
-        /></a-form-item>
-        <a-form-item
-          field="selected_executor_fingerprints"
-          label="执行器"
-          required
-          :rules="[
-            {
-              required: true,
-              type: 'array',
-              message: `请选择 ${form.default_executor_count || 1} 个执行器`,
-            },
-          ]"
-          ><a-select
-            v-model="executeForm.selected_executor_fingerprints"
-            multiple
-            allow-clear
-            :loading="executorLoading"
-            :options="executorOptions"
-            :max-tag-count="3"
-            :limit="Number(form.default_executor_count || 1)"
-            placeholder="必须选择足量执行器后才能开始"
-            @change="preflightSelectedExecutors"
-        /></a-form-item>
-        <a-alert
-          v-if="executeForm.test_env !== null"
-          :type="executorSelectionReady ? 'success' : 'warning'"
-          class="mango-perf-executor-alert"
-          >需要 {{ form.default_executor_count || 1 }} 个执行器，已选择
-          {{ executeForm.selected_executor_fingerprints.length }} 个；每个节点至少需要
-          {{ executorPreflight.required_per_node || 0 }}
-          {{ String(executorPreflight.capacity_type || '').toUpperCase() }} 安全容量。</a-alert
-        >
-        <a-form-item label="请求记录">
-          <a-space>
-            <a-checkbox v-model="executeForm.capture_request">记录请求</a-checkbox>
-            <a-checkbox v-model="executeForm.capture_response">记录响应</a-checkbox>
-          </a-space>
-        </a-form-item>
-        <a-alert v-if="executeForm.capture_request || executeForm.capture_response" type="warning" class="mango-perf-profile-hint">
-          每个执行器分别生成 CSV；单文件超过 100 MB 不上传。可能包含业务敏感数据，请按需开启。
-        </a-alert>
-        <a-form-item
-          v-if="Number(executeForm.test_env) === 2"
-          field="production_load_confirmed"
-          label="生产风险确认"
-          required
-          :rules="[{ required: true, type: 'boolean', message: '请确认已获得生产环境发压授权' }]"
-          ><a-checkbox v-model="executeForm.production_load_confirmed"
-            >我确认已获得授权，并理解生产发压风险</a-checkbox
-          ></a-form-item
-        >
-        <a-form-item field="remark" label="运行备注"
-          ><a-textarea
-            v-model="executeForm.remark"
-            placeholder="本次执行目的、变更单号或关注点"
-            :max-length="512"
-            show-word-limit
-        /></a-form-item>
-      </a-form>
-    </template>
-  </ModalDialog>
+  <ScenarioExecuteDialog
+    ref="executeDialogRef"
+    :scenario-id="id"
+    :context-version="executionContextVersion"
+    :executor-count="Number(form.default_executor_count || 1)"
+    :is-context-current="isExecutionContextCurrent"
+    :save-configuration="saveExecutionConfiguration"
+    @busy-change="executing = $event"
+    @executed="onScenarioExecuted"
+  />
 
   <BaseSidePanel
     :visible="scriptPreviewVisible"
     :title="`k6 脚本预览 / 场景版本 ${scriptPreview?.scenario_version || '-'}`"
     width="80vw"
     :show-footer="false"
-    @update:visible="scriptPreviewVisible = $event"
-    @cancel="scriptPreviewVisible = false"
+    @update:visible="onScriptPreviewVisibilityChange"
+    @cancel="closeScriptPreview"
   >
     <template #header-actions>
-      <a-button v-if="scriptPreview" size="mini" @click="copyScriptPreview">复制当前内容</a-button>
+      <a-button v-if="scriptPreview" size="mini" :loading="scriptPreviewCopying" :disabled="scriptPreviewLoading" @click="copyScriptPreview">复制当前内容</a-button>
     </template>
-    <a-spin :loading="scriptPreviewLoading" class="mango-perf-script-preview">
+    <MangoPanelSpin :loading="scriptPreviewLoading" class="mango-perf-script-preview">
+
       <template v-if="scriptPreview">
         <a-alert type="info" class="mango-perf-script-preview__notice">
           预览基于已保存的场景配置。执行器运行同一份脚本模板，场景快照通过环境变量注入；测试环境、分片、运行号和密钥在执行时才填入。快照按敏感字段规则脱敏，仍请勿对外分享。
         </a-alert>
-        <div class="mango-perf-script-preview__meta">快照 SHA-256：{{ scriptPreview.snapshot_hash }}</div>
+        <div class="mango-perf-script-preview__meta" :title="scriptPreview.snapshot_hash">快照 SHA-256：{{ scriptPreview.snapshot_hash }}</div>
         <a-tabs v-model:active-key="scriptPreviewTab" class="mango-perf-script-preview__tabs">
           <a-tab-pane key="script" title="k6 脚本">
             <div class="mango-perf-script-preview__code">
@@ -398,7 +254,7 @@
           </a-tab-pane>
         </a-tabs>
       </template>
-    </a-spin>
+    </MangoPanelSpin>
   </BaseSidePanel>
 
   <BaseSidePanel
@@ -414,106 +270,158 @@
       :key="sourceCase.case_id"
       embedded
       :case-id="sourceCase.case_id"
-      :project-product-id="form.project_product?.id || form.project_product"
+      :project-product-id="form.project_product"
       @close="caseDetailVisible = false"
     />
   </BaseSidePanel>
 </template>
 
 <script setup lang="ts">
-  import { Message, Modal } from '@arco-design/web-vue'
-  import { computed, onMounted, reactive, ref } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { Message } from '@arco-design/web-vue'
+  import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
-  import ModalDialog from '@/components/overlays/ModalDialog.vue'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import CodeEditor from '@/components/editors/CodeEditor.vue'
+  import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
+  import LoadConfigurationDialog from './components/LoadConfigurationDialog.vue'
+  import ScenarioExecuteDialog from './components/ScenarioExecuteDialog.vue'
+  import { useScenarioScriptPreview } from './composables/useScenarioScriptPreview'
+  import useUserStore from '@/store/modules/user'
+  import { readScenarioConfiguration, readSourceCaseOptions, readSavedScenarioVersion, readScenarioValidation } from './records'
   import ApiCaseDetails from '@/views/apitest/case/details/index.vue'
   import {
-    executePerfScenario,
     getPerfScenario,
-    getPerfScenarioScriptPreview,
     getPerfScenarioSourceCases,
-    preflightPerfScenario,
     savePerfScenarioConfiguration,
     validatePerfScenario,
   } from '@/api/perf'
   import { engineOptions, loadProfileOptions } from '../config'
   import {
+    createDefaultLoadConfiguration,
     createDefaultPerformanceGoal,
-    isRecommendedPerformanceGoal,
+    createScenarioForm,
+    failurePolicyOptions,
     performanceGoalTemplateOptions,
-    performanceGoalFromApi,
-    performanceGoalToPayload,
-    type PerformanceGoalTemplateKey,
   } from './config'
-  import { fieldNames } from '@/setting'
-  import { useEnum } from '@/store/modules/get-enum'
+  import {
+    isRecommendedPerformanceGoal,
+    performanceGoalToPayload,
+    performanceGoalValidationMessage,
+  } from './performance-goal'
+  import type { LoadConfiguration, LoadConfigurationChange, PerformanceGoalDraft, PerformanceGoalTemplateKey, ScenarioConfigurationRecord, ScenarioForm, SourceCaseRelease } from './types'
 
   const route = useRoute()
   const router = useRouter()
-  const id = String(route.query.id || '')
-  const enumStore = useEnum()
+  function scenarioId(value: unknown): string {
+    return typeof value === 'string' && /^\d+$/.test(value) && Number.isSafeInteger(Number(value)) && Number(value) > 0
+      ? String(Number(value)) : ''
+  }
+  const id = ref(scenarioId(route.query.id))
+  watch(() => route.path === '/perf/scenario/details' ? scenarioId(route.query.id) : null, value => {
+    if (value !== null) id.value = value
+  }, { flush: 'sync' })
+  const user = useUserStore()
+  const executionContextVersion = ref(0)
+  let active = true, mounted = false, disposed = false
+  function isExecutionContextCurrent(version: number): boolean {
+    return !disposed && active && !!id.value && version === executionContextVersion.value &&
+      route.path === '/perf/scenario/details' && (typeof document === 'undefined' || document.visibilityState !== 'hidden')
+  }
+  function captureContext() {
+    const version = executionContextVersion.value, scenarioId = id.value
+    return isExecutionContextCurrent(version) ? {
+      id: scenarioId, version,
+      isCurrent: () => id.value === scenarioId && isExecutionContextCurrent(version),
+    } : null
+  }
+  async function saveExecutionConfiguration(isCurrent: () => boolean): Promise<boolean> {
+    if (!isCurrent()) return false
+    const saved = await save()
+    return saved && isCurrent()
+  }
+  function onScenarioExecuted(runId: number, version: number): void {
+    if (isExecutionContextCurrent(version)) router.push({ path: '/perf/run/details', query: { id: runId } })
+  }
   const loading = ref(false)
+  const detailError = ref(false)
   const saving = ref(false)
   const validating = ref(false)
+  const refreshBeforeWrite = ref(false)
   const executing = ref(false)
   const caseLoading = ref(false)
-  const executorLoading = ref(false)
-  const form = reactive<any>({})
-  const loadConfig = reactive<any>({})
-  const sourceCase = ref<any>(null)
+  const caseError = ref(false)
+  const form: ScenarioForm = reactive(createScenarioForm())
+  const scenarioRecord = ref<ScenarioConfigurationRecord | null>(null)
+  const loadConfig: LoadConfiguration = reactive({ ...createDefaultLoadConfiguration(), duration_seconds: 0 })
+  const sourceCase = ref<SourceCaseRelease | null>(null)
   const caseDetailVisible = ref(false)
-  const scriptPreviewVisible = ref(false)
-  const scriptPreviewLoading = ref(false)
-  const scriptPreviewTab = ref('script')
-  const scriptPreview = ref<{
-    scenario_version: number
-    snapshot_hash: string
-    script: string
-    snapshot: string
-  } | null>(null)
-  const caseItems = ref<any[]>([])
-  const performanceGoal = reactive(createDefaultPerformanceGoal())
+  const {
+    visible: scriptPreviewVisible, loading: scriptPreviewLoading, copying: scriptPreviewCopying,
+    error: scriptPreviewError, activeTab: scriptPreviewTab, preview: scriptPreview,
+    open: openScriptPreview, close: closeScriptPreview, reload: reloadScriptPreview,
+    copy: copyScriptPreview, onVisibleChange: onScriptPreviewVisibilityChange,
+  } = useScenarioScriptPreview({
+    scenarioId: () => id.value,
+    contextVersion: () => executionContextVersion.value,
+    isContextCurrent: isExecutionContextCurrent,
+  })
+  const caseItems = ref<SourceCaseRelease[]>([])
+  const performanceGoal: PerformanceGoalDraft = reactive(createDefaultPerformanceGoal())
   const performanceGoalTemplate = ref<PerformanceGoalTemplateKey>('recommended')
-  const loadDialogRef = ref<InstanceType<typeof ModalDialog> | null>(null)
-  const loadFormRef = ref<any>(null)
-  const loadEditor = reactive<any>({ form: {} })
-  const isRateProfile = computed(() => ['constant_arrival_rate', 'constant_iteration_rate'].includes(loadEditor.form.profile))
-  const showFixedDuration = computed(() => !['staircase', 'linear_ramp', 'spike'].includes(loadEditor.form.profile))
-  const editedDuration = computed(() => {
-    const value = loadEditor.form
-    if (value.profile === 'staircase') return Math.ceil(Number(value.target_users || 0) / Math.max(1, Number(value.step_users || 1))) * Number(value.step_interval_seconds || 0) + Number(value.hold_seconds || 0)
-    if (value.profile === 'linear_ramp') return Number(value.ramp_seconds || 0) + Number(value.hold_seconds || 0)
-    if (value.profile === 'spike') return ['baseline_seconds', 'ramp_seconds', 'hold_seconds', 'recovery_seconds'].reduce((total, key) => total + Number(value[key] || 0), 0)
-    return Number(value.duration_seconds || 0)
-  })
-  const loadProfileHint = computed(() => ({
-    constant_concurrency: '固定人数持续运行指定时间；每个虚拟用户重复执行完整 Case。',
-    fixed_iterations: '所有执行器合计完成指定次数的完整 Case；到截止时间仍未完成则本次运行不达标。',
-    staircase: '从首阶开始，每隔指定秒数增加并发，最后可保持峰值。',
-    linear_ramp: '从起始并发平滑升至目标并发，可在峰值保持一段时间。',
-    spike: '先运行基线，再快速升至峰值，保持后恢复至基线。',
-    soak: '固定并发长期运行，用于观察稳定性；最长 24 小时。',
-    constant_arrival_rate: '按固定速率启动完整 Case；单个 Case 可以包含多个 HTTP 请求。',
-    constant_iteration_rate: '按固定速率启动完整 Case；与到达率执行语义相同，保留独立模型供分类。',
-  } as Record<string, string>)[loadEditor.form.profile] || '')
-  const executeDialogRef = ref<InstanceType<typeof ModalDialog> | null>(null)
-  const executeFormRef = ref<any>(null)
-  const executorCandidates = ref<any[]>([])
-  const executorPreflight = reactive<any>({})
-  const executeForm = reactive<any>({
-    test_env: null,
-    selected_executor_fingerprints: [],
-    remark: '',
-    production_load_confirmed: false,
-    capture_request: false,
-    capture_response: false,
-  })
+  const loadDialogRef = ref<InstanceType<typeof LoadConfigurationDialog> | null>(null)
+  const executeDialogRef = ref<InstanceType<typeof ScenarioExecuteDialog> | null>(null)
+  let detailReadVersion = 0
+  let caseReadVersion = 0
+  let pendingSaveVersion: number | null = null
+  let needsDetailRead = true, needsCaseRead = true
 
-  const failurePolicyOptions = [
-    { label: '严格：全部节点就绪', value: 'strict' },
-    { label: '满足最小节点后继续', value: 'continue' },
-  ]
+  function invalidateContext(reset: boolean): void {
+    const previousVersion = executionContextVersion.value
+    executionContextVersion.value++
+    detailReadVersion++
+    caseReadVersion++
+    if (loading.value) needsDetailRead = true
+    if (caseLoading.value) needsCaseRead = true
+    loading.value = false
+    caseLoading.value = false
+    caseDetailVisible.value = false
+    loadDialogRef.value?.close()
+    executeDialogRef.value?.close()
+    if (reset) {
+      Object.assign(form, createScenarioForm())
+      Object.assign(loadConfig, createDefaultLoadConfiguration(), { duration_seconds: 0 })
+      Object.assign(performanceGoal, createDefaultPerformanceGoal())
+      performanceGoalTemplate.value = 'recommended'
+      scenarioRecord.value = null
+      sourceCase.value = null
+      caseItems.value = []
+      detailError.value = false
+      caseError.value = false
+      refreshBeforeWrite.value = false
+      needsDetailRead = true
+      needsCaseRead = true
+    } else if (saving.value && pendingSaveVersion === previousVersion) refreshBeforeWrite.value = true
+  }
+  function resumeReads(): void {
+    if (!mounted || !captureContext() || refreshBeforeWrite.value) return
+    if (needsDetailRead) {
+      if (!loading.value) retryDetails()
+      return
+    }
+    if (needsCaseRead && !caseLoading.value) retryCaseOptions()
+  }
+  watch(() => [id.value, user.userId, user.roleId, user.token, user.selected_environment], () => {
+    invalidateContext(true)
+    void Promise.resolve().then(resumeReads)
+  }, { flush: 'sync' })
+  watch(() => route.path, () => {
+    invalidateContext(false)
+    void Promise.resolve().then(resumeReads)
+  }, { flush: 'sync' })
+  watch(() => form.source_case_release_id, () => { caseDetailVisible.value = false }, { flush: 'sync' })
+
   const caseOptions = computed(() =>
     caseItems.value.map((item) => ({
       label: item.title,
@@ -530,61 +438,71 @@
       ? '系统推荐模板：三个客户端指标必须同时达标；仅用于结果判定，不会自动中止执行。'
       : '自定义目标：三个客户端指标按 AND 关系判定；不会自动中止执行。'
   )
-  const executorOptions = computed(() =>
-    executorCandidates.value.map((item) => ({
-      value: item.fingerprint,
-      label: `${item.executor_name || item.fingerprint} · 可用 ${item.available} ${String(
-        executorPreflight.capacity_type || ''
-      ).toUpperCase()}${item.calibrated ? ' · 已校准' : ' · 未校准'}`,
-    }))
-  )
-  const executorSelectionReady = computed(
-    () =>
-      executeForm.selected_executor_fingerprints.length ===
-        Number(form.default_executor_count || 1) && executorPreflight.can_run === true
-  )
-
   async function loadCases() {
+    const context = captureContext()
+    if (!context) return
+    const request = ++caseReadVersion
+    const detail = detailReadVersion
+    const isCurrent = () => context.isCurrent() && request === caseReadVersion && detail === detailReadVersion
+    needsCaseRead = true
     caseLoading.value = true
+    caseError.value = false
     try {
-      const response: any = await getPerfScenarioSourceCases(id)
-      caseItems.value = response.data || []
-      if (
-        sourceCase.value &&
-        !caseItems.value.some((item) => item.release_id === sourceCase.value.release_id)
-      )
-        caseItems.value.unshift(sourceCase.value)
+      const response = await getPerfScenarioSourceCases(context.id)
+      if (!isCurrent()) return
+      const items = readSourceCaseOptions(response), pinned = sourceCase.value
+      if (pinned && !items.some(item => item.release_id === pinned.release_id)) items.unshift(pinned)
+      caseItems.value = items
+      needsCaseRead = false
+    } catch (error) {
+      if (!isCurrent()) return
+      void (reportLoadError(error, "加载失败，请重试", false), caseError.value = true)
+      throw error
     } finally {
-      caseLoading.value = false
+      if (isCurrent()) caseLoading.value = false
     }
   }
   async function load() {
+    const context = captureContext()
+    if (!context || (refreshBeforeWrite.value && saving.value)) return
+    const request = ++detailReadVersion
+    const isCurrent = () => context.isCurrent() && request === detailReadVersion
+    needsDetailRead = true
+    ++caseReadVersion
+    caseLoading.value = false
+    caseError.value = false
     loading.value = true
+    detailError.value = false
     try {
-      const response: any = await getPerfScenario(id)
-      Object.assign(form, response.data)
-      Object.keys(loadConfig).forEach((key) => delete loadConfig[key])
-      Object.assign(loadConfig, response.data.load_config || {})
-      sourceCase.value = response.data.source_case || null
-      form.source_case_release_id ||= sourceCase.value?.release_id
-      Object.assign(performanceGoal, performanceGoalFromApi(response.data.performance_goal))
-      performanceGoalTemplate.value =
-        response.data.performance_goal?.template_key === 'custom' ||
-        !isRecommendedPerformanceGoal(performanceGoal)
-          ? 'custom'
-          : 'recommended'
-      await loadCases()
+      const response = await getPerfScenario(context.id)
+      if (!isCurrent()) return
+      const record = readScenarioConfiguration(response, context.id)
+      scenarioRecord.value = record
+      Object.assign(form, record.form)
+      Object.assign(loadConfig, record.load)
+      sourceCase.value = record.source
+      Object.assign(performanceGoal, record.goal)
+      performanceGoalTemplate.value = record.goalTemplate
+      needsDetailRead = false
+      refreshBeforeWrite.value = false
+    } catch (error) {
+      if (!isCurrent()) return
+      void (reportLoadError(error, "加载失败，请重试", false), detailError.value = true)
+      throw error
     } finally {
-      loading.value = false
+      if (isCurrent()) loading.value = false
     }
+    await loadCases()
   }
+  function retryDetails(): void { void load().catch(() => {}) }
+  function retryCaseOptions(): void { void loadCases().catch(() => {}) }
   function selectCase(value: unknown) {
     sourceCase.value = caseItems.value.find((item) => item.release_id === Number(value)) || null
   }
-  function formatLoadTarget(item: any) {
+  function formatLoadTarget(item: LoadConfiguration) {
     return form.load_type === 'concurrency' ? item.target_users || 0 : item.target_rate || 0
   }
-  function formatLoadUnit(item: any) {
+  function formatLoadUnit(item: LoadConfiguration) {
     return form.load_type === 'concurrency'
       ? '并发用户'
       : item.rate_time_unit === 'minute'
@@ -592,100 +510,13 @@
       : 'Case 启动/秒'
   }
   async function openLoadConfig() {
-    loadEditor.form = {
-      name: '基础负载',
-      profile: form.load_type === 'concurrency' ? 'constant_concurrency' : form.load_type === 'arrival_rate' ? 'constant_arrival_rate' : 'constant_iteration_rate',
-      duration_seconds: 60,
-      target_users: form.load_type === 'concurrency' ? 10 : null,
-      target_rate: form.load_type === 'concurrency' ? null : 10,
-      rate_time_unit: 'second',
-      preallocated_vus: form.load_type === 'concurrency' ? null : 10,
-      max_vus: form.load_type === 'concurrency' ? null : 100,
-      ramp_type: 'linear',
-      user_wait_min_ms: 0,
-      user_wait_max_ms: 0,
-      total_iterations: 10000,
-      start_users: 1,
-      step_users: 10,
-      step_interval_seconds: 30,
-      ramp_seconds: 30,
-      hold_seconds: 30,
-      baseline_seconds: 30,
-      recovery_seconds: 30,
-      ...loadConfig,
-    }
-    for (const [key, fallback] of Object.entries({ total_iterations: 10000, start_users: 1, step_users: 10, step_interval_seconds: 30, ramp_seconds: 30, hold_seconds: 30, baseline_seconds: 30, recovery_seconds: 30 })) {
-      if (loadEditor.form[key] == null) loadEditor.form[key] = fallback
-    }
-    loadFormRef.value?.clearValidate?.()
-    await loadDialogRef.value?.show()
+    if (!captureContext() || loading.value) return
+    await loadDialogRef.value?.open(hasLoadConfig.value ? loadConfig : undefined, form.load_type)
   }
-  async function commitLoadConfig() {
-    const errors = await loadFormRef.value?.validate()
-    if (errors) {
-      loadDialogRef.value?.setConfirmLoading(false)
-      return
-    }
-    if (isRateProfile.value && Number(loadEditor.form.max_vus) < Number(loadEditor.form.preallocated_vus)) {
-      Message.warning('最大 VU 不能小于预分配 VU')
-      loadDialogRef.value?.setConfirmLoading(false)
-      return
-    }
-    if (Number(loadEditor.form.user_wait_min_ms || 0) > Number(loadEditor.form.user_wait_max_ms || 0)) {
-      Message.warning('最大迭代等待不能小于最小值')
-      loadDialogRef.value?.setConfirmLoading(false)
-      return
-    }
-    if (!editedDuration.value || editedDuration.value > 86400) {
-      Message.warning('总时长必须在 1 秒到 24 小时之间')
-      loadDialogRef.value?.setConfirmLoading(false)
-      return
-    }
-    if (!isRateProfile.value && Number(loadEditor.form.target_users) < Number(form.default_executor_count || 1)) {
-      Message.warning('目标并发不能少于执行器数量')
-      loadDialogRef.value?.setConfirmLoading(false)
-      return
-    }
-    if (loadEditor.form.profile === 'fixed_iterations' && Number(loadEditor.form.total_iterations) < Number(loadEditor.form.target_users || 0)) {
-      Message.warning('Case 执行次数不能少于目标并发用户数')
-      loadDialogRef.value?.setConfirmLoading(false)
-      return
-    }
-    if (loadEditor.form.profile === 'staircase' && (Number(loadEditor.form.step_users) < Number(form.default_executor_count || 1) || Math.ceil(Number(loadEditor.form.target_users) / Number(loadEditor.form.step_users)) > 99)) {
-      Message.warning('每阶增加并发不能少于执行器数，且最多 99 阶')
-      loadDialogRef.value?.setConfirmLoading(false)
-      return
-    }
-    if (['linear_ramp', 'spike'].includes(loadEditor.form.profile) && Number(loadEditor.form.start_users) >= Number(loadEditor.form.target_users)) {
-      Message.warning('起始并发必须小于目标并发')
-      loadDialogRef.value?.setConfirmLoading(false)
-      return
-    }
-    const value = { ...loadEditor.form, duration_seconds: editedDuration.value }
-    form.load_type = isRateProfile.value ? (value.profile === 'constant_arrival_rate' ? 'arrival_rate' : 'iteration_rate') : 'concurrency'
-    if (!isRateProfile.value) {
-      value.target_rate = null
-      value.rate_time_unit = null
-      value.preallocated_vus = null
-      value.max_vus = null
-    } else value.target_users = null
-    Object.keys(loadConfig).forEach((key) => delete loadConfig[key])
-    Object.assign(loadConfig, value)
-    await loadDialogRef.value?.close()
-  }
-  function selectLoadProfile(value: unknown) {
-    const profile = String(value)
-    const name = loadEditor.form.name
-    const rate = ['constant_arrival_rate', 'constant_iteration_rate'].includes(profile)
-    Object.assign(loadEditor.form, {
-      name, profile, duration_seconds: 60, target_users: rate ? null : 10,
-      target_rate: rate ? 10 : null, rate_time_unit: 'second',
-      preallocated_vus: rate ? 10 : null, max_vus: rate ? 100 : null,
-      total_iterations: 10000, start_users: 1, step_users: 10,
-      step_interval_seconds: 30, ramp_seconds: 30, hold_seconds: 30,
-      baseline_seconds: 30, recovery_seconds: 30,
-    })
-    loadFormRef.value?.clearValidate?.()
+  function commitLoadConfig(change: LoadConfigurationChange) {
+    if (!captureContext()) return
+    form.load_type = change.loadType
+    Object.assign(loadConfig, change.configuration)
   }
   function applyPerformanceGoalTemplate(value: unknown) {
     if (value !== 'recommended' && value !== 'custom') return
@@ -706,141 +537,88 @@
     if (!hasLoadConfig.value) return Message.warning('请配置负载'), false
     if (Number(loadConfig.user_wait_min_ms || 0) > Number(loadConfig.user_wait_max_ms || 0))
       return Message.warning('最大迭代等待不能小于最小值'), false
-    if (Number(performanceGoal.p95_ms) <= 0) return Message.warning('P95 响应时间必须大于 0'), false
+    const goalError = performanceGoalValidationMessage(performanceGoal)
+    if (goalError) return Message.warning(goalError), false
     return true
   }
   async function save() {
+    const context = captureContext()
+    if (!context || saving.value || loading.value || refreshBeforeWrite.value || form.version === null) return false
     if (!validateLocal()) return false
+    pendingSaveVersion = context.version
     saving.value = true
     try {
-      const response: any = await savePerfScenarioConfiguration(id, {
-        version: form.version,
+      const version = form.version
+      const response = await savePerfScenarioConfiguration(context.id, {
+        version,
         source_case_release_id: form.source_case_release_id,
         base: {
           name: form.name,
           default_executor_count: form.default_executor_count,
           node_failure_policy: form.node_failure_policy,
-          min_ready_nodes: form.min_ready_nodes,
+          min_ready_nodes: form.min_ready_nodes ?? null,
         },
         load_config: { ...loadConfig },
         performance_goal: performanceGoalToPayload(performanceGoal, performanceGoalTemplate.value),
       })
-      form.version = response.data.version
+      if (!context.isCurrent()) return false
+      form.version = readSavedScenarioVersion(response, context.id, version)
       Message.success('配置已保存')
       return true
+    } catch (error) {
+      if (!context.isCurrent()) return false
+      throw error
     } finally {
       saving.value = false
+      pendingSaveVersion = null
     }
   }
   async function validateConfig() {
+    const context = captureContext()
+    if (!context || validating.value) return
     validating.value = true
     try {
       if (!(await save())) return
-      const response: any = await validatePerfScenario(id)
+      if (!context.isCurrent()) return
+      const response = await validatePerfScenario(context.id)
+      if (!context.isCurrent()) return
+      const result = readScenarioValidation(response)
       Message.success(
-        `校验通过：完整 Case 共 ${response.data.step_count} 个步骤，预计 ${response.data.duration_seconds} 秒`
+        `校验通过：完整 Case 共 ${result.step_count} 个步骤，预计 ${result.duration_seconds} 秒`
       )
+    } catch (error) {
+      if (context.isCurrent()) throw error
     } finally {
       validating.value = false
     }
   }
-  async function openScriptPreview() {
-    scriptPreviewVisible.value = true
-    scriptPreviewLoading.value = true
-    scriptPreviewTab.value = 'script'
-    scriptPreview.value = null
-    try {
-      const response: any = await getPerfScenarioScriptPreview(id)
-      scriptPreview.value = response.data
-    } catch {
-      scriptPreviewVisible.value = false
-    } finally {
-      scriptPreviewLoading.value = false
-    }
-  }
-  async function copyScriptPreview() {
-    if (!scriptPreview.value) return
-    const value = scriptPreviewTab.value === 'snapshot' ? scriptPreview.value.snapshot : scriptPreview.value.script
-    await navigator.clipboard.writeText(value)
-    Message.success('已复制预览内容')
-  }
   async function openExecuteDialog() {
-    if (!validateLocal()) return
-    Object.assign(executeForm, {
-      test_env: null,
-      selected_executor_fingerprints: [],
-      remark: '',
-      production_load_confirmed: false,
-      capture_request: false,
-      capture_response: false,
-    })
-    executorCandidates.value = []
-    Object.keys(executorPreflight).forEach((key) => delete executorPreflight[key])
-    executeFormRef.value?.clearValidate?.()
-    await executeDialogRef.value?.show()
+    if (loading.value || refreshBeforeWrite.value || !isExecutionContextCurrent(executionContextVersion.value) || !validateLocal()) return
+    await executeDialogRef.value?.open()
   }
-  async function loadExecutorCandidates() {
-    executeForm.selected_executor_fingerprints = []
-    executorCandidates.value = []
-    Object.keys(executorPreflight).forEach((key) => delete executorPreflight[key])
-    if (executeForm.test_env === null || executeForm.test_env === undefined) return
-    executorLoading.value = true
-    try {
-      const response: any = await preflightPerfScenario(id, {
-        test_env: Number(executeForm.test_env),
-        selected_executor_fingerprints: [],
-      })
-      Object.assign(executorPreflight, response.data || {})
-      executorCandidates.value = response.data?.candidates || []
-    } finally {
-      executorLoading.value = false
-    }
-  }
-  async function preflightSelectedExecutors() {
-    if (!executeForm.selected_executor_fingerprints.length) {
-      executorPreflight.can_run = false
-      return
-    }
-    const response: any = await preflightPerfScenario(id, {
-      test_env: Number(executeForm.test_env),
-      selected_executor_fingerprints: executeForm.selected_executor_fingerprints,
-    })
-    Object.assign(executorPreflight, response.data || {})
-  }
-  async function execute() {
-    const errors = await executeFormRef.value?.validate()
-    if (errors || !executorSelectionReady.value) {
-      if (!errors)
-        Message.warning(`必须选择 ${form.default_executor_count || 1} 个容量充足的执行器`)
-      executeDialogRef.value?.setConfirmLoading(false)
-      return
-    }
-    executing.value = true
-    try {
-      if (!(await save())) return
-      const response: any = await executePerfScenario(id, {
-        test_env: Number(executeForm.test_env),
-        remark: executeForm.remark,
-        selected_executor_fingerprints: executeForm.selected_executor_fingerprints,
-        production_load_confirmed: executeForm.production_load_confirmed,
-        capture_request: executeForm.capture_request,
-        capture_response: executeForm.capture_response,
-      })
-      await executeDialogRef.value?.close()
-      router.push({ path: '/perf/run/details', query: { id: response.data.run_id } })
-    } finally {
-      executing.value = false
-      executeDialogRef.value?.setConfirmLoading(false)
-    }
+  function visibilityChanged(): void {
+    if (document.visibilityState === 'hidden') invalidateContext(false)
+    else resumeReads()
   }
   onMounted(async () => {
-    await load()
-    if (String(route.query.execute || '') === '1') await openExecuteDialog()
+    mounted = true
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', visibilityChanged)
+    const context = captureContext()
+    if (!context) return
+    try { await load() } catch { return }
+    if (context.isCurrent() && String(route.query.execute || '') === '1') await openExecuteDialog()
+  })
+  onDeactivated(() => { active = false; invalidateContext(false) })
+  onActivated(() => { active = true; resumeReads() })
+  onBeforeUnmount(() => {
+    disposed = true
+    invalidateContext(false)
+    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', visibilityChanged)
   })
 </script>
 
 <style scoped lang="less">
-  .mango-perf-profile-hint {
+  .mango-perf-read-error {
     margin-bottom: var(--m-page-gap);
   }
   .mango-perf-script-preview {
@@ -1036,14 +814,6 @@
   .mango-perf-settings-panel :deep(.arco-select) {
     width: 100%;
   }
-  .mango-perf-input-separator {
-    display: inline-flex;
-    align-items: center;
-    padding: 0 6px;
-    border-block: 1px solid var(--m-border);
-    color: var(--m-muted);
-    font-size: 12px;
-  }
   .mango-perf-goal-template-select {
     width: 144px;
   }
@@ -1077,9 +847,6 @@
   }
   .mango-perf-goal-row :deep(.arco-input-number) {
     width: 100%;
-  }
-  .mango-perf-executor-alert {
-    margin-bottom: var(--m-page-gap);
   }
   @container (max-width: 1199px) {
     .mango-perf-editor-grid {

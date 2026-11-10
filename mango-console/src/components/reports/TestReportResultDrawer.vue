@@ -7,27 +7,23 @@
     class="mango-test-report-result-drawer"
     unmount-on-close
   >
-    <div class="mango-test-report-result-drawer__layout">
+    <div class="mango-workbench-scroll-x mango-test-report-result-drawer__workspace">
+    <div class="mango-detail-workbench mango-test-report-result-drawer__layout">
       <ExecutionHistoryList
         :items="historyItems"
         :selected-id="selectedResultId"
         :loading="historyLoading"
+        :error-text="historyError"
         empty-text="当前失败记录暂无可切换的执行结果"
         @select="changeResult"
+        @retry="loadHistory"
       />
       <mango-panel-spin
         :loading="detailLoading"
         class="mango-test-report-result-drawer__spin"
         :class="{ 'mango-test-report-result-drawer__spin--api': normalizedCaseType === 1 }"
       >
-        <div v-if="loadError" class="mango-test-report-result-drawer__feedback" role="alert">
-          <icon-exclamation-circle-fill />
-          <div>
-            <strong>详细报告加载失败</strong>
-            <span>{{ loadError }}</span>
-          </div>
-          <a-button size="small" type="primary" @click="loadDetail">重新加载</a-button>
-        </div>
+        <template v-if="loadError"><a-button size="small" type="primary" @click="loadDetail">重新加载</a-button></template>
         <div v-else-if="!hasDetail && !detailLoading" class="mango-test-report-result-drawer__feedback">
           <icon-file />
           <div>
@@ -35,206 +31,164 @@
             <span>{{ resultData?.error_message || fallbackError || '后端未返回失败原因' }}</span>
           </div>
         </div>
-        <ElementTestReport v-else-if="normalizedCaseType === 0" :result-data="resultData" />
+        <ElementTestReport v-else-if="hasDetail && normalizedCaseType === 0" :result-data="resultData" />
         <ApiTestReport
-          v-else-if="normalizedCaseType === 1"
+          v-else-if="hasDetail && normalizedCaseType === 1"
           :result-data="resultData"
           contained
         />
-        <PytestTestReport v-else-if="normalizedCaseType === 2" :result-data="resultData" />
+        <PytestTestReport v-else-if="hasDetail && normalizedCaseType === 2" :result-data="resultData" />
       </mango-panel-spin>
+    </div>
     </div>
   </a-drawer>
 </template>
 
 <script lang="ts" setup>
-  import { computed, ref, watch } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
+  import { useRoute } from 'vue-router'
+  import { useUserStoreContext } from '@/store/modules/user'
   import { IconExclamationCircleFill, IconFile } from '@arco-design/web-vue/es/icon'
-  import {
-    getSystemTestSuiteDetailsResultOptionsShare,
-    getSystemTestSuiteDetailsResultShare,
-  } from '@/api/system/test_sute_details'
+  import { getSystemTestSuiteDetailsResultOptionsShare, getSystemTestSuiteDetailsResultShare } from '@/api/system/test_sute_details'
   import ExecutionHistoryList from '@/components/business/ExecutionHistoryList.vue'
-  import type { ExecutionHistoryItem } from '@/components/business/execution-history'
+  import { historyId, type ExecutionHistoryItem } from '../business/execution-history'
+  import { failureResultTarget, failureResultOptions, failureResultRecord, type FailureResultOption } from './test-report-result'
   import ElementTestReport from './ElementTestReport.vue'
   import ApiTestReport from './ApiTestReport.vue'
   import PytestTestReport from './PytestTestReport.vue'
 
-  const props = withDefaults(
-    defineProps<{
-      visible?: boolean
-      testSuiteDetailId?: number | string
-      caseType?: number | string
-      caseName?: string
-      caseId?: number | string
-      fallbackError?: string
-    }>(),
-    {
-      visible: false,
-      testSuiteDetailId: '',
-      caseType: -1,
-      caseName: '',
-      caseId: '',
-      fallbackError: '',
-    }
-  )
-
-  const emit = defineEmits<{
-    (event: 'update:visible', value: boolean): void
-  }>()
-
-  const localVisible = ref(false)
-  const detailLoading = ref(false)
-  const historyLoading = ref(false)
-  const resultData = ref<any>({})
-  const resultOptions = ref<any[]>([])
-  const selectedResultId = ref<number | string>('')
-  const loadError = ref('')
-  let requestSequence = 0
-
-  const normalizedCaseType = computed(() => Number(props.caseType))
-  const drawerTitle = computed(() => {
-    const name = props.caseName || (props.caseId ? `Case #${props.caseId}` : '测试用例')
-    return `失败详情：${name}`
-  })
-  const historyItems = computed<ExecutionHistoryItem[]>(() =>
-    resultOptions.value.map((item: any) => ({
-      id: item.id,
-      title: item.label || item.status_text || '执行结果',
-      statusText: item.status_text || '未知',
-      statusColor: statusColor(item.status_text),
-      time: item.update_time || item.create_time || '-',
-      actor: item.trigger_user_name || '',
-      latest: Boolean(item.is_case_latest),
-      sourceText: item.source_scope_name || '测试报告',
-    }))
-  )
+  const props = withDefaults(defineProps<{
+    visible?: boolean
+    testSuiteDetailId?: number | string
+    caseType?: number | string
+    caseName?: string
+    caseId?: number | string
+    fallbackError?: string
+  }>(), { visible: false, testSuiteDetailId: '', caseType: -1, caseName: '', caseId: '', fallbackError: '' })
+  const emit = defineEmits<{ (event: 'update:visible', value: boolean): void }>()
+  const route = useRoute(), user = useUserStoreContext(), pagePath = route.path
+  const localVisible = computed({ get: () => props.visible, set: value => { if (!value) { dismissed = true; invalidate() }; emit('update:visible', value) } })
+  const target = computed(() => failureResultTarget(props))
+  const normalizedCaseType = computed(() => target.value?.caseType ?? -1)
+  const drawerTitle = computed(() => `失败详情：${target.value?.caseName || (target.value?.caseId !== null && target.value?.caseId !== undefined ? `Case ID ${target.value.caseId}` : '测试用例')}`)
+  const detailLoading = ref(false), historyLoading = ref(false)
+  const loadError = ref(''), historyError = ref('')
+  const resultData = ref<Record<string, unknown> | null>(null)
+  const resultOptions = ref<FailureResultOption[]>([])
+  const selectedResultId = ref<number | string | null>(null)
+  let version = 0, detailSequence = 0, mounted = false, active = true, disposed = false, dismissed = false
+  let historyPending: { version: number; promise: Promise<void> } | null = null
+  let detailPending: { version: number; sequence: number; key: string; promise: Promise<void> } | null = null
+  const available = () => mounted && active && !disposed && !dismissed && props.visible && route.path === pagePath && document.visibilityState === 'visible'
+  const historyItems = computed<ExecutionHistoryItem[]>(() => resultOptions.value.map(item => ({
+    id: item.id, title: item.label || item.status_text || '执行结果', statusText: item.status_text || '未知',
+    statusColor: statusColor(item.status_text), time: item.update_time || item.create_time || '-',
+    actor: item.trigger_user_name, latest: item.is_case_latest, sourceText: item.source_scope_name || '测试报告',
+  })))
   const hasDetail = computed(() => {
-    const record = resultData.value || {}
-    if (normalizedCaseType.value === 0) {
-      return Boolean(
-        (Array.isArray(record.element_result_list) && record.element_result_list.length) ||
-          (Array.isArray(record.children) && record.children.length)
-      )
-    }
-    if (normalizedCaseType.value === 1) {
-      return Boolean(record.request || record.response || record.ass || record.error_message || record.name)
-    }
-    if (normalizedCaseType.value === 2) {
-      return Boolean(
-        record.attachments ||
-          record.statusDetails ||
-          record.fullName ||
-          record.description ||
-          record.error_message ||
-          record.name
-      )
-    }
-    return false
+    const record = resultData.value
+    if (!record) return false
+    if (normalizedCaseType.value === 0) return Boolean((Array.isArray(record.element_result_list) && record.element_result_list.length) || (Array.isArray(record.children) && record.children.length))
+    if (normalizedCaseType.value === 1) return Boolean(record.request || record.response || record.ass || record.error_message || record.name)
+    return normalizedCaseType.value === 2 && Boolean(record.attachments || record.statusDetails || record.fullName || record.description || record.error_message || record.name)
   })
-
-  watch(
-    () => props.visible,
-    (visible) => {
-      localVisible.value = visible
-      if (visible) {
-        resultData.value = {}
-        resultOptions.value = []
-        selectedResultId.value = ''
-        loadError.value = ''
-        loadDetail()
-      }
-    }
-  )
-  watch(localVisible, (visible) => emit('update:visible', visible))
-
-  function statusColor(status: unknown) {
-    const value = String(status || '')
+  function statusColor(value: string) {
     if (value.includes('通过') || value.includes('成功')) return 'green'
     if (value.includes('失败') || value.includes('错误')) return 'red'
     if (value.includes('警告')) return 'orange'
     if (value.includes('执行中') || value.includes('进行中')) return 'arcoblue'
     return 'gray'
   }
-
-  async function loadDetail(resultId?: number | string) {
-    const detailId = props.testSuiteDetailId
-    if (!detailId) {
-      loadError.value = '缺少测试报告明细 ID，无法加载最近失败结果'
-      return
-    }
-    const sequence = ++requestSequence
-    detailLoading.value = true
-    loadError.value = ''
-    if (!resultOptions.value.length) historyLoading.value = true
-    try {
-      const requests: Promise<any>[] = [
-        getSystemTestSuiteDetailsResultShare(detailId, resultId),
-      ]
-      if (!resultOptions.value.length) {
-        requests.push(getSystemTestSuiteDetailsResultOptionsShare(detailId))
-      }
-      const [detailResponse, optionsResponse] = await Promise.all(requests)
-      if (sequence !== requestSequence) return
-      if (optionsResponse) {
-        resultOptions.value = optionsResponse.data || []
-        selectedResultId.value = resultId || resultOptions.value[0]?.id || ''
-      } else if (resultId) {
-        selectedResultId.value = resultId
-      }
-      resultData.value = buildReportRecord(detailResponse.data || {})
-    } catch (error: any) {
-      if (sequence !== requestSequence) return
-      loadError.value = error?.msg || error?.message || '请稍后重试'
-    } finally {
-      if (sequence === requestSequence) {
-        detailLoading.value = false
-        historyLoading.value = false
-      }
-    }
+  function invalidate() {
+    version++; detailSequence++
+    resultData.value = null; detailLoading.value = false; historyLoading.value = false
+    loadError.value = ''; historyError.value = ''
   }
-
-  function changeResult(resultId: number | string) {
-    loadDetail(resultId)
+  function closeContext() {
+    dismissed = true; invalidate(); resultOptions.value = []; selectedResultId.value = null
+    if (props.visible) emit('update:visible', false)
   }
-
-  function buildReportRecord(detailRecord: any) {
-    const children = Array.isArray(detailRecord?.children) ? detailRecord.children : []
-    const matched = children[0] || detailRecord
-    const baseRecord = {
-      ...matched,
-      case_type: normalizedCaseType.value,
-      name: matched?.name || props.caseName || detailRecord?.case_name || detailRecord?.name,
-      status: matched?.status ?? detailRecord?.status,
-      error_message:
-        matched?.error_message ||
-        matched?.statusDetails?.message ||
-        detailRecord?.error_message ||
-        props.fallbackError,
-      test_suite_detail_id: detailRecord?.id || props.testSuiteDetailId,
-    }
-    if (normalizedCaseType.value !== 0) return baseRecord
-    return {
-      ...baseRecord,
-      test_time: baseRecord.test_time || detailRecord?.test_time,
-      test_object: baseRecord.test_object || detailRecord?.test_object,
-      video_path: baseRecord.video_path || detailRecord?.video_path,
-      cache_data: baseRecord.cache_data || detailRecord?.cache_data,
-      data_factory_cache_data:
-        baseRecord.data_factory_cache_data || detailRecord?.data_factory_cache_data,
-      element_result_list: [baseRecord],
-      children: [baseRecord],
-    }
+  function validateTarget() {
+    if (!target.value) { loadError.value = '缺少有效报告明细或用例类型，无法加载结果'; return null }
+    return { ...target.value }
   }
+  function loadHistory(): Promise<void> {
+    if (!available()) return Promise.resolve()
+    const snapshot = validateTarget(), currentVersion = version
+    if (!snapshot) return Promise.resolve()
+    if (historyPending?.version === version) return historyPending.promise
+    historyLoading.value = true; historyError.value = ''
+    const current = () => available() && currentVersion === version
+    const promise = Promise.resolve().then(async () => {
+      try {
+        if (!current()) return
+        const response = await getSystemTestSuiteDetailsResultOptionsShare(snapshot.detailId)
+        if (!current()) return
+        resultOptions.value = failureResultOptions(response)
+        // Default detail endpoint resolves this report's latest result, not the case-wide first history entry.
+        if (selectedResultId.value === null) selectedResultId.value = resultOptions.value.find(item => item.is_latest && String(item.detailId) === String(snapshot.detailId))?.id ?? null
+      } catch (loadFailure0) { if (current()) (reportLoadError(loadFailure0, "执行历史加载失败，请重试", false), historyError.value = '执行历史加载失败，请重试') }
+      finally {
+        if (currentVersion === version) historyLoading.value = false
+        if (historyPending?.version === currentVersion) historyPending = null
+      }
+    })
+    historyPending = { version: currentVersion, promise }; return promise
+  }
+  function loadDetail(): Promise<void> {
+    if (!available()) return Promise.resolve()
+    const snapshot = validateTarget(), currentVersion = version, resultId = selectedResultId.value
+    if (!snapshot) return Promise.resolve()
+    const key = JSON.stringify([snapshot, resultId])
+    if (detailPending?.version === version && detailPending.sequence === detailSequence && detailPending.key === key) return detailPending.promise
+    const sequence = ++detailSequence
+    detailLoading.value = true; loadError.value = ''; resultData.value = null
+    const current = () => available() && currentVersion === version && sequence === detailSequence
+    const promise = Promise.resolve().then(async () => {
+      try {
+        if (!current()) return
+        const response = await getSystemTestSuiteDetailsResultShare(snapshot.detailId, resultId)
+        if (current()) resultData.value = failureResultRecord(response, snapshot)
+      } catch (loadFailure1) { if (current()) (reportLoadError(loadFailure1, "详细报告加载失败，请重试", false), loadError.value = '详细报告加载失败，请重试') }
+      finally {
+        if (currentVersion === version && sequence === detailSequence) detailLoading.value = false
+        if (detailPending?.version === currentVersion && detailPending.sequence === sequence) detailPending = null
+      }
+    })
+    detailPending = { version: currentVersion, sequence, key, promise }; return promise
+  }
+  function changeResult(value: number | string): Promise<void> {
+    const id = historyId(value)
+    if (!available() || id === null || !resultOptions.value.some(item => String(item.id) === String(id))) return Promise.resolve()
+    selectedResultId.value = id
+    return loadDetail()
+  }
+  function resume() { if (available()) { void loadHistory(); void loadDetail() } }
+  function visibilityChanged() { if (available()) resume(); else invalidate() }
+  watch(() => [props.visible, props.testSuiteDetailId, props.caseType, props.caseId, props.caseName, props.fallbackError], () => {
+    dismissed = false; invalidate(); resultOptions.value = []; selectedResultId.value = null; resume()
+  }, { flush: 'sync' })
+  watch(() => [route.fullPath, user.userId, user.roleId, user.token, user.selected_environment], closeContext, { flush: 'sync' })
+  onMounted(() => { mounted = true; document.addEventListener('visibilitychange', visibilityChanged); resume() })
+  onDeactivated(() => { active = false; invalidate() })
+  onActivated(() => { const wasInactive = !active; active = true; if (wasInactive) resume() })
+  onBeforeUnmount(() => { disposed = true; invalidate(); document.removeEventListener('visibilitychange', visibilityChanged) })
 </script>
 
 <style scoped>
+  .mango-test-report-result-drawer__workspace {
+    --mango-workbench-min-width: 920px;
+  }
+
   .mango-test-report-result-drawer__layout {
     box-sizing: border-box;
     display: grid;
     height: 100%;
     min-height: 0;
     padding: var(--m-page-gap);
+    margin-top: 0;
     grid-template-columns: 260px minmax(0, 1fr);
     gap: var(--m-page-gap);
     background: var(--m-bg);
@@ -306,9 +260,4 @@
     overflow: hidden;
   }
 
-  @media (max-width: 1100px) {
-    .mango-test-report-result-drawer__layout {
-      min-width: 920px;
-    }
-  }
 </style>

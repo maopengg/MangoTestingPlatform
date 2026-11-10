@@ -27,21 +27,12 @@ const exactQueryAllowlist = new Map([
     'src/views/system/error-record/config.ts#conditionItems',
     '聚合异常接口仅 source 支持逗号分隔多值，category 仍是精确单值。',
   ],
-  [
-    'src/views/system/sql-execution/config.ts#conditionItems',
-    'SQL 审计接口仅 ID 支持 __in 查询，枚举和依赖型筛选仍使用精确单值协议。',
-  ],
 ])
 
 const directExactQueryAllowlist = new Map()
 function allowDirectExactQuery(file, models, reason) {
   models.forEach((model) => directExactQueryAllowlist.set(`${file}#${model}`, reason))
 }
-allowDirectExactQuery(
-  'src/views/system/sql-execution/index.vue',
-  ['item.value'],
-  'SQL 审计接口只读取 source_type、source_stage、status 精确值；这些枚举没有集合查询协议。'
-)
 allowDirectExactQuery(
   'src/views/gray/repository/index.vue',
   ['query.test_env'],
@@ -80,6 +71,18 @@ allowDirectExactQuery(
     'filters.source_plan',
   ],
   '缺陷列表使用自定义精确查询，当前不解析 __in。'
+)
+allowDirectExactQuery(
+  'src/views/functional-test/suite/details/index.vue',
+  [
+    'caseFilters.test_type',
+    'caseFilters.scenario_layer',
+    'caseFilters.scenario_type',
+    'caseFilters.scenario_tag',
+    'caseFilters.change_status',
+    'caseFilters.automation_impact_status',
+  ],
+  '来源用例复用 ManualTestCaseCRUD.get；test_type/scenario_tag 按 JSON 单元素 contains 过滤，其余枚举精确查询，接口未拆分 __in 逗号集合。'
 )
 allowDirectExactQuery(
   'src/views/functional-test/suite/index.vue',

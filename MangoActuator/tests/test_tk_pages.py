@@ -93,9 +93,9 @@ class TkPagesContractTests(TestCase):
         self.assertIn("minsize=56", home)
         self.assertGreaterEqual(home.count('width=4, variant="directory_link"'), 2)
 
-    def test_default_entry_uses_tkinter_application(self):
+    def test_default_entry_uses_flet_application(self):
         entry = (ACTUATOR_ROOT / "desktop_main.py").read_text(encoding="utf-8")
-        self.assertIn("run_tk_application", entry)
+        self.assertIn("run_flet_application", entry)
         tree = ast.parse(entry)
         imported_modules = {
             alias.name.split(".")[0]
@@ -171,7 +171,7 @@ class TkPagesContractTests(TestCase):
     def test_duplicate_desktop_instance_is_reported_without_traceback(self):
         error = RuntimeInstanceAlreadyRunning("已有实例（PID 123）")
         with (
-            patch("src.tk_pages.application.run_tk_application", side_effect=error),
+            patch("src.flet_pages.application.run_flet_application", side_effect=error),
             patch.object(desktop_main, "_show_duplicate_instance_warning") as show_warning,
             patch("src.tools.log_collector.log.warning") as log_warning,
         ):

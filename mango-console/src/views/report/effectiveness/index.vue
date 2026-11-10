@@ -112,7 +112,7 @@
               清除缓存
             </a-button>
           </a-tooltip>
-          <a-button size="small" @click="toggleReportMode">
+          <a-button size="small" :disabled="printing || imageExporting" @click="toggleReportMode">
             {{ reportMode ? '退出汇报模式' : '汇报模式' }}
           </a-button>
           <a-tooltip v-if="reportMode" :content="imageExportTooltip" position="bottom" mini>
@@ -133,6 +133,7 @@
       </TableHeader>
     </template>
     <template #default>
+
       <div id="mango-effectiveness-report-image" class="mango-effectiveness-report-document">
         <div class="mango-effectiveness-paper-page mango-effectiveness-paper-page--summary">
           <span class="mango-effectiveness-paper-page__number">01 / 07 · 质量摘要</span>
@@ -359,7 +360,7 @@
                   class="mango-effectiveness-ai-card__action"
                   size="small"
                   :loading="aiLoading"
-                  :disabled="loading"
+                  :disabled="loading || !overviewReady"
                   @click="loadAiSummary(true)"
                 >
                   <template #icon><icon-refresh /></template>
@@ -368,6 +369,7 @@
               </a-tooltip>
             </header>
 
+            <div v-if="aiInsightError && !loading && !aiLoading" class="mango-soft-panel" role="alert">{{ aiInsightError }}</div>
             <div v-if="loading || aiLoading" class="mango-effectiveness-ai-loading">
               <div class="mango-effectiveness-ai-loading__intro">
                 <a-skeleton :animation="true">
@@ -452,7 +454,11 @@
               </div>
             </div>
 
-            <div v-else class="mango-effectiveness-ai-unavailable" role="alert">
+            <div v-else-if="aiError" class="mango-empty-state" role="alert">
+              <strong>{{ aiError }}</strong>
+              <a-button size="small" :loading="aiLoading" :disabled="!overviewReady" @click="loadAiSummary(true)">重试</a-button>
+            </div>
+            <div v-else-if="aiState.available === false" class="mango-effectiveness-ai-unavailable" role="alert">
               <div class="mango-effectiveness-ai-unavailable__visual">
                 <span><icon-robot /></span>
               </div>
@@ -763,7 +769,7 @@
                     </div>
                     <a-tag
                       size="small"
-                      :color="record.quality_level === 'danger' ? 'red' : record.quality_level === 'warning' ? 'orange' : 'green'"
+                      :color="record.quality_level === 'danger' ? 'red' : record.quality_level === 'warning' ? 'orange' : record.quality_level === 'success' ? 'green' : 'gray'"
                     >{{ record.quality_label }}</a-tag>
                     <div class="mango-effectiveness-module-row__rate">
                       <strong :class="rateClass(record.final_pass_rate)">{{
@@ -1075,8 +1081,11 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
-  import { useRouter } from 'vue-router'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, nextTick, onMounted, onBeforeUnmount, onActivated, onDeactivated, reactive, ref, watch } from 'vue'
+  import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
+  import { useUserStoreContext } from '@/store/modules/user'
 
   import { Message } from '@arco-design/web-vue'
   import {
@@ -1089,33 +1098,38 @@
     IconRobot,
     IconSettings,
   } from '@arco-design/web-vue/es/icon'
-  import printJS from 'print-js'
-  import { toPng } from 'html-to-image'
   import { useEnum } from '@/store/modules/get-enum'
   import { useProject } from '@/store/modules/get-project'
   import { fieldNames } from '@/setting'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
   import TestReportResultDrawer from '@/components/reports/TestReportResultDrawer.vue'
   import DiagnosticMarkdownDrawer from '@/components/reports/DiagnosticMarkdownDrawer.vue'
-  import { getOptionId } from '@/utils/business-format'
   import {
     getAutomationEffectivenessOverview,
-    postAutomationEffectivenessAiSummary,
     postAutomationEffectivenessCacheClear,
   } from '@/api/system/automation-effectiveness'
   import EffectivenessChart from './components/EffectivenessChart.vue'
   import EffectivenessAiNote from './components/EffectivenessAiNote.vue'
   import EffectivenessEmptyState from './components/EffectivenessEmptyState.vue'
   import PeriodQualityTrend from './components/PeriodQualityTrend.vue'
-  import { effectivenessQualityThresholds } from './config'
+  import { effectivenessQualityThresholds, periodPresetOptions, defaultPeriodPreset, type PeriodPreset } from './config'
+  import { effectivenessPayload, effectivenessObject, type InsightKey } from './ai-summary'
+  import { useEffectivenessAiSummary } from './composables/useEffectivenessAiSummary'
+  import { useEffectivenessExport } from './composables/useEffectivenessExport'
+  import { createEmptyOverview, normalizeEffectivenessOverview, effectivenessNumber, effectivenessMatrixRows, effectivenessChartIndex, effectivenessDate, type EffectivenessOverview, type EffectivenessDimension, type EffectivenessTask, type EffectivenessFailedCase } from './overview'
+  import { createDefaultFilters, copyEffectivenessFilters, selectedEffectivenessProduct, effectivenessQuery, resolvePeriodDateRange, type EffectivenessFilters } from './filters'
+  import { chartPoint, chartPoints, chartHtml } from './chart-boundary'
 
   type ModuleQualityFilter = 'attention' | 'all' | 'danger' | 'warning' | 'success'
 
   const enumStore = useEnum()
   const projectStore = useProject()
   const router = useRouter()
+  const route = useRoute(), userStore = useUserStoreContext(), pagePath = route.path
+  let mounted = false, active = true, disposed = false, needsLoad = true
+  const pageAvailable = () => mounted && active && !disposed && route.path === pagePath && document.visibilityState === 'visible'
+  let initialized = false
   const loading = ref(false)
-  const aiLoading = ref(false)
   const reportMode = ref(false)
   const filterVisible = ref(false)
   const printing = ref(false)
@@ -1140,10 +1154,10 @@
     () => loading.value || aiLoading.value || cacheClearing.value
   )
   const pdfExportDisabled = computed(
-    () => reportContentLoading.value || imageExporting.value || printing.value
+    () => !overviewReady.value || reportContentLoading.value || imageExporting.value || printing.value
   )
   const imageExportDisabled = computed(
-    () => reportContentLoading.value || printing.value || imageExporting.value
+    () => !overviewReady.value || reportContentLoading.value || printing.value || imageExporting.value
   )
   const pdfExportTooltip = computed(() =>
     pdfExportDisabled.value ? '请等待全部加载完成' : '打印或保存为 PDF'
@@ -1151,151 +1165,33 @@
   const imageExportTooltip = computed(() =>
     imageExportDisabled.value ? '请等待全部加载完成' : '下载完整高清 PNG 图片'
   )
-  const aiState = reactive<any>({
-    available: null,
-    reason: '',
-    model: '',
-    generated_at: '',
-    summary: null,
+  const pageContextVersion = ref(0), overviewReady = ref(false), loadError = ref('')
+  const ai = useEffectivenessAiSummary({
+    scopeKey: () => pageContextVersion.value,
+    available: () => pageAvailable() && overviewReady.value && !loading.value,
+    snapshot: () => overviewReady.value && overviewEvidence.value ? {
+      overview: overviewEvidence.value,
+      context: {
+        project_product: selectedProjectProductTitle.value,
+        period: reportPeriodText.value,
+        comparison_period: comparisonPeriodText.value,
+        environment: optionTitles(enumStore.environment_type, filters.test_env, '全部环境'),
+        task_type: optionTitles(sceneOptions.value, filters.execution_scene, '全部执行场景'),
+        coverage_scope: optionTitles(scopeOptions.value, filters.execution_scope, '全部执行范围'),
+      },
+    } : null,
   })
-  const aiInsightState = reactive<any>({
-    available: null,
-    insights: {},
-  })
-  const aiInsightKeys = [
-    'overview',
-    'status',
-    'modules',
-    'benefits',
-    'trend',
-    'environment',
-    'task_type',
-    'coverage_scope',
-    'module_risk',
-    'issue_pareto',
-    'environment_task_matrix',
-    'module_change',
-    'automation_type',
-    'task_health',
-    'failed_case_ranking',
-  ]
-  const componentInsightKeys = new Set(['overview', 'status', 'modules', 'benefits'])
-  const missingAiInsightKeys = (summary: any) =>
-    aiInsightKeys.filter((key) => {
-      const insights = componentInsightKeys.has(key)
-        ? summary?.component_insights
-        : summary?.chart_insights
-      return !String(insights?.[key] || '').trim()
-    })
-  const chartInsight = (key: string) =>
-    String(aiInsightState.insights?.[key] || aiState.summary?.chart_insights?.[key] || '').trim()
-  const componentInsight = (key: string) =>
-    String(
-      aiInsightState.insights?.[key] || aiState.summary?.component_insights?.[key] || ''
-    ).trim()
+  const aiState = ai.state, aiInsightState = ai.insightState
+  const aiLoading = ai.loading
+  const aiError = ai.error, aiInsightError = ai.insightError
+  const chartInsight = (key: InsightKey) => aiInsightState.insights[key] || aiState.summary?.chart_insights[key] || ''
+  const componentInsight = (key: InsightKey) => aiInsightState.insights[key] || aiState.summary?.component_insights[key] || ''
+  const loadAiSummary = (force = false) => ai.load(force)
   let overviewRequestSequence = 0
-  let aiRequestSequence = 0
-  function formatDate(date: Date) {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
-      date.getDate()
-    ).padStart(2, '0')}`
-  }
-
-  type PeriodPreset =
-    | 'natural_week'
-    | 'natural_two_weeks'
-    | 'natural_month'
-    | 'natural_quarter'
-    | 'recent_2_days'
-    | 'recent_7_days'
-    | 'recent_14_days'
-    | 'recent_month'
-    | 'recent_3_months'
-
-  const periodPresetOptions = [
-    { label: '自然周', value: 'natural_week' },
-    { label: '自然 2 周', value: 'natural_two_weeks' },
-    { label: '自然月', value: 'natural_month' },
-    { label: '自然季度', value: 'natural_quarter' },
-    { label: '最近 2 天', value: 'recent_2_days' },
-    { label: '最近 7 天', value: 'recent_7_days' },
-    { label: '最近 14 天', value: 'recent_14_days' },
-    { label: '最近 1 个月', value: 'recent_month' },
-    { label: '最近 3 个月', value: 'recent_3_months' },
-  ]
-  const defaultPeriodPreset: PeriodPreset = 'recent_7_days'
-
-  function shiftMonthsClamped(date: Date, months: number) {
-    const target = new Date(date.getFullYear(), date.getMonth() - months, 1)
-    const targetMonthLastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate()
-    target.setDate(Math.min(date.getDate(), targetMonthLastDay))
-    return target
-  }
-
-  function resolvePeriodDateRange(preset: PeriodPreset, current = new Date()) {
-    const end = new Date(current.getFullYear(), current.getMonth(), current.getDate())
-    const start = new Date(end)
-    if (preset === 'recent_2_days' || preset === 'recent_7_days' || preset === 'recent_14_days') {
-      const periodDays = preset === 'recent_2_days' ? 2 : preset === 'recent_7_days' ? 7 : 14
-      start.setDate(start.getDate() - (periodDays - 1))
-    } else if (preset === 'recent_month' || preset === 'recent_3_months') {
-      start.setTime(shiftMonthsClamped(end, preset === 'recent_month' ? 1 : 3).getTime())
-      start.setDate(start.getDate() + 1)
-    } else if (preset === 'natural_month') {
-      start.setDate(1)
-    } else if (preset === 'natural_quarter') {
-      start.setMonth(Math.floor(start.getMonth() / 3) * 3, 1)
-    } else {
-      const weekday = start.getDay() || 7
-      start.setDate(start.getDate() - weekday + 1)
-      if (preset === 'natural_two_weeks') start.setDate(start.getDate() - 7)
-    }
-    return [formatDate(start), formatDate(end)]
-  }
-
-  const defaultDateRange = resolvePeriodDateRange(defaultPeriodPreset)
-  const filters = reactive({
-    periodPreset: defaultPeriodPreset as PeriodPreset,
-    dateRange: [...defaultDateRange] as string[],
-    project_product: undefined as any,
-    test_env: [] as Array<string | number>,
-    execution_scene: [] as Array<string | number>,
-    execution_scope: [] as Array<string | number>,
-  })
-  const draftFilters = reactive({
-    periodPreset: defaultPeriodPreset as PeriodPreset,
-    dateRange: [...defaultDateRange] as string[],
-    project_product: undefined as any,
-    test_env: [] as Array<string | number>,
-    execution_scene: [] as Array<string | number>,
-    execution_scope: [] as Array<string | number>,
-  })
-  const overview = reactive<any>({
-    cards: {},
-    comparison: {},
-    benefits: { automation_types: [], scene_benefits: [] },
-    convergence: {},
-    module_quality: [],
-    insights: [],
-    trend: [],
-    period_quality: [],
-    status_distribution: [],
-    scene_distribution: [],
-    scope_distribution: [],
-    environment_quality: [],
-    scene_matrix: { scenes: [], environments: [], values: {} },
-    module_risks: [],
-    inspection_tasks: [],
-    automation_type_quality: [],
-    task_source_summary: {
-      task_count: 0,
-      report_count: 0,
-      execution_count: 0,
-      report_success_count: 0,
-    },
-    task_health: [],
-    failed_case_ranking: [],
-  })
+  const filters: EffectivenessFilters = reactive(createDefaultFilters())
+  const draftFilters: EffectivenessFilters = reactive(createDefaultFilters())
+  const overview: EffectivenessOverview = reactive(createEmptyOverview())
+  const overviewEvidence = ref<Record<string, unknown> | null>(null)
   const hasEffectivenessData = computed(
     () =>
       Number(overview.cards?.suite_count || 0) > 0 || Number(overview.cards?.detail_count || 0) > 0
@@ -1303,7 +1199,7 @@
   const hasTrendData = computed(
     () =>
       hasEffectivenessData.value &&
-      (overview.trend || []).some((item: any) => Number(item.detail_count || 0) > 0)
+      (overview.trend || []).some((item) => Number(item.detail_count || 0) > 0)
   )
   const dataConfidence = computed(() => {
     const suites = Number(overview.cards.suite_count || 0)
@@ -1331,19 +1227,19 @@
   const scopeOptions = computed(() =>
     (enumStore.automation_execution_scope || []).filter((item) => item.key !== 'unclassified')
   )
-  const selectedProjectProductId = computed(() => getOptionId(filters.project_product))
+  const selectedProjectProductId = computed(() => selectedEffectivenessProduct(filters.project_product))
   const selectedProjectProductTitle = computed(() => {
     const productId = selectedProjectProductId.value
     if (productId === null || productId === undefined) return '全部项目/产品'
     for (const project of projectStore.projectProduct || []) {
       const product = (project.children || []).find(
-        (item: any) => String(item.value) === String(productId)
+        (item) => String(item.value) === String(productId)
       )
       if (product) return `${project.label} / ${product.label}`
     }
     return '已选项目/产品'
   })
-  const generatedAt = computed(() => new Date().toLocaleString('zh-CN', { hour12: false }))
+  const generatedAt = ref('')
   const reportPeriodText = computed(() =>
     filters.dateRange?.length === 2
       ? `${filters.dateRange[0]} 至 ${filters.dateRange[1]}`
@@ -1372,7 +1268,7 @@
     () => `筛选条件${activeFilterCount.value ? `（${activeFilterCount.value}）` : ''}`
   )
   const optionTitles = (
-    options: any[] | null,
+    options: Array<{ key: string | number; title: string }> | null | undefined,
     values: Array<string | number>,
     fallback: string
   ) => {
@@ -1385,11 +1281,12 @@
   const reportScopeItems = computed(() => [
     selectedProjectProductTitle.value,
     optionTitles(enumStore.environment_type, filters.test_env, '全部环境'),
-    optionTitles(sceneOptions.value as any[], filters.execution_scene, '全部执行场景'),
-    optionTitles(scopeOptions.value as any[], filters.execution_scope, '全部执行范围'),
+    optionTitles(sceneOptions.value, filters.execution_scene, '全部执行场景'),
+    optionTitles(scopeOptions.value, filters.execution_scope, '全部执行范围'),
   ])
   const verdictText = computed(() => {
     if (!overview.cards.suite_count) return '暂无正式数据'
+    if (overview.cards.final_pass_rate === null) return overview.cards.unfinished_count > 0 ? '执行尚未完成' : '暂无完成结果'
     if (overview.cards.final_pass_rate < effectivenessQualityThresholds.highRiskPassRate)
       return '质量风险较高'
     if (
@@ -1400,7 +1297,7 @@
     if (overview.cards.unfinished_count > 0) return '执行尚未完成'
     if (
       overview.cards.warning_count > 0 ||
-      overview.cards.flaky_rate > effectivenessQualityThresholds.healthyFlakyRate
+      (overview.cards.flaky_rate !== null && overview.cards.flaky_rate > effectivenessQualityThresholds.healthyFlakyRate)
     )
       return '质量需要关注'
     return '质量良好'
@@ -1410,6 +1307,7 @@
   )
   const verdictReasonText = computed(() => {
     if (!overview.cards.suite_count) return '当前筛选范围暂无正式定时任务报告'
+    if (overview.cards.final_pass_rate === null) return overview.cards.unfinished_count > 0 ? `仍有 ${overview.cards.unfinished_count} 个执行明细尚未结束` : '当前周期尚无可计算通过率的完成结果'
     if (overview.cards.final_pass_rate < effectivenessQualityThresholds.highRiskPassRate)
       return `最终通过率 ${formatRate(overview.cards.final_pass_rate)}，低于质量基线`
     if (overview.cards.failed_count > 0)
@@ -1481,7 +1379,7 @@
     return rateComparisonText(overview.convergence.issue_rate_delta, '问题率', false)
   })
   const sourceTaskRows = computed(() =>
-    [...(overview.task_health || [])].sort((left: any, right: any) => {
+    [...(overview.task_health || [])].sort((left, right) => {
       const leftRate = left.report_success_rate
       const rightRate = right.report_success_rate
       if (
@@ -1496,7 +1394,7 @@
   )
   const sourceTaskDetails = computed(() =>
     sourceTaskRows.value.map(
-      (item: any) =>
+      (item) =>
         `${item.task_name}：报告 ${formatRate(item.report_success_rate)} / 用例 ${formatRate(
           item.final_pass_rate
         )}`
@@ -1602,9 +1500,8 @@
     grid: { left: 42, right: 42, top: 42, bottom: 30, containLabel: true },
   }
   function normalizeChartRate(value: unknown) {
-    if (value === null || value === undefined || value === '') return null
-    const normalized = Number(value)
-    return Number.isFinite(normalized) ? Number(normalized.toFixed(2)) : null
+    const normalized = effectivenessNumber(value)
+    return normalized === null ? null : Number(normalized.toFixed(2))
   }
   function formatChartRate(value: unknown) {
     const normalized = normalizeChartRate(value)
@@ -1615,16 +1512,16 @@
     if (normalized === null) return '-'
     return `${signed && normalized > 0 ? '+' : ''}${normalized.toFixed(2)}`
   }
-  function formatAxisTooltip(params: any, rateSeriesNames: string[]) {
-    const items = Array.isArray(params) ? params : [params]
+  function formatAxisTooltip(params: unknown, rateSeriesNames: string[]) {
+    const items = chartPoints(params)
     if (!items.length) return ''
     const rateSeries = new Set(rateSeriesNames)
-    const title = items[0]?.axisValueLabel ?? items[0]?.name ?? ''
-    const rows = items.map((item: any) => {
+    const title = chartHtml(items[0].axisValueLabel || items[0].name)
+    const rows = items.map((item) => {
       const displayValue = rateSeries.has(item.seriesName)
         ? formatChartRate(item.value)
         : formatCount(item.value)
-      return `${item.marker || ''}${item.seriesName}：${displayValue}`
+      return `● ${chartHtml(item.seriesName)}：${displayValue}`
     })
     return [title, ...rows].filter(Boolean).join('<br/>')
   }
@@ -1639,12 +1536,12 @@
     tooltip: {
       trigger: 'axis',
       confine: true,
-      formatter: (params: any) => formatAxisTooltip(params, ['最终通过率']),
+      formatter: (params: unknown) => formatAxisTooltip(params, ['最终通过率']),
     },
     color: ['var(--m-danger)', 'var(--m-warning)', 'var(--m-chart-2)'],
     xAxis: {
       type: 'category',
-      data: overview.trend.map((item: any) => item.date),
+      data: overview.trend.map((item) => item.date),
       axisLabel: {
         color: 'var(--m-muted)',
         interval: trendAxisLabelInterval.value,
@@ -1675,7 +1572,7 @@
         type: 'bar',
         stack: 'issue',
         barMaxWidth: 22,
-        data: overview.trend.map((item: any) => item.failed_count),
+        data: overview.trend.map((item) => item.failed_count),
         itemStyle: { borderRadius: [0, 0, 2, 2] },
       },
       {
@@ -1683,7 +1580,7 @@
         type: 'bar',
         stack: 'issue',
         barMaxWidth: 22,
-        data: overview.trend.map((item: any) => item.warning_count),
+        data: overview.trend.map((item) => item.warning_count),
         itemStyle: { borderRadius: [3, 3, 0, 0] },
       },
       {
@@ -1693,7 +1590,7 @@
         smooth: true,
         symbolSize: 6,
         z: 3,
-        data: overview.trend.map((item: any) => normalizeChartRate(item.final_pass_rate)),
+        data: overview.trend.map((item) => normalizeChartRate(item.final_pass_rate)),
         lineStyle: { color: 'var(--m-success)', width: 2 },
         itemStyle: { color: 'var(--m-success)' },
         emphasis: {
@@ -1713,7 +1610,7 @@
     tooltip: {
       trigger: 'axis',
       confine: true,
-      formatter: (params: any) => formatAxisTooltip(params, ['通过', '未通过']),
+      formatter: (params: unknown) => formatAxisTooltip(params, ['通过', '未通过']),
     },
     color: ['var(--m-success)', 'var(--m-danger)'],
     legend: {
@@ -1735,7 +1632,7 @@
     yAxis: {
       type: 'category',
       inverse: true,
-      data: overview.environment_quality.map((item: any) => item.environment_name),
+      data: overview.environment_quality.map((item) => item.environment_name),
       axisLabel: { color: 'var(--m-text-2)' },
     },
     series: [
@@ -1744,7 +1641,7 @@
         type: 'bar',
         stack: 'quality',
         barMaxWidth: 22,
-        data: overview.environment_quality.map((item: any) => ({
+        data: overview.environment_quality.map((item) => ({
           value: normalizeChartRate(item.final_pass_rate) ?? 0,
           itemStyle: {
             color: 'var(--m-success)',
@@ -1757,7 +1654,7 @@
         type: 'bar',
         stack: 'quality',
         barMaxWidth: 22,
-        data: overview.environment_quality.map((item: any) => {
+        data: overview.environment_quality.map((item) => {
           const rate = item.final_pass_rate
           const hasResult = rate !== null && rate !== undefined
           return {
@@ -1771,16 +1668,17 @@
         label: {
           show: true,
           position: 'right',
-          formatter: (params: any) => {
-            const rate = overview.environment_quality[params.dataIndex]?.final_pass_rate
+          formatter: (params: unknown) => {
+            const index = effectivenessChartIndex(params)
+            const rate = index === null ? null : overview.environment_quality[index]?.final_pass_rate
             return rate === null || rate === undefined ? '暂无结果' : formatChartRate(rate)
           },
         },
       },
     ],
   }))
-  const dimensionOption = (items: any[], nameKey: string) => {
-    const otherStatus = items.map((item: any) =>
+  const dimensionOption = (items: EffectivenessDimension[], nameKey: 'scene_name' | 'scope_name' | 'type_name') => {
+    const otherStatus = items.map((item) =>
       Math.max(
         Number(item.detail_count || 0) -
           Number(item.success_count || 0) -
@@ -1793,17 +1691,17 @@
       {
         name: '通过',
         color: 'var(--m-success)',
-        data: items.map((item: any) => item.success_count || 0),
+        data: items.map((item) => item.success_count || 0),
       },
       {
         name: '失败',
         color: 'var(--m-danger)',
-        data: items.map((item: any) => item.failed_count || 0),
+        data: items.map((item) => item.failed_count || 0),
       },
       {
         name: '警告',
         color: 'var(--m-warning)',
-        data: items.map((item: any) => item.warning_count || 0),
+        data: items.map((item) => item.warning_count || 0),
       },
       { name: '其他状态', color: 'var(--m-muted)', data: otherStatus },
     ]
@@ -1822,7 +1720,7 @@
       tooltip: {
         trigger: 'axis',
         confine: true,
-        formatter: (params: any) => formatAxisTooltip(params, ['最终通过率']),
+        formatter: (params: unknown) => formatAxisTooltip(params, ['最终通过率']),
       },
       legend: {
         top: 0,
@@ -1844,7 +1742,7 @@
       },
       xAxis: {
         type: 'category',
-        data: items.map((item: any) => item[nameKey]),
+        data: items.map((item) => item[nameKey]),
         axisLabel: {
           color: 'var(--m-text-2)',
           interval: 0,
@@ -1887,7 +1785,7 @@
           yAxisIndex: 1,
           symbolSize: 7,
           z: 3,
-          data: items.map((item: any) => normalizeChartRate(item.final_pass_rate)),
+          data: items.map((item) => normalizeChartRate(item.final_pass_rate)),
           lineStyle: { color: 'var(--m-success)', width: 2 },
           itemStyle: { color: 'var(--m-success)' },
           emphasis: {
@@ -1908,8 +1806,8 @@
 
   const moduleRiskData = computed(() => {
     const items = [...(overview.module_quality || [])]
-      .filter((item: any) => item.final_pass_rate !== null && item.final_pass_rate !== undefined)
-      .sort((left: any, right: any) => {
+      .filter((item) => item.final_pass_rate !== null && item.final_pass_rate !== undefined)
+      .sort((left, right) => {
         const leftIssues = Number(left.failed_count || 0) + Number(left.warning_count || 0)
         const rightIssues = Number(right.failed_count || 0) + Number(right.warning_count || 0)
         return (
@@ -1922,7 +1820,7 @@
   const moduleRiskSummary = computed(() => {
     if (!moduleRiskData.value.length) return '暂无模块数据'
     const riskCount = moduleRiskData.value.filter(
-      (item: any) => item.quality_level === 'danger'
+      (item) => item.quality_level === 'danger'
     ).length
     return riskCount ? `${riskCount} 个高风险模块` : '当前模块整体稳定'
   })
@@ -1936,7 +1834,7 @@
   }
   const moduleRiskOption = computed(() => {
     const detailValues = moduleRiskData.value
-      .map((item: any) => Number(item.detail_count || 0))
+      .map((item) => Number(item.detail_count || 0))
       .sort((left: number, right: number) => left - right)
     const positiveDetailValues = detailValues.filter((value: number) => value > 0)
     const minPositiveDetail = positiveDetailValues[0] || 1
@@ -1947,7 +1845,7 @@
       : 0
     const maxIssues = Math.max(
       ...moduleRiskData.value.map(
-        (item: any) => Number(item.failed_count || 0) + Number(item.warning_count || 0)
+        (item) => Number(item.failed_count || 0) + Number(item.warning_count || 0)
       ),
       1
     )
@@ -1957,9 +1855,11 @@
       tooltip: {
         trigger: 'item',
         confine: true,
-        formatter: (params: any) => {
-          const value = params.value || []
-          return `${value[3]}<br/>执行次数：${formatCount(
+        formatter: (params: unknown) => {
+          const point = chartPoint(params)
+          const rawValue = point?.value
+          const value = Array.isArray(rawValue) ? rawValue : []
+          return `${chartHtml(value[3])}<br/>执行次数：${formatCount(
             value[4] ?? value[0]
           )}<br/>最终通过率：${formatChartRate(value[1])}<br/>问题结果：${formatCount(value[2])}`
         },
@@ -1993,7 +1893,7 @@
         {
           name: '模块风险',
           type: 'scatter',
-          data: moduleRiskData.value.map((item: any, index: number) => {
+          data: moduleRiskData.value.map((item, index: number) => {
             const issues = Number(item.failed_count || 0) + Number(item.warning_count || 0)
             const color =
               item.quality_level === 'danger'
@@ -2047,23 +1947,23 @@
 
   const issueParetoData = computed(() =>
     [...(overview.module_quality || [])]
-      .map((item: any) => ({
+      .map((item) => ({
         ...item,
         issue_count: Number(item.failed_count || 0) + Number(item.warning_count || 0),
       }))
-      .filter((item: any) => item.issue_count > 0)
-      .sort((left: any, right: any) => right.issue_count - left.issue_count)
+      .filter((item) => item.issue_count > 0)
+      .sort((left, right) => right.issue_count - left.issue_count)
       .slice(0, 8)
   )
   const issueParetoSummary = computed(() => {
     const allIssues = (overview.module_quality || []).reduce(
-      (total: number, item: any) =>
+      (total: number, item) =>
         total + Number(item.failed_count || 0) + Number(item.warning_count || 0),
       0
     )
     if (!allIssues) return '当前模块暂无问题'
     const topIssues = issueParetoData.value.reduce(
-      (total: number, item: any) => total + item.issue_count,
+      (total: number, item) => total + item.issue_count,
       0
     )
     return `前 ${issueParetoData.value.length} 个模块贡献 ${Math.round(
@@ -2072,11 +1972,11 @@
   })
   const issueParetoOption = computed(() => {
     const total = issueParetoData.value.reduce(
-      (sum: number, item: any) => sum + item.issue_count,
+      (sum: number, item) => sum + item.issue_count,
       0
     )
     let accumulated = 0
-    const cumulative = issueParetoData.value.map((item: any) => {
+    const cumulative = issueParetoData.value.map((item) => {
       accumulated += item.issue_count
       return total ? Number(((accumulated / total) * 100).toFixed(2)) : 0
     })
@@ -2092,11 +1992,11 @@
       tooltip: {
         trigger: 'axis',
         confine: true,
-        formatter: (params: any) => formatAxisTooltip(params, ['累计占比']),
+        formatter: (params: unknown) => formatAxisTooltip(params, ['累计占比']),
       },
       xAxis: {
         type: 'category',
-        data: issueParetoData.value.map((item: any) => item.module_path),
+        data: issueParetoData.value.map((item) => item.module_path),
         axisLabel: {
           color: 'var(--m-muted)',
           interval: 0,
@@ -2127,7 +2027,7 @@
           type: 'bar',
           stack: 'issue',
           barMaxWidth: 28,
-          data: issueParetoData.value.map((item: any) => item.failed_count || 0),
+          data: issueParetoData.value.map((item) => item.failed_count || 0),
           itemStyle: { color: 'var(--m-danger)' },
         },
         {
@@ -2135,7 +2035,7 @@
           type: 'bar',
           stack: 'issue',
           barMaxWidth: 28,
-          data: issueParetoData.value.map((item: any) => item.warning_count || 0),
+          data: issueParetoData.value.map((item) => item.warning_count || 0),
           itemStyle: { color: 'var(--m-warning)', borderRadius: [3, 3, 0, 0] },
         },
         {
@@ -2151,30 +2051,7 @@
     }
   })
 
-  const sceneMatrixData = computed(() => {
-    const matrix = overview.scene_matrix || { scenes: [], environments: [], values: {} }
-    const result: any[] = []
-    ;(matrix.environments || []).forEach((environment: any, environmentIndex: number) => {
-      ;(matrix.scenes || []).forEach((scene: any, sceneIndex: number) => {
-        const item = matrix.values?.[String(environment.key)]?.[scene.key]
-        if (item?.final_pass_rate === null || item?.final_pass_rate === undefined) return
-        result.push({
-          environmentIndex,
-          sceneIndex,
-          environment: environment.title,
-          scene: scene.title,
-          label: `${environment.title} · ${scene.title}`,
-          finalPassRate: normalizeChartRate(item.final_pass_rate) ?? 0,
-          detailCount: Number(item.detail_count || 0),
-          failedCount: Number(item.failed_count || 0),
-        })
-      })
-    })
-    return result.sort(
-      (left, right) =>
-        left.finalPassRate - right.finalPassRate || right.detailCount - left.detailCount
-    )
-  })
+  const sceneMatrixData = computed(() => effectivenessMatrixRows(overview.scene_matrix))
   const sceneMatrixSummary = computed(() => {
     if (!sceneMatrixData.value.length) return '暂无交叉质量数据'
     const lowest = sceneMatrixData.value[0]
@@ -2194,12 +2071,12 @@
       tooltip: {
         trigger: 'item',
         confine: true,
-        formatter: (params: any) => {
-          const item = params.data || {}
-          return `${item.environment} × ${item.scene}<br/>最终通过率：${formatChartRate(
-            item.value
-          )}<br/>执行次数：${formatCount(item.detailCount)}<br/>失败：${formatCount(
-            item.failedCount
+        formatter: (params: unknown) => {
+          const item = chartPoint(params)?.data
+          return `${chartHtml(item?.environment)} × ${chartHtml(item?.scene)}<br/>最终通过率：${formatChartRate(
+            item?.value
+          )}<br/>执行次数：${formatCount(item?.detailCount)}<br/>失败：${formatCount(
+            item?.failedCount
           )}`
         },
       },
@@ -2215,7 +2092,7 @@
       yAxis: {
         type: 'category',
         inverse: true,
-        data: rows.map((item: any) => item.label),
+        data: rows.map((item) => item.label),
         axisLabel: {
           color: 'var(--m-text-2)',
           width: 128,
@@ -2233,7 +2110,7 @@
             color: 'var(--m-surface-soft)',
             borderRadius: 4,
           },
-          data: rows.map((item: any) => ({
+          data: rows.map((item) => ({
             ...item,
             value: item.finalPassRate,
             itemStyle: {
@@ -2249,8 +2126,8 @@
           label: {
             show: true,
             position: 'right',
-            formatter: (params: any) =>
-              `${formatChartRate(params.value)} · ${formatCount(params.data.detailCount)} 次`,
+            formatter: (params: unknown) =>
+              `${formatChartRate(chartPoint(params)?.value)} · ${formatCount(chartPoint(params)?.data?.detailCount)} 次`,
             color: 'var(--m-text-2)',
             fontSize: 10,
           },
@@ -2262,23 +2139,23 @@
 
   const moduleChangeData = computed(() => {
     const items = (overview.module_quality || []).filter(
-      (item: any) => item.pass_rate_delta !== null && item.pass_rate_delta !== undefined
+      (item) => item.pass_rate_delta !== null && item.pass_rate_delta !== undefined
     )
     const improved = [...items]
-      .filter((item: any) => Number(item.pass_rate_delta) > 0)
-      .sort((left: any, right: any) => Number(right.pass_rate_delta) - Number(left.pass_rate_delta))
+      .filter((item) => Number(item.pass_rate_delta) > 0)
+      .sort((left, right) => Number(right.pass_rate_delta) - Number(left.pass_rate_delta))
       .slice(0, 4)
     const declined = [...items]
-      .filter((item: any) => Number(item.pass_rate_delta) < 0)
-      .sort((left: any, right: any) => Number(left.pass_rate_delta) - Number(right.pass_rate_delta))
+      .filter((item) => Number(item.pass_rate_delta) < 0)
+      .sort((left, right) => Number(left.pass_rate_delta) - Number(right.pass_rate_delta))
       .slice(0, 4)
     return [...declined, ...improved].sort(
-      (left: any, right: any) => Number(left.pass_rate_delta) - Number(right.pass_rate_delta)
+      (left, right) => Number(left.pass_rate_delta) - Number(right.pass_rate_delta)
     )
   })
   const moduleChangeSummary = computed(() => {
-    const declined = moduleChangeData.value.filter((item: any) => Number(item.pass_rate_delta) < 0)
-    const improved = moduleChangeData.value.filter((item: any) => Number(item.pass_rate_delta) > 0)
+    const declined = moduleChangeData.value.filter((item) => Number(item.pass_rate_delta) < 0)
+    const improved = moduleChangeData.value.filter((item) => Number(item.pass_rate_delta) > 0)
     return `改善 ${improved.length} 个 · 下降 ${declined.length} 个`
   })
   const moduleChangeOption = computed(() => ({
@@ -2287,8 +2164,8 @@
     tooltip: {
       trigger: 'item',
       confine: true,
-      formatter: (params: any) =>
-        `${params.name}<br/>较上周期：${formatPercentagePoint(params.value, true)} 个百分点`,
+      formatter: (params: unknown) =>
+        `${chartHtml(chartPoint(params)?.name)}<br/>较上周期：${formatPercentagePoint(chartPoint(params)?.value, true)} 个百分点`,
     },
     xAxis: {
       type: 'value',
@@ -2300,7 +2177,7 @@
     },
     yAxis: {
       type: 'category',
-      data: moduleChangeData.value.map((item: any) => item.module_path),
+      data: moduleChangeData.value.map((item) => item.module_path),
       axisLabel: {
         color: 'var(--m-text-2)',
         width: 100,
@@ -2312,7 +2189,7 @@
         name: '通过率变化',
         type: 'bar',
         barMaxWidth: 20,
-        data: moduleChangeData.value.map((item: any) => ({
+        data: moduleChangeData.value.map((item) => ({
           value: normalizeChartRate(item.pass_rate_delta) ?? 0,
           itemStyle: {
             color: Number(item.pass_rate_delta || 0) >= 0 ? 'var(--m-success)' : 'var(--m-danger)',
@@ -2323,7 +2200,7 @@
           show: true,
           position: 'right',
           color: 'var(--m-text-2)',
-          formatter: (params: any) => `${formatPercentagePoint(params.value, true)} 个百分点`,
+          formatter: (params: unknown) => `${formatPercentagePoint(chartPoint(params)?.value, true)} 个百分点`,
         },
       },
     ],
@@ -2333,7 +2210,7 @@
     const items = overview.automation_type_quality || []
     if (!items.length) return '暂无类型数据'
     const best = [...items].sort(
-      (left: any, right: any) =>
+      (left, right) =>
         Number(right.final_pass_rate || 0) - Number(left.final_pass_rate || 0)
     )[0]
     return `最佳 ${best.type_name} ${formatRate(best.final_pass_rate)}`
@@ -2348,7 +2225,7 @@
   )
   const taskHealthSummary = computed(() => {
     const abnormal = (overview.task_health || []).filter(
-      (item: any) => Number(item.consecutive_abnormal || 0) > 0
+      (item) => Number(item.consecutive_abnormal || 0) > 0
     ).length
     return abnormal ? `${abnormal} 个任务存在连续异常` : '当前任务运行稳定'
   })
@@ -2356,19 +2233,19 @@
   const failedCaseRankingSummary = computed(() => {
     const rows = overview.failed_case_ranking || []
     if (!rows.length) return '本周期无失败用例'
-    const maxFailedCount = Math.max(...rows.map((item: any) => Number(item.failed_count || 0)))
+    const maxFailedCount = Math.max(...rows.map((item) => Number(item.failed_count || 0)))
     return `当前展示 ${rows.length} 个去重失败 Case · 最高出现 ${maxFailedCount} 次`
   })
 
   const environmentQualitySummary = computed(() => {
     const rows = (overview.environment_quality || []).filter(
-      (item: any) => item.final_pass_rate !== null && item.final_pass_rate !== undefined
+      (item) => item.final_pass_rate !== null && item.final_pass_rate !== undefined
     )
     if (!rows.length) return '暂无环境数据'
-    const best = rows.reduce((current: any, item: any) =>
+    const best = rows.reduce((current, item) =>
       Number(item.final_pass_rate || 0) > Number(current.final_pass_rate || 0) ? item : current
     )
-    const worst = rows.reduce((current: any, item: any) =>
+    const worst = rows.reduce((current, item) =>
       Number(item.final_pass_rate || 0) < Number(current.final_pass_rate || 0) ? item : current
     )
     if (best.environment === worst.environment)
@@ -2379,12 +2256,12 @@
   })
   const moduleQualitySummary = computed(() =>
     (overview.module_quality || []).reduce(
-      (summary: any, item: any) => {
+      (summary, item) => {
         summary[item.quality_level] = (summary[item.quality_level] || 0) + 1
         summary.total += 1
         return summary
       },
-      { success: 0, warning: 0, danger: 0, total: 0 }
+      { success: 0, warning: 0, danger: 0, unknown: 0, total: 0 }
     )
   )
   const moduleQualityAttentionCount = computed(
@@ -2392,7 +2269,7 @@
   )
   const sortedModuleQualityData = computed(() => {
     const levelOrder: Record<string, number> = { danger: 0, warning: 1, success: 2 }
-    return [...(overview.module_quality || [])].sort((left: any, right: any) => {
+    return [...(overview.module_quality || [])].sort((left, right) => {
       const leftIssues = Number(left.failed_count || 0) + Number(left.warning_count || 0)
       const rightIssues = Number(right.failed_count || 0) + Number(right.warning_count || 0)
       return (
@@ -2406,7 +2283,7 @@
   })
   const moduleQualityData = computed(() => {
     if (reportMode.value) return sortedModuleQualityData.value.slice(0, 8)
-    return sortedModuleQualityData.value.filter((item: any) => {
+    return sortedModuleQualityData.value.filter((item) => {
       return (
         moduleQualityFilter.value === 'all' ||
         (moduleQualityFilter.value === 'attention'
@@ -2434,22 +2311,20 @@
       : '尚无足够的正式定时任务结果用于评估模块质量'
   )
   const benefitSceneMap = computed(() =>
-    Object.fromEntries(
-      (overview.benefits.scene_benefits || []).map((item: any) => [item.scene, item])
-    )
+    new Map(overview.benefits.scene_benefits.map(item => [item.scene, item] as const))
   )
   const benefitSceneItems = computed(() => overview.benefits.scene_benefits || [])
   const aggregateBenefitScenes = (sceneKeys: string[]) =>
     sceneKeys.reduce(
       (result, sceneKey) => {
-        const scene = benefitSceneMap.value[sceneKey] || {}
-        result.suite_count += Number(scene.suite_count || 0)
-        result.execution_count += Number(scene.execution_count || 0)
-        result.unique_case_count += Number(scene.unique_case_count || 0)
-        result.abnormal_count += Number(scene.abnormal_count || 0)
+        const scene = benefitSceneMap.value.get(sceneKey)
+        result.suite_count += Number(scene?.suite_count || 0)
+        result.execution_count += Number(scene?.execution_count || 0)
+        result.unique_case_count += Number(scene?.unique_case_count || 0)
+        result.abnormal_count += Number(scene?.abnormal_count || 0)
         result.active_day_count = Math.max(
           result.active_day_count,
-          Number(scene.active_day_count || 0)
+          Number(scene?.active_day_count || 0)
         )
         return result
       },
@@ -2521,126 +2396,63 @@
     })),
     ...benefitItems.value,
   ])
-  async function loadData() {
-    const requestSequence = ++overviewRequestSequence
-    aiRequestSequence += 1
-    aiLoading.value = false
-    Object.assign(aiState, {
-      available: null,
-      reason: '',
-      model: '',
-      generated_at: '',
-      summary: null,
-    })
-    Object.assign(aiInsightState, { available: null, insights: {} })
-    loading.value = true
-    try {
-      const params: Record<string, any> = {}
-      if (filters.dateRange?.length === 2) [params.start_date, params.end_date] = filters.dateRange
-      if (selectedProjectProductId.value !== null && selectedProjectProductId.value !== undefined)
-        params.project_product_id = selectedProjectProductId.value
-      if (filters.test_env.length) params.test_env = filters.test_env.join(',')
-      if (filters.execution_scene.length) params.execution_scene = filters.execution_scene.join(',')
-      if (filters.execution_scope.length) params.execution_scope = filters.execution_scope.join(',')
-      const res = await getAutomationEffectivenessOverview(params)
-      if (requestSequence !== overviewRequestSequence) return
-      Object.assign(overview, res.data || {})
-      void loadAiSummary(false, requestSequence)
-    } catch (error: any) {
-      if (requestSequence === overviewRequestSequence) {
-        Message.error(error?.msg || '获取自动化效能数据失败')
-      }
-    } finally {
-      if (requestSequence === overviewRequestSequence) loading.value = false
-    }
+  let pendingOverview: { key: string; sequence: number; promise: Promise<void> } | null = null
+  function clearOverview() {
+    Object.assign(overview, createEmptyOverview())
+    overviewEvidence.value = null
+    generatedAt.value = ''
+    overviewReady.value = false
   }
-  async function loadAiSummary(force = false, sourceSequence = overviewRequestSequence) {
-
-    const requestSequence = ++aiRequestSequence
-    aiLoading.value = true
-    Object.assign(aiState, {
-      available: null,
-      reason: '',
-      model: '',
-      generated_at: '',
-      summary: null,
-    })
-    Object.assign(aiInsightState, { available: null, insights: {} })
-    try {
-      const overviewPayload = JSON.parse(JSON.stringify(overview))
-      const context = {
-        project_product: selectedProjectProductTitle.value,
-        period: reportPeriodText.value,
-        comparison_period: comparisonPeriodText.value,
-        environment: optionTitles(enumStore.environment_type, filters.test_env, '全部环境'),
-        task_type: optionTitles(
-          sceneOptions.value as any[],
-          filters.execution_scene,
-          '全部执行场景'
-        ),
-        coverage_scope: optionTitles(
-          scopeOptions.value as any[],
-          filters.execution_scope,
-          '全部执行范围'
-        ),
-      }
-      const summaryResult = await postAutomationEffectivenessAiSummary({
-        overview: overviewPayload,
-        context,
-        force,
-      })
-      if (requestSequence !== aiRequestSequence || sourceSequence !== overviewRequestSequence)
-        return
-      const summaryData = summaryResult.data || { available: false, reason: 'AI服务暂不可用' }
-      Object.assign(aiState, summaryData)
-
-      const missingInsightKeys = summaryData.available
-        ? missingAiInsightKeys(summaryData.summary)
-        : []
-      if (missingInsightKeys.length) {
-        try {
-          const insightResult = await postAutomationEffectivenessAiSummary({
-            mode: 'insights',
-            overview: overviewPayload,
-            context,
-            insight_keys: missingInsightKeys,
-            force,
-          })
-          if (requestSequence !== aiRequestSequence || sourceSequence !== overviewRequestSequence)
-            return
-          Object.assign(aiInsightState, insightResult.data || { available: false, insights: {} })
-        } catch {
-          Object.assign(aiInsightState, { available: false, insights: {} })
+  function invalidateReads(clear = false) {
+    overviewRequestSequence++
+    pageContextVersion.value++
+    needsLoad = true
+    loading.value = false
+    overviewReady.value = false
+    loadError.value = ''
+    failureReportDrawer.visible = false
+    diagnosticDrawer.visible = false
+    filterVisible.value = false
+    if (clear) clearOverview()
+  }
+  function loadData(): Promise<void> {
+    if (!pageAvailable()) { needsLoad = true; return Promise.resolve() }
+    if (!initialized) return initializePage()
+    const params = effectivenessQuery(filters)
+    const key = JSON.stringify(params)
+    if (pendingOverview?.key === key && pendingOverview.sequence === overviewRequestSequence) return pendingOverview.promise
+    const requestSequence = ++overviewRequestSequence
+    pageContextVersion.value++
+    const current = () => pageAvailable() && requestSequence === overviewRequestSequence
+    clearOverview()
+    loadError.value = ''
+    loading.value = true
+    needsLoad = false
+    const promise = Promise.resolve().then(async () => {
+      try {
+        if (!current()) return
+        const response: unknown = await getAutomationEffectivenessOverview(params, true)
+        if (!current()) return
+        const evidence = effectivenessPayload(response)
+        Object.assign(overview, normalizeEffectivenessOverview(evidence))
+        overviewEvidence.value = evidence
+        generatedAt.value = new Date().toLocaleString('zh-CN', { hour12: false })
+        overviewReady.value = true
+      } catch (loadFailure0) {
+        if (current()) { clearOverview(); (reportLoadError(loadFailure0, "加载失败，请重试", false), loadError.value = '获取自动化效能数据失败，请重试'); needsLoad = true }
+      } finally {
+        if (current()) {
+          loading.value = false
+          if (overviewReady.value) void loadAiSummary()
         }
-      } else {
-        Object.assign(aiInsightState, {
-          available: Boolean(summaryData.available),
-          insights: {},
-        })
+        if (pendingOverview?.promise === promise) pendingOverview = null
       }
-    } catch (error: any) {
-      if (requestSequence !== aiRequestSequence || sourceSequence !== overviewRequestSequence)
-        return
-      Object.assign(aiState, {
-        available: false,
-        reason: error?.message || error?.msg || '无法连接 AI 服务',
-        model: '',
-        generated_at: '',
-        summary: null,
-      })
-      Object.assign(aiInsightState, { available: false, insights: {} })
-    } finally {
-      if (requestSequence === aiRequestSequence && sourceSequence === overviewRequestSequence)
-        aiLoading.value = false
-    }
+    })
+    pendingOverview = { key, sequence: requestSequence, promise }
+    return promise
   }
   function resetFilters() {
-    draftFilters.periodPreset = defaultPeriodPreset
-    draftFilters.dateRange = resolvePeriodDateRange(defaultPeriodPreset)
-    draftFilters.project_product = undefined
-    draftFilters.test_env = []
-    draftFilters.execution_scene = []
-    draftFilters.execution_scope = []
+    Object.assign(draftFilters, createDefaultFilters())
   }
 
   function onPeriodPresetChange(value?: PeriodPreset) {
@@ -2648,37 +2460,27 @@
   }
 
   function syncDraftFilters() {
-    draftFilters.periodPreset = filters.periodPreset
-    draftFilters.dateRange = [...filters.dateRange]
-    draftFilters.project_product = filters.project_product
-    draftFilters.test_env = [...filters.test_env]
-    draftFilters.execution_scene = [...filters.execution_scene]
-    draftFilters.execution_scope = [...filters.execution_scope]
+    Object.assign(draftFilters, copyEffectivenessFilters(filters))
   }
 
   async function applyFilters() {
-    filters.periodPreset = draftFilters.periodPreset
-    filters.dateRange = [...draftFilters.dateRange]
-    filters.project_product = draftFilters.project_product
-    filters.test_env = [...draftFilters.test_env]
-    filters.execution_scene = [...draftFilters.execution_scene]
-    filters.execution_scope = [...draftFilters.execution_scope]
-    projectStore.setProjectProductNavigationSelection(getOptionId(filters.project_product) ?? null)
-    await loadData()
+    Object.assign(filters, copyEffectivenessFilters(draftFilters))
+    projectStore.setProjectProductNavigationSelection(selectedProjectProductId.value)
     filterVisible.value = false
+    await loadData()
   }
 
   function visibleProjectProductIds() {
-    return (projectStore.projectProduct || []).flatMap((project: any) =>
+    return (projectStore.projectProduct || []).flatMap((project) =>
       (project.children || [])
-        .map((product: any) => product.value)
-        .filter((value: any) => value !== null && value !== undefined && value !== '')
+        .map((product) => product.value)
+        .filter(value => value !== null && value !== undefined && value !== '')
     )
   }
 
-  function normalizeVisibleProjectProductId(value: any) {
+  function normalizeVisibleProjectProductId(value: unknown) {
     const productIds = visibleProjectProductIds()
-    return productIds.find((productId: any) => String(productId) === String(value))
+    return productIds.find((productId) => String(productId) === String(value))
   }
 
   function initializeProjectProductFilter() {
@@ -2703,14 +2505,14 @@
         return
       filters.project_product = normalizedProduct
       draftFilters.project_product = normalizedProduct
-      void loadData()
+      if (initialized) void loadData()
     }
   )
   function formatRate(value: number | null | undefined) {
     return formatChartRate(value)
   }
-  function formatCount(value: number | null | undefined) {
-    return Number(value || 0).toLocaleString('zh-CN')
+  function formatCount(value: unknown) {
+    return (effectivenessNumber(value) ?? 0).toLocaleString('zh-CN')
   }
   function formatDuration(value: number | null | undefined) {
     if (value === null || value === undefined) return '-'
@@ -2784,89 +2586,89 @@
     }
     return labels[value] || '待评估'
   }
-  function currentReportQuery() {
-    const query: Record<string, any> = {
-      start_date: filters.dateRange?.[0],
-      end_date: filters.dateRange?.[1],
-      project_product: selectedProjectProductId.value,
-      test_env: filters.test_env.join(','),
-      execution_scene: filters.execution_scene.join(','),
-      execution_scope: filters.execution_scope.join(','),
-    }
-    return Object.fromEntries(
-      Object.entries(query).filter(
-        ([, value]) => value !== undefined && value !== null && value !== ''
-      )
-    )
+  function currentReportQuery(): LocationQueryRaw {
+    const params = effectivenessQuery(filters)
+    const query: LocationQueryRaw = {}
+    if (params.start_date) query.start_date = params.start_date
+    if (params.end_date) query.end_date = params.end_date
+    if (params.project_product_id !== undefined) query.project_product = params.project_product_id
+    if (params.test_env) query.test_env = params.test_env
+    if (params.execution_scene) query.execution_scene = params.execution_scene
+    if (params.execution_scope) query.execution_scope = params.execution_scope
+    return query
   }
-  function openReportList(extra: Record<string, any> = {}) {
-    router.push({ path: '/report/index', query: { ...currentReportQuery(), ...extra } })
+  function openReportList(extra: LocationQueryRaw = {}) {
+    if (!pageAvailable()) return
+    return router.push({ path: '/report/index', query: { ...currentReportQuery(), ...extra } })
   }
-  function openTaskDiagnostic(item: any) {
+  function openTaskDiagnostic(item: EffectivenessTask) {
+    if (!pageAvailable() || item.task_id === null) return
     diagnosticDrawer.targetId = item.task_id
     diagnosticDrawer.documentAvailable = Boolean(item.diagnostic_file_path)
     diagnosticDrawer.title = `${item.task_name || '定时任务'} · 排查结果`
     diagnosticDrawer.visible = true
   }
-  function openFailedCaseReport(item: any) {
-    if (!item?.latest_failed_detail_id) {
+  function openFailedCaseReport(item: EffectivenessFailedCase) {
+    if (!pageAvailable()) return
+    if (item.latest_failed_detail_id === null || item.case_id === null || ![0, 1, 2].includes(item.case_type ?? -1)) {
       Message.error('当前失败用例缺少报告明细 ID，无法查看最近结果')
       return
     }
     failureReportDrawer.testSuiteDetailId = item.latest_failed_detail_id
-    failureReportDrawer.caseType = item.case_type
+    failureReportDrawer.caseType = item.case_type ?? -1
     failureReportDrawer.caseId = item.case_id
     failureReportDrawer.caseName = item.case_name || `Case #${item.case_id}`
-    failureReportDrawer.fallbackError = item.latest_error || ''
+    failureReportDrawer.fallbackError = item.latest_error
     failureReportDrawer.visible = true
   }
-  function onPeriodQualityClick(item: any) {
-    openReportList({
-      start_date: String(item?.start || '').slice(0, 10),
-      end_date: String(item?.end || '').slice(0, 10),
-    })
+  function onPeriodQualityClick(item: { start?: string; end?: string }) {
+    const start = effectivenessDate(item.start), end = effectivenessDate(item.end)
+    if (start && end) return openReportList({ start_date: start, end_date: end })
   }
-  function onTrendChartClick(params: any) {
-    const item = overview.trend?.[Number(params?.dataIndex)]
-    if (item?.date_value) openReportList({ start_date: item.date_value, end_date: item.date_value })
+  function onTrendChartClick(params: unknown) {
+    const index = effectivenessChartIndex(params)
+    if (index === null) return
+    const date = effectivenessDate(overview.trend[index]?.date_value)
+    if (date) return openReportList({ start_date: date, end_date: date })
   }
-  function onEnvironmentChartClick(params: any) {
-    const item = overview.environment_quality?.[Number(params?.dataIndex)]
-    if (item) openReportList({ test_env: item.environment })
+  function onEnvironmentChartClick(params: unknown) {
+    const index = effectivenessChartIndex(params), item = index === null ? null : overview.environment_quality[index]
+    if (item && item.environment !== null) return openReportList({ test_env: item.environment })
   }
-  function onSceneChartClick(params: any) {
-    const item = overview.scene_distribution?.[Number(params?.dataIndex)]
-    if (item) openReportList({ execution_scene: item.scene })
+  function onSceneChartClick(params: unknown) {
+    const index = effectivenessChartIndex(params), item = index === null ? null : overview.scene_distribution[index]
+    if (item?.scene) return openReportList({ execution_scene: item.scene })
   }
-  function onScopeChartClick(params: any) {
-    const item = overview.scope_distribution?.[Number(params?.dataIndex)]
-    if (item) openReportList({ execution_scope: item.scope })
+  function onScopeChartClick(params: unknown) {
+    const index = effectivenessChartIndex(params), item = index === null ? null : overview.scope_distribution[index]
+    if (item?.scope) return openReportList({ execution_scope: item.scope })
   }
-  function onModuleRiskClick(params: any) {
-    const item = moduleRiskData.value[Number(params?.dataIndex)]
-    if (item?.module_id) openReportList({ module: item.module_id })
+  function onModuleRiskClick(params: unknown) {
+    const index = effectivenessChartIndex(params), item = index === null ? null : moduleRiskData.value[index]
+    if (item && item.module_id !== null) return openReportList({ module: item.module_id })
   }
-  function onIssueParetoClick(params: any) {
-    const item = issueParetoData.value[Number(params?.dataIndex)]
-    if (item?.module_id) openReportList({ module: item.module_id })
+  function onIssueParetoClick(params: unknown) {
+    const index = effectivenessChartIndex(params), item = index === null ? null : issueParetoData.value[index]
+    if (item && item.module_id !== null) return openReportList({ module: item.module_id })
   }
-  function onModuleChangeClick(params: any) {
-    const item = moduleChangeData.value[Number(params?.dataIndex)]
-    if (item?.module_id) openReportList({ module: item.module_id })
+  function onModuleChangeClick(params: unknown) {
+    const index = effectivenessChartIndex(params), item = index === null ? null : moduleChangeData.value[index]
+    if (item && item.module_id !== null) return openReportList({ module: item.module_id })
   }
-  function onSceneMatrixClick(params: any) {
-    const matrix = overview.scene_matrix || {}
-    openReportList({
-      execution_scene: matrix.scenes?.[params?.data?.sceneIndex]?.key,
-      test_env: matrix.environments?.[params?.data?.environmentIndex]?.key,
-    })
+  function onSceneMatrixClick(params: unknown) {
+    const data = effectivenessObject(effectivenessObject(params)?.data)
+    const sceneIndex = effectivenessChartIndex({ dataIndex: data?.sceneIndex })
+    const environmentIndex = effectivenessChartIndex({ dataIndex: data?.environmentIndex })
+    if (sceneIndex === null || environmentIndex === null) return
+    const scene = overview.scene_matrix.scenes[sceneIndex], environment = overview.scene_matrix.environments[environmentIndex]
+    if (scene && environment) return openReportList({ execution_scene: scene.key, test_env: environment.key })
   }
-  function taskHealthClass(item: any) {
-    if (Number(item.consecutive_abnormal || 0) >= 2 || Number(item.final_pass_rate || 0) < 70)
+  function taskHealthClass(item: EffectivenessTask) {
+    if (item.consecutive_abnormal >= 2 || (item.final_pass_rate !== null && item.final_pass_rate < 70))
       return 'is-danger'
-    if (Number(item.consecutive_abnormal || 0) || Number(item.final_pass_rate || 0) < 90)
+    if (item.consecutive_abnormal > 0 || (item.final_pass_rate !== null && item.final_pass_rate < 90))
       return 'is-warning'
-    return 'is-success'
+    return item.final_pass_rate === null ? 'is-neutral' : 'is-success'
   }
   function openAiSettings() {
     router.push('/system/settings/index')
@@ -2877,216 +2679,91 @@
     filterVisible.value = nextVisible
   }
   async function toggleReportMode() {
+    if (!pageAvailable() || printing.value || imageExporting.value) return
+    const context = pageContextVersion.value
     reportMode.value = !reportMode.value
     if (reportMode.value) filterVisible.value = false
     await nextTick()
-    window.dispatchEvent(new Event('resize'))
+    if (pageAvailable() && context === pageContextVersion.value) window.dispatchEvent(new Event('resize'))
   }
   async function clearEffectivenessCache() {
+    if (cacheClearing.value || !pageAvailable()) return
+    const context = pageContextVersion.value
     cacheClearing.value = true
     try {
       const res = await postAutomationEffectivenessCacheClear()
+      if (!pageAvailable() || context !== pageContextVersion.value) return
+      if (res.code !== 200) throw new Error('清除缓存失败')
       Message.success(res.msg)
       await loadData()
+    } catch {
+      if (pageAvailable() && context === pageContextVersion.value) Message.error('清除统计缓存失败，请重试')
     } finally {
       cacheClearing.value = false
     }
   }
-  async function printReport() {
-    if (reportContentLoading.value || imageExporting.value) {
-      Message.warning('请等待全部加载完成')
-      return
-    }
-    printing.value = true
-    reportMode.value = true
-    filterVisible.value = false
-    await waitForReportRender()
-    printJS({
-      printable: 'mango-effectiveness-report-image',
-      type: 'html',
-      targetStyles: ['*'],
-      scanStyles: true,
-      // print-js 的默认 800px 最大宽度和 12pt 字号会破坏 A4 网格与文字层级。
-      maxWidth: 10000,
-      font_size: '',
-      style: `
-        @page { size: A4 landscape; margin: 0; }
-        html, body {
-          width: 297mm !important;
-          min-width: 297mm !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          overflow: visible !important;
-          background: var(--m-surface) !important;
-        }
-        #mango-effectiveness-report-image {
-          display: flex !important;
-          width: 297mm !important;
-          max-width: 297mm !important;
-          min-width: 297mm !important;
-          margin: 0 !important;
-          padding: 9mm 10mm 8mm !important;
-          box-sizing: border-box !important;
-          overflow: visible !important;
-          flex-direction: column !important;
-          gap: var(--m-page-gap, 8px) !important;
-          border: 0 !important;
-          background: var(--m-surface) !important;
-          box-shadow: none !important;
-          print-color-adjust: exact !important;
-          -webkit-print-color-adjust: exact !important;
-        }
-        #mango-effectiveness-report-image .mango-effectiveness-paper-page,
-        #mango-effectiveness-report-image .mango-effectiveness-module-quality__list,
-        #mango-effectiveness-report-image .mango-effectiveness-module-quality__loading,
-        #mango-effectiveness-report-image .arco-spin,
-        #mango-effectiveness-report-image .mango-panel-spin__content {
-          width: 100% !important;
-          max-width: none !important;
-          min-width: 0 !important;
-          height: auto !important;
-          max-height: none !important;
-          overflow: visible !important;
-        }
-        #mango-effectiveness-report-image .mango-effectiveness-paper-page {
-          margin: 0 !important;
-          padding: 0 !important;
-          gap: var(--m-page-gap, 8px) !important;
-          break-inside: auto !important;
-          page-break-inside: auto !important;
-          border: 0 !important;
-          background: transparent !important;
-          box-shadow: none !important;
-        }
-        #mango-effectiveness-report-image .mango-effectiveness-task-health__list,
-        #mango-effectiveness-report-image .mango-effectiveness-case-health__list {
-          min-height: 0 !important;
-          flex: 1 1 auto !important;
-          max-height: none !important;
-          overflow: visible !important;
-          scrollbar-gutter: auto !important;
-        }
-        #mango-effectiveness-report-image .mango-effectiveness-task-health__list article .arco-btn,
-        #mango-effectiveness-report-image .mango-effectiveness-case-health__list article .arco-btn {
-          display: none !important;
-        }
-        #mango-effectiveness-report-image .mango-effectiveness-grid--health {
-          align-items: start !important;
-        }
-        #mango-effectiveness-report-image .mango-effectiveness-grid--health > .mango-effectiveness-panel {
-          height: auto !important;
-          max-height: none !important;
-          box-sizing: border-box !important;
-          overflow: visible !important;
-        }
-        #mango-effectiveness-report-image .mango-effectiveness-grid--module-analysis > .mango-effectiveness-panel:last-child:nth-child(odd) {
-          grid-column: 1 / -1 !important;
-        }
-        #mango-effectiveness-report-image .mango-effectiveness-card {
-          min-height: 116px !important;
-        }
-        #mango-effectiveness-report-image .mango-effectiveness-card__comparison,
-        #mango-effectiveness-report-image .mango-effectiveness-card__footer small {
-          overflow: visible !important;
-          text-overflow: clip !important;
-          white-space: normal !important;
-        }
-        #mango-effectiveness-report-image .mango-effectiveness-grid--diagnostics .mango-effectiveness-panel-title {
-          display: grid !important;
-          min-height: 68px !important;
-          grid-template-columns: minmax(0, 1fr) !important;
-          padding: 6px 0 !important;
-          align-content: center !important;
-          gap: 2px !important;
-        }
-        #mango-effectiveness-report-image .mango-effectiveness-grid--diagnostics .mango-effectiveness-panel-title strong {
-          white-space: nowrap !important;
-        }
-        #mango-effectiveness-report-image .mango-effectiveness-grid--diagnostics .mango-effectiveness-panel-title > small {
-          max-width: 100% !important;
-          justify-self: start !important;
-          white-space: normal !important;
-        }
-        #mango-effectiveness-report-image .mango-effectiveness-insight,
-        #mango-effectiveness-report-image .mango-effectiveness-card,
-        #mango-effectiveness-report-image .mango-section-card,
-        #mango-effectiveness-report-image .mango-effectiveness-report-header {
-          break-inside: avoid !important;
-          page-break-inside: avoid !important;
-          box-shadow: none !important;
-        }
-        #mango-effectiveness-report-image .mango-effectiveness-ai-card__action,
-        #mango-effectiveness-report-image .mango-effectiveness-ai-unavailable .arco-btn {
-          display: none !important;
-        }
-      `,
-      documentTitle: reportDocumentTitle.value.replace(/[\\/]/g, '-'),
-      onPrintDialogClose: () => {
-        printing.value = false
-      },
+  const { printReport, downloadReportImage } = useEffectivenessExport({
+    contextKey: () => JSON.stringify([pageContextVersion.value, reportMode.value, moduleQualityFilter.value]),
+    available: () => pageAvailable() && overviewReady.value,
+    loading: () => reportContentLoading.value,
+    title: () => reportDocumentTitle.value,
+    printing, imageExporting, reportMode, filterVisible,
+  })
+  let initialization: { version: number; promise: Promise<void> } | null = null
+  function initializePage(): Promise<void> {
+    if (!pageAvailable()) return Promise.resolve()
+    if (initialization?.version === pageContextVersion.value) return initialization.promise
+    const version = pageContextVersion.value
+    const current = () => pageAvailable() && version === pageContextVersion.value
+    loading.value = true
+    loadError.value = ''
+    const promise = Promise.resolve().then(async () => {
+      try {
+        if (!current()) return
+        await Promise.all([enumStore.getEnum(), projectStore.projectProductName()])
+        if (!current()) return
+        if (projectStore.optionErrors.products) throw new Error('项目产品加载失败')
+        initializeProjectProductFilter()
+        initialized = true
+        await loadData()
+      } catch (loadFailure1) {
+        if (current()) { loading.value = false; needsLoad = true; (reportLoadError(loadFailure1, "质量效能选项加载失败，请重试", false), loadError.value = '质量效能选项加载失败，请重试') }
+      } finally {
+        if (initialization?.promise === promise) initialization = null
+      }
     })
+    initialization = { version, promise }
+    return promise
   }
-  async function waitForReportRender() {
-    await nextTick()
-    window.dispatchEvent(new Event('resize'))
-    if (document.fonts?.ready) await document.fonts.ready
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+  function visibilityChanged() {
+    if (!pageAvailable()) invalidateReads()
+    else if (needsLoad) void loadData()
   }
-  function reportFileName(extension: string) {
-    const safeTitle = reportDocumentTitle.value
-      .replace(/[\\/:*?"<>|]/g, '-')
-      .replace(/\s+/g, ' ')
-      .trim()
-    return `${safeTitle || '自动化质量效能报告'}.${extension}`
-  }
-  async function downloadReportImage() {
-    if (reportContentLoading.value || printing.value || imageExporting.value) {
-      Message.warning('请等待全部加载完成')
-      return
-    }
-    imageExporting.value = true
-    filterVisible.value = false
-    try {
-      await waitForReportRender()
-      const report = document.getElementById('mango-effectiveness-report-image')
-      if (!report) throw new Error('未找到汇报内容')
-      const width = Math.ceil(report.scrollWidth)
-      const height = Math.ceil(report.scrollHeight)
-      const pixelRatio = Math.max(
-        1,
-        Math.min(3, 30000 / Math.max(height, 1), 30000 / Math.max(width, 1))
-      )
-      const backgroundColor =
-        getComputedStyle(report).backgroundColor ||
-        getComputedStyle(document.documentElement).getPropertyValue('--m-surface').trim()
-      const dataUrl = await toPng(report, {
-        width,
-        height,
-        pixelRatio,
-        cacheBust: true,
-        backgroundColor,
-        style: {
-          margin: '0',
-          transform: 'none',
-          boxShadow: 'none',
-        },
-      })
-      const link = document.createElement('a')
-      link.download = reportFileName('png')
-      link.href = dataUrl
-      link.click()
-      Message.success(`高清图片已生成（${pixelRatio.toFixed(1)} 倍清晰度）`)
-    } catch (error: any) {
-      Message.error(error?.message || '高清图片生成失败，请稍后重试')
-    } finally {
-      imageExporting.value = false
-    }
-  }
-  onMounted(async () => {
-    await Promise.all([enumStore.getEnum(), projectStore.projectProductName()])
-    initializeProjectProductFilter()
-    loadData()
+  watch([
+    () => route.fullPath, () => userStore.userId, () => userStore.roleId,
+    () => userStore.token, () => userStore.selected_environment,
+  ], () => {
+    initialized = false
+    invalidateReads(true)
+    filters.project_product = undefined
+    syncDraftFilters()
+    if (pageAvailable()) void initializePage()
+  }, { flush: 'sync' })
+  onMounted(() => {
+    mounted = true
+    document.addEventListener('visibilitychange', visibilityChanged)
+    void initializePage()
+  })
+  onDeactivated(() => { active = false; invalidateReads() })
+  onActivated(() => {
+    const wasInactive = !active
+    active = true
+    if (wasInactive && needsLoad) void loadData()
+  })
+  onBeforeUnmount(() => {
+    disposed = true
+    invalidateReads(true)
+    document.removeEventListener('visibilitychange', visibilityChanged)
   })
 </script>
 

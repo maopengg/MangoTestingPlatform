@@ -1,6 +1,6 @@
 import { deleted, get, post, put } from '@/api/http'
 
-export function getUserFile(value) {
+export function getUserFile(value: object) {
   return get({
     url: '/system/file',
     data: () => {

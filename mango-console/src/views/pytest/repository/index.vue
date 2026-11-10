@@ -3,7 +3,7 @@
     <template #header>
       <TableHeader title="Pytest 仓库管理">
         <template #header-extra>
-          <a-button  type="primary" size="small" @click="openEditor()">新增仓库</a-button>
+          <a-button type="primary" size="small" @click="openEditor()">新增仓库</a-button>
         </template>
       </TableHeader>
     </template>
@@ -35,9 +35,7 @@
             <span class="mango-pytest-repository-page__metric-note">已发现测试用例</span>
           </div>
           <div
-            class="
-              mango-pytest-repository-page__metric mango-pytest-repository-page__metric--status
-            "
+            class="mango-pytest-repository-page__metric mango-pytest-repository-page__metric--status"
             :class="{ 'mango-pytest-repository-page__metric--danger': repositoryMetrics.failed }"
           >
             <span class="mango-pytest-repository-page__metric-label">同步异常</span>
@@ -51,262 +49,191 @@
           </div>
         </div>
 
-        <div class="mango-pytest-repository-page__workbench">
-          <aside class="mango-pytest-repository-page__tree-panel">
-            <PytestCaseDirectoryTree
-              :data="repositoryTree"
-              :loading="selectedTreeLoading"
-              :selected-key="selectedTreeKey"
-              expand-selected
-              @select="onTreeNodeSelect"
-              @directory-toggle="onTreeNodeSelect"
-            />
-          </aside>
 
-          <section class="mango-pytest-repository-page__main">
-            <div v-if="selectedRepository" class="mango-pytest-repository-page__selection">
-              <div class="mango-pytest-repository-page__selection-title">
-                <strong>{{ selectedRepository.name }}</strong>
-                <a-tag size="small">{{ providerLabel(selectedRepository.provider) }}</a-tag>
-                <a-tag :color="syncStatusColor(selectedRepository.sync_status)" size="small">
-                  {{ syncStatusLabel(selectedRepository.sync_status) }}
-                </a-tag>
-              </div>
-              <div class="mango-pytest-repository-page__selection-meta">
-                <span
-                  >分支
-                  {{ selectedRepository.active_branch || selectedRepository.default_branch }}</span
-                >
-                <span>目录 {{ selectedTreeStats.directory_count }}</span>
-                <span>文件 {{ selectedTreeStats.file_count }}</span>
-              </div>
-            </div>
-            <div v-if="selectedFileNode" class="mango-pytest-repository-page__preview">
-              <div class="mango-pytest-repository-page__preview-header">
-                <div>
-                  <strong :title="selectedFileNode.path">{{ selectedFileNode.path }}</strong>
-                  <a-tag v-if="isMarkdownPreview" color="blue" size="small">Markdown</a-tag>
-                  <a-tag color="gray" size="small">只读</a-tag>
-                </div>
-                <a-button class="mango-back-button" size="small" @click="returnToRepositoryList">
-                  返回仓库列表
-                </a-button>
-              </div>
-              <mango-panel-spin
-                :loading="filePreviewLoading"
-                class="mango-pytest-repository-page__preview-body"
+        <div class="mango-workbench-scroll-x"
+          ><div class="mango-pytest-repository-page__workbench">
+            <aside class="mango-pytest-repository-page__tree-panel">
+              <PytestCaseDirectoryTree
+                :data="repositoryTree"
+                :loading="selectedTreeLoading"
+                :selected-key="selectedTreeKey"
+                expand-selected
+                @select="onTreeNodeSelect"
+                @directory-toggle="onTreeNodeSelect"
               >
-                <div
-                  v-if="isMarkdownPreview"
-                  class="mango-pytest-repository-page__markdown mango-native-scrollbar"
+                <template #actions
+                  ><a-button
+                    v-if="selectedTreeFailed"
+                    type="text"
+                    status="danger"
+                    size="small"
+                    :loading="selectedTreeLoading"
+                    @click="retryTree"
+                    >重试</a-button
+                  ></template
                 >
-                  <MdPreview
-                    id="mango-pytest-repository-markdown-preview"
-                    :model-value="filePreviewContent"
-                    :theme="markdownTheme"
-                    preview-theme="github"
-                  />
+              </PytestCaseDirectoryTree>
+            </aside>
+
+            <section class="mango-pytest-repository-page__main">
+              <div v-if="selectedRepository" class="mango-pytest-repository-page__selection">
+                <div class="mango-pytest-repository-page__selection-title">
+                  <strong>{{ selectedRepository.name }}</strong>
+                  <a-tag size="small">{{ providerLabel(selectedRepository.provider) }}</a-tag>
+                  <a-tag :color="syncStatusColor(selectedRepository.sync_status)" size="small">
+                    {{ syncStatusLabel(selectedRepository.sync_status) }}
+                  </a-tag>
                 </div>
-                <CodeEditor
-                  v-else
-                  v-model="filePreviewContent"
-                  :language="filePreviewLanguage"
-                  :code-style="{ height: '100%' }"
-                  readonly
-                  placeholder="暂无可预览内容"
-                />
-              </mango-panel-spin>
-            </div>
-            <a-table
-              v-else
-              class="mango-native-scroll-table mango-pytest-repository-page__table"
-              :columns="tableColumns"
-              :data="repositories"
-              :loading="loading"
-              :pagination="false"
-              :scroll="{ x: 1130, y: 'calc(100vh - 350px)' }"
-              :row-class="repositoryRowClass"
-              row-key="id"
-              @row-click="onRepositoryRowClick"
-            >
-              <template #columns>
-                <a-table-column
-                  v-for="column in tableColumns"
-                  :key="column.key"
-                  :title="column.title"
-                  :data-index="column.key"
-                  :align="column.align"
-                  :width="column.width"
-                  :fixed="column.fixed"
+                <div class="mango-pytest-repository-page__selection-meta">
+                  <span
+                    >分支
+                    {{
+                      selectedRepository.active_branch || selectedRepository.default_branch
+                    }}</span
+                  >
+                  <span>目录 {{ selectedTreeStats.directory_count }}</span>
+                  <span>文件 {{ selectedTreeStats.file_count }}</span>
+                </div>
+              </div>
+              <div v-if="selectedFileNode" class="mango-pytest-repository-page__preview">
+                <div class="mango-pytest-repository-page__preview-header">
+                  <div>
+                    <strong :title="selectedFileNode.path">{{ selectedFileNode.path }}</strong>
+                    <a-tag v-if="isMarkdownPreview" color="blue" size="small">Markdown</a-tag>
+                    <a-tag color="gray" size="small">只读</a-tag>
+                  </div>
+                  <a-button class="mango-back-button" size="small" @click="returnToRepositoryList">
+                    返回仓库列表
+                  </a-button>
+                </div>
+                <mango-panel-spin
+                  :loading="filePreviewLoading"
+                  class="mango-pytest-repository-page__preview-body"
                 >
-                  <template #cell="{ record }">
-                    <div
-                      v-if="column.key === 'repository'"
-                      class="mango-pytest-repository-page__identity"
-                    >
-                      <strong :title="record.name">{{ record.name }}</strong>
-                      <div>
-                        <a-tag size="small">{{ providerLabel(record.provider) }}</a-tag>
-                        <span>{{ record.credential?.configured ? '已配置凭证' : '公开仓库' }}</span>
-                      </div>
-                    </div>
-                    <div
-                      v-else-if="column.key === 'source'"
-                      class="mango-pytest-repository-page__source"
-                    >
-                      <span :title="record.repo_url">{{ record.repo_url }}</span>
-                      <div>
-                        <a-tag size="small">{{
-                          record.active_branch || record.default_branch
-                        }}</a-tag>
-                        <code v-if="record.current_commit">{{
-                          shortCommit(record.current_commit)
-                        }}</code>
-                      </div>
-                    </div>
-                    <div
-                      v-else-if="column.key === 'assets'"
-                      class="mango-pytest-repository-page__assets"
-                    >
-                      <span
-                        >项目 <strong>{{ record.project_count || 0 }}</strong></span
+
+                  <template v-if="filePreviewFailed"></template>
+                  <CodeEditor
+                    v-else-if="!isMarkdownPreview"
+                    v-model="filePreviewContent"
+                    :language="filePreviewLanguage"
+                    :code-style="{ height: '100%' }"
+                    readonly
+                    placeholder="暂无可预览内容"
+                  />
+                </mango-panel-spin>
+              </div>
+              <a-table
+                v-else
+                class="mango-native-scroll-table mango-pytest-repository-page__table"
+                :columns="tableColumns"
+                :data="repositories"
+                :loading="loading"
+                :pagination="false"
+                :scroll="{ x: repositoryScrollWidth, y: '100%' }"
+                :row-class="repositoryRowClass"
+                row-key="id"
+                @row-click="onRepositoryRowClick"
+              >
+                <template #columns>
+                  <a-table-column
+                    v-for="column in tableColumns"
+                    :key="column.key"
+                    :title="column.title"
+                    :data-index="column.key"
+                    :align="column.align"
+                    :width="column.width"
+                    :fixed="column.fixed"
+                    :ellipsis="column.ellipsis"
+                    :tooltip="column.tooltip"
+                  >
+                    <template #cell="{ record }">
+                      <div
+                        v-if="column.key === 'repository'"
+                        class="mango-pytest-repository-page__identity"
                       >
-                      <span
-                        >Case <strong>{{ record.case_count || 0 }}</strong></span
-                      >
-                    </div>
-                    <div
-                      v-else-if="column.key === 'sync'"
-                      class="mango-pytest-repository-page__sync"
-                    >
-                      <div>
-                        <a-tag :color="syncStatusColor(record.sync_status)" size="small">
-                          {{ syncStatusLabel(record.sync_status) }}
-                        </a-tag>
-                        <span>{{ record.last_sync_time || '尚未同步' }}</span>
+                        <strong :title="record.name">{{ record.name }}</strong>
+                        <div>
+                          <a-tag size="small">{{ providerLabel(record.provider) }}</a-tag>
+                          <span>{{
+                            record.credential?.configured ? '已配置凭证' : '公开仓库'
+                          }}</span>
+                        </div>
                       </div>
-                      <small v-if="record.last_sync_error" :title="record.last_sync_error">
-                        {{ record.last_sync_error }}
-                      </small>
-                    </div>
-                    <template v-else-if="column.key === 'actions'">
-                      <MangoTableActions :actions="repositoryActions(record)" />
+                      <div
+                        v-else-if="column.key === 'source'"
+                        class="mango-pytest-repository-page__source"
+                      >
+                        <span :title="record.repo_url">{{ record.repo_url }}</span>
+                        <div>
+                          <a-tag size="small">{{
+                            record.active_branch || record.default_branch
+                          }}</a-tag>
+                          <code v-if="record.current_commit">{{
+                            shortCommit(record.current_commit)
+                          }}</code>
+                        </div>
+                      </div>
+                      <div
+                        v-else-if="column.key === 'assets'"
+                        class="mango-pytest-repository-page__assets"
+                      >
+                        <span
+                          >项目 <strong>{{ record.project_count || 0 }}</strong></span
+                        >
+                        <span
+                          >Case <strong>{{ record.case_count || 0 }}</strong></span
+                        >
+                      </div>
+                      <div
+                        v-else-if="column.key === 'sync'"
+                        class="mango-pytest-repository-page__sync"
+                      >
+                        <div>
+                          <a-tag :color="syncStatusColor(record.sync_status)" size="small">
+                            {{ syncStatusLabel(record.sync_status) }}
+                          </a-tag>
+                          <span>{{ record.last_sync_time || '尚未同步' }}</span>
+                        </div>
+                        <small v-if="record.last_sync_error" :title="record.last_sync_error">
+                          {{ record.last_sync_error }}
+                        </small>
+                      </div>
+                      <template v-else-if="column.key === 'actions'">
+                        <MangoTableActions :actions="repositoryActions(record)" />
+                      </template>
+                      <template v-else>{{ record[column.key] ?? '-' }}</template>
                     </template>
-                    <template v-else>{{ record[column.key] ?? '-' }}</template>
-                  </template>
-                </a-table-column>
-              </template>
-              <template #empty>
-                <div class="mango-empty-state">暂无 Pytest 仓库</div>
-              </template>
-            </a-table>
-          </section>
-        </div>
+                  </a-table-column>
+                </template>
+                <template #empty>
+                  <div class="mango-empty-state">暂无 Pytest 仓库</div>
+                </template>
+              </a-table>
+            </section>
+          </div></div
+        >
       </div>
     </template>
   </TableBody>
 
+  <PytestRepositoryEditor
+    ref="editor"
+    :busy-ids="busyIds"
+    @busy="editorBusy"
+    @saved="refreshAfterWrite"
+  />
   <a-modal
-    v-model:visible="editorVisible"
-    :title="repositoryForm.id ? '编辑 Pytest 仓库' : '新增 Pytest 仓库'"
-    :width="680"
-    :body-style="{ maxHeight: 'calc(100vh - 180px)', overflowY: 'auto' }"
-    :ok-loading="saving"
-    unmount-on-close
-    @before-ok="saveRepository"
-  >
-    <a-form
-      :model="repositoryForm"
-      class="mango-pytest-repository-page__editor-form"
-      layout="horizontal"
-      :label-col-props="{ span: 9 }"
-      :wrapper-col-props="{ span: 15 }"
-    >
-      <section class="mango-pytest-repository-page__form-section">
-        <div class="mango-section-title">
-          <div class="mango-section-title__main">
-            <h2>仓库配置</h2>
-          </div>
-        </div>
-        <a-grid :cols="2" :col-gap="16" :row-gap="0">
-          <a-grid-item
-            ><a-form-item label="仓库名称" required
-              ><a-input v-model="repositoryForm.name" /></a-form-item
-          ></a-grid-item>
-          <a-grid-item
-            ><a-form-item label="Git 平台" required
-              ><a-select
-                v-model="repositoryForm.provider"
-                :options="providerOptions" /></a-form-item
-          ></a-grid-item>
-          <a-grid-item :span="2"
-            ><a-form-item label="仓库地址" required>
-              <a-input
-                v-model="repositoryForm.repo_url"
-                placeholder="https://git.example.com/group/project.git" /></a-form-item
-          ></a-grid-item>
-          <a-grid-item
-            ><a-form-item label="API 地址"
-              ><a-input
-                v-model="repositoryForm.api_base_url"
-                placeholder="留空则根据仓库地址自动填写" /></a-form-item
-          ></a-grid-item>
-          <a-grid-item
-            ><a-form-item label="远程项目标识"
-              ><a-input
-                v-model="repositoryForm.remote_project"
-                placeholder="group/project" /></a-form-item
-          ></a-grid-item>
-          <a-grid-item
-            ><a-form-item label="默认分支" required
-              ><a-input v-model="repositoryForm.default_branch" /></a-form-item
-          ></a-grid-item>
-        </a-grid>
-      </section>
-
-      <section class="mango-pytest-repository-page__form-section">
-        <div class="mango-section-title">
-          <div class="mango-section-title__main">
-            <h2>访问凭证</h2>
-            <p>
-              公开仓库选择“无需认证”，也可清空认证方式。已有凭证会在保存后移除；保留认证方式时，Token / 密码留空表示不修改。推送需要写入权限。
-            </p>
-          </div>
-        </div>
-        <a-grid :cols="2" :col-gap="16" :row-gap="0">
-          <a-grid-item
-            ><a-form-item label="认证方式"
-              ><a-select
-                v-model="repositoryForm.credential_auth_type"
-                allow-clear
-                placeholder="无需认证（公开仓库）"
-                :options="credentialTypeOptions" /></a-form-item
-          ></a-grid-item>
-          <a-grid-item v-if="repositoryForm.credential_auth_type === 'username_password'"
-            ><a-form-item label="用户名"
-              ><a-input v-model="repositoryForm.credential_username" /></a-form-item
-          ></a-grid-item>
-          <a-grid-item v-if="repositoryForm.credential_auth_type && repositoryForm.credential_auth_type !== 'none'"
-            ><a-form-item label="Token / 密码"
-              ><a-input-password
-                v-model="repositoryForm.credential_secret"
-                :placeholder="
-                  repositoryForm.id ? '留空表示不修改' : '请输入访问密钥'
-                " /></a-form-item
-          ></a-grid-item>
-        </a-grid>
-      </section>
-    </a-form>
-  </a-modal>
-
-  <a-modal
-    v-model:visible="branchVisible"
+    modal-class="mango-simple-form-modal"
+    :visible="branchVisible"
     title="切换仓库分支"
+    :width="560"
     :ok-loading="branchSwitching"
-    @before-ok="confirmSwitchBranch"
+    :on-before-ok="confirmSwitchBranch"
+    @cancel="closeBranch"
+    @update:visible="onBranchVisible"
   >
-    <a-form :model="branchForm" layout="horizontal">
-      <a-form-item label="目标分支" required>
+    <a-form class="mango-simple-form" :model="branchForm" layout="horizontal" auto-label-width :disabled="branchSwitching">
+      <a-form-item label="目标分支" class="mango-form-item__require mango-simple-form-item">
         <a-select
           v-model="branchForm.branch"
           :options="branchOptions"
@@ -314,13 +241,30 @@
           allow-search
           placeholder="请选择分支"
         />
+        <template v-if="branchFailed" #extra
+          ><a-button size="small" :loading="branchLoading" @click="loadBranchOptions"
+            >重试</a-button
+          ></template
+        >
       </a-form-item>
     </a-form>
   </a-modal>
 </template>
 
 <script lang="ts" setup>
-  import { computed, onMounted, reactive, ref } from 'vue'
+import { reportLoadError, runLoadRequest } from '@/utils/load-error'
+
+  import {
+    computed,
+    onActivated,
+    onBeforeUnmount,
+    onDeactivated,
+    onMounted,
+    reactive,
+    ref,
+    watch,
+  } from 'vue'
+  import { useRoute } from 'vue-router'
   import { Message, Modal } from '@arco-design/web-vue'
   import { MdPreview } from 'md-editor-v3'
   import 'md-editor-v3/lib/preview.css'
@@ -332,438 +276,572 @@
     getPytestRepositoryFile,
     getPytestRepositoryTree,
     pullPytestRepository,
-    savePytestRepository,
     switchPytestRepositoryBranch,
     testPytestRepository,
     type PytestRepository,
   } from '@/api/pytest/repository'
-  import { tableColumns } from './config'
-  import PytestCaseDirectoryTree, {
-    type PytestDirectoryNode,
-  } from '@/views/pytest/case/components/PytestCaseDirectoryTree.vue'
+  import { providerOptions, repositoryScrollWidth, tableColumns } from './config'
+  import {
+    buildRepositoryTree,
+    readBranches,
+    readRepositories,
+    readRepositoryFile,
+    readRepositoryTree,
+    repositoryResponse,
+    repositoryRevision,
+    repositoryRootKey,
+  } from './records'
+  import type { BranchOption } from './records'
+  import type { DirectoryNode } from '../case/records'
+  import PytestCaseDirectoryTree from '@/views/pytest/case/components/PytestCaseDirectoryTree.vue'
+  import PytestRepositoryEditor from './components/PytestRepositoryEditor.vue'
   import CodeEditor from '@/components/editors/CodeEditor.vue'
   import useAppConfigStore from '@/store/modules/app-config'
+  import useUserStore from '@/store/modules/user'
+  import { usePagePolling } from '@/hooks/use-page-polling'
 
-  const repositories = ref<PytestRepository[]>([])
-  const appStore = useAppConfigStore()
-  const loading = ref(false)
-  const saving = ref(false)
-  const actionLoading = reactive<Record<number, boolean>>({})
-  const editorVisible = ref(false)
-  const branchVisible = ref(false)
-  const branchLoading = ref(false)
-  const branchSwitching = ref(false)
-  const branchOptions = ref<Array<{ label: string; value: string }>>([])
-  const branchForm = reactive({ repositoryId: 0, branch: '' })
-  const repositoryForm = reactive<Record<string, any>>({})
-  const selectedRepositoryId = ref<number | null>(null)
-  const selectedTreeKey = ref('')
-  const repositoryTreeChildren = reactive<Record<number, PytestDirectoryNode[]>>({})
-  const repositoryTreeStats = reactive<
-    Record<number, { directory_count: number; file_count: number }>
-  >({})
-  const repositoryTreeLoading = reactive<Record<number, boolean>>({})
-  const selectedFileNode = ref<PytestDirectoryNode | null>(null)
-  const filePreviewContent = ref('')
-  const filePreviewLoading = ref(false)
-  let filePreviewRequestId = 0
-  const providerOptions = [
-    { label: 'GitLab', value: 'gitlab' },
-    { label: 'GitHub', value: 'github' },
-    { label: 'Gitee', value: 'gitee' },
-  ]
-  const publicRepositoryProviders: Record<string, string> = {
-    'github.com': 'github',
-    'gitlab.com': 'gitlab',
-    'gitee.com': 'gitee',
+  interface TreeCache {
+    revision: string
+    nodes: DirectoryNode[]
+    directory_count: number
+    file_count: number
   }
-
-  function repositoryHost(repoUrl: string): string {
-    const sshMatch = repoUrl.match(/^git@([^:]+):/i)
-    if (sshMatch) return sshMatch[1].toLowerCase()
-    try {
-      return new URL(repoUrl).hostname.toLowerCase()
-    } catch {
-      return ''
-    }
-  }
-  const credentialTypeOptions = [
-    { label: '无需认证（公开仓库）', value: 'none' },
-    { label: 'Access Token', value: 'token' },
-    { label: '用户名 / 密码', value: 'username_password' },
-  ]
+  const repositories = ref<PytestRepository[]>([]),
+    loading = ref(false),
+    listFailed = ref(false)
+  const user = useUserStore(),
+    route = useRoute(),
+    appStore = useAppConfigStore()
+  const editor = ref<InstanceType<typeof PytestRepositoryEditor> | null>(null)
+  const actionIds = ref<number[]>([]),
+    editorBusyIds = ref<number[]>([])
+  const busyIds = computed(() => [...new Set([...actionIds.value, ...editorBusyIds.value])])
+  const selectedRepositoryId = ref<number | null>(null),
+    selectedTreeKey = ref('')
+  const trees = reactive(new Map<number, TreeCache>()),
+    treeLoading = ref<number[]>([]),
+    treeFailed = ref<number[]>([])
+  const selectedFileNode = ref<DirectoryNode | null>(null),
+    filePreviewContent = ref(''),
+    filePreviewLoading = ref(false),
+    filePreviewFailed = ref(false)
+  const branchVisible = ref(false),
+    branchLoading = ref(false),
+    branchFailed = ref(false),
+    branchSwitching = ref(false)
+  const branchOptions = ref<BranchOption[]>([]),
+    branchForm = reactive<{ repositoryId: number | null; branch: string }>({
+      repositoryId: null,
+      branch: '',
+    })
+  let version = 0,
+    listRequest = 0,
+    fileRequest = 0,
+    treeRequest = 0,
+    branchVersion = 0,
+    branchRequest = 0,
+    confirmationVersion = 0
+  let active = true,
+    disposed = false,
+    openedEditorId: number | null = null
+  let listPending: { version: number; promise: Promise<void> } | null = null
+  const treePending = new Map<number, { request: number; promise: Promise<void> }>()
+  let confirmation: ReturnType<typeof Modal.confirm> | null = null
+  const available = () =>
+    !disposed && active && (typeof document === 'undefined' || !document.hidden)
+  const current = (context: number) => available() && context === version
   const selectedRepository = computed(
-    () => repositories.value.find((item) => item.id === selectedRepositoryId.value) || null
+    () => repositories.value.find((row) => row.id === selectedRepositoryId.value) ?? null
   )
-  const selectedTreeStats = computed(
+  const selectedTreeStats = computed(() =>
+    selectedRepositoryId.value === null
+      ? { directory_count: 0, file_count: 0 }
+      : trees.get(selectedRepositoryId.value) ?? { directory_count: 0, file_count: 0 }
+  )
+  const selectedTreeLoading = computed(
     () =>
-      repositoryTreeStats[selectedRepositoryId.value || 0] || {
-        directory_count: 0,
-        file_count: 0,
-      }
+      selectedRepositoryId.value !== null && treeLoading.value.includes(selectedRepositoryId.value)
   )
-  const selectedTreeLoading = computed(() =>
-    Boolean(repositoryTreeLoading[selectedRepositoryId.value || 0])
+  const selectedTreeFailed = computed(
+    () =>
+      selectedRepositoryId.value !== null && treeFailed.value.includes(selectedRepositoryId.value)
   )
   const repositoryMetrics = computed(() => ({
     repositories: repositories.value.length,
-    projects: repositories.value.reduce(
-      (total, item) => total + Number(item.project_count || 0),
-      0
-    ),
-    cases: repositories.value.reduce((total, item) => total + Number(item.case_count || 0), 0),
-    failed: repositories.value.filter((item) => Number(item.sync_status) === 3).length,
+    projects: repositories.value.reduce((n, row) => n + row.project_count, 0),
+    cases: repositories.value.reduce((n, row) => n + row.case_count, 0),
+    failed: repositories.value.filter((row) => row.sync_status === 3).length,
   }))
-  const repositoryTree = computed<PytestDirectoryNode[]>(() =>
-    repositories.value.map((repository) => ({
-      key: repositoryRootKey(repository.id),
-      title: repository.name,
+  const repositoryTree = computed<DirectoryNode[]>(() =>
+    repositories.value.map((row) => ({
+      key: repositoryRootKey(row.id),
+      title: row.name,
       type: 'repository',
       path: '',
-      breadcrumb: [repository.name],
-      repository_id: repository.id,
+      breadcrumb: [row.name],
+      repository_id: row.id,
       case_count: 0,
-      count: repositoryTreeStats[repository.id]?.file_count || 0,
-      children: repositoryTreeChildren[repository.id] || [],
+      count: trees.get(row.id)?.file_count ?? 0,
+      children: trees.get(row.id)?.nodes ?? [],
     }))
   )
   const filePreviewLanguage = computed<'python' | 'json'>(() =>
-    selectedFileNode.value?.path.toLocaleLowerCase().endsWith('.json') ? 'json' : 'python'
+    selectedFileNode.value?.path.toLowerCase().endsWith('.json') ? 'json' : 'python'
   )
   const isMarkdownPreview = computed(() =>
-    /\.(md|markdown|mdown|mkd)$/i.test(selectedFileNode.value?.path || '')
+    /\.(md|markdown|mdown|mkd)$/i.test(selectedFileNode.value?.path ?? '')
   )
   const markdownTheme = computed<'light' | 'dark'>(() =>
     appStore.theme === 'dark' ? 'dark' : 'light'
   )
-  function providerLabel(value: string) {
+  function providerLabel(value: string): string {
     return providerOptions.find((item) => item.value === value)?.label || value || '-'
   }
-
-  function syncStatusLabel(value: number) {
-    return ['空闲', '同步中', '成功', '失败'][Number(value)] || '-'
+  function syncStatusLabel(value: number): string {
+    return ['空闲', '同步中', '成功', '失败'][value] || '-'
   }
-
-  function syncStatusColor(value: number) {
-    return ['gray', 'arcoblue', 'green', 'red'][Number(value)] || 'gray'
+  function syncStatusColor(value: number): string {
+    return ['gray', 'arcoblue', 'green', 'red'][value] || 'gray'
   }
-
-  function shortCommit(value?: string | null) {
-    return String(value || '').slice(0, 8)
+  function shortCommit(value?: string | null): string {
+    return (value ?? '').slice(0, 8)
   }
-
-  function repositoryRootKey(repositoryId: number) {
-    return `repository:${repositoryId}`
-  }
-
-  function buildRepositoryTree(
-    repository: PytestRepository,
-    entries: Array<{ path: string; type: 'directory' | 'file' }>
-  ): PytestDirectoryNode[] {
-    const roots: PytestDirectoryNode[] = []
-    const directoryMap = new Map<string, PytestDirectoryNode>()
-
-    const ensureDirectory = (path: string): PytestDirectoryNode | null => {
-      if (!path) return null
-      const existing = directoryMap.get(path)
-      if (existing) return existing
-      const parts = path.split('/').filter(Boolean)
-      const parentPath = parts.slice(0, -1).join('/')
-      const parent = ensureDirectory(parentPath)
-      const node: PytestDirectoryNode = {
-        key: `repository:${repository.id}:directory:${path}`,
-        title: parts[parts.length - 1],
-        type: 'directory',
-        path,
-        breadcrumb: [repository.name, ...parts],
-        repository_id: repository.id,
-        case_count: 0,
-        children: [],
-      }
-      directoryMap.set(path, node)
-      if (parent) parent.children?.push(node)
-      else roots.push(node)
-      return node
-    }
-
-    entries
-      .filter((entry) => entry.type === 'directory')
-      .sort((left, right) => left.path.localeCompare(right.path))
-      .forEach((entry) => ensureDirectory(entry.path))
-    entries
-      .filter((entry) => entry.type === 'file')
-      .sort((left, right) => left.path.localeCompare(right.path))
-      .forEach((entry) => {
-        const parts = entry.path.split('/').filter(Boolean)
-        const parent = ensureDirectory(parts.slice(0, -1).join('/'))
-        const node: PytestDirectoryNode = {
-          key: `repository:${repository.id}:file:${entry.path}`,
-          title: parts[parts.length - 1],
-          type: 'file',
-          path: entry.path,
-          breadcrumb: [repository.name, ...parts],
-          repository_id: repository.id,
-          case_count: 0,
-        }
-        if (parent) parent.children?.push(node)
-        else roots.push(node)
-      })
-
-    const sortAndCount = (nodes: PytestDirectoryNode[]): number => {
-      nodes.sort((left, right) => {
-        if (left.type !== right.type) return left.type === 'directory' ? -1 : 1
-        return left.title.localeCompare(right.title)
-      })
-      return nodes.reduce((total, node) => {
-        const fileCount = node.type === 'file' ? 1 : sortAndCount(node.children || [])
-        if (node.type === 'directory') node.count = fileCount
-        return total + fileCount
-      }, 0)
-    }
-    sortAndCount(roots)
-    return roots
-  }
-
-  async function loadRepositoryTree(repositoryId: number, force = false) {
-    if (!force && repositoryTreeChildren[repositoryId]) return
-    const repository = repositories.value.find((item) => item.id === repositoryId)
-    if (!repository) return
-    repositoryTreeLoading[repositoryId] = true
-    try {
-      const response = await getPytestRepositoryTree(repositoryId)
-      const entries = Array.isArray(response.data?.entries) ? response.data.entries : []
-      repositoryTreeChildren[repositoryId] = buildRepositoryTree(repository, entries)
-      repositoryTreeStats[repositoryId] = {
-        directory_count: Number(response.data?.directory_count || 0),
-        file_count: Number(response.data?.file_count || 0),
-      }
-    } finally {
-      repositoryTreeLoading[repositoryId] = false
-    }
-  }
-
-  async function selectRepository(repositoryId: number, force = false) {
-    filePreviewRequestId += 1
+  function clearPreview(): void {
+    fileRequest++
     selectedFileNode.value = null
     filePreviewContent.value = ''
-    selectedRepositoryId.value = repositoryId
-    selectedTreeKey.value = repositoryRootKey(repositoryId)
-    await loadRepositoryTree(repositoryId, force)
+    filePreviewLoading.value = false
+    filePreviewFailed.value = false
   }
-
-  function onTreeNodeSelect(node: PytestDirectoryNode | null) {
-    if (!node) return
-    selectedTreeKey.value = node.key
+  function closeBranch(): void {
+    branchVersion++
+    branchRequest++
+    branchVisible.value = false
+    branchLoading.value = false
+    branchFailed.value = false
+    branchOptions.value = []
+    branchForm.repositoryId = null
+    branchForm.branch = ''
+  }
+  function invalidateTree(id: number): void {
+    treePending.delete(id)
+    trees.delete(id)
+    treeLoading.value = treeLoading.value.filter((value) => value !== id)
+    treeFailed.value = treeFailed.value.filter((value) => value !== id)
+    if (selectedFileNode.value?.repository_id === id) clearPreview()
+    if (selectedRepositoryId.value === id) selectedTreeKey.value = repositoryRootKey(id)
+  }
+  function invalidate(clear = false): void {
+    version++
+    listRequest++
+    confirmationVersion++
+    listPending = null
+    loading.value = false
+    confirmation?.close()
+    confirmation = null
+    editor.value?.close()
+    closeBranch()
+    clearPreview()
+    treePending.clear()
+    trees.clear()
+    treeLoading.value = []
+    treeFailed.value = []
+    selectedTreeKey.value =
+      selectedRepositoryId.value === null ? '' : repositoryRootKey(selectedRepositoryId.value)
+    if (clear) {
+      repositories.value = []
+      selectedRepositoryId.value = null
+      selectedTreeKey.value = ''
+      listFailed.value = false
+    }
+  }
+  function editorBusy(id: number | null, busy: boolean): void {
+    if (id === null) return
+    editorBusyIds.value = busy
+      ? [...new Set([...editorBusyIds.value, id])]
+      : editorBusyIds.value.filter((value) => value !== id)
+  }
+  function openEditor(row?: PytestRepository): void {
+    if (!available() || (row && busyIds.value.includes(row.id))) return
+    const record = row ? repositories.value.find((item) => item.id === row.id) : undefined
+    if (row && !record) return
+    closeBranch()
+    openedEditorId = record?.id ?? null
+    editor.value?.open(record)
+  }
+  function repositoryRowClass(row: PytestRepository): string {
+    return row.id === selectedRepositoryId.value
+      ? 'mango-pytest-repository-page__row--selected'
+      : ''
+  }
+  function repositoryActions(row: PytestRepository) {
+    const busy = busyIds.value.includes(row.id)
+    return [
+      { label: '编辑', disabled: busy, onClick: () => openEditor(row) },
+      { label: '拉取', loading: busy, onClick: () => void runAction(row, 'pull') },
+      { label: '测试连接', loading: busy, onClick: () => void runAction(row, 'test') },
+      { label: '切换分支', disabled: busy, onClick: () => void openBranch(row) },
+      { label: '删除', danger: true, disabled: busy, onClick: () => removeRepository(row) },
+    ]
+  }
+  function loadRepositories(silent = false): Promise<void> {
+    if (!available()) return Promise.resolve()
+    if (listPending?.version === version) {
+      if (!silent) loading.value = true
+      return listPending.promise
+    }
+    const context = version,
+      request = ++listRequest
+    if (!silent) loading.value = true
+    listFailed.value = false
+    const promise = (async () => {
+      try {
+        const rows = readRepositories(await runLoadRequest(silent, () => getPytestRepositories()))
+        if (!current(context) || request !== listRequest) return
+        for (const old of repositories.value) {
+          const next = rows.find((row) => row.id === old.id)
+          if (!next || repositoryRevision(next) !== repositoryRevision(old)) {
+            invalidateTree(old.id)
+            if (openedEditorId === old.id) editor.value?.close()
+            if (branchForm.repositoryId === old.id) closeBranch()
+          }
+        }
+        repositories.value = rows
+        if (!rows.some((row) => row.id === selectedRepositoryId.value)) {
+          clearPreview()
+          selectedRepositoryId.value = rows[0]?.id ?? null
+          selectedTreeKey.value =
+            selectedRepositoryId.value === null ? '' : repositoryRootKey(selectedRepositoryId.value)
+        }
+        if (selectedRepositoryId.value !== null) void loadRepositoryTree(selectedRepositoryId.value)
+      } catch (loadFailure0) {
+        if (current(context) && request === listRequest) (reportLoadError(loadFailure0, "加载失败，请重试", silent), listFailed.value = true)
+      } finally {
+        if (current(context) && request === listRequest) {
+          loading.value = false
+          listPending = null
+        }
+      }
+    })()
+    listPending = { version, promise }
+    return promise
+  }
+  function loadRepositoryTree(id: number, force = false): Promise<void> {
+    const row = repositories.value.find((row) => row.id === id)
+    if (!available() || !row) return Promise.resolve()
+    if (!force && treePending.has(id)) return treePending.get(id)!.promise
+    const revision = repositoryRevision(row)
+    if (!force && trees.get(id)?.revision === revision) return Promise.resolve()
+    if (force) invalidateTree(id)
+    const context = version,
+      request = ++treeRequest
+    treeLoading.value = [...new Set([...treeLoading.value, id])]
+    treeFailed.value = treeFailed.value.filter((value) => value !== id)
+    const valid = () =>
+      current(context) &&
+      treePending.get(id)?.request === request &&
+      repositories.value.some((row) => row.id === id && repositoryRevision(row) === revision)
+    const promise = (async () => {
+      try {
+        const data = readRepositoryTree(await getPytestRepositoryTree(id))
+        if (!valid()) return
+        trees.set(id, {
+          revision,
+          nodes: buildRepositoryTree(row, data.entries),
+          directory_count: data.directory_count,
+          file_count: data.file_count,
+        })
+      } catch (loadFailure0) {
+        if (valid()) (reportLoadError(loadFailure0, "加载失败，请重试", false), treeFailed.value = [...new Set([...treeFailed.value, id])])
+      } finally {
+        if (valid()) {
+          treeLoading.value = treeLoading.value.filter((value) => value !== id)
+          treePending.delete(id)
+        }
+      }
+    })()
+    treePending.set(id, { request, promise })
+    return promise
+  }
+  function findNode(key: string, nodes = repositoryTree.value): DirectoryNode | null {
+    for (const node of nodes) {
+      if (node.key === key) return node
+      const child = findNode(key, node.children)
+      if (child) return child
+    }
+    return null
+  }
+  async function selectRepository(id: number): Promise<void> {
+    if (!available() || !repositories.value.some((row) => row.id === id)) return
+    clearPreview()
+    selectedRepositoryId.value = id
+    selectedTreeKey.value = repositoryRootKey(id)
+    await loadRepositoryTree(id)
+  }
+  function onRepositoryRowClick(row: PytestRepository): void {
+    void selectRepository(row.id)
+  }
+  function onTreeNodeSelect(value: DirectoryNode | null): void {
+    if (!available() || !value) return
+    const node = findNode(value.key)
+    if (!node || node.repository_id == null) return
     if (node.type === 'file') {
       void loadFilePreview(node)
       return
     }
-    filePreviewRequestId += 1
-    selectedFileNode.value = null
-    filePreviewContent.value = ''
-    if (node.repository_id && node.repository_id !== selectedRepositoryId.value) {
-      void selectRepository(node.repository_id)
-    } else if (node.type === 'repository' && node.repository_id) {
-      void loadRepositoryTree(node.repository_id)
-    }
+    clearPreview()
+    selectedRepositoryId.value = node.repository_id
+    selectedTreeKey.value = node.key
+    void loadRepositoryTree(node.repository_id)
   }
-
-  async function loadFilePreview(node: PytestDirectoryNode) {
-    if (!node.repository_id || !node.path) return
-    const requestId = ++filePreviewRequestId
+  async function loadFilePreview(value: DirectoryNode): Promise<void> {
+    const node = findNode(value.key)
+    if (!available() || !node || node.type !== 'file' || node.repository_id == null) return
+    const row = repositories.value.find((row) => row.id === node.repository_id)
+    if (!row) return
+    const context = version,
+      request = ++fileRequest,
+      revision = repositoryRevision(row)
+    selectedRepositoryId.value = row.id
+    selectedTreeKey.value = node.key
     selectedFileNode.value = node
     filePreviewContent.value = ''
     filePreviewLoading.value = true
-    try {
-      const response = await getPytestRepositoryFile(node.repository_id, node.path)
-      if (requestId !== filePreviewRequestId) return
-      filePreviewContent.value = String(response.data?.content || '')
-    } catch {
-      if (requestId === filePreviewRequestId) filePreviewContent.value = ''
-    } finally {
-      if (requestId === filePreviewRequestId) filePreviewLoading.value = false
-    }
-  }
-
-  function returnToRepositoryList() {
-    filePreviewRequestId += 1
-    selectedFileNode.value = null
-    filePreviewContent.value = ''
-    if (selectedRepositoryId.value) {
-      selectedTreeKey.value = repositoryRootKey(selectedRepositoryId.value)
-    }
-  }
-
-  function onRepositoryRowClick(record: PytestRepository) {
-    void selectRepository(record.id)
-  }
-
-  function repositoryRowClass(record: PytestRepository) {
-    return record.id === selectedRepositoryId.value
-      ? 'mango-pytest-repository-page__row--selected'
-      : ''
-  }
-
-  function repositoryActions(record: PytestRepository) {
-    return [
-      {  label: '编辑', onClick: () => openEditor(record) },
-      {
-        label: '拉取',
-        loading: actionLoading[record.id],
-        onClick: () => void runAction(record, () => pullPytestRepository(record.id)),
-      },
-      {
-        label: '测试连接',
-        loading: actionLoading[record.id],
-        onClick: () => void runAction(record, () => testPytestRepository(record.id)),
-      },
-      {  label: '切换分支', onClick: () => void openBranch(record) },
-      {  label: '删除', danger: true, onClick: () => removeRepository(record) },
-    ]
-  }
-
-  async function loadRepositories() {
-    loading.value = true
-    try {
-      const response = await getPytestRepositories()
-      repositories.value = Array.isArray(response.data) ? response.data : []
-      const selectedExists = repositories.value.some(
-        (item) => item.id === selectedRepositoryId.value
+    filePreviewFailed.value = false
+    const valid = () =>
+      current(context) &&
+      request === fileRequest &&
+      repositories.value.some(
+        (row) => row.id === node.repository_id && repositoryRevision(row) === revision
       )
-      if (!selectedExists) {
-        selectedRepositoryId.value = repositories.value[0]?.id || null
-        selectedTreeKey.value = selectedRepositoryId.value
-          ? repositoryRootKey(selectedRepositoryId.value)
-          : ''
-      }
-      if (selectedRepositoryId.value) await loadRepositoryTree(selectedRepositoryId.value)
-    } finally {
-      loading.value = false
-    }
-  }
-
-  function resetForm(record?: PytestRepository) {
-    Object.keys(repositoryForm).forEach((key) => delete repositoryForm[key])
-    Object.assign(repositoryForm, {
-      id: record?.id,
-      name: record?.name || '',
-      provider: record?.provider || 'gitlab',
-      repo_url: record?.repo_url || '',
-      api_base_url: record?.api_base_url || '',
-      remote_project: record?.remote_project || '',
-      default_branch: record?.default_branch || 'master',
-      credential_auth_type: record?.credential?.auth_type || 'none',
-      credential_username: record?.credential?.username || '',
-      credential_secret: '',
-    })
-  }
-
-  function openEditor(record?: PytestRepository) {
-    resetForm(record)
-    editorVisible.value = true
-  }
-
-  async function saveRepository(done: (closed: boolean) => void) {
-    if (!repositoryForm.name || !repositoryForm.repo_url || !repositoryForm.default_branch) {
-      Message.error('请填写仓库名称、仓库地址和默认分支')
-      done(false)
-      return
-    }
-    const actualProvider = publicRepositoryProviders[repositoryHost(repositoryForm.repo_url)]
-    if (actualProvider && actualProvider !== repositoryForm.provider) {
-      const platformName = providerOptions.find((item) => item.value === actualProvider)?.label
-      Message.error(`仓库地址属于 ${platformName}，请将 Git 平台改为 ${platformName}`)
-      done(false)
-      return
-    }
-    saving.value = true
     try {
-      const response = await savePytestRepository({
-        ...repositoryForm,
-        credential_auth_type: repositoryForm.credential_auth_type || 'none',
-        credential_username: !repositoryForm.credential_auth_type || repositoryForm.credential_auth_type === 'none'
-          ? '' : repositoryForm.credential_username,
-        credential_secret: !repositoryForm.credential_auth_type || repositoryForm.credential_auth_type === 'none'
-          ? '' : repositoryForm.credential_secret,
-      })
-      Message.success(response.msg)
-      await loadRepositories()
-      done(true)
-    } catch {
-      done(false)
+      const content = readRepositoryFile(
+        await getPytestRepositoryFile(row.id, node.path),
+        node.path
+      )
+      if (valid()) filePreviewContent.value = content
+    } catch (loadFailure1) {
+      if (valid()) (reportLoadError(loadFailure1, "加载失败，请重试", false), filePreviewFailed.value = true)
     } finally {
-      saving.value = false
+      if (valid()) filePreviewLoading.value = false
     }
   }
-
-  async function runAction(record: PytestRepository, action: () => Promise<any>) {
-    if (actionLoading[record.id]) return
-    actionLoading[record.id] = true
+  function retryFilePreview(): void {
+    if (selectedFileNode.value) void loadFilePreview(selectedFileNode.value)
+  }
+  function retryTree(): void {
+    if (selectedRepositoryId.value !== null)
+      void loadRepositoryTree(selectedRepositoryId.value, true)
+  }
+  function returnToRepositoryList(): void {
+    clearPreview()
+    selectedTreeKey.value =
+      selectedRepositoryId.value === null ? '' : repositoryRootKey(selectedRepositoryId.value)
+  }
+  async function refreshAfterWrite(id: number | null): Promise<void> {
+    if (!available()) return
+    listRequest++
+    listPending = null
+    if (id !== null) invalidateTree(id)
+    await loadRepositories()
+  }
+  async function runAction(row: PytestRepository, action: 'pull' | 'test'): Promise<boolean> {
+    if (
+      !available() ||
+      busyIds.value.includes(row.id) ||
+      !repositories.value.some((item) => item.id === row.id)
+    )
+      return false
+    const id = row.id,
+      context = version
+    actionIds.value = [...actionIds.value, id]
     try {
-      const response = await action()
-      Message.success(response.msg)
-      await loadRepositories()
-      await loadRepositoryTree(record.id, true)
+      repositoryResponse(
+        await (action === 'pull' ? pullPytestRepository(id) : testPytestRepository(id))
+      )
+      if (!current(context)) return false
+      Message.success(action === 'pull' ? '仓库拉取成功' : '连接测试成功')
+      await refreshAfterWrite(id)
+      return current(context)
     } catch {
-      // 请求层已展示具体错误，避免操作入口重复提示或产生未处理的 Promise 拒绝。
+      if (current(context)) Message.error('仓库操作失败，请重试')
+      return false
     } finally {
-      actionLoading[record.id] = false
+      actionIds.value = actionIds.value.filter((value) => value !== id)
     }
   }
-
-  async function openBranch(record: PytestRepository) {
-    branchForm.repositoryId = record.id
-    branchForm.branch = record.active_branch || record.default_branch || ''
-    branchVisible.value = true
+  async function loadBranchOptions(): Promise<void> {
+    const id = branchForm.repositoryId
+    if (!available() || !branchVisible.value || id === null || branchLoading.value) return
+    const context = version,
+      window = branchVersion,
+      request = ++branchRequest
     branchLoading.value = true
+    branchFailed.value = false
+    const valid = () =>
+      current(context) &&
+      window === branchVersion &&
+      request === branchRequest &&
+      branchVisible.value
     try {
-      const response = await getPytestRepositoryBranches(record.id)
-      branchOptions.value = (response.data || []).map((item: any) => ({
-        label: item.default ? `${item.name}（默认）` : item.name,
-        value: item.name,
-      }))
+      const options = readBranches(await getPytestRepositoryBranches(id))
+      if (valid()) branchOptions.value = options
+    } catch (loadFailure1) {
+      if (valid()) (reportLoadError(loadFailure1, "加载失败，请重试", false), branchFailed.value = true)
     } finally {
-      branchLoading.value = false
+      if (valid()) branchLoading.value = false
     }
   }
-
-  async function confirmSwitchBranch(done: (closed: boolean) => void) {
-    if (!branchForm.branch) {
-      Message.error('请选择目标分支')
-      done(false)
-      return
+  async function openBranch(row: PytestRepository): Promise<void> {
+    if (!available() || branchSwitching.value || busyIds.value.includes(row.id)) return
+    const record = repositories.value.find((item) => item.id === row.id)
+    if (!record) return
+    editor.value?.close()
+    closeBranch()
+    branchForm.repositoryId = record.id
+    branchForm.branch = record.active_branch || record.default_branch
+    branchVisible.value = true
+    await loadBranchOptions()
+  }
+  async function confirmSwitchBranch(): Promise<boolean> {
+    const id = branchForm.repositoryId,
+      branch = branchForm.branch
+    if (
+      !available() ||
+      !branchVisible.value ||
+      id === null ||
+      busyIds.value.includes(id) ||
+      branchSwitching.value ||
+      branchLoading.value ||
+      branchFailed.value
+    )
+      return false
+    if (!branchOptions.value.some((option) => option.value === branch)) {
+      Message.warning('请选择有效的目标分支')
+      return false
     }
+    const context = version,
+      window = branchVersion
     branchSwitching.value = true
+    actionIds.value = [...actionIds.value, id]
     try {
-      const response = await switchPytestRepositoryBranch(
-        branchForm.repositoryId,
-        branchForm.branch
-      )
-      Message.success(response.msg)
-      await loadRepositories()
-      done(true)
+      repositoryResponse(await switchPytestRepositoryBranch(id, branch))
+      if (!current(context) || window !== branchVersion || !branchVisible.value) return false
+      closeBranch()
+      Message.success('分支切换成功')
+      await refreshAfterWrite(id)
+      return current(context)
     } catch {
-      done(false)
+      if (current(context) && window === branchVersion) Message.error('分支切换失败，请重试')
+      return false
     } finally {
       branchSwitching.value = false
+      actionIds.value = actionIds.value.filter((value) => value !== id)
     }
   }
-
-  function removeRepository(record: PytestRepository) {
-    Modal.confirm({
+  function onBranchVisible(value: boolean): void {
+    if (!value) closeBranch()
+  }
+  function removeRepository(row: PytestRepository): void {
+    if (
+      !available() ||
+      busyIds.value.includes(row.id) ||
+      !repositories.value.some((item) => item.id === row.id)
+    )
+      return
+    confirmation?.close()
+    const id = row.id,
+      context = version,
+      window = ++confirmationVersion
+    const revision = repositoryRevision(repositories.value.find((item) => item.id === id)!)
+    const valid = () => current(context) && window === confirmationVersion
+    confirmation = Modal.confirm({
       title: '删除 Pytest 仓库',
       content: '只有未绑定 Pytest 项目的仓库才能删除。确定继续吗？',
       okButtonProps: { status: 'danger' },
+      onCancel: () => {
+        if (window === confirmationVersion) {
+          confirmationVersion++
+          confirmation = null
+        }
+      },
       onBeforeOk: async () => {
-        const response = await deletePytestRepository(record.id)
-        Message.success(response.msg)
-        await loadRepositories()
-        return true
+        if (
+          !valid() ||
+          busyIds.value.includes(id) ||
+          !repositories.value.some((row) => row.id === id && repositoryRevision(row) === revision)
+        )
+          return false
+        actionIds.value = [...actionIds.value, id]
+        try {
+          repositoryResponse(await deletePytestRepository(id))
+          if (!valid()) return false
+          repositories.value = repositories.value.filter((row) => row.id !== id)
+          if (selectedRepositoryId.value === id) {
+            clearPreview()
+            selectedRepositoryId.value = repositories.value[0]?.id ?? null
+            selectedTreeKey.value =
+              selectedRepositoryId.value === null
+                ? ''
+                : repositoryRootKey(selectedRepositoryId.value)
+          }
+          if (branchForm.repositoryId === id) closeBranch()
+          if (openedEditorId === id) editor.value?.close()
+          Message.success('仓库删除成功')
+          await refreshAfterWrite(id)
+          return valid()
+        } catch {
+          if (valid()) Message.error('仓库删除失败，请重试')
+          return false
+        } finally {
+          actionIds.value = actionIds.value.filter((value) => value !== id)
+        }
       },
     })
   }
-
-  onMounted(loadRepositories)
+  watch(
+    () => [user.userId, user.roleId, user.token, user.selected_environment, route.fullPath],
+    () => {
+      invalidate(true)
+      void loadRepositories()
+    },
+    { flush: 'sync' }
+  )
+  function visibilityChanged(): void {
+    if (typeof document !== 'undefined' && document.hidden) invalidate()
+    else void loadRepositories()
+  }
+  const polling = usePagePolling(async (context) => {
+    if (!context.isCurrent() || !repositories.value.some((row) => row.sync_status === 1)) return
+    await loadRepositories(true)
+  })
+  watch(
+    () => repositories.value.some((row) => row.sync_status === 1),
+    (pending) => {
+      if (pending) polling.start()
+      else polling.stop()
+    },
+    { flush: 'sync' }
+  )
+  onMounted(() => {
+    if (typeof document !== 'undefined')
+      document.addEventListener('visibilitychange', visibilityChanged)
+    void loadRepositories()
+  })
+  onActivated(() => {
+    active = true
+    void loadRepositories()
+  })
+  onDeactivated(() => {
+    active = false
+    invalidate()
+  })
+  onBeforeUnmount(() => {
+    disposed = true
+    invalidate(true)
+    if (typeof document !== 'undefined')
+      document.removeEventListener('visibilitychange', visibilityChanged)
+  })
 </script>
 
 <style lang="less" scoped>
@@ -867,7 +945,15 @@
     }
   }
 
+  .mango-workbench-scroll-x {
+    --mango-workbench-min-width: 960px;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
   .mango-pytest-repository-page__workbench {
+    height: 100%;
+    min-width: var(--mango-workbench-min-width);
     display: grid;
     min-height: 0;
     flex: 1 1 auto;
@@ -1107,44 +1193,5 @@
 
   .mango-pytest-repository-page__sync small {
     color: var(--m-danger);
-  }
-
-  .mango-pytest-repository-page__editor-form {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .mango-pytest-repository-page__form-section {
-    padding: 0 0 2px;
-  }
-
-  .mango-pytest-repository-page__form-section + .mango-pytest-repository-page__form-section {
-    margin-top: 8px;
-    padding-top: 12px;
-    border-top: 1px solid var(--m-border);
-  }
-
-  .mango-pytest-repository-page__form-section :deep(.arco-form-item) {
-    margin-bottom: 8px;
-  }
-
-  .mango-pytest-repository-page__form-section :deep(.arco-form-item-label-col.arco-col) {
-    width: 112px;
-    max-width: 112px;
-    flex: 0 0 112px;
-  }
-
-  .mango-pytest-repository-page__form-section :deep(.arco-form-item-label) {
-    white-space: nowrap;
-  }
-
-  .mango-pytest-repository-page__form-section :deep(.arco-form-item-wrapper-col.arco-col) {
-    width: auto;
-    max-width: none;
-    flex: 1 1 0;
-  }
-
-  .mango-pytest-repository-page__form-section :deep(.arco-grid-item:last-child .arco-form-item) {
-    margin-bottom: 0;
   }
 </style>

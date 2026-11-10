@@ -26,7 +26,12 @@
           @click="emit('toggle-compare')"
           >{{ compareOpen ? '收起对照' : '对照结果' }}</a-button
         >
-        <a-button v-if="activeKey !== '36'" size="small" type="outline" :loading="verifying" @click="emit('verify')"
+        <a-button
+          v-if="activeKey !== '36'"
+          size="small"
+          type="outline"
+          :loading="verifying"
+          @click="emit('verify', draft)"
           >一键验证</a-button
         >
       </a-space>
@@ -36,7 +41,7 @@
         ><TipMessage
           margin-bottom="8px"
           message="仅断言已配置的JSON字段，未填写的字段不参与校验" /><a-textarea
-          v-model="item.ass_json_all"
+          v-model="draft.ass_json_all"
           :disabled="editLocked"
           :auto-size="fixedRows"
           allow-clear
@@ -47,7 +52,7 @@
     <a-tab-pane key="33" title="文本一致">
       <div class="m-2"
         ><TipMessage margin-bottom="8px" message="对响应文本进行完整匹配" /><a-textarea
-          v-model="item.ass_text_all"
+          v-model="draft.ass_text_all"
           :disabled="editLocked"
           :auto-size="fixedRows"
           allow-clear
@@ -64,13 +69,19 @@
         <p v-else-if="compareOpen && !compareResults?.length" class="mango-assertion-config-hint">
           暂无断言结果，请先执行或点击“一键验证”。
         </p>
-        <p v-else-if="showRowComparison && !fieldCompareResults.length" class="mango-assertion-config-hint">
+        <p
+          v-else-if="showRowComparison && !fieldCompareResults.length"
+          class="mango-assertion-config-hint"
+        >
           当前结果不包含响应字段校验，请查看其他断言类型的结果。
         </p>
         <p v-else-if="showRowComparison && !resultByIndex.size" class="mango-assertion-config-hint">
           历史结果无法确认对应行，请点击“一键验证”后对照。
         </p>
-        <p v-else-if="showRowComparison && resultByIndex.size < fieldCompareResults.length" class="mango-assertion-config-hint">
+        <p
+          v-else-if="showRowComparison && resultByIndex.size < fieldCompareResults.length"
+          class="mango-assertion-config-hint"
+        >
           部分历史结果无法确认对应行，仅展示已匹配的结果；完整结果可在“断言结果”查看。
         </p>
         <div class="mango-assertion-table-region">
@@ -113,7 +124,12 @@
                   <span
                     v-if="showRowComparison && canShowGroupSummary(record)"
                     class="mango-assertion-config-table__group-summary"
-                  >组校验：{{ Number(groupSummaryByName.get(record.groupName || '未分组')?.status) === 1 ? '通过' : '失败' }}</span>
+                    >组校验：{{
+                      Number(groupSummaryByName.get(record.groupName || '未分组')?.status) === 1
+                        ? '通过'
+                        : '失败'
+                    }}</span
+                  >
                 </template>
               </a-table-column>
               <a-table-column title="提取方法" :width="128">
@@ -124,7 +140,7 @@
                     :options="typeOptions"
                     :disabled="editLocked"
                     :allow-clear="false"
-                    @change="updateAssertionType($event, item.ass_jsonpath, record.index)"
+                    @change="updateAssertionType($event, draft.ass_jsonpath, record.index)"
                   />
                 </template>
               </a-table-column>
@@ -137,7 +153,11 @@
                     :placeholder="expressionPlaceholder(record.assertion)"
                     @blur="save('ass_jsonpath')"
                   />
-                  <a-tooltip v-if="showRowComparison && getResultForRow(record)" :content="formatResultValue(getResultForRow(record)?.actual, 2000)" mini>
+                  <a-tooltip
+                    v-if="showRowComparison && getResultForRow(record)"
+                    :content="formatResultValue(getResultForRow(record)?.actual, 2000)"
+                    mini
+                  >
                     <span class="mango-assertion-config-table__inline-result">
                       响应值：{{ formatResultValue(getResultForRow(record)?.actual) }}
                     </span>
@@ -154,20 +174,29 @@
                     expand-trigger="hover"
                     value-key="key"
                     placeholder="请选择断言方法"
-                    @change="updateJsonpathMethod($event, item.ass_jsonpath, record.index)"
+                    @change="updateJsonpathMethod($event, draft.ass_jsonpath, record.index)"
                   />
                   <a-tooltip :content="assertionPreview(record.assertion)">
                     <span class="mango-assertion-config-table__preview">{{
                       assertionPreview(record.assertion)
                     }}</span>
                   </a-tooltip>
-                  <a-tooltip v-if="showRowComparison && getResultForRow(record)" :content="getResultForRow(record)?.ass_msg || '暂无执行消息'" mini>
+                  <a-tooltip
+                    v-if="showRowComparison && getResultForRow(record)"
+                    :content="getResultForRow(record)?.ass_msg || '暂无执行消息'"
+                    mini
+                  >
                     <span
                       class="mango-assertion-config-table__result-status"
-                      :class="Number(getResultForRow(record)?.status) === 1
-                        ? 'mango-assertion-config-table__result-status--pass'
-                        : 'mango-assertion-config-table__result-status--fail'"
-                    >校验：{{ Number(getResultForRow(record)?.status) === 1 ? '通过' : '失败' }}</span>
+                      :class="
+                        Number(getResultForRow(record)?.status) === 1
+                          ? 'mango-assertion-config-table__result-status--pass'
+                          : 'mango-assertion-config-table__result-status--fail'
+                      "
+                      >校验：{{
+                        Number(getResultForRow(record)?.status) === 1 ? '通过' : '失败'
+                      }}</span
+                    >
                   </a-tooltip>
                 </template>
               </a-table-column>
@@ -182,7 +211,13 @@
                     @blur="save('ass_jsonpath')"
                   />
                   <span v-else class="mango-assertion-config-table__muted">无需预期值</span>
-                  <a-tooltip v-if="showRowComparison && showExpect(record.assertion) && getResultForRow(record)" :content="formatResultValue(getResultForRow(record)?.expect, 2000)" mini>
+                  <a-tooltip
+                    v-if="
+                      showRowComparison && showExpect(record.assertion) && getResultForRow(record)
+                    "
+                    :content="formatResultValue(getResultForRow(record)?.expect, 2000)"
+                    mini
+                  >
                     <span class="mango-assertion-config-table__inline-result">
                       执行时：{{ formatResultValue(getResultForRow(record)?.expect) }}
                     </span>
@@ -217,7 +252,7 @@
         >
           <KeyValueList
             layout="assertion"
-            :data-list="item.ass_sql"
+            :data-list="draft.ass_sql"
             :field-config="sqlFields"
             :on-delete-item="(index) => remove('ass_sql', index)"
             :on-save="() => save('ass_sql')"
@@ -238,7 +273,7 @@
           ></a-space
         >
         <a-textarea
-          v-model="item.ass_schema"
+          v-model="draft.ass_schema"
           :disabled="editLocked"
           :auto-size="fixedRows"
           allow-clear
@@ -253,7 +288,7 @@
           class="mango-horizontal-scroll-region"
         >
           <GeneralAssertionEditor
-            v-model="item.ass_general"
+            v-model="draft.ass_general"
             :methods="generalMethods"
             :edit-locked="editLocked"
             @save="save('ass_general')"
@@ -267,7 +302,8 @@
 </template>
 
 <script setup lang="ts">
-  /* eslint-disable vue/no-mutating-props */
+  import { useApiCaseScenarioDraft } from '../composables/useApiCaseScenarioDraft'
+  import type { ApiCaseScenario } from '../types'
   import { computed } from 'vue'
   import KeyValueList from '@/components/forms/KeyValueList.vue'
   import GeneralAssertionEditor from '@/components/forms/GeneralAssertionEditor.vue'
@@ -283,7 +319,7 @@
   type AssertionListField = 'ass_jsonpath' | 'ass_sql' | 'ass_general'
   const props = withDefaults(
     defineProps<{
-      item: any
+      item: ApiCaseScenario
       activeKey: string
       editLocked: boolean
       verifying: boolean
@@ -310,10 +346,15 @@
   const emit = defineEmits<{
     (event: 'change', value: string): void
     (event: 'save', field: AssertionField, value: any, id: number): void
-    (event: 'verify'): void
+    (event: 'verify', scenario: ApiCaseScenario): void
     (event: 'toggle-compare'): void
     (event: 'generate-schema'): void
   }>()
+  const { draft } = useApiCaseScenarioDraft(
+    () => props.item,
+    () => {}
+  )
+
   const fixedRows = { minRows: 9, maxRows: 9 }
   const relationOptions = [
     { label: '且', value: 'AND' },
@@ -334,7 +375,7 @@
   }
   const assertionRows = computed(() => {
     const groupNames = new Map<string, { order: number; logic: 'AND' | 'OR'; color: number }>()
-    const rows = (props.item.ass_jsonpath || []).map((assertion: any, index: number) => {
+    const rows = (draft.value.ass_jsonpath || []).map((assertion: any, index: number) => {
       const groupName = String(assertion.group_name || '').trim()
       if (!groupNames.has(groupName)) {
         groupNames.set(groupName, {
@@ -361,9 +402,11 @@
     })
     return rows
   })
-  const fieldCompareResults = computed(() => (props.compareResults || []).filter((result: any) =>
-    ['jsonpath', 'regex', 'cache'].includes(String(result?.source_type || ''))
-  ))
+  const fieldCompareResults = computed(() =>
+    (props.compareResults || []).filter((result: any) =>
+      ['jsonpath', 'regex', 'cache'].includes(String(result?.source_type || ''))
+    )
+  )
   function assertionSignature(assertion: any) {
     if (!assertion || typeof assertion !== 'object' || Array.isArray(assertion)) return ''
     return JSON.stringify([
@@ -377,7 +420,7 @@
   }
   const resultByIndex = computed(() => {
     const results = new Map<number, any>()
-    const configSignatures = (props.item.ass_jsonpath || []).map(assertionSignature)
+    const configSignatures = (draft.value.ass_jsonpath || []).map(assertionSignature)
     const configMatches = new Map<string, number[]>()
     configSignatures.forEach((signature: string, index: number) => {
       if (signature) configMatches.set(signature, [...(configMatches.get(signature) || []), index])
@@ -391,13 +434,23 @@
     for (const result of candidates) {
       const signature = assertionSignature(result.raw_config)
       const explicitIndex = Number(result.assertion_index) - 1
-      if (Number.isInteger(explicitIndex) && explicitIndex >= 0 && explicitIndex < configSignatures.length
-        && (props.compareSource === 'verify' || (signature && signature === configSignatures[explicitIndex]))) {
+      if (
+        Number.isInteger(explicitIndex) &&
+        explicitIndex >= 0 &&
+        explicitIndex < configSignatures.length &&
+        (props.compareSource === 'verify' ||
+          (signature && signature === configSignatures[explicitIndex]))
+      ) {
         results.set(explicitIndex, result)
         continue
       }
       const matches = configMatches.get(signature) || []
-      if (signature && matches.length === 1 && resultCounts.get(signature) === 1 && !results.has(matches[0])) {
+      if (
+        signature &&
+        matches.length === 1 &&
+        resultCounts.get(signature) === 1 &&
+        !results.has(matches[0])
+      ) {
         results.set(matches[0], result)
       }
     }
@@ -417,7 +470,10 @@
     return resultByIndex.value.get(record.index)
   }
   function isFirstGroupRow(record: any) {
-    return assertionRows.value.find((row: any) => row.groupName === record.groupName)?.index === record.index
+    return (
+      assertionRows.value.find((row: any) => row.groupName === record.groupName)?.index ===
+      record.index
+    )
   }
   function canShowGroupSummary(record: any) {
     const name = record.groupName || '未分组'
@@ -431,7 +487,11 @@
     if (value === null) return 'null'
     let text: string
     if (typeof value === 'object') {
-      try { text = JSON.stringify(value) ?? String(value) } catch { text = String(value) }
+      try {
+        text = JSON.stringify(value) ?? String(value)
+      } catch {
+        text = String(value)
+      }
     } else {
       text = String(value)
     }
@@ -449,8 +509,8 @@
   function assertionRowClass(record: any) {
     return record.colorIndex < 0 ? '' : `mango-assertion-config-row--group-${record.colorIndex}`
   }
-  function newJsonpathAssertion() {
-    const defaultGroup = props.item.ass_jsonpath.find(
+  function newJsonpathAssertion(): import('@/types/api-test/case-parameter').ApiJsonPathAssertionItem {
+    const defaultGroup = draft.value.ass_jsonpath.find(
       (assertion: any) => !String(assertion.group_name || '').trim()
     )
     return {
@@ -465,7 +525,7 @@
   function changeGroupLogic(name: string, value: any) {
     if (props.editLocked) return
     const logic = String(value).toUpperCase() === 'OR' ? 'OR' : 'AND'
-    props.item.ass_jsonpath.forEach((assertion: any) => {
+    draft.value.ass_jsonpath.forEach((assertion: any) => {
       if (String(assertion.group_name || '').trim() === name) assertion.group_logic = logic
     })
     save('ass_jsonpath')
@@ -477,11 +537,11 @@
   function assignAssertionGroup(index: number, value: any) {
     if (props.editLocked) return
     const name = String(value || '').trim()
-    const existing = props.item.ass_jsonpath.find(
+    const existing = draft.value.ass_jsonpath.find(
       (item: any, itemIndex: number) =>
         itemIndex !== index && String(item.group_name || '').trim() === name
     )
-    const assertion = props.item.ass_jsonpath[index]
+    const assertion = draft.value.ass_jsonpath[index]
     if (String(assertion.group_name || '').trim() === name) return
     assertion.group_name = name
     assertion.group_logic =
@@ -512,17 +572,17 @@
     )[normalizeType(assertion?.assertion_type)]
   }
   function save(field: AssertionField) {
-    if (!props.editLocked) emit('save', field, props.item[field], props.item.id)
+    if (!props.editLocked) emit('save', field, draft.value[field], draft.value.id)
   }
   function remove(field: AssertionListField, index: number) {
     if (!props.editLocked) {
-      props.item[field].splice(index, 1)
+      draft.value[field].splice(index, 1)
       save(field)
     }
   }
   function update(field: AssertionListField, index: number, value: any) {
     if (!props.editLocked) {
-      props.item[field][index] = value
+      draft.value[field][index] = value
       save(field)
     }
   }
@@ -589,11 +649,11 @@
   }
   function addItem() {
     if (props.editLocked) return
-    if (props.activeKey === '31') props.item.ass_jsonpath.push(newJsonpathAssertion())
+    if (props.activeKey === '31') draft.value.ass_jsonpath.push(newJsonpathAssertion())
     if (props.activeKey === '32')
-      props.item.ass_general.push({ group_name: '', group_logic: 'AND', method: '', value: {} })
+      draft.value.ass_general.push({ group_name: '', group_logic: 'AND', method: '', value: {} })
     if (props.activeKey === '35')
-      props.item.ass_sql.push({
+      draft.value.ass_sql.push({
         actual: '',
         method: 'assert_sql_count',
         expect: '',
@@ -604,7 +664,7 @@
     if (props.editLocked) return
     if (props.activeKey === '32') {
       const groupName = `或关系${Date.now().toString().slice(-4)}`
-      props.item.ass_general.push(
+      draft.value.ass_general.push(
         { group_name: groupName, group_logic: 'OR', method: '', value: {} },
         { group_name: groupName, group_logic: 'OR', method: '', value: {} }
       )
@@ -686,8 +746,12 @@
     font-size: 12px;
     font-weight: 600;
   }
-  .mango-assertion-config-table__result-status--pass { color: var(--m-success); }
-  .mango-assertion-config-table__result-status--fail { color: var(--m-danger); }
+  .mango-assertion-config-table__result-status--pass {
+    color: var(--m-success);
+  }
+  .mango-assertion-config-table__result-status--fail {
+    color: var(--m-danger);
+  }
   .mango-assertion-config-table__group-summary {
     display: block;
     margin-top: var(--m-space-xs);

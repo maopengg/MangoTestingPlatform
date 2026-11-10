@@ -1,5 +1,5 @@
 <template>
-  <div class="mango-home-workbench-scroll">
+  <div class="mango-home-workbench-scroll mango-workbench-scroll-x">
     <div class="main-container mango-home-dashboard">
       <div class="left">
         <div class="item mango-section-card">
@@ -8,7 +8,9 @@
             class="mango-home-card-shortcut"
             type="text"
             size="small"
-            @click="navigateTo('/report/effectiveness/index')"
+            :loading="navigatingTo === homeLinks.quality"
+            :disabled="!!navigatingTo"
+            @click="navigateTo(homeLinks.quality)"
           >
             直达质量效能
             <template #icon><IconArrowRight /></template>
@@ -16,7 +18,8 @@
           <p class="mango-home-panel-description"
             >按项目汇总定时任务执行报告，比较执行量与最终结果</p
           >
-          <ProjectQualityChart :data="data.projectQuality" :loading="data.projectQualityLoading" />
+
+          <ProjectQualityChart :data="projectQualityRows" :loading="projectQualityLoading" />
         </div>
         <div class="item mango-section-card">
           <Title title="近 7 天执行结果" />
@@ -24,20 +27,23 @@
             class="mango-home-card-shortcut"
             type="text"
             size="small"
-            @click="navigateTo('/report/index')"
+            :loading="navigatingTo === homeLinks.reports"
+            :disabled="!!navigatingTo"
+            @click="navigateTo(homeLinks.reports)"
           >
             直达执行报告
             <template #icon><IconArrowRight /></template>
           </a-button>
           <p class="mango-home-panel-description">按真实用例与场景数汇总最终执行质量</p>
+
           <StatusChart
-            :success="data.reportStatus.success"
-            :fail="data.reportStatus.fail"
-            :warning="data.reportStatus.warning"
+            :success="reportCounts.success"
+            :fail="reportCounts.fail"
+            :warning="reportCounts.warning"
             :other="reportOtherCount"
-            :loading="data.reportSumLoading"
+            :loading="reportSumLoading"
             center-label="最终通过率"
-            :center-value="formatPercent(data.reportPassRate)"
+            :center-value="formatPercent(reportPassRate)"
           />
         </div>
         <div class="item mango-section-card">
@@ -50,7 +56,7 @@
         <div class="trend-panel panel mango-section-card">
           <Title title="近 12 周自动化执行趋势" />
           <p class="mango-home-panel-description">UI、API、Pytest 的真实用例与场景执行规模</p>
-          <FullYearSalesChart ref="fullYearSalesChart" />
+          <FullYearSalesChart />
         </div>
         <div class="center-bottom">
           <div class="pending-panel panel mango-section-card">
@@ -63,7 +69,7 @@
           <div class="activity-panel panel mango-section-card">
             <Title title="近 7 天用户活跃度" />
             <p class="mango-home-panel-description">衡量用户对测试平台的实际使用情况</p>
-            <HotProductChart ref="hotProductChart" />
+            <HotProductChart />
           </div>
         </div>
       </div>
@@ -100,8 +106,15 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, onMounted, reactive, ref } from 'vue'
-  import { useRouter } from 'vue-router'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
+  import { Message } from '@arco-design/web-vue'
+  import useUserStore from '@/store/modules/user'
+  import { homeLinks } from './config'
+  import { emptyReportCounts, formatPercent, readProjectQuality, readReportSummary } from './records'
+  import type { HomeReportCounts, ProjectQualityItem } from './types'
+  import { useRoute, useRouter } from 'vue-router'
   import { IconArrowRight } from '@arco-design/web-vue/es/icon'
   import FullYearSalesChart from './components/chart/FullYearSalesChart.vue'
   import HotProductChart from './components/chart/HotProductChart.vue'
@@ -120,115 +133,84 @@
   const contactVisible = ref(false)
   const skillVisible = ref(false)
   const hasPendingRisk = ref(false)
-  const router = useRouter()
+  const router = useRouter(), route = useRoute(), user = useUserStore()
+  const entryPath = route.path
+  const contextKey = computed(() => JSON.stringify([
+    route.fullPath, user.userId, user.roleId, user.token, user.selected_environment,
+  ]))
+  const projectQualityRows = ref<ProjectQualityItem[]>([])
+  const projectQualityLoading = ref(false)
+  const projectQualityError = ref('')
+  const reportCounts = ref<HomeReportCounts>(emptyReportCounts())
+  const reportPassRate = ref<number | null>(null)
+  const reportSumLoading = ref(false)
+  const reportSumError = ref('')
+  const navigatingTo = ref<string | null>(null)
+  let active = true, mounted = false, projectSequence = 0, reportSequence = 0, contextGeneration = 0
+  const available = () => active && route.path === entryPath
+  const reportOtherCount = computed(() => reportCounts.value.proceed + reportCounts.value.stay_begin + reportCounts.value.stopped)
 
-  const data: any = reactive({
-    projectQuality: [],
-    reportStatus: {
-      success: 0,
-      fail: 0,
-      warning: 0,
-      proceed: 0,
-      stay_begin: 0,
-      stopped: 0,
-    },
-    reportPassRate: null,
-    projectQualityLoading: false,
-    reportSumLoading: false,
-    onlineUsers: 0,
-  })
-
-  const reportOtherCount = computed(
-    () =>
-      Number(data.reportStatus.proceed || 0) +
-      Number(data.reportStatus.stay_begin || 0) +
-      Number(data.reportStatus.stopped || 0)
-  )
-
-  function projectQuality() {
-    data.projectQualityLoading = true
-    getSystemProjectQuality()
-      .then((res) => {
-        data.projectQuality = Array.isArray(res.data) ? res.data : []
-      })
-      .catch(console.log)
-      .finally(() => {
-        data.projectQualityLoading = false
-      })
+  async function loadProjectQuality() {
+    if (!available()) return
+    const sequence = ++projectSequence, context = contextKey.value, generation = contextGeneration
+    const current = () => available() && sequence === projectSequence && context === contextKey.value && generation === contextGeneration
+    projectQualityLoading.value = true
+    projectQualityError.value = ''
+    try {
+      const rows = readProjectQuality(await getSystemProjectQuality())
+      if (current()) projectQualityRows.value = rows
+    } catch (loadFailure0) {
+      if (current()) (reportLoadError(loadFailure0, "项目自动化质量加载失败，请重试", false), projectQualityError.value = '项目自动化质量加载失败，请重试')
+    } finally {
+      if (current()) projectQualityLoading.value = false
+    }
   }
 
-  function getAllReportSum() {
-    data.reportSumLoading = true
-    getSystemCaseRunSum()
-      .then((res) => {
-        const payload = res.data || {}
-        if (Array.isArray(payload)) {
-          const legacy = Object.fromEntries(
-            payload.map((item: any) => [String(item.name || ''), Number(item.value || 0)])
-          )
-          data.reportStatus = {
-            success: legacy['通过'] || 0,
-            fail: legacy['失败'] || 0,
-            warning: legacy['警告'] || 0,
-            proceed: legacy['进行中'] || 0,
-            stay_begin: legacy['待开始'] || 0,
-            stopped: legacy['已停止'] || 0,
-          }
-          const completed =
-            data.reportStatus.success + data.reportStatus.fail + data.reportStatus.warning
-          data.reportPassRate = completed
-            ? Number(((data.reportStatus.success / completed) * 100).toFixed(2))
-            : null
-          return
-        }
-        data.reportStatus = {
-          ...data.reportStatus,
-          ...(payload.status_counts || {}),
-        }
-        data.reportPassRate = payload.final_pass_rate ?? null
-      })
-      .catch(console.log)
-      .finally(() => {
-        data.reportSumLoading = false
-      })
+  async function loadReportSummary() {
+    if (!available()) return
+    const sequence = ++reportSequence, context = contextKey.value, generation = contextGeneration
+    const current = () => available() && sequence === reportSequence && context === contextKey.value && generation === contextGeneration
+    reportSumLoading.value = true
+    reportSumError.value = ''
+    try {
+      const summary = readReportSummary(await getSystemCaseRunSum())
+      if (current()) { reportCounts.value = summary.counts; reportPassRate.value = summary.passRate }
+    } catch (loadFailure1) {
+      if (current()) (reportLoadError(loadFailure1, "近七天执行结果加载失败，请重试", false), reportSumError.value = '近七天执行结果加载失败，请重试')
+    } finally {
+      if (current()) reportSumLoading.value = false
+    }
   }
 
-  function formatPercent(value: number | string | null | undefined) {
-    if (value === null || value === undefined || value === '') return '-'
-    const numberValue = Number(value)
-    return Number.isFinite(numberValue) ? `${numberValue.toFixed(2)}%` : '-'
+  function reloadAggregates() { void loadProjectQuality(); void loadReportSummary() }
+  function invalidateAggregates() {
+    contextGeneration++; projectSequence++; reportSequence++
+    projectQualityLoading.value = false; reportSumLoading.value = false
+    contactVisible.value = false; skillVisible.value = false
   }
+  watch(contextKey, () => {
+    invalidateAggregates()
+    projectQualityRows.value = []; reportCounts.value = emptyReportCounts(); reportPassRate.value = null
+    projectQualityError.value = ''; reportSumError.value = ''; hasPendingRisk.value = false
+    if (mounted && available()) reloadAggregates()
+  }, { flush: 'sync' })
+  onMounted(() => { mounted = true; reloadAggregates() })
+  onDeactivated(() => { active = false; invalidateAggregates() })
+  onActivated(() => { if (mounted && !active) { active = true; reloadAggregates() } })
+  onBeforeUnmount(() => { active = false; mounted = false; invalidateAggregates() })
 
-  function navigateTo(path: string) {
-    router.push(path)
+  async function navigateTo(path: string) {
+    if (!available() || navigatingTo.value) return
+    const generation = contextGeneration
+    navigatingTo.value = path
+    try { await router.push(path) }
+    catch { if (available() && generation === contextGeneration) Message.error('页面打开失败，请重试') }
+    finally { navigatingTo.value = null }
   }
-
-  onMounted(() => {
-    nextTick(async () => {
-      projectQuality()
-      getAllReportSum()
-    })
-  })
-
-  // 资源中心相关方法
-  function downloadExecutor() {
-    // 跳转到执行器下载链接
-    window.open('https://www.alipan.com/s/8CmZdabwt4R', '_blank')
-  }
-
-  function viewSkill() {
-    skillVisible.value = true
-  }
-
-  function viewHelp() {
-    // 跳转到帮助文档链接
-    window.open('http://160.202.231.91:36696/', '_blank')
-  }
-
-  function contactAuthor() {
-    // 打开联系作者弹窗
-    contactVisible.value = true
-  }
+  function downloadExecutor() { if (available()) window.open(homeLinks.executor, '_blank', 'noopener,noreferrer') }
+  function viewHelp() { if (available()) window.open(homeLinks.help, '_blank', 'noopener,noreferrer') }
+  function viewSkill() { if (available()) skillVisible.value = true }
+  function contactAuthor() { if (available()) contactVisible.value = true }
 </script>
 
 <style lang="less" scoped>
@@ -236,30 +218,8 @@
     z-index: 1;
   }
 
-  :deep(.arco-card) {
-    border-radius: var(--m-radius-lg);
-    border: 1px solid var(--m-border);
-    background: var(--m-surface);
-    box-shadow: var(--m-shadow);
-    transition: box-shadow 0.3s ease;
-  }
-
-  :deep(.arco-card:hover) {
-    box-shadow: var(--m-shadow);
-  }
-
-  :deep(.arco-card-body) {
-    padding: 0;
-    height: 100%;
-  }
-
-  :deep(.arco-modal) {
-    .arco-modal-body {
-      padding: 18px;
-    }
-  }
-
   .mango-home-workbench-scroll {
+    --mango-workbench-min-width: calc(1050px + 2 * var(--m-page-gap));
     width: 100%;
     height: 100%;
     min-width: 0;
@@ -277,7 +237,7 @@
     width: 100%;
     height: 100%;
     /* 首页是固定阅读顺序的数据看板；宽度不足时滚动，不能把右栏重排到不可见区域。 */
-    min-width: 1064px;
+    min-width: var(--mango-workbench-min-width);
     min-height: 648px;
     margin: 0 auto;
     grid-template-areas: 'left center right';
@@ -599,29 +559,6 @@
       .center-workspace {
         grid-template-rows: 243px minmax(0, 1fr);
       }
-    }
-  }
-
-  // 按钮样式优化
-  :deep(.arco-btn) {
-    border-radius: 5px;
-    transition: all 0.3s ease;
-  }
-
-  :deep(.arco-btn:hover) {
-    transform: translateY(-1px);
-    box-shadow: var(--m-shadow);
-  }
-
-  // 描述列表样式优化
-  :deep(.arco-descriptions) {
-    .arco-descriptions-item-label {
-      font-weight: 500;
-      color: var(--m-muted);
-    }
-
-    .arco-descriptions-item-value {
-      color: var(--m-text-2);
     }
   }
 

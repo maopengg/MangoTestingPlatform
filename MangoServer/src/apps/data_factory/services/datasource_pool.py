@@ -2,16 +2,23 @@ import atexit
 import os
 import threading
 import time
+import uuid
 
 from sqlalchemy import exc
 from sqlalchemy.pool import QueuePool
 
 from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService
+from src.apps.data_factory.services.datasource_timing import DatasourceTimingService
 
 
 class DatasourceQueuePool(QueuePool):
     def _do_get(self):
         from src.apps.data_factory.services.datasource_wait import DatasourceWaitService
+        from src.apps.data_factory.services.datasource_timing import DatasourceTimingService as Timing
+        from src.apps.data_factory.enums.performance import DatasourceTimingPhaseEnum as Phase
+        started = time.monotonic()
+        next_log = started + 30
+        wait_id = uuid.uuid4().hex
         while True:
             try:
                 return super()._do_get()
@@ -19,7 +26,11 @@ class DatasourceQueuePool(QueuePool):
                 # 只处理本地 QueuePool 的容量等待，驱动连接/SQL 超时不得重试。
                 if error.code != '3o7r':
                     raise
-            DatasourceWaitService.pause()
+            next_log = Timing.diagnose(started, next_log, phase=Phase.LOCAL_POOL,
+                                      database_id=getattr(self, '_mango_database_id', None), wait_id=wait_id,
+                                      group=getattr(self, '_mango_instance_group', None))
+            with Timing.waiting(Phase.LOCAL_POOL):
+                DatasourceWaitService.pause()
 
 
 class DatasourcePoolRegistry:
@@ -33,7 +44,7 @@ class DatasourcePoolRegistry:
     def get_engine(cls, target, timeout, builder):
         policy = DatasourceGovernorService.policy()
         key = (target.cache_key, timeout, policy.pool_size)
-        with cls._lock:
+        with DatasourceTimingService.locked(cls._lock):
             if cls._pid != os.getpid():
                 # fork 不得关闭父进程的在用 socket，也不得复用它们。
                 for engine, dispose, _, _ in cls._engines.values():
@@ -57,6 +68,7 @@ class DatasourcePoolRegistry:
             engine = builder(policy)
             engine._mango_pool_size = policy.pool_size
             engine._mango_instance_group = DatasourceGovernorService.target_policy(target, policy)[2]
+            engine.pool._mango_instance_group = engine._mango_instance_group
             dispose = engine.dispose
             cls._engines[key] = engine, dispose, time.monotonic(), 1
             # 既有调用方的 dispose 表示租借结束，不销毁其他线程共享的真实池。
@@ -68,7 +80,7 @@ class DatasourcePoolRegistry:
 
     @classmethod
     def touch(cls, key):
-        with cls._lock:
+        with DatasourceTimingService.locked(cls._lock):
             if key in cls._engines:
                 engine, dispose, _, borrowers = cls._engines[key]
                 cls._engines[key] = engine, dispose, time.monotonic(), max(0, borrowers - 1)
@@ -77,7 +89,7 @@ class DatasourcePoolRegistry:
 
     @classmethod
     def relieve_pressure(cls, group):
-        with cls._lock:
+        with DatasourceTimingService.locked(cls._lock):
             for key, (engine, dispose, _, borrowers) in list(cls._engines.items()):
                 if getattr(engine, '_mango_instance_group', None) == group and engine.pool.checkedout() == 0:
                     dispose()
@@ -102,7 +114,7 @@ class DatasourcePoolRegistry:
             time.sleep(5)
             def maintain():
                 nonlocal renewed
-                with cls._lock:
+                with DatasourceTimingService.locked(cls._lock):
                     DatasourceGovernorService.flush_pending_releases()
                     DatasourceGovernorService.flush_closed_connections()
                     cls.prune(DatasourceGovernorService.policy().pool_idle_seconds)
@@ -119,7 +131,7 @@ class DatasourcePoolRegistry:
     @classmethod
     def renew_live_connections(cls):
         from src.apps.data_factory.services.datasource_connection import GovernedDbapiConnection
-        with cls._lock:
+        with DatasourceTimingService.locked(cls._lock):
             stale = DatasourceGovernorService.renew_connections(GovernedDbapiConnection.live_permits())
             # 不复活过期租约；仅关闭闲置池的真实连接，再按 close 证明核销。
             # checkedout 中的操作必须自行完成/回滚，不能由维护线程中断。
@@ -128,7 +140,7 @@ class DatasourcePoolRegistry:
 
     @classmethod
     def close_all(cls):
-        with cls._lock:
+        with DatasourceTimingService.locked(cls._lock):
             cls.prune(0)
 
 

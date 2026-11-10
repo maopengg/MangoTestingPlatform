@@ -26,7 +26,7 @@ export const scenarioColumns = [
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
-    width: 160,
+    width: 140,
     align: 'center',
     fixed: 'right',
   },

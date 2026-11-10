@@ -35,16 +35,16 @@
     </template>
 
     <template #default>
-      <a-space direction="vertical" fill>
-        <!-- 报告表格 -->
+      <div class="mango-monitoring-report">
+
         <a-table
-          :scroll="{ x: 1190 }"
+          :scroll="{ x: reportTableScrollX }"
           :bordered="false"
-          :loading="table.tableLoading.value"
-          :data="table.dataList"
+          :loading="listLoading"
+          :data="rows"
           :columns="tableColumns"
           :pagination="false"
-          :rowKey="rowKey"
+          row-key="id"
         >
           <template #columns>
             <a-table-column
@@ -59,18 +59,18 @@
               :tooltip="item.tooltip"
             >
               <template v-if="item.key === 'index'" #cell="{ record }">
-                <span class="report-id-cell">{{ record.id }}</span>
+                <span class="mango-monitoring-report__id">{{ record.id }}</span>
               </template>
               <template v-else-if="item.key === 'task_name'" #cell="{ record }">
                 {{ record.task_name }}
               </template>
               <template v-else-if="item.key === 'status'" #cell="{ record }">
                 <a-tag :color="monitoringLogStatusColor(record.status)" size="small"
-                  >{{ enumStore.monitoring_log_status[record.status]?.title || '-' }}
+                  >{{ statusTitle(record) }}
                 </a-tag>
               </template>
               <template v-else-if="item.key === 'msg'" #cell="{ record }">
-                <span :title="record.msg">{{ record.msg }}</span>
+                <span :title="record.msg ?? undefined">{{ record.msg }}</span>
               </template>
               <template v-else-if="item.key === 'is_notice'" #cell="{ record }">
                 <a-tag :color="record.is_notice === 1 ? 'green' : 'gray'" size="small">
@@ -88,7 +88,7 @@
             </a-table-column>
           </template>
         </a-table>
-      </a-space>
+      </div>
     </template>
     <template #footer>
       <TableFooter :pagination="pagination" />
@@ -96,122 +96,168 @@
   </TableBody>
 
   <!-- 详情抽屉 -->
-  <a-drawer v-model:visible="detailDrawer.visible" :width="600" title="报告详情" :footer="false">
-    <a-descriptions :column="1" bordered v-if="detailDrawer.data">
-      <a-descriptions-item label="报告ID">{{ detailDrawer.data.id }}</a-descriptions-item>
+  <BaseSidePanel v-model:visible="detailVisible" :width="600" title="报告详情" :show-footer="false">
+    <a-descriptions :column="1" bordered v-if="selectedReport">
+      <a-descriptions-item label="报告ID">{{ selectedReport.id }}</a-descriptions-item>
       <a-descriptions-item label="关联任务">
-        <a-tag color="blue">{{ detailDrawer.data.task_name }}</a-tag>
+        <span class="mango-monitoring-report__name">{{ selectedReport.task_name || '-' }}</span>
       </a-descriptions-item>
       <a-descriptions-item label="状态">
-        <a-tag :color="monitoringLogStatusColor(detailDrawer.data.status)">
-          {{ detailDrawer.data.status_display }}
+        <a-tag :color="monitoringLogStatusColor(selectedReport.status)">
+          {{ statusTitle(selectedReport) }}
         </a-tag>
       </a-descriptions-item>
       <a-descriptions-item label="创建时间"
-        >{{ detailDrawer.data.create_time }}
+        >{{ selectedReport.create_time }}
       </a-descriptions-item>
       <a-descriptions-item label="是否通知">
-        <a-tag :color="detailDrawer.data.is_notice === 1 ? 'green' : 'gray'" size="small">
-          {{ detailDrawer.data.is_notice === 1 ? '是' : '否' }}
+        <a-tag :color="selectedReport.is_notice === 1 ? 'green' : 'gray'" size="small">
+          {{ selectedReport.is_notice === 1 ? '是' : '否' }}
         </a-tag>
       </a-descriptions-item>
-      <a-descriptions-item label="通知组" v-if="detailDrawer.data.task_notice_group">
-        <a-tag color="blue">{{ detailDrawer.data.task_notice_group.name }}</a-tag>
+      <a-descriptions-item label="通知组" v-if="selectedReport.task_notice_group">
+        <span class="mango-monitoring-report__name">{{ selectedReport.task_notice_group.name }}</span>
       </a-descriptions-item>
       <a-descriptions-item label="消息内容">
-        <div class="drawer-pre-wrap drawer-pre-wrap--sm">
-          {{ detailDrawer.data.msg }}
+        <div class="mango-monitoring-report__text mango-monitoring-report__text--short">
+          {{ selectedReport.msg }}
         </div>
       </a-descriptions-item>
-      <a-descriptions-item label="详细信息" v-if="detailDrawer.data.send_text">
-        <div class="drawer-pre-wrap">
-          {{ detailDrawer.data.send_text }}
+      <a-descriptions-item label="详细信息" v-if="selectedReport.send_text">
+        <div class="mango-monitoring-report__text">
+          {{ selectedReport.send_text }}
         </div>
       </a-descriptions-item>
     </a-descriptions>
-  </a-drawer>
+  </BaseSidePanel>
 </template>
 
 <script lang="ts" setup>
-  import { usePagination, useRowKey, useTable } from '@/hooks/table'
-  import { nextTick, onMounted, reactive } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { usePagination } from '@/hooks/table'
+  import { computed, ref, watch, onMounted, onActivated, onDeactivated, onBeforeUnmount } from 'vue'
+  import { useRoute } from 'vue-router'
   import { fieldNames } from '@/setting'
-  import { getFormItems } from '@/utils/datacleaning'
-  import { conditionItems, tableColumns } from './config'
-  import { getMonitoringReportList, MonitoringReport } from '@/api/monitoring/report'
+  import { createConditionItems, tableColumns, reportTableScrollX } from './config'
+  import { createReportQuery, readMonitoringReport, readReportPage } from './records'
+  import { getMonitoringReportList } from '@/api/monitoring/report'
+  import type { MonitoringReport } from '@/api/monitoring/report'
+  import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import { useEnum } from '@/store/modules/get-enum'
+  import useUserStore from '@/store/modules/user'
   import { getStatusTagColor, MONITORING_LOG_STATUS_COLORS } from '@/utils/status-color'
 
-  const pagination = usePagination(doRefresh, () => table.tableLoading)
-  const table = useTable()
-  const rowKey = useRowKey('id')
+  const conditionItems = createConditionItems()
+  const rows = ref<MonitoringReport[]>([])
+  const listLoading = ref(false)
+  const loadFailed = ref(false)
+  const selectedReport = ref<MonitoringReport | null>(null)
+  const detailVisible = ref(false)
+  const pagination = usePagination(doRefresh, listLoading)
   const enumStore = useEnum()
+  const route = useRoute()
+  const user = useUserStore()
+  const identity = computed(() => JSON.stringify([route.fullPath, user.userId, user.roleId, user.token, user.selected_environment]))
+  let requestSequence = 0
+  let mounted = false
+  let active = false
+  let pendingKey: string | null = null
+  let pending: Promise<void> | null = null
+  const available = () => mounted && active && route.path === '/monitoring/report/index'
+  const monitoringLogStatusColor = (value: number) => getStatusTagColor(MONITORING_LOG_STATUS_COLORS, value)
+  const statusTitle = (record: MonitoringReport) =>
+    enumStore.monitoring_log_status.find(item => String(item.key) === String(record.status))?.title || record.status_display || '-'
 
-  const monitoringLogStatusColor = (value: number) =>
-    getStatusTagColor(MONITORING_LOG_STATUS_COLORS, value)
+  function closeDetail() {
+    detailVisible.value = false
+    selectedReport.value = null
+  }
+  watch(detailVisible, visible => { if (!visible) selectedReport.value = null }, { flush: 'sync' })
 
-  // 详情抽屉
-  const detailDrawer = reactive({
-    visible: false,
-    data: null as MonitoringReport | null,
-  })
+  function invalidate() {
+    ++requestSequence
+    pendingKey = null
+    pending = null
+    rows.value = []
+    pagination.setTotalSize(0)
+    listLoading.value = false
+    loadFailed.value = false
+    closeDetail()
+  }
+
+  function doRefresh(): Promise<void> {
+    if (!available()) { listLoading.value = false; return Promise.resolve() }
+    const query = createReportQuery(conditionItems, pagination.page, pagination.pageSize)
+    const key = JSON.stringify(query)
+    if (pending && pendingKey === key) return pending
+    const request = ++requestSequence
+    const context = identity.value
+    const current = () => available() && request === requestSequence && context === identity.value
+    listLoading.value = true
+    loadFailed.value = false
+    pendingKey = key
+    pending = (async () => {
+      try {
+        const response = await getMonitoringReportList(query)
+        if (!current()) return
+        const page = readReportPage(response)
+        rows.value = page.rows
+        pagination.setTotalSize(page.total)
+      } catch (loadFailure0) {
+        if (current()) (reportLoadError(loadFailure0, "加载失败，请重试", false), loadFailed.value = true)
+      } finally {
+        if (current()) {
+          listLoading.value = false
+          pendingKey = null
+          pending = null
+        }
+      }
+    })()
+    return pending
+  }
 
   function onSearchRefresh() {
-    doRefresh(true)
+    closeDetail()
+    pagination.page = 1
+    return doRefresh()
   }
-
-  function doRefresh(showLoading = false) {
-    if (showLoading) {
-      table.tableLoading.value = true
-    }
-    let value = getFormItems(conditionItems)
-    value['page'] = pagination.page
-    value['pageSize'] = pagination.pageSize
-    getMonitoringReportList(value)
-      .then((res: any) => {
-        table.handleSuccess(res)
-        pagination.setTotalSize((res as any).totalSize || 0)
-      })
-      .catch(console.log)
-      .finally(() => {
-        if (showLoading) {
-          table.tableLoading.value = false
-        }
-      })
-  }
-
   function onResetSearch() {
-    conditionItems.forEach((it) => {
-      it.value = it.multiple ? [] : ''
-    })
-    doRefresh(true)
+    conditionItems.forEach(item => item.reset())
+    return onSearchRefresh()
   }
-
   function onViewDetail(record: MonitoringReport) {
-    detailDrawer.data = record
-    detailDrawer.visible = true
+    if (!available()) return
+    selectedReport.value = readMonitoringReport(record)
+    detailVisible.value = true
   }
 
-  onMounted(() => {
-    nextTick(() => {
-      doRefresh()
-    })
-  })
+  watch(identity, () => {
+    invalidate()
+    if (available()) void doRefresh()
+  }, { flush: 'sync' })
+  function resume() {
+    if (!mounted || active) return
+    active = true
+    void doRefresh()
+  }
+  function suspend() { active = false; invalidate() }
+  onMounted(() => { mounted = true; resume() })
+  onActivated(resume)
+  onDeactivated(suspend)
+  onBeforeUnmount(() => { mounted = false; suspend() })
 </script>
 
 <style scoped lang="less">
-  .report-id-cell {
-    display: inline-block;
-    width: 80px;
-  }
-
-  .drawer-pre-wrap {
+  .mango-monitoring-report { min-width: 0; }
+  .mango-monitoring-report__error { margin-bottom: var(--m-page-gap); }
+  .mango-monitoring-report__name { overflow-wrap: anywhere; }
+  .mango-monitoring-report__text {
     max-height: 300px;
-    overflow-y: auto;
+    overflow: auto;
     white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: var(--m-text-2);
   }
-
-  .drawer-pre-wrap--sm {
-    max-height: 200px;
-  }
+  .mango-monitoring-report__text--short { max-height: 200px; }
 </style>

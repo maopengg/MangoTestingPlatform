@@ -14,18 +14,18 @@
         :module-value="filters.module"
         :reset-key="resetKey"
         @filter-change="onNavigation"
-        @search="load"
+        @search="search"
         @reset-search="resetSearch"
       >
         <template #search>
-          <a-form :model="filters" layout="inline" @keyup.enter="load">
+          <a-form :model="filters" layout="inline" @keyup.enter="search">
             <a-form-item label="场景名称"
               ><a-input
                 v-model="filters.name"
                 allow-clear
                 placeholder="请输入场景名称"
-                @clear="load"
-                @blur="load"
+                @clear="search"
+                @blur="search"
             /></a-form-item>
             <a-form-item label="负载模型"
               ><a-select
@@ -35,7 +35,7 @@
                 :options="loadTypeOptions"
                 allow-clear
                 placeholder="请选择负载模型"
-                @change="load"
+                @change="search"
             /></a-form-item>
           </a-form>
         </template>
@@ -74,8 +74,9 @@
               >
               <template v-else-if="column.key === 'status'" #cell="{ record }"
                 ><a-switch
-                  size="small"
                   :model-value="record.status"
+                  :loading="changingIds.has(record.id)"
+                  :disabled="changingIds.has(record.id) || deletingIds.has(record.id)"
                   :checked-value="1"
                   :unchecked-value="0"
                   :before-change="(value) => toggleStatus(record, value)"
@@ -87,7 +88,7 @@
         label: '执行',
         onClick: () => execute(record), },
     { label: '配置', onClick: () => goDetail(record) },
-    { label: '删除', danger: true, onClick: () => remove(record) },
+    { label: '删除', danger: true, loading: deletingIds.has(record.id), disabled: changingIds.has(record.id), onClick: () => remove(record) },
 ]"
                 />
               </template>
@@ -99,240 +100,191 @@
     </template>
   </TableBody>
 
-  <ModalDialog ref="createDialogRef" title="新建性能场景" :width="720" @confirm="saveCreate">
-    <template #content>
-      <a-form ref="createFormRef" :model="form" layout="horizontal" auto-label-width>
-        <a-grid :cols="2" :col-gap="12" :row-gap="4">
-          <a-grid-item
-            ><a-form-item
-              field="name"
-              label="场景名称"
-              class="mango-form-item__require"
-              :rules="[{ required: true, message: '请输入场景名称' }]"
-              ><a-input
-                v-model="form.name"
-                placeholder="请输入便于识别的场景名称"
-                :max-length="128" /></a-form-item
-          ></a-grid-item>
-          <a-grid-item
-            ><a-form-item
-              field="project_product"
-              label="项目产品"
-              class="mango-form-item__require"
-              :rules="[{ required: true, message: '请选择项目产品' }]"
-              ><ProjectProductSelect v-model="form.project_product" /></a-form-item
-          ></a-grid-item>
-          <a-grid-item
-            ><a-form-item
-              field="module"
-              label="产品模块"
-              class="mango-form-item__require"
-              :rules="[{ required: true, message: '请选择产品模块' }]"
-              ><ProductModuleSelect
-                v-model="form.module"
-                :project-product-id="productId(form.project_product)" /></a-form-item
-          ></a-grid-item>
-          <a-grid-item
-            ><a-form-item
-              field="engine"
-              label="执行引擎"
-              class="mango-form-item__require"
-              :rules="[{ required: true, message: '请选择执行引擎' }]"
-              ><a-select v-model="form.engine" :options="engineOptions" placeholder="请选择执行引擎" /></a-form-item
-          ></a-grid-item>
-          <a-grid-item
-            ><a-form-item
-              field="load_type"
-              label="负载模型"
-              class="mango-form-item__require"
-              :rules="[{ required: true, message: '请选择负载模型' }]"
-              ><a-select
-                v-model="form.load_type"
-                :options="loadTypeOptions"
-                placeholder="请选择负载模型" /></a-form-item
-          ></a-grid-item>
-          <a-grid-item
-            ><a-form-item
-              field="default_executor_count"
-              label="执行器数"
-              class="mango-form-item__require"
-              :rules="[{ required: true, message: '请输入执行器数量' }]"
-              ><a-input-number
-                v-model="form.default_executor_count"
-                :min="1"
-                :max="100"
-                placeholder="请输入 1-100" /></a-form-item
-          ></a-grid-item>
-          <a-grid-item :span="2"
-            ><a-form-item field="description" label="说明"
-              ><a-textarea
-                v-model="form.description"
-                placeholder="可填写测试目标、业务范围或注意事项"
-                :max-length="1000"
-                show-word-limit
-                :auto-size="{ minRows: 2, maxRows: 4 }" /></a-form-item
-          ></a-grid-item>
-        </a-grid>
-      </a-form>
-    </template>
-  </ModalDialog>
+  <ScenarioCreateDialog ref="createDialogRef" :context-version="createContextVersion"
+    :is-context-current="isCreateContextCurrent" @created="onCreated" />
 </template>
 
 <script setup lang="ts">
+import { reportLoadError } from '@/utils/load-error'
+
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, reactive, ref } from 'vue'
-  import { useRouter } from 'vue-router'
+  import { onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
   import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
-  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
-  import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
   import MangoTableActions from '@/components/table/MangoTableActions.vue'
-  import ModalDialog from '@/components/overlays/ModalDialog.vue'
+  import ScenarioCreateDialog from './components/ScenarioCreateDialog.vue'
+  import useUserStore from '@/store/modules/user'
   import { usePagination } from '@/hooks/table'
   import { formatModulePath, formatProjectProductPath } from '@/utils/business-format'
-  import {
-    createPerfScenario,
-    deletePerfScenario,
-    getPerfScenarios,
-    updatePerfScenario,
-  } from '@/api/perf'
-  import { engineOptions, loadTypeOptions, scenarioColumns, scenarioScrollX } from './config'
-  import { prefillNavigationModel, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+  import { deletePerfScenario, getPerfScenarios, updatePerfScenario } from '@/api/perf'
+  import { loadTypeOptions, scenarioColumns, scenarioScrollX } from './config'
+  import { selectionId } from './create'
+  import { copyScenarioFilters, createScenarioFilters, readScenarioRows, scenarioQuery, scenarioSuccess } from './list'
+  import type { ScenarioRow } from './list'
+  import type { NavigationCreateSource } from '@/utils/navigation-create-defaults'
 
+  const route = useRoute(), router = useRouter(), user = useUserStore()
   const navigationCreateRef = ref<NavigationCreateSource | null>(null)
-
-  const router = useRouter()
-  const rows = ref<any[]>([])
-  const loading = ref(false)
-  const createDialogRef = ref<InstanceType<typeof ModalDialog> | null>(null)
-  const createFormRef = ref<any>(null)
-  const resetKey = ref(0)
-  const filters = reactive<any>({
-    name: '',
-    load_type: [],
-    project_product: undefined,
-    module: undefined,
-  })
-  const form = reactive<any>({
-    name: '',
-    project_product: undefined,
-    module: undefined,
-    engine: 'k6',
-    load_type: 'concurrency',
-    default_executor_count: 1,
-    execution_mode: 'sequential',
-    node_failure_policy: 'strict',
-    user_wait_min_ms: 0,
-    user_wait_max_ms: 0,
-    status: 1,
-    tags: [],
-  })
-  const pagination = usePagination(load, () => loading)
-
-  function productId(value: any) {
-    return Array.isArray(value) ? value[value.length - 1] : value
+  const createDialogRef = ref<InstanceType<typeof ScenarioCreateDialog> | null>(null)
+  const rows = ref<ScenarioRow[]>([]), loading = ref(false), failed = ref(false), resetKey = ref(0)
+  const filters = reactive(createScenarioFilters()), appliedFilters = ref(createScenarioFilters())
+  const changingIds = reactive(new Set<number>()), deletingIds = reactive(new Set<number>())
+  const pagination = usePagination(() => load(), () => loading)
+  const createContextVersion = ref(0)
+  let active = true, disposed = false, mounted = false, needsRead = true, readVersion = 0, queryVersion = 0
+  let pending: { key: string; isCurrent: () => boolean; promise: Promise<boolean> } | null = null
+  let deleteDialog: ReturnType<typeof Modal.confirm> | null = null
+  let deleteGeneration = 0
+  const available = () => !disposed && active && route.path === '/perf/scenario/index' &&
+    (typeof document === 'undefined' || document.visibilityState !== 'hidden')
+  function isCreateContextCurrent(version: number): boolean { return available() && version === createContextVersion.value }
+  function closeCreate(): void { createContextVersion.value++; createDialogRef.value?.close() }
+  function closeDelete(): void { deleteGeneration++; deleteDialog?.close(); deleteDialog = null }
+  function invalidateRead(): void { readVersion++; pending = null; loading.value = false }
+  function suspend(clear: boolean): void {
+    closeCreate(); closeDelete(); invalidateRead(); needsRead = true
+    if (clear) { rows.value = []; pagination.setTotalSize(0); failed.value = false }
   }
-  function loadTitle(value: string) {
-    return loadTypeOptions.find((item) => item.value === value)?.label || value
+  function resume(): void {
+    if (!mounted || !available() || loading.value || !needsRead) return
+    void load()
   }
-  function loadTarget(record: any) {
-    if (record.load_type === 'concurrency') return `${record.target_users || 0} 用户`
-    return `${record.target_rate || 0} 请求/${record.rate_time_unit === 'minute' ? '分钟' : '秒'}`
+  function loadTitle(value: string) { return loadTypeOptions.find(item => item.value === value)?.label || value }
+  function loadTarget(record: ScenarioRow) {
+    if (record.load_type === 'concurrency') return `${record.target_users ?? 0} 用户`
+    return `${record.target_rate ?? 0} 请求/${record.rate_time_unit === 'minute' ? '分钟' : '秒'}`
   }
-  function query() {
-    const params = Object.fromEntries(
-      Object.entries({
-        ...filters,
-        project_product: productId(filters.project_product),
-        page: pagination.page,
-        pageSize: pagination.pageSize,
-      }).filter(([, value]) => value !== '' && value !== undefined && value !== null)
-    )
-    delete params.load_type
-    if (filters.load_type.length) params.load_type__in = filters.load_type.join(',')
-    return params
-  }
-  async function load() {
+  function query() { return scenarioQuery(appliedFilters.value, pagination.page, pagination.pageSize) }
+  function load(): Promise<boolean> {
+    if (!available()) { loading.value = false; return Promise.resolve(false) }
+    const params = query(), key = JSON.stringify(params), context = createContextVersion.value
+    if (pending?.key === key && pending.isCurrent()) return pending.promise
+    const request = ++readVersion
+    const isCurrent = () => available() && context === createContextVersion.value && request === readVersion
+    const job = { key, isCurrent, promise: Promise.resolve(false) }
+    pending = job
     loading.value = true
-    try {
-      const response: any = await getPerfScenarios(query())
-      rows.value = response.data || []
-      pagination.setTotalSize(response.totalSize || 0)
-    } finally {
-      loading.value = false
-    }
-  }
-  function onNavigation(value: any) {
-    filters.project_product = value.projectProduct || undefined
-    filters.module = value.module || undefined
-    pagination.page = 1
-    load()
-  }
-  function resetSearch() {
-    filters.name = ''
-    filters.load_type = []
-    resetKey.value += 1
-    load()
-  }
-  async function openCreate() {
-    Object.assign(form, {
-      name: '',
-      project_product: filters.project_product,
-      module: filters.module,
-      engine: 'k6',
-      load_type: 'concurrency',
-      default_executor_count: 1,
-      execution_mode: 'sequential',
-      node_failure_policy: 'strict',
-      user_wait_min_ms: 0,
-      user_wait_max_ms: 0,
-      status: 1,
-      tags: [],
+    failed.value = false
+    needsRead = true
+    job.promise = Promise.resolve().then(async () => {
+      try {
+        if (!isCurrent()) return false
+        const response = await getPerfScenarios(params)
+        if (!isCurrent()) return false
+        const result = readScenarioRows(response)
+        const lastPage = Math.max(1, Math.ceil(result.total / Number(params.pageSize)))
+        if (Number(params.page) > lastPage) { pagination.page = lastPage; return load() }
+        rows.value = result.rows
+        pagination.setTotalSize(result.total)
+        needsRead = false
+        return true
+      } catch (loadFailure0) {
+        if (isCurrent()) (reportLoadError(loadFailure0, "加载失败，请重试", false), failed.value = true)
+        return false
+      } finally {
+        if (pending === job) { pending = null; loading.value = false }
+      }
     })
-    await prefillNavigationModel(navigationCreateRef.value, form)
-    createFormRef.value?.clearValidate?.()
-    await createDialogRef.value?.show()
+    return job.promise
   }
-  async function saveCreate() {
-    const errors = await createFormRef.value?.validate()
-    if (errors) {
-      createDialogRef.value?.setConfirmLoading(false)
-      return
-    }
+  function search(): Promise<boolean> {
+    const next = copyScenarioFilters(filters)
+    pagination.page = 1
+    if (JSON.stringify(next) !== JSON.stringify(appliedFilters.value)) appliedFilters.value = next
+    return load()
+  }
+  function onNavigation(value: { projectProduct: unknown; module: unknown }): Promise<boolean> {
+    filters.project_product = selectionId(value.projectProduct)
+    filters.module = selectionId(value.module)
+    return search()
+  }
+  function resetSearch(): Promise<boolean> {
+    Object.assign(filters, createScenarioFilters())
+    resetKey.value++
+    return search()
+  }
+  async function openCreate(): Promise<void> {
+    if (available()) await createDialogRef.value?.open(navigationCreateRef.value?.getCreateDefaults())
+  }
+  function onCreated(id: number, version: number): void {
+    if (isCreateContextCurrent(version)) router.push({ path: '/perf/scenario/details', query: { id } })
+  }
+  function currentRow(record: ScenarioRow): boolean { return available() && rows.value.some(row => row.id === record.id) }
+  function goDetail(record: ScenarioRow): void {
+    if (currentRow(record)) router.push({ path: '/perf/scenario/details', query: { id: record.id } })
+  }
+  function execute(record: ScenarioRow): void {
+    if (currentRow(record)) router.push({ path: '/perf/scenario/details', query: { id: record.id, execute: '1' } })
+  }
+  async function toggleStatus(record: ScenarioRow, value: unknown): Promise<boolean> {
+    if (!currentRow(record) || (value !== 0 && value !== 1) || changingIds.has(record.id) || deletingIds.has(record.id)) return false
+    const id = record.id, context = createContextVersion.value, selection = queryVersion
+    const isCurrent = () => isCreateContextCurrent(context) && queryVersion === selection
+    changingIds.add(id)
     try {
-      const response: any = await createPerfScenario({
-        ...form,
-        project_product: productId(form.project_product),
-      })
-      await createDialogRef.value?.close()
-      Message.success('场景已创建')
-      router.push({ path: '/perf/scenario/details', query: { id: response.data.id } })
-    } finally {
-      createDialogRef.value?.setConfirmLoading(false)
-    }
+      const response = scenarioSuccess(await updatePerfScenario({ id, status: value }))
+      const result = response.data
+      if (!result || typeof result !== 'object' || Array.isArray(result)) throw new Error('场景更新响应格式不正确')
+      const saved = result as Record<string, unknown>
+      if (saved.id !== id || saved.status !== value) throw new Error('场景更新响应与提交不一致')
+      if (!isCurrent()) return false
+      const row = rows.value.find(item => item.id === id)
+      if (row) row.status = value
+      invalidateRead()
+      await load()
+      return true
+    } catch {
+      if (isCurrent()) Message.error('状态修改失败，请重试')
+      return false
+    } finally { changingIds.delete(id) }
   }
-  function goDetail(record: any) {
-    router.push({ path: '/perf/scenario/details', query: { id: record.id } })
-  }
-  async function toggleStatus(record: any, value: any) {
-    await updatePerfScenario({ id: record.id, status: value })
-    record.status = value
-    return true
-  }
-  function execute(record: any) {
-    router.push({ path: '/perf/scenario/details', query: { id: record.id, execute: '1' } })
-  }
-  function remove(record: any) {
-    Modal.warning({
-      title: '删除性能场景',
-      content: `确认删除“${record.name}”吗？`,
-      hideCancel: false,
-      okButtonProps: { status: 'danger' },
-      async onOk() {
-        await deletePerfScenario(record.id)
-        Message.success('删除成功')
-        load()
+  function remove(record: ScenarioRow): void {
+    if (!currentRow(record) || deletingIds.has(record.id) || changingIds.has(record.id)) return
+    closeDelete()
+    const window = deleteGeneration, context = createContextVersion.value, selection = queryVersion, id = record.id
+    const isCurrent = () => window === deleteGeneration && isCreateContextCurrent(context) && queryVersion === selection
+    deleteDialog = Modal.confirm({
+      title: '删除性能场景', content: `确认删除“${record.name}”吗？`,
+      okText: '删除', cancelText: '取消', okButtonProps: { status: 'danger' },
+      onBeforeOk: async () => {
+        if (!isCurrent() || deletingIds.has(id) || changingIds.has(id)) return false
+        deletingIds.add(id)
+        try {
+          scenarioSuccess(await deletePerfScenario(id))
+          if (!isCurrent()) return false
+          Message.success('删除成功')
+          invalidateRead()
+          await load()
+          return true
+        } catch {
+          if (isCurrent()) Message.error('删除失败，请重试')
+          return false
+        } finally { deletingIds.delete(id) }
       },
     })
   }
-  onMounted(load)
+  function visibilityChanged(): void { if (document.visibilityState === 'hidden') suspend(false); else resume() }
+  watch(() => [pagination.page, pagination.pageSize, appliedFilters.value], () => {
+    queryVersion++; closeDelete(); invalidateRead(); needsRead = true
+  }, { flush: 'sync' })
+  watch(() => [user.userId, user.roleId, user.token, user.selected_environment], () => {
+    suspend(true)
+    Object.assign(filters, createScenarioFilters())
+    appliedFilters.value = createScenarioFilters()
+    pagination.page = 1
+    resetKey.value++
+    void Promise.resolve().then(resume)
+  }, { flush: 'sync' })
+  watch(() => route.path, () => { suspend(false); void Promise.resolve().then(resume) }, { flush: 'sync' })
+  onMounted(() => {
+    mounted = true
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', visibilityChanged)
+    resume()
+  })
+  onDeactivated(() => { active = false; suspend(false) })
+  onActivated(() => { active = true; resume() })
+  onBeforeUnmount(() => {
+    disposed = true; active = false; suspend(true)
+    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', visibilityChanged)
+  })
 </script>

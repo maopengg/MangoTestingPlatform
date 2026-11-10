@@ -53,8 +53,9 @@
 
     <div v-if="!collapsed" class="mango-project-navigation-sidebar__tree">
       <a-spin :loading="loading" class="mango-project-navigation-sidebar__spin">
+        <template v-if="loadFailed && !loading"></template>
         <a-tree
-          v-if="displayTree.length"
+          v-else-if="displayTree.length"
           v-model:expanded-keys="expandedKeys"
           :data="displayTree"
           :selected-keys="selectedKeys"
@@ -91,9 +92,12 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, onActivated, onMounted, ref, watch } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
   import { IconLeft, IconRight } from '@arco-design/web-vue/es/icon'
   import { useProject } from '@/store/modules/get-project'
+  import useUserStore from '@/store/modules/user'
   import {
     buildAllProductModuleFilterTree,
     buildProjectProductFilterTree,
@@ -107,6 +111,7 @@
     getProductIdForTreeSelection,
     getTreeSelectionPath,
     groupModuleTreeByProjectProduct,
+    type ModuleOption,
   } from './project-product-filter'
 
   const props = defineProps({
@@ -133,12 +138,21 @@
     title: '全部项目',
   }
   const projectStore = useProject()
+  const userStore = useUserStore()
   const keyword = ref('')
   const loading = ref(false)
   const initialized = ref(false)
+  const loadFailed = ref(false)
   const expandedKeys = ref<string[]>([])
   const selectedTreeKey = ref(ALL_PROJECT_PRODUCTS_KEY)
-  const moduleOptionsByProduct = ref<Record<string, any[]>>({})
+  const moduleOptionsByProduct = ref<Record<string, ModuleOption[]>>({})
+  let mounted = false
+  let active = true
+  let disposed = false
+  let loadVersion = 0
+  let needsLoad = true
+  let pendingLoad: { version: number; promise: Promise<void> } | null = null
+  const available = () => mounted && active && !disposed && (typeof document === 'undefined' || !document.hidden)
 
   const projectOptions = computed(() => projectStore.projectProduct || [])
   const productEntries = computed(() => flattenProjectProducts(projectOptions.value))
@@ -198,6 +212,7 @@
   }
 
   function onSelect(keys: string[]) {
+    if (!available() || !initialized.value || loading.value || loadFailed.value) return
     const key = keys[0]
     if (!key) return
     if (key === ALL_PROJECT_PRODUCTS_KEY) {
@@ -376,11 +391,6 @@
     return false
   }
 
-  async function loadAllModules() {
-    const tree = await projectStore.getAllProductModuleTree()
-    moduleOptionsByProduct.value = groupModuleTreeByProjectProduct(tree)
-  }
-
   watch(
     () => props.resetKey,
     () => {
@@ -398,7 +408,11 @@
   )
   watch(
     () => props.showModules,
-    () => initialized.value && syncSelectionOnActivated()
+    () => {
+      invalidateLoad()
+      void loadNavigation()
+    },
+    { flush: 'sync' }
   )
 
   function syncSelectionOnActivated() {
@@ -410,23 +424,88 @@
     if (!restored) selectAllProjectProducts()
   }
 
-  onActivated(syncSelectionOnActivated)
-
-  onMounted(async () => {
-    loading.value = true
-    try {
-      await projectStore.projectProductName()
-      if (props.showModules) await loadAllModules()
+  function invalidateLoad(clear = false) {
+    ++loadVersion
+    pendingLoad = null
+    needsLoad = true
+    loading.value = false
+    initialized.value = false
+    if (clear) {
+      keyword.value = ''
       expandedKeys.value = []
-      initialized.value = true
-      const restored = restoreCachedSelection()
-      const fellBackToAll = restored ? false : validateCurrentSelection()
-      if (!restored && !fellBackToAll && props.emitInitialFilter) {
-        emitFilter(null, null)
-      }
-    } finally {
-      loading.value = false
+      selectedTreeKey.value = ALL_PROJECT_PRODUCTS_KEY
+      moduleOptionsByProduct.value = {}
+      loadFailed.value = false
     }
+  }
+
+  function loadNavigation(): Promise<void> {
+    if (!available()) return Promise.resolve()
+    if (pendingLoad?.version === loadVersion) return pendingLoad.promise
+    const version = loadVersion, showModules = props.showModules
+    const current = () => version === loadVersion && available()
+    initialized.value = false
+    loading.value = true
+    loadFailed.value = false
+    const promise = (async () => {
+      try {
+        await projectStore.projectProductName()
+        if (!current()) return
+        if (projectStore.optionErrors.products) throw new Error('项目加载失败')
+        if (showModules) {
+          const tree = await projectStore.getAllProductModuleTree()
+          if (!current()) return
+          if (projectStore.optionErrors.modules) throw new Error('模块加载失败')
+          moduleOptionsByProduct.value = groupModuleTreeByProjectProduct(tree)
+        }
+        expandedKeys.value = []
+        initialized.value = true
+        needsLoad = false
+        const restored = restoreCachedSelection()
+        const fellBackToAll = restored ? false : validateCurrentSelection()
+        if (!restored && !fellBackToAll && props.emitInitialFilter) emitFilter(null, null)
+      } catch (loadFailure0) {
+        if (current()) (reportLoadError(loadFailure0, "加载失败，请重试", false), loadFailed.value = true)
+      } finally {
+        if (current()) {
+          loading.value = false
+          pendingLoad = null
+        }
+      }
+    })()
+    pendingLoad = { version, promise }
+    return promise
+  }
+
+  watch(() => [userStore.userId, userStore.roleId, userStore.token, userStore.selected_environment], () => {
+    invalidateLoad(true)
+    const version = loadVersion
+    void Promise.resolve().then(() => {
+      if (version !== loadVersion || !available()) return
+      emitFilter(null, null)
+      void loadNavigation()
+    })
+  }, { flush: 'sync' })
+
+  function resume() {
+    if (needsLoad) void loadNavigation()
+    else syncSelectionOnActivated()
+  }
+  function onVisibilityChange() {
+    if (document.hidden) invalidateLoad()
+    else if (active) resume()
+  }
+  onActivated(() => { active = true; resume() })
+  onDeactivated(() => { active = false; invalidateLoad() })
+  onMounted(() => {
+    mounted = true
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisibilityChange)
+    void loadNavigation()
+  })
+  onBeforeUnmount(() => {
+    disposed = true
+    invalidateLoad()
+    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisibilityChange)
   })
 </script>
 

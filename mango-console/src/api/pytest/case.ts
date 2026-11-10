@@ -30,7 +30,7 @@ export function getPytestCase(data: any) {
 }
 
 export function putPytestCase(data: object) {
-  return put({
+  return put<unknown>({
     url: 'pytest/case',
     data: () => {
       return data
@@ -49,7 +49,7 @@ export function putPytestCasePublication(caseId: number, targetStatus: 'prepubli
 }
 
 export function postPytestCaseUpdate(projectId: number) {
-  return post({
+  return post<unknown>({
     url: 'pytest/case/update',
     data: () => {
       return { project_id: projectId }
@@ -68,13 +68,13 @@ export function getPytestCaseRead(id: any, fileType = 'py', silentError = false)
 }
 
 export function postPytestCaseWrite(
-  id: any,
-  file_content: any,
-  fileType = 'py',
+  id: number,
+  file_content: string,
+  fileType: 'py' | 'feature' = 'py',
   expectedCommit?: string,
   expectedContentHash?: string
-) {
-  return post({
+): Promise<unknown> {
+  return post<unknown>({
     url: 'pytest/case/write',
     data: () => {
       return {
@@ -141,14 +141,14 @@ export function putPytestCaseModule(data: { case_ids: number[]; module_id: numbe
 export function putPytestCaseBatchUpdate(data: {
   updates: Array<{ id: number; changes: Record<string, unknown> }>
 }) {
-  return put({
+  return put<unknown>({
     url: 'pytest/case/batch-update',
     data: () => data,
   })
 }
 
 export function postPytestCaseAiInfer(data: { case_ids: number[] }) {
-  return post({
+  return post<unknown>({
     url: 'pytest/case/ai-infer',
     data: () => data,
   })

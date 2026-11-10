@@ -10,20 +10,10 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+  import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
   import { dispose } from 'echarts/core'
   import useEcharts from '@/hooks/useEcharts'
-
-  interface ProjectQualityItem {
-    project_id: number
-    project_name: string
-    report_count: number
-    success_count: number
-    fail_count: number
-    warning_count: number
-    other_count: number
-    pass_rate: number | null
-  }
+  import type { ProjectQualityItem } from '../../types'
 
   const props = defineProps<{
     data: ProjectQualityItem[]
@@ -34,6 +24,8 @@
   const chartData = computed(() => (Array.isArray(props.data) ? props.data : []))
   let resizeObserver: ResizeObserver | null = null
   let resizeFrame = 0
+  let active = true, mounted = false, listening = false, generation = 0
+  let observedElement: HTMLDivElement | null = null
 
   const token = (name: string) =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim()
@@ -43,7 +35,7 @@
   }
 
   function renderChart() {
-    if (!chartRef.value || !chartData.value.length) return
+    if (!active || !mounted || !chartRef.value || !chartData.value.length) return
     const rows = chartData.value
     const names = rows.map((item) => item.project_name || `项目 ${item.project_id}`)
     const visibleRows = Math.min(rows.length, 4)
@@ -92,9 +84,10 @@
           borderColor: token('--m-border'),
           textStyle: { color: token('--m-text') },
           padding: 9,
-          formatter(params: any[]) {
+          formatter(params: Array<{ dataIndex: number; marker?: string; seriesName?: string; value?: unknown }>) {
             if (!params?.length) return ''
             const row = rows[params[0].dataIndex]
+            if (!row) return ''
             const passRate = row.pass_rate === null ? '-' : `${row.pass_rate.toFixed(2)}%`
             return [
               `<strong>${row.project_name}</strong>`,
@@ -175,46 +168,66 @@
   }
 
   function resizeChart() {
-    if (!chartRef.value) return
+    if (!active || !mounted || !chartRef.value) return
     if (resizeFrame) window.cancelAnimationFrame(resizeFrame)
+    const current = generation, element = chartRef.value
     resizeFrame = window.requestAnimationFrame(() => {
-      if (chartRef.value) useEcharts(chartRef.value).resize()
+      if (active && mounted && current === generation && chartRef.value === element) useEcharts(element).resize()
       resizeFrame = 0
     })
   }
 
   function observeChart() {
-    if (!chartRef.value || resizeObserver) return
-    resizeObserver = new ResizeObserver(resizeChart)
-    resizeObserver.observe(chartRef.value)
+    if (observedElement !== chartRef.value) releaseCanvas()
+    if (!active || !mounted || !chartRef.value) return
+    observedElement = chartRef.value
+    if (!resizeObserver && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(resizeChart)
+      resizeObserver.observe(chartRef.value)
+    }
+    renderChart()
+  }
+
+  function releaseCanvas() {
+    generation++
+    resizeObserver?.disconnect()
+    resizeObserver = null
+    if (resizeFrame) window.cancelAnimationFrame(resizeFrame)
+    resizeFrame = 0
+    if (observedElement) dispose(observedElement)
+    observedElement = null
   }
 
   watch(
     chartData,
     async () => {
+      const current = generation
       await nextTick()
+      if (!active || !mounted || current !== generation) return
       observeChart()
-      renderChart()
     },
     { deep: true }
   )
+  watch(chartRef, observeChart, { flush: 'post' })
 
-  onMounted(() => {
+  function startChart() {
+    if (!active || !mounted || listening) return
+    listening = true
     window.addEventListener('mango-theme-change', renderChart)
     window.addEventListener('resize', resizeChart)
-    nextTick(() => {
-      observeChart()
-      renderChart()
-    })
-  })
+    observeChart()
+  }
 
-  onBeforeUnmount(() => {
+  function stopChart() {
     window.removeEventListener('mango-theme-change', renderChart)
     window.removeEventListener('resize', resizeChart)
-    resizeObserver?.disconnect()
-    if (resizeFrame) window.cancelAnimationFrame(resizeFrame)
-    if (chartRef.value) dispose(chartRef.value)
-  })
+    listening = false
+    releaseCanvas()
+  }
+  onMounted(() => { mounted = true; startChart() })
+  onActivated(() => { active = true; startChart() })
+  onDeactivated(() => { active = false; stopChart() })
+  onBeforeUnmount(() => { active = false; mounted = false; stopChart() })
 </script>
 
 <style lang="less" scoped>

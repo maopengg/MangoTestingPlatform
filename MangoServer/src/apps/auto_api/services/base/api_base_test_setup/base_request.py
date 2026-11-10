@@ -55,6 +55,9 @@ class BaseRequest:
             else:
                 log.api.debug(f'开始执行接口：{request_data.model_dump_json()}')
             response = self.send_request(request_data, prepared_body)
+            manager = getattr(self, 'resource_cleanup_manager', None)
+            if manager is not None:
+                manager.after_response(getattr(prepared_body, 'api_resource_record', None), response)
         except httpx.HTTPError as error:
             raise_request_error(error, request_data)
         except OSError as error:
@@ -69,6 +72,11 @@ class BaseRequest:
         return response
 
     def send_request(self, request_data, prepared_body):
+        manager = getattr(self, 'resource_cleanup_manager', None)
+        if manager is not None:
+            prepared_body.api_resource_record = manager.before_request(
+                request_data, getattr(self, 'resource_cleanup_api_info_id', None),
+                getattr(self, 'resource_cleanup_test_env', None))
         start_time = time.time()
         if request_data.protocol_type == ApiProtocolTypeEnum.MCP.value:
             response = McpProtocolClient(
@@ -126,10 +134,10 @@ class BaseRequest:
 
 
 if __name__ == '__main__':
-    data = {"method": "POST", "url": "https://zdtoolpre.zalldigital.cn/api/z-tool-app/commodity/subscription/list",
+    data = {"method": "POST", "url": "https://api.example.com/api/orders",
             "headers": {"accept": "application/json, text/plain, */*",
-                        "authorization": "Bearer 757b38d0-99d9-4df4af20b34",
-                        "tenant_id": '14',
+                        "authorization": "Bearer example-token",
+                        "tenant_id": 'example-tenant',
                         "content-type": "application/json"}, "params": None, "data": None, "json": '{}', "file": None,
             "posterior_file": None}
 

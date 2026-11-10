@@ -21,8 +21,8 @@
           type="button"
           class="version-card current-version-card"
           :class="{ active: selectedKey === 'current' }"
-          :disabled="selecting"
-          @click="selectCurrent"
+          :disabled="selecting || busy"
+          @click="selectedKey !== 'current' && selectCurrent()"
         >
           <div class="version-card-head">
             <strong>当前配置</strong>
@@ -47,7 +47,7 @@
             type="button"
             class="version-card"
             :class="{ active: selectedKey === `revision-${revision.id}` }"
-            :disabled="selecting"
+            :disabled="selecting || busy"
             @click="selectRevision(revision)"
             @mouseenter="startVersionPopoverTimer(getRevisionPopoverKey(revision))"
             @mousemove="restartVersionPopoverTimer(getRevisionPopoverKey(revision))"
@@ -97,6 +97,7 @@
       <a-button
         v-if="selectedKey === 'current'"
         long
+        :disabled="busy"
         :loading="creatingRevision"
         @click="createRevision"
         data-testid="qa-views-apitest-info-details-components-apiinfoversionpanel-button-生成修订"
@@ -106,6 +107,7 @@
       <a-button
         v-if="selectedRevision && !selectedRevision.release?.is_current"
         long
+        :disabled="busy"
         type="primary"
         :loading="publishing"
         @click="publishSelected"
@@ -115,6 +117,7 @@
       <a-button
         v-if="selectedRevision"
         long
+        :disabled="busy"
         :loading="checkingOut"
         @click="checkoutSelectedRevision"
         data-testid="qa-views-apitest-info-details-components-apiinfoversionpanel-button-迁出到编辑态"
@@ -124,6 +127,7 @@
       <a-button
         v-if="selectedRevision && !selectedRevision.release"
         long
+        :disabled="busy"
         status="danger"
         :loading="deletingRevision"
         @click="deleteSelectedRevision"
@@ -134,6 +138,7 @@
     </div>
   </aside>
   <ApiVersionCompareDrawer
+    :key="`compare-${windowSession}`"
     v-model:visible="compareDrawerVisible"
     left-title="当前编辑态"
     :left-payload="apiInfoCompareLeftPayload"
@@ -141,14 +146,15 @@
     :load-target-payload="loadApiInfoCompareTarget"
   />
   <ExecutionResultHistoryDrawer
+    :key="`history-${windowSession}`"
     v-model:visible="resultHistoryVisible"
     :title="resultHistoryTitle"
     :query="resultHistoryQuery"
   />
 </template>
 
-<script lang="ts" setup>
-  import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+<script setup lang="ts">
+  import { computed, onBeforeUnmount, onDeactivated, onActivated, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import ApiVersionCompareDrawer from '@/components/business/ApiVersionCompareDrawer.vue'
   import ExecutionResultHistoryDrawer from '@/components/business/ExecutionResultHistoryDrawer.vue'
@@ -164,17 +170,24 @@
   import type { ApiInfoRevisionListItem } from '@/types/api-test/info-version'
   import { parseApiInfoRevisionPayload } from '@/types/api-test/info-revision-payload'
 
+  import {
+    cloneLosslessJson,
+    isLosslessJsonNumber,
+    stringifyLosslessJson,
+  } from '@/utils/lossless-json'
+  import { apiInfoEditableFields } from '../config'
+  import type { ApiInfoRecord, ApiVersionSelection } from '../types'
+  import type { ApiInfoRevisionDetail } from '@/types/api-test/info-version'
+
   const props = defineProps<{
     apiInfoId: number | string
-    currentPayload?: Record<string, any> | null
+    currentPayload?: Partial<ApiInfoRecord> | null
+    beforeAction?: () => Promise<unknown>
   }>()
   const emit = defineEmits<{
-    (
-      event: 'select',
-      value: { kind: 'current' | 'revision'; id: number; label: string; payload: any }
-    ): void
+    (event: 'select', value: ApiVersionSelection): void
+    (event: 'checkout'): void
   }>()
-
   const revisions = ref<ApiInfoRevisionListItem[]>([])
   const selectedKey = ref('current')
   const loading = ref(false)
@@ -208,6 +221,7 @@
   })
   const currentVersionSummary = computed(() => {
     if (!currentRelease.value) return '当前配置尚未形成正式版本'
+    if (!publishedRevisionPayloadLoaded.value) return '发布快照暂不可用'
     if (hasUnpublishedChanges.value) {
       return `与 ${getRevisionTitle(currentRelease.value)} 不一致`
     }
@@ -215,6 +229,7 @@
   })
   const versionStateTitle = computed(() => {
     if (!currentRelease.value) return '当前接口尚未发布'
+    if (!publishedRevisionPayloadLoaded.value) return '发布快照暂不可用'
     return hasUnpublishedChanges.value ? '当前修改尚未发布' : '当前编辑态与发布版本一致'
   })
   const versionStateDescription = computed(() => {
@@ -252,43 +267,15 @@
       : { revision_id_isnull: 1 }),
   }))
 
-  const apiInfoEditableFields = [
-    'url',
-    'method',
-    'protocol_type',
-    'headers',
-    'params',
-    'is_text_params',
-    'body_type',
-    'body_config',
-    'sse_config',
-    'mcp_config',
-    'posterior_json_path',
-    'posterior_re',
-    'posterior_func',
-    'status',
-  ]
-
-  function unwrap<T>(response: any): T {
-    return (response?.data ?? response) as T
-  }
-
-  function pickApiInfoEditablePayload(payload: any) {
-    if (!payload) return {}
-    return apiInfoEditableFields.reduce<Record<string, unknown>>((result, field) => {
-      result[field] = payload[field]
-      return result
-    }, {})
-  }
-
   function stableSerialize(value: unknown): string {
     if (Array.isArray(value)) {
-      return JSON.stringify(value.map((item) => stableValue(item))) || ''
+      return stringifyLosslessJson(value.map((item) => stableValue(item))) || ''
     }
-    return JSON.stringify(stableValue(value)) || ''
+    return stringifyLosslessJson(stableValue(value)) || ''
   }
 
   function stableValue(value: unknown): unknown {
+    if (isLosslessJsonNumber(value)) return value
     if (Array.isArray(value)) return value.map((item) => stableValue(item))
     if (value && typeof value === 'object') {
       return Object.keys(value as Record<string, unknown>)
@@ -301,168 +288,277 @@
     return value
   }
 
+  let active = true,
+    generation = 0,
+    listRequest = 0,
+    publishedRequest = 0
+  let confirmation: ReturnType<typeof Modal.confirm> | null = null
+  const windowSession = ref(0)
+  const busy = computed(
+    () => creatingRevision.value || checkingOut.value || publishing.value || deletingRevision.value
+  )
+  function current(token: number) {
+    return active && generation === token
+  }
+  function pickApiInfoEditablePayload(payload: Partial<ApiInfoRecord> | null | undefined) {
+    return Object.fromEntries(
+      Object.entries(payload || {}).filter(([key]) => apiInfoEditableFields.includes(key))
+    )
+  }
+  function unwrap<T>(response: { data?: T } | T): T {
+    return ((response as { data?: T })?.data ?? response) as T
+  }
   function selectCurrent() {
-    selectRequestSeq += 1
+    if (!active) return
+    selectRequestSeq++
+    selecting.value = false
     selectedKey.value = 'current'
     emit('select', {
       kind: 'current',
       id: Number(props.apiInfoId),
       label: '当前编辑态',
-      payload: props.currentPayload || {},
+      payload: cloneLosslessJson(props.currentPayload || {}),
     })
   }
-
   async function selectRevision(revision: ApiInfoRevisionListItem) {
-    if (selecting.value) return
-    const requestSeq = ++selectRequestSeq
+    if (selecting.value || busy.value || !active) return
+    const token = generation,
+      request = ++selectRequestSeq,
+      previous = selectedKey.value
     selectedKey.value = `revision-${revision.id}`
     selecting.value = true
     try {
-      const detail = unwrap<any>(await getApiInfoRevisionDetail(revision.id))
-      if (requestSeq !== selectRequestSeq || selectedKey.value !== `revision-${revision.id}`) return
+      try { await props.beforeAction?.() } catch { /* 只读查看不被之前的保存失败阻止。 */ }
+      if (!current(token) || request !== selectRequestSeq) return
+      const detail = unwrap<ApiInfoRevisionDetail>(await getApiInfoRevisionDetail(revision.id))
+      if (!current(token) || request !== selectRequestSeq) return
       emit('select', {
         kind: 'revision',
         id: revision.id,
         label: getRevisionTitle(revision),
-        payload: parseApiInfoRevisionPayload(detail.payload).api_info,
+        payload: cloneLosslessJson(parseApiInfoRevisionPayload(detail.payload).api_info),
       })
+    } catch {
+      if (current(token) && request === selectRequestSeq) selectedKey.value = previous
     } finally {
-      if (requestSeq === selectRequestSeq) selecting.value = false
+      if (current(token) && request === selectRequestSeq) selecting.value = false
     }
   }
-
   async function refresh() {
-    if (!props.apiInfoId) return
+    if (!props.apiInfoId || !active) return
+    const token = generation,
+      request = ++listRequest,
+      target = props.apiInfoId
     loading.value = true
     try {
-      revisions.value =
-        unwrap<ApiInfoRevisionListItem[]>(await getApiInfoRevisionList(props.apiInfoId)) || []
+      const rows = unwrap<ApiInfoRevisionListItem[]>(await getApiInfoRevisionList(target)) || []
+      if (!current(token) || request !== listRequest) return
+      revisions.value = rows
       await loadPublishedRevisionPayload()
-      if (!selectedKey.value || selectedKey.value === 'current') selectCurrent()
+      if (!current(token) || request !== listRequest) return
+      if (!selectedKey.value || selectedKey.value === 'current' || !selectedRevision.value)
+        selectCurrent()
+    } catch {
+      /* 公共请求层反馈错误，保留版本列表。 */
     } finally {
-      loading.value = false
+      if (current(token) && request === listRequest) loading.value = false
     }
   }
-
   async function loadPublishedRevisionPayload() {
+    const token = generation,
+      request = ++publishedRequest,
+      revision = currentRelease.value
     publishedRevisionPayload.value = null
     publishedRevisionPayloadLoaded.value = false
-    const revision = currentRelease.value
     if (!revision) {
       publishedRevisionPayloadLoaded.value = true
       return
     }
     try {
-      const detail = unwrap<any>(await getApiInfoRevisionDetail(revision.id))
+      const detail = unwrap<ApiInfoRevisionDetail>(await getApiInfoRevisionDetail(revision.id))
+      if (!current(token) || request !== publishedRequest) return
       publishedRevisionPayload.value = pickApiInfoEditablePayload(
         parseApiInfoRevisionPayload(detail.payload).api_info
       )
-    } finally {
       publishedRevisionPayloadLoaded.value = true
+    } catch {
+      /* 快照不可用时不声称编辑态与发布版本一致。 */
     }
   }
-
   async function createRevision() {
-    if (creatingRevision.value) return
+    if (busy.value || !active) return
+    const token = generation,
+      target = props.apiInfoId
     creatingRevision.value = true
     try {
+      await props.beforeAction?.()
+      if (!current(token)) return
       const revision = unwrap<ApiInfoRevisionListItem>(
-        await createApiInfoRevision(props.apiInfoId, '从当前配置生成修订')
+        await createApiInfoRevision(target, '从当前配置生成修订')
       )
+      if (!current(token)) return
       Message.success('已从当前编辑态生成修订，尚未发布')
       await refresh()
-      const target = revisions.value.find((item) => item.id === revision.id)
-      if (target) await selectRevision(target)
+      if (!current(token)) return
+      const row = revisions.value.find((item) => item.id === revision.id)
+      creatingRevision.value = false
+      if (row) await selectRevision(row)
+    } catch {
+      /* 公共请求层反馈错误，可重新生成修订。 */
     } finally {
       creatingRevision.value = false
     }
   }
-
-  function publishSelected() {
-    if (!selectedRevision.value || publishing.value) return
+  function confirmRevision(action: 'publish' | 'checkout' | 'delete') {
     const revision = selectedRevision.value
-    Modal.confirm({
-      title: '发布接口版本',
-      content: revision.release
-        ? '确认将该版本设为当前发布吗？已有用例不会自动切换到该版本。'
-        : '确认发布该修订为正式版本吗？已有用例不会自动切换到新版本。',
-      okText: '确认发布',
+    if (
+      !revision ||
+      busy.value ||
+      confirmation ||
+      !active ||
+      (action === 'delete' && revision.release)
+    )
+      return
+    const token = generation,
+      target = props.apiInfoId,
+      revisionId = revision.id
+    const pending =
+      action === 'publish' ? publishing : action === 'checkout' ? checkingOut : deletingRevision
+    const config =
+      action === 'publish'
+        ? {
+            title: '发布接口版本',
+            content: revision.release
+              ? '确认将该版本设为当前发布吗？已有用例不会自动切换到该版本。'
+              : '确认发布该修订为正式版本吗？已有用例不会自动切换到新版本。',
+            okText: '确认发布',
+          }
+        : action === 'checkout'
+        ? {
+            title: '迁出到编辑态',
+            content: '迁出后将覆盖当前配置，原版本会保留，是否继续？',
+            okText: '确认迁出',
+          }
+        : {
+            title: '删除未发布修订',
+            content: `确认删除修订 r${revision.revision_no} 吗？删除后不可恢复。`,
+            okText: '确认删除',
+          }
+    const modal = Modal.confirm({
+      ...config,
+      okButtonProps: action === 'delete' ? { status: 'danger' } : undefined,
       async onBeforeOk() {
-        publishing.value = true
+        if (!current(token) || busy.value) return false
+        pending.value = true
         try {
-          await publishApiInfoRevision(props.apiInfoId, revision.id)
-          Message.success('已发布；已有用例版本未变')
-          await refresh()
-          return true
-        } finally {
-          publishing.value = false
-        }
-      },
-    })
-  }
-
-  function checkoutSelectedRevision() {
-    if (!selectedRevision.value || checkingOut.value) return
-    const revision = selectedRevision.value
-    Modal.confirm({
-      title: '迁出到编辑态',
-      content: '迁出后将覆盖当前配置，原版本会保留，是否继续？',
-      okText: '确认迁出',
-      async onBeforeOk() {
-        checkingOut.value = true
-        try {
-          await checkoutApiInfoRevision(props.apiInfoId, revision.id)
-          Message.success('已迁出到编辑态')
-          selectedKey.value = 'current'
-          await refresh()
-          return true
-        } finally {
-          checkingOut.value = false
-        }
-      },
-    })
-  }
-
-  function deleteSelectedRevision() {
-    if (!selectedRevision.value || selectedRevision.value.release || deletingRevision.value) return
-    const revision = selectedRevision.value
-    Modal.confirm({
-      title: '删除未发布修订',
-      content: `确认删除修订 r${revision.revision_no} 吗？删除后不可恢复。`,
-      okText: '确认删除',
-      okButtonProps: { status: 'danger' },
-      async onBeforeOk() {
-        deletingRevision.value = true
-        try {
-          await deleteApiInfoRevision(props.apiInfoId, revision.id)
-          Message.success('修订已删除')
-          selectCurrent()
+          await props.beforeAction?.()
+          if (!current(token)) return false
+          if (action === 'publish') await publishApiInfoRevision(target, revisionId)
+          else if (action === 'checkout') await checkoutApiInfoRevision(target, revisionId)
+          else await deleteApiInfoRevision(target, revisionId)
+          if (!current(token)) return true
+          Message.success(
+            action === 'publish'
+              ? '已发布；已有用例版本未变'
+              : action === 'checkout'
+              ? '已迁出到编辑态'
+              : '修订已删除'
+          )
+          if (action === 'checkout') {
+            emit('checkout')
+            return true
+          }
+          if (action === 'delete') selectedKey.value = 'current'
           await refresh()
           return true
         } catch {
           return false
         } finally {
-          deletingRevision.value = false
+          pending.value = false
         }
       },
+      onClose() {
+        if (confirmation === modal) confirmation = null
+      },
     })
+    confirmation = modal
   }
-
+  function publishSelected() {
+    confirmRevision('publish')
+  }
+  function checkoutSelectedRevision() {
+    confirmRevision('checkout')
+  }
+  function deleteSelectedRevision() {
+    confirmRevision('delete')
+  }
   function openCompareDrawer() {
     compareDrawerVisible.value = true
   }
-
   function openResultHistoryDrawer() {
     resultHistoryVisible.value = true
   }
-
   async function loadApiInfoCompareTarget(target: ApiVersionCompareTarget) {
     if (target.payload) return target.payload
-    const revisionId = Number(target.key.replace('revision-', ''))
-    const detail = unwrap<any>(await getApiInfoRevisionDetail(revisionId))
+    const token = generation,
+      revisionId = Number(target.key.replace('revision-', ''))
+    const detail = unwrap<ApiInfoRevisionDetail>(await getApiInfoRevisionDetail(revisionId))
+    if (!current(token)) return {}
     return pickApiInfoEditablePayload(parseApiInfoRevisionPayload(detail.payload).api_info)
   }
-
+  function close() {
+    active = false
+    generation++
+    listRequest++
+    publishedRequest++
+    selectRequestSeq++
+    loading.value = false
+    selecting.value = false
+    compareDrawerVisible.value = false
+    resultHistoryVisible.value = false
+    windowSession.value++
+    confirmation?.close()
+    confirmation = null
+    clearVersionPopoverTimer()
+    clearVersionPopoverCloseTimer()
+    activePopoverKey.value = ''
+  }
+  watch(
+    selectedKey,
+    () => {
+      compareDrawerVisible.value = false
+      resultHistoryVisible.value = false
+    },
+    { flush: 'sync' }
+  )
+  watch(
+    [compareDrawerVisible, resultHistoryVisible],
+    ([compare, history], [oldCompare, oldHistory]) => {
+      if ((oldCompare && !compare) || (oldHistory && !history)) windowSession.value++
+    }
+  )
+  watch(
+    () => props.apiInfoId,
+    () => {
+      close()
+      active = true
+      revisions.value = []
+      selectedKey.value = 'current'
+      publishedRevisionPayload.value = null
+      publishedRevisionPayloadLoaded.value = false
+      void refresh()
+    },
+    { immediate: true }
+  )
+  onBeforeUnmount(close)
+  onDeactivated(close)
+  onActivated(() => {
+    if (!active) {
+      active = true
+      void refresh()
+    }
+  })
+  defineExpose({ refresh, openResultHistoryDrawer, close })
   function getRevisionTitle(revision: ApiInfoRevisionListItem) {
     return revision.release?.version_label || `修订 r${revision.revision_no}`
   }
@@ -534,14 +630,6 @@
     clearVersionPopoverCloseTimer()
     activePopoverKey.value = key
   }
-
-  watch(() => props.apiInfoId, refresh)
-  onMounted(refresh)
-  onBeforeUnmount(() => {
-    clearVersionPopoverTimer()
-    clearVersionPopoverCloseTimer()
-  })
-  defineExpose({ refresh, openResultHistoryDrawer })
 </script>
 
 <style scoped>

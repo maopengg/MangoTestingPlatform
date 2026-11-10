@@ -10,7 +10,7 @@
               ><span></span><span>Key</span><span>Value</span></div
             >
             <a-checkbox-group
-              v-model="item.headers"
+              v-model="draft.headers"
               class="mango-case-global-table__body"
               direction="vertical"
               :disabled="editLocked || headersSaving"
@@ -44,7 +44,7 @@
             >
           </div>
           <a-textarea
-            v-model="item.params"
+            v-model="draft.params"
             allow-clear
             :disabled="editLocked || paramsSaving"
             :auto-size="{ minRows: 6 }"
@@ -59,8 +59,8 @@
         <ApiRequestBodyEditor
           :protocol-type="protocolType"
           :body-type="bodyType"
-          :body-config="item.body_config"
-          :sse-config="item.sse_config"
+          :body-config="draft.body_config"
+          :sse-config="draft.sse_config"
           :project-product-id="projectProductId"
           :body-type-readonly="true"
           :readonly="editLocked"
@@ -72,7 +72,8 @@
 </template>
 
 <script setup lang="ts">
-  /* eslint-disable vue/no-mutating-props */
+  import { useApiCaseScenarioDraft } from '../composables/useApiCaseScenarioDraft'
+  import type { ApiCaseScenario, ScenarioPatch } from '../types'
   import { ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { useApiCaseParameterSave } from '../composables/useApiCaseAutoSave'
@@ -81,7 +82,7 @@
 
   const props = withDefaults(
     defineProps<{
-      item: any
+      item: ApiCaseScenario
       activeKey: string
       editLocked: boolean
       headerOptions?: any[]
@@ -97,12 +98,20 @@
   )
   const emit = defineEmits<{
     (event: 'change', value: string): void
-    (event: 'edit-json', field: string, label: string, item: any): void
+    (event: 'patch', patch: ScenarioPatch): void
+    (event: 'edit-json', field: string, label: string, item: ApiCaseScenario): void
     (event: 'saving-change', saving: boolean): void
   }>()
   const headersSaving = ref(false)
-  const putApiCaseDetailedParameter = useApiCaseParameterSave()
+  const persistParameter = useApiCaseParameterSave()
+  const { draft, save: putApiCaseDetailedParameter } = useApiCaseScenarioDraft(
+    () => props.item,
+    (patch) => emit('patch', patch),
+    persistParameter,
+    () => props.editLocked
+  )
   const paramsSaving = ref(false)
+  const bodySaving = ref(false)
 
   function setSaving(target: typeof headersSaving, saving: boolean) {
     target.value = saving
@@ -110,22 +119,23 @@
   }
 
   async function saveHeaders(selectedValues: any) {
+    const scenario = draft.value
     if (props.editLocked || headersSaving.value) return
     const nextHeaders = Array.isArray(selectedValues) ? [...selectedValues] : []
-    const persistedHeaders = Array.isArray(props.item.__persistedHeaders)
-      ? [...props.item.__persistedHeaders]
+    const persistedHeaders = Array.isArray(scenario.__persistedHeaders)
+      ? [...scenario.__persistedHeaders]
       : []
     setSaving(headersSaving, true)
     try {
       const response = await putApiCaseDetailedParameter({
-        id: props.item.id,
+        id: scenario.id,
         headers: nextHeaders,
       })
-      props.item.headers = nextHeaders
-      props.item.__persistedHeaders = [...nextHeaders]
+      scenario.headers = nextHeaders
+      scenario.__persistedHeaders = [...nextHeaders]
       if (response) Message.success(response.msg)
     } catch (error: any) {
-      props.item.headers = persistedHeaders
+      scenario.headers = persistedHeaders
       Message.error(error?.msg || '场景请求头保存失败，已恢复上一次配置')
     } finally {
       setSaving(headersSaving, false)
@@ -133,12 +143,13 @@
   }
 
   async function saveParams() {
+    const scenario = draft.value
     if (props.editLocked || paramsSaving.value) return
     setSaving(paramsSaving, true)
     try {
       const response = await putApiCaseDetailedParameter({
-        id: props.item.id,
-        params: props.item.params === '' ? null : props.item.params,
+        id: scenario.id,
+        params: scenario.params === '' ? null : scenario.params,
       })
       if (response) Message.success(response.msg)
     } catch (error: any) {
@@ -149,22 +160,26 @@
   }
 
   async function saveBody(value: any) {
-    if (props.editLocked) return
-    const protocolExpectation = props.item.body_config?.protocol_expectation
+    const scenario = draft.value
+    if (props.editLocked || bodySaving.value) return
+    setSaving(bodySaving, true)
+    const protocolExpectation = scenario.body_config?.protocol_expectation
     const bodyConfig = protocolExpectation
       ? { ...(value.body_config || {}), protocol_expectation: protocolExpectation }
       : value.body_config
-    props.item.body_config = bodyConfig
-    props.item.sse_config = value.sse_config
+    scenario.body_config = bodyConfig
+    scenario.sse_config = value.sse_config
     try {
       const response = await putApiCaseDetailedParameter({
-        id: props.item.id,
+        id: scenario.id,
         body_config: bodyConfig,
         sse_config: value.sse_config,
       })
       if (response) Message.success(response.msg)
     } catch (error: any) {
       Message.error(error?.msg || '请求体保存失败')
+    } finally {
+      setSaving(bodySaving, false)
     }
   }
 </script>

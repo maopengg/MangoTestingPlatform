@@ -18,7 +18,10 @@
 </template>
 
 <script lang="ts" setup>
-  const visible = defineModel<boolean>('visible', { default: false })
+  import { computed, onDeactivated } from 'vue'
+  const props = withDefaults(defineProps<{ visible?: boolean }>(), { visible: false })
+  const emit = defineEmits<{ (event: 'update:visible', value: boolean): void }>()
+  const visible = computed({ get: () => props.visible, set: value => emit('update:visible', value) })
 
   function handleCancel() {
     visible.value = false
@@ -27,6 +30,7 @@
   function handleOk() {
     visible.value = false
   }
+  onDeactivated(handleCancel)
 </script>
 <style scoped>
   .contact-author {

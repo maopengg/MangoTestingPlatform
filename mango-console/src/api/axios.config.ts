@@ -1,9 +1,10 @@
 import Axios, { AxiosResponse } from 'axios'
-import { Message } from '@arco-design/web-vue'
 import qs from 'qs'
 import { normalizeIdSearchParams } from '@/utils/id-search'
 import CustomRequestInterceptor from './interceptors/CustomRequestInterceptor'
 import UserTokenExpiredInterceptor from './interceptors/UserTokenExpiredInterceptor'
+import { markErrorReported, reportLoadError } from '@/utils/load-error'
+import { normalizeEmptyListTotal } from '@/utils/api-response'
 
 const deploymentConfig: { apiBase?: string; socketURL?: string; storageBase?: string } =
   typeof window === 'undefined' ? {} : (window as any).__MANGO_CONFIG__ || {}
@@ -65,17 +66,6 @@ const HTTP_ERROR_MESSAGE_MAP: Record<number, string> = {
   504: '服务响应超时，请稍后重试',
 }
 
-const ERROR_MESSAGE_INTERVAL = 3000
-let lastHttpErrorMessageTime = 0
-
-function showHttpErrorMessage(message: string) {
-  const now = Date.now()
-  if (now - lastHttpErrorMessageTime > ERROR_MESSAGE_INTERVAL) {
-    Message.error(message)
-    lastHttpErrorMessageTime = now
-  }
-}
-
 function getHttpErrorMessage(error: any): string {
   const status = error.response?.status
   const responseMessage = error.response?.data?.msg
@@ -117,7 +107,7 @@ service.interceptors.response.use(
   (response: AxiosResponse): AxiosResponse => {
     UserTokenExpiredInterceptor(response)
     if (response.status === 200) {
-      return response
+      return { ...response, data: normalizeEmptyListTotal(response.data) }
     } else {
       throw new Error(response.status.toString())
     }
@@ -128,11 +118,13 @@ service.interceptors.response.use(
       return error.response
     }
     const message = getHttpErrorMessage(error)
-    showHttpErrorMessage(message)
+    const failure = { code: error.response?.status || 500, msg: message }
+    if (error.config?.silentError) markErrorReported(failure)
+    else reportLoadError(failure, message)
     if (import.meta.env.MODE === 'dev') {
       console.log(error)
     }
-    return Promise.reject({ code: error.response?.status || 500, msg: message })
+    return Promise.reject(failure)
   }
 )
 

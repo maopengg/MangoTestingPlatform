@@ -7,7 +7,15 @@
           >拖动框选，支持从 WPS / Excel 复制粘贴</span
         >
       </div>
-      <a-space size="small">
+      <a-space size="small" wrap>
+        <a-spin v-if="relationOptionsLoading" :loading="true" />
+        <a-button
+          v-if="editable && relationOptionsError"
+          size="small"
+          :loading="relationOptionsLoading"
+          @click="retryRelationOptions"
+          >重试选项</a-button
+        >
         <slot name="toolbar"></slot>
         <a-button
           v-if="activeFilterCount"
@@ -51,25 +59,47 @@
     </div>
 
     <div class="mango-functional-grid__sheet-shell">
-      <mango-panel-spin class="mango-functional-grid__spin" :loading="loading">
-        <div ref="container" class="mango-functional-grid__sheet"></div>
+      <mango-panel-spin
+        class="mango-functional-grid__spin"
+        :loading="loading || renderLoading || incrementalLoading"
+      >
+
+        <div v-show="!renderError" ref="container" class="mango-functional-grid__sheet"></div>
       </mango-panel-spin>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import {
+    computed,
+    nextTick,
+    onActivated,
+    onBeforeUnmount,
+    onDeactivated,
+    onMounted,
+    ref,
+    watch,
+  } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { createFunctionalSheet } from '@/plugins/univer-sheets'
-  import { getUserModuleTree } from '@/api/system/module'
-  import { useProject } from '@/store/modules/get-project'
+  import { scaleDensityPixels } from '@/hooks/useDisplayDensity'
+  import { useFunctionalGridOptions } from './composables/useFunctionalGridOptions'
+  import type { RelationListOption } from './composables/useFunctionalGridOptions'
   import draggable from 'vuedraggable'
-  import type { FunctionalGridColumn } from './functional-case-grid'
+  import { readGridRecord } from './functional-case-grid'
+  import type {
+    FunctionalGridColumn,
+    FunctionalGridCellChange,
+    FunctionalGridCellValue,
+    FunctionalGridRecord,
+  } from './functional-case-grid'
 
   const props = withDefaults(
     defineProps<{
-      rows: Record<string, any>[]
+      rows: object[]
       columns: FunctionalGridColumn[]
       loading?: boolean
       editable?: boolean
@@ -77,6 +107,7 @@
       rowKey?: string
       showHint?: boolean
       filterable?: boolean
+      contextKey?: string
     }>(),
     {
       loading: false,
@@ -85,21 +116,13 @@
       rowKey: 'id',
       showHint: true,
       filterable: true,
+      contextKey: '',
     }
   )
 
   const emit = defineEmits<{
-    (
-      event: 'cell-change',
-      payload: {
-        row: Record<string, any>
-        field?: string
-        oldValue?: any
-        changes?: Record<string, any>
-        oldValues?: Record<string, any>
-      }
-    ): void
-    (event: 'selection-change', rows: Record<string, any>[]): void
+    (event: 'cell-change', payload: FunctionalGridCellChange): void
+    (event: 'selection-change', rows: object[]): void
     (event: 'view-change', columns: FunctionalGridColumn[]): void
     (
       event: 'filter-change',
@@ -107,29 +130,38 @@
     ): void
     (event: 'load-more'): void
     (event: 'insert-rows', payload: { index: number; count: number }): void
-    (event: 'remove-rows', rows: Record<string, any>[]): void
+    (event: 'remove-rows', rows: object[]): void
     (event: 'sort-change', payload: { field: string; direction: 'asc' | 'desc' }): void
   }>()
 
   const container = ref<HTMLElement>()
-  const projectStore = useProject()
+  const renderLoading = ref(false),
+    renderError = ref(false)
+  const incrementalLoading = ref(false)
   const defaultColumns = ref<FunctionalGridColumn[]>([])
   const innerColumns = ref<FunctionalGridColumn[]>([])
   const activeFilterCount = ref(0)
+  // Univer's dynamic facade/command payloads stay inside this adapter; business rows and emits are typed.
   let univerInstance: any
   let univerAPI: any
   let workbook: any
   let worksheet: any
-  let disposables: any[] = []
+  let disposables: Array<{ dispose: () => void }> = []
   let rebuildTimer: number | undefined
   let loadMoreFrame: number | undefined
   let gridGeneration = 0
   let componentUnmounted = false
+  let componentActive = true,
+    componentMounted = false
+  let rowUpdateGeneration = 0
+  let viewportTimer: number | undefined
+  let renderedDensity = 1
   let syncing = false
   let bufferColumnHidden = false
   let lastLoadMoreRowCount = 0
   let retainedFilterCriteria = new Map<string, any>()
   let retainedViewport: { row: number; column: number } | undefined
+  let retainedZoom: number | undefined
   const ROW_BUFFER_COUNT = 8
   const COLUMN_BUFFER_COUNT = 1
   const LOAD_MORE_PRELOAD_ROWS = 100
@@ -171,16 +203,25 @@
     'sheet.command.set-worksheet-activate',
   ])
   const EDIT_MODE_MESSAGE_ID = 'mango-functional-grid-edit-mode-required'
-  const moduleTreeCache = new Map<string, any[]>()
-  const moduleListOptionsCache = new Map<string, RelationListOption[]>()
-  const relationDrafts = new Map<any, Record<string, any>>()
-  let projectProductListOptions: RelationListOption[] = []
-
-  interface RelationListOption {
-    label: string
-    value: string | number
-    path: string
-    legacy?: boolean
+  const {
+    productOptions,
+    moduleOptions: moduleListOptionsCache,
+    loading: relationOptionsLoading,
+    error: relationOptionsError,
+    prepare: prepareOptions,
+    reset: resetOptions,
+  } = useFunctionalGridOptions({ current: () => componentActive && !componentUnmounted })
+  interface RelationDraft {
+    project_product_id: number
+    project_product_path: string
+    module_id: null
+    module_path: string
+  }
+  const relationDrafts = new Map<object, RelationDraft>()
+  const gridRows = computed(() => props.rows.map(readGridRecord))
+  const previewRow = (row: FunctionalGridRecord): FunctionalGridRecord => {
+    const draft = relationDrafts.get(row)
+    return draft ? { ...row, ...draft } : row
   }
 
   const cloneColumns = (columns: FunctionalGridColumn[]) =>
@@ -220,11 +261,11 @@
     return value ?? ''
   }
 
-  const formatRowValue = (row: Record<string, any>, column: FunctionalGridColumn) => {
-    return formatValue(row[column.displayField || column.field], column)
+  const formatRowValue = (row: FunctionalGridRecord, column: FunctionalGridColumn) => {
+    return formatValue(previewRow(row)[column.displayField || column.field], column)
   }
 
-  const parseValue = (value: unknown, column: FunctionalGridColumn) => {
+  const parseValue = (value: unknown, column: FunctionalGridColumn): FunctionalGridCellValue => {
     const text = value === null || value === undefined ? '' : String(value).trim()
     if (column.options) {
       if (column.multiple) {
@@ -272,8 +313,6 @@
     Array.isArray(left) || Array.isArray(right)
       ? JSON.stringify(left ?? []) === JSON.stringify(right ?? [])
       : left === right
-
-  const relationDraftKey = (row: Record<string, any>) => row[props.rowKey] ?? row
 
   const resolveColorToken = (token?: string) => {
     if (!token) return ''
@@ -343,12 +382,12 @@
   }
 
   const buildCellData = () => {
-    const data: Record<number, Record<number, any>> = {
+    const data: Record<number, Record<number, { v: ReturnType<typeof formatRowValue> }>> = {
       0: Object.fromEntries(
         visibleColumns.value.map((column, index) => [index, { v: column.title }])
       ),
     }
-    props.rows.forEach((row, rowIndex) => {
+    gridRows.value.forEach((row, rowIndex) => {
       data[rowIndex + 1] = Object.fromEntries(
         visibleColumns.value.map((column, columnIndex) => [
           columnIndex,
@@ -368,7 +407,7 @@
     })
     return [...indexes]
       .sort((a, b) => a - b)
-      .map((index) => props.rows[index])
+      .map((index) => gridRows.value[index])
       .filter(Boolean)
   }
 
@@ -387,6 +426,7 @@
     }
     if (INSERT_ROW_COMMANDS.has(event.id)) {
       event.cancel = true
+      if (!props.editable) return
       const range = commandRanges(event.params)[0] || {}
       const startRow = Math.max(1, Number(range.startRow ?? 1))
       const rangeCount = Math.max(1, Number(range.endRow ?? startRow) - startRow + 1)
@@ -396,6 +436,7 @@
     }
     if (REMOVE_ROW_COMMANDS.has(event.id)) {
       event.cancel = true
+      if (!props.editable) return
       const ranges = commandRanges(event.params)
       const targets = ranges.length ? selectedDataRows(ranges) : []
       emit('remove-rows', targets)
@@ -464,7 +505,7 @@
     if (!COLUMN_WIDTH_COMMANDS.has(event.id) || !worksheet) return
     visibleColumns.value.forEach((column, index) => {
       const width = worksheet.getColumnWidth?.(index)
-      if (Number.isFinite(width) && width > 0) column.width = Math.round(width)
+      if (Number.isFinite(width) && width > 0) column.width = Math.round(width / renderedDensity)
     })
     emit(
       'view-change',
@@ -473,7 +514,7 @@
   }
 
   const restoreCell = (rowIndex: number, columnIndex: number) => {
-    const row = props.rows[rowIndex - 1]
+    const row = gridRows.value[rowIndex - 1]
     const column = visibleColumns.value[columnIndex]
     if (!column || !worksheet) return
     syncing = true
@@ -483,8 +524,9 @@
     syncing = false
   }
 
-  const refreshRowCells = (rowKey: any, fields: string[] = []) => {
-    const rowIndex = props.rows.findIndex((row) => String(row[props.rowKey]) === String(rowKey)) + 1
+  const refreshRowCells = (rowKey: string | number, fields: string[] = []) => {
+    const rowIndex =
+      gridRows.value.findIndex((row) => String(row[props.rowKey]) === String(rowKey)) + 1
     if (rowIndex <= 0) return
     const fieldSet = new Set(fields)
     visibleColumns.value.forEach((column, columnIndex) => {
@@ -514,7 +556,7 @@
     })
     changed.forEach((key) => {
       const [rowIndex, columnIndex] = key.split(':').map(Number)
-      const row = props.rows[rowIndex - 1]
+      const row = gridRows.value[rowIndex - 1]
       const column = visibleColumns.value[columnIndex]
       if (!column) return
       if (rowIndex === 0) {
@@ -537,31 +579,25 @@
           const selected = options.find((item) => item.label === String(cellValue ?? ''))
           if (!selected) throw new Error(`“${column.title}”必须从下拉选项中选择`)
           if (column.editor === 'project-product') {
-            if (valuesEqual(Number(selected.value), Number(row.project_product_id))) {
+            if (valuesEqual(Number(selected.value), Number(previewRow(row).project_product_id))) {
               restoreCell(rowIndex, columnIndex)
               return
             }
-            const draftKey = relationDraftKey(row)
-            if (!relationDrafts.has(draftKey)) {
-              relationDrafts.set(draftKey, {
-                project_product_id: row.project_product_id,
-                project_product_path: row.project_product_path,
-                module_id: row.module_id,
-                module_path: row.module_path,
+            if (valuesEqual(Number(selected.value), Number(row.project_product_id)))
+              relationDrafts.delete(row)
+            else
+              relationDrafts.set(row, {
+                project_product_id: Number(selected.value),
+                project_product_path: selected.path,
+                module_id: null,
+                module_path: '',
               })
-            }
-            Object.assign(row, {
-              project_product_id: Number(selected.value),
-              project_product_path: selected.path,
-              module_id: null,
-              module_path: '',
-            })
             visibleColumns.value.forEach((item, index) => {
-              if (['project-product', 'module-cascader'].includes(item.editor || '')) {
+              if (['project-product', 'module-cascader'].includes(item.editor || ''))
                 restoreCell(rowIndex, index)
-              }
             })
-            Message.info('请选择三级模块，选择后将自动保存项目产品和模块')
+            if (relationDrafts.has(row))
+              Message.info('请选择三级模块，选择后将自动保存项目产品和模块')
             void refreshRelationValidationForRow(rowIndex - 1)
           } else {
             if (selected.legacy) {
@@ -569,29 +605,29 @@
               Message.warning('当前为历史非三级模块，请选择一个三级模块')
               return
             }
-            const draftKey = relationDraftKey(row)
-            const relationDraft = relationDrafts.get(draftKey)
-            const changes: Record<string, any> = {
+            const draft = relationDrafts.get(row)
+            const changes: Record<string, FunctionalGridCellValue> = {
+              ...(draft
+                ? {
+                    project_product_id: draft.project_product_id,
+                    project_product_path: draft.project_product_path,
+                  }
+                : {}),
               module_id: Number(selected.value),
               module_path: selected.path,
             }
-            if (relationDraft) {
-              changes.project_product_id = row.project_product_id
-              changes.project_product_path = row.project_product_path
-            }
-            emitCellChanges(row, rowIndex, column.field, changes, relationDraft)
-            relationDrafts.delete(draftKey)
+            relationDrafts.delete(row)
+            emitCellChanges(row, rowIndex, column.field, changes)
           }
           return
         }
         const nextValue = parseValue(cellValue, column)
         if (!valuesEqual(nextValue, oldValue)) {
-          row[column.field] = nextValue
-          emit('cell-change', { row, field: column.field, oldValue })
+          emitCellChanges(row, rowIndex, column.field, { [column.field]: nextValue })
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         restoreCell(rowIndex, columnIndex)
-        Message.warning(error?.message || '单元格内容格式不正确')
+        Message.warning(error instanceof Error ? error.message : '单元格内容格式不正确')
       }
     })
   }
@@ -600,9 +636,14 @@
     window.clearTimeout(rebuildTimer)
     rebuildTimer = undefined
     window.cancelAnimationFrame(loadMoreFrame || 0)
+    window.clearTimeout(viewportTimer)
+    viewportTimer = undefined
     loadMoreFrame = undefined
     try {
       captureFilterCriteria()
+      const zoom = worksheet?.getZoom?.()
+      if (typeof zoom === 'number' && Number.isFinite(zoom) && zoom >= 0.1 && zoom <= 4)
+        retainedZoom = zoom
       const visibleRange = worksheet?.getVisibleRange?.()
       if (visibleRange) {
         retainedViewport = {
@@ -613,7 +654,13 @@
     } catch (error) {
       console.warn('保留功能用例表格视图状态失败', error)
     }
-    disposables.forEach((item) => item?.dispose?.())
+    disposables.forEach((item) => {
+      try {
+        item?.dispose?.()
+      } catch {
+        console.warn('释放功能用例表格监听失败')
+      }
+    })
     disposables = []
     const currentUniver = univerInstance
     workbook = null
@@ -621,131 +668,90 @@
     bufferColumnHidden = false
     univerAPI = null
     univerInstance = null
+    syncing = false
     // FUniver 与 Univer 指向同一棵 React 渲染树，只销毁核心实例，避免重复卸载 DOM。
-    currentUniver?.dispose?.()
+    try {
+      currentUniver?.dispose?.()
+    } catch {
+      console.warn('释放功能用例表格实例失败')
+    }
   }
 
   const disposeGrid = () => {
     gridGeneration += 1
+    rowUpdateGeneration += 1
+    incrementalLoading.value = false
     destroyCurrentGrid()
   }
 
-  const thirdLevelModuleOptions = (items: any[]) => {
-    const normalize = (nodes: any[], depth: number): any[] =>
-      (nodes || []).reduce<any[]>((result, item) => {
-        const level = Number(item.level ?? depth)
-        if (level > 3) return result
-        const children = level < 3 ? normalize(item.children || [], depth + 1) : []
-        if (level < 3 && !children.length) return result
-        result.push({
-          label: item.title ?? item.label ?? String(item.key ?? item.value),
-          value: String(item.key ?? item.value),
-          children,
-        })
-        return result
-      }, [])
-    return normalize(items, 1)
-  }
-
-  const flattenLeafOptions = (items: any[], parentLabels: string[] = []): RelationListOption[] =>
-    (items || []).flatMap((item) => {
-      const label = item.label ?? item.title ?? String(item.value ?? item.key)
-      const labels = [...parentLabels, label]
-      if (item.children?.length) return flattenLeafOptions(item.children, labels)
-      return [
-        {
-          label: labels.join('/'),
-          value: item.value ?? item.key,
-          path: labels.join('/'),
-        },
-      ]
-    })
-
   const emitCellChanges = (
-    row: Record<string, any>,
+    row: FunctionalGridRecord,
     rowIndex: number,
     field: string,
-    changes: Record<string, any>,
-    originalValues?: Record<string, any>
+    changes: Record<string, FunctionalGridCellValue>
   ) => {
-    const oldValues = Object.fromEntries(
-      Object.keys(changes).map((key) => [
-        key,
-        originalValues && key in originalValues ? originalValues[key] : row[key],
-      ])
+    const actualChanges = Object.entries(changes).filter(
+      ([key, value]) => !valuesEqual(row[key], value)
     )
-    const actualChanges = Object.fromEntries(
-      Object.entries(changes).filter(([key, value]) => !valuesEqual(oldValues[key], value))
-    )
-    if (!Object.keys(actualChanges).length) return
-    Object.assign(row, actualChanges)
+    if (!actualChanges.length) return
+    const persisted: FunctionalGridCellChange['changes'] = {}
+    const display: FunctionalGridCellChange['displayChanges'] = {}
+    const oldValues: Record<string, unknown> = {}
+    for (const [key, value] of actualChanges) {
+      const original = row[key]
+      oldValues[key] = Array.isArray(original) ? [...original] : original
+      if (key === 'project_product_path' || key === 'module_path') {
+        if (typeof value === 'string') display[key] = value
+      } else persisted[key] = Array.isArray(value) ? [...value] : value
+    }
+    emit('cell-change', { row, field, changes: persisted, displayChanges: display, oldValues })
+    // The owner handles the event synchronously; rejected patches restore the existing record.
     visibleColumns.value.forEach((column, index) => {
-      if (column.field in actualChanges || (column.displayField || '') in actualChanges) {
+      if (actualChanges.some(([key]) => column.field === key || column.displayField === key))
         restoreCell(rowIndex, index)
-      }
     })
-    const persistedChanges = Object.fromEntries(
-      Object.entries(actualChanges).filter(([key]) => !key.endsWith('_path'))
-    )
-    emit('cell-change', {
-      row,
-      field,
-      oldValue: oldValues[field],
-      changes: persistedChanges,
-      oldValues,
-    })
-  }
-
-  const loadModuleOptions = async (productId: any) => {
-    const key = String(productId)
-    if (moduleTreeCache.has(key)) return moduleTreeCache.get(key) || []
-    const response = await getUserModuleTree(productId)
-    const options = thirdLevelModuleOptions(Array.isArray(response.data) ? response.data : [])
-    moduleTreeCache.set(key, options)
-    return options
   }
 
   const prepareRelationListOptions = async () => {
-    await projectStore.projectProductName()
-    projectProductListOptions = flattenLeafOptions(projectStore.projectProduct)
-    const productIds = [
-      ...new Set(
-        props.rows
-          .map((row) => row.project_product_id)
-          .filter((value) => value !== null && value !== undefined && value !== '')
-          .map(String)
-      ),
-    ]
-    await Promise.all(
-      productIds.map(async (productId) => {
-        if (moduleListOptionsCache.has(productId)) return
-        try {
-          const options = await loadModuleOptions(productId)
-          moduleListOptionsCache.set(productId, flattenLeafOptions(options))
-        } catch (error) {
-          console.error(error)
-          moduleListOptionsCache.set(productId, [])
-        }
-      })
+    if (
+      !componentActive ||
+      componentUnmounted ||
+      !props.editable ||
+      !visibleColumns.value.some((column) =>
+        ['project-product', 'module-cascader'].includes(column.editor || '')
+      )
     )
+      return
+    const productIds = gridRows.value
+      .map((row) => previewRow(row).project_product_id)
+      .filter(
+        (value): value is string | number => typeof value === 'string' || typeof value === 'number'
+      )
+    await prepareOptions(productIds)
   }
 
-  const relationListOptions = (row: Record<string, any>, column: FunctionalGridColumn) => {
-    if (column.editor === 'project-product') return projectProductListOptions
-    const options = moduleListOptionsCache.get(String(row.project_product_id)) || []
+  const relationListOptions = (
+    row: FunctionalGridRecord,
+    column: FunctionalGridColumn
+  ): RelationListOption[] => {
+    if (column.editor === 'project-product') return productOptions.value
+    const current = previewRow(row)
+    const options = moduleListOptionsCache.get(String(current.project_product_id)) || []
     if (
-      row.module_id === null ||
-      row.module_id === undefined ||
-      options.some((item) => String(item.value) === String(row.module_id))
+      current.module_id === null ||
+      current.module_id === undefined ||
+      options.some((item) => String(item.value) === String(current.module_id))
     ) {
       return options
     }
-    const legacyPath = String(row.module_path || '').trim()
+    const legacyPath = String(current.module_path || '').trim()
     if (!legacyPath || legacyPath === '-') return options
+    if (typeof current.module_id !== 'string' && typeof current.module_id !== 'number')
+      return options
     return [
       {
         label: legacyPath,
-        value: row.module_id,
+        value: current.module_id,
         path: legacyPath,
         legacy: true,
       },
@@ -754,10 +760,10 @@
   }
 
   const applyDataValidation = (startDataRow: number, rowCount: number) => {
-    if (!worksheet || rowCount <= 0) return
+    if (!worksheet || rowCount <= 0 || !props.editable) return
     visibleColumns.value.forEach((column, columnIndex) => {
       if (['project-product', 'module-cascader'].includes(column.editor || '')) {
-        props.rows.slice(startDataRow, startDataRow + rowCount).forEach((row, offset) => {
+        gridRows.value.slice(startDataRow, startDataRow + rowCount).forEach((row, offset) => {
           const options = relationListOptions(row, column)
           if (!options.length) return
           const rule = univerAPI
@@ -808,12 +814,39 @@
   }
 
   const refreshRelationValidationForRow = async (dataRow: number) => {
-    const targetWorksheet = worksheet
+    const targetWorksheet = worksheet,
+      targetRow = props.rows[dataRow],
+      generation = gridGeneration
     await prepareRelationListOptions()
-    if (!targetWorksheet || worksheet !== targetWorksheet) return
+    if (
+      !componentActive ||
+      generation !== gridGeneration ||
+      props.rows[dataRow] !== targetRow ||
+      !targetWorksheet ||
+      worksheet !== targetWorksheet
+    )
+      return
     syncing = true
     try {
       applyDataValidation(dataRow, 1)
+    } finally {
+      syncing = false
+    }
+  }
+
+  const retryRelationOptions = async () => {
+    const generation = gridGeneration
+    await prepareRelationListOptions()
+    if (!componentActive || generation !== gridGeneration) return
+    if (!worksheet) {
+      await createGrid()
+      return
+    }
+    syncing = true
+    try {
+      applyDataValidation(0, props.rows.length)
+    } catch (loadFailure0) {
+      void (reportLoadError(loadFailure0, "加载失败，请重试", false), renderError.value = true)
     } finally {
       syncing = false
     }
@@ -824,9 +857,9 @@
     const containerStyle = getComputedStyle(container.value as HTMLElement)
     const textColor = containerStyle.getPropertyValue('--m-text-2').trim()
     const bodyRange = worksheet.getRange(startDataRow + 1, 0, rowCount, visibleColumns.value.length)
-    worksheet.setRowHeights(startDataRow + 1, rowCount, 28)
+    worksheet.setRowHeights(startDataRow + 1, rowCount, scaleDensityPixels(28))
     bodyRange.setFontFamily(containerStyle.fontFamily)
-    bodyRange.setFontSize(12)
+    bodyRange.setFontSize(scaleDensityPixels(12))
     if (textColor) bodyRange.setFontColor(textColor)
     bodyRange.setVerticalAlignment('middle')
     bodyRange.setBorder(
@@ -870,7 +903,7 @@
       containerStyle.getPropertyValue('--m-table-border').trim()
     )
     headerRange.setFontWeight('bold')
-    headerRange.setFontSize(12)
+    headerRange.setFontSize(scaleDensityPixels(12))
     if (headerTextColor) headerRange.setFontColor(headerTextColor)
     headerRange.setVerticalAlignment('middle')
     headerRange.setHorizontalAlignment('center')
@@ -910,9 +943,9 @@
     worksheet.setFrozenRows(1)
     const fixedCount = visibleColumns.value.filter((column) => column.fixed === 'left').length
     if (fixedCount) worksheet.setFrozenColumns(fixedCount)
-    worksheet.setRowHeight(0, 30)
+    worksheet.setRowHeight(0, scaleDensityPixels(30))
     visibleColumns.value.forEach((column, index) =>
-      worksheet.setColumnWidth(index, column.width || column.minWidth || 120)
+      worksheet.setColumnWidth(index, scaleDensityPixels(column.width || column.minWidth || 120))
     )
     applySheetTheme()
     applyDataValidation(0, props.rows.length)
@@ -923,92 +956,115 @@
   }
 
   const appendRowsToSheet = async (startDataRow: number) => {
-    const targetWorksheet = worksheet
-    if (!targetWorksheet || !visibleColumns.value.length) {
-      scheduleRebuild()
-      return
-    }
-    await prepareRelationListOptions()
-    if (worksheet !== targetWorksheet) return
-    const rowCount = props.rows.length - startDataRow
-    if (rowCount <= 0) return
-    const columnCount = visibleColumns.value.length
-    let appendedRange: any
-    syncing = true
+    if (!componentActive || componentUnmounted) return
+    const revision = ++rowUpdateGeneration
+    incrementalLoading.value = true
     try {
-      ensureSheetCapacity(props.rows.length)
-      appendedRange = targetWorksheet.getRange(startDataRow + 1, 0, rowCount, columnCount)
-      targetWorksheet.setRowHeights(startDataRow + 1, rowCount, 28)
-      appendedRange.setValues(
-        props.rows
-          .slice(startDataRow)
-          .map((row) => visibleColumns.value.map((column) => formatRowValue(row, column)))
-      )
-    } catch (error) {
-      console.error('追加功能用例数据失败', error)
-      scheduleRebuild()
-      return
+      const targetWorksheet = worksheet
+      if (!targetWorksheet || !visibleColumns.value.length) {
+        scheduleRebuild()
+        return
+      }
+      await prepareRelationListOptions()
+      if (!componentActive || revision !== rowUpdateGeneration || worksheet !== targetWorksheet)
+        return
+      const rowCount = props.rows.length - startDataRow
+      if (rowCount <= 0) return
+      const columnCount = visibleColumns.value.length
+      let appendedRange: any
+      syncing = true
+      try {
+        ensureSheetCapacity(props.rows.length)
+        appendedRange = targetWorksheet.getRange(startDataRow + 1, 0, rowCount, columnCount)
+        targetWorksheet.setRowHeights(startDataRow + 1, rowCount, scaleDensityPixels(28))
+        appendedRange.setValues(
+          gridRows.value
+            .slice(startDataRow)
+            .map((row) => visibleColumns.value.map((column) => formatRowValue(row, column)))
+        )
+      } catch (error) {
+        console.error('追加功能用例数据失败', error)
+        scheduleRebuild()
+        return
+      } finally {
+        syncing = false
+      }
+      syncing = true
+      try {
+        applyBodyStyle(startDataRow, rowCount)
+        applyDataValidation(startDataRow, rowCount)
+        rebuildFilterRange()
+      } catch (error) {
+        console.error('补充功能用例表格样式或规则失败', error)
+      } finally {
+        syncing = false
+      }
+      scheduleLoadMoreCheck()
     } finally {
-      syncing = false
+      if (componentActive && revision === rowUpdateGeneration) incrementalLoading.value = false
     }
-    syncing = true
-    try {
-      applyBodyStyle(startDataRow, rowCount)
-      applyDataValidation(startDataRow, rowCount)
-      rebuildFilterRange()
-    } catch (error) {
-      console.error('补充功能用例表格样式或规则失败', error)
-    } finally {
-      syncing = false
-    }
-    scheduleLoadMoreCheck()
   }
 
   const replaceRowsInSheet = async (previousRowCount: number) => {
-    const targetWorksheet = worksheet
-    if (!targetWorksheet || !visibleColumns.value.length) {
-      scheduleRebuild()
-      return
-    }
-    await prepareRelationListOptions()
-    if (worksheet !== targetWorksheet) return
-    const rowCount = props.rows.length
-    const columnCount = visibleColumns.value.length
-    syncing = true
+    if (!componentActive || componentUnmounted) return
+    const revision = ++rowUpdateGeneration
+    incrementalLoading.value = true
     try {
-      ensureSheetCapacity(rowCount)
-      if (rowCount) {
-        targetWorksheet
-          .getRange(1, 0, rowCount, columnCount)
-          .setValues(
-            props.rows.map((row) =>
-              visibleColumns.value.map((column) => formatRowValue(row, column))
+      const targetWorksheet = worksheet
+      if (!targetWorksheet || !visibleColumns.value.length) {
+        scheduleRebuild()
+        return
+      }
+      await prepareRelationListOptions()
+      if (!componentActive || revision !== rowUpdateGeneration || worksheet !== targetWorksheet)
+        return
+      const rowCount = props.rows.length
+      const columnCount = visibleColumns.value.length
+      syncing = true
+      try {
+        ensureSheetCapacity(rowCount)
+        if (rowCount) {
+          targetWorksheet
+            .getRange(1, 0, rowCount, columnCount)
+            .setValues(
+              gridRows.value.map((row) =>
+                visibleColumns.value.map((column) => formatRowValue(row, column))
+              )
             )
-          )
-        applyBodyStyle(0, rowCount)
-        applyDataValidation(0, rowCount)
+          applyBodyStyle(0, rowCount)
+          applyDataValidation(0, rowCount)
+        }
+        if (previousRowCount > rowCount) {
+          targetWorksheet
+            .getRange(rowCount + 1, 0, previousRowCount - rowCount, columnCount)
+            .clearContent()
+        }
+        rebuildFilterRange()
+      } catch (error) {
+        console.error('更新功能用例表格数据失败', error)
+        scheduleRebuild()
+        return
+      } finally {
+        syncing = false
       }
-      if (previousRowCount > rowCount) {
-        targetWorksheet
-          .getRange(rowCount + 1, 0, previousRowCount - rowCount, columnCount)
-          .clearContent()
-      }
-      rebuildFilterRange()
-    } catch (error) {
-      console.error('更新功能用例表格数据失败', error)
-      scheduleRebuild()
-      return
+      scheduleLoadMoreCheck()
     } finally {
-      syncing = false
+      if (componentActive && revision === rowUpdateGeneration) incrementalLoading.value = false
     }
-    scheduleLoadMoreCheck()
   }
 
   const scheduleLoadMoreCheck = () => {
+    if (!componentActive || componentUnmounted) return
     window.cancelAnimationFrame(loadMoreFrame || 0)
     loadMoreFrame = window.requestAnimationFrame(() => {
       loadMoreFrame = undefined
-      if (!props.rows.length || lastLoadMoreRowCount === props.rows.length) return
+      if (
+        !componentActive ||
+        componentUnmounted ||
+        !props.rows.length ||
+        lastLoadMoreRowCount === props.rows.length
+      )
+        return
       const visibleRange = worksheet?.getVisibleRange?.()
       const visibleEndRow = Number(visibleRange?.endRow ?? 0)
       const triggerRow = Math.max(1, props.rows.length - LOAD_MORE_PRELOAD_ROWS)
@@ -1019,93 +1075,137 @@
   }
 
   const createGrid = async () => {
-    if (componentUnmounted || !container.value || !visibleColumns.value.length) return
-    const generation = ++gridGeneration
-    destroyCurrentGrid()
-    await prepareRelationListOptions()
-    if (componentUnmounted || generation !== gridGeneration || !container.value) return
-    await nextTick()
-    if (componentUnmounted || generation !== gridGeneration || !container.value) return
-    const targetContainer = container.value
-    const result = createFunctionalSheet(targetContainer)
     if (
+      !componentActive ||
+      !componentMounted ||
       componentUnmounted ||
-      generation !== gridGeneration ||
-      container.value !== targetContainer
-    ) {
-      result.univer.dispose()
-      return
-    }
-    univerInstance = result.univer
-    univerAPI = result.univerAPI
-    workbook = univerAPI.createWorkbook({
-      name: '功能测试用例',
-      sheets: {
-        cases: {
-          id: 'cases',
-          name: '用例',
-          zoomRatio: DEFAULT_ZOOM_RATIO,
-          rowCount: Math.max(props.rows.length + ROW_BUFFER_COUNT, 60),
-          columnCount: visibleColumns.value.length + COLUMN_BUFFER_COUNT,
-          cellData: buildCellData(),
-        },
-      },
-      sheetOrder: ['cases'],
-    })
-    setupSheet()
-    if (retainedViewport) {
-      const viewport = retainedViewport
-      retainedViewport = undefined
-      window.setTimeout(() => {
-        if (generation !== gridGeneration || !worksheet || !props.rows.length) return
-        const row = Math.min(viewport.row, props.rows.length)
-        const column = Math.min(viewport.column, Math.max(visibleColumns.value.length - 1, 0))
-        worksheet.getRange(row, column).activate()
-      }, 0)
-    }
-    disposables.push(
-      univerAPI.addEvent(univerAPI.Event.SelectionChanged, ({ selections }: any) => {
-        emit('selection-change', props.selectable ? selectedDataRows(selections) : [])
-      }),
-      univerAPI.addEvent(univerAPI.Event.BeforeSheetEditStart, (event: any) => {
-        const column = visibleColumns.value[event.column]
-        if (
-          !props.editable ||
-          event.row === 0 ||
-          event.row > props.rows.length ||
-          !column ||
-          column.editable === false ||
-          ['project-product', 'module-cascader'].includes(column.editor || '') ||
-          Boolean(column.options?.length)
-        )
-          event.cancel = true
-      }),
-      univerAPI.addEvent(univerAPI.Event.BeforeClipboardPaste, (event: any) => {
-        if (!props.editable) event.cancel = true
-      }),
-      univerAPI.addEvent(univerAPI.Event.BeforeCommandExecute, interceptStructureCommand),
-      univerAPI.addEvent(univerAPI.Event.CommandExecuted, persistNativeColumnWidth),
-      univerAPI.addEvent(univerAPI.Event.SheetValueChanged, ({ effectedRanges }: any) => {
-        syncChangedRanges(effectedRanges)
-      }),
-      univerAPI.addEvent(univerAPI.Event.SheetRangeFiltered, () => {
-        if (syncing) return
-        captureFilterCriteria(true)
-      }),
-      univerAPI.addEvent(univerAPI.Event.SheetRangeFilterCleared, () => {
-        if (syncing) return
-        retainedFilterCriteria.clear()
-        activeFilterCount.value = 0
-        emit('filter-change', { active: false, activeColumns: 0, filteredOutRows: [] })
-      }),
-      univerAPI.addEvent(univerAPI.Event.Scroll, scheduleLoadMoreCheck)
+      !container.value ||
+      !visibleColumns.value.length
     )
-    captureFilterCriteria(true)
-    scheduleLoadMoreCheck()
+      return
+    const generation = ++gridGeneration
+    ++rowUpdateGeneration
+    incrementalLoading.value = false
+    renderLoading.value = true
+    renderError.value = false
+    try {
+      destroyCurrentGrid()
+      await prepareRelationListOptions()
+      if (
+        componentUnmounted ||
+        !componentActive ||
+        generation !== gridGeneration ||
+        !container.value
+      )
+        return
+      await nextTick()
+      if (
+        componentUnmounted ||
+        !componentActive ||
+        generation !== gridGeneration ||
+        !container.value
+      )
+        return
+      const targetContainer = container.value
+      const result = createFunctionalSheet(targetContainer)
+      if (
+        componentUnmounted ||
+        !componentActive ||
+        generation !== gridGeneration ||
+        container.value !== targetContainer
+      ) {
+        result.univer.dispose()
+        return
+      }
+      renderedDensity = scaleDensityPixels(1)
+      univerInstance = result.univer
+      univerAPI = result.univerAPI
+      workbook = univerAPI.createWorkbook({
+        name: '功能测试用例',
+        sheets: {
+          cases: {
+            id: 'cases',
+            name: '用例',
+            zoomRatio: retainedZoom ?? DEFAULT_ZOOM_RATIO,
+            defaultRowHeight: scaleDensityPixels(28),
+            defaultColumnWidth: scaleDensityPixels(120),
+            rowCount: Math.max(props.rows.length + ROW_BUFFER_COUNT, 60),
+            columnCount: visibleColumns.value.length + COLUMN_BUFFER_COUNT,
+            cellData: buildCellData(),
+          },
+        },
+        sheetOrder: ['cases'],
+      })
+      setupSheet()
+      if (retainedViewport) {
+        const viewport = retainedViewport
+        retainedViewport = undefined
+        viewportTimer = window.setTimeout(() => {
+          viewportTimer = undefined
+          if (!componentActive || generation !== gridGeneration || !worksheet || !props.rows.length)
+            return
+          const row = Math.min(viewport.row, props.rows.length)
+          const column = Math.min(viewport.column, Math.max(visibleColumns.value.length - 1, 0))
+          worksheet.getRange(row, column).activate()
+        }, 0)
+      }
+      // Univer callbacks are an external adapter boundary; disposal alone cannot cancel queued callbacks.
+      const listen = (event: unknown, handler: (payload: any) => void) =>
+        univerAPI.addEvent(event, (payload: any) => {
+          if (componentActive && !componentUnmounted && generation === gridGeneration)
+            handler(payload)
+        })
+      disposables.push(
+        listen(univerAPI.Event.SelectionChanged, ({ selections }: any) => {
+          emit('selection-change', props.selectable ? selectedDataRows(selections) : [])
+        }),
+        listen(univerAPI.Event.BeforeSheetEditStart, (event: any) => {
+          const column = visibleColumns.value[event.column]
+          if (
+            !props.editable ||
+            event.row === 0 ||
+            event.row > props.rows.length ||
+            !column ||
+            column.editable === false ||
+            ['project-product', 'module-cascader'].includes(column.editor || '') ||
+            Boolean(column.options?.length)
+          )
+            event.cancel = true
+        }),
+        listen(univerAPI.Event.BeforeClipboardPaste, (event: any) => {
+          if (!props.editable) event.cancel = true
+        }),
+        listen(univerAPI.Event.BeforeCommandExecute, interceptStructureCommand),
+        listen(univerAPI.Event.CommandExecuted, persistNativeColumnWidth),
+        listen(univerAPI.Event.SheetValueChanged, ({ effectedRanges }: any) => {
+          syncChangedRanges(effectedRanges)
+        }),
+        listen(univerAPI.Event.SheetRangeFiltered, () => {
+          if (syncing) return
+          captureFilterCriteria(true)
+        }),
+        listen(univerAPI.Event.SheetRangeFilterCleared, () => {
+          if (syncing) return
+          retainedFilterCriteria.clear()
+          activeFilterCount.value = 0
+          emit('filter-change', { active: false, activeColumns: 0, filteredOutRows: [] })
+        }),
+        listen(univerAPI.Event.Scroll, scheduleLoadMoreCheck)
+      )
+      captureFilterCriteria(true)
+      scheduleLoadMoreCheck()
+    } catch (loadFailure1) {
+      if (componentActive && generation === gridGeneration) {
+        destroyCurrentGrid()
+        void (reportLoadError(loadFailure1, "加载失败，请重试", false), renderError.value = true)
+      }
+    } finally {
+      if (componentActive && generation === gridGeneration) renderLoading.value = false
+    }
   }
 
   const scheduleRebuild = () => {
-    if (!container.value) return
+    if (!componentMounted || !componentActive || componentUnmounted || !container.value) return
     window.clearTimeout(rebuildTimer)
     rebuildTimer = window.setTimeout(() => {
       void createGrid()
@@ -1143,10 +1243,15 @@
   watch(
     () => props.rows,
     (nextRows, previousRows) => {
+      if (!componentActive || componentUnmounted) return
       const appended =
         previousRows.length > 0 &&
         nextRows.length > previousRows.length &&
-        previousRows.every((row, index) => row[props.rowKey] === nextRows[index]?.[props.rowKey])
+        previousRows.every(
+          (row, index) =>
+            readGridRecord(row)[props.rowKey] ===
+            (nextRows[index] && readGridRecord(nextRows[index])[props.rowKey])
+        )
       if (!appended) {
         lastLoadMoreRowCount = 0
         relationDrafts.clear()
@@ -1158,30 +1263,61 @@
   watch(
     () => props.editable,
     (editable) => {
-      let revertedRelationDraft = false
-      if (!editable && relationDrafts.size) {
-        props.rows.forEach((row) => {
-          const originalValues = relationDrafts.get(relationDraftKey(row))
-          if (originalValues) Object.assign(row, originalValues)
-        })
-        relationDrafts.clear()
-        revertedRelationDraft = true
-      }
-      if (revertedRelationDraft) void replaceRowsInSheet(props.rows.length)
+      const hadDraft = relationDrafts.size > 0
+      if (!editable) relationDrafts.clear()
+      if (!editable && hadDraft) void replaceRowsInSheet(props.rows.length)
+      else if (editable) void retryRelationOptions()
     }
   )
 
-  const handleThemeChange = () => applySheetTheme()
+  const handleThemeChange = () => scheduleRebuild()
+  const handleDensityChange = () => scheduleRebuild()
+
+  watch(
+    () => props.contextKey,
+    () => {
+      resetOptions()
+      relationDrafts.clear()
+      disposeGrid()
+      retainedFilterCriteria.clear()
+      retainedViewport = undefined
+      retainedZoom = undefined
+      activeFilterCount.value = 0
+      lastLoadMoreRowCount = 0
+      renderLoading.value = false
+      renderError.value = false
+      scheduleRebuild()
+    },
+    { flush: 'sync' }
+  )
 
   onMounted(() => {
     componentUnmounted = false
+    componentMounted = true
     window.addEventListener('mango-theme-change', handleThemeChange)
-    void projectStore.projectProductName()
+    window.addEventListener('mango-density-change', handleDensityChange)
+    void createGrid()
+  })
+  onDeactivated(() => {
+    componentActive = false
+    relationDrafts.clear()
+    resetOptions()
+    disposeGrid()
+    renderLoading.value = false
+    renderError.value = false
+  })
+  onActivated(() => {
+    if (componentActive) return
+    componentActive = true
     void createGrid()
   })
   onBeforeUnmount(() => {
     componentUnmounted = true
+    componentActive = false
+    componentMounted = false
     window.removeEventListener('mango-theme-change', handleThemeChange)
+    window.removeEventListener('mango-density-change', handleDensityChange)
+    resetOptions()
     disposeGrid()
   })
 
@@ -1219,9 +1355,13 @@
     border: 1px solid var(--m-border);
     border-radius: var(--m-radius-sm);
     background: var(--m-surface-soft);
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .mango-functional-grid__summary {
+    min-width: 0;
+    flex-wrap: wrap;
     gap: 12px;
     color: var(--m-text-2);
     font-size: 13px;

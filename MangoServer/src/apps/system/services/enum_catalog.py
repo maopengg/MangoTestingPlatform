@@ -12,6 +12,7 @@ from src.apps.auto_api.enums.callback import (
     CallbackDeliveryPolicy, CallbackResponseMode,
 )
 from src.apps.auto_api.enums.retry import ApiTransientRetryCondition
+from src.apps.auto_api.enums.resource_cleanup import ApiResourceCleanupStatus
 from src.apps.auto_api.enums.assertion import ApiDefaultAssertionCheck
 from src.apps.data_factory.enums.audit import DatasourceAuditSourceEnum, DatasourceAuditStageEnum
 from src.apps.data_factory.enums.cleanup_resource import EsCleanupModeEnum
@@ -148,6 +149,7 @@ class EnumCatalogService:
             'api_case_configuration_filter': ApiCaseConfigurationFilterEnum.get_option(),
             'api_case_scenario_tag': ApiCaseScenarioTagEnum.get_option(),
             'api_case_release_status': ApiCaseReleaseStatusEnum.get_option(),
+            'api_resource_cleanup_status': ApiResourceCleanupStatus.get_option(),
             'product_type': ProductTypeEnum.get_option(),
             'auto_type': AutoTypeEnum.get_option(),
             'data_source_category': DataSourceCategoryEnum.get_option(),

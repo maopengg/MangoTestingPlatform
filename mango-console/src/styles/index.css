@@ -1833,6 +1833,13 @@ body {
   color: var(--m-muted);
 }
 
+/* Arco includes the input in its tag TransitionGroup. KeepAlive reactivation
+   must not animate that input from its detached-page position. */
+.arco-select-view-input.input-tag-zoom-move,
+.arco-input-tag-input.input-tag-zoom-move {
+  transition-property: color, border-color, background-color;
+}
+
 .arco-form-item-error .arco-input-wrapper,
 .arco-form-item-error .arco-textarea-wrapper,
 .arco-form-item-error .arco-select-view,
@@ -1993,6 +2000,73 @@ body {
 .arco-drawer-body {
   min-height: 0;
   overflow: auto;
+}
+
+.mango-simple-form-modal .arco-modal-body {
+  padding: 24px;
+}
+
+.mango-simple-form-modal .mango-simple-form,
+.mango-simple-form-modal .mango-simple-form-content,
+.mango-simple-form-modal .mango-simple-form-fields {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0;
+  max-width: 100% !important;
+  grid-column: auto;
+}
+
+.mango-simple-form-modal .arco-form-item {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  width: 100%;
+  margin-bottom: 16px !important;
+}
+
+.mango-simple-form-modal .mango-simple-form > .arco-form-item:last-child {
+  margin-bottom: 0 !important;
+}
+
+.mango-simple-form-modal .arco-form-item > .arco-form-item-label-col {
+  width: auto !important;
+  max-width: none !important;
+  box-sizing: content-box;
+  padding-right: 12px;
+  text-align: right;
+}
+
+.mango-simple-form-modal .arco-form-item > .arco-form-item-label-col > label {
+  white-space: nowrap;
+  color: var(--m-text);
+}
+
+.mango-simple-form-modal .arco-form-item > .arco-form-item-wrapper-col {
+  flex: 1 1 0 !important;
+  width: auto !important;
+  min-width: 0;
+  max-width: none !important;
+  margin-left: 0 !important;
+}
+
+.mango-simple-form-modal .arco-form-item .arco-form-item-content {
+  gap: 8px;
+}
+
+.mango-simple-form-modal .arco-form-item .arco-form-item-content > :is(
+  .arco-input-wrapper, .arco-input-number, .arco-select-view, .arco-select,
+  .arco-picker, .arco-cascader, .arco-textarea-wrapper
+) {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.mango-simple-form-modal .arco-form-item .arco-form-item-content > :is(
+  .arco-space-vertical, .arco-input-group
+) {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .arco-modal-body {

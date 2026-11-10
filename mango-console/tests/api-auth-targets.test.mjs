@@ -1,62 +1,29 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
-import ts from 'typescript'
-import { ref } from 'vue'
+import { form, record, component, deferred, flush } from './helpers/auth-config-harness.mjs'
 
-const filename = 'src/views/apitest/auth-config/index.vue'
-const source = readFileSync(filename, 'utf8')
-const { descriptor } = parse(source)
-const ast = ts.createSourceFile('auth.ts', descriptor.scriptSetup.content, ts.ScriptTarget.Latest, true)
-
-test('submit normalizes cleared optional fields without dropping selected values', () => {
-  const method = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name.text === 'normalizeSubmitValue')
-  const code = ts.transpileModule(method.getText(ast), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
-  const normalize = new Function(code + ';return normalizeSubmitValue')()
-  for (const empty of [null, undefined]) {
-    const value = normalize({ auth_type: 1, refresh_mode: 3, target_address: empty, public_variable_ids: empty })
-    assert.equal(value.target_address, '')
-    assert.deepEqual(value.public_variable_ids, [])
-  }
-  const value = normalize({ auth_type: 1, refresh_mode: 3, target_address: 'https://example.org', public_variable_ids: [7] })
-  assert.equal(value.target_address, 'https://example.org')
-  assert.deepEqual(value.public_variable_ids, [7])
+test('submission normalizes optional fields and product leaf without mutating the draft', () => {
+  const draft=form.createAuthDraft(record({auth_type:1,refresh_mode:3}))
+  Object.assign(draft,{project_product:[1,4],target_address:null,public_variable_ids:null,time_task:2,notice_group:3})
+  const result=form.normalizeSubmitValue(draft)
+  assert.equal(result.project_product,4);assert.equal(result.target_address,'')
+  assert.deepEqual(result.public_variable_ids,[]);assert.equal(result.time_task,null)
+  assert.equal(result.notice_group,null);assert.equal(result.api_info,null)
+  assert.equal(draft.time_task,2)
+  const chosen=form.normalizeSubmitValue({...draft,target_address:'https://example.org',public_variable_ids:[7]})
+  assert.equal(chosen.target_address,'https://example.org');assert.deepEqual(chosen.public_variable_ids,[7])
 })
-
-test('target selector is optional and defaults to the configured default address', () => {
-  const config = readFileSync('src/views/apitest/auth-config/config.ts', 'utf8')
-  assert.match(config, /label: '适用目标地址', key: 'target_address', value: ref\(''\), type: 'select', required: false/)
-  assert.match(source, /:options="targetOptions" :loading="targetsLoading"/)
-  assert.match(source, /record.target_address \|\| '默认地址'/)
-  const script = compileScript(descriptor, { id: 'auth-targets' })
-  const template = compileTemplate({ source: descriptor.template.content, filename, id: 'auth-targets',
-    compilerOptions: { bindingMetadata: script.bindings } })
-  assert.deepEqual(template.errors, [])
-})
-
-test('target loading uses product scope and environment zero, with stale responses ignored', async () => {
-  const method = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name.text === 'loadTargetOptions')
-  const code = ts.transpileModule(method.getText(ast), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
-  const product = ref({ value: [1, 2] })
-  const options = ref([])
-  const loading = ref(false)
-  const pending = []
-  const calls = []
-  const load = new Function('projectProductItem', 'authEnvironment', 'targetOptions', 'targetsLoading',
-    'getOptionId', 'getApiAuthTargets', 'let targetRequest=0;' + code + ';return loadTargetOptions')(
-      product, ref(0), options, loading, value => value?.at(-1),
-      query => { calls.push(query); return new Promise(resolve => pending.push(resolve)) },
-    )
-  const first = load()
-  assert.equal(loading.value, true)
-  assert.deepEqual(calls[0], { project_product: 2, test_env: 0 })
-  product.value = { value: [1, 3] }
-  const second = load()
-  pending[1]({ data: [{ value: 'https://example.org', label: 'Example' }] })
-  await second
-  pending[0]({ data: [{ value: 'https://example.com' }] })
-  await first
-  assert.equal(options.value[0].value, 'https://example.org')
-  assert.equal(loading.value, false)
+test('targets accept environment zero and product scope; old or closed requests cannot overwrite', async () => {
+  const pending=[], calls=[]
+  const editor=component('AuthConfigEditor','formModel,targetOptions,targetsLoading,onAuthVariableContextChange,closeEditor',{
+    api:{getApiAuthTargets:query=>{calls.push(query);const d=deferred();pending.push(d);return d.promise}},
+  })
+  editor.handle.open(record());assert.deepEqual(calls[0],{project_product:2,test_env:0})
+  editor.formModel.project_product=[1,4];editor.onAuthVariableContextChange()
+  pending[1].resolve({data:[{value:'https://example.org',label:'new'}]});await flush()
+  pending[0].resolve({data:[{value:'https://example.com',label:'old'}]});await flush()
+  assert.equal(editor.targetOptions.value[0].label,'new')
+  editor.onAuthVariableContextChange();editor.closeEditor();pending[2].resolve({data:[{label:'closed'}]});await flush()
+  assert.equal(editor.targetOptions.value.length,0);assert.equal(editor.targetsLoading.value,false)
+  editor.cleanup()
 })

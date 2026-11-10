@@ -1,10 +1,10 @@
 <template>
   <main class="mango-cli-auth-page">
-    <a-card class="mango-cli-auth-card" :bordered="false">
+    <a-card class="mango-cli-auth-card" :bordered="false" :aria-busy="status === 'loading'">
       <div class="mango-cli-auth-logo">M</div>
       <h1>芒果 CLI 授权</h1>
-      <p>{{ statusText }}</p>
-      <a-spin v-if="status === 'loading'" :size="28" />
+      <p role="status" aria-live="polite">{{ statusText }}</p>
+      <a-spin v-if="status === 'loading'" :size="scaleDensityPixels(28)" />
       <a-alert v-else-if="status === 'error'" type="error">{{ errorMessage }}</a-alert>
       <a-button v-if="status === 'error'" type="primary" size="small" @click="authorize">
         重新授权
@@ -14,85 +14,110 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, ref } from 'vue'
+  import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
-  import { post } from '@/api/http'
+  import { authorizeCli } from '@/api/cli-auth'
   import useUserStore from '@/store/modules/user'
+  import { scaleDensityPixels } from '@/hooks/useDisplayDensity'
+  import { authorizationMessages, authorizationStatusText } from './config'
+  import {
+    authorizationErrorMessage,
+    authorizationParams,
+    isAuthorizationResult,
+    validatedCallback,
+  } from './params'
 
-  type Status = 'loading' | 'error' | 'success'
-  interface AuthorizationResult {
-    code: string
-    expires_in: number
+  type AuthorizationStatus = keyof typeof authorizationStatusText
+  const route = useRoute(),
+    router = useRouter(),
+    userStore = useUserStore()
+  const status = ref<AuthorizationStatus>('loading'),
+    errorMessage = ref('')
+  const statusText = computed(() => authorizationStatusText[status.value])
+  let active = true,
+    mounted = false,
+    requestSequence = 0,
+    pendingRequest: number | null = null
+
+  function invalidate() {
+    ++requestSequence
+    pendingRequest = null
   }
-
-  const route = useRoute()
-  const router = useRouter()
-  const userStore = useUserStore()
-  const status = ref<Status>('loading')
-  const errorMessage = ref('')
-  const statusText = computed(() => {
-    if (status.value === 'success') return '授权已完成，正在返回终端…'
-    if (status.value === 'error') return '未能完成授权'
-    return '正在安全地授权当前 CLI…'
-  })
-
-  function queryValue(name: string): string {
-    const value = route.query[name]
-    return typeof value === 'string' ? value : ''
-  }
-
-  function validatedCallback(value: string): URL | null {
-    try {
-      const url = new URL(value)
-      if (url.protocol !== 'http:' || url.hostname !== '127.0.0.1' || url.pathname !== '/callback') {
-        return null
-      }
-      if (!url.port || url.username || url.password || url.search || url.hash) return null
-      return url
-    } catch {
-      return null
-    }
-  }
-
   async function authorize() {
+    if (
+      !active ||
+      route.path !== '/cli-auth' ||
+      pendingRequest !== null ||
+      status.value === 'success'
+    )
+      return
+    const request = ++requestSequence,
+      fullPath = route.fullPath,
+      token = userStore.token
+    const current = () =>
+      active &&
+      request === requestSequence &&
+      route.path === '/cli-auth' &&
+      route.fullPath === fullPath &&
+      userStore.token === token
+    pendingRequest = request
     status.value = 'loading'
     errorMessage.value = ''
-    if (!userStore.token) {
-      await router.replace({ path: '/login', query: { redirect: route.fullPath } })
-      return
-    }
-    const redirectUri = queryValue('redirect_uri')
-    const state = queryValue('state')
-    const codeChallenge = queryValue('code_challenge')
-    const version = queryValue('version')
-    const callback = validatedCallback(redirectUri)
-    if (!callback || !state || !codeChallenge || !version) {
-      status.value = 'error'
-      errorMessage.value = 'CLI 授权参数无效，请返回终端重新执行登录命令。'
-      return
-    }
     try {
-      const response = await post<AuthorizationResult>({
-        url: '/cli/auth/authorize',
-        data: { redirect_uri: redirectUri, state, code_challenge: codeChallenge, version },
-        silentError: true,
-      })
-      const data = response.data as AuthorizationResult
+      if (!token) {
+        const failure = await router.replace({ path: '/login', query: { redirect: fullPath } })
+        if (failure && current()) throw new Error(authorizationMessages.loginRedirectFailed)
+        return
+      }
+      const payload = authorizationParams(route.query)
+      if (!payload) throw new Error(authorizationMessages.invalidParams)
+      const callback = validatedCallback(payload.redirect_uri)
+      if (!callback) throw new Error(authorizationMessages.invalidParams)
+      const response = await authorizeCli(payload)
+      if (!current()) return
+      const result: unknown = response.data
+      if (!isAuthorizationResult(result)) throw new Error(authorizationMessages.invalidResult)
+      callback.searchParams.set('code', result.code)
+      callback.searchParams.set('state', payload.state)
       status.value = 'success'
-      callback.searchParams.set('code', data.code)
-      callback.searchParams.set('state', state)
       window.location.assign(callback.toString())
-    } catch (error: any) {
+    } catch (error: unknown) {
+      if (!current()) return
       status.value = 'error'
-      errorMessage.value = error?.message || '授权失败，请重试。'
+      errorMessage.value = authorizationErrorMessage(error)
+    } finally {
+      if (pendingRequest === request) pendingRequest = null
     }
   }
 
-  onMounted(authorize)
+  watch([() => route.fullPath, () => userStore.token], () => {
+    invalidate()
+    if (route.path !== '/cli-auth') return
+    status.value = 'loading'
+    errorMessage.value = ''
+    if (active && mounted) void authorize()
+  })
+  function deactivate() {
+    active = false
+    invalidate()
+  }
+  onMounted(() => {
+    mounted = true
+    void authorize()
+  })
+  onDeactivated(deactivate)
+  onBeforeUnmount(deactivate)
+  onActivated(() => {
+    if (!active) {
+      active = true
+      if (mounted && status.value !== 'success') void authorize()
+    }
+  })
 </script>
 
 <style scoped lang="less">
   .mango-cli-auth-page {
+    box-sizing: border-box;
     min-height: 100vh;
     display: grid;
     place-items: center;

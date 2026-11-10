@@ -9,7 +9,7 @@
               taskConfigLoading
                 ? '正在读取定时任务配置'
                 : isManualScope
-                  ? '维护当前定时任务绑定的执行用例和执行顺序'
+                  ? '维护当前定时任务绑定的执行用例'
                   : '查看当前规则实时匹配的已发布用例'
             }}
           </div>
@@ -21,7 +21,9 @@
     </template>
 
     <template #default>
-      <div v-if="taskConfigLoading" class="mango-section-card mango-timing-case-initial-loading">
+
+
+      <div v-if="taskConfigLoading && !taskConfig" class="mango-section-card mango-timing-case-initial-loading">
         <a-spin :loading="true" tip="正在读取定时任务配置..." />
       </div>
       <div
@@ -38,13 +40,17 @@
             <a-button
               size="small"
               type="primary"
-              :disabled="addSelectionKeys.length === 0"
+              :disabled="addSelectionKeys.length === 0 || writeBusy || candidateLoading || !!candidateError || !!boundCaseKeysError"
               :loading="addLoading"
               @click="onAddSelectedCases" data-testid="qa-views-timing-tasks-case-button-添加选中"
             >
               添加选中 {{ addSelectionKeys.length }}
             </a-button>
           </div>
+
+
+
+          <a-alert v-if="bindingError" type="error">{{ bindingError }}</a-alert>
 
           <div class="mango-soft-panel mango-timing-case-filter">
             <a-form :model="addForm" layout="horizontal" @keyup.enter="loadCandidateCases">
@@ -264,10 +270,10 @@
                   >
                     <template #cell="{ record }">
                       <a-tag
-                        :color="record.published_release_id ? 'green' : 'gray'"
+                        :color="record.published_release_id != null ? 'green' : 'gray'"
                         size="small"
                       >
-                        {{ record.published_release_id ? '当前已发布' : '暂无已发布版本' }}
+                        {{ record.published_release_id != null ? '当前已发布' : '暂无已发布版本' }}
                       </a-tag>
                     </template>
                   </a-table-column>
@@ -291,7 +297,7 @@
           <div class="mango-section-title">
             <div>
               <h3>已绑定用例</h3>
-              <p>支持搜索、拖拽排序、单个删除和批量删除</p>
+              <p>支持搜索、单个删除和批量删除</p>
             </div>
             <div class="mango-timing-case-bound-actions">
               <div class="mango-timing-case-summary">
@@ -304,12 +310,18 @@
                 size="small"
                 status="danger"
                 :loading="deleteLoading"
+                :disabled="writeBusy || selectedRowKeys.length === 0"
                 @click="onDelete(null)" data-testid="qa-views-timing-tasks-case-button-批量删除"
               >
                 批量删除
               </a-button>
             </div>
           </div>
+
+
+
+
+          <a-alert v-if="deletionError" type="error">{{ deletionError }}</a-alert>
 
           <div class="mango-soft-panel mango-timing-case-bound-filter">
             <a-form :model="boundFilter" layout="vertical">
@@ -347,7 +359,8 @@
                   v-else
                   v-model="boundFilter.module"
                   :field-names="fieldNames"
-                  :options="data.boundModuleList"
+                  :options="boundModuleOptions"
+                  :loading="boundModuleLoading"
                   allow-clear
                   allow-search
                   placeholder="全部模块名称"
@@ -359,7 +372,8 @@
                 <a-select
                   v-model="boundFilter.casePeople"
                   :field-names="fieldNames"
-                  :options="data.nickname"
+                  :options="ownerOptions"
+                  :loading="ownerLoading"
                   allow-clear
                   allow-search
                   placeholder="全部负责人"
@@ -386,9 +400,8 @@
                 class="mango-timing-case-table"
                 :bordered="false"
                 :columns="tableColumns"
-                :data="table.dataList"
-                :draggable="{ type: 'handle', width: 40 }"
-                :loading="table.tableLoading.value"
+                :data="boundRows"
+                :loading="boundLoading"
                 :pagination="false"
                 :row-selection="{ selectedRowKeys, showCheckedAll }"
                 :row-key="rowKey"
@@ -491,7 +504,7 @@
                   </template>
                   <template v-else-if="item.key === 'actions'" #cell="{ record }">
                     <MangoTableActions
-                      :actions="[{ label: '删除', danger: true, onClick: () => onDelete(record) }]"
+                      :actions="[{ label: '删除', danger: true, disabled: writeBusy, loading: deletingIds.includes(String(record.id)), onClick: () => onDelete(record) }]"
                     />
                   </template>
                 </a-table-column>
@@ -516,13 +529,14 @@
             <p>当前列表根据任务保存的项目产品、模块、用例类型、测试场景和发布状态实时计算，仅供查看。</p>
           </div>
         </div>
+        <a-alert v-if="ruleError" type="error">{{ ruleError }}<a-button type="text" size="small" @click="loadRuleCases()">重试</a-button></a-alert>
         <div class="mango-soft-panel mango-timing-case-rule-filter">
-          <a-form :model="ruleFilter" layout="inline" @keyup.enter="loadRuleCases">
+          <a-form :model="ruleFilter" layout="inline" @keyup.enter="loadRuleCases(true)">
             <a-form-item label="ID">
-              <a-input v-model="ruleFilter.caseId" allow-clear placeholder="请输入用例ID" @clear="loadRuleCases" />
+              <a-input v-model="ruleFilter.caseId" allow-clear placeholder="请输入用例ID" @clear="loadRuleCases(true)" />
             </a-form-item>
             <a-form-item label="名称">
-              <a-input v-model="ruleFilter.caseName" allow-clear placeholder="请输入用例名称" @blur="loadRuleCases" @clear="loadRuleCases" />
+              <a-input v-model="ruleFilter.caseName" allow-clear placeholder="请输入用例名称" @blur="loadRuleCases(true)" @clear="loadRuleCases(true)" />
             </a-form-item>
             <a-form-item label="用例类型">
               <a-select
@@ -530,9 +544,11 @@
                 :field-names="fieldNames"
                 :options="taskCaseTypeOptions"
                 multiple
+                tag-nowrap
+                :max-tag-count="1"
                 allow-clear
                 placeholder="全部类型"
-                @change="loadRuleCases"
+                @change="loadRuleCases(true)"
               />
             </a-form-item>
             <a-form-item label="模块">
@@ -543,7 +559,7 @@
                 :selectable-level="0"
                 :project-product-id="taskConfig?.project_product?.id"
                 placeholder="全部模块"
-                @change="loadRuleCases"
+                @change="loadRuleCases(true)"
               />
             </a-form-item>
             <a-form-item label="执行场景">
@@ -552,15 +568,17 @@
                 :field-names="fieldNames"
                 :options="enumStore.api_case_scenario_tag"
                 multiple
+                tag-nowrap
+                :max-tag-count="1"
                 allow-clear
                 placeholder="全部标签"
-                @change="loadRuleCases"
+                @change="loadRuleCases(true)"
               />
             </a-form-item>
           </a-form>
         </div>
         <div class="mango-timing-case-rule-summary">
-          <a-tag size="small">总数 {{ ruleSummary.selected_count || 0 }}</a-tag>
+          <a-tag size="small">总数 {{ ruleSelectedCount }}</a-tag>
           <a-tag size="small">{{ executionScopeName }}</a-tag>
           <a-tag size="small">{{ executionSceneName }}</a-tag>
         </div>
@@ -569,7 +587,7 @@
             :data="ruleCases"
             :loading="ruleLoading"
             :pagination="false"
-            row-key="case_id"
+            row-key="row_key"
             size="small"
             :scroll="{ x: 1180 }"
           >
@@ -602,21 +620,29 @@
         <TableFooter class="mango-timing-case-footer" :pagination="rulePagination" />
       </section>
       <div v-else class="mango-section-card mango-timing-case-initial-loading">
-        <a-empty description="定时任务不存在或无权查看" />
+        <div class="mango-empty-state">
+          <p>{{ taskConfigError || '定时任务不存在或无权查看' }}</p>
+          <a-button size="small" :loading="taskConfigLoading" @click="initializeTaskCases">重试</a-button>
+        </div>
       </div>
     </template>
   </TableBody>
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import { useRoute } from 'vue-router'
+  import useUserStore from '@/store/modules/user'
+  import usePermissionStore from '@/store/modules/permission'
   import { fieldNames } from '@/setting'
   import { scaleDensityLength } from '@/hooks/useDisplayDensity'
-  import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { candidateExecutionVersionOptions, tableColumns } from './config'
+  import { usePagination, useRowKey, useRowSelection } from '@/hooks/table'
+  import { candidateColumns, candidateExecutionVersionOptions, tableColumns } from './config'
   import type { CandidateExecutionVersion } from './config'
+  import { parseTaskCaseConfig, type TaskCaseConfig, type TaskCaseId } from './task-config'
   import {
     deleteSystemTasksRunCase,
     getSystemTasksRunCase,
@@ -631,27 +657,25 @@
   import StickyHorizontalTable from '@/components/table/StickyHorizontalTable.vue'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
   import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
-  import type { ApiCaseTaskCandidate } from '@/types/api-test/case-version'
   import { formatModulePath, formatProjectProductPath } from '@/utils/business-format'
-  import {
-    getSystemTasks,
-    getSystemTaskSelectionCases,
-    type ScheduledTaskRuleCase,
-  } from '@/api/system/tasks'
-
-  type CandidateCase = Partial<ApiCaseTaskCandidate> & {
-    key: string | number
-    title: string
-    module?: { id: number; name: string; full_path: string } | null
-  }
+  import { getSystemTasks } from '@/api/system/tasks'
+  import { parseBoundCases, parseBoundCaseKeys, parseCandidateCases, parseTaskCaseOptions, taskCaseLeaf, taskCaseSuccessMessage,
+    type BoundCaseRecord, type CandidateCase, type TaskCaseOption } from './case-records'
+  import { useRuleCaseSelection } from './composables/useRuleCaseSelection'
 
   const enumStore = useEnum()
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
-  const table = useTable()
-  const pagination = usePagination(doRefresh, () => table.tableLoading)
-  const candidatePagination = usePagination(() => loadCandidateCases(false), () => candidateLoading)
+  const boundRows = ref<BoundCaseRecord[]>([])
+  const boundLoading = ref(false)
+  const boundError = ref('')
+  const pagination = usePagination(doRefresh, boundLoading)
+  const candidatePageChanging = ref(false)
+  const candidatePagination = usePagination(() => { candidatePageChanging.value = false }, candidatePageChanging)
   const rowKey = useRowKey('id')
   const route = useRoute()
+  const user = useUserStore(), permission = usePermissionStore(), pagePath = route.path
+  let mounted = false, active = true, disposed = false, contextVersion = 0, needsReload = true
+  let pendingInitialization: Promise<void> | null = null
   const props = withDefaults(
     defineProps<{
       embedded?: boolean
@@ -673,13 +697,21 @@
   const emit = defineEmits<{
     (e: 'close'): void
   }>()
-  const currentTaskId = computed(() => props.taskId || route.query.id || '')
+  const currentTaskId = computed(() => {
+    if (props.taskId !== '') return props.taskId
+    const queryId = route.query.id
+    return (Array.isArray(queryId) ? queryId[0] : queryId) ?? ''
+  })
   const currentTaskName = computed(() => props.taskName || String(route.query.name || ''))
   const currentTaskType = computed(() =>
     props.embedded ? props.taskType ?? null : route.query.type ?? null
   )
-  const taskConfig = ref<any>(null)
+  const taskConfig = ref<TaskCaseConfig | null>(null)
   const taskConfigLoading = ref(true)
+  const taskConfigError = ref('')
+  const enumLoading = ref(false), enumError = ref('')
+  let taskConfigRequestId = 0
+  let enumRequestId = 0
   const configuredCaseTypes = computed<number[]>(() => taskConfig.value?.case_types || [])
   const fixedTaskType = computed(() => {
     if (configuredCaseTypes.value.length === 1) return Number(configuredCaseTypes.value[0])
@@ -695,7 +727,7 @@
     }))
   )
   const isManualScope = computed(() => taskConfig.value?.execution_scope === 'manual')
-  const hasFixedTaskModule = computed(() => Boolean(taskConfig.value?.module?.id))
+  const hasFixedTaskModule = computed(() => taskConfig.value?.module != null)
   const executionScopeName = computed(() =>
     optionTitle(enumStore.automation_execution_scope, taskConfig.value?.execution_scope)
   )
@@ -705,10 +737,14 @@
       ? scenes.map((scene: string) => optionTitle(enumStore.api_case_scenario_tag, scene)).join('、')
       : '未分类'
   })
-  const currentProjectProductId = computed(
-    () => props.projectProductId || route.query.project_product_id || ''
-  )
-  const currentModuleId = computed(() => props.moduleId || route.query.module_id || '')
+  const currentProjectProductId = computed(() => {
+    const query = route.query.project_product_id
+    return props.projectProductId !== '' ? props.projectProductId : (Array.isArray(query) ? query[0] : query) ?? ''
+  })
+  const currentModuleId = computed(() => {
+    const query = route.query.module_id
+    return props.moduleId !== '' ? props.moduleId : (Array.isArray(query) ? query[0] : query) ?? ''
+  })
 
   const addForm = reactive({
     type: fixedTaskType.value ?? 1,
@@ -721,45 +757,47 @@
     scenarioTags: [] as string[],
     executionVersions: [] as CandidateExecutionVersion[],
   })
-  const data: any = reactive({
-    boundModuleList: [],
-    nickname: [],
+  const boundModuleOptions = ref<TaskCaseOption[]>([]), ownerOptions = ref<TaskCaseOption[]>([])
+  const boundModuleLoading = ref(false), ownerLoading = ref(false)
+  const boundModuleError = ref(''), ownerError = ref('')
+  const { ruleCases, ruleLoading, ruleError, ruleSelectedCount, ruleFilter, rulePagination, loadRuleCases,
+    invalidate: invalidateRuleCases, reset: resetRuleCases } = useRuleCaseSelection({
+    getTaskId: () => currentTaskId.value, isManual: () => isManualScope.value,
+    available: () => available(), captureContext: () => captureContext(),
   })
-  const ruleCases = ref<ScheduledTaskRuleCase[]>([])
-  const ruleLoading = ref(false)
-  const ruleSummary = ref<Record<string, any>>({})
-  const ruleFilter = reactive({
-    caseId: '',
-    caseName: '',
-    caseTypes: [] as number[],
-    moduleId: '' as string | number,
-    scenarioTags: [] as string[],
-  })
-  const rulePagination = usePagination(loadRuleCases, () => ruleLoading)
   const candidateCases = ref<CandidateCase[]>([])
   const addSelectionKeys = ref<Array<string | number>>([])
   const candidateLoading = ref(false)
+  const candidateError = ref(''), boundCaseKeysError = ref('')
   let candidateRequestId = 0
   let boundCaseKeysRequestId = 0
+  let boundRequestId = 0, ownerRequestId = 0, moduleRequestId = 0
   const boundCaseKeysLoading = ref(false)
   const boundCaseKeySet = ref<Set<string>>(new Set())
   const addLoading = ref(false)
   const deleteLoading = ref(false)
+  const deletingIds = ref<string[]>([])
+  const bindingError = ref(''), deletionError = ref('')
+  const writeBusy = computed(() => addLoading.value || deleteLoading.value)
+  let confirmation: ReturnType<typeof Modal.confirm> | null = null, confirmationVersion = 0
   const boundFilter = reactive({
-    type: '',
-    projectProduct: '',
-    module: '',
-    casePeople: '',
+    type: '' as string | number,
+    projectProduct: '' as string | number | Array<string | number>,
+    module: '' as string | number | Array<string | number>,
+    casePeople: '' as string | number,
     caseName: '',
   })
-  const candidateColumns = [
-    { title: '', dataIndex: 'selected', width: 54 },
-    { title: '用例名称', dataIndex: 'title' },
-    { title: '状态', dataIndex: 'status', width: 86 },
-  ]
+
+  const identity = () => JSON.stringify([route.path, route.fullPath, currentTaskId.value, currentTaskType.value, props.embedded,
+    props.projectProductId, props.moduleId, user.userId, user.roleId, user.token, user.selected_environment, permission.permissionKeys])
+  const available = () => active && !disposed && route.path === pagePath && (typeof document === 'undefined' || document.visibilityState === 'visible')
+  function captureContext() {
+    const key = identity(), version = contextVersion
+    return () => available() && key === identity() && version === contextVersion
+  }
 
   const taskCaseDetailTitle = computed(() => {
-    const id = currentTaskId.value || '-'
+    const id = currentTaskId.value === '' ? '-' : currentTaskId.value
     const name = taskConfig.value?.name || currentTaskName.value || '-'
     return `定时任务用例配置 / ${id} / ${name}`
   })
@@ -770,7 +808,7 @@
       return candidateCases.value
     }
     return candidateCases.value.filter((item) =>
-      addForm.executionVersions.includes(item.published_release_id ? 'published' : 'unpublished')
+      addForm.executionVersions.includes(item.published_release_id != null ? 'published' : 'unpublished')
     )
   })
   const pagedCandidateCases = computed(() => {
@@ -791,8 +829,8 @@
     return selectedCount > 0 && selectedCount < selectableCandidateCases.value.length
   })
   const boundStats = computed(() => {
-    return table.dataList.reduce(
-      (acc: any, item: any) => {
+    return boundRows.value.reduce(
+      (acc, item) => {
         acc.total += 1
         if (Number(item.type) === 0) acc.ui += 1
         if (Number(item.type) === 1) acc.api += 1
@@ -821,71 +859,40 @@
     }
   )
 
-  function getBoundCaseName(record: any) {
-    return record.ui_case?.name || record.api_case?.name || record.pytest_case?.name || '-'
+  function getBoundCaseName(record: BoundCaseRecord) {
+    return record.case_name
   }
 
-  function getLeafValue(value: any) {
-    if (Array.isArray(value)) {
-      return value[value.length - 1] ?? ''
-    }
-    return value || ''
+  function getLeafValue(value: unknown) {
+    return taskCaseLeaf(value)
   }
 
-  function getBoundCase(record: any) {
-    return record.ui_case || record.api_case || record.pytest_case || {}
+  function getBoundCaseProjectProduct(record: BoundCaseRecord) {
+    return record.product_path
   }
 
-  function getBoundCaseId(record: any) {
-    return record.ui_case?.id || record.api_case?.id || record.pytest_case?.id || ''
+  function getBoundCaseModule(record: BoundCaseRecord) {
+    return record.module_path
   }
 
-  function getBoundCaseProjectProduct(record: any) {
-    const caseInfo = getBoundCase(record)
-    const projectProductPath = formatProjectProductPath(caseInfo.project_product)
-    return (
-      (projectProductPath !== '-' ? projectProductPath : '') ||
-      caseInfo.project_product_name ||
-      caseInfo.project?.name ||
-      caseInfo.product?.name ||
-      '-'
-    )
+  function getBoundCaseOwner(record: BoundCaseRecord) {
+    return record.owner_name
   }
 
-  function getBoundCaseModule(record: any) {
-    const caseInfo = getBoundCase(record)
-    const modulePath = formatModulePath(caseInfo.module)
-    return modulePath !== '-' ? modulePath : caseInfo.module_name || '-'
+  function getBoundCaseEnumValue(record: BoundCaseRecord, key: 'scenario_layer' | 'scenario_type' | 'level') {
+    return record[key]
   }
 
-  function getBoundCaseOwner(record: any) {
-    const caseInfo = getBoundCase(record)
-    return (
-      caseInfo.case_people?.name ||
-      caseInfo.case_people_name ||
-      caseInfo.user?.name ||
-      caseInfo.create_user?.name ||
-      '-'
-    )
+  function getBoundCaseTags(record: BoundCaseRecord) {
+    return record.scenario_tags
   }
 
-  function getBoundCaseEnumValue(record: any, key: string) {
-    const caseInfo = getBoundCase(record)
-    const value = caseInfo[key]
-    return value === undefined || value === null || value === '' ? null : value
+  function getEnumTitle(options: Array<{ key: string | number; title: string }> | undefined, value: unknown) {
+    return options?.find(item => String(item.key) === String(value))?.title || '-'
   }
 
-  function getBoundCaseTags(record: any) {
-    const tags = getBoundCase(record).scenario_tags
-    return Array.isArray(tags) ? tags : []
-  }
-
-  function getEnumTitle(options: any[], value: any) {
-    return options?.find((item: any) => String(item.key) === String(value))?.title || '-'
-  }
-
-  function optionTitle(options: any[], value: any) {
-    return options?.find((item: any) => String(item.key) === String(value))?.title || '-'
+  function optionTitle(options: Array<{ key: string | number; title: string }> | undefined, value: unknown) {
+    return getEnumTitle(options, value)
   }
 
   function selectedFilterText(
@@ -909,10 +916,10 @@
   }
 
   function isCandidateSelectable(item: CandidateCase) {
-    if (boundCaseKeysLoading.value) return false
+    if (writeBusy.value || candidateLoading.value || candidateError.value || boundCaseKeysLoading.value || boundCaseKeysError.value) return false
     if (isCaseBound(item.key)) return false
     if (!isApiCaseType.value) return true
-    return Boolean(item.published_release_id)
+    return item.published_release_id != null
   }
 
   function toggleCandidateCase(caseId: string | number, checked: boolean) {
@@ -953,19 +960,19 @@
   }
 
   function onBoundTypeChange(value: number | string) {
-    boundFilter.type = value as any
+    boundFilter.type = value ?? ''
     boundFilter.module = ''
-    data.boundModuleList = []
+    boundModuleOptions.value = []
     if (Number(value) === 2) {
       loadBoundPytestModules(boundFilter.projectProduct)
     }
     onBoundFilterChange()
   }
 
-  function onBoundProjectProductChange(value: any) {
-    boundFilter.projectProduct = value
+  function onBoundProjectProductChange(value: unknown) {
+    boundFilter.projectProduct = getLeafValue(value)
     boundFilter.module = ''
-    data.boundModuleList = []
+    boundModuleOptions.value = []
     if (isBoundPytestCaseType.value) {
       loadBoundPytestModules(value)
     }
@@ -986,140 +993,163 @@
   }
 
   function loadCandidateCases(resetPage = true) {
+    if (!available()) { candidateLoading.value = false; return Promise.resolve() }
     const requestId = ++candidateRequestId
-    if (resetPage) {
+    const taskId = currentTaskId.value
+    const context = captureContext(), current = () => context() && requestId === candidateRequestId
+    if (resetPage !== false) {
       clearCandidateCases()
     }
-    const projectProductId = getLeafValue(addForm.projectProduct || currentProjectProductId.value)
+    const projectProductId = getLeafValue(addForm.projectProduct === '' ? currentProjectProductId.value : addForm.projectProduct)
     const moduleId = getLeafValue(addForm.module)
-    if (!moduleId && !projectProductId) {
+    if (moduleId === '' && projectProductId === '') {
       candidateLoading.value = false
       return
     }
     candidateLoading.value = true
+    candidateError.value = ''
     return getSystemTasksTypeCaseName(
       addForm.type,
-      moduleId || undefined,
-      projectProductId || undefined,
+      moduleId === '' ? undefined : moduleId,
+      projectProductId === '' ? undefined : projectProductId,
       undefined,
       {
-        case_name: addForm.caseName || undefined,
+        case_name: addForm.caseName.trim() || undefined,
         levels: addForm.levels?.join(','),
         scenario_layers: addForm.scenarioLayers?.join(','),
         scenario_types: addForm.scenarioTypes?.join(','),
         scenario_tags: addForm.scenarioTags?.join(','),
       },
-      currentTaskId.value
+      taskId
     )
       .then((res) => {
-        if (requestId !== candidateRequestId) return
-        candidateCases.value = res.data || []
+        if (!current()) return
+        candidateCases.value = parseCandidateCases(res)
       })
-      .catch(console.log)
+      .catch((loadFailure0) => { if (current()) (reportLoadError(loadFailure0, "候选用例加载失败，请重试", false), candidateError.value = '候选用例加载失败，请重试') })
       .finally(() => {
-        if (requestId !== candidateRequestId) return
+        if (!current()) return
         candidateLoading.value = false
       })
   }
 
   function loadBoundCaseKeys() {
+    if (!available()) { boundCaseKeysLoading.value = false; return Promise.resolve() }
     const requestId = ++boundCaseKeysRequestId
-    if (!currentTaskId.value) {
+    const taskId = currentTaskId.value
+    const context = captureContext(), current = () => context() && requestId === boundCaseKeysRequestId
+    boundCaseKeysError.value = ''
+    if (taskId === '') {
       boundCaseKeySet.value = new Set()
       boundCaseKeysLoading.value = false
       return Promise.resolve()
     }
     boundCaseKeysLoading.value = true
     return getSystemTasksRunCase({
-      task_id: currentTaskId.value,
+      task_id: taskId,
       type: addForm.type,
       case_ids_only: 1,
     })
       .then((res) => {
-        if (requestId !== boundCaseKeysRequestId) return
-        boundCaseKeySet.value = new Set(
-          (res.data || []).map((item: any) => String(item.case_id))
-        )
+        if (!current()) return
+        boundCaseKeySet.value = parseBoundCaseKeys(res)
+        addSelectionKeys.value = addSelectionKeys.value.filter(key => !boundCaseKeySet.value.has(String(key)))
       })
-      .catch(console.log)
+      .catch((loadFailure1) => { if (current()) (reportLoadError(loadFailure1, "已添加用例标识加载失败，请重试", false), boundCaseKeysError.value = '已添加用例标识加载失败，请重试') })
       .finally(() => {
-        if (requestId !== boundCaseKeysRequestId) return
+        if (!current()) return
         boundCaseKeysLoading.value = false
       })
   }
 
   function onAddSelectedCases() {
+    if (!available() || writeBusy.value || !isManualScope.value || currentTaskId.value === '') return
     if (addSelectionKeys.value.length === 0) {
       Message.error('请选择要添加的用例')
       return
     }
-    const typeList = ['ui_case', 'api_case', 'pytest_case']
-    const payload: any = {
+    const type = Number(addForm.type)
+    if (![0, 1, 2].includes(type)) return
+    const selectedKeys = new Set(addSelectionKeys.value.map(String))
+    const selectedCases = candidateCases.value.filter(item => selectedKeys.has(String(item.key)))
+    if (selectedCases.length !== selectedKeys.size || selectedCases.some(item => !isCandidateSelectable(item))) {
+      Message.warning('选中用例已变化，请重新选择')
+      return
+    }
+    const payload: {
+      type: number; task: TaskCaseId; ui_case?: TaskCaseId[]; api_case?: TaskCaseId[]; pytest_case?: TaskCaseId[]
+    } = {
       type: addForm.type,
       task: currentTaskId.value,
     }
     if (isApiCaseType.value) {
-      const selectedKeys = new Set(addSelectionKeys.value.map(String))
-      const selectedCases = candidateCases.value.filter((item) =>
-        selectedKeys.has(String(item.key))
-      )
-      if (selectedCases.some((item) => !item.published_release_id)) {
+      if (selectedCases.some((item) => item.published_release_id == null)) {
         Message.warning('存在未发布的用例，请刷新后重新选择')
         return
       }
       payload.api_case = selectedCases.map((item) => item.key)
-      submitSelectedCases(payload)
-      return
+      return submitSelectedCases(payload)
     }
-    payload[typeList[Number(addForm.type)]] = addSelectionKeys.value
-    submitSelectedCases(payload)
+    if (type === 0) payload.ui_case = selectedCases.map(item => item.key)
+    else payload.pytest_case = selectedCases.map(item => item.key)
+    return submitSelectedCases(payload)
   }
 
-  function submitSelectedCases(payload: Record<string, unknown>) {
+  async function submitSelectedCases(payload: { type: number; task: TaskCaseId; ui_case?: TaskCaseId[]; api_case?: TaskCaseId[]; pytest_case?: TaskCaseId[] }) {
+    if (!available() || writeBusy.value) return
+    const snapshot = { ...payload }
+    if (payload.ui_case) snapshot.ui_case = payload.ui_case.slice()
+    if (payload.api_case) snapshot.api_case = payload.api_case.slice()
+    if (payload.pytest_case) snapshot.pytest_case = payload.pytest_case.slice()
+    const selectionVersion = candidateRequestId, key = identity(), current = captureContext()
+    let refreshAttempted = false
     addLoading.value = true
-    return postSystemTasksRunCase(payload)
-      .then((res) => {
-        Message.success(bindingResultMessage(res))
-        addSelectionKeys.value = []
-        loadBoundCaseKeys()
-        doRefresh()
-      })
-      .catch(console.log)
-      .finally(() => {
-        addLoading.value = false
-      })
+    bindingError.value = ''
+    try {
+      const response = await postSystemTasksRunCase(snapshot), message = taskCaseSuccessMessage(response, true)
+      if (key === identity()) needsReload = true
+      if (!current()) return
+      Message.success(message)
+      if (selectionVersion === candidateRequestId && Number(addForm.type) === snapshot.type) addSelectionKeys.value = []
+      needsReload = false; refreshAttempted = true
+      await Promise.allSettled([loadBoundCaseKeys(), doRefresh()])
+    } catch { if (current()) bindingError.value = '添加用例失败，请重试' }
+    finally { addLoading.value = false; if (!refreshAttempted || !current()) resume() }
   }
 
-  function bindingResultMessage(res: any) {
-    const result = res.data
-    if (!result || typeof result.created_count !== 'number') return res.msg
-    return `${res.msg}：新增 ${result.created_count} 条，更新 ${result.updated_count} 条，已添加跳过 ${result.skipped_count} 条`
-  }
+  function closeConfirmation() { confirmationVersion++; confirmation?.close(); confirmation = null }
 
-  function onDelete(record: any) {
+  function onDelete(record: BoundCaseRecord | null) {
+    if (!available() || writeBusy.value || !isManualScope.value || currentTaskId.value === '') return
     const batch = record === null
     if (batch && selectedRowKeys.value.length === 0) {
       Message.error('请选择要删除的数据')
       return
     }
-    Modal.confirm({
+    const targetIds = batch ? selectedRowKeys.value.map(String) : [String(record.id)]
+    const target = batch ? targetIds.slice() : record.id, key = identity(), context = captureContext()
+    closeConfirmation()
+    const version = confirmationVersion, current = () => version === confirmationVersion && context()
+    confirmation = Modal.confirm({
       title: '提示',
       content: batch ? '是否要删除选中的定时任务用例？' : '是否要删除此定时任务用例？',
       cancelText: '取消',
       okText: '删除',
-      onBeforeOk: () => {
-        deleteLoading.value = batch
-        return deleteSystemTasksRunCase(batch ? selectedRowKeys.value : record.id)
-          .then((res) => {
-            Message.success(res.msg)
-          })
-          .catch(console.log)
-          .finally(() => {
-            loadBoundCaseKeys()
-            doRefresh()
-            deleteLoading.value = false
-            if (batch) selectedRowKeys.value = []
-          })
+      onCancel: () => { if (version === confirmationVersion) closeConfirmation() },
+      onBeforeOk: async () => {
+        if (!current() || writeBusy.value) return false
+        deleteLoading.value = true; deletingIds.value = targetIds; deletionError.value = ''
+        let refreshAttempted = false
+        try {
+          const response = await deleteSystemTasksRunCase(target), message = taskCaseSuccessMessage(response)
+          if (key === identity()) needsReload = true
+          if (!current()) return false
+          closeConfirmation(); Message.success(message)
+          selectedRowKeys.value = selectedRowKeys.value.filter(key => !targetIds.includes(String(key)))
+          needsReload = false; refreshAttempted = true
+          await Promise.allSettled([loadBoundCaseKeys(), doRefresh()]); return true
+        } catch { if (current()) deletionError.value = '删除用例失败，请重试'; return false }
+        finally { deleteLoading.value = false; deletingIds.value = []; if (!refreshAttempted || !context()) resume() }
       },
     })
   }
@@ -1132,120 +1162,169 @@
     window.history.back()
   }
 
-  function doRefresh() {
-    table.tableLoading.value = true
+  function doRefresh(): Promise<void> {
+    if (!available()) { boundLoading.value = false; return Promise.resolve() }
+    const requestId = ++boundRequestId, taskId = currentTaskId.value
+    const context = captureContext(), current = () => context() && requestId === boundRequestId
+    if (taskId === '') { boundLoading.value = false; return Promise.resolve() }
+    boundLoading.value = true
+    boundError.value = ''
     const projectProductId = getLeafValue(boundFilter.projectProduct)
     const moduleId = getLeafValue(boundFilter.module)
     const boundType =
       boundFilter.type === '' || boundFilter.type === null ? undefined : boundFilter.type
-    getSystemTasksRunCase({
-      task_id: currentTaskId.value,
+    return getSystemTasksRunCase({
+      task_id: taskId,
       type: boundType,
-      project_product_id: projectProductId || undefined,
-      module_id: moduleId || undefined,
-      case_people_id: boundFilter.casePeople || undefined,
-      case_name: boundFilter.caseName || undefined,
+      project_product_id: projectProductId === '' ? undefined : projectProductId,
+      module_id: moduleId === '' ? undefined : moduleId,
+      case_people_id: boundFilter.casePeople === '' ? undefined : boundFilter.casePeople,
+      case_name: boundFilter.caseName.trim() || undefined,
       page: pagination.page,
       pageSize: pagination.pageSize,
     })
-      .then((res) => {
-        table.handleSuccess(res)
-        pagination.setTotalSize((res as any).totalSize)
+      .then(async (res) => {
+        if (!current()) return
+        const result = parseBoundCases(res)
+        pagination.setTotalSize(result.total)
+        const lastPage = Math.max(1, Math.ceil(result.total / pagination.pageSize))
+        if (pagination.page > lastPage) { pagination.page = lastPage; await doRefresh(); return }
+        boundRows.value = result.rows
       })
-      .catch((error) => {
-        table.tableLoading.value = false
-        console.log(error)
-      })
+      .catch((loadFailure2) => { if (current()) (reportLoadError(loadFailure2, "已绑定用例加载失败，请重试", false), boundError.value = '已绑定用例加载失败，请重试') })
+      .finally(() => { if (current()) boundLoading.value = false })
   }
 
-  function loadBoundPytestModules(projectProductId: any) {
+  function loadBoundPytestModules(projectProductId: unknown) {
+    if (!available()) { boundModuleLoading.value = false; return Promise.resolve() }
+    const requestId = ++moduleRequestId, taskId = currentTaskId.value
     const productId = getLeafValue(projectProductId)
-    if (!productId) return
-    getPytestProductName(productId)
+    const context = captureContext(), current = () => context() && requestId === moduleRequestId && productId === getLeafValue(boundFilter.projectProduct) && isBoundPytestCaseType.value
+    boundModuleError.value = ''
+    if (productId === '') { boundModuleOptions.value = []; boundModuleLoading.value = false; return Promise.resolve() }
+    boundModuleLoading.value = true
+    return getPytestProductName(productId)
       .then((res) => {
-        data.boundModuleList = res.data
+        if (current()) boundModuleOptions.value = parseTaskCaseOptions(res)
       })
-      .catch(console.log)
+      .catch((loadFailure3) => { if (current()) (reportLoadError(loadFailure3, "模块选项加载失败，请重试", false), boundModuleError.value = '模块选项加载失败，请重试') })
+      .finally(() => { if (context() && requestId === moduleRequestId) boundModuleLoading.value = false })
   }
 
   function getNickName() {
-    getUserName()
+    if (!available()) { ownerLoading.value = false; return Promise.resolve() }
+    const requestId = ++ownerRequestId, taskId = currentTaskId.value
+    const context = captureContext(), current = () => context() && requestId === ownerRequestId
+    ownerLoading.value = true; ownerError.value = ''
+    return getUserName()
       .then((res) => {
-        data.nickname = res.data
+        if (current()) ownerOptions.value = parseTaskCaseOptions(res)
       })
-      .catch(console.log)
+      .catch((loadFailure4) => { if (current()) (reportLoadError(loadFailure4, "负责人选项加载失败，请重试", false), ownerError.value = '负责人选项加载失败，请重试') })
+      .finally(() => { if (current()) ownerLoading.value = false })
   }
 
   async function loadTaskConfig() {
+    if (!available()) { taskConfigLoading.value = false; return false }
+    const requestId = ++taskConfigRequestId
+    const taskId = currentTaskId.value
+    const context = captureContext(), current = () => context() && requestId === taskConfigRequestId
     taskConfigLoading.value = true
+    taskConfigError.value = ''
     try {
-      if (!currentTaskId.value) return
-      const res = await getSystemTasks({ id: currentTaskId.value, page: 1, pageSize: 1 })
-      const responseData: any = res.data
-      const record = Array.isArray(responseData)
-        ? responseData[0]
-        : Array.isArray(responseData?.items)
-          ? responseData.items[0]
-          : responseData
-      if (!record) {
-        Message.error('定时任务不存在或无权查看')
-        return
+      if (taskId === '') {
+        taskConfig.value = null
+        taskConfigError.value = '缺少定时任务 ID'
+        return false
       }
+      const res = await getSystemTasks({ id: taskId, page: 1, pageSize: 1 })
+      if (!current()) return false
+      const record = parseTaskCaseConfig(res, taskId)
+      if (!record) {
+        taskConfig.value = null
+        taskConfigError.value = '定时任务不存在或无权查看'
+        return false
+      }
+      const firstLoad = taskConfig.value === null
       taskConfig.value = record
-      addForm.projectProduct = record.project_product?.id || record.project_product || ''
-      addForm.module = record.module?.id || record.module || ''
-      const allowedTypes = Array.isArray(record.case_types) ? record.case_types : []
+      if (firstLoad) {
+        addForm.projectProduct = record.project_product?.id ?? ''
+        addForm.module = record.module?.id ?? ''
+        boundFilter.projectProduct = addForm.projectProduct
+        boundFilter.module = addForm.module
+      }
+      const allowedTypes = record.case_types
       if (allowedTypes.length && !allowedTypes.includes(Number(addForm.type))) {
         addForm.type = Number(allowedTypes[0])
       }
-      boundFilter.projectProduct = addForm.projectProduct
-      boundFilter.module = addForm.module
+      return true
+    } catch (loadFailure5) {
+      if (current()) (reportLoadError(loadFailure5, "定时任务配置加载失败，请重试", false), taskConfigError.value = '定时任务配置加载失败，请重试')
+      return false
     } finally {
-      taskConfigLoading.value = false
+      if (current()) taskConfigLoading.value = false
     }
   }
 
-  async function loadRuleCases() {
-    if (!currentTaskId.value || isManualScope.value) return
-    ruleLoading.value = true
-    try {
-      const res = await getSystemTaskSelectionCases({
-        task_id: currentTaskId.value,
-        case_id: ruleFilter.caseId || undefined,
-        case_name: ruleFilter.caseName || undefined,
-        case_types: ruleFilter.caseTypes.length ? ruleFilter.caseTypes.join(',') : undefined,
-        module_id: getLeafValue(ruleFilter.moduleId) || undefined,
-        scenario_tags: ruleFilter.scenarioTags.length
-          ? ruleFilter.scenarioTags.join(',')
-          : undefined,
-        page: rulePagination.page,
-        pageSize: rulePagination.pageSize,
-      })
-      ruleCases.value = res.data?.items || []
-      ruleSummary.value = res.data?.summary || {}
-      rulePagination.setTotalSize(res.data?.count || 0)
-    } catch (error: any) {
-      Message.error(error?.msg || '查询规则匹配用例失败')
-    } finally {
-      ruleLoading.value = false
-    }
+  function initializeTaskCases(): Promise<void> {
+    if (!available() || writeBusy.value) { needsReload = true; return Promise.resolve() }
+    if (pendingInitialization) return pendingInitialization
+    const current = captureContext()
+    needsReload = false
+    const request = Promise.resolve().then(async () => {
+      if (!current() || !await loadTaskConfig() || !current()) return
+      if (isManualScope.value) {
+        await Promise.allSettled([loadBoundCaseKeys(), doRefresh(), getNickName(), loadCandidateCases(false),
+          ...(isBoundPytestCaseType.value ? [loadBoundPytestModules(boundFilter.projectProduct)] : [])])
+      } else {
+        await loadRuleCases()
+      }
+    }).catch((loadFailure0) => { if (current()) (reportLoadError(loadFailure0, "加载失败，请重试", false), taskConfigError.value = '任务用例初始化失败，请重试') })
+      .finally(() => { if (pendingInitialization === request) pendingInitialization = null })
+    pendingInitialization = request
+    return request
   }
+
+  async function loadEnums() {
+    if (!available()) return
+    const request = ++enumRequestId, context = captureContext(), current = () => context() && request === enumRequestId
+    enumLoading.value = true; enumError.value = ''
+    try { await enumStore.getEnum() }
+    catch (loadFailure6) { if (current()) (reportLoadError(loadFailure6, "枚举加载失败，请重试", false), enumError.value = '枚举加载失败，请重试') }
+    finally { if (current()) enumLoading.value = false }
+  }
+
+  function pause() {
+    contextVersion++; taskConfigRequestId++; candidateRequestId++; boundCaseKeysRequestId++; boundRequestId++
+    invalidateRuleCases(); moduleRequestId++; ownerRequestId++; enumRequestId++
+    needsReload = true; pendingInitialization = null; closeConfirmation()
+    taskConfigLoading.value = false; candidateLoading.value = false; boundCaseKeysLoading.value = false
+    boundLoading.value = false; ownerLoading.value = false; boundModuleLoading.value = false; enumLoading.value = false
+  }
+  function resume() {
+    if (!mounted || !available() || writeBusy.value || !needsReload) return
+    void loadEnums(); void initializeTaskCases()
+  }
+  function visibilityChanged() { if (document.visibilityState === 'visible') resume(); else pause() }
+  watch(identity, () => {
+    pause(); taskConfig.value = null
+    boundRows.value = []; candidateCases.value = []; ownerOptions.value = []; boundModuleOptions.value = []
+    selectedRowKeys.value = []; addSelectionKeys.value = []; boundCaseKeySet.value = new Set(); resetRuleCases()
+    Object.assign(addForm, { type: fixedTaskType.value ?? 1, projectProduct: '', module: '', caseName: '', levels: [], scenarioLayers: [], scenarioTypes: [], scenarioTags: [], executionVersions: [] })
+    Object.assign(boundFilter, { type: '', projectProduct: '', module: '', casePeople: '', caseName: '' })
+    for (const paginationInfo of [pagination, candidatePagination]) { paginationInfo.page = 1; paginationInfo.setTotalSize(0) }
+    for (const error of [taskConfigError, candidateError, boundCaseKeysError, boundError, ownerError, boundModuleError, bindingError, deletionError, enumError]) error.value = ''
+    resume()
+  }, { flush: 'sync' })
 
   onMounted(() => {
-    nextTick(async () => {
-      await enumStore.getEnum()
-      await loadTaskConfig()
-      if (!taskConfig.value) return
-      if (isManualScope.value) {
-        loadBoundCaseKeys()
-        doRefresh()
-        getNickName()
-        loadCandidateCases()
-      } else {
-        loadRuleCases()
-      }
-    })
+    mounted = true
+    document.addEventListener('visibilitychange', visibilityChanged)
+    resume()
   })
+  onActivated(() => { active = true; resume() })
+  onDeactivated(() => { active = false; pause() })
+  onBeforeUnmount(() => { disposed = true; pause(); document.removeEventListener('visibilitychange', visibilityChanged) })
 </script>
 
 <style lang="less" scoped>

@@ -1,5 +1,6 @@
-import { reactive, ref } from 'vue'
-import { FormItem } from '@/types/components'
+import { reactive } from 'vue'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
+import type { FormItem } from '@/types/components'
 import { useTableColumn } from '@/hooks/table'
 
 export const tableScrollX = 1540
@@ -22,35 +23,46 @@ export const sourceTagOptions = [
   { key: 'schedule_fire', title: '调度触发失败' },
 ]
 
-export const conditionItems: Array<FormItem> = reactive([
-  {
-    key: 'category',
-    label: '记录类型',
-    type: 'select',
-    placeholder: '请选择记录类型',
-    value: ref(''),
-    optionItems: categoryOptions.map((item) => ({ label: item.title, value: item.key })),
-  },
-  {
-    key: 'keyword',
-    label: '异常关键字',
-    type: 'input',
-    placeholder: '搜索对象、异常类型或错误摘要',
-    value: ref(''),
-  },
-  {
-    key: 'source',
-    label: '来源',
-    type: 'select',
-    placeholder: '请选择异常来源',
-    value: ref<string[]>([]),
-    multiple: true,
-    optionItems: sourceTagOptions.map((item) => ({
-      label: item.title,
-      value: item.key === 'http' ? 'http,drf' : item.key,
-    })),
-  },
-])
+export interface ErrorRecordCondition extends Pick<FormItem, 'label' | 'type' | 'placeholder' | 'multiple' | 'searchOperator' | 'reset'> {
+  key: 'category' | 'keyword' | 'source'
+  value: string | string[]
+  optionItems?: Array<{ label: string; value: string }>
+}
+
+export function createConditionItems(): ErrorRecordCondition[] {
+  const conditionItems: ErrorRecordCondition[] = [
+    {
+      key: 'category',
+      label: '记录类型',
+      type: 'select',
+      placeholder: '请选择记录类型',
+      value: '',
+      optionItems: categoryOptions.map((item) => ({ label: item.title, value: item.key })),
+    },
+    {
+      key: 'keyword',
+      label: '异常关键字',
+      type: 'input',
+      placeholder: '搜索对象、异常类型或错误摘要',
+      value: '',
+    },
+    {
+      key: 'source',
+      label: '来源',
+      type: 'select',
+      placeholder: '请选择异常来源',
+      value: [],
+      multiple: true,
+      optionItems: sourceTagOptions.map((item) => ({
+        label: item.title,
+        value: item.key === 'http' ? 'http,drf' : item.key,
+      })),
+    },
+  ]
+  // The aggregate endpoint uses category=scalar and source=comma-list, not __in.
+  enableMultiSelectSearch(conditionItems, ['category'])
+  return reactive(conditionItems)
+}
 
 export const tableColumns = useTableColumn([
   { title: '时间', key: 'time', dataIndex: 'time', width: 180 },

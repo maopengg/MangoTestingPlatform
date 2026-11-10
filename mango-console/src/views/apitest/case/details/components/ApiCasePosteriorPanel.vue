@@ -10,7 +10,7 @@
       <div class="m-2 mango-horizontal-scroll-region">
         <TipMessage message="从响应JSON中提取，请输入JSONPath表达式并点击测试" />
         <KeyValueList
-          :data-list="item.posterior_response"
+          :data-list="draft.posterior_response"
           :field-config="jsonFields"
           :on-delete-item="(index) => removeItem('posterior_response', index)"
           :on-save="() => saveField('posterior_response')"
@@ -28,7 +28,7 @@
     <a-tab-pane key="44" title="响应文本提取">
       <div class="m-2 mango-horizontal-scroll-region">
         <KeyValueList
-          :data-list="item.posterior_response_text"
+          :data-list="draft.posterior_response_text"
           :field-config="textFields"
           :on-delete-item="(index) => removeItem('posterior_response_text', index)"
           :on-save="() => saveField('posterior_response_text')"
@@ -46,7 +46,7 @@
     <a-tab-pane key="41" title="后置数据库">
       <div class="m-2">
         <DataSourceOperationList
-          :data-list="item.posterior_sql"
+          :data-list="draft.posterior_sql"
           :datasource-options="datasourceOptions"
           :environment-options="environmentOptions"
           :project-product-id="projectProductId"
@@ -63,7 +63,7 @@
         <div class="mango-api-wait-config__field">
           <span class="mango-api-wait-config__label">等待时间</span>
           <a-input-number
-            v-model="item.posterior_sleep"
+            v-model="draft.posterior_sleep"
             :disabled="editLocked"
             :min="0"
             :max="32767"
@@ -87,7 +87,7 @@
     <a-tab-pane key="43" title="后置函数">
       <div class="m-2">
         <CodeEditor
-          v-model="item.posterior_func"
+          v-model="draft.posterior_func"
           :readonly="editLocked"
           :line-height="280"
           :code-style="{ width: '100%' }"
@@ -100,12 +100,11 @@
 </template>
 
 <script setup lang="ts">
-  /* eslint-disable vue/no-mutating-props */
+  import { useApiCaseScenarioDraft } from '../composables/useApiCaseScenarioDraft'
+  import type { ApiCaseScenario, ScenarioPatch } from '../types'
   import { computed } from 'vue'
   import { Message } from '@arco-design/web-vue'
-  import {
-    postCaseDetailedParameterTestExtractResponseAfter,
-  } from '@/api/apitest/case-detailed-parameter'
+  import { postCaseDetailedParameterTestExtractResponseAfter } from '@/api/apitest/case-detailed-parameter'
   import { useApiCaseParameterSave } from '../composables/useApiCaseAutoSave'
   import CodeEditor from '@/components/editors/CodeEditor.vue'
   import DataSourceOperationList from '@/components/forms/DataSourceOperationList.vue'
@@ -116,7 +115,7 @@
   type PosteriorField = PosteriorListField | 'posterior_sleep' | 'posterior_func'
   const props = withDefaults(
     defineProps<{
-      item: any
+      item: ApiCaseScenario
       activeKey: string
       editLocked: boolean
       datasourceOptions?: any[]
@@ -129,8 +128,17 @@
       environmentOptions: () => [],
     }
   )
-  const emit = defineEmits<{ (event: 'change', value: string): void }>()
-  const putApiCaseDetailedParameter = useApiCaseParameterSave()
+  const emit = defineEmits<{
+    (event: 'change', value: string): void
+    (event: 'patch', patch: ScenarioPatch): void
+  }>()
+  const persistParameter = useApiCaseParameterSave()
+  const { draft, save: putApiCaseDetailedParameter } = useApiCaseScenarioDraft(
+    () => props.item,
+    (patch) => emit('patch', patch),
+    persistParameter,
+    () => props.editLocked
+  )
   const jsonFields = [
     { field: 'value', label: 'JSONPath语法', placeholder: '请输入JSONPath语法' },
     { field: 'key', label: 'Key', placeholder: '请输入缓存Key' },
@@ -142,11 +150,11 @@
   const canAdd = computed(() => ['40', '41', '44'].includes(props.activeKey))
   const isLongWait = computed(
     () =>
-      Number.isFinite(Number(props.item.posterior_sleep)) &&
-      Number(props.item.posterior_sleep) > 1800
+      Number.isFinite(Number(draft.value.posterior_sleep)) &&
+      Number(draft.value.posterior_sleep) > 1800
   )
   const waitHint = computed(() => {
-    const value = props.item.posterior_sleep
+    const value = draft.value.posterior_sleep
     if (value === null || value === undefined || value === '')
       return '接口响应后暂停执行，单位为秒，支持 0～32767 秒'
     const seconds = Number(value)
@@ -163,21 +171,22 @@
 
   function addItem() {
     if (props.editLocked) return
-    if (props.activeKey === '40') props.item.posterior_response.push({ key: '', value: '' })
-    if (props.activeKey === '44') props.item.posterior_response_text.push({ key: '', value: '' })
+    if (props.activeKey === '40') draft.value.posterior_response.push({ key: '', value: '' })
+    if (props.activeKey === '44') draft.value.posterior_response_text.push({ key: '', value: '' })
     if (props.activeKey === '41')
-      props.item.posterior_sql.push({ key: '', value: '', datasource_alias: null, test_envs: [] })
+      draft.value.posterior_sql.push({ key: '', value: '', datasource_alias: null, test_envs: [] })
   }
   async function saveField(field: PosteriorField) {
+    const scenario = draft.value
     if (props.editLocked) return
     if (
       (field === 'posterior_response' || field === 'posterior_response_text') &&
-      props.item[field].some((item) => !item.key?.trim() || !item.value?.trim())
+      scenario[field].some((item) => !item.key?.trim() || !item.value?.trim())
     ) return
     try {
       const response = await putApiCaseDetailedParameter({
-        id: props.item.id,
-        [field]: props.item[field],
+        id: scenario.id,
+        [field]: scenario[field],
       })
       if (response) Message.success(response.msg)
     } catch {
@@ -186,19 +195,20 @@
   }
   function removeItem(field: PosteriorListField, index: number) {
     if (props.editLocked) return
-    props.item[field].splice(index, 1)
+    draft.value[field].splice(index, 1)
     void saveField(field)
   }
   function updateItem(field: PosteriorListField, index: number, value: any) {
     if (props.editLocked) return
-    props.item[field][index] = value
+    draft.value[field][index] = value
     void saveField(field)
   }
   function saveCode() {
     void saveField('posterior_func')
   }
   async function testExtract(type: 'jsonpath' | 're', index: number) {
-    const response = props.item.result_data?.response
+    const scenario = draft.value
+    const response = scenario.result_data?.response
     if (!response) return Message.error('暂无执行响应，无法测试提取')
     const source = type === 'jsonpath' ? response.json : response.text
     if (source === null || source === undefined || source === '')
@@ -207,14 +217,14 @@
       )
     const expression =
       type === 'jsonpath'
-        ? props.item.posterior_response?.[index]
-        : props.item.posterior_response_text?.[index]
+        ? scenario.posterior_response?.[index]
+        : scenario.posterior_response_text?.[index]
     if (!expression) return Message.error('提取配置不存在')
     try {
       const result = await postCaseDetailedParameterTestExtractResponseAfter(
         type,
-        expression,
-        source
+        { ...expression },
+        typeof source === 'string' ? source : JSON.stringify(source)
       )
       Message.success(`测试成功，Key：【${result.data.key}】，Value：【${result.data.value}】`)
     } catch {

@@ -1,7 +1,7 @@
 <template>
   <div class="mango-case-gray-panel">
     <div class="mango-case-gray-panel__filters">
-      <a-form layout="inline" @keyup.enter="loadFeatures">
+      <a-form :model="query" layout="inline" @keyup.enter="loadFeatures">
         <a-form-item label="项目/产品">
           <ProjectProductSelect v-model="query.projectProduct" @change="onSearchProjectProductChange" />
         </a-form-item>

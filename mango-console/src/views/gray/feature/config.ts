@@ -1,6 +1,4 @@
-import { useTable, useTableColumn } from '@/hooks/table'
-
-const table = useTable()
+import type { TableColumnData } from '@arco-design/web-vue'
 
 export const configTypeOptions = [
   { label: 'YAML', value: 1 },
@@ -25,23 +23,69 @@ export const grayValueTypeOptions = [
   { label: 'JSON', value: 'json' },
 ]
 
-const featureColumns = useTableColumn([
-  { ...table.indexColumn, width: 100 },
-  { title: '灰度编号', dataIndex: 'gray_code', key: 'gray_code', width: 140, ellipsis: true, tooltip: true, align: 'left' },
-  { title: '灰度名称', dataIndex: 'name', key: 'name', ellipsis: true, tooltip: true, align: 'left' },
+const featureColumns: Array<TableColumnData & { key: string }> = [
+  { title: 'ID', dataIndex: 'id', key: 'index', width: 100, align: 'center' },
+  {
+    title: '灰度编号',
+    dataIndex: 'gray_code',
+    key: 'gray_code',
+    width: 140,
+    ellipsis: true,
+    tooltip: true,
+    align: 'left',
+  },
+  {
+    title: '灰度名称',
+    dataIndex: 'name',
+    key: 'name',
+    width: 240,
+    ellipsis: true,
+    tooltip: true,
+    align: 'left',
+  },
   { title: '类型', dataIndex: 'config_type', key: 'config_type', width: 90, align: 'center' },
-  { title: '灰度Key', dataIndex: 'feature_key', key: 'feature_key', width: 260, ellipsis: true, tooltip: true, align: 'left' },
+  {
+    title: '灰度Key',
+    dataIndex: 'feature_key',
+    key: 'feature_key',
+    width: 260,
+    ellipsis: true,
+    tooltip: true,
+    align: 'left',
+  },
   { title: '状态', dataIndex: 'status', key: 'status', width: 90, align: 'center' },
-  { title: '项目/产品', dataIndex: 'project_product', key: 'project_product', width: 140, ellipsis: true, tooltip: true, align: 'left' },
-  { title: '模块', dataIndex: 'module', key: 'module', width: 240, ellipsis: true, tooltip: true, align: 'left' },
-  { title: '操作', dataIndex: 'actions', key: 'actions', width: 160, fixed: 'right', align: 'center' },
-])
+  {
+    title: '项目/产品',
+    dataIndex: 'project_product',
+    key: 'project_product',
+    width: 140,
+    ellipsis: true,
+    tooltip: true,
+    align: 'left',
+  },
+  {
+    title: '模块',
+    dataIndex: 'module',
+    key: 'module',
+    width: 240,
+    ellipsis: true,
+    tooltip: true,
+    align: 'left',
+  },
+  {
+    title: '操作',
+    dataIndex: 'actions',
+    key: 'actions',
+    width: 140,
+    fixed: 'right',
+    align: 'center',
+  },
+]
 
 export const grayPageConfig = {
   title: '灰度开关',
-  tabKey: 'feature',
   columns: featureColumns,
-  scrollX: 1580,
+  scrollX: featureColumns.reduce((width, column) => width + Number(column.width || 0), 0),
   configTypeOptions,
   enableStatusOptions,
   variableSourceOptions,

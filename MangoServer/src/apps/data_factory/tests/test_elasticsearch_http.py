@@ -1,11 +1,12 @@
 import io
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from unittest.mock import MagicMock, patch
 from urllib.error import HTTPError, URLError
 from urllib.request import Request
 
 from django.test import SimpleTestCase, override_settings
 from django.utils import timezone
+from src.apps.data_factory.services.datasource_timing import DatasourceTimingService as Timing
 
 from src.apps.data_factory.exceptions import DataFactoryError
 from src.apps.data_factory.models import Database
@@ -65,3 +66,30 @@ class ElasticsearchHttpTests(SimpleTestCase):
                     DataSourceDiscoveryService.tables(DatasourceTargetService.maintenance(database), refresh=True)
                 self.assertEqual(code, raised.exception.code)
                 self.assertNotIn('元数据权限', raised.exception.msg)
+
+    def test_connect_header_and_body_timings_are_separate_without_changing_response(self):
+        clock = [0.0]
+        @contextmanager
+        def stream(*args, **kwargs):
+            trace = kwargs['extensions']['trace']
+            trace('connection.connect_tcp.started', {'host': 'AUTO_PRIVATE_HOST'})
+            clock[0] = 2
+            trace('connection.connect_tcp.complete', {})
+            clock[0] = 3
+            response = MagicMock(status_code=200)
+            def body(*args, **kwargs):
+                clock[0] = 4
+                yield b'{"ok":true}'
+            response.iter_bytes.side_effect = body
+            yield response
+        client = MagicMock()
+        client.stream.side_effect = stream
+        with patch('src.apps.data_factory.services.elasticsearch_http.ProtocolPoolRegistry.borrow',
+                   return_value=nullcontext(client)), \
+                patch('src.apps.data_factory.services.elasticsearch_http.monotonic', side_effect=lambda: clock[0]), \
+                patch('src.apps.data_factory.services.datasource_timing.monotonic', side_effect=lambda: clock[0]), \
+                Timing.scope():
+            with open_elasticsearch_request(Request('https://es.example.com/item'),
+                                            target=MagicMock(), timeout=5) as response:
+                self.assertEqual(response.read(), b'{"ok":true}')
+            self.assertEqual(Timing.snapshot(), {'connect': 2000, 'execute': 1000, 'fetch': 1000})

@@ -67,11 +67,15 @@ class DatasourceWaitService:
     @staticmethod
     @contextmanager
     def owner(pulse):
+        from src.apps.data_factory.services.datasource_timing import DatasourceTimingService
         token = _wait_pulse.set(pulse)
         elapsed = _wait_elapsed.set(0.0)
+        renewed = _wait_renewed.set(0.0)
         try:
-            yield
+            with DatasourceTimingService.scope():
+                yield
         finally:
+            _wait_renewed.reset(renewed)
             _wait_elapsed.reset(elapsed)
             _wait_pulse.reset(token)
 
@@ -80,10 +84,26 @@ class DatasourceWaitService:
         return _wait_elapsed.get()
 
     @staticmethod
+    @contextmanager
+    def control_io():
+        from src.apps.data_factory.services.datasource_timing import DatasourceTimingService as Timing
+        from src.apps.data_factory.enums.performance import DatasourceTimingPhaseEnum as Phase
+        started, waited = monotonic(), _wait_elapsed.get()
+        try:
+            with Timing.measure(Phase.CONTROL_IO):
+                yield
+        finally:
+            # 控制库行锁/网络耗时也不是被测 SQL 耗时；嵌套退避已累计的部分不重复计算。
+            nested = max(0, _wait_elapsed.get() - waited)
+            _wait_elapsed.set(_wait_elapsed.get() + max(0, monotonic() - started - nested))
+
+    @staticmethod
     def pause(seconds=0.1, *, renew_operation=True):
         from src.apps.task_center.services.execution.cooperative_executor import wait_until
         from src.apps.data_factory.services.cleanup_persistence import CleanupPersistenceService
+        from src.apps.data_factory.services.datasource_timing import DatasourceTimingService as Timing
         started = monotonic()
+        wait_before, timing_before = _wait_elapsed.get(), Timing.snapshot()
         CleanupPersistenceService.check()
         if renew_operation and started - _wait_renewed.get() >= 5:
             from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService
@@ -93,6 +113,14 @@ class DatasourceWaitService:
         if pulse is not None:
             pulse()
         due = monotonic() + seconds
+        resumed = [0.0]
         # ready 在调度 greenlet 中也会调用，不能在其中访问 Case 的 ContextVar。
-        wait_until(lambda: monotonic() >= due, seconds + 1, interval=seconds)
-        _wait_elapsed.set(_wait_elapsed.get() + monotonic() - started)
+        try:
+            wait_until(lambda: monotonic() >= due, seconds + 1, interval=seconds,
+                       on_resume=lambda: resumed.__setitem__(0, max(0, monotonic() - due)))
+        finally:
+            elapsed = monotonic() - started
+            nested_wait = max(0, _wait_elapsed.get() - wait_before)
+            _wait_elapsed.set(_wait_elapsed.get() + max(0, elapsed - nested_wait))
+            own_time = max(0, elapsed - sum(Timing.delta(timing_before).values()) / 1000)
+            Timing.waited(own_time, min(own_time, resumed[0]))

@@ -186,6 +186,7 @@ def register_case_crud_tools(mcp):
             preview_token: str | None = None,
             confirm_text: str | None = None,
             callback_checks: list[dict] | None = None,
+            resource_cleanup: list[dict] | None = None,
     ) -> dict:
         """更新 API case 主体配置。module_id 可修改所属模块，case_people_id 可修改负责人；复杂字段格式见 get_api_case_schema.api_case_fields。
 
@@ -194,6 +195,9 @@ def register_case_crud_tools(mcp):
         SQL 的 key 支持单个缓存变量，也支持 id,name 这种英文逗号分隔多 key；查询结果取第一行，按列名优先、列顺序兜底写入多个缓存变量。
         先调用 list_data_factory_datasource_aliases 查询数据库。
         如果 Case 已有已发布版本，必须先调用 preview_modify_published_api_case_impact 并传回 preview_token/confirm_text。
+        resource_cleanup 配置本Case API创建资源的SQL与ES失败安全清理；规则见 get_api_case_resource_cleanup_schema。
+        仅test/dev、单场景POST创建、关闭失败重试；创建名称必须包含本轮变量 ${{api_resource_<规则key>}}。
+        支持SQL业务ID、ES文档ID（如group_id）与自增主键分别映射，不能伪装为数据工厂资源。
         """
         confirm_error = _require_published_api_case_modify_confirmation(case_id, preview_token, confirm_text)
         if confirm_error:
@@ -221,6 +225,7 @@ def register_case_crud_tools(mcp):
             "front_auth_config": front_auth_config,
             "posterior_sql": posterior_sql,
             "callback_checks": callback_checks,
+            "resource_cleanup": resource_cleanup,
         }.items():
             if value is not None:
                 payload[key] = value

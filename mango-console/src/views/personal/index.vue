@@ -1,16 +1,18 @@
 <template>
-  <TableBody ref="tableBody">
+  <TableBody>
     <main class="mango-personal-page">
-      <section class="mango-section-card mango-personal-profile">
+      <section class="mango-section-card mango-personal-profile" :aria-busy="loading">
+
+        <a-spin :loading="loading" class="mango-personal-profile__loading">
         <header class="mango-personal-profile__header">
           <div class="mango-personal-profile__identity">
             <a-avatar :size="72" class="mango-personal-profile__avatar">
               <icon-user />
             </a-avatar>
             <div class="mango-personal-profile__name">
-              <h2>{{ personalCenterData.data.name || userStore.nickName || '-' }}</h2>
-              <p>{{ personalCenterData.data.username || '-' }}</p>
-              <a-tag size="small">{{ personalCenterData.data.role?.name || '未分配角色' }}</a-tag>
+              <h2 :title="profile?.name">{{ profile?.name || '-' }}</h2>
+              <p :title="profile?.username">{{ profile?.username || '-' }}</p>
+              <a-tag size="small">{{ profile?.roleName || '未分配角色' }}</a-tag>
             </div>
           </div>
         </header>
@@ -18,11 +20,11 @@
         <dl class="mango-personal-profile__details">
           <div class="mango-personal-profile__detail">
             <dt>最近登录时间</dt>
-            <dd>{{ personalCenterData.data.last_login_time || '-' }}</dd>
+            <dd :title="profile?.lastLoginTime || ''">{{ profile?.lastLoginTime || '-' }}</dd>
           </div>
           <div class="mango-personal-profile__detail">
             <dt>登录 IP</dt>
-            <dd>{{ personalCenterData.data.ip || '-' }}</dd>
+            <dd :title="profile?.ip || ''">{{ profile?.ip || '-' }}</dd>
           </div>
         </dl>
 
@@ -30,180 +32,96 @@
           <a-button
             long
             size="small"
-            @click="onUpdate"
+            :disabled="!profile || loading || loggingOut"
+            :loading="loggingOut"
+            @click="openPassword"
             data-testid="qa-views-personal-button-修改密码"
           >
             修改密码
           </a-button>
         </div>
+        </a-spin>
       </section>
 
       <UserCachePanel />
     </main>
   </TableBody>
-  <ModalDialog ref="modalDialogRef" :title="personalCenterData.actionTitle" @confirm="onDataForm">
-    <template #content>
-      <a-form :model="formModel">
-        <a-form-item
-          v-for="item of visibleFormItems"
-          :key="item.key"
-          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
-          :label="item.label"
-        >
-          <template v-if="item.key === 'email'">
-            <a-input v-model="item.value" :placeholder="item.placeholder" allow-clear>
-              <template #prefix><icon-email /></template>
-            </a-input>
-          </template>
-          <template v-else-if="item.type === 'input'">
-            <a-input-password v-model="item.value" :placeholder="item.placeholder" allow-clear />
-          </template>
-          <template v-if="item.key === 'email' || item.key === 'new_password'" #extra>
-            <span v-if="item.key === 'email'"> 修改成功后，原账号将停用，请使用该邮箱登录。 </span>
-            <span v-else>至少8位，并包含大写字母、小写字母、数字和特殊字符。</span>
-          </template>
-        </a-form-item>
-      </a-form>
-    </template>
-  </ModalDialog>
+  <PasswordChangeDialog ref="passwordDialog" :user-id="profile?.id || 0" :requires-email-migration="profile?.requiresEmailMigration || false"
+    :context-version="contextVersion" :is-context-current="isContextCurrent" @changed="handlePasswordChanged" />
 </template>
 
 <script lang="ts" setup>
-  import useUserStore from '@/store/modules/user'
-  import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
 
-  import { FormItem, ModalDialogType } from '@/types/components'
+  import useUserStore from '@/store/modules/user'
+  import { onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
+  import { useRoute } from 'vue-router'
   import { Message } from '@arco-design/web-vue'
-  import { getFormItems } from '@/utils/datacleaning'
-  import { getUserInfo, postUserPassword } from '@/api/user/user'
+  import { getUserInfo } from '@/api/user/user'
   import UserCachePanel from './components/UserCachePanel.vue'
+  import PasswordChangeDialog from './components/PasswordChangeDialog.vue'
+  import { readPersonalProfile } from './records'
+  import type { PasswordDialogHandle, PersonalProfile } from './types'
 
   const userStore = useUserStore()
-  const formModel = ref({})
-  const modalDialogRef = ref<ModalDialogType | null>(null)
-  const personalCenterData = reactive({
-    actionTitle: '修改密码',
-    data: {} as any,
-  })
-  const formItems: FormItem[] = reactive([
-    {
-      label: '原始密码',
-      key: 'password',
-      value: '',
-      placeholder: '请输入原始密码',
-      required: true,
-      type: 'input',
-      validator: function () {
-        if (!this.value) {
-          Message.error(this.placeholder || '')
-          return false
-        }
-        return true
-      },
-    },
-    {
-      label: '登录邮箱',
-      key: 'email',
-      value: '',
-      placeholder: '请输入新的登录邮箱',
-      required: true,
-      type: 'input',
-      validator: function () {
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(this.value || ''))) {
-          Message.error('请输入正确的邮箱地址')
-          return false
-        }
-        return true
-      },
-    },
-    {
-      label: '新密码',
-      key: 'new_password',
-      value: null,
-      type: 'input',
-      required: true,
-      placeholder: '请输入新密码',
-      validator: function () {
-        if (!this.value && this.value !== 0) {
-          Message.error(this.placeholder || '')
-          return false
-        }
-        return true
-      },
-    },
-    {
-      label: '确认密码',
-      key: 'confirm_password',
-      value: '',
-      type: 'input',
-      required: true,
-      placeholder: '请输入确认密码',
-      validator: function () {
-        if (!this.value) {
-          Message.error(this.placeholder || '')
-          return false
-        }
-        return true
-      },
-    },
-  ])
-  const visibleFormItems = computed(() =>
-    formItems.filter(
-      (item) => item.key !== 'email' || personalCenterData.data.requires_email_login_migration
-    )
-  )
-
-  function onUpdate() {
-    modalDialogRef.value?.toggle()
-    nextTick(() => {
-      formItems.forEach((it) => {
-        it.value = ''
-      })
-    })
+  const route = useRoute()
+  const profile = ref<PersonalProfile | null>(null), passwordDialog = ref<PasswordDialogHandle | null>(null)
+  const loading = ref(false), failed = ref(false), loggingOut = ref(false), contextVersion = ref(0)
+  let mounted = false, active = true, disposed = false, needsRead = true, readVersion = 0
+  let pending: { version: number; promise: Promise<void> } | null = null
+  const available = () => !disposed && active && route.path === '/personal/info' && (typeof document === 'undefined' || !document.hidden)
+  const isContextCurrent = (version: number) => available() && version === contextVersion.value
+  function suspend(clear: boolean): void {
+    contextVersion.value++; readVersion++; pending = null; needsRead = true; loading.value = false
+    passwordDialog.value?.close()
+    if (clear) { profile.value = null; failed.value = false }
   }
-
-  function doRefresh() {
-    getUserInfo({
-      id: userStore.userId,
+  function loadProfile(): Promise<void> {
+    if (!mounted || !available() || userStore.userId < 1) return Promise.resolve()
+    if (pending) return pending.promise
+    const version = contextVersion.value, request = ++readVersion, id = userStore.userId
+    const current = () => isContextCurrent(version) && request === readVersion
+    loading.value = true; failed.value = false
+    const promise = Promise.resolve().then(async () => {
+      try {
+        if (!current()) return
+        const response = await getUserInfo({ id })
+        if (!current()) return
+        profile.value = readPersonalProfile(response, id)
+        needsRead = false
+      } catch (loadFailure0) { if (current()) (reportLoadError(loadFailure0, "加载失败，请重试", false), failed.value = true) }
+      finally { if (current()) { loading.value = false; pending = null } }
     })
-      .then((res) => {
-        if (res.data) {
-          personalCenterData.data = res.data[0]
-        }
-      })
-      .catch(console.log)
+    pending = { version, promise }
+    return promise
   }
-
-  function onDataForm() {
-    if (visibleFormItems.value.every((it) => (it.validator ? it.validator() : true))) {
-      let value = getFormItems(visibleFormItems.value)
-      value['id'] = userStore.userId
-      postUserPassword(value)
-        .then((res) => {
-          modalDialogRef.value?.toggle()
-          Message.success(res.msg)
-          userStore.logout().then(() => {
-            window.localStorage.removeItem('visited-routes')
-            window.location.reload()
-            localStorage.clear()
-          })
-        })
-        .catch((error) => {
-          console.log(error)
-        })
-        .finally(() => {
-          modalDialogRef.value?.setConfirmLoading(false)
-        })
-    } else {
-      modalDialogRef.value?.setConfirmLoading(false)
-    }
+  function resume(): void { if (mounted && needsRead) void loadProfile() }
+  function openPassword(): void { if (available() && profile.value && !loading.value && !loggingOut.value) passwordDialog.value?.open() }
+  async function handlePasswordChanged(version: number): Promise<void> {
+    if (!isContextCurrent(version) || loggingOut.value) return
+    loggingOut.value = true
+    const userId = userStore.userId, token = userStore.token
+    Message.success('密码已修改，请重新登录')
+    try {
+      await userStore.logout()
+      if (!userStore.token && userStore.userId === 0) {
+        window.localStorage.removeItem('visited-routes')
+        window.location.reload()
+      }
+    } catch {
+      if (!disposed && userStore.userId === userId && userStore.token === token) Message.error('退出登录失败，请重新登录')
+    } finally { loggingOut.value = false }
   }
-
-  onMounted(() => {
-    nextTick(async () => {
-      doRefresh()
-    })
-  })
+  watch(() => [userStore.userId, userStore.roleId, userStore.token, userStore.selected_environment], () => {
+    suspend(true)
+    void Promise.resolve().then(resume)
+  }, { flush: 'sync' })
+  watch(() => route.path, () => { suspend(false); void Promise.resolve().then(resume) }, { flush: 'sync' })
+  function onVisibilityChange(): void { if (document.hidden) suspend(false); else resume() }
+  onMounted(() => { mounted = true; if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisibilityChange); resume() })
+  onActivated(() => { active = true; resume() })
+  onDeactivated(() => { active = false; suspend(false) })
+  onBeforeUnmount(() => { disposed = true; suspend(true); if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisibilityChange) })
 </script>
 <style lang="less" scoped>
   .mango-personal-page {
@@ -216,6 +134,11 @@
 
   .mango-personal-profile {
     padding: 20px;
+  }
+
+  .mango-personal-profile__loading {
+    display: block;
+    width: 100%;
   }
 
   .mango-personal-profile__header,

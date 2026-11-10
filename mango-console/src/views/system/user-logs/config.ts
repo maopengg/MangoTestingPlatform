@@ -1,9 +1,8 @@
 import { FormItem } from '@/types/components'
 import { enableMultiSelectSearch } from '@/utils/search-condition'
 import { reactive, ref } from 'vue'
-import { useTable, useTableColumn } from '@/hooks/table'
+import { useTableIndexColumn, useTableColumn } from '@/hooks/table'
 
-const table = useTable()
 export const tableScrollX = 1800
 export const requestMethodOptions = [
   { key: 'GET', title: 'GET' },
@@ -16,13 +15,15 @@ export const requestMethodOptions = [
 ]
 
 export const tableColumns = useTableColumn([
-  table.indexColumn,
+  { ...useTableIndexColumn(), align: 'center' },
   {
     title: '昵称',
     key: 'user',
     dataIndex: 'user',
     align: 'left',
     width: 110,
+    ellipsis: true,
+    tooltip: true,
   },
 
   {
@@ -31,6 +32,8 @@ export const tableColumns = useTableColumn([
     dataIndex: 'ip',
     align: 'left',
     width: 150,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '来源',
@@ -50,6 +53,8 @@ export const tableColumns = useTableColumn([
     dataIndex: 'url',
     align: 'left',
     width: 300,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: 'method',
@@ -83,7 +88,8 @@ export const tableColumns = useTableColumn([
   },
 ])
 
-export const conditionItems: Array<FormItem> = reactive([
+export function createConditionItems(): FormItem[] {
+  const items: FormItem[] = reactive([
   {
     key: 'user',
     label: '筛选用户',
@@ -93,7 +99,7 @@ export const conditionItems: Array<FormItem> = reactive([
     searchOperator: 'in',
     placeholder: '请选择用户',
     optionItems: [],
-    reset: function () {},
+    reset: function () { this.value = [] },
   },
   {
     key: 'source_type',
@@ -102,7 +108,7 @@ export const conditionItems: Array<FormItem> = reactive([
     placeholder: '请选择来源',
     value: ref(''),
     optionItems: [],
-    reset: function () {},
+    reset: function () { this.value = [] },
   },
   {
     key: 'method',
@@ -111,7 +117,7 @@ export const conditionItems: Array<FormItem> = reactive([
     placeholder: '请选择请求方法',
     value: ref(''),
     optionItems: [],
-    reset: function () {},
+    reset: function () { this.value = [] },
   },
   {
     key: 'url',
@@ -120,7 +126,7 @@ export const conditionItems: Array<FormItem> = reactive([
     placeholder: '请输入url',
     value: ref(''),
     optionItems: [],
-    reset: function () {},
+    reset: function () { this.value = '' },
   },
   {
     key: 'request_data',
@@ -129,7 +135,7 @@ export const conditionItems: Array<FormItem> = reactive([
     placeholder: '请输入请求数据',
     value: ref(''),
     optionItems: [],
-    reset: function () {},
+    reset: function () { this.value = '' },
   },
   {
     key: 'response_data',
@@ -138,7 +144,8 @@ export const conditionItems: Array<FormItem> = reactive([
     placeholder: '请输入响应数据',
     value: ref(''),
     optionItems: [],
-    reset: function () {},
+    reset: function () { this.value = '' },
   },
-])
-enableMultiSelectSearch(conditionItems)
+  ])
+  return enableMultiSelectSearch(items)
+}

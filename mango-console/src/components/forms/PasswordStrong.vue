@@ -68,8 +68,10 @@
         tipValue.value = '强'
       } else {
         stronger.forEach((it) => (it.status = 'normal'))
+        tipValue.value = props.inputValue ? '弱' : '未输入'
       }
-    }
+    },
+    { immediate: true }
   )
 </script>
 <style lang="less" scoped>

@@ -4,11 +4,13 @@ import json
 import os
 import threading
 import time
+import uuid
 from contextlib import contextmanager
 from urllib.error import HTTPError
 
 from src.apps.data_factory.enums.performance import DatasourcePermitKindEnum
 from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService
+from src.apps.data_factory.services.datasource_timing import DatasourceTimingService
 
 
 class ProtocolPoolRegistry:
@@ -26,9 +28,15 @@ class ProtocolPoolRegistry:
                      getattr(target, 'redis_db', None), target.extra_config, protocol, policy.pool_size]
         key = hashlib.sha256(json.dumps(signature, sort_keys=True).encode()).hexdigest()
         from src.apps.data_factory.services.datasource_wait import DatasourceWaitService
+        from src.apps.data_factory.services.datasource_timing import DatasourceTimingService as Timing
+        from src.apps.data_factory.enums.performance import DatasourceTimingPhaseEnum as Phase
+        started = time.monotonic()
+        next_log = started + 30
+        wait_id = uuid.uuid4().hex
+        group = DatasourceGovernorService.target_policy(target, policy)[2]
         while True:
             building = False
-            with cls._lock:
+            with DatasourceTimingService.locked(cls._lock):
                 if cls._pid != os.getpid():
                     cls._entries, cls._pid, cls._thread, cls._building = {}, os.getpid(), None, set()
                 cls.prune(policy.pool_idle_seconds)
@@ -60,31 +68,36 @@ class ProtocolPoolRegistry:
                         for permit in permits:
                             DatasourceGovernorService.finish_operation(permit, failure=error)
                     finally:
-                        with cls._lock:
+                        with DatasourceTimingService.locked(cls._lock):
                             cls._building.discard(key)
                     raise
-                with cls._lock:
+                with DatasourceTimingService.locked(cls._lock):
                     entry = {'client': client, 'permits': permits, 'active': 1, 'capacity': size, 'group': group,
                              'used': time.monotonic(), 'broken': False}
                     cls._entries[key] = entry
                     cls._building.discard(key)
                 break
-            DatasourceWaitService.pause()
-        with cls._lock:
+            next_log = Timing.diagnose(started, next_log, phase=Phase.LOCAL_POOL,
+                                      database_id=target.id, wait_id=wait_id, group=group)
+            with Timing.waiting(Phase.LOCAL_POOL):
+                DatasourceWaitService.pause()
+        with DatasourceTimingService.locked(cls._lock):
             if cls._thread is None:
                 cls._thread = threading.Thread(target=cls.reap, name='datasource-protocol-reaper', daemon=True)
                 cls._thread.start()
         broken = False
         failure = None
         try:
-            yield entry['client']
+            # 先借到协议池，再申请操作名额；不能占着操作名额等待另一个调用归还池。
+            with DatasourceGovernorService.operation(target, physical=True):
+                yield entry['client']
         except BaseException as error:
             failure = error
             # 完整读取后的 404 是正常的文档不存在响应，不应反复销毁连接池。
             broken = not isinstance(error, HTTPError)
             raise
         finally:
-            with cls._lock:
+            with DatasourceTimingService.locked(cls._lock):
                 entry['active'] -= 1
                 entry['used'] = time.monotonic()
                 entry['broken'] = entry['broken'] or broken
@@ -113,7 +126,7 @@ class ProtocolPoolRegistry:
 
     @classmethod
     def relieve_pressure(cls, group):
-        with cls._lock:
+        with DatasourceTimingService.locked(cls._lock):
             for entry in cls._entries.values():
                 if entry.get('group') == group and not entry['active']:
                     entry['used'] = 0
@@ -121,7 +134,7 @@ class ProtocolPoolRegistry:
 
     @classmethod
     def close_all(cls):
-        with cls._lock:
+        with DatasourceTimingService.locked(cls._lock):
             cls.prune(0)
 
     @classmethod
@@ -132,7 +145,7 @@ class ProtocolPoolRegistry:
             time.sleep(5)
             def maintain():
                 nonlocal renewed
-                with cls._lock:
+                with DatasourceTimingService.locked(cls._lock):
                     DatasourceGovernorService.flush_pending_releases()
                     DatasourceGovernorService.flush_closed_connections()
                     cls.prune(DatasourceGovernorService.policy().pool_idle_seconds)
@@ -147,7 +160,7 @@ class ProtocolPoolRegistry:
 
     @classmethod
     def renew_live_connections(cls):
-        with cls._lock:
+        with DatasourceTimingService.locked(cls._lock):
             stale = DatasourceGovernorService.renew_connections(
                 [permit for entry in cls._entries.values() for permit in entry['permits']])
             if stale:

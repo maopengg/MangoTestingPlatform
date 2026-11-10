@@ -1,10 +1,10 @@
 <template>
-  <div class="theme-lab">
+  <div class="theme-lab mango-theme-lab">
     <section class="lab-head">
       <div>
         <p class="eyebrow">MANGO CONSOLE DESIGN SYSTEM</p>
         <h1>企业级 SaaS 组件主题验收</h1>
-        <p class="sub-title">抽取系统高频组件，预览统一后的后台产品风格。</p>
+        <p class="sub-title">本地样式示例，业务按钮不提交数据；断言 AI 分析沿用公共组件。</p>
       </div>
       <div class="head-card">
         <span>视觉关键词</span>
@@ -42,32 +42,32 @@
         <div class="type-card page-title-sample">
           <span>页面标题 / Report Page</span>
           <strong>测试报告详情</strong>
-          <p>19px / 700 / --m-text，用于详情页头部、报告页头部、一级业务页面标题。</p>
+          <p>22px / 700 / --m-text，用于详情页头部、报告页头部、一级业务页面标题。</p>
         </div>
         <div class="type-card detail-title-sample">
           <span>详情标题 / Detail Title</span>
           <strong>订单创建主流程校验</strong>
-          <p>16px / 650 / --m-text，用于抽屉、详情卡片、被查看对象名称。</p>
+          <p>18px / 650 / --m-text，用于抽屉、详情卡片、被查看对象名称。</p>
         </div>
         <div class="type-card section-title-sample">
           <span>区块标题 / Section Title</span>
           <strong>测试套用例列表</strong>
-          <p>14px / 600 / --m-text，用于表格区、配置分组、帮助页分类。</p>
+          <p>16px / 600 / --m-text，用于表格区、配置分组、帮助页分类。</p>
         </div>
         <div class="type-card table-title-sample">
           <span>卡片标题 / Card Title</span>
           <strong>API自动化配置</strong>
-          <p>12px / 600 / --m-text-2，用于卡片、小面板、表格工具栏标题。</p>
+          <p>14px / 600 / --m-text-2，用于卡片、小面板、表格工具栏标题。</p>
         </div>
         <div class="type-card body-title-sample">
           <span>正文强调 / Body Strong</span>
           <strong>执行环境：测试环境</strong>
-          <p>11px / 500 / --m-text-2，用于描述列表、列表项主文案。</p>
+          <p>13px / 500 / --m-text-2，用于描述列表、列表项主文案。</p>
         </div>
         <div class="type-card meta-title-sample">
           <span>辅助信息 / Meta Text</span>
           <strong>2026-05-22 10:32:08</strong>
-          <p>10px / 400-600 / --m-muted，用于时间、统计说明、面包屑非当前项。</p>
+          <p>12px / 400-600 / --m-muted，用于时间、统计说明、面包屑非当前项。</p>
         </div>
       </div>
     </section>
@@ -91,6 +91,7 @@
             type="primary"
             status="warning"
             data-testid="qa-views-help-test-button-后退"
+            :loading="navigationLoading"
             @click="goBack"
           >
             后退
@@ -223,7 +224,7 @@
           <p>覆盖输入、级联、选择、日期、时间、数字、标签、开关等高频控件。</p>
         </div>
         <div class="title-actions">
-          <a-button size="small" data-testid="qa-views-help-test-button-重置">重置</a-button>
+          <a-button size="small" @click="resetFilters" data-testid="qa-views-help-test-button-重置">重置</a-button>
           <a-button size="small" type="primary" data-testid="qa-views-help-test-button-搜索">搜索</a-button>
         </div>
       </div>
@@ -282,9 +283,9 @@
           <p>
             <span>测试用例</span>
             <i></i>
-            <span>已选择 2 项</span>
+            <span>已选择 {{ selectedRowKeys.length }} 项</span>
             <i></i>
-            <span>共 128 条</span>
+            <span>当前示例 {{ displayedRows.length }} 条</span>
           </p>
         </div>
         <div class="title-actions">
@@ -300,11 +301,12 @@
       <a-table
         :bordered="false"
         :columns="columns"
-        :data="rows"
+        :data="displayedRows"
         :loading="false"
         :pagination="false"
-        :row-selection="{ selectedRowKeys }"
-        :scroll="{ x: 1210 }"
+        v-model:selected-keys="selectedRowKeys"
+        :row-selection="{ type: 'checkbox', showCheckedAll: true }"
+        :scroll="{ x: tableScrollX }"
         row-key="id"
         class="theme-table"
       >
@@ -315,25 +317,17 @@
           <a-tag :color="record.statusColor" size="small">{{ record.status }}</a-tag>
         </template>
         <template #enabled="{ record }">
-          <a-switch :model-value="record.enabled" size="small" />
+          <a-switch v-model="record.enabled"  />
         </template>
         <template #actions>
-          <a-space :size="4">
-            <a-button type="text" size="mini" data-testid="qa-views-help-test-button-编辑">编辑</a-button>
-            <a-button type="text" size="mini" data-testid="qa-views-help-test-button-执行-2">执行</a-button>
-            <a-dropdown trigger="hover">
-              <a-button type="text" size="mini" data-testid="qa-views-help-test-button-更多-2">更多</a-button>
-              <template #content>
-                <a-doption>详情</a-doption>
-                <a-doption>复制</a-doption>
-                <a-doption>查看日志</a-doption>
-              </template>
-            </a-dropdown>
-          </a-space>
+          <MangoTableActions :actions="[
+            { label: '编辑' }, { label: '执行' }, { label: '详情' },
+            { label: '复制' }, { label: '查看日志' },
+          ]" />
         </template>
       </a-table>
       <div class="mango-table-footer-preview">
-        <a-pagination :total="128" :page-size="10" size="small" show-total show-jumper />
+        <a-pagination :total="displayedRows.length" :page-size="10" size="small" show-total show-jumper />
       </div>
     </section>
 
@@ -344,7 +338,7 @@
             <h2>详情信息</h2>
             <p>详情页、抽屉、报告头部可以使用描述列表和状态摘要。</p>
           </div>
-          <a-button size="small" type="primary" @click="drawerVisible = true" data-testid="qa-views-help-test-button-打开抽屉">打开抽屉</a-button>
+          <a-button size="small" type="primary" @click="openDrawer" data-testid="qa-views-help-test-button-打开抽屉">打开抽屉</a-button>
         </div>
         <a-descriptions :column="2" size="small" bordered>
           <a-descriptions-item label="任务名称">每日冒烟测试</a-descriptions-item>
@@ -470,8 +464,8 @@
           <div class="bar-chart">
             <div v-for="item in trendItems" :key="item.week" class="bar-column">
               <div class="bar-stack">
-                <i class="success" :style="{ height: `${item.success}px` }"></i>
-                <i class="danger" :style="{ height: `${item.fail}px` }"></i>
+                <i class="success" :style="{ height: `${scaleDensityPixels(item.success)}px` }"></i>
+                <i class="danger" :style="{ height: `${scaleDensityPixels(item.fail)}px` }"></i>
               </div>
               <span>{{ item.week }}</span>
             </div>
@@ -641,8 +635,8 @@
       </div>
     </section>
 
-    <a-drawer v-model:visible="drawerVisible" :width="560" title="主题抽屉样式">
-      <a-form :model="drawerForm" layout="vertical">
+    <a-drawer v-model:visible="drawerVisible" :width="560" title="主题抽屉样式" @cancel="cancelDrawer">
+      <a-form :model="drawerForm" layout="horizontal">
         <a-form-item label="任务名称">
           <a-input v-model="drawerForm.name" />
         </a-form-item>
@@ -657,12 +651,12 @@
         </a-form-item>
       </a-form>
       <template #footer>
-        <a-button @click="drawerVisible = false" data-testid="qa-views-help-test-button-取消">取消</a-button>
-        <a-button type="primary" @click="drawerVisible = false" data-testid="qa-views-help-test-button-保存">保存</a-button>
+        <a-button @click="cancelDrawer" data-testid="qa-views-help-test-button-取消">取消</a-button>
+        <a-button type="primary" @click="saveDrawer" data-testid="qa-views-help-test-button-保存">保存</a-button>
       </template>
     </a-drawer>
 
-    <a-modal v-model:visible="modalVisible" title="主题弹窗样式" width="378px">
+    <a-modal v-model:visible="modalVisible" title="主题弹窗样式" :width="540">
       <p class="mango-muted-text"
         >弹窗用于确认、短表单和不可打断的重点提示。按钮、边框、标题和正文都沿用同一套 token。</p
       >
@@ -671,7 +665,12 @@
 </template>
 
 <script lang="ts" setup>
-  import { reactive, ref } from 'vue'
+  import { computed, onActivated, onDeactivated, reactive, ref } from 'vue'
+  import { Message } from '@arco-design/web-vue'
+  import type { TablePropsType } from '@/types/components'
+  import MangoTableActions from '@/components/table/MangoTableActions.vue'
+  import { scaleDensityPixels } from '@/hooks/useDisplayDensity'
+  import { colorTokens, customColumns, assertionResultItems, keyValueItems, progressItems, statusOptions, productOptions, treeData, columns, sampleRows, messages, statisticItems, trendItems, rankItems, chartStatusItems, auditGroups, notificationItems, jsonExample, pythonExample, miniJsonExample, tableScrollX } from './test/config'
   import { useRouter } from 'vue-router'
   import AddButton from '@/components/actions/AddButton.vue'
   import DeleteButton from '@/components/actions/DeleteButton.vue'
@@ -684,21 +683,32 @@
   const router = useRouter()
   const drawerVisible = ref(false)
   const modalVisible = ref(false)
-  const tableFilter = ref('all')
+  const tableFilter = ref<'all' | 'fail' | 'success'>('all')
+  const rows = ref(sampleRows.map(row => ({ ...row })))
+  const displayedRows = computed(() => rows.value.filter(row => tableFilter.value === 'all' || row.status === (tableFilter.value === 'fail' ? '失败' : '成功')))
   const selectedRowKeys = ref(['10421', '10423'])
   const tableConfigState = ref('等待操作')
   const passwordSample = ref('Mango2026')
-  const visibleCustomColumns = ref<any[]>([])
+  const visibleCustomColumns = ref<TablePropsType[]>([])
 
-  const goBack = () => {
-    if (window.history.state?.back) {
-      router.back()
-      return
+  const navigationLoading = ref(false)
+  let active = true
+  let navigationGeneration = 0
+  async function goBack() {
+    if (!active || navigationLoading.value) return
+    const generation = navigationGeneration
+    navigationLoading.value = true
+    try {
+      if (window.history.state?.back) router.back()
+      else await router.push('/index/home')
+    } catch {
+      if (active && generation === navigationGeneration) Message.error('返回失败，请重试')
+    } finally {
+      navigationLoading.value = false
     }
-    router.push('/index/home')
   }
 
-  const formModel = reactive({
+  const createFilterForm = () => ({
     keyword: '',
     product: '',
     status: '',
@@ -709,297 +719,38 @@
     owner: '',
     notice: true,
   })
+  const formModel = reactive(createFilterForm())
+  function resetFilters() { Object.assign(formModel, createFilterForm()) }
 
-  const drawerForm = reactive({
+  interface DrawerForm { name: string; mode: 'serial' | 'parallel'; failNotice: boolean }
+  const drawerSaved = ref<DrawerForm>({
     name: '每日冒烟测试',
     mode: 'parallel',
     failNotice: true,
   })
-
-  const colorTokens = [
-    { name: 'Primary', value: 'var(--m-primary)' },
-    { name: 'Primary Soft', value: 'var(--m-primary-soft)' },
-    { name: 'Background', value: 'var(--m-bg)' },
-    { name: 'Surface', value: 'var(--m-surface)' },
-    { name: 'Border', value: 'var(--m-border)' },
-    { name: 'Text', value: 'var(--m-text)' },
-    { name: 'Success', value: 'var(--m-success)' },
-    { name: 'Danger', value: 'var(--m-danger)' },
-    { name: 'Warning', value: 'var(--m-warning)' },
-    { name: 'Muted', value: 'var(--m-muted)' },
-  ]
-
-  const customColumns = [
-    { title: '用例名称', key: 'name' },
-    { title: '接口名称', key: 'apiName' },
-    { title: '执行环境', key: 'env' },
-    { title: '测试结果', key: 'status' },
-    { title: '更新时间', key: 'updatedAt', width: 180 },
-  ]
+  const drawerForm = reactive<DrawerForm>({ ...drawerSaved.value })
+  function openDrawer() { Object.assign(drawerForm, drawerSaved.value); drawerVisible.value = true }
+  function cancelDrawer() { drawerVisible.value = false; Object.assign(drawerForm, drawerSaved.value) }
+  function saveDrawer() { drawerSaved.value = { name: drawerForm.name, mode: drawerForm.mode, failNotice: drawerForm.failNotice }; drawerVisible.value = false }
+  onDeactivated(() => { active = false; navigationGeneration++; cancelDrawer(); modalVisible.value = false })
+  onActivated(() => { active = true })
 
   visibleCustomColumns.value = [...customColumns]
 
-  const onCustomColumnsUpdate = (columns: any[]) => {
-    visibleCustomColumns.value = columns
+  const onCustomColumnsUpdate = (columns: TablePropsType[]) => {
+    visibleCustomColumns.value = columns.map(column => ({ ...column }))
     tableConfigState.value = `已显示 ${columns.length} 列`
   }
 
-  const assertionResultItems = [
-    {
-      method: '状态码等于',
-      actual: '500',
-      expect: '200',
-      ass_msg: '状态码断言失败，接口返回服务器异常，请检查订单服务日志',
-      status: 0,
-    },
-    {
-      method: '响应字段包含',
-      actual: 'order_no, status, amount',
-      expect: 'order_no',
-      ass_msg: '响应字段存在',
-      status: 1,
-    },
-  ]
-
-  const keyValueItems = [
-    { key: 'Authorization', value: 'Bearer ********', type: 'Header', color: 'blue' },
-    { key: 'order_no', value: '${orderNo}', type: 'Param', color: 'green' },
-    { key: 'cleanup', value: 'after_case', type: 'Config', color: 'orange' },
-  ]
-
-  const progressItems = [
-    { label: 'UI 自动化', percent: 0.76 },
-    { label: 'API 自动化', percent: 0.92 },
-    { label: 'Pytest', percent: 0.58 },
-  ]
-
-  const statusOptions = [
-    { label: '成功', value: 'success' },
-    { label: '失败', value: 'fail' },
-    { label: '进行中', value: 'running' },
-  ]
-
-  const productOptions = [
-    {
-      label: 'Mango 平台',
-      value: 'mango',
-      children: [
-        { label: '控制台', value: 'console' },
-        { label: '执行器', value: 'actuator' },
-      ],
-    },
-  ]
-
-  const treeData = [
-    {
-      key: 'team',
-      title: '测试团队',
-      children: [
-        { key: 'admin', title: 'Admin' },
-        { key: 'tester', title: 'Tester' },
-      ],
-    },
-  ]
-
-  const columns = [
-    { title: 'ID', dataIndex: 'id', width: 90 },
-    {
-      title: '用例名称',
-      dataIndex: 'name',
-      width: 220,
-      ellipsis: true,
-      tooltip: true,
-      align: 'left',
-    },
-    {
-      title: '模块名称',
-      dataIndex: 'module',
-      width: 150,
-      ellipsis: true,
-      tooltip: true,
-      align: 'left',
-    },
-    { title: '等级', slotName: 'level', width: 100 },
-    { title: '维护人', dataIndex: 'owner', width: 110 },
-    { title: '状态', slotName: 'status', width: 110 },
-    { title: '启用', slotName: 'enabled', width: 90 },
-    { title: '更新时间', dataIndex: 'updatedAt', width: 180 },
-    { title: '说明', dataIndex: 'description', ellipsis: true, tooltip: true, align: 'left' },
-    { title: '操作', slotName: 'actions', fixed: 'right', width: 160 },
-  ]
-
-  const rows = [
-    {
-      id: '10421',
-      name: '订单创建主流程校验',
-      module: '订单中心',
-      level: 'P0',
-      levelColor: 'red',
-      owner: 'Admin',
-      status: '成功',
-      statusColor: 'green',
-      enabled: true,
-      updatedAt: '2026-05-22 10:32:08',
-      description: '覆盖创建订单、库存冻结、支付单生成等关键链路。',
-    },
-    {
-      id: '10422',
-      name: '支付回调签名异常场景',
-      module: '支付中心',
-      level: 'P1',
-      levelColor: 'orange',
-      owner: 'Mango',
-      status: '失败',
-      statusColor: 'red',
-      enabled: true,
-      updatedAt: '2026-05-22 10:34:19',
-      description: '断言失败：response.code 期望为 200，实际为 500。',
-    },
-    {
-      id: '10423',
-      name: '用户权限边界校验',
-      module: '用户权限',
-      level: 'P1',
-      levelColor: 'orange',
-      owner: 'Tester',
-      status: '进行中',
-      statusColor: 'blue',
-      enabled: false,
-      updatedAt: '2026-05-22 10:38:01',
-      description: '验证角色、菜单、接口权限的组合边界。',
-    },
-  ]
-
-  const messages = [
-    { type: 'info', title: '通知中心', content: '用于展示 WebSocket 消息、系统通知和执行提醒。' },
-    { type: 'success', title: '执行完成', content: '成功反馈轻量出现，不打断用户继续排查。' },
-    { type: 'danger', title: '异常提示', content: '失败信息保留红色语义，但避免大面积警告色。' },
-  ]
-
-  const statisticItems = [
-    { label: '今日执行', value: 128, precision: 0, trend: '+12%', color: 'blue' },
-    { label: '成功率', value: 96.8, precision: 1, trend: '稳定', color: 'green' },
-    { label: '失败用例', value: 7, precision: 0, trend: '需关注', color: 'red' },
-    { label: '平均耗时', value: 2.35, precision: 2, trend: '秒', color: 'orange' },
-  ]
-
-  const trendItems = [
-    { week: 'W1', success: 82, fail: 14 },
-    { week: 'W2', success: 104, fail: 18 },
-    { week: 'W3', success: 76, fail: 10 },
-    { week: 'W4', success: 118, fail: 16 },
-    { week: 'W5', success: 94, fail: 20 },
-    { week: 'W6', success: 126, fail: 12 },
-    { week: 'W7', success: 108, fail: 8 },
-    { week: 'W8', success: 132, fail: 15 },
-  ]
-
-  const rankItems = [
-    { name: '订单中心', value: 96, count: 428 },
-    { name: '支付中心', value: 78, count: 352 },
-    { name: '用户权限', value: 62, count: 286 },
-    { name: '数据工厂', value: 48, count: 214 },
-    { name: '监控任务', value: 36, count: 168 },
-  ]
-
-  const chartStatusItems = [
-    { label: '成功', value: 963, percent: 88, type: 'success' },
-    { label: '失败', value: 42, percent: 28, type: 'danger' },
-    { label: '进行中', value: 18, percent: 18, type: 'running' },
-  ]
-
-  const auditGroups = [
-    {
-      title: 'Token 使用',
-      status: '必需',
-      color: 'blue',
-      items: ['页面背景使用 --m-bg', '卡片面板使用 --m-surface', '状态反馈使用语义 token'],
-    },
-    {
-      title: '组件覆盖',
-      status: '已覆盖',
-      color: 'green',
-      items: [
-        'Arco 表格、表单、弹窗、抽屉读取主题',
-        '自定义组件读取 --m-*',
-        '图表监听主题变化刷新',
-      ],
-    },
-    {
-      title: '允许例外',
-      status: '受控',
-      color: 'orange',
-      items: ['代码高亮保留 PyCharm 风格', '业务枚举色可保留', '图表 fallback 仅作兜底'],
-    },
-    {
-      title: '验收页面',
-      status: '建议',
-      color: 'purple',
-      items: ['登录页', '首页', '报告详情', 'API/UI 详情', '系统设置与数据工厂'],
-    },
-  ]
-
-  const notificationItems = [
-    {
-      title: '执行器节点 online-runner-01',
-      description: 'Windows / Chrome 126 / 空闲中',
-      avatar: 'UI',
-      color: 'var(--m-primary)',
-      status: '在线',
-      tagColor: 'green',
-    },
-    {
-      title: '接口回归任务完成',
-      description: '128 条用例，失败 7 条，耗时 18m 24s',
-      avatar: 'API',
-      color: 'var(--m-success)',
-      status: '已通知',
-      tagColor: 'blue',
-    },
-    {
-      title: 'Pytest 环境依赖异常',
-      description: 'requirements.txt 安装失败，等待处理',
-      avatar: 'PY',
-      color: 'var(--m-danger)',
-      status: '异常',
-      tagColor: 'red',
-    },
-  ]
-
-  const jsonExample = `<span class="syntax-brace">{</span>
-  <span class="syntax-key">"theme"</span>: <span class="syntax-string">"enterprise-data-dense"</span>,
-  <span class="syntax-key">"primary"</span>: <span class="syntax-string">"#1E40AF"</span>,
-  <span class="syntax-key">"surface"</span>: <span class="syntax-string">"#FFFFFF"</span>,
-  <span class="syntax-key">"table"</span>: <span class="syntax-brace">{</span>
-    <span class="syntax-key">"bordered"</span>: <span class="syntax-bool">false</span>,
-    <span class="syntax-key">"hover"</span>: <span class="syntax-string">"#EFF6FF"</span>,
-    <span class="syntax-key">"density"</span>: <span class="syntax-string">"compact"</span>
-  <span class="syntax-brace">}</span>
-<span class="syntax-brace">}</span>`
-
-  const pythonExample = `<span class="syntax-keyword">import</span> <span class="syntax-module">pytest</span>
-
-
-<span class="syntax-keyword">def</span> <span class="syntax-function">test_create_order</span><span class="syntax-brace">(</span>api_client, order_payload<span class="syntax-brace">)</span>:
-    response = api_client.<span class="syntax-method">post</span><span class="syntax-brace">(</span><span class="syntax-string">"/api/orders"</span>, json=order_payload<span class="syntax-brace">)</span>
-    body = response.<span class="syntax-method">json</span><span class="syntax-brace">()</span>
-
-    <span class="syntax-keyword">assert</span> response.status_code == <span class="syntax-number">200</span>
-    <span class="syntax-keyword">assert</span> body<span class="syntax-brace">[</span><span class="syntax-string">"code"</span><span class="syntax-brace">]</span> == <span class="syntax-number">0</span>
-    <span class="syntax-keyword">assert</span> body<span class="syntax-brace">[</span><span class="syntax-string">"data"</span><span class="syntax-brace">][</span><span class="syntax-string">"order_no"</span><span class="syntax-brace">]</span>`
-
-  const miniJsonExample = `<span class="syntax-brace">{</span>
-  <span class="syntax-key">"code"</span>: <span class="syntax-number">0</span>,
-  <span class="syntax-key">"message"</span>: <span class="syntax-string">"success"</span>,
-  <span class="syntax-key">"trace_id"</span>: <span class="syntax-string">"mango-20260522"</span>
-<span class="syntax-brace">}</span>`
 </script>
 
 <style scoped lang="less">
   .theme-lab {
+    box-sizing: border-box;
+    min-width: 0;
     height: 100%;
     overflow: auto;
-    padding: 12px;
+    padding: var(--m-page-gap);
     background: linear-gradient(
         180deg,
         var(--m-primary-soft),
@@ -1039,9 +790,9 @@
 
   .lab-head h1 {
     margin-top: 5px;
-    font-size: 23px;
+    font-size: 22px;
     line-height: 30px;
-    font-weight: 750;
+    font-weight: 700;
   }
 
   .sub-title,
@@ -1076,7 +827,7 @@
   }
 
   .mango-section-card {
-    margin-top: 9px;
+    margin-top: var(--m-page-gap);
     padding: 12px;
   }
 
@@ -1100,7 +851,7 @@
 
   .mango-section-title h2,
   .table-toolbar h2 {
-    font-size: 14px;
+    font-size: 16px;
   }
 
   .token-grid {
@@ -1137,10 +888,15 @@
     color: var(--m-muted);
   }
 
+  .component-grid > *,
+  .chart-grid > * {
+    min-width: 0;
+  }
+
   .component-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 9px;
+    gap: var(--m-page-gap);
   }
 
   .type-grid {
@@ -1179,35 +935,35 @@
   }
 
   .page-title-sample strong {
-    font-size: 19px;
+    font-size: 22px;
     font-weight: 700;
   }
 
   .detail-title-sample strong {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 650;
   }
 
   .section-title-sample strong {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 600;
   }
 
   .table-title-sample strong {
     color: var(--m-text-2);
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 600;
   }
 
   .body-title-sample strong {
     color: var(--m-text-2);
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 500;
   }
 
   .meta-title-sample strong {
     color: var(--m-muted);
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
   }
 
@@ -1285,7 +1041,7 @@
     max-width: 324px;
     margin-top: 9px;
 
-    :deep(.tip) {
+    :deep(.mango-password-strength__bar) {
       height: 7px;
       border-radius: 899px;
     }
@@ -1576,10 +1332,7 @@
 
   .chart-grid {
     display: grid;
-    grid-template-columns: minmax(234px, 0.9fr) minmax(378px, 1.35fr) minmax(234px, 1fr) minmax(
-        234px,
-        1fr
-      );
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
     gap: var(--m-page-gap);
   }
 
@@ -1914,7 +1667,7 @@
     border: 1px solid var(--m-code-border);
     border-radius: var(--m-radius-lg);
     background: var(--m-code-bg);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    box-shadow: none;
   }
 
   .editor-title {
@@ -1924,7 +1677,7 @@
     height: 28px;
     padding: 0 10px;
     border-bottom: 1px solid var(--m-code-border);
-    background: color-mix(in srgb, var(--m-code-bg) 88%, #ffffff);
+    background: color-mix(in srgb, var(--m-code-bg) 88%, var(--m-code-text));
     color: var(--m-code-comment);
     font-size: 10px;
   }
@@ -1950,34 +1703,34 @@
     tab-size: 2;
   }
 
-  .syntax-key,
-  .syntax-function {
+  :deep(.syntax-key),
+  :deep(.syntax-function) {
     color: var(--m-code-function);
     font-weight: 650;
   }
 
-  .syntax-string {
+  :deep(.syntax-string) {
     color: var(--m-code-string);
   }
 
-  .syntax-keyword,
-  .syntax-bool {
+  :deep(.syntax-keyword),
+  :deep(.syntax-bool) {
     color: var(--m-code-keyword);
     font-weight: 600;
   }
 
-  .syntax-number {
+  :deep(.syntax-number) {
     color: var(--m-code-number);
     font-weight: 650;
   }
 
-  .syntax-module,
-  .syntax-method {
+  :deep(.syntax-module),
+  :deep(.syntax-method) {
     color: var(--m-code-function);
     font-weight: 600;
   }
 
-  .syntax-brace {
+  :deep(.syntax-brace) {
     color: var(--m-code-bracket);
   }
 
@@ -2017,52 +1770,4 @@
     font-size: 11px;
   }
 
-  @media (max-width: 1px) {
-    .token-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .type-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .component-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .chart-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .audit-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 1px) {
-    .theme-lab {
-      padding: 7px;
-    }
-
-    .lab-head,
-    .token-grid,
-    .type-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .mango-section-title,
-    .table-toolbar {
-      align-items: flex-start;
-      flex-direction: column;
-    }
-
-    .chart-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .audit-grid,
-    .audit-command {
-      grid-template-columns: 1fr;
-    }
-  }
 </style>

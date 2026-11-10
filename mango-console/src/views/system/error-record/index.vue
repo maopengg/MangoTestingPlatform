@@ -1,22 +1,22 @@
 <template>
-  <TableBody ref="tableBody" content-flush>
+  <TableBody content-flush>
     <template #header>
       <TableHeader
         :show-filter="true"
         title="系统异常记录"
-        @search="doRefresh"
+        @search="onSearch"
         @reset-search="onResetSearch"
       >
         <template #search-content>
-          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
+          <a-form :model="{}" layout="inline" @keyup.enter="onSearch">
             <a-form-item v-for="item in conditionItems" :key="item.key" :label="item.label">
               <a-input
                 v-if="item.type === 'input'"
                 v-model="item.value"
                 :placeholder="item.placeholder"
                 allow-clear
-                @blur="doRefresh"
-                @clear="doRefresh"
+                @blur="onSearch"
+                @clear="onSearch"
               />
               <a-select
                 v-else-if="item.type === 'select'"
@@ -26,7 +26,7 @@
                 :multiple="item.multiple"
                 :max-tag-count="item.multiple ? 1 : undefined"
                 allow-clear
-                @change="doRefresh"
+                @change="onSearch"
               />
             </a-form-item>
           </a-form>
@@ -35,11 +35,13 @@
     </template>
 
     <template #default>
+
+
       <a-table
         :bordered="false"
         :columns="tableColumns"
-        :data="table.dataList"
-        :loading="table.tableLoading.value"
+        :data="rows"
+        :loading="listLoading"
         :pagination="false"
         :scroll="{ x: tableScrollX }"
         row-key="__rowKey"
@@ -65,7 +67,7 @@
               {{ record.exception_type || '-' }}
             </template>
             <template v-else-if="item.key === 'count'" #cell="{ record }">
-              {{ record.count || 1 }}
+              {{ record.count }}
             </template>
             <template v-else-if="item.key === 'status_name'" #cell="{ record }">
               <a-tag :color="record.status === 'warning' ? 'orange' : 'red'" size="small">{{ record.status_name || '异常' }}</a-tag>
@@ -77,8 +79,8 @@
     {
         label: '来源页面',
         hidden: !record.link,
-        onClick: () => openSource(record.link), },
-    { label: '日志', onClick: () => openLog(record.log_query) },
+        loading: sourceOpening, disabled: sourceOpening, onClick: () => openSource(record.link), },
+    { label: '日志', loading: copying, disabled: copying, onClick: () => openLog(record.log_query) },
 ]"
               />
             </template>
@@ -96,10 +98,11 @@
     v-model:visible="detail.visible"
     :show-footer="false"
     title="系统异常详情"
-    width="760px"
+    :width="760"
+    @cancel="closeDetail"
   >
     <template #header-actions>
-      <a-button v-if="detail.record" size="small" @click="copyErrorDetail">
+      <a-button v-if="detail.record" size="small" :loading="copying" @click="copyErrorDetail">
         <template #icon><icon-copy /></template>
         复制详情
       </a-button>
@@ -124,7 +127,7 @@
           <a-descriptions-item label="发生时间">{{
             detail.record.time || '-'
           }}</a-descriptions-item>
-          <a-descriptions-item label="出现次数">{{ detail.record.count || 1 }}</a-descriptions-item>
+          <a-descriptions-item label="出现次数">{{ detail.record.count }}</a-descriptions-item>
           <a-descriptions-item label="服务名称">
             {{ detail.record.service_name || '-' }}
           </a-descriptions-item>
@@ -143,7 +146,7 @@
             <h3>错误摘要</h3>
             <p>用于快速识别本次异常原因</p>
           </div>
-          <a-button size="mini" type="text" @click="copyText(detail.record.message, '错误摘要')">
+          <a-button size="mini" type="text" :loading="copying" @click="copyText(detail.record.message, '错误摘要')">
             <template #icon><icon-copy /></template>
             复制
           </a-button>
@@ -160,7 +163,7 @@
             <h3>{{ detail.record.status === 'warning' ? '校验诊断' : '异常堆栈' }}</h3>
             <p>{{ tracebackLineCount }} 行 · 支持横向和纵向滚动</p>
           </div>
-          <a-button size="mini" type="text" @click="copyText(detail.record.traceback, '异常堆栈')">
+          <a-button size="mini" type="text" :loading="copying" @click="copyText(detail.record.traceback, '异常堆栈')">
             <template #icon><icon-copy /></template>
             复制
           </a-button>
@@ -174,137 +177,144 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, onMounted, reactive } from 'vue'
-  import { useRouter } from 'vue-router'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, onMounted, onBeforeUnmount, onActivated, onDeactivated, reactive, ref, watch } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
   import { Message } from '@arco-design/web-vue'
   import { IconCopy } from '@arco-design/web-vue/es/icon'
-  import { usePagination, useTable } from '@/hooks/table'
-  import { getFormItems } from '@/utils/datacleaning'
+  import { usePagination } from '@/hooks/table'
+  import useUserStore from '@/store/modules/user'
+  import usePermissionStore from '@/store/modules/permission'
   import { getSystemErrorRecordList } from '@/api/system/error-record'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import MangoTableActions from '@/components/table/MangoTableActions.vue'
   import { useEnum } from '@/store/modules/get-enum'
   import { getEnumTagColor } from '@/utils/business-format'
-  import { conditionItems, sourceTagOptions, tableColumns, tableScrollX } from './config'
+  import { createConditionItems, sourceTagOptions, tableColumns, tableScrollX } from './config'
+  import { buildErrorRecordQuery, resetErrorRecordConditions, parseErrorRecords, errorRecordDetail, errorRecordSourcePath, errorRecordLogUrl } from './error-record'
+  import type { ErrorRecordRow } from './error-record'
 
-  const router = useRouter()
-  const enumStore = useEnum()
-  const table = useTable()
-  const pagination = usePagination(doRefresh, () => table.tableLoading)
-  const detail = reactive<any>({ visible: false, record: null })
-  const tracebackLineCount = computed(() => {
-    const traceback = String(detail.record?.traceback || '')
-    return traceback ? traceback.split('\n').length : 0
-  })
-
-  function buildQuery() {
-    const query = Object.fromEntries(
-      Object.entries(getFormItems(conditionItems)).filter(
-        ([, value]) => value !== '' && value !== null && value !== undefined
-      )
-    )
-    if (Array.isArray(query.source)) {
-      query.source = query.source.filter(Boolean).join(',')
-    }
-    return query
-  }
-
-  function doRefresh() {
-    table.tableLoading.value = true
-    return getSystemErrorRecordList({
-      ...buildQuery(),
-      page: pagination.page,
-      pageSize: pagination.pageSize,
+  const router = useRouter(), route = useRoute(), user = useUserStore(), permission = usePermissionStore(), pagePath = route.path
+  const enumStore = useEnum(), conditionItems = createConditionItems()
+  const rows = ref<ErrorRecordRow[]>([]), listLoading = ref(false), listError = ref('')
+  const enumLoading = ref(false), enumError = ref('')
+  const pagination = usePagination(doRefresh, listLoading)
+  const detail = reactive<{ visible: boolean; record: ErrorRecordRow | null }>({ visible: false, record: null })
+  const copying = ref(false), sourceOpening = ref(false)
+  const tracebackLineCount = computed(() => detail.record?.traceback ? detail.record.traceback.split('\n').length : 0)
+  let mounted = false, active = true, disposed = false, needsLoad = true, needsEnums = true
+  let version = 0, listVersion = 0, enumVersion = 0, detailVersion = 0
+  let pendingList: { key: string; promise: Promise<void> } | null = null
+  const available = () => mounted && active && !disposed && route.path === pagePath && document.visibilityState === 'visible'
+  const identity = () => JSON.stringify([route.fullPath, user.userId, user.roleId, user.token, user.selected_environment, permission.permissionKeys])
+  const current = (generation: number, key: string) => available() && generation === version && key === identity()
+  function buildQuery() { return buildErrorRecordQuery(conditionItems) }
+  function doRefresh(): Promise<void> {
+    if (!available()) { needsLoad = true; listLoading.value = false; return Promise.resolve() }
+    const query = { ...buildQuery(), page: pagination.page, pageSize: pagination.pageSize }
+    const context = version, identityKey = identity(), key = JSON.stringify([identityKey, query])
+    if (pendingList?.key === key) return pendingList.promise
+    const generation = ++listVersion
+    listLoading.value = true; listError.value = ''; needsLoad = false
+    const valid = () => current(context, identityKey) && generation === listVersion && key === JSON.stringify([identity(), { ...buildQuery(), page: pagination.page, pageSize: pagination.pageSize }])
+    const promise = Promise.resolve().then(async () => {
+      try {
+        if (!valid()) return
+        const result = parseErrorRecords(await getSystemErrorRecordList(query))
+        if (!valid()) return
+        rows.value = result.rows; pagination.setTotalSize(result.total)
+      } catch (loadFailure0) { if (valid()) { rows.value = []; pagination.setTotalSize(0); (reportLoadError(loadFailure0, "系统异常加载失败，请重试", false), listError.value = '系统异常加载失败，请重试') } }
+      finally { if (generation === listVersion) { listLoading.value = false; pendingList = null } }
     })
-      .then((res) => {
-        const rows = (res.data || []).map((item: any) => ({
-          ...item,
-          __rowKey: `${item.source}-${item.object_id}`,
-        }))
-        table.handleSuccess({ ...res, data: rows })
-        pagination.setTotalSize((res as any).totalSize || 0)
-      })
-      .catch(() => {
-        table.tableLoading.value = false
-      })
+    pendingList = { key, promise }
+    return promise
   }
-
-  function onResetSearch() {
-    conditionItems.forEach((item) => {
-      item.value = item.multiple ? [] : ''
-    })
-    doRefresh()
+  function onSearch() { pagination.page = 1; return doRefresh() }
+  function onResetSearch() { resetErrorRecordConditions(conditionItems); return onSearch() }
+  async function loadEnums() {
+    if (!available() || enumLoading.value) return
+    const generation = ++enumVersion, context = version, key = identity()
+    enumLoading.value = true; enumError.value = ''; needsEnums = false
+    try { await enumStore.getEnum() }
+    catch (loadFailure1) { if (current(context, key) && generation === enumVersion) { (reportLoadError(loadFailure1, "来源颜色配置加载失败", false), enumError.value = '来源颜色配置加载失败'); needsEnums = true } }
+    finally { if (generation === enumVersion) enumLoading.value = false }
   }
-
-  function openDetail(record: any) {
-    detail.record = record
-    detail.visible = true
+  function closeDetail() { detailVersion++; detail.visible = false; detail.record = null }
+  function openDetail(record: ErrorRecordRow) {
+    if (!available()) return
+    detailVersion++; detail.record = { ...record }; detail.visible = true
   }
-
   function sourceTypeColor(source: string) {
-    const normalizedSource = source === 'drf' ? 'http' : source
-    return getEnumTagColor(sourceTagOptions, normalizedSource, enumStore.colors)
+    return getEnumTagColor(sourceTagOptions, source === 'drf' ? 'http' : source, enumStore.colors)
   }
-
-  function openSource(link?: string) {
-    if (link) router.push(link)
+  async function openSource(link: string) {
+    if (!available() || sourceOpening.value) return
+    const path = errorRecordSourcePath(link)
+    if (!path) { Message.warning('暂无有效来源页面'); return }
+    const context = version, key = identity()
+    sourceOpening.value = true
+    try { await router.push(path) }
+    catch { if (current(context, key)) Message.error('来源页面打开失败，请重试') }
+    finally { sourceOpening.value = false }
   }
-
-  async function copyText(value: unknown, label: string) {
-    const text = String(value || '').trim()
-    if (!text) {
-      Message.warning(`暂无${label}`)
-      return
-    }
+  async function copyText(value: unknown, label: string, fromDetail = true) {
+    if (!available() || copying.value || (fromDetail && !detail.visible)) return
+    const text = typeof value === 'string' ? value.trim() : ''
+    if (!text) { Message.warning(`暂无${label}`); return }
+    const context = version, key = identity(), generation = detailVersion
+    const valid = () => current(context, key) && (!fromDetail || (detail.visible && generation === detailVersion))
+    copying.value = true
     try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable')
       await navigator.clipboard.writeText(text)
-      Message.success(`${label}已复制`)
-    } catch {
-      Message.error('复制失败，请手动选择文本复制')
-    }
+      if (valid()) Message.success(`${label}已复制`)
+    } catch { if (valid()) Message.error('复制失败，请手动选择文本复制') }
+    finally { copying.value = false }
   }
-
   function copyErrorDetail() {
-    const record = detail.record
-    if (!record) return
-    const text = [
-      `记录类型：${record.source_name || '-'}`,
-      `记录ID：${record.object_id || '-'}`,
-      `发生时间：${record.time || '-'}`,
-      `出现次数：${record.count || 1}`,
-      `服务名称：${record.service_name || '-'}`,
-      `异常类型：${record.exception_type || '-'}`,
-      `对象：${record.title || '-'}`,
-      `错误摘要：${record.message || '-'}`,
-      record.traceback ? `异常堆栈：\n${record.traceback}` : '',
-    ]
-      .filter(Boolean)
-      .join('\n')
-    copyText(text, '异常详情')
+    if (!detail.record) return
+    return copyText(errorRecordDetail(detail.record), '异常详情')
   }
-
-  function openLog(query?: string) {
-    if (!query) {
-      Message.warning('暂无日志查询条件')
-      return
-    }
+  async function openLog(query: string) {
+    if (!available()) return
+    if (!query) { Message.warning('暂无日志查询条件'); return }
     const logPlatformUrl = String(import.meta.env.VITE_APP_LOG_PLATFORM_URL || '').trim()
-    if (logPlatformUrl) {
-      const separator = logPlatformUrl.includes('?') ? '&' : '?'
-      window.open(`${logPlatformUrl}${separator}query=${encodeURIComponent(query)}`, '_blank')
-      return
-    }
-    navigator.clipboard?.writeText(query)
-    Message.success('日志查询条件已复制')
+    if (!logPlatformUrl) return copyText(query, '日志查询条件', false)
+    const url = errorRecordLogUrl(logPlatformUrl, query, window.location.origin)
+    if (!url) { Message.error('日志平台地址无效'); return }
+    try { window.open(url, '_blank', 'noopener,noreferrer') }
+    catch { Message.error('日志平台打开失败，请重试') }
   }
-
-  onMounted(async () => {
-    await enumStore.getEnum()
-    doRefresh()
-  })
+  function pause() {
+    version++; listVersion++; enumVersion++; pendingList = null
+    needsLoad = true; needsEnums = true; listLoading.value = false; enumLoading.value = false
+    closeDetail()
+  }
+  function resume() {
+    if (!available()) return
+    if (needsLoad) void doRefresh()
+    if (needsEnums) void loadEnums()
+  }
+  function visibilityChanged() { if (document.visibilityState === 'visible') resume(); else pause() }
+  watch(identity, () => { pause(); rows.value = []; pagination.setTotalSize(0); pagination.page = 1; resume() }, { flush: 'sync' })
+  watch(() => detail.visible, visible => { if (!visible && detail.record) closeDetail() })
+  onMounted(() => { mounted = true; document.addEventListener('visibilitychange', visibilityChanged); resume() })
+  onActivated(() => { active = true; resume() })
+  onDeactivated(() => { active = false; pause() })
+  onBeforeUnmount(() => { disposed = true; pause(); document.removeEventListener('visibilitychange', visibilityChanged) })
 </script>
 
 <style scoped>
+  .mango-error-record-feedback {
+    padding: var(--m-page-gap);
+    color: var(--m-muted);
+  }
+
+  .mango-error-record-feedback--error {
+    color: var(--m-danger);
+  }
+
   .mango-error-record-panel {
     box-sizing: border-box;
     display: flex;
@@ -380,18 +390,4 @@
     white-space: pre;
   }
 
-  @media (max-width: 720px) {
-    .mango-error-record-panel {
-      padding: 0;
-    }
-
-    .mango-error-record-section {
-      padding: 12px;
-    }
-
-    .mango-error-record-trace .mango-code-panel {
-      max-height: calc(100vh - 560px);
-      min-height: 180px;
-    }
-  }
 </style>

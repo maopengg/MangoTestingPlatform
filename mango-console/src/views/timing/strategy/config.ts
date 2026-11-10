@@ -1,12 +1,13 @@
 import { FormItem } from '@/types/components'
 import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
-import { Message } from '@arco-design/web-vue'
-import { useTable, useTableColumn } from '@/hooks/table'
+import { useTableIndexColumn, useTableColumn } from '@/hooks/table'
 import { createUpdateUserCondition, updateUserColumn } from '@/utils/update-user'
+import { enableMultiSelectSearch } from '@/utils/search-condition'
 
-const table = useTable()
-export const conditionItems: Array<FormItem> = reactive([
+export const tableScrollX = 1200
+export function createConditionItems(): FormItem[] {
+  const fields: Array<Omit<FormItem, 'disabled'>> = [
   {
     key: 'id',
     label: 'ID',
@@ -28,54 +29,30 @@ export const conditionItems: Array<FormItem> = reactive([
     },
   },
   createUpdateUserCondition(),
-])
-export const formItems: FormItem[] = reactive([
-  {
-    label: '定时器介绍',
-    key: 'name',
-    value: ref(''),
-    placeholder: '请输入定时器的介绍',
-    required: true,
-    type: 'input',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: 'cron',
-    key: 'cron',
-    value: ref(''),
-    type: 'input',
-    required: true,
-    placeholder: '请输入正确的cron表达式',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-])
+  ]
+  return enableMultiSelectSearch(reactive(fields))
+}
 
 export const tableColumns = useTableColumn([
-  table.indexColumn,
+  { ...useTableIndexColumn(), align: 'center' },
 
   {
     title: '定时器介绍',
     key: 'name',
     dataIndex: 'name',
     align: 'left',
+    width: 250,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: 'Cron表达式',
     key: 'cron',
     dataIndex: 'cron',
     align: 'left',
+    width: 220,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '创建时间',
@@ -89,7 +66,7 @@ export const tableColumns = useTableColumn([
     dataIndex: 'update_time',
     width: 180,
   },
-  updateUserColumn(),
+  { ...updateUserColumn(), key: 'update_user' },
   {
     title: '操作',
     key: 'actions',

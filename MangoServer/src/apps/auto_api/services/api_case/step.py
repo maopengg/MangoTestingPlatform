@@ -46,6 +46,38 @@ class ApiCaseStepService:
             operator_id=operator_id, source=source,
         )
 
+    @classmethod
+    def update_step(
+            cls, step_id: int, *, api_info_id: int,
+            pinned_api_info_revision_id: int | None, execution_config: dict,
+            operator_id=None, source='page',
+    ) -> dict:
+        config = ApiStepExecutionConfig.parse_config(execution_config).model_dump(exclude_defaults=True)
+        original = ApiCaseDetailed.objects.filter(id=step_id).first()
+        if original is None:
+            raise AutoApiError(API_CASE_STEP_NOT_FOUND)
+
+        def operation(_):
+            step = ApiCaseDetailed.objects.select_for_update().get(id=step_id)
+            revision_id = pinned_api_info_revision_id
+            if (step.api_info_id, step.pinned_api_info_revision_id) != (api_info_id, revision_id):
+                _, revision_id = cls.resolve_api_runtime(
+                    api_info_id, pinned_api_info_revision_id=revision_id, allow_draft=False,
+                )
+            step.api_info_id = api_info_id
+            step.pinned_api_info_revision_id = revision_id
+            step.execution_config = config
+            step.update_user_id = operator_id
+            step.save(update_fields=[
+                'api_info', 'pinned_api_info_revision', 'execution_config', 'update_user', 'update_time',
+            ])
+            return {'step_id': step.id, 'execution_config': config}
+
+        return ApiCaseAggregateMutationService.mutate(
+            original.case_id, action='update_step', operation=operation,
+            operator_id=operator_id, source=source,
+        )
+
     @staticmethod
     def resolve_api_runtime(
             api_info_id: int,
@@ -146,6 +178,9 @@ class ApiCaseStepService:
         ).count()
 
         def operation(locked_case):
+            if any(rule.get('trigger_step_key') == f'step-{step_id}' for rule in locked_case.resource_cleanup):
+                from src.apps.auto_api.exceptions import API_RESOURCE_CONFIG_INVALID
+                raise AutoApiError(API_RESOURCE_CONFIG_INVALID, value=('请先移除绑定该步骤的资源清理规则',))
             if any(rule.get('trigger_step_key') == f'step-{step_id}' for rule in locked_case.callback_checks):
                 from src.apps.auto_api.exceptions import API_CALLBACK_CONFIG_INVALID
                 raise AutoApiError(API_CALLBACK_CONFIG_INVALID, value=('请先移除绑定该步骤的回调验证',))

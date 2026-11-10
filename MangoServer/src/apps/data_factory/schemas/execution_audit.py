@@ -3,6 +3,7 @@ from typing import Literal
 from pydantic import Field
 
 from src.common.schemas import FrozenSchema
+from src.apps.data_factory.enums.performance import DatasourceTimingPhaseEnum
 
 
 class DatasourceAuditMetadata(FrozenSchema):
@@ -17,3 +18,6 @@ class DatasourceAuditMetadata(FrozenSchema):
     transaction_admission_wait_ms: float = Field(default=0, ge=0)
     factory_preparation_ms: float = Field(default=0, ge=0)
     factory_preparation_wait_ms: float = Field(default=0, ge=0)
+    # 各段互斥累计毫秒数；父审计包含其子操作，统计时不可父子相加。
+    timing_ms: dict[DatasourceTimingPhaseEnum, float] = Field(default_factory=dict)
+    factory_preparation_timing_ms: dict[DatasourceTimingPhaseEnum, float] = Field(default_factory=dict)

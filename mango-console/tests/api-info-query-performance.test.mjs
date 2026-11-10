@@ -46,10 +46,12 @@ test('a product switch cancels stale option pagination', async () => {
 test('summary refresh and editing remain separate, with loading on edit', () => {
   const source = readFileSync('src/views/apitest/info/index.vue', 'utf8')
   assert.match(source, /value\['summary'\] = true/)
-  assert.match(source, /await getApiInfo\(\{ id: record\.id \}\)/)
-  assert.match(source, /label: '编辑', loading: editingId/)
-  const edit = source.slice(source.indexOf('async function onUpdate'), source.indexOf('function onDownload'))
-  assert.ok(edit.indexOf('await getApiInfo') < edit.indexOf('modalDialogRef.value?.toggle()'))
+  assert.match(source, /editorRef\.value\?\.openEdit\(record\.id\)/)
+  assert.match(source, /label: '编辑',\s*loading: editingId/)
+  const editor = readFileSync('src/views/apitest/info/components/ApiInfoEditor.vue', 'utf8')
+  assert.match(editor, /await getApiInfo\(\{ id \}\)/)
+  assert.match(editor, /:loading="detailLoading"/)
+  assert.match(editor, /saving\.value\s*\|\|\s*detailLoading\.value\s*\|\|\s*loadFailed\.value/)
 })
 
 test('modified Vue pages compile without changing their layout', () => {

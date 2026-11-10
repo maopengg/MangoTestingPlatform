@@ -43,6 +43,7 @@
               </span>
             </button>
           </div>
+          <template v-else-if="!loading && loadFailed"></template>
           <div v-else-if="!loading" class="mango-empty-state mango-skill-center__list-empty">
             {{ skills.length ? '没有匹配的 Skill' : '暂无 Skill 文档' }}
           </div>
@@ -62,6 +63,7 @@
                 type="primary"
                 size="small"
                 :loading="downloadingKey === detail.key"
+                :disabled="downloadingKey !== null"
                 @click="downloadSkill(detail)"
               >
                 <template #icon><icon-download /></template>
@@ -95,10 +97,16 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, ref, watch } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, ref, watch } from 'vue'
   import { IconBook, IconDownload, IconRefresh } from '@arco-design/web-vue/es/icon'
   import { Message } from '@arco-design/web-vue'
   import { zipSync } from 'fflate'
+  import { useRoute } from 'vue-router'
+  import useUserStore from '@/store/modules/user'
+  import { createSkillRecord, parseIntroductions, renderMarkdown } from '../skill-documents'
+  import type { SkillRecord } from '../types'
 
   const skillDocuments = import.meta.glob('../../../../../skill/*/SKILL.md', {
     eager: true,
@@ -124,32 +132,37 @@
     }
   ) as Record<string, string>
 
-  interface SkillRecord {
-    key: string
-    name: string
-    description: string
-    category?: string
-    original_description?: string
-    has_custom_introduction?: boolean
-    sections?: Array<{ title: string; summary: string }>
-    content?: string
-  }
-
-  interface SkillIntroduction {
-    title?: string
-    description?: string
-    category?: string
-  }
-
-  const props = defineProps({ visible: { type: Boolean, default: false } })
-  const emit = defineEmits(['update:visible'])
+  const props = withDefaults(defineProps<{ visible?: boolean }>(), { visible: false })
+  const emit = defineEmits<{ (event: 'update:visible', value: boolean): void }>()
   const loading = ref(false)
   const detailLoading = ref(false)
   const skills = ref<SkillRecord[]>([])
-  const selectedKey = ref('')
-  const detail = ref<SkillRecord | null>(null)
+  const selectedKey = ref<string | null>(null)
+  const detail = computed(() => skills.value.find(item => item.key === selectedKey.value) ?? null)
   const keyword = ref('')
-  const downloadingKey = ref('')
+  const downloadingKey = ref<string | null>(null)
+  const loadFailed = ref(false)
+  const route = useRoute(), user = useUserStore(), entryPath = route.path
+  const contextKey = computed(() => JSON.stringify([
+    route.fullPath, user.userId, user.roleId, user.token, user.selected_environment,
+  ]))
+  let active = true, generation = 0, detailSequence = 0
+  let downloadController: AbortController | null = null
+  const urls = new Map<string, ReturnType<typeof setTimeout>>()
+  const available = () => active && route.path === entryPath && props.visible
+  function releaseUrl(url: string) {
+    const timer = urls.get(url)
+    if (timer !== undefined) clearTimeout(timer)
+    URL.revokeObjectURL(url)
+    urls.delete(url)
+  }
+  function invalidate() {
+    generation++; detailSequence++
+    downloadController?.abort()
+    loading.value = false; detailLoading.value = false; loadFailed.value = false
+    skills.value = []; selectedKey.value = null; keyword.value = ''
+    for (const url of urls.keys()) releaseUrl(url)
+  }
 
   const visible = computed(() => props.visible)
   const filteredSkills = computed(() => {
@@ -164,208 +177,95 @@
   const detailHtml = computed(() => renderMarkdown(detail.value?.content || ''))
 
   function close() {
+    invalidate()
     emit('update:visible', false)
   }
 
   async function loadSkills() {
+    if (!available()) return
+    const currentGeneration = ++generation
+    detailSequence++
+    detailLoading.value = false
     loading.value = true
+    loadFailed.value = false
     try {
-      const introductions = parseIntroductions()
-      skills.value = Object.entries(skillDocuments)
+      const introductions = parseIntroductions(introductionDocuments)
+      const rows = Object.entries(skillDocuments)
         .map(([path, content]) => createSkillRecord(path, content, introductions))
         .filter((item): item is SkillRecord => Boolean(item))
         .sort((previous, next) => previous.name.localeCompare(next.name, 'zh-CN'))
-      const nextKey = skills.value.some((item) => item.key === selectedKey.value)
-        ? selectedKey.value
-        : skills.value[0]?.key || ''
-      if (!nextKey) {
-        selectedKey.value = ''
-        detail.value = null
-        return
-      }
-      selectSkill(nextKey)
-    } catch (error) {
-      skills.value = []
-      selectedKey.value = ''
-      detail.value = null
-      console.log(error)
-    } finally {
       await nextTick()
-      loading.value = false
+      if (!available() || generation !== currentGeneration) return
+      skills.value = rows
+      const key = rows.some(item => item.key === selectedKey.value) ? selectedKey.value : rows[0]?.key ?? null
+      if (key) selectSkill(key)
+      else selectedKey.value = null
+    } catch (loadFailure0) {
+      if (available() && generation === currentGeneration) (reportLoadError(loadFailure0, "加载失败，请重试", false), loadFailed.value = true)
+    } finally {
+      if (available() && generation === currentGeneration) loading.value = false
     }
   }
 
   function selectSkill(key: string) {
-    selectedKey.value = key
+    if (!available()) return
+    const sequence = ++detailSequence, currentGeneration = generation
+    selectedKey.value = skills.value.some(item => item.key === key) ? key : null
     detailLoading.value = true
-    detail.value = skills.value.find((item) => item.key === key) || null
     nextTick(() => {
-      detailLoading.value = false
+      if (available() && currentGeneration === generation && sequence === detailSequence) detailLoading.value = false
     })
   }
 
   async function downloadSkill(record: SkillRecord) {
-    if (downloadingKey.value) return
-    downloadingKey.value = record.key
+    if (!available() || downloadingKey.value !== null || !skills.value.some(item => item.key === record.key)) return
+    const currentGeneration = generation, key = record.key
+    const current = () => available() && currentGeneration === generation
+    const controller = new AbortController()
+    downloadController = controller
+    downloadingKey.value = key
     try {
-      const skillRoot = `/skill/${record.key}/`
+      const skillRoot = `/skill/${key}/`
       const assets = Object.entries(skillAssetUrls).filter(([path]) => path.includes(skillRoot))
-      if (!assets.length) throw new Error('Skill 目录为空')
-
-      const files = await Promise.all(
-        assets.map(async ([path, assetUrl]) => {
-          const relativePath = path.slice(path.indexOf(skillRoot) + skillRoot.length)
-          const response = await fetch(assetUrl)
-          if (!response.ok) throw new Error(`读取 ${relativePath} 失败`)
-          return [relativePath, new Uint8Array(await response.arrayBuffer())] as const
-        })
-      )
+      if (!assets.length) throw Error('Empty Skill assets')
+      // 一个文件失败后仍等待其余请求结束，避免提前释放物理下载锁。
+      const results = await Promise.allSettled(assets.map(async ([path, assetUrl]) => {
+        const relativePath = path.slice(path.indexOf(skillRoot) + skillRoot.length)
+        const response = await fetch(assetUrl, { signal: controller.signal })
+        if (!response.ok) throw Error('Skill asset unavailable')
+        return [relativePath, new Uint8Array(await response.arrayBuffer())] as const
+      }))
+      if (!current()) return
+      const files = results.map(result => {
+        if (result.status === 'rejected') throw Error('Skill asset unavailable')
+        return result.value
+      })
       const archive = zipSync(Object.fromEntries(files), { level: 6 })
+      if (!current()) return
       const url = URL.createObjectURL(new Blob([archive], { type: 'application/zip' }))
+      urls.set(url, setTimeout(() => releaseUrl(url), 1000))
       const link = document.createElement('a')
       link.href = url
-      link.download = `${record.key}.zip`
+      link.download = `${key}.zip`
       document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+      try { link.click() } finally { document.body.removeChild(link) }
       Message.success(`已打包 ${files.length} 个文件，开始下载`)
-    } catch (error) {
-      Message.error(error instanceof Error ? error.message : 'Skill 打包失败')
-    } finally {
-      downloadingKey.value = ''
-    }
-  }
-
-  function parseIntroductions(): Record<string, SkillIntroduction> {
-    const content = Object.values(introductionDocuments)[0]
-    if (!content) return {}
-    try {
-      const payload = JSON.parse(content)
-      return payload && typeof payload === 'object' ? payload : {}
     } catch {
-      return {}
+      if (current()) Message.error('Skill 打包失败，请重试')
+    } finally {
+      downloadingKey.value = null
+      if (downloadController === controller) downloadController = null
     }
   }
 
-  function parseFrontmatter(content: string) {
-    if (!content.startsWith('---')) return {} as Record<string, string>
-    const endIndex = content.indexOf('\n---', 3)
-    if (endIndex < 0) return {} as Record<string, string>
-    return content
-      .slice(3, endIndex)
-      .trim()
-      .split(/\r?\n/)
-      .reduce<Record<string, string>>((result, line) => {
-        const separator = line.indexOf(':')
-        if (separator > 0) result[line.slice(0, separator).trim()] = line.slice(separator + 1).trim()
-        return result
-      }, {})
-  }
-
-  function extractSections(content: string) {
-    const frontmatterEnd = content.startsWith('---') ? content.indexOf('\n---', 3) : -1
-    const body = frontmatterEnd >= 0 ? content.slice(frontmatterEnd + 4) : content
-    return body
-      .split(/\r?\n/)
-      .filter((line) => line.startsWith('## '))
-      .slice(0, 12)
-      .map((line) => ({ title: line.slice(3).trim(), summary: '' }))
-  }
-
-  function createSkillRecord(
-    path: string,
-    content: string,
-    introductions: Record<string, SkillIntroduction>
-  ): SkillRecord | null {
-    const key = path.match(/\/skill\/([^/]+)\/SKILL\.md$/)?.[1]
-    if (!key) return null
-    const meta = parseFrontmatter(content)
-    const introduction = introductions[key]
-    const originalDescription = meta.description || content.trim()
-    return {
-      key,
-      name: introduction?.title || meta.name || key,
-      description: introduction?.description || originalDescription,
-      category: introduction?.category || '',
-      original_description: originalDescription,
-      has_custom_introduction: Boolean(introduction),
-      sections: extractSections(content),
-      content,
-    }
-  }
-
-  function escapeHtml(value: string) {
-    return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
-  }
-
-  function renderInlineMarkdown(value: string) {
-    return escapeHtml(value).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-  }
-
-  function renderMarkdown(value: string) {
-    const text = String(value || '')
-    const frontmatterEnd = text.startsWith('---') ? text.indexOf('\n---', 3) : -1
-    const lines = (frontmatterEnd >= 0 ? text.slice(frontmatterEnd + 4) : text).split(/\r?\n/)
-    const html: string[] = []
-    let inCode = false
-    let codeLines: string[] = []
-    let listType = ''
-    const closeList = () => {
-      if (!listType) return
-      html.push(`</${listType}>`)
-      listType = ''
-    }
-
-    lines.forEach((line) => {
-      if (line.trim().startsWith('```')) {
-        if (inCode) {
-          html.push(`<pre><code>${escapeHtml(codeLines.join('\n'))}</code></pre>`)
-          codeLines = []
-          inCode = false
-        } else {
-          closeList()
-          inCode = true
-        }
-        return
-      }
-      if (inCode) {
-        codeLines.push(line)
-        return
-      }
-      const heading = line.match(/^(#{1,4})\s+(.+)$/)
-      if (heading) {
-        closeList()
-        const level = Math.min(heading[1].length + 1, 4)
-        html.push(`<h${level}>${renderInlineMarkdown(heading[2])}</h${level}>`)
-        return
-      }
-      const ordered = line.match(/^\s*\d+\.\s+(.+)$/)
-      const unordered = line.match(/^\s*[-*]\s+(.+)$/)
-      if (ordered || unordered) {
-        const type = ordered ? 'ol' : 'ul'
-        if (listType !== type) {
-          closeList()
-          html.push(`<${type}>`)
-          listType = type
-        }
-        html.push(`<li>${renderInlineMarkdown((ordered || unordered)?.[1] || '')}</li>`)
-        return
-      }
-      closeList()
-      if (!line.trim()) return
-      if (line.startsWith('> ')) html.push(`<blockquote>${renderInlineMarkdown(line.slice(2))}</blockquote>`)
-      else if (/^---+$/.test(line.trim())) html.push('<hr />')
-      else html.push(`<p>${renderInlineMarkdown(line)}</p>`)
-    })
-    closeList()
-    if (inCode) html.push(`<pre><code>${escapeHtml(codeLines.join('\n'))}</code></pre>`)
-    return html.join('')
-  }
-
-  watch(() => props.visible, (value) => {
-    if (value) loadSkills()
-  })
+  watch(() => props.visible, value => {
+    if (value) void loadSkills()
+    else invalidate()
+  }, { immediate: true, flush: 'sync' })
+  watch(contextKey, () => { invalidate(); emit('update:visible', false) }, { flush: 'sync' })
+  onDeactivated(() => { active = false; close() })
+  onActivated(() => { if (!active) { active = true; if (props.visible) void loadSkills() } })
+  onBeforeUnmount(() => { active = false; invalidate() })
 </script>
 
 <style scoped lang="less">

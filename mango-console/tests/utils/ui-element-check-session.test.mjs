@@ -64,3 +64,10 @@ test('实时结果早于接口响应时完成态不会被接口响应重新激�
   assert.equal(session.bindCheckId(token, 'check-fast'), false)
   assert.equal(session.isActive(), false)
 })
+test('zero element ID remains a real identity and cannot consume a different element result', () => {
+  const session = createUiElementCheckSession()
+  const token = session.start(0, 'example-workspace')
+  session.bindCheckId(token, 'example-check')
+  assert.equal(session.accept({ element_id: 1, workspace_id: 'example-workspace', check_id: 'example-check' }), false)
+  assert.equal(session.accept({ element_id: 0, workspace_id: 'example-workspace', check_id: 'example-check' }), true)
+})

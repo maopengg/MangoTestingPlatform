@@ -26,6 +26,7 @@ API_INFO_CONFIG_FIELDS = tuple(API_INFO_CONFIG_DEFAULTS.keys())
 API_INFO_IDENTITY_FIELDS = ('id', 'name', 'project_product_id', 'module_id')
 
 API_CASE_CONFIG_DEFAULTS = {
+    'resource_cleanup': [],
     'callback_checks': [],
     'front_custom': [],
     'front_sql': [],

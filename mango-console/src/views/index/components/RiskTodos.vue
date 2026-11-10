@@ -49,6 +49,7 @@
                     size="mini"
                     type="text"
                     :loading="handlingTodoId === item.id"
+                    :disabled="handlingTodoId !== null"
                     @click="confirmHandled(item)"
                   >
                     已处理
@@ -56,7 +57,8 @@
                   <a-button
                     size="mini"
                     type="text"
-                    :disabled="handlingTodoId === item.id"
+                    :loading="navigatingTodoId === item.id"
+                    :disabled="handlingTodoId !== null || navigatingTodoId !== null"
                     @click="goToSource(item)"
                   >
                     去处理
@@ -84,7 +86,7 @@
                 <span>失败明细</span>
                 <div
                   v-for="(error, index) in cleanupErrors(item)"
-                  :key="error.item_id || index"
+                  :key="error.item_id ?? index"
                   class="mango-risk-todo-detail__error"
                 >
                   <strong>{{ error.alias || error.table_name || `失败项 ${index + 1}` }}</strong>
@@ -102,7 +104,7 @@
                 <span>待清理明细</span>
                 <div
                   v-for="(cleanupItem, index) in cleanupPendingItems(item)"
-                  :key="cleanupItem.item_id || index"
+                  :key="cleanupItem.item_id ?? index"
                   class="mango-risk-todo-detail__cleanup-item"
                 >
                   <strong>{{
@@ -132,17 +134,13 @@
             </div>
           </template>
         </HoverTaskDetail>
-        <div v-if="loadingMore || loadMoreFailed" class="mango-risk-todos__load-more">
-          <mango-panel-spin v-if="loadingMore" :size="16" />
-          <a-button v-else size="mini" type="text" @click="loadNextPage"
-            >加载失败，点击重试</a-button
-          >
-        </div>
+        <template v-if="loadingMore || loadMoreFailed"><a-button  size="mini" type="text" @click="loadNextPage"
+            >重新加载</a-button></template>
       </div>
       <div v-else-if="!loading" class="mango-empty-state mango-risk-todos__empty">
         <template v-if="loadFailed">
-          <span>风险待办加载失败</span>
-          <a-button size="mini" type="text" @click="fetchData(true)">重新加载</a-button>
+          <span></span>
+          <a-button size="mini" type="text" @click="refresh">重新加载</a-button>
         </template>
         <template v-else>
           <IconCheckCircle />
@@ -154,37 +152,27 @@
 </template>
 
 <script lang="ts" setup>
-  import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-  import { useRouter } from 'vue-router'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
+  import useUserStore from '@/store/modules/user'
+  import { usePagePolling, type PollingContext } from '@/hooks/use-page-polling'
+  import { scaleDensityPixels } from '@/hooks/useDisplayDensity'
   import { Message, Modal } from '@arco-design/web-vue'
   import { IconCheckCircle, IconExclamationCircleFill } from '@arco-design/web-vue/es/icon'
   import { getSystemWorkbenchTodos, postSystemWorkbenchTodoHandled } from '@/api/system'
   import { useNotificationMessage } from '@/store/modules/notification-message'
   import HoverTaskDetail from './HoverTaskDetail.vue'
-
-  interface RiskTodoItem {
-    id: number
-    source_type: number
-    source_id: number
-    event_type: number
-    event_type_name: string
-    severity: number
-    title: string
-    summary: string
-    due_at: string | null
-    occurred_at: string
-    project_product: { name: string; project?: { name?: string } }
-    module?: { id: number; name: string } | null
-    details: Record<string, any>
-    owners: Array<{ id: number; name: string; username: string }>
-    can_mark_handled: boolean
-  }
+  import { homeFeedPageSize as pageSize } from '../config'
+  import { readRiskTodos, readHandledTodo, riskCleanupDetails } from '../records'
+  import type { RiskTodoItem } from '../types'
 
   const emit = defineEmits<{
     (event: 'pending-change', hasPending: boolean): void
     (event: 'pending-count-change', count: number): void
   }>()
-  const router = useRouter()
+  const router = useRouter(), route = useRoute(), user = useUserStore()
   const notificationMessage = useNotificationMessage()
   const items = ref<RiskTodoItem[]>([])
   const loading = ref(true)
@@ -194,20 +182,31 @@
   const page = ref(1)
   const total = ref(0)
   const handlingTodoId = ref<number | null>(null)
-  const pageSize = 20
-  const summary = reactive({
-    pending: 0,
-    expiring: 0,
-    expired: 0,
-    refresh_failed: 0,
-    schema_invalid: 0,
-    schema_review: 0,
-    cleanup_failed: 0,
-    cleanup_required: 0,
-    api_case_prepublication_review: 0,
-  })
+  const navigatingTodoId = ref<number | null>(null)
+  const identityKey = computed(() => JSON.stringify([user.userId, user.roleId, user.token, user.selected_environment]))
+  const contextKey = computed(() => JSON.stringify([identityKey.value, route.fullPath]))
+  let mounted = false, requestPending = false, actionGeneration = 0
   let requestSequence = 0
-  let refreshTimer: ReturnType<typeof setInterval> | undefined
+  let confirmation: ReturnType<typeof Modal.confirm> | null = null
+  const polling = usePagePolling(context => fetchData('quiet', context), pause)
+
+  function invalidateRead() {
+    requestSequence++
+    requestPending = false
+    loading.value = false
+    loadingMore.value = false
+  }
+  function pause() {
+    invalidateRead()
+    actionGeneration++
+    confirmation?.close()
+    confirmation = null
+  }
+  function publishCount(count: number) {
+    notificationMessage.setTodoPendingCount(count)
+    emit('pending-change', count > 0)
+    emit('pending-count-change', count)
+  }
 
   function severityKey(value: number) {
     return value === 2 ? 'danger' : 'warning'
@@ -289,11 +288,11 @@
   }
 
   function cleanupErrors(item: RiskTodoItem) {
-    return Array.isArray(item.details?.errors) ? item.details.errors : []
+    return riskCleanupDetails(item.details.errors)
   }
 
   function cleanupPendingItems(item: RiskTodoItem) {
-    return Array.isArray(item.details?.cleanup_items) ? item.details.cleanup_items : []
+    return riskCleanupDetails(item.details.cleanup_items)
   }
 
   function schemaDifferences(item: RiskTodoItem) {
@@ -321,74 +320,66 @@
     return `${Math.floor(minutes / 1440)} 天后到期`
   }
 
-  async function fetchData(reset = true) {
-    if (!reset && (loading.value || loadingMore.value || items.value.length >= total.value)) return
+  async function fetchData(mode: 'reset' | 'append' | 'quiet', pollContext?: PollingContext) {
+    if (!polling.isAvailable() || requestPending || handlingTodoId.value !== null) return
+    if (mode === 'append' && items.value.length >= total.value) return
     const sequence = ++requestSequence
-    const targetPage = reset ? 1 : page.value + 1
-    if (reset) {
-      loading.value = items.value.length === 0
+    const context = contextKey.value
+    const current = () => polling.isAvailable() && sequence === requestSequence
+      && context === contextKey.value && (!pollContext || pollContext.isCurrent())
+    requestPending = true
+    const targetPage = mode === 'append' ? page.value + 1 : mode === 'quiet' ? page.value : 1
+    if (mode !== 'append') {
+      loading.value = mode === 'reset' || items.value.length === 0
       loadFailed.value = false
     } else {
       loadingMore.value = true
       loadMoreFailed.value = false
     }
     try {
-      const res = await getSystemWorkbenchTodos({
-        page: targetPage,
-        pageSize,
-        status: 'pending',
-      })
-      if (sequence !== requestSequence) return
-      const payload = res.data || {}
-      const rows = Array.isArray(payload.items) ? payload.items : []
-      Object.assign(summary, payload.summary || {})
-      const pendingCount = Number(summary.pending || 0)
-      notificationMessage.setTodoPendingCount(pendingCount)
-      emit('pending-change', pendingCount > 0)
-      emit('pending-count-change', pendingCount)
-      if (reset) items.value = rows
-      else {
-        const existingIds = new Set(items.value.map((item) => item.id))
-        items.value.push(...rows.filter((item: RiskTodoItem) => !existingIds.has(item.id)))
+      const rows = mode === 'append' ? [...items.value] : []
+      let nextTotal = 0, pendingCount = 0, lastPage = 1
+      for (let nextPage = mode === 'append' ? targetPage : 1; nextPage <= targetPage; nextPage++) {
+        const result = readRiskTodos(await getSystemWorkbenchTodos({ page: nextPage, pageSize, status: 'pending' }))
+        if (!current()) return
+        rows.push(...result.rows)
+        nextTotal = result.total
+        pendingCount = result.pending
+        lastPage = nextPage
+        if (nextPage * pageSize >= nextTotal || !result.rows.length) break
       }
-      page.value = targetPage
-      total.value = Number(payload.count || rows.length)
-    } catch {
-      if (sequence !== requestSequence) return
-      if (reset) {
-        items.value = []
-        loadFailed.value = true
-      } else loadMoreFailed.value = true
+      items.value = nextTotal === 0 ? [] : [...new Map(rows.map(row => [row.id, row])).values()].slice(0, nextTotal)
+      page.value = lastPage
+      total.value = nextTotal
+      publishCount(pendingCount)
+      loadFailed.value = false
+      loadMoreFailed.value = false
+    } catch (loadFailure0) {
+      if (!current()) return
+      if (mode === 'append') (reportLoadError(loadFailure0, "加载失败，请重试", false), loadMoreFailed.value = true)
+      else (reportLoadError(loadFailure0, "加载失败，请重试", false), loadFailed.value = true)
     } finally {
       if (sequence === requestSequence) {
+        requestPending = false
         loading.value = false
         loadingMore.value = false
       }
     }
   }
 
-  function loadNextPage() {
-    fetchData(false)
-  }
+  function refresh() { return fetchData('reset') }
+  function loadNextPage() { return fetchData('append') }
 
   function handleScroll(event: Event) {
     const target = event.currentTarget as HTMLElement
-    if (target.scrollHeight - target.scrollTop - target.clientHeight <= 64) loadNextPage()
+    if (target.scrollHeight - target.scrollTop - target.clientHeight <= scaleDensityPixels(64)) void loadNextPage()
   }
 
-  function goToSource(item: RiskTodoItem) {
-    if (item.source_type === 6) {
-      router.push({
-        path: '/apitest/case/index',
-        query: {
-          publication_status: 'prepublished',
-          project_product: String(item.source_id),
-        },
-      })
-      return
-    }
+  async function goToSource(item: RiskTodoItem) {
+    if (!polling.isAvailable() || handlingTodoId.value !== null || navigatingTodoId.value !== null) return
+    const generation = actionGeneration, context = contextKey.value
     const path =
-      item.source_type === 1
+      item.source_type === 6 ? '/apitest/case/index' : item.source_type === 1
         ? '/uitest/auth-config/index'
         : item.source_type === 2
         ? '/apitest/auth-config/index'
@@ -396,46 +387,67 @@
         ? '/data-factory/execution/index'
         : '/data-factory/entity/index'
     const query =
-      item.source_type === 4
-        ? { execution_no: String(item.details?.execution_no || '') }
+      item.source_type === 6 ? { publication_status: 'prepublished', project_product: String(item.source_id) } : item.source_type === 4
+        ? { execution_no: String(item.details.execution_no ?? '') }
         : { id: String(item.source_id) }
-    router.push({ path, query })
+    navigatingTodoId.value = item.id
+    try { await router.push({ path, query }) }
+    catch {
+      if (polling.isAvailable() && generation === actionGeneration && context === contextKey.value) Message.error('页面打开失败，请重试')
+    } finally { navigatingTodoId.value = null }
   }
 
   function confirmHandled(item: RiskTodoItem) {
+    if (!polling.isAvailable() || !item.can_mark_handled || handlingTodoId.value !== null || confirmation) return
+    const id = item.id, generation = actionGeneration, context = contextKey.value
+    let dialog: ReturnType<typeof Modal.confirm> | null = null
+    const current = () => polling.isAvailable() && generation === actionGeneration && context === contextKey.value && confirmation === dialog
     const isCleanupFailure = item.event_type === 6
-    Modal.confirm({
+    dialog = Modal.confirm({
       title: '确认标记为已处理？',
       content: isCleanupFailure
         ? '请确认已在线下完成清理。该操作只关闭当前清理失败待办，不会再次执行数据清理。'
         : '该操作只关闭当前结构待确认事件，不会修改数据模型或数据库表结构。',
       okText: '已处理',
       cancelText: '取消',
+      onBeforeCancel: () => handlingTodoId.value === null,
+      onClose: () => { if (confirmation === dialog) confirmation = null },
       onBeforeOk: async () => {
-        handlingTodoId.value = item.id
+        if (!current() || handlingTodoId.value !== null) return false
+        if (!items.value.some(row => row.id === id && row.can_mark_handled)) return true
+        handlingTodoId.value = id
+        invalidateRead()
+        let acknowledged = false
         try {
-          const res = await postSystemWorkbenchTodoHandled({ id: item.id })
-          Message.success(res.msg)
-          await fetchData(true)
-          return true
+          const message = readHandledTodo(await postSystemWorkbenchTodoHandled({ id }), id)
+          if (!current()) return false
+          acknowledged = true
+          items.value = items.value.filter(row => row.id !== id)
+          Message.success(message)
         } catch {
-          return false
+          if (current()) Message.error('标记处理失败，请重试')
         } finally {
           handlingTodoId.value = null
         }
+        if (acknowledged && current()) await fetchData('quiet')
+        return acknowledged
       },
     })
+    confirmation = dialog
   }
 
-  onMounted(() => {
-    fetchData(true)
-    refreshTimer = setInterval(() => fetchData(true), 60_000)
-  })
-
-  onBeforeUnmount(() => {
-    requestSequence += 1
-    if (refreshTimer) clearInterval(refreshTimer)
-  })
+  watch(contextKey, (value, previous) => {
+    pause()
+    items.value = []
+    page.value = 1
+    total.value = 0
+    loadFailed.value = false
+    loadMoreFailed.value = false
+    if (JSON.parse(value)[0] !== JSON.parse(previous)[0]) publishCount(0)
+    if (mounted) void refresh()
+  }, { flush: 'sync' })
+  onMounted(() => { mounted = true; polling.start(); void refresh() })
+  onBeforeUnmount(() => { mounted = false; pause() })
 </script>
 
 <style lang="less" scoped>

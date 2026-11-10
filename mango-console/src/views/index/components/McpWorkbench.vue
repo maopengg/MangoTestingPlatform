@@ -14,6 +14,7 @@
     </div>
 
     <div class="mango-mcp-scroll-area mango-custom-scrollbar">
+
       <div class="mango-mcp-prompt-panel">
         <div class="mango-mcp-prompt-head">
           <span>推荐指令</span>
@@ -24,6 +25,8 @@
         <button
           class="mango-mcp-prompt-text"
           type="button"
+          :disabled="copyingLabel !== null"
+          :aria-busy="copyingLabel === '推荐指令'"
           @click="copyText(activePrompt, '推荐指令')"
         >
           {{ activePrompt }}
@@ -38,7 +41,7 @@
           </a-typography-paragraph>
         </div>
         <a-tooltip content="复制 MCP 地址">
-          <a-button size="mini" type="text" @click="copyText(mcpUrl, 'MCP 地址')">
+          <a-button size="mini" type="text" :loading="copyingLabel === 'MCP 地址'" :disabled="copyingLabel !== null" @click="copyText(mcpUrl, 'MCP 地址')">
             <template #icon><icon-copy /></template>
           </a-button>
         </a-tooltip>
@@ -68,12 +71,12 @@
         </div>
         <a-space size="mini">
           <a-tooltip content="复制 Authorization 请求头">
-            <a-button size="mini" type="text" :disabled="!apiKey" @click="copyAuthHeader">
+            <a-button size="mini" type="text" :loading="copyingLabel === 'Authorization 请求头'" :disabled="keyUnavailable || copyingLabel !== null" @click="copyAuthHeader">
               <template #icon><icon-copy /></template>
             </a-button>
           </a-tooltip>
           <a-tooltip content="重置当前用户 APIKey">
-            <a-button size="mini" type="text" :loading="resetting" @click="resetApiKey">
+            <a-button size="mini" type="text" :loading="resetting" :disabled="apiKeyLoading || resetting" @click="resetApiKey">
               <template #icon><icon-refresh /></template>
             </a-button>
           </a-tooltip>
@@ -100,7 +103,8 @@
         size="small"
         type="primary"
         long
-        :disabled="!apiKey"
+        :disabled="keyUnavailable || copyingLabel !== null"
+        :loading="copyingLabel === '一键安装说明'"
         @click="copyInstallPrompt"
         data-testid="qa-views-index-components-mcpworkbench-button-复制一键安装说明"
       >
@@ -110,6 +114,7 @@
       <a-button
         size="small"
         long
+        :loading="apiKeyLoading"
         @click="openConfig"
         data-testid="qa-views-index-components-mcpworkbench-button-查看配置"
       >
@@ -131,7 +136,8 @@
           <a-button
             size="mini"
             type="text"
-            :disabled="!apiKey"
+            :disabled="keyUnavailable || copyingLabel !== null"
+            :loading="copyingLabel === '一键安装说明'"
             @click="copyText(installPrompt, '一键安装说明')"
             data-testid="qa-views-index-components-mcpworkbench-button-复制"
           >
@@ -147,7 +153,8 @@
           <a-button
             size="mini"
             type="text"
-            :disabled="!apiKey"
+            :disabled="keyUnavailable || copyingLabel !== null"
+            :loading="copyingLabel === 'Authorization 请求头'"
             @click="copyAuthHeader"
             data-testid="qa-views-index-components-mcpworkbench-button-复制-2"
           >
@@ -163,6 +170,7 @@
         <a-link
           :href="docsUrl"
           target="_blank"
+          rel="noopener noreferrer"
           data-testid="qa-views-index-components-mcpworkbench-link-查看使用文档"
           >查看使用文档</a-link
         >
@@ -172,7 +180,10 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, markRaw, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, markRaw, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
+  import { useRoute } from 'vue-router'
   import { Message, Modal } from '@arco-design/web-vue'
   import {
     IconBook,
@@ -203,6 +214,17 @@
   const apiKey = ref('')
   const configVisible = ref(false)
   const resetting = ref(false)
+  const apiKeyLoading = ref(false)
+  const apiKeyFailed = ref(false)
+  const copyingLabel = ref<string | null>(null)
+  const keyUnavailable = computed(() => !apiKey.value || apiKeyLoading.value || resetting.value)
+  const route = useRoute(), entryPath = route.path
+  const contextKey = computed(() => JSON.stringify([
+    route.fullPath, userStore.userId, userStore.roleId, userStore.token, userStore.selected_environment,
+  ]))
+  let active = true, mounted = false, generation = 0, keyReadSequence = 0, credentialVersion = 0
+  let confirmation: ReturnType<typeof Modal.confirm> | null = null
+  const available = () => active && route.path === entryPath
   const capabilityGridRef = ref<HTMLElement | null>(null)
   const capabilityColumns = ref<1 | 2>(2)
   let capabilityResizeObserver: ResizeObserver | null = null
@@ -230,7 +252,7 @@
     {
       key: 'factory',
       title: '数据工厂',
-      desc: '数据库、实体、模板、SQL 查询和清理',
+      desc: '表结构、实体、模板与已保存配置的执行和清理',
       icon: resolveMenuIcon('/data-factory', markRaw(IconStorage)),
     },
     {
@@ -253,8 +275,8 @@
     },
     {
       key: 'ai',
-      title: 'AI 资产',
-      desc: 'Skill、MCP 工具快照和 Agent 记录',
+      title: '服务能力',
+      desc: 'Skill 文档与 MCP 工具元数据发现',
       icon: resolveMenuIcon('/ai', markRaw(IconRobot)),
     },
     {
@@ -273,7 +295,7 @@
     `使用 ${mcpServerName.value} MCP 创建一个 UI 页面步骤并绑定到 UI 用例中。`,
     `使用 ${mcpServerName.value} MCP 为指定表创建数据实体和模板，并预览生成数据。`,
     `使用 ${mcpServerName.value} MCP 查询测试报告，筛选失败用例并生成排查结论。`,
-    `使用 ${mcpServerName.value} MCP 查询 AI Skill 和 MCP 工具快照。`,
+    `使用 ${mcpServerName.value} MCP 查询 Skill 清单和工具元数据。`,
   ])
   const promptIndex = ref(Math.floor(Math.random() * prompts.value.length))
 
@@ -289,8 +311,9 @@
   const modeText = computed(() => import.meta.env.MODE || '-')
   const activePrompt = computed(() => prompts.value[promptIndex.value])
   const maskedApiKey = computed(() => {
+    if (apiKeyLoading.value) return '正在加载 APIKey'
     if (!apiKey.value) return '当前用户暂无 APIKey'
-    if (apiKey.value.length <= 18) return apiKey.value
+    if (apiKey.value.length <= 18) return '••••••••'
     return `${apiKey.value.slice(0, 12)}...${apiKey.value.slice(-8)}`
   })
   const authHeader = computed(() =>
@@ -322,80 +345,110 @@ Authorization: ${authHeader.value}
     input.style.position = 'fixed'
     input.style.opacity = '0'
     document.body.appendChild(input)
-    input.select()
-    document.execCommand('copy')
-    document.body.removeChild(input)
+    try {
+      input.select()
+      if (!document.execCommand('copy')) throw Error('Clipboard unavailable')
+    } finally { document.body.removeChild(input) }
   }
 
   async function copyText(text: string, label: string) {
-    if (!text) return
+    if (!available() || !text || copyingLabel.value !== null || resetting.value) return
+    const currentGeneration = generation, version = credentialVersion
+    const current = () => available() && generation === currentGeneration && credentialVersion === version
+    copyingLabel.value = label
     try {
       if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text)
+        try { await navigator.clipboard.writeText(text) }
+        catch {
+          if (!current()) return
+          fallbackCopy(text)
+        }
       } else {
         fallbackCopy(text)
       }
-      Message.success(`${label}已复制`)
-    } catch (error) {
-      fallbackCopy(text)
-      Message.success(`${label}已复制`)
-    }
+      if (current()) Message.success(`${label}已复制`)
+    } catch {
+      if (current()) Message.error('复制失败，请重试')
+    } finally { copyingLabel.value = null }
   }
 
   function copyAuthHeader() {
+    if (!available() || apiKeyLoading.value || resetting.value) return
     if (!apiKey.value) {
       Message.warning('当前用户暂无 APIKey')
       return
     }
-    copyText(`Authorization: ${authHeader.value}`, 'Authorization 请求头')
+    return copyText(`Authorization: ${authHeader.value}`, 'Authorization 请求头')
   }
 
   function copyInstallPrompt() {
+    if (!available() || apiKeyLoading.value || resetting.value) return
     if (!apiKey.value) {
       Message.warning('当前用户暂无 APIKey，请先在用户管理中生成或重置 APIKey')
       return
     }
-    copyText(installPrompt.value, '一键安装说明')
+    return copyText(installPrompt.value, '一键安装说明')
   }
 
   function openConfig() {
-    configVisible.value = true
+    if (available()) configVisible.value = true
   }
 
-  function openDocs() {
-    window.open(docsUrl, '_blank')
+  function readApiKey(value: unknown): string {
+    if (!value || typeof value !== 'object' || !('code' in value) || value.code !== 200 || !('data' in value)) throw Error('Invalid APIKey response')
+    const data = value.data
+    if (!data || typeof data !== 'object' || !('api_key' in data) || typeof data.api_key !== 'string' || !data.api_key.trim()) throw Error('Invalid APIKey response')
+    return data.api_key
   }
 
-  function loadCurrentUserApiKey() {
-    if (!userStore.userId) return
-    getCurrentUserApiKey()
-      .then((res) => {
-        apiKey.value = res.data?.api_key || ''
-      })
-      .catch(console.log)
+  async function loadCurrentUserApiKey() {
+    if (!available() || !userStore.userId || resetting.value) return
+    const sequence = ++keyReadSequence, currentGeneration = generation
+    const current = () => available() && sequence === keyReadSequence && currentGeneration === generation
+    apiKeyLoading.value = true
+    apiKeyFailed.value = false
+    try {
+      const key = readApiKey(await getCurrentUserApiKey())
+      if (current()) { apiKey.value = key; credentialVersion++ }
+    } catch (loadFailure0) {
+      if (current()) (reportLoadError(loadFailure0, "加载失败，请重试", false), apiKeyFailed.value = true)
+    } finally { if (current()) apiKeyLoading.value = false }
   }
 
   function resetApiKey() {
-    if (!userStore.userId) return
-    Modal.confirm({
+    if (!available() || !userStore.userId || resetting.value || apiKeyLoading.value || confirmation) return
+    const currentGeneration = generation
+    let dialog: ReturnType<typeof Modal.confirm> | null = null
+    const current = () => available() && currentGeneration === generation && confirmation === dialog
+    dialog = Modal.confirm({
       title: '重置 MCP APIKey',
       content: '重置后旧 APIKey 会立即失效，已配置的 MCP 客户端需要更新。',
       cancelText: '取消',
       okText: '重置',
-      onBeforeOk: () => {
+      onClose: () => { if (confirmation === dialog) confirmation = null },
+      onBeforeCancel: () => !resetting.value,
+      onBeforeOk: async () => {
+        if (!current() || resetting.value) return false
         resetting.value = true
-        return putUserApiKey({})
-          .then((res) => {
-            Message.success(`${res.msg}，请复制新的 APIKey 更新 MCP 客户端配置`)
-            apiKey.value = res.data?.api_key || ''
-            loadCurrentUserApiKey()
-          })
-          .catch(console.log)
-          .finally(() => {
-            resetting.value = false
-          })
+        credentialVersion++
+        keyReadSequence++
+        try {
+          const key = readApiKey(await putUserApiKey({}))
+          if (!current()) return false
+          apiKey.value = key
+          apiKeyFailed.value = false
+          Message.success('APIKey 已重置，请更新 MCP 客户端配置')
+          return true
+        } catch {
+          if (current()) Message.error('APIKey 重置失败，请重试')
+          return false
+        } finally {
+          resetting.value = false
+          if (mounted && available() && currentGeneration !== generation) void loadCurrentUserApiKey()
+        }
       },
     })
+    confirmation = dialog
   }
 
   function updateCapabilityColumns() {
@@ -410,15 +463,24 @@ Authorization: ${authHeader.value}
   }
 
   function scheduleCapabilityLayout() {
+    if (!available()) return
     if (capabilityLayoutFrame) window.cancelAnimationFrame(capabilityLayoutFrame)
     capabilityLayoutFrame = window.requestAnimationFrame(() => {
-      updateCapabilityColumns()
+      if (available()) updateCapabilityColumns()
       capabilityLayoutFrame = 0
     })
   }
 
-  onMounted(() => {
-    loadCurrentUserApiKey()
+  function stopLayout() {
+    capabilityResizeObserver?.disconnect()
+    capabilityResizeObserver = null
+    window.removeEventListener('resize', scheduleCapabilityLayout)
+    if (capabilityLayoutFrame) window.cancelAnimationFrame(capabilityLayoutFrame)
+    capabilityLayoutFrame = 0
+  }
+  function startLayout() {
+    stopLayout()
+    if (!available()) return
     scheduleCapabilityLayout()
     if (capabilityGridRef.value && typeof ResizeObserver !== 'undefined') {
       capabilityResizeObserver = new ResizeObserver(scheduleCapabilityLayout)
@@ -426,15 +488,22 @@ Authorization: ${authHeader.value}
     } else {
       window.addEventListener('resize', scheduleCapabilityLayout)
     }
-  })
+  }
 
   watch(displayDensityScale, scheduleCapabilityLayout)
-
-  onBeforeUnmount(() => {
-    capabilityResizeObserver?.disconnect()
-    window.removeEventListener('resize', scheduleCapabilityLayout)
-    if (capabilityLayoutFrame) window.cancelAnimationFrame(capabilityLayoutFrame)
+  watch(capabilityGridRef, startLayout, { flush: 'post' })
+  function invalidate() {
+    generation++; credentialVersion++; keyReadSequence++
+    apiKey.value = ''; apiKeyLoading.value = false; apiKeyFailed.value = false; configVisible.value = false
+    confirmation?.close(); confirmation = null
+  }
+  watch(contextKey, () => { invalidate(); if (mounted) void loadCurrentUserApiKey() }, { flush: 'sync' })
+  onMounted(() => { mounted = true; void loadCurrentUserApiKey(); startLayout() })
+  onDeactivated(() => { active = false; invalidate(); stopLayout() })
+  onActivated(() => {
+    if (mounted && !active) { active = true; void loadCurrentUserApiKey(); startLayout() }
   })
+  onBeforeUnmount(() => { active = false; mounted = false; invalidate(); stopLayout() })
 </script>
 
 <style lang="less" scoped>

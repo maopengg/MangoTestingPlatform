@@ -40,7 +40,7 @@ test('enum labels preserve zero and false without replacing the stored selection
 })
 
 test('view-only field controls do not bind edits or serialize the whole config', () => {
-  const page = readFileSync(new URL(base + 'index.vue', import.meta.url), 'utf8')
+  const page = readFileSync(new URL(base + 'components/EntityRulesDialog.vue', import.meta.url), 'utf8')
   const dialog = page.slice(page.indexOf(':title="`${entityRuleRecord'), page.indexOf('</a-modal>', page.indexOf(':title="`${entityRuleRecord')))
   assert.match(dialog, /生成方式（只读）/)
   assert.match(dialog, /生成配置（只读）/)

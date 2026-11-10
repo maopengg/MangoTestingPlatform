@@ -46,7 +46,7 @@ class ModuleCoverageQueryMixin:
             queryset = queryset.filter(repository_key=repository_key)
         if branch:
             queryset = queryset.filter(branch=branch)
-        return queryset
+        return queryset.select_related('api_case', 'api_case_revision')
 
     @classmethod
     def interface_page(
@@ -259,7 +259,7 @@ class ModuleCoverageQueryMixin:
                 "sync_action": item.sync_action,
                 "update_time": item.create_time,
                 "resolution_status": resolution["status"],
-                "analysis_status": cls.interface_analysis_status(
+                **cls.interface_analysis_assessment(
                     item, sum(cls.case_analysis_complete(case, item) for case in analysis_cases[identity]),
                     len(analysis_cases[identity])),
                 "resolution_reason": resolution["reason"],
@@ -282,7 +282,9 @@ class ModuleCoverageQueryMixin:
                     round(effective_completed * 100 / target, 2) if target else 0
                 ),
             }
-            row["coverage_status"] = cls.interface_coverage_status(item, target, effective_completed, row["deferred_case_count"])
+            row["coverage_status"] = cls.interface_coverage_status(
+                item, target, effective_completed, row["deferred_case_count"], analysis_status=row["analysis_status"],
+            )
             rows.append(row)
         if coverage_statuses or analysis_statuses:
             rows = [row for row in rows
@@ -325,8 +327,8 @@ class ModuleCoverageQueryMixin:
         if interface_snapshot.lifecycle_status == ModuleCoverageInterfaceStatus.ACTIVE:
             cases = cases.filter(removed_at__isnull=True)
         cases = list(cases.select_related(
-            "api_case", "last_seen_scan", "current_snapshot",
-            "current_snapshot__interface_snapshot",
+            "api_case", "api_case_revision", "last_seen_scan", "current_snapshot",
+            "current_snapshot__interface_snapshot", "current_snapshot__scan",
         ).order_by("name", "id"))
         resolution = cls.interface_resolution(
             interface_snapshot.mermaid, interface_snapshot.node_ids,
@@ -346,6 +348,9 @@ class ModuleCoverageQueryMixin:
             for item in cases
         )
         case_page = max(1, int(case_page))
+        analysis = cls.interface_analysis_assessment(
+            interface_snapshot, sum(cls.case_analysis_complete(item, interface_snapshot) for item in cases), len(cases),
+        )
         case_page_size = min(100, max(1, int(case_page_size)))
         page_cases = cases[(case_page - 1) * case_page_size:case_page * case_page_size]
         if interface_snapshot.module_interface_id:
@@ -374,7 +379,9 @@ class ModuleCoverageQueryMixin:
             "coverage_status": cls.interface_coverage_status(
                 interface_snapshot, target, completed,
                 sum(item.status == ModuleCoverageCaseStatus.DEFERRED for item in cases),
+                analysis_status=analysis["analysis_status"],
             ),
+            **analysis,
             "first_scan_id": first_scan_id,
             "latest_scan_id": interface_snapshot.scan_id,
             "latest_commit_sha": interface_snapshot.scan.commit_sha,

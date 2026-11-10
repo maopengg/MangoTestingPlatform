@@ -1,6 +1,7 @@
 import { inject, provide, watch, type InjectionKey } from 'vue'
 import { putApiCase } from '@/api/apitest/case'
 import { putApiCaseDetailedParameter } from '@/api/apitest/case-detailed-parameter'
+import type { CaseWorkspaceRecord, ApiCaseScenario } from '../types'
 import { createChangeAwareSave } from '@/utils/change-aware-save'
 
 type ParameterSave = (
@@ -39,11 +40,15 @@ const parameterFields = [
   'posterior_file',
 ]
 
-function editableValues(record: any, fields: string[]) {
-  return { id: record?.id, ...Object.fromEntries(fields.map((key) => [key, record?.[key]])) }
+function editableValues(record: { id?: string | number } | null, fields: string[]) {
+  const values = new Map(Object.entries(record || {}))
+  return { id: record?.id, ...Object.fromEntries(fields.map((key) => [key, values.get(key)])) }
 }
 
-export function useApiCaseAutoSave(record: () => any, scenarios: () => any[]) {
+export function useApiCaseAutoSave(
+  record: () => CaseWorkspaceRecord,
+  scenarios: () => ApiCaseScenario[]
+) {
   const caseSave = createChangeAwareSave(putApiCase)
   const parameterSave = createChangeAwareSave(putApiCaseDetailedParameter)
   watch(record, (value) => caseSave.seed(editableValues(value, caseFields)), {

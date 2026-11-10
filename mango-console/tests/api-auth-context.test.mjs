@@ -1,58 +1,90 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import ts from 'typescript'
-import { ref, reactive } from 'vue'
-import { parse } from '@vue/compiler-sfc'
+import { reactive } from 'vue'
+import { config, form, record, component, deferred, flush } from './helpers/auth-config-harness.mjs'
 
-const source = readFileSync('src/views/apitest/auth-config/index.vue', 'utf8')
-const ast = ts.createSourceFile('auth.ts', parse(source).descriptor.scriptSetup.content, ts.ScriptTarget.Latest, true)
-
-test('associated variables remain an optional array in create and edit payloads', () => {
-  const config = readFileSync('src/views/apitest/auth-config/config.ts', 'utf8')
-  const configAst = ts.createSourceFile('config.ts', config, ts.ScriptTarget.Latest, true)
-  const declaration = configAst.statements.filter(ts.isVariableStatement)
-    .flatMap(node => [...node.declarationList.declarations]).find(node => node.name.getText(configAst) === 'formItems')
-  const code = ts.transpileModule(`const ${declaration.getText(configAst)}`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
-  const items = new Function('reactive', 'ref', code + ';return formItems')(reactive, ref)
-  const item = items.find(item => item.key === 'public_variable_ids')
-  assert.equal(item.multiple, true)
-  assert.deepEqual(item.value, [])
-  item.value = [7, 8]
-  const exports = {}
-  new Function('exports', ts.transpileModule(readFileSync('src/utils/datacleaning.ts', 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-  }).outputText)(exports)
-  assert.deepEqual(exports.getFormItems(items).public_variable_ids, [7, 8])
-  assert.match(source, /:loading="publicVariablesLoading"/)
-  assert.match(source, /@change="onAuthVariableContextChange"/)
+test('independent search and edit instances cannot leak values; edit drafts do not mutate rows', () => {
+  const a=config.createConditionItems(), b=config.createConditionItems()
+  a[1].value='changed'
+  assert.equal(b[1].value,'')
+  const row=record(), draft=reactive(form.createAuthDraft(row)), fields=config.createFormItems(draft)
+  fields.find(f=>f.key==='name').value='edited'
+  draft.public_variable_ids.push(8)
+  assert.equal(draft.name,'edited'); assert.equal(row.name,'Example auth')
+  assert.deepEqual(row.public_variable_ids,[7])
+  assert.equal(form.createAuthDraft(undefined,0).test_env,0)
+  assert.equal(form.createAuthDraft().api_info,null)
 })
 
-test('variable options use real product ID, accept environment zero and ignore stale results', async () => {
-  const declaration = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name.text === 'loadPublicVariableOptions')
-  const code = ts.transpileModule(declaration.getText(ast), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
-  const options = ref([])
-  const loading = ref(false)
-  const product = ref({ value: [1, 3] })
-  const pending = []
-  const calls = []
-  const load = new Function('projectProductItem', 'authEnvironment', 'publicVariableOptions', 'publicVariablesLoading',
-    'getApiAuthPublicVariables', 'getOptionId', 'formItems',
-    'let publicVariableRequest = 0;' + code + ';return loadPublicVariableOptions')(
-      product, ref(0), options, loading,
-      query => { calls.push(query); return new Promise(resolve => pending.push(resolve)) },
-      value => value[value.length - 1], [{ key: 'public_variable_ids', value: [] }],
-    )
-  const first = load('tenant')
-  assert.equal(loading.value, true)
-  assert.equal(calls[0].project_product, 3)
-  assert.equal(calls[0].test_env, 0)
-  product.value = { value: [1, 4] }
-  const second = load('user')
-  pending[1]({ data: [{ id: 8, name: 'User', key: 'user_id' }] })
-  await second
-  pending[0]({ data: [{ id: 7, name: 'Tenant', key: 'tenant_id' }] })
-  await first
-  assert.deepEqual(options.value.map(item => item.value), [8])
-  assert.equal(loading.value, false)
+test('closing or switching product ignores late public-variable and notice options', async () => {
+  const pending=[], notices=[]
+  const editor=component('AuthConfigEditor','formModel, publicVariableOptions, noticeOptions, publicVariablesLoading, closeEditor, onFormProjectProductChange',{
+    api:{getApiAuthPublicVariables:()=>{const d=deferred();pending.push(d);return d.promise}},
+    getSystemNoticeName:()=>{const d=deferred();notices.push(d);return d.promise},
+  })
+  editor.handle.open(record())
+  editor.formModel.project_product=4;editor.onFormProjectProductChange()
+  pending[1].resolve({data:[{id:9,name:'new',key:'user'}]});notices[1].resolve({data:[{key:2,title:'new'}]})
+  await flush()
+  pending[0].resolve({data:[{id:8,name:'old',key:'tenant'}]});notices[0].resolve({data:[{key:1,title:'old'}]})
+  await flush()
+  assert.deepEqual(editor.publicVariableOptions.value.map(i=>i.value),[9])
+  assert.equal(editor.noticeOptions.value[0].key,2)
+  editor.formModel.project_product=5;editor.onFormProjectProductChange();editor.closeEditor()
+  pending[2].resolve({data:[{id:10}]});notices[2].resolve({data:[{key:3}]});await flush()
+  assert.equal(editor.publicVariablesLoading.value,false)
+  assert.notEqual(editor.noticeOptions.value[0]?.key,3)
+  editor.cleanup()
+})
+
+test('save rejects duplicate submissions, retains failed draft and creates without previous edit ID', async () => {
+  const pending=[], payloads=[]
+  const save=payload=>{payloads.push(payload);const d=deferred();pending.push(d);return d.promise}
+  const editor=component('AuthConfigEditor','formModel, saving, editorVisible, onDataForm, closeEditor',{api:{putApiAuthConfig:save,postApiAuthConfig:save}})
+  editor.handle.open(record())
+  const saving=editor.onDataForm();assert.equal(editor.saving.value,true)
+  assert.equal(await editor.onDataForm(),false);assert.equal(payloads.length,1)
+  pending[0].reject(new Error('failure'));assert.equal(await saving,false)
+  assert.equal(editor.saving.value,false);assert.equal(editor.editorVisible.value,true)
+  editor.closeEditor();editor.handle.open(undefined,4)
+  Object.assign(editor.formModel,{name:'new auth',api_info:8})
+  const created=editor.onDataForm();pending[1].resolve({msg:'ok'});assert.equal(await created,true)
+  assert.equal('id' in payloads[1],false);assert.equal(payloads[1].status,1)
+  assert.equal(payloads[1].project_product,4);assert.equal(editor.editorVisible.value,false)
+  assert.equal(editor.events.length,1);editor.cleanup()
+})
+
+test('list preserves zero/multi-value filters and ignores old search responses; reset drops selection', async () => {
+  const requests=[]
+  const page=component('index','conditionItems, selectedRowKeys, pagination, table, doRefresh, onResetSearch',{
+    api:{getApiAuthConfig:query=>{const d=deferred();requests.push({...d,query});return d.promise}},
+  })
+  page.conditionItems.find(f=>f.key==='test_env').value=[0,2]
+  page.conditionItems.find(f=>f.key==='auth_type').value=[0]
+  const first=page.doRefresh(true), second=page.doRefresh(true)
+  assert.equal(requests[0].query.test_env__in,'0,2');assert.equal(requests[0].query.auth_type__in,'0')
+  assert.equal('name' in requests[0].query,false)
+  requests[1].resolve({data:[{id:2}],totalSize:1});await second
+  requests[0].resolve({data:[{id:1}],totalSize:1});await first
+  assert.deepEqual(page.table.dataList,[{id:2}]);assert.equal(page.table.tableLoading.value,false)
+  page.selectedRowKeys.value=['1'];page.pagination.page=4;page.onResetSearch()
+  assert.equal(page.pagination.page,1);assert.deepEqual(page.selectedRowKeys.value,[])
+  assert.deepEqual(page.conditionItems.find(f=>f.key==='test_env').value,[])
+  requests[2].resolve({data:[],totalSize:0});await flush();page.cleanup()
+})
+
+test('failed status/delete operations do not commit state or close confirmation; success does', async () => {
+  let confirmation, fail=true
+  const page=component('index','table,onModifyStatus,onDelete,selectedRowKeys',{
+    Modal:{confirm:value=>{confirmation=value}},
+    api:{putApiAuthConfigStatus:async()=>{if(fail)throw new Error('failure');return {code:200}},
+      deleteApiAuthConfig:async()=>{if(fail)throw new Error('failure');return {msg:'ok'}}},
+  })
+  page.table.dataList=[record()]
+  assert.equal(await page.onModifyStatus(false,1),false);assert.equal(page.table.dataList[0].status,1)
+  page.selectedRowKeys.value=['1'];page.onDelete(null);page.selectedRowKeys.value=[]
+  assert.equal(await confirmation.onBeforeOk(),false)
+  fail=false
+  assert.equal(await page.onModifyStatus(false,1),true);assert.equal(page.table.dataList[0].status,0)
+  assert.equal(await confirmation.onBeforeOk(),true);page.cleanup()
 })

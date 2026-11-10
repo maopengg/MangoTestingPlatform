@@ -3,47 +3,52 @@ import fs from 'node:fs'
 import test from 'node:test'
 import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
 import { computed, reactive, ref } from 'vue'
-import ts from 'typescript'
+import path from 'node:path'
+import { harness, deferred, flush } from '../helpers/case-details-harness.mjs'
 
 const root = new URL('../../', import.meta.url)
 const panelPath = 'src/views/apitest/mock/components/MockCallLogsPanel.vue'
 const panelSource = fs.readFileSync(new URL(panelPath, root), 'utf8')
 
-function createPanel(getMockLogs) {
-  const { descriptor } = parse(panelSource)
-  const source = descriptor.scriptSetup.content.replace(/^\s*import .*$/gm, '')
-  const code = ts.transpileModule(source, {
-    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
-  }).outputText
-  const props = { visible: true, mockId: 2, mockKey: 'callback' }
-  let changed
-  let cleanup
-  let opening
+function createPanel(getMockLogs, extra = {}) {
   let confirmOptions
   const cleared = []
-  const api = {
-    getMockLogs,
-    getMockLogDetail: async (id) => ({ data: { id, assertion_results: [] } }),
-    getMockAssertionMethods: async () => ({ data: [] }),
-    clearMockLogs: async (id) => { cleared.push(id); return { data: { deleted_count: 1 } } },
-    exportMockLogs: async () => {},
-  }
-  const injections = {
-    computed, reactive, ref, ...api,
-    watch: (_sources, callback) => { changed = callback; opening = callback([props.visible]) },
-    onBeforeUnmount: (callback) => { cleanup = callback },
-    defineProps: () => props,
-    defineEmits: () => (_event, value) => { props.visible = value },
-    Message: { success() {}, error() {} },
-    Modal: { confirm(options) { confirmOptions = options } },
-  }
-  const setup = new Function(...Object.keys(injections), code + '\nreturn { logs, loadLogs, clearLogs, openLogDetail }')
-  const state = setup(...Object.values(injections))
+  const panel = harness(
+    'MockCallLogsPanel',
+    'logs,loadLogs,clearLogs,openLogDetail,exportLogs,listFailed,detailFailed,buildLogQuery,visible',
+    {
+      base: path.resolve('src/views/apitest/mock'),
+      props: { visible: true, mockId: 2, mockKey: 'callback' },
+      api: {
+        getMockLogs,
+        getMockLogDetail: async (id) => ({ data: { id, assertion_results: [] } }),
+        getMockAssertionMethods: async () => ({ data: [] }),
+        clearMockLogs: async (id) => {
+          cleared.push(id)
+          return { data: { deleted_count: 1 } }
+        },
+        ...extra,
+      },
+      Modal: {
+        confirm(options) {
+          confirmOptions = options
+          return {
+            close() {
+              options.onClose?.()
+            },
+          }
+        },
+      },
+    }
+  )
   return {
-    state, props, opening, cleared,
-    change: () => changed([props.visible]),
-    cleanup: () => cleanup(),
-    confirm: () => confirmOptions.onOk(),
+    state: panel,
+    props: panel.props,
+    cleared,
+    opening: flush(),
+    change: flush,
+    cleanup: panel.close,
+    confirm: () => confirmOptions.onBeforeOk(),
   }
 }
 
@@ -52,12 +57,20 @@ test('mock list opens the shared panel without navigating to configuration', () 
   assert.match(source, /label: '调用记录', onClick: \(\) => openLogs\(record\)/)
   assert.match(source, /logsTarget\.value = \{ id: record\.id, mock_key: record\.mock_key \}/)
   assert.doesNotMatch(source, /query: \{ id, logs: 1 \}/)
-  for (const path of [panelPath, 'src/views/apitest/mock/index.vue', 'src/views/apitest/mock/details/index.vue']) {
+  for (const path of [
+    panelPath,
+    'src/views/apitest/mock/index.vue',
+    'src/views/apitest/mock/details/index.vue',
+  ]) {
     const { descriptor, errors } = parse(fs.readFileSync(new URL(path, root), 'utf8'))
     assert.deepEqual(errors, [])
     const script = compileScript(descriptor, { id: path })
-    const template = compileTemplate({ source: descriptor.template.content, filename: path, id: path,
-      compilerOptions: { bindingMetadata: script.bindings } })
+    const template = compileTemplate({
+      source: descriptor.template.content,
+      filename: path,
+      id: path,
+      compilerOptions: { bindingMetadata: script.bindings },
+    })
     assert.deepEqual(template.errors, [])
   }
 })
@@ -70,6 +83,7 @@ test('opening loads the selected mock and changing mock ignores stale responses'
   panel.props.mockId = 3
   panel.props.mockKey = 'other-callback'
   const changed = panel.change()
+  await flush()
   assert.equal(pending[1].params.id, 3)
   pending[1].resolve({ data: [{ id: 30 }], totalSize: 1 })
   await changed
@@ -81,21 +95,84 @@ test('opening loads the selected mock and changing mock ignores stale responses'
   panel.cleanup()
 })
 
-test('clear confirmation keeps its original mock identity after selection changes', async () => {
+test('stale clear confirmation cannot delete after switching the target', async () => {
   const panel = createPanel(async () => ({ data: [{ id: 20 }], totalSize: 1 }))
   await panel.opening
   panel.state.clearLogs()
   panel.props.mockId = 3
   await panel.change()
   await panel.confirm()
-  assert.deepEqual(panel.cleared, [2])
+  assert.deepEqual(panel.cleared, [])
   assert.equal(panel.state.logs.clearing, false)
   panel.cleanup()
 })
 
 test('failed list requests always release loading', async () => {
-  const panel = createPanel(async () => { throw new Error('test request failure') })
-  await assert.rejects(panel.opening, /test request failure/)
+  const panel = createPanel(async () => {
+    throw new Error('test request failure')
+  })
+  await panel.opening
+  assert.equal(panel.state.listFailed.value, true)
   assert.equal(panel.state.logs.loading, false)
+  panel.cleanup()
+})
+
+test('closing nested details ignores delayed detail and catalog responses', async () => {
+  const detail = deferred(),
+    panel = createPanel(async () => ({ data: [{ id: 20 }], totalSize: 1 }), {
+      getMockLogDetail: () => detail.promise,
+    })
+  await panel.opening
+  const task = panel.state.openLogDetail({ id: 20 })
+  panel.state.logs.detailVisible = false
+  detail.resolve({ data: { id: 20, request_data: { body: false } } })
+  await task
+  assert.equal(panel.state.logs.selected, null)
+  assert.equal(panel.state.logs.detailLoading, false)
+  panel.cleanup()
+})
+test('failed clear keeps confirmation retryable and freezes original ID', async () => {
+  let fail = true
+  const calls = [],
+    panel = createPanel(async () => ({ data: [{ id: 20 }], totalSize: 1 }), {
+      clearMockLogs: async (id) => {
+        calls.push(id)
+        if (fail) throw Error('delete')
+        return { data: { deleted_count: 1 } }
+      },
+    })
+  await panel.opening
+  panel.state.clearLogs()
+  assert.equal(await panel.confirm(), false)
+  assert.equal(panel.state.logs.clearing, false)
+  fail = false
+  assert.equal(await panel.confirm(), true)
+  assert.deepEqual(calls, [2, 2])
+  panel.cleanup()
+})
+test('export rejects duplicates and suppresses late download after closing', async () => {
+  const pending = deferred()
+  let calls = 0
+  const panel = createPanel(async () => ({ data: [{ id: 20 }], totalSize: 1 }), {
+    exportMockLogs: () => {
+      calls++
+      return pending.promise
+    },
+  })
+  await panel.opening
+  const task = panel.state.exportLogs()
+  await panel.state.exportLogs()
+  assert.equal(calls, 1)
+  panel.state.visible.value = false
+  pending.resolve({ data: new Blob(['csv']), headers: {} })
+  await task
+  assert.equal(panel.state.logs.exporting, false)
+  panel.cleanup()
+})
+test('query keeps false-like assertion filter and omits empty fields', async () => {
+  const panel = createPanel(async () => ({ data: [], totalSize: 0 }))
+  await panel.opening
+  panel.state.logs.filters.assertion_passed = 0
+  assert.deepEqual(panel.state.buildLogQuery(), { id: 2, assertion_passed: 0 })
   panel.cleanup()
 })

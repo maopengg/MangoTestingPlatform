@@ -50,14 +50,15 @@ export function postUserProduct(data: object) {
 }
 
 export function putUserProduct(data: object) {
-  return put({ url: '/system/product',
+  return put({
+    url: '/system/product',
     data: () => {
       return data
     },
   })
 }
 
-export function deleteUserProduct(id: number | string[] | number[]) {
+export function deleteUserProduct(id: number | string | string[] | number[]) {
   return deleted({
     url: '/system/product',
     data: () => {

@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { ownershipFormattingSource, hasOwnershipFormatter } from './lib/navigation-ownership-source.mjs'
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const viewsRoot = path.resolve(scriptDir, '../src/views')
@@ -95,12 +96,11 @@ for (const vuePath of walk(viewsRoot)) {
   if (!/title:\s*['"]项目\/产品['"]/.test(combinedSource)) {
     issues.push(`${relativePath}: 导航列表缺少“项目/产品”列`)
   }
-  const usesProjectProductPath = /formatProjectProductPath\(record\.project_product\)/.test(
-    vueSource
-  )
+  const formattingSource = ownershipFormattingSource(vuePath, vueSource)
+  const usesProjectProductPath = hasOwnershipFormatter(formattingSource, 'project_product')
   if (!usesProjectProductPath) {
     issues.push(
-      `${relativePath}: 项目/产品必须使用 formatProjectProductPath(record.project_product) 展示`
+      `${relativePath}: 项目/产品必须使用 formatProjectProductPath 展示关系对象（project_product 或 project_product_data）`
     )
   }
 
@@ -110,8 +110,8 @@ for (const vuePath of walk(viewsRoot)) {
     if (!/title:\s*['"]模块['"]/.test(combinedSource)) {
       issues.push(`${relativePath}: 模块导航列表缺少“模块”列`)
     }
-    if (!/formatModulePath\(record\.module\)/.test(vueSource)) {
-      issues.push(`${relativePath}: 模块列必须使用 formatModulePath(record.module) 展示`)
+    if (!hasOwnershipFormatter(formattingSource, 'module')) {
+      issues.push(`${relativePath}: 模块列必须使用 formatModulePath 展示关系对象（module 或 module_data）`)
     }
   }
   validateOwnershipColumnOrder(relativePath, configSource || vueSource, showsModules)

@@ -2,7 +2,7 @@
   <a-empty
     v-if="!detail"
     description="请选择执行记录"
-    class="mango-ui-case-execution-result__empty"
+    class="mango-empty-state mango-ui-case-execution-result__empty"
   />
   <div v-else class="mango-ui-case-execution-result">
     <a-alert v-if="executionError" type="error" class="mango-ui-case-execution-result__alert">
@@ -12,7 +12,7 @@
     <a-empty
       v-else
       description="本轮执行没有可展示的 UI 测试结果"
-      class="mango-ui-case-execution-result__empty"
+      class="mango-empty-state mango-ui-case-execution-result__empty"
     />
   </div>
 </template>
@@ -20,15 +20,19 @@
 <script lang="ts" setup>
   import { computed } from 'vue'
   import ElementTestReport from './ElementTestReport.vue'
+  import { uiReportObject } from './ui-report'
 
   const props = defineProps<{
-    detail: any | null
+    detail: unknown
   }>()
 
-  const resultData = computed(() => props.detail?.result_data || null)
-  const executionError = computed(
-    () => props.detail?.error_message || resultData.value?.error_message || ''
-  )
+  const detail = computed(() => uiReportObject(props.detail))
+  const resultData = computed(() => uiReportObject(detail.value?.result_data))
+  const executionError = computed(() => {
+    const error = detail.value?.error_message
+    const resultError = resultData.value?.error_message
+    return typeof error === 'string' && error ? error : typeof resultError === 'string' ? resultError : ''
+  })
 </script>
 
 <style scoped>

@@ -18,14 +18,15 @@ const { getFormItems } = loadUtils('src/utils/datacleaning.ts')
 
 test('actual API Case search component honors all six screenshot fields', () => {
   const config = readFileSync('src/views/apitest/case/config.ts', 'utf8')
-  const start = config.indexOf('export const conditionItems')
-  const end = config.indexOf('export const formItems', start)
+  const start = config.indexOf('export function createConditionItems')
+  const end = config.indexOf('export function createMetadataFormItems', start)
   const code = config.slice(start, end).replace('export ', '')
-  const items = new Function('reactive', 'ref', 'createIdSearchValue', 'createUpdateUserCondition', 'enableMultiSelectSearch',
-    ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText + '; return conditionItems')(
-    reactive, ref, () => ref(''), () => ({ key: 'update_user', type: 'select', value: [] }), enableMultiSelectSearch
+  const items = new Function('reactive', 'ref', 'createIdSearchValue', 'createUpdateUserCondition', 'enableMultiSelectSearch', 'bindingSearchOptions',
+    ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText + '; return createConditionItems()')(
+    reactive, ref, () => ref(''), () => ({ key: 'update_user', type: 'select', value: [] }), enableMultiSelectSearch, []
   )
-  for (const key of ['publication_status', 'level', 'scenario_layer', 'scenario_type', 'case_people', 'status']) {
+  assert.equal(items.some(item=>item.key==='publication_status'), false, 'publication status uses fixed tabs')
+  for (const key of ['level', 'scenario_layer', 'scenario_type', 'case_people', 'status']) {
     const item = items.find(item => item.key === key)
     assert.equal(item.multiple, true, key)
     item.value = key === 'publication_status' ? ['published', 'draft_changed'] : [0, 1]
@@ -33,7 +34,7 @@ test('actual API Case search component honors all six screenshot fields', () => 
     item.reset()
     assert.deepEqual(item.value, [], key)
   }
-  const component = readFileSync('src/views/apitest/case/ApiCaseSearchFilters.vue', 'utf8')
+  const component = readFileSync('src/views/apitest/case/components/ApiCaseSearchFilters.vue', 'utf8')
   assert.match(component, /:multiple="item.multiple \|\| item.key === 'scenario_tags'"/)
   assert.match(component, /:max-tag-count=/)
 })
@@ -49,15 +50,20 @@ test('handwritten filter normalization preserves zero, false, pagination and sou
 
 test('API public default-enabled filter supports both states, zero and reset', () => {
   const config = readFileSync('src/views/apitest/public/config.ts', 'utf8')
-  const code = config.slice(config.indexOf('export const conditionItems'), config.indexOf('export const formItems')).replace('export ', '')
+  const code = config.slice(config.indexOf('export function createConditionItems'), config.indexOf('export const tableColumns')).replace('export ', '')
   const items = new Function('reactive', 'ref', 'createIdSearchValue', 'createUpdateUserCondition', 'enableMultiSelectSearch',
-    ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText + '; return conditionItems')(
+    ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText + '; return createConditionItems()')(
     reactive, ref, () => ref(''), () => ({ key: 'update_user', type: 'select', value: [] }), enableMultiSelectSearch
   )
   const item = items.find(item => item.key === 'status')
   assert.equal(item.label, '默认开启')
   assert.equal(item.multiple, true)
-  assert.deepEqual(item.optionItems, [{ key: 1, title: '开启' }, { key: 0, title: '关闭' }])
+  const options = {}
+  new Function('exports', ts.transpileModule(config.slice(config.indexOf('export const enabledSearchOptions'), config.indexOf('export function createConditionItems')), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
+  }).outputText)(options)
+  assert.deepEqual(options.enabledSearchOptions, [{ key: 1, title: '开启' }, { key: 0, title: '关闭' }])
+  assert.match(readFileSync('src/views/apitest/public/index.vue', 'utf8'), /:option-overrides="\{ status: enabledSearchOptions \}"/)
   for (const values of [[1], [0], [0, 1]]) {
     item.value = values
     assert.equal(getFormItems(items).status__in, values.join(','))
@@ -66,14 +72,14 @@ test('API public default-enabled filter supports both states, zero and reset', (
   assert.deepEqual(item.value, [])
   assert.equal(getFormItems(items).status__in, null)
   const component = readFileSync('src/components/business/ApiResourceSearchFilters.vue', 'utf8')
-  assert.match(component, /return options\[item.key\] \?\? item.optionItems/)
+  assert.match(component, /return props.optionOverrides\?\.\[item.key\] \?\? options\[item.key\] \?\? item.optionItems/)
 })
 
 test('task switches and task group search use collection queries and array resets', () => {
   const config = readFileSync('src/views/timing/tasks/config.ts', 'utf8')
-  const code = config.slice(config.indexOf('export const conditionItems'), config.indexOf('export const formItems')).replace('export ', '')
+  const code = config.slice(config.indexOf('export function taskStatusOptions'), config.indexOf('export const tableColumns')).replaceAll('export ', '')
   const items = new Function('reactive', 'ref', 'createIdSearchValue', 'enableMultiSelectSearch',
-    ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText + ';return conditionItems')(
+    ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText + ';return createConditionItems()')(
     reactive, ref, () => ref(''), enableMultiSelectSearch
   )
   for (const key of ['status', 'is_notice', 'task_group']) {
@@ -102,7 +108,7 @@ test('audit ignores disabled search markup and detects a broken live child compo
 test('changed search components and pages compile', () => {
   for (const filename of [
     'src/components/business/ApiResourceSearchFilters.vue', 'src/views/apitest/public/index.vue',
-    'src/views/apitest/case/ApiCaseSearchFilters.vue', 'src/views/apitest/case/index.vue',
+    'src/views/apitest/case/components/ApiCaseSearchFilters.vue', 'src/views/apitest/case/index.vue',
     'src/views/uitest/public/index.vue', 'src/views/system/user/index.vue',
     'src/views/gray/repository/index.vue', 'src/views/gray/execution-log/index.vue', 'src/views/perf/run/index.vue',
     'src/views/timing/tasks/index.vue',

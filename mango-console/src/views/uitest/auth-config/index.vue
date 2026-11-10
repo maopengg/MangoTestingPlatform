@@ -20,6 +20,7 @@
             :field-names="fieldNames"
             :enum-store="enumStore"
             :user-list="userOptions"
+            :users-loading="usersLoading"
             :option-overrides="{
               auth_type: enumStore.ui_auth_type,
               refresh_mode: enumStore.ui_auth_refresh_mode,
@@ -29,6 +30,11 @@
             @reset="onReset"
           />
         </template>
+        <div v-if="listError || usersError || enumsError || enumsLoading || operationError || taskError" class="mango-ui-auth-feedback">
+
+          <a-alert v-if="operationError" type="error">{{ operationError }}</a-alert>
+          <a-alert v-if="taskError" type="error">{{ taskError }}</a-alert>
+        </div>
         <template #toolbar>
         <a-button  size="small" type="primary" @click="onAdd" data-testid="qa-views-uitest-auth-config-button-新增">新增</a-button>
         </template>
@@ -36,8 +42,8 @@
         class="mango-native-scroll-table"
         :bordered="false"
         :columns="columns"
-        :data="table.dataList"
-        :loading="table.tableLoading.value"
+        :data="rows"
+        :loading="listLoading"
         :pagination="false"
         :scroll="{ x: tableScrollX, y: '100%' }"
         row-key="id"
@@ -59,7 +65,7 @@
             </template>
             <template v-else-if="item.key === 'auth_type'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.auth_type]" size="small">
-                {{ enumStore.ui_auth_type[record.auth_type]?.title || '-' }}
+                {{ optionTitle(enumStore.ui_auth_type, record.auth_type) }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'auth_config'" #cell="{ record }">
@@ -72,7 +78,7 @@
             <template v-else-if="item.key === 'refresh_mode'" #cell="{ record }">
               <span v-if="record.auth_type === 3">-</span>
               <a-tag v-else :color="enumStore.colors[record.refresh_mode]" size="small">
-                {{ enumStore.ui_auth_refresh_mode[record.refresh_mode]?.title || '-' }}
+                {{ optionTitle(enumStore.ui_auth_refresh_mode, record.refresh_mode) }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'refresh_strategy'" #cell="{ record }">
@@ -98,7 +104,7 @@
                   {{
                     record.refreshing
                       ? '刷新中'
-                      : enumStore.ui_auth_refresh_status[record.last_refresh_status]?.title || '-'
+                      : optionTitle(enumStore.ui_auth_refresh_status, record.last_refresh_status)
                   }}
                 </a-tag>
               </a-tooltip>
@@ -108,9 +114,10 @@
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-switch
-                :before-change="(checked) => onStatusChange(record.id, checked ? 1 : 0)"
-                :default-checked="record.status === 1"
-                size="small"
+                :before-change="(checked) => onStatusChange(record, checked ? 1 : 0)"
+                :model-value="record.status === 1"
+                :loading="isOperationLoading(record.id, 'status')"
+                :disabled="busy(record.id)"
               />
             </template>
             <template v-else-if="item.key === 'project_product'" #cell="{ record }">
@@ -134,157 +141,46 @@
     </template>
   </TableBody>
 
-  <ModalDialog ref="modalDialogRef" :title="formTitle" @confirm="onSubmit">
-    <template #content>
-      <a-form ref="formRef" :model="form">
-        <a-form-item label="项目/产品" class="mango-form-item__require">
-          <ProjectProductSelect v-model="form.project_product" @change="onFormProjectProductChange" />
-        </a-form-item>
-        <a-form-item
-          class="mango-form-item__require"
-          field="test_env"
-          label="被测环境"
-          :rules="[{ required: true, message: '请选择被测环境' }]"
-        >
-          <a-select
-            v-model="form.test_env"
-            :field-names="fieldNames"
-            :options="environmentOptions"
-            allow-clear
-            placeholder="请选择被测环境"
-            value-key="key" data-testid="qa-views-uitest-auth-config-select-请选择绑定环境"
-          />
-        </a-form-item>
-        <a-form-item label="授权名称" class="mango-form-item__require">
-          <a-input v-model="form.name" placeholder="请输入授权名称" data-testid="qa-views-uitest-auth-config-input-请输入授权名称-2" />
-        </a-form-item>
-        <a-form-item label="授权方式" class="mango-form-item__require">
-          <a-select
-            v-model="form.auth_type"
-            :field-names="fieldNames"
-            :options="enabledAuthTypeOptions"
-            placeholder="请选择授权方式"
-            value-key="key" data-testid="qa-views-uitest-auth-config-select-请选择授权方式-2"
-          />
-        </a-form-item>
-        <a-form-item v-if="form.auth_type === 3" label="页面步骤" class="mango-form-item__require">
-          <a-select
-            v-model="form.page_step"
-            :options="pageStepOptions"
-            allow-clear
-            allow-search
-            placeholder="请选择登录页面步骤" data-testid="qa-views-uitest-auth-config-select-请选择登录页面步骤"
-          />
-        </a-form-item>
-        <a-form-item v-if="form.auth_type === 2" label="登录接口" class="mango-form-item__require">
-          <a-select
-            v-model="form.api_info"
-            :options="apiInfoOptions"
-            :loading="apiInfoLoading"
-            allow-clear
-            allow-search
-            placeholder="请选择接口转入的登录接口" data-testid="qa-views-uitest-auth-config-select-请选择接口转入的登录接口"
-          />
-        </a-form-item>
-        <a-form-item v-if="form.auth_type === 0" label="手动缓存 JSON">
-          <a-textarea v-model="manualConfigText" :auto-size="{ minRows: 5, maxRows: 10 }" />
-        </a-form-item>
-        <a-form-item v-if="form.auth_type === 1" label="自动授权配置 JSON">
-          <a-textarea v-model="autoConfigText" :auto-size="{ minRows: 5, maxRows: 10 }" />
-        </a-form-item>
-        <a-form-item v-if="form.auth_type === 2" label="接口转入配置 JSON">
-          <a-textarea v-model="apiConfigText" :auto-size="{ minRows: 5, maxRows: 10 }" />
-        </a-form-item>
-        <a-form-item v-if="form.auth_type !== 3" label="刷新方式">
-          <a-select
-            v-model="form.refresh_mode"
-            :field-names="fieldNames"
-            :options="refreshModeOptions"
-            value-key="key"
-          />
-        </a-form-item>
-        <a-form-item v-if="form.auth_type === 2 && form.refresh_mode === 1" label="定时策略" class="mango-form-item__require">
-          <a-select
-            v-model="form.time_task"
-            :options="timeTaskOptions"
-            allow-clear
-            allow-search
-            placeholder="请选择定时策略" data-testid="qa-views-uitest-auth-config-select-请选择定时策略"
-          />
-        </a-form-item>
-        <a-form-item v-if="form.auth_type !== 3 && form.refresh_mode === 2" label="通知组" class="mango-form-item__require">
-          <a-select
-            v-model="form.notice_group"
-            :options="noticeOptions"
-            allow-clear
-            allow-search
-            placeholder="请选择到期提醒通知组" data-testid="qa-views-uitest-auth-config-select-请选择到期提醒通知组"
-          />
-        </a-form-item>
-        <a-form-item v-if="form.auth_type !== 3" label="有效期(分钟)">
-          <a-input-number v-model="form.token_ttl" :min="1" />
-        </a-form-item>
-        <a-form-item
-          v-if="form.auth_type !== 3 && form.refresh_mode === 2"
-          field="expire_notice_minutes"
-          label="提前提醒(分钟)"
-          :rules="[{ type: 'number', min: 10, message: '提前提醒时间不能少于10分钟' }]"
-        >
-          <a-input-number v-model="form.expire_notice_minutes" :min="10" />
-        </a-form-item>
-      </a-form>
-    </template>
-  </ModalDialog>
+  <UiAuthEditorDialog ref="editorRef" @saved="refreshAfterEditor" />
 
-  <a-modal v-model:visible="cacheModal.visible" title="授权缓存" :footer="false" width="720px">
-    <pre class="mango-auth-cache">{{ cacheModal.text }}</pre>
-  </a-modal>
+  <UiAuthCacheDialog ref="cacheRef" />
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
+  import { useRoute } from 'vue-router'
+  import useUserStore from '@/store/modules/user'
+  import usePermissionStore from '@/store/modules/permission'
   import { Message, Modal } from '@arco-design/web-vue'
   import TableBody from '@/components/table/TableBody.vue'
   import TableHeader from '@/components/table/TableHeader.vue'
   import TableFooter from '@/components/table/TableFooter.vue'
   import MangoTableActions from '@/components/table/MangoTableActions.vue'
-  import ModalDialog from '@/components/overlays/ModalDialog.vue'
-  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
+  import UiAuthEditorDialog from './components/UiAuthEditorDialog.vue'
+  import UiAuthCacheDialog from './components/UiAuthCacheDialog.vue'
   import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
   import ApiResourceSearchFilters from '@/components/business/ApiResourceSearchFilters.vue'
-  import { usePagination, useTable } from '@/hooks/table'
-  import { ModalDialogType } from '@/types/components'
+  import { usePagination } from '@/hooks/table'
   import { fieldNames } from '@/setting'
   import { useEnum } from '@/store/modules/get-enum'
-  import { formatProjectProductPath, getOptionId } from '@/utils/business-format'
+  import { formatProjectProductPath } from '@/utils/business-format'
   import { AUTH_REFRESH_STATUS_COLORS, getStatusTagColor } from '@/utils/status-color'
-  import { conditionItems, tableColumns, tableScrollX } from './config'
+  import { createConditionItems, tableColumns, tableScrollX } from './config'
+  import { uiAuthId, requiredUiAuthId, uiAuthResponse, readUiAuthOptions, type UiAuthId, type UiAuthOption } from './auth-editor-records'
+  import { getAuthConfigText, getRefreshStrategyText, uiAuthListQuery, type UiAuthListRecord } from './auth-list-records'
+  import { useAuthList } from './composables/useAuthList'
+  import { useAuthTaskObserver } from './composables/useAuthTaskObserver'
   import { getFormItems } from '@/utils/datacleaning'
-  import { getUiSteps } from '@/api/uitest/page-steps'
-  import { getApiInfoOptions } from '@/api/apitest/info'
-  import { getSystemTimingList } from '@/api/system/time'
-  import { getSystemNoticeName } from '@/api/system/notice_group'
   import { getUserName } from '@/api/user/user'
-  import { getExecutorTask } from '@/api/system/executor-task'
-  import {
-    clearExecutorTaskObservation,
-    loadExecutorTaskObservation,
-    saveExecutorTaskObservation,
-  } from '@/utils/executor-task-observer.mjs'
   import {
     deleteUiAuthConfig,
-    getUiAuthConfig,
-    getUiAuthConfigCache,
-    postUiAuthConfig,
-    postUiAuthConfigAutoCapture,
-    postUiAuthConfigAutoStart,
     postUiAuthConfigClear,
     postUiAuthConfigRefresh,
-    putUiAuthConfig,
     putUiAuthConfigStatus,
   } from '@/api/uitest/auth-config'
-  import type { UiAuthCacheConfig, UiAuthConfigPayload } from '@/types/ui-test/case'
-  import { prefillNavigationModel, NavigationCreateSource } from '@/utils/navigation-create-defaults'
+  import type { NavigationCreateSource } from '@/utils/navigation-create-defaults'
 
   const navigationCreateRef = ref<NavigationCreateSource | null>(null)
 
@@ -296,529 +192,189 @@
     disabled?: boolean
   }
 
+  const route = useRoute(), user = useUserStore(), permission = usePermissionStore(), pagePath = route.path
   const enumStore = useEnum()
+  const conditionItems = createConditionItems()
   const authRefreshStatusColor = (value: number) =>
     getStatusTagColor(AUTH_REFRESH_STATUS_COLORS, value)
-  const table = useTable()
-  const pagination = usePagination(doRefresh, () => table.tableLoading)
-  const modalDialogRef = ref<ModalDialogType | null>(null)
-  const formRef = ref<any>(null)
-  const formTitle = ref('新增授权')
-  const editingId = ref<number | null>(null)
-  const manualConfigText = ref('{"cookies":[],"local_storage":[],"session_storage":[],"headers":{}}')
-  const autoConfigText = ref('{"url":"","cookie_domains":[],"local_storage_keys":[],"session_storage_keys":[],"headers":{},"timeout":300}')
-  const apiConfigText = ref('{"api_info":null,"token_path":"$.response.json.data.token","cookie_mapping":{},"local_storage_mapping":[],"session_storage_mapping":[],"header_mapping":{}}')
-  const pageStepOptions = ref<any[]>([])
-  const apiInfoOptions = ref<any[]>([])
-  const apiInfoLoading = ref(false)
-  let apiInfoRequest = 0
-  const timeTaskOptions = ref<any[]>([])
-  const noticeOptions = ref<any[]>([])
-  const userOptions = ref<any[]>([])
+  let mounted = false, active = true, disposed = false, paused = false, contextVersion = 0, userVersion = 0, enumVersion = 0
+  const identity = () => JSON.stringify([route.path, route.fullPath, user.userId, user.roleId, user.token, user.selected_environment, permission.permissionKeys])
+  const available = () => mounted && active && !disposed && route.path === pagePath && document.visibilityState === 'visible'
+  function capture() { const key = identity(), version = contextVersion; return () => available() && key === identity() && version === contextVersion }
+  const pagination = usePagination(doRefresh, () => list.loading)
+  const list = useAuthList({ available, capture, query: normalizeQuery, pagination })
+  const { rows, loading: listLoading, error: listError } = list
+  const editorRef = ref<InstanceType<typeof UiAuthEditorDialog> | null>(null)
+  const cacheRef = ref<InstanceType<typeof UiAuthCacheDialog> | null>(null)
+  const userOptions = ref<UiAuthOption[]>([]), usersLoading = ref(false), usersError = ref('')
+  const enumsLoading = ref(false), enumsError = ref(''), operationError = ref('')
   const sidebarResetKey = ref(0)
-  const query = reactive({ project_product: '' })
-  const form = reactive<any>({
-    project_product: '',
-    test_env: '',
-    name: '',
-    auth_type: 0,
-    status: 1,
-    page_step: null,
-    api_info: null,
-    time_task: null,
-    notice_group: null,
-    refresh_mode: 0,
-    token_ttl: 1440,
-    expire_notice_minutes: 30,
-  })
-  const cacheModal = reactive({ visible: false, text: '' })
-  const authTaskLoading = reactive<Record<string, boolean>>({})
+  const query = reactive<{ project_product: UiAuthId | null }>({ project_product: null })
+  type AuthOperation = 'status' | 'refresh' | 'clear' | 'delete'
+  const pendingRows = reactive(new Set<string>()), pendingOperations = reactive(new Set<string>())
+  const confirmations = new Map<string, { close: () => void; valid: () => boolean }>()
+  const rowKey = (id: UiAuthId) => JSON.stringify([identity(), String(id)])
+  const manualBusy = (id: UiAuthId) => pendingRows.has(rowKey(id))
+  const tasks = useAuthTaskObserver({ available, capture, owner: () => JSON.stringify([user.userId, user.roleId, user.selected_environment]), busy: manualBusy, onCaptured: () => { list.invalidate(); return doRefresh(false) } })
+  const { error: taskError } = tasks
+  const busy = (id: UiAuthId) => manualBusy(id) || tasks.isSubmitting(id)
+  const isOperationLoading = (id: UiAuthId, action: AuthOperation) => pendingOperations.has(`${rowKey(id)}:${action}`)
   const columns = tableColumns
-  const environmentOptions = computed(() => enumStore.environment_type)
-  const enabledAuthTypeOptions = computed(() =>
-    (enumStore.ui_auth_type || []).filter((item: any) => item.key !== 4)
-  )
-  const refreshModeOptions = computed(() =>
-    (enumStore.ui_auth_refresh_mode || []).filter((item: any) => {
-      if (form.auth_type === 2) return true
-      return item.key !== 1
-    })
-  )
-
   function onSearchRefresh() {
     pagination.page = 1
-    doRefresh(true)
+    closeConfirmations()
+    return doRefresh()
   }
 
-  function onNavigationFilterChange({ projectProduct }: { projectProduct: any }) {
-    query.project_product = projectProduct ?? ''
+  function onNavigationFilterChange({ projectProduct }: { projectProduct: unknown }) {
+    query.project_product = uiAuthId(projectProduct)
     pagination.page = 1
-    doRefresh(true)
+    closeConfirmations()
+    return doRefresh()
   }
 
-  async function doRefresh(showLoading = false) {
-    if (showLoading) {
-      table.tableLoading.value = true
-    }
-    try {
-      const res = await getUiAuthConfig({
-        page: pagination.page,
-        pageSize: pagination.pageSize,
-        ...normalizeQuery(),
-      })
-      table.handleSuccess(res)
-      pagination.setTotalSize(res.totalSize || 0)
-    } finally {
-      if (showLoading) {
-        table.tableLoading.value = false
-      }
-    }
-  }
+  async function doRefresh(showLoading = true) { const loaded = await list.load(showLoading); if (loaded && available()) tasks.resume(rows.value); return loaded }
+  function refreshAfterEditor() { list.invalidate(); return doRefresh() }
 
   function onReset() {
-    query.project_product = ''
-    conditionItems.forEach(item => { item.value = item.multiple ? [] : '' })
+    query.project_product = null
+    conditionItems.forEach(item => { if (item.reset) item.reset(); else item.value = item.multiple ? [] : '' })
     pagination.page = 1
     sidebarResetKey.value += 1
-    doRefresh()
+    closeConfirmations()
+    return doRefresh()
   }
 
-  function normalizeQuery() {
-    const value: Record<string, any> = {
-      ...getFormItems(conditionItems),
-      project_product: getOptionId(query.project_product),
-    }
-    Object.keys(value).forEach(key => clearEmptyFilter(value, key))
-    return value
+  function normalizeQuery() { return uiAuthListQuery(getFormItems(conditionItems), query.project_product, pagination.page, pagination.pageSize) }
+  function optionTitle(options: unknown, value: UiAuthId) {
+    try { return readUiAuthOptions(options ?? []).find(item => String(item.key) === String(value))?.title ?? '-' }
+    catch { return '-' }
   }
 
-  function clearEmptyFilter(value: Record<string, any>, key: string) {
-    if (value[key] === null || value[key] === '' || value[key] === undefined) {
-      delete value[key]
-    }
-  }
+  function onAdd() { return editorRef.value?.openCreate(navigationCreateRef.value?.getCreateDefaults().projectProduct ?? null) }
+  function onEdit(record: UiAuthListRecord) { if (available() && !busy(record.id)) return editorRef.value?.openEdit(record) }
+  function captureOperation() { const valid = capture(), key = JSON.stringify(normalizeQuery()); return () => valid() && key === JSON.stringify(normalizeQuery()) }
 
-  function getAuthConfigText(record: any) {
-    if (record.auth_type === 0) {
-      const config = record.manual_config || {}
-      return [
-        `Cookie ${arrayLength(config.cookies)}`,
-        `本地存储 ${arrayLength(config.local_storage)}`,
-        `会话存储 ${arrayLength(config.session_storage)}`,
-        `请求头 ${objectSize(config.headers)}`,
-      ].join('；')
-    }
-    if (record.auth_type === 1) {
-      const config = record.auto_auth_config || {}
-      const details = [
-        config.url || '使用授权环境地址',
-        `超时 ${config.timeout ?? 300}秒`,
-        `Cookie域 ${arrayLength(config.cookie_domains)}`,
-        `本地存储键 ${arrayLength(config.local_storage_keys)}`,
-        `会话存储键 ${arrayLength(config.session_storage_keys)}`,
-        `请求头 ${objectSize(config.headers)}`,
-      ]
-      return details.join('；')
-    }
-    if (record.auth_type === 2) {
-      const config = record.api_config || {}
-      const apiInfoId = config.api_info || config.api_info_id
-      return [
-        `登录接口 ${apiInfoId ? `#${apiInfoId}` : '-'}`,
-        `Token路径 ${config.token_path || '-'}`,
-        `Cookie映射 ${objectSize(config.cookie_mapping)}`,
-        `本地存储映射 ${arrayLength(config.local_storage_mapping)}`,
-        `会话存储映射 ${arrayLength(config.session_storage_mapping)}`,
-        `请求头映射 ${objectSize(config.header_mapping)}`,
-      ].join('；')
-    }
-    if (record.auth_type === 3) {
-      return record.page_step
-        ? `${record.page_step.name || '页面步骤'}（#${record.page_step.id}）`
-        : '-'
-    }
-    return record.custom_code ? '已配置自定义代码' : '-'
-  }
-
-  function getRefreshStrategyText(record: any) {
-    if (record.auth_type === 3) return '-'
-    if (record.refresh_mode === 0) return '手动触发'
-    if (record.refresh_mode === 1) {
-      return record.time_task?.name
-        ? `定时策略：${record.time_task.name}`
-        : '未配置定时策略'
-    }
-    if (record.refresh_mode === 2) {
-      const noticeGroup = record.notice_group?.name || '未配置通知组'
-      return `提前 ${record.expire_notice_minutes ?? '-'} 分钟；通知组：${noticeGroup}`
-    }
-    return '-'
-  }
-
-  function arrayLength(value: unknown) {
-    return Array.isArray(value) ? value.length : 0
-  }
-
-  function objectSize(value: unknown) {
-    return value && typeof value === 'object' && !Array.isArray(value)
-      ? Object.keys(value as Record<string, unknown>).length
-      : 0
-  }
-
-  function onAdd() {
-    editingId.value = null
-    formTitle.value = '新增授权'
-    Object.assign(form, {
-      project_product: '',
-      test_env: '',
-      name: '',
-      auth_type: 0,
-      status: 1,
-      page_step: null,
-      api_info: null,
-      time_task: null,
-      notice_group: null,
-      refresh_mode: 0,
-      token_ttl: 1440,
-      expire_notice_minutes: 30,
-    })
-    resetJsonEditors()
-    void prefillNavigationModel(navigationCreateRef.value, form, () => editingId.value === null)
-      .then(() => { if (editingId.value === null) onFormProjectProductChange() })
-    modalDialogRef.value?.toggle()
-  }
-
-  function onEdit(record: any) {
-    editingId.value = record.id
-    formTitle.value = '编辑授权'
-    const apiConfig = record.api_config || {}
-    Object.assign(form, {
-      ...record,
-      project_product: record.project_product?.id,
-      page_step: record.page_step?.id,
-      api_info: apiConfig.api_info || apiConfig.api_info_id || null,
-      time_task: record.time_task?.id || null,
-      notice_group: record.notice_group?.id || null,
-    })
-    manualConfigText.value = JSON.stringify(record.manual_config || {}, null, 2)
-    autoConfigText.value = JSON.stringify(record.auto_auth_config || {}, null, 2)
-    apiConfigText.value = JSON.stringify(apiConfig, null, 2)
-    loadRelatedOptions(record.project_product?.id)
-    modalDialogRef.value?.toggle()
-  }
-
-  async function onSubmit() {
-    const errors = await formRef.value?.validate()
-    if (errors) {
-      modalDialogRef.value?.setConfirmLoading(false)
-      return
-    }
+  async function runOperation(id: UiAuthId, action: AuthOperation, write: () => Promise<unknown>, message: string, current = captureOperation(), status?: 0 | 1): Promise<boolean> {
+    if (!available() || !current() || busy(id)) return false
+    const key = rowKey(id), actionKey = `${key}:${action}`, identityKey = identity()
+    pendingRows.add(key); pendingOperations.add(actionKey); operationError.value = ''
+    let committed = false
     try {
-      const projectProductId = getOptionId(form.project_product)
-      const parsedApiConfig = parseJson<Record<string, unknown>>(apiConfigText.value)
-      const apiConfig = {
-        ...parsedApiConfig,
-        api_info: form.api_info || parsedApiConfig.api_info || null,
+      uiAuthResponse(await write()); committed = true
+      if (current()) {
+        if (status !== undefined) list.updateStatus(id, status)
+        Message.success(message)
       }
-      const payload: UiAuthConfigPayload = {
-        project_product: projectProductId,
-        test_env: form.test_env,
-        name: form.name,
-        auth_type: form.auth_type,
-        status: form.status,
-        refresh_mode: form.auth_type === 3 ? 0 : form.refresh_mode,
-        token_ttl: form.token_ttl,
-        expire_notice_minutes: form.expire_notice_minutes,
-        page_step: form.auth_type === 3 ? form.page_step : null,
-        time_task: form.auth_type === 2 && form.refresh_mode === 1 ? form.time_task : null,
-        notice_group: form.auth_type !== 3 && form.refresh_mode === 2 ? form.notice_group : null,
-        custom_code: '',
-        manual_config: parseJson<UiAuthCacheConfig>(manualConfigText.value),
-        auto_auth_config: parseJson<Record<string, unknown>>(autoConfigText.value),
-        api_config: apiConfig,
-      }
-      editingId.value ? await putUiAuthConfig({ ...payload, id: editingId.value }) : await postUiAuthConfig(payload)
-      Message.success('保存成功')
-      modalDialogRef.value?.toggle()
-      await doRefresh()
-    } finally {
-      modalDialogRef.value?.setConfirmLoading(false)
+      return true
+    } catch { if (current()) operationError.value = { status: '状态更新失败，请重试', refresh: '缓存刷新失败，请重试', clear: '缓存清空失败，请重试', delete: '删除失败，请重试' }[action]; return false }
+    finally {
+      pendingRows.delete(key); pendingOperations.delete(actionKey)
+      if (committed && available() && identityKey === identity()) { list.invalidate(); void doRefresh(false) }
     }
   }
-
-  function parseJson<T = Record<string, unknown>>(value: string): T {
-    try {
-      return JSON.parse(value || '{}') as T
-    } catch {
-      Message.error('JSON格式不正确')
-      throw new Error('JSON格式不正确')
-    }
+  function onStatusChange(record: UiAuthListRecord, status: 0 | 1) {
+    const id = requiredUiAuthId(record.id)
+    return runOperation(id, 'status', () => putUiAuthConfigStatus(id, status), '状态已更新', captureOperation(), status)
   }
 
-  async function onStatusChange(id: number, status: number) {
-    await putUiAuthConfigStatus(id, status)
-    Message.success('状态已更新')
-    return true
+  function onRefresh(record: UiAuthListRecord) {
+    if ([1, 3].includes(record.auth_type)) return Promise.resolve(false)
+    const id = requiredUiAuthId(record.id)
+    return runOperation(id, 'refresh', () => postUiAuthConfigRefresh(id), '缓存已更新')
   }
 
-  async function onRefresh(record: any) {
-    await postUiAuthConfigRefresh(record.id)
-    Message.success('缓存已更新')
-    await doRefresh()
-  }
+  function onAutoStart(record: UiAuthListRecord) { return tasks.start(record, 'start') }
+  function onAutoCapture(record: UiAuthListRecord) { return tasks.start(record, 'capture') }
+  const isAuthTaskLoading = (id: UiAuthId, action: 'start' | 'capture') => tasks.isLoading(id, action)
 
-  async function onAutoStart(record: any) {
-    const key = authTaskKey(record.id, 'start')
-    if (authTaskLoading[key]) return
-    authTaskLoading[key] = true
-    try {
-      const response = await postUiAuthConfigAutoStart(record.id)
-      const taskId = getTaskId(response)
-      saveExecutorTaskObservation('ui-auth-start', record.id, {
-        taskId,
-        businessType: 'u_auth_auto',
-      })
-      await waitExecutorTask(taskId, 2 * 60 * 1000, 'ui-auth-start', record.id)
-      Message.success('自动授权浏览器已打开，请完成登录后点击“完成登录”')
-    } finally {
-      authTaskLoading[key] = false
-    }
-  }
-
-  async function onAutoCapture(record: any) {
-    const key = authTaskKey(record.id, 'capture')
-    if (authTaskLoading[key]) return
-    authTaskLoading[key] = true
-    try {
-      const response = await postUiAuthConfigAutoCapture(record.id)
-      const taskId = getTaskId(response)
-      saveExecutorTaskObservation('ui-auth-capture', record.id, {
-        taskId,
-        businessType: 'u_auth_auto_capture',
-      })
-      await waitExecutorTask(taskId, 15 * 60 * 1000, 'ui-auth-capture', record.id)
-      Message.success('授权缓存已提取并保存')
-      await doRefresh()
-    } finally {
-      authTaskLoading[key] = false
-    }
-  }
-
-  function authTaskKey(id: number, action: 'start' | 'capture') {
-    return `${id}:${action}`
-  }
-
-  function isAuthTaskLoading(id: number, action: 'start' | 'capture') {
-    return Boolean(authTaskLoading[authTaskKey(id, action)])
-  }
-
-  function getAuthActions(record: any): AuthTableAction[] {
+  function getAuthActions(record: UiAuthListRecord): AuthTableAction[] {
     return [
       {  label: '缓存', onClick: () => onCache(record) },
       {
         label: '刷新',
         onClick: () => onRefresh(record),
-        disabled: [1, 3].includes(record.auth_type),
+        disabled: [1, 3].includes(record.auth_type) || busy(record.id),
+        loading: isOperationLoading(record.id, 'refresh'),
       },
       {
         label: '自动授权',
         onClick: () => onAutoStart(record),
-        disabled: record.auth_type !== 1,
+        disabled: record.auth_type !== 1 || busy(record.id),
         loading: isAuthTaskLoading(record.id, 'start'),
       },
       {
         label: '完成登录',
         onClick: () => onAutoCapture(record),
-        disabled: record.auth_type !== 1,
+        disabled: record.auth_type !== 1 || busy(record.id),
         loading: isAuthTaskLoading(record.id, 'capture'),
       },
-      {  label: '编辑', onClick: () => onEdit(record) },
-      {  label: '清空', danger: true, onClick: () => onClear(record) },
-      {  label: '删除', danger: true, onClick: () => onDelete(record) },
+      {  label: '编辑', disabled: busy(record.id), onClick: () => onEdit(record) },
+      {  label: '清空', danger: true, disabled: busy(record.id), loading: isOperationLoading(record.id, 'clear'), onClick: () => onClear(record) },
+      {  label: '删除', danger: true, disabled: busy(record.id), loading: isOperationLoading(record.id, 'delete'), onClick: () => onDelete(record) },
     ]
   }
 
-  function getTaskId(response: any): number {
-    const taskId = Number(response?.data?.task_id ?? response?.task_id)
-    if (!Number.isFinite(taskId) || taskId <= 0) {
-      throw new Error('服务端未返回有效的执行器任务ID')
-    }
-    return taskId
+  function onClear(record: UiAuthListRecord) {
+    const id = requiredUiAuthId(record.id)
+    return runOperation(id, 'clear', () => postUiAuthConfigClear(id), '缓存已清空')
   }
 
-  async function waitExecutorTask(
-    taskId: number,
-    timeoutMs: number,
-    observationScope = '',
-    businessId: number | string = ''
-  ) {
-    const startedAt = Date.now()
-    while (Date.now() - startedAt < timeoutMs) {
-      const response = await getExecutorTask(taskId)
-      const task = response?.data || response
-      if (task?.terminal) {
-        if (observationScope) {
-          clearExecutorTaskObservation(observationScope, businessId, taskId)
-        }
-        if (task.status === 'success') return task
-        throw new Error(task.error_message || `执行器任务未完成（${task.status || '未知状态'}）`)
-      }
-      await new Promise((resolve) => window.setTimeout(resolve, 1000))
-    }
-    throw new Error('等待执行器任务结果超时，可稍后刷新查看授权缓存')
-  }
+  function onCache(record: unknown) { return cacheRef.value?.open(record) }
 
-  function resumeAuthTasks() {
-    for (const record of table.dataList) {
-      for (const action of ['start', 'capture'] as const) {
-        const scope = action === 'start' ? 'ui-auth-start' : 'ui-auth-capture'
-        const observation = loadExecutorTaskObservation(scope, record.id)
-        if (!observation?.taskId) continue
-        const key = authTaskKey(record.id, action)
-        authTaskLoading[key] = true
-        void waitExecutorTask(
-          Number(observation.taskId),
-          action === 'start' ? 2 * 60 * 1000 : 15 * 60 * 1000,
-          scope,
-          record.id
-        )
-          .then(async () => {
-            Message.success(action === 'start' ? '自动授权浏览器已打开' : '授权缓存已提取并保存')
-            if (action === 'capture') await doRefresh()
-          })
-          .catch((error) => Message.error(error?.message || '自动授权任务执行失败'))
-          .finally(() => {
-            authTaskLoading[key] = false
-          })
-      }
-    }
-  }
-
-  async function onClear(record: any) {
-    await postUiAuthConfigClear(record.id)
-    Message.success('缓存已清空')
-    await doRefresh()
-  }
-
-  async function onCache(record: any) {
-    const res = await getUiAuthConfigCache(record.id)
-    cacheModal.text = JSON.stringify(res.data, null, 2)
-    cacheModal.visible = true
-  }
-
-  function onDelete(record: any) {
-    Modal.confirm({
+  function closeConfirmations() { for (const entry of confirmations.values()) entry.close(); confirmations.clear() }
+  function onDelete(record: UiAuthListRecord) {
+    const id = requiredUiAuthId(record.id), key = String(id), valid = capture(), queryKey = JSON.stringify(normalizeQuery())
+    if (!available() || busy(id) || confirmations.has(key)) return
+    let open = true
+    const current = () => open && valid() && queryKey === JSON.stringify(normalizeQuery()) && confirmations.get(key)?.valid === current
+    const close = () => { open = false; confirmations.delete(key); shell.close() }
+    const shell = Modal.confirm({
       title: '删除授权',
       content: '是否要删除此 UI 授权配置？',
-      onOk: async () => {
-        await deleteUiAuthConfig(record.id)
-        Message.success('删除成功')
-        await doRefresh()
+      okText: '删除', cancelText: '取消', okButtonProps: { status: 'danger' },
+      onCancel: close,
+      onBeforeOk: async () => {
+        const success = await runOperation(id, 'delete', () => deleteUiAuthConfig(id), '删除成功', current)
+        if (success && current()) close()
+        return success
       },
     })
+    confirmations.set(key, { close, valid: current })
   }
 
-  function onFormProjectProductChange() {
-    form.page_step = null
-    form.api_info = null
-    form.notice_group = null
-    loadRelatedOptions(form.project_product)
+  async function loadUsers() {
+    if (!available()) return
+    const version = ++userVersion, current = capture(); usersLoading.value = true; usersError.value = ''
+    try { const options = readUiAuthOptions(uiAuthResponse(await getUserName())); if (version === userVersion && current()) userOptions.value = options }
+    catch (loadFailure0) { if (version === userVersion && current()) (reportLoadError(loadFailure0, "更新人加载失败，请重试", false), usersError.value = '更新人加载失败，请重试') }
+    finally { if (version === userVersion) usersLoading.value = false }
   }
-
-  async function loadPageSteps(projectProductValue: any = form.project_product) {
-    const res = await getUiSteps({ page: 1, pageSize: 500, project_product: getOptionId(projectProductValue) || undefined })
-    pageStepOptions.value = (res.data || []).map((item: any) => ({ label: item.name, value: item.id }))
+  async function loadEnums() {
+    if (!available()) return
+    const version = ++enumVersion, current = capture(); enumsLoading.value = true; enumsError.value = ''
+    try { await enumStore.getEnum() }
+    catch (loadFailure1) { if (version === enumVersion && current()) (reportLoadError(loadFailure1, "授权选项加载失败，请重试", false), enumsError.value = '授权选项加载失败，请重试') }
+    finally { if (version === enumVersion) enumsLoading.value = false }
   }
-
-  async function loadApiInfoList(projectProductId: any) {
-    const request = ++apiInfoRequest
-    apiInfoOptions.value = []
-    apiInfoLoading.value = false
-    if (!projectProductId) return
-    apiInfoLoading.value = true
-    try {
-      const items = await getApiInfoOptions(projectProductId, () => request === apiInfoRequest)
-      if (request !== apiInfoRequest) return
-      apiInfoOptions.value = items.map((item: any) => ({
-        label: `${item.name}${item.url ? ` / ${item.url}` : ''}`,
-        value: item.id,
-      }))
-    } finally {
-      if (request === apiInfoRequest) apiInfoLoading.value = false
-    }
+  function invalidate(clear = false) {
+    contextVersion++; userVersion++; enumVersion++; list.invalidate(clear); closeConfirmations()
+    tasks.pause()
+    editorRef.value?.close(); cacheRef.value?.close(); usersLoading.value = false; enumsLoading.value = false
+    if (clear) { userOptions.value = []; usersError.value = ''; enumsError.value = ''; operationError.value = '' }
   }
+  function resume() { if (!available()) return; paused = false; tasks.resume(rows.value); return Promise.allSettled([doRefresh(), loadUsers(), loadEnums()]) }
+  function visibilityChanged() { if (available()) { if (paused) void resume() } else { paused = true; invalidate(true) } }
+  watch(identity, () => { invalidate(true); pagination.page = 1; if (available()) void resume() }, { flush: 'sync' })
+  onMounted(async () => { mounted = true; document.addEventListener('visibilitychange', visibilityChanged); await resume() })
+  onActivated(() => { active = true; if (paused) void resume() })
+  onDeactivated(() => { active = false; paused = true; invalidate(true) })
+  onBeforeUnmount(() => { disposed = true; invalidate(true); document.removeEventListener('visibilitychange', visibilityChanged) })
 
-  async function loadNoticeList(projectProductId: any) {
-    noticeOptions.value = []
-    if (!projectProductId) return
-    const res = await getSystemNoticeName(projectProductId)
-    noticeOptions.value = res.data || []
-  }
-
-  async function loadTimeTaskList() {
-    const res = await getSystemTimingList()
-    timeTaskOptions.value = res.data || []
-  }
-
-  function loadRelatedOptions(projectProductValue: any) {
-    const projectProductId = getOptionId(projectProductValue)
-    loadPageSteps(projectProductId)
-    loadApiInfoList(projectProductId)
-    loadNoticeList(projectProductId)
-  }
-
-  function resetJsonEditors() {
-    manualConfigText.value = '{"cookies":[],"local_storage":[],"session_storage":[],"headers":{}}'
-    autoConfigText.value = '{"url":"","cookie_domains":[],"local_storage_keys":[],"session_storage_keys":[],"headers":{},"timeout":300}'
-    apiConfigText.value = '{"api_info":null,"token_path":"$.response.json.data.token","cookie_mapping":{},"local_storage_mapping":[],"session_storage_mapping":[],"header_mapping":{}}'
-  }
-
-  onMounted(async () => {
-    await doRefresh()
-    resumeAuthTasks()
-    getUserName().then((res) => (userOptions.value = res.data || []))
-    loadPageSteps()
-    loadTimeTaskList()
-  })
-
-  watch(
-    () => form.auth_type,
-    (authType) => {
-      if (authType === 3) {
-        form.refresh_mode = 0
-        form.time_task = null
-        form.notice_group = null
-      } else if (authType !== 2 && form.refresh_mode === 1) {
-        form.refresh_mode = 0
-        form.time_task = null
-      }
-    }
-  )
-
-  watch(
-    () => form.refresh_mode,
-    (refreshMode) => {
-      if (refreshMode !== 1) form.time_task = null
-      if (refreshMode !== 2) form.notice_group = null
-    }
-  )
 </script>
 
 <style scoped>
-  .mango-auth-toolbar {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 8px;
-  }
-
-  .mango-auth-cache {
-    max-height: 520px;
-    overflow: auto;
-    padding: 8px;
-    color: var(--m-text);
-    background: var(--m-surface-soft);
-    border-radius: var(--m-radius-sm);
-  }
+  .mango-ui-auth-feedback { display: grid; flex-shrink: 0; gap: var(--m-page-gap); }
 
   .mango-auth-table-summary {
     overflow: hidden;

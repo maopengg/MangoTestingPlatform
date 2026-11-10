@@ -18,6 +18,7 @@ from src.apps.auto_api.enums.module_coverage import (
     ModuleCoverageValidity,
     ModuleCoverageAnalysisStatus,
     ModuleCoveragePolicy,
+    ModuleCoverageInterfaceCoverageStatus,
 )
 
 
@@ -76,11 +77,11 @@ class ModuleCoverageOverviewMixin:
             "project_inventory_summary": overview["project_inventory_summary"],
             "modules": overview["modules"],
             "definitions": {
-                "module_scan": "项目/产品全部叶子模块；仅已生效的完整链路扫描计为完成，不随模块筛选变化",
+                "module_scan": "所选项目/产品/模块范围内的叶子模块；仅已生效的完整链路扫描计为完成，随模块筛选变化",
                 "module_inventory": "第一阶段：完整模块接口清单已生效；包含纯盘点，零接口模块须有完整盘点证据；多仓库分别核实",
-                "interface_analysis": "第二阶段：当前生效业务图和场景分析完整且修订匹配才算已分析；排除项不计分母，暂缓单列；ApiInfo绑定不是分析完成",
+                "interface_analysis": "第二阶段：当前生效业务图和场景分析完整且修订匹配才算已分析；版本差异单列analysis_review_count，实际分析不完整列analysis_gap_count；排除项不计分母，暂缓单列；ApiInfo绑定不是分析完成",
                 "interface_entry": "bound_count / interface_count；已正确绑定 ApiInfo 的当前有效接口；排除接口不计入",
-                "interface_coverage": "covered_interface_count / interface_count；全部目标场景有效完成才算覆盖；排除接口及其场景不计入",
+                "interface_coverage": "covered_interface_count / interface_count；当前分析完成且全部目标场景有效完成才算覆盖；分析未完成但已有成果计为部分覆盖，保留Case和绑定；排除接口及其场景不计入",
                 "automation": "completed_count / target_count；暂不处理单独统计；执行失败不影响有效覆盖完成状态",
                 "rates": "百分比为 0–100；分母为零时为 null，不代表已完成；overview 为页面概览口径，顶层保留旧指标",
                 "scope": "不传仓库或分支时汇总所选范围全部基线；项目统计仅含当前账号可见产品",
@@ -98,26 +99,42 @@ class ModuleCoverageOverviewMixin:
 
     @classmethod
     def interface_analysis_status(cls, interface, scenario_count, total_scenarios=None):
+        return cls.interface_analysis_assessment(interface, scenario_count, total_scenarios)["analysis_status"]
+
+    @classmethod
+    def interface_analysis_assessment(cls, interface, scenario_count, total_scenarios=None):
         relation = getattr(interface, "module_interface", None)
         policy = getattr(relation, "coverage_policy", ModuleCoveragePolicy.INCLUDED)
-        if policy == ModuleCoveragePolicy.EXCLUDED:
-            return ModuleCoverageAnalysisStatus.EXCLUDED
-        if policy == ModuleCoveragePolicy.DEFERRED:
-            return ModuleCoverageAnalysisStatus.DEFERRED
         analysis_scan = interface.scan
         latest_scan = getattr(relation, "last_seen_scan", None)
+
+        def result(status, reason):
+            return {"analysis_status": status, "analysis_reason": reason,
+                    "analysis_commit_sha": analysis_scan.commit_sha,
+                    "latest_inventory_commit_sha": latest_scan.commit_sha if latest_scan else analysis_scan.commit_sha}
+
+        if policy == ModuleCoveragePolicy.EXCLUDED:
+            return result(ModuleCoverageAnalysisStatus.EXCLUDED, getattr(relation, "coverage_reason", "") or "已排除当前覆盖范围")
+        if policy == ModuleCoveragePolicy.DEFERRED:
+            return result(ModuleCoverageAnalysisStatus.DEFERRED, getattr(relation, "coverage_reason", "") or "已暂缓分析")
+        if cls.is_inventory_scan(analysis_scan) or not interface.mermaid:
+            return result(ModuleCoverageAnalysisStatus.PENDING, "仅完成接口盘点或尚无业务全景图")
         if (latest_scan and latest_scan.status == ModuleCoverageScanStatus.COMPLETED
                 and latest_scan.commit_sha != analysis_scan.commit_sha):
-            return ModuleCoverageAnalysisStatus.GAP
-        if cls.is_inventory_scan(analysis_scan) or not interface.mermaid:
-            return ModuleCoverageAnalysisStatus.PENDING
-        if (analysis_scan.status != ModuleCoverageScanStatus.COMPLETED or interface.gap_reason
-                or cls.interface_resolution(interface.mermaid, interface.node_ids)["status"]
-                != ModuleCoverageResolutionStatus.RESOLVED):
-            return ModuleCoverageAnalysisStatus.GAP
+            return result(ModuleCoverageAnalysisStatus.REVIEW,
+                          f"已有分析版本 {analysis_scan.commit_sha} 与最新盘点版本 {latest_scan.commit_sha} 不同，需核实相关代码及依赖变化")
+        if analysis_scan.status != ModuleCoverageScanStatus.COMPLETED:
+            return result(ModuleCoverageAnalysisStatus.GAP, "分析扫描尚未完成并生效")
+        if interface.gap_reason:
+            return result(ModuleCoverageAnalysisStatus.GAP, interface.gap_reason)
+        resolution = cls.interface_resolution(interface.mermaid, interface.node_ids)
+        if resolution["status"] != ModuleCoverageResolutionStatus.RESOLVED:
+            return result(ModuleCoverageAnalysisStatus.GAP, resolution["reason"] or "业务调用链尚未解析完整")
         if total_scenarios and scenario_count != total_scenarios:
-            return ModuleCoverageAnalysisStatus.GAP
-        return ModuleCoverageAnalysisStatus.COMPLETED if scenario_count else ModuleCoverageAnalysisStatus.PENDING
+            return result(ModuleCoverageAnalysisStatus.GAP, f"已登记 {total_scenarios} 个场景，其中 {scenario_count} 个分析有效，需补全或复核其余场景")
+        if not scenario_count:
+            return result(ModuleCoverageAnalysisStatus.PENDING, "已有全景图，但尚无有效场景分析")
+        return result(ModuleCoverageAnalysisStatus.COMPLETED, "当前版本的全景图与已登记场景分析完整有效；不代表自动化已完成")
 
     @classmethod
     def case_analysis_complete(cls, item, interface):
@@ -156,7 +173,7 @@ class ModuleCoverageOverviewMixin:
                                       "uncovered_interface_count": 0, "deferred_interface_count": 0,
                                       "excluded_interface_count": 0,
                                       "analyzed_interface_count": 0, "pending_analysis_count": 0,
-                                      "analysis_gap_count": 0, "deferred_analysis_count": 0})
+                                      "analysis_gap_count": 0, "analysis_review_count": 0, "deferred_analysis_count": 0})
         gaps = []
         for interface in interfaces:
             if interface.module_id not in module_map:
@@ -172,6 +189,7 @@ class ModuleCoverageOverviewMixin:
                 (ModuleCoverageAnalysisStatus.COMPLETED, "analyzed_interface_count"),
                 (ModuleCoverageAnalysisStatus.PENDING, "pending_analysis_count"),
                 (ModuleCoverageAnalysisStatus.GAP, "analysis_gap_count"),
+                (ModuleCoverageAnalysisStatus.REVIEW, "analysis_review_count"),
                 (ModuleCoverageAnalysisStatus.DEFERRED, "deferred_analysis_count"),
             ):
                 direct[interface.module_id][key] += int(analysis_status == status)
@@ -190,11 +208,16 @@ class ModuleCoverageOverviewMixin:
                 ModuleCoverageApiInfoBindingStatus.BOUND
             )
             # 暂不处理不属于自动化目标；没有任何场景才视为待补场景。
-            incomplete = completed < len(targets) if targets else not deferred
+            coverage_status = cls.interface_coverage_status(
+                interface, len(targets), completed, deferred, analysis_status=analysis_status,
+            )
+            incomplete = coverage_status not in (
+                ModuleCoverageInterfaceCoverageStatus.COVERED, ModuleCoverageInterfaceCoverageStatus.DEFERRED,
+            )
             stats = direct[interface.module_id]
-            if targets and completed == len(targets):
+            if coverage_status == ModuleCoverageInterfaceCoverageStatus.COVERED:
                 stats["covered_interface_count"] += 1
-            elif completed:
+            elif coverage_status == ModuleCoverageInterfaceCoverageStatus.PARTIAL:
                 stats["partial_interface_count"] += 1
             elif not targets and deferred:
                 stats["deferred_interface_count"] += 1
@@ -256,13 +279,13 @@ class ModuleCoverageOverviewMixin:
                 if baseline and latest_applied and baseline.commit_sha == latest_applied.commit_sha:
                     inventory_scans.append(baseline)
             inventoried = bool(source_groups) and len(inventory_scans) == len(source_groups)
+            if module.id not in selected:
+                continue
             if len(descendants[module.id]) == 1:
                 project_scan_summary["leaf_count"] += 1
                 project_scan_summary["scanned_count" if applied else "unscanned_count"] += 1
                 project_inventory_summary["leaf_count"] += 1
                 project_inventory_summary["inventoried_count" if inventoried else "uninventoried_count"] += 1
-            if module.id not in selected:
-                continue
             scope = descendants[module.id] & selected
             totals = {key: sum(direct[item][key] for item in scope) for key in direct[module.id]}
             rows.append({"id": module.id, "parent_id": module.parent_id,
@@ -289,7 +312,7 @@ class ModuleCoverageOverviewMixin:
                               "deferred_count", "incomplete_interface_count", "covered_interface_count",
                               "partial_interface_count", "uncovered_interface_count", "deferred_interface_count",
                               "excluded_interface_count")}
-        for key in ("analyzed_interface_count", "pending_analysis_count", "analysis_gap_count", "deferred_analysis_count"):
+        for key in ("analyzed_interface_count", "pending_analysis_count", "analysis_gap_count", "analysis_review_count", "deferred_analysis_count"):
             totals[key] = sum(direct[item][key] for item in selected if item in module_map)
         leaves = [row for row in rows if row["is_leaf"]]
         filtered_gaps = [row for row in gaps if row["module_id"] in selected]

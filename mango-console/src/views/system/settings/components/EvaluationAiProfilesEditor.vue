@@ -1,16 +1,17 @@
 <template>
   <div class="mango-evaluation-ai-profiles">
     <a-space>
-      <a-button v-if="true"  size="small" :disabled="loading" @click="add">新增 AI</a-button>
-      <a-button v-if="true"  size="small" type="primary" :loading="loading" @click="save">保存 AI 列表</a-button>
+      <a-button size="small" :disabled="loading || Boolean(modelError) || draft.length >= 50" @click="add">新增 AI</a-button>
+      <a-button size="small" type="primary" :disabled="Boolean(modelError)" :loading="loading" @click="save">保存 AI 列表</a-button>
     </a-space>
-    <div v-if="!draft.length" class="mango-empty-state">尚未配置效果测评 AI</div>
+    <a-alert v-if="modelError" type="error">{{ modelError }}</a-alert>
+    <div v-else-if="!draft.length" class="mango-empty-state">尚未配置效果测评 AI</div>
     <section v-for="(profile, index) in draft" :key="profile.id" class="mango-soft-panel">
       <div class="mango-section-title">
         <strong>{{ profile.name || `AI ${index + 1}` }}</strong>
         <a-space>
-          <a-switch v-if="true"  v-model="profile.enabled" size="small" :disabled="loading" />
-          <a-button v-if="true"  size="small" type="text" status="danger" :disabled="loading" @click="draft.splice(index, 1)">移除</a-button>
+          <a-switch v-model="profile.enabled" size="small" :disabled="loading" />
+          <a-button size="small" type="text" status="danger" :disabled="loading" @click="remove(index)">移除</a-button>
         </a-space>
       </div>
       <a-form :model="profile" layout="horizontal" :disabled="loading">
@@ -27,29 +28,34 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { ref, watch } from 'vue'
+  import { ref, toRaw, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
-
-  import { computed } from 'vue'
-  const props = defineProps<{ modelValue: any[]; loading?: boolean }>()
-  const emit = defineEmits(['update:modelValue', 'save'])
-
-  const draft = ref<any[]>([])
-  const providers = [{ value: 'openai_compatible', label: 'OpenAI 兼容' }, { value: 'openai', label: 'OpenAI' }, { value: 'azure_openai', label: 'Azure OpenAI' }]
-  watch(() => props.modelValue, value => { draft.value = JSON.parse(JSON.stringify(value || [])) }, { immediate: true, deep: true })
+  import { EVALUATION_AI_PROVIDER_OPTIONS as providers } from '../config'
+  import { createEvaluationAiProfile, copyEvaluationAiProfiles, evaluationAiProfilePayload } from '../evaluation-profiles'
+  import type { EvaluationAiProfile } from '../evaluation-profiles'
+  const props = defineProps<{ modelValue: unknown; loading?: boolean }>()
+  const emit = defineEmits<{ (event: 'update:modelValue', value: EvaluationAiProfile[]): void; (event: 'save'): void }>()
+  const draft = ref<EvaluationAiProfile[]>([]), modelError = ref('')
+  let lastEmission: EvaluationAiProfile[] | null = null
+  watch(() => props.modelValue, value => {
+    if (lastEmission !== null && toRaw(value) === lastEmission) return
+    try { draft.value = copyEvaluationAiProfiles(value); modelError.value = '' }
+    catch { draft.value = []; modelError.value = 'AI列表配置格式异常，请重新读取系统配置' }
+  }, { immediate: true })
   function add() {
-    if (props.loading || draft.value.length >= 50) return
-    draft.value.push({ id: crypto.randomUUID(), name: '', provider_type: 'openai_compatible',
-      base_url: '', model: '', api_key: '', timeout: 120, enabled: true })
+    if (props.loading || modelError.value || draft.value.length >= 50) return
+    draft.value.push(createEvaluationAiProfile(crypto.randomUUID()))
+  }
+  function remove(index: number) {
+    if (props.loading || modelError.value || !Number.isInteger(index) || index < 0 || index >= draft.value.length) return
+    draft.value.splice(index, 1)
   }
   function save() {
-    if (props.loading) return
-    if (draft.value.some(row => !row.name.trim() || !row.model.trim() || !row.base_url.trim() || (row.enabled && !row.api_key.trim()))) {
-      Message.warning('请填写 AI 名称、模型、服务地址和密钥')
-      return
-    }
-    emit('update:modelValue', JSON.parse(JSON.stringify(draft.value)))
-    emit('save')
+    if (props.loading || modelError.value) return
+    try {
+      const payload = evaluationAiProfilePayload(draft.value)
+      lastEmission = payload; emit('update:modelValue', payload); emit('save')
+    } catch (error) { Message.warning(error instanceof Error ? error.message : '请检查 AI 配置') }
   }
 </script>
 <style scoped>

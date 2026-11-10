@@ -12,7 +12,15 @@
     value-key="key"
     @update:model-value="onUpdate"
     @change="onChange"
-  />
+    @popup-visible-change="onPopupVisibleChange"
+  >
+    <template #empty>
+      <div class="mango-empty-state">
+        <template v-if="failed"><a-button size="small" :loading="loading" @click.stop="loadOptions">重试</a-button></template>
+        <template v-else>暂无模块</template>
+      </div>
+    </template>
+  </a-cascader>
 </template>
 
 <script lang="ts">
@@ -26,12 +34,37 @@
   }
 
   const pendingModuleRequests = new Map<string, Promise<SharedModuleOption[]>>()
+  const moduleRequestScopes = new WeakMap<object, { identity: unknown[]; version: number }>()
+  let nextModuleScope = 0
+  function moduleRequestScope(store: object, identity: unknown[]): number {
+    const scope = moduleRequestScopes.get(store)
+    if (scope && scope.identity.every((value, index) => value === identity[index])) return scope.version
+    const version = ++nextModuleScope
+    moduleRequestScopes.set(store, { identity: [...identity], version })
+    return version
+  }
+  function readModuleOptions(value: unknown): SharedModuleOption[] {
+    if (!Array.isArray(value)) throw new Error('模块列表格式不正确')
+    return value.map(value => {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('模块格式不正确')
+      const row = value as Record<string, unknown>
+      if ((typeof row.key !== 'string' && (typeof row.key !== 'number' || !Number.isFinite(row.key))) || typeof row.title !== 'string') throw new Error('模块字段格式不正确')
+      if (row.disabled !== undefined && typeof row.disabled !== 'boolean') throw new Error('模块状态格式不正确')
+      const option: SharedModuleOption = { key: row.key, title: row.title }
+      if (row.disabled !== undefined) option.disabled = row.disabled
+      if (row.children !== undefined && row.children !== null) option.children = readModuleOptions(row.children)
+      return option
+    })
+  }
 </script>
 
 <script lang="ts" setup>
-  import { computed, onMounted, ref, watch } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
   import { fieldNames } from '@/setting'
   import { getUserModuleTree } from '@/api/system/module'
+  import useUserStore from '@/store/modules/user'
 
   type ModuleOption = SharedModuleOption
 
@@ -99,9 +132,19 @@
   })
 
   const emit = defineEmits(['update:modelValue', 'change', 'loaded'])
+  const user = useUserStore()
   const options = ref<ModuleOption[]>([])
   const loading = ref(false)
   const loadVersion = ref(0)
+  const failed = ref(false)
+  let active = true, disposed = false, mounted = false, needsLoad = true
+  let sharedRequest: { key: string; promise: Promise<SharedModuleOption[]> } | null = null
+  const identityScope = () => moduleRequestScope(user, [user.userId, user.roleId, user.token, user.selected_environment])
+  function detachSharedRequest(): void {
+    if (sharedRequest && pendingModuleRequests.get(sharedRequest.key) === sharedRequest.promise)
+      pendingModuleRequests.delete(sharedRequest.key)
+    sharedRequest = null
+  }
   const cascaderOptions = computed(() => {
     const excludedKeys = new Set(props.excludedKeys.map((item) => String(item)))
     const hasMaxLevel =
@@ -153,28 +196,25 @@
   })
 
   onMounted(() => {
-    loadOptions()
+    mounted = true
+    void loadOptions()
   })
 
   watch(
-    () => props.projectProductId,
+    () => [getCacheKey(props.projectProductId), identityScope(), props.refreshToken],
     (value, oldValue) => {
-      if (value === oldValue) {
-        return
-      }
-      if (props.autoClear) {
+      detachSharedRequest()
+      if (props.autoClear && (value[0] !== oldValue[0] || value[1] !== oldValue[1])) {
         emit('update:modelValue', '')
       }
-      loadOptions()
-    }
-  )
-
-  watch(
-    () => props.refreshToken,
-    (value, oldValue) => {
-      if (value === oldValue) return
-      loadOptions()
-    }
+      options.value = []
+      failed.value = false
+      loadVersion.value++
+      loading.value = false
+      needsLoad = true
+      if (mounted && active && !disposed) void loadOptions()
+    },
+    { flush: 'sync' }
   )
 
   function getLeafValue(value: any) {
@@ -191,43 +231,55 @@
       : String(leafValue)
   }
 
-  function fetchModuleOptions(projectProductId: any) {
-    const key = getCacheKey(projectProductId)
+  function fetchModuleOptions(projectProductId: unknown, key: string) {
     const pending = pendingModuleRequests.get(key)
     if (pending) {
       return pending
     }
     const request = getUserModuleTree(getLeafValue(projectProductId))
       .then((res) => {
-        return Array.isArray(res.data) ? res.data : []
+        if (res.code !== 200) throw new Error('模块列表加载失败')
+        return readModuleOptions(res.data)
       })
       .finally(() => {
-        pendingModuleRequests.delete(key)
+        if (pendingModuleRequests.get(key) === request) pendingModuleRequests.delete(key)
       })
     pendingModuleRequests.set(key, request)
     return request
   }
 
   function loadOptions() {
+    if (disposed || !active) return Promise.resolve()
     const version = loadVersion.value + 1
     loadVersion.value = version
+    const scope = identityScope()
     const cacheKey = getCacheKey(props.projectProductId)
+    const isCurrent = () => !disposed && active && loadVersion.value === version && identityScope() === scope && getCacheKey(props.projectProductId) === cacheKey
     loading.value = true
-    return fetchModuleOptions(props.projectProductId)
+    failed.value = false
+    needsLoad = true
+    const key = `${scope}:${cacheKey}`, promise = fetchModuleOptions(props.projectProductId, key)
+    sharedRequest = { key, promise }
+    return promise
       .then((list) => {
-        if (loadVersion.value !== version || getCacheKey(props.projectProductId) !== cacheKey) {
-          return
-        }
+        if (!isCurrent()) return
         options.value = list
+        needsLoad = false
         emit('loaded', cascaderOptions.value)
       })
-      .catch(console.log)
+      .catch((loadFailure0) => { if (isCurrent()) (reportLoadError(loadFailure0, "加载失败，请重试", false), failed.value = true) })
       .finally(() => {
-        if (loadVersion.value === version) {
-          loading.value = false
-        }
+        if (isCurrent()) loading.value = false
+        if (sharedRequest?.promise === promise) sharedRequest = null
       })
   }
+
+  function onPopupVisibleChange(visible: boolean): void {
+    if (visible && failed.value && !loading.value) void loadOptions()
+  }
+  onDeactivated(() => { active = false; detachSharedRequest(); loadVersion.value++; loading.value = false; needsLoad = true })
+  onActivated(() => { active = true; if (mounted && needsLoad && !loading.value) void loadOptions() })
+  onBeforeUnmount(() => { disposed = true; active = false; detachSharedRequest(); loadVersion.value++; loading.value = false })
 
   function onUpdate(value: any) {
     if (!isSelectableValue(value)) return

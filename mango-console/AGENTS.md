@@ -12,6 +12,7 @@
 ## 页面规范化、状态与组件化
 
 - 新增或整理页面状态、组件及 composable 时，遵循 [Vue 页面状态管理与组件化开发规范](../docs/架构设计/Vue页面状态管理与组件化开发规范.md)。
+- 逐页修复必须执行该规范 §8.0：每页修改前重新完整阅读根/前端/适用目录 AGENTS、迁移规范和前端统一规则，向用户附规范链接说明本页范围与执行要点，再登记、修改、验证和更新台账；不得用上一页阅读记录或摘要替代，也无需为例行推进反复请求批准。
 - 不新增 `reactive<any>`、`const data: any = reactive(...)` 等无类型的整页状态对象；按职责组织状态，使用明确类型，派生值使用 `computed`。
 - 页面负责布局与协调，独立业务区域按需要拆组件；不按行数或文件数量机械拆分，不传递整个页面状态对象。
 - 目录按上述规范组织：页面入口与真实配置放 `index.vue`、`config.ts`，类型、业务组件和有状态逻辑按需放 `types.ts`、`components/`、`composables/`；子路由保持独立目录，不建空壳文件。
@@ -99,7 +100,7 @@ npm run responsive:audit
 - `MangoTableActions` 操作数小于等于 3 时全部外显；大于等于 4 时外显 2 个，其余进“更多”。
 - 删除/移除/清理必须 `danger: true`。
 - 表格内执行、调试保持文本按钮；表格外主执行按钮才用成功绿色。
-- 表格中的启用/停用、默认开启、是否生效等二元状态优先使用 `a-switch size="small"`，通过 `beforeChange` 等机制确保接口成功后再切换；只读状态才使用 tag。
+- 表格中的启用/停用、默认开启、是否生效等二元状态优先使用默认大小的 `a-switch`，不指定 `size`；单元格子组件同样遵循。通过 `beforeChange` 等机制确保接口成功后再切换；只读状态才使用 tag。
 - 枚举类 tag 颜色优先使用 `useEnum()` 提供的 `enumStore.colors[value]`，展示文案从对应枚举项的 `title` 获取，例如测试对象列表的部署环境、自动化类型。
 - 表格列对齐统一：ID、序号、数字、短枚举、状态 tag、开关、操作列等固定/短字段居中；名称、路径、说明、地址、错误信息、绑定关系等业务文本字段左对齐。
 - 长字段必须 `ellipsis: true`、`tooltip: true`。
@@ -127,6 +128,8 @@ npm run responsive:audit
 - 说明文案用 `--m-muted`，错误提示用 `--m-danger`。
 
 ## 弹窗与抽屉
+
+- 无分类分区的普通表单弹窗统一使用 `modal-class="mango-simple-form-modal"`、宽度 `560` 和 `mango-simple-form` 单列左右布局；字段使用 `mango-simple-form-item`，结构网格使用 `mango-simple-form-fields`。有分类标题、分区或 Tabs 的配置弹窗保持原布局，不接入该样式；选择表格/树工作台不属于普通表单。修改后运行 `npm run modal:audit`。
 
 - 普通 `a-modal` footer 按钮统一靠右。
 - `Modal.confirm` 的取消/删除按钮统一靠右。
@@ -161,6 +164,8 @@ npm run responsive:audit
 
 ## Loading 规则
 
+- 加载失败统一调用 `reportLoadError`，不在页面、弹窗或抽屉渲染错误横幅；保留失败状态、重新加载和编辑门禁。业务校验、发布检查及执行结果错误继续展示。后台请求通过 `runLoadRequest` 捕获静默标记，错误不重复提示；成功空列表省略 `totalSize` 时复用 `normalizeEmptyListTotal`，不放宽非空列表或失败响应校验。修改后运行 `npm run loading-feedback:audit`。
+
 - 首次加载和用户主动发起的接口请求必须有对应 loading 状态；页面级自动轮询复用 `usePagePolling`，统一 5 秒静默更新，不反复触发页面或表格 loading，局部任务轮询按所属协议维护。
 - 异步保存、删除、执行、调试、导入、导出必须绑定按钮 loading。
 - 表格数据加载必须绑定表格 loading。
@@ -189,7 +194,7 @@ npm run responsive:audit
 - `npm run theme:audit` 保持 `Needs review: 0`。
 - 操作列宽度是否统一为 `160`。
 - 新增、创建、导入等列表主按钮是否使用小号紧凑尺寸。
-- 二元状态列是否使用小号开关，并确保接口成功后再切换。
+- 二元状态列是否使用默认大小开关，并确保接口成功后再切换。
 - 弹窗宽度、单双列布局是否匹配内容密度。
 - 表格是否只在内部横向滚动。
 - 多栏工作台/左树右表/图表多栏是否不会在 13 寸屏幕下被压缩；必要时是否使用 `mango-workbench-scroll-x` 和准确的 `--mango-workbench-min-width`。

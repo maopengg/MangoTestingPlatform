@@ -16,214 +16,135 @@
         <template #search>
           <a-form layout="inline" :model="query" @keyup.enter="onSearchRefresh">
             <a-form-item label="配置名称">
-                  <a-input
-                    v-model="query.name"
-                    allow-clear
-                    placeholder="请输入配置名称"
-                    @blur="onSearchRefresh"
-                    @clear="onSearchRefresh"
-                    data-testid="qa-views-gray-config-file-input-请输入配置名称"
-                  />
+              <a-input
+                v-model="query.name"
+                allow-clear
+                placeholder="请输入配置名称"
+                @blur="onSearchRefresh"
+                @clear="onSearchRefresh"
+                data-testid="qa-views-gray-config-file-input-请输入配置名称"
+              />
             </a-form-item>
             <a-form-item label="状态">
-                  <a-select
-                    v-model="query.status"
-                    multiple
-                    :max-tag-count="1"
-                    :options="enableStatusOptions"
-                    allow-clear
-                    placeholder="请选择状态"
-                    @change="onSearchRefresh"
-                    data-testid="qa-views-gray-config-file-select-请选择状态"
-                  />
+              <a-select
+                v-model="query.status"
+                multiple
+                :max-tag-count="1"
+                :options="enableStatusOptions"
+                allow-clear
+                placeholder="请选择状态"
+                @change="onSearchRefresh"
+                data-testid="qa-views-gray-config-file-select-请选择状态"
+              />
             </a-form-item>
           </a-form>
         </template>
         <template #toolbar>
-      <div class="mango-gray-toolbar">
+          <div class="mango-gray-toolbar">
+            <a-button v-if="enumError" size="small" :loading="enumLoading" @click="loadEnums"
+              >重试环境选项</a-button
+            >
+            <a-spin v-else-if="enumLoading" :loading="enumLoading" />
             <a-button
               size="small"
               type="primary"
+              :disabled="actionBlocked() || bindingDrawer.visible"
               @click="onAdd"
               data-testid="qa-views-gray-config-file-button-新增配置文件"
               >新增配置文件</a-button
             >
-      </div>
+          </div>
         </template>
-      <a-table
-        class="mango-native-scroll-table"
-        :bordered="false"
-        :columns="yamlColumns"
-        :data="table.dataList"
-        :loading="table.tableLoading.value"
-        :pagination="false"
-        :scroll="{ x: grayPageConfig.scrollX, y: '100%' }"
-        row-key="id"
-      >
-        <template #columns>
-          <a-table-column v-for="item in yamlColumns" :key="item.key" v-bind="item">
-            <template v-if="item.key === 'index'" #cell="{ record }">{{ record.id }}</template>
-            <template v-else-if="item.key === 'bindings'" #cell="{ record }">
-              <a-space v-if="visibleBindings(record.bindings).length" size="mini" wrap>
-                <a-tag
-                  v-for="binding of visibleBindings(record.bindings)"
-                  :key="binding.id"
-                  :color="environmentColor(binding?.repository?.test_env)"
-                  size="small"
-                >
-                  {{ bindingLabel(binding) }}
-                </a-tag>
+        <a-table
+          class="mango-native-scroll-table"
+          :bordered="false"
+          :columns="yamlColumns"
+          :data="rows"
+          :loading="listLoading"
+          :pagination="false"
+          :scroll="{ x: grayPageConfig.scrollX, y: '100%' }"
+          row-key="id"
+        >
+          <template #columns>
+            <a-table-column v-for="item in yamlColumns" :key="item.key" v-bind="item">
+              <template v-if="item.key === 'index'" #cell="{ record }">{{ record.id }}</template>
+              <template v-else-if="item.key === 'bindings'" #cell="{ record }">
+                <a-space v-if="visibleBindings(record.bindings).length" size="mini" wrap>
+                  <a-tag
+                    v-for="binding of visibleBindings(record.bindings)"
+                    :key="binding.id"
+                    :color="environmentColor(binding?.repository?.test_env)"
+                    size="small"
+                  >
+                    {{ bindingLabel(binding) }}
+                  </a-tag>
                   <a-tag v-if="hiddenBindings(record.bindings).length" color="gray" size="small"
                     >+{{ hiddenBindings(record.bindings).length }}</a-tag
                   >
-              </a-space>
-              <span v-else>-</span>
-            </template>
-            <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-switch
-                :beforeChange="(newValue) => onModifyYamlStatus(newValue, record.id)"
-                :default-checked="record.status === 1"
-              />
-            </template>
-            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              {{ formatProjectProductPath(record.project_product) }}
-            </template>
-            <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <MangoTableActions
-                :actions="[
-    { label: '绑定/查看', onClick: () => onBindingManage(record) },
-    { label: '编辑', onClick: () => onEdit(record) },
-    {
-        label: '删除',
-        danger: true,
-        loading: actionLoading === `delete-${record.id}`,
-        onClick: () => onDelete(record), },
-]"
-              />
-            </template>
-          </a-table-column>
+                </a-space>
+                <span v-else>-</span>
+              </template>
+              <template v-else-if="item.key === 'status'" #cell="{ record }">
+                <a-switch
+                  :beforeChange="(newValue) => onModifyYamlStatus(newValue, record.id)"
+                  :model-value="record.status === 1"
+                  :loading="rowLoading('yaml', 'status', record.id)"
+                  :disabled="actionBlocked()"
+                />
+              </template>
+              <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+                {{ formatProjectProductPath(record.project_product) }}
+              </template>
+              <template v-else-if="item.key === 'actions'" #cell="{ record }">
+                <MangoTableActions
+                  :actions="[
+                    { label: '绑定/查看', onClick: () => onBindingManage(record) },
+                    { label: '编辑', onClick: () => onEdit(record) },
+                    {
+                      label: '删除',
+                      danger: true,
+                      loading: rowLoading('yaml', 'delete', record.id),
+                      onClick: () => onDelete(record),
+                    },
+                  ]"
+                />
+              </template>
+            </a-table-column>
+          </template>
+        </a-table>
+        <template #footer>
+          <TableFooter :pagination="pagination" />
         </template>
-      </a-table>
-    <template #footer>
-      <TableFooter :pagination="pagination" />
-    </template>
       </ProjectProductNavigationWorkbench>
     </template>
   </TableBody>
 
-  <ModalDialog
-    ref="yamlDialogRef"
-    :title="form.id ? '编辑配置文件' : '新增配置文件'"
-    width="560px"
-    @confirm="onSubmit"
-  >
-    <template #content>
-      <a-form
-        class="mango-gray-form"
-        :model="form"
-        layout="horizontal"
-        :label-col-props="{ span: 5 }"
-        :wrapper-col-props="{ span: 19 }"
-      >
-        <a-form-item label="项目/产品" class="mango-form-item__require"
-          ><ProjectProductSelect v-model="form.project_product" placeholder="请选择项目/产品"
-        /></a-form-item>
-        <a-form-item label="配置名称" class="mango-form-item__require"
-          ><a-input
-            v-model="form.name"
-            placeholder="请输入配置名称"
-            data-testid="qa-views-gray-config-file-input-请输入配置名称-2"
-        /></a-form-item>
-        <a-form-item label="等待秒数"
-          ><a-input-number
-            v-model="form.effect_wait_seconds"
-            :min="0"
-            placeholder="请输入等待秒数"
-            data-testid="qa-views-gray-config-file-input-number-请输入等待秒数"
-        /></a-form-item>
-        <a-form-item label="启用状态"
-          ><a-switch v-model="form.status" :checked-value="1" :unchecked-value="0"
-        /></a-form-item>
-      </a-form>
-    </template>
-  </ModalDialog>
+  <YamlFileEditor
+    ref="yamlEditorRef"
+    :context-key="editorScopeKey"
+    :blocked="writeBusy || bindingSaving || bindingEditorVisible"
+    @busy="yamlSaving = $event"
+    @visible="yamlEditorVisible = $event"
+    @saved="onYamlSaved"
+  />
+  <YamlBindingEditor
+    ref="bindingEditorRef"
+    :context-key="editorScopeKey"
+    :blocked="writeBusy || yamlSaving || yamlEditorVisible"
+    @busy="bindingSaving = $event"
+    @visible="bindingEditorVisible = $event"
+    @saved="onBindingSaved"
+  />
 
-  <ModalDialog
-    ref="bindingDialogRef"
-    :title="bindingForm.id ? '编辑仓库绑定' : '新增仓库绑定'"
-    width="560px"
-    @confirm="onBindingSubmit"
-  >
-    <template #content>
-      <a-form
-        class="mango-gray-form"
-        :model="bindingForm"
-        layout="horizontal"
-        :label-col-props="{ span: 5 }"
-        :wrapper-col-props="{ span: 19 }"
-      >
-        <a-form-item label="所属仓库" class="mango-form-item__require">
-          <a-select
-            v-model="bindingForm.repository"
-            :options="repositoryOptions"
-            allow-search
-            placeholder="请选择仓库"
-            @change="onBindingRepositoryChange"
-            data-testid="qa-views-gray-config-file-select-请选择仓库"
-          />
-        </a-form-item>
-        <a-form-item label="文件路径" class="mango-form-item__require">
-          <a-cascader
-            v-model="bindingForm.file_path"
-            :options="repositoryFilePathOptions"
-            :loading="repositoryFilePathLoading"
-            allow-search
-            expand-trigger="hover"
-            placeholder="请选择仓库配置目录下的文件"
-          />
-        </a-form-item>
-        <a-form-item label="启用状态"
-          ><a-switch v-model="bindingForm.status" :checked-value="1" :unchecked-value="0"
-        /></a-form-item>
-      </a-form>
-    </template>
-  </ModalDialog>
+  <YamlContentDrawer ref="contentDrawerRef" :context-key="contentScopeKey" />
 
-  <BaseSidePanel
-    :visible="contentDrawer.visible"
-    :title="contentDrawer.title"
-    :width="1000"
-    cancel-button-text="关闭"
-    @update:visible="(value) => (contentDrawer.visible = value)"
-    @cancel="contentDrawer.visible = false"
-  >
-    <template #default>
-      <div class="mango-gray-code-drawer">
-        <div class="mango-gray-code-drawer__path">{{ contentDrawer.filePath || '-' }}</div>
-        <CodeEditor
-          v-model="contentDrawer.content"
-          readonly
-          placeholder="暂无配置内容"
-          :code-style="{ height: 'calc(100vh - 190px)' }"
-        />
-      </div>
-    </template>
-    <template #footer-buttons>
-      <a-button
-        @click="contentDrawer.visible = false"
-        data-testid="qa-views-gray-config-file-button-关闭"
-        >关闭</a-button
-      >
-    </template>
-  </BaseSidePanel>
-
-  <BaseSidePanel
+  <a-drawer
+    class="mango-gray-binding-panel"
     :visible="bindingDrawer.visible"
     :title="bindingDrawer.title"
     :width="900"
-    cancel-button-text="关闭"
-    @update:visible="(value) => (bindingDrawer.visible = value)"
-    @cancel="bindingDrawer.visible = false"
+    :on-before-cancel="canCloseBindings"
+    @update:visible="bindings.onVisibleChange"
   >
     <template #default>
       <div class="mango-gray-binding-drawer">
@@ -231,18 +152,20 @@
           <a-button
             size="small"
             type="primary"
+            :disabled="actionBlocked()"
             @click="onBindingAdd"
             data-testid="qa-views-gray-config-file-button-新增仓库绑定"
             >新增仓库绑定</a-button
           >
         </div>
         <a-table
+          class="mango-native-scroll-table"
           :bordered="false"
           :columns="bindingColumns"
           :data="bindingDrawer.dataList"
           :loading="bindingDrawer.loading"
           :pagination="false"
-          :scroll="{ x: grayPageConfig.bindingScrollX }"
+          :scroll="{ x: grayPageConfig.bindingScrollX, y: '100%' }"
           row-key="id"
         >
           <template #columns>
@@ -259,23 +182,26 @@
               <template v-else-if="item.key === 'status'" #cell="{ record }">
                 <a-switch
                   :beforeChange="(newValue) => onModifyBindingStatus(newValue, record.id)"
-                  :default-checked="record.status === 1"
+                  :model-value="record.status === 1"
+                  :loading="rowLoading('binding', 'status', record.id)"
+                  :disabled="actionBlocked()"
                 />
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <MangoTableActions
                   :actions="[
-    {
-        label: '查看',
-        loading: actionLoading === `binding-content-${record.id}`,
-        onClick: () => onBindingContent(record), },
-    { label: '编辑', onClick: () => onBindingEdit(record) },
-    {
-        label: '删除',
-        danger: true,
-        loading: actionLoading === `binding-delete-${record.id}`,
-        onClick: () => onDeleteBinding(record), },
-]"
+                    {
+                      label: '查看',
+                      onClick: () => onBindingContent(record),
+                    },
+                    { label: '编辑', onClick: () => onBindingEdit(record) },
+                    {
+                      label: '删除',
+                      danger: true,
+                      loading: rowLoading('binding', 'delete', record.id),
+                      onClick: () => onDeleteBinding(record),
+                    },
+                  ]"
                 />
               </template>
             </a-table-column>
@@ -283,458 +209,427 @@
         </a-table>
       </div>
     </template>
-  </BaseSidePanel>
+    <template #footer>
+      <a-button :disabled="!canCloseBindings()" @click="bindings.onVisibleChange(false)"
+        >关闭</a-button
+      >
+    </template>
+  </a-drawer>
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, reactive, ref } from 'vue'
-  import { Message, Modal } from '@arco-design/web-vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import {
+    computed,
+    onActivated,
+    onBeforeUnmount,
+    onDeactivated,
+    onMounted,
+    reactive,
+    ref,
+    watch,
+  } from 'vue'
+  import { Message } from '@arco-design/web-vue'
   import TableBody from '@/components/table/TableBody.vue'
   import TableHeader from '@/components/table/TableHeader.vue'
   import TableFooter from '@/components/table/TableFooter.vue'
   import MangoTableActions from '@/components/table/MangoTableActions.vue'
-  import ModalDialog from '@/components/overlays/ModalDialog.vue'
-  import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
-  import CodeEditor from '@/components/editors/CodeEditor.vue'
-  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
   import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
   import { useEnum } from '@/store/modules/get-enum'
-  import { usePagination, useTable } from '@/hooks/table'
-  import { useLatestRequest } from '@/hooks/use-latest-request'
-  import { formatProjectProductPath, getOptionId } from '@/utils/business-format'
-  import type { ModalDialogType } from '@/types/components'
-  import {
-    deleteGrayYamlFile,
-    deleteGrayYamlFileBinding,
-    getGrayRepository,
-    getGrayYamlFile,
-    getGrayYamlFileBinding,
-    getGrayYamlFileContent,
-    getGrayYamlRepositoryFiles,
-    postGrayYamlFile,
-    postGrayYamlFileBinding,
-    putGrayYamlFile,
-    putGrayYamlFileBinding,
-  } from '@/api/gray'
+  import { useRoute } from 'vue-router'
+  import useUserStore from '@/store/modules/user'
+  import { usePagination } from '@/hooks/table'
+  import { formatProjectProductPath } from '@/utils/business-format'
+  import type { NavigationCreateSource } from '@/utils/navigation-create-defaults'
+  import { getGrayYamlFile } from '@/api/gray'
+  import YamlFileEditor from './components/YamlFileEditor.vue'
+  import YamlBindingEditor from './components/YamlBindingEditor.vue'
+  import YamlContentDrawer from './components/YamlContentDrawer.vue'
+  import { useYamlBindings } from './composables/useYamlBindings'
+  import { useYamlMutations } from './composables/useYamlMutations'
+  import type { MutationTarget } from './composables/useYamlMutations'
+  import type { ContentDrawerHandle } from './content'
+  import type {
+    YamlEditorHandle,
+    BindingEditorHandle,
+    YamlRecord,
+    BindingRecord,
+    Repository,
+    Selection,
+  } from './forms'
+  import { selectionId } from './forms'
+  import { createQuery, queryParams, yamlPage } from './yaml-rows'
+  import type { YamlRow } from './yaml-rows'
   import { enableStatusOptions, grayPageConfig } from './config'
-  import { prefillNavigationModel, NavigationCreateSource } from '@/utils/navigation-create-defaults'
 
+  const user = useUserStore(),
+    route = useRoute(),
+    enumStore = useEnum()
   const navigationCreateRef = ref<NavigationCreateSource | null>(null)
-
-  const table = useTable()
-  const enumStore = useEnum()
-  const pagination = usePagination(onSearch, () => table.tableLoading)
-  const { beginRequest, isLatestRequest } = useLatestRequest()
-  const sidebarResetKey = ref(0)
-  const yamlDialogRef = ref<ModalDialogType | null>(null)
-  const bindingDialogRef = ref<ModalDialogType | null>(null)
-  const query = reactive<any>({})
-  const form = reactive<any>({})
-  const bindingForm = reactive<any>({})
-  const repositoryList = ref<any[]>([])
-  const repositoryFiles = ref<string[]>([])
-  const repositoryFilePathLoading = ref(false)
-  const actionLoading = ref('')
-  const contentDrawer = reactive({ visible: false, title: '', content: '', filePath: '' })
-  const bindingDrawer = reactive<any>({
-    visible: false,
-    title: '',
-    record: null,
-    dataList: [],
-    loading: false,
-  })
-  const yamlColumns = computed(() => grayPageConfig.columns)
-  const bindingColumns = computed(() => grayPageConfig.yamlBindingColumns || [])
-  const repositoryOptions = computed(() =>
-    repositoryList.value.map((item) => ({ label: repositoryLabel(item), value: item.id }))
+  const yamlEditorRef = ref<YamlEditorHandle | null>(null)
+  const bindingEditorRef = ref<BindingEditorHandle | null>(null)
+  const contentDrawerRef = ref<ContentDrawerHandle | null>(null)
+  const yamlSaving = ref(false),
+    bindingSaving = ref(false)
+  const yamlEditorVisible = ref(false),
+    bindingEditorVisible = ref(false)
+  const rows = ref<YamlRow[]>([]),
+    listLoading = ref(false),
+    listError = ref(false)
+  const enumLoading = ref(false),
+    enumError = ref(false)
+  const query = reactive(createQuery())
+  const pagination = usePagination(onSearch, listLoading)
+  const sidebarResetKey = ref(0),
+    viewEpoch = ref(0),
+    contentEpoch = ref(0)
+  let active = true,
+    mounted = false,
+    listSequence = 0,
+    enumSequence = 0
+  const isPageRoute = () => route.fullPath.split('?')[0] === '/gray/config-file/index'
+  const identityScopeKey = computed(() =>
+    JSON.stringify([
+      route.fullPath,
+      user.userId,
+      user.roleId,
+      user.token,
+      user.selected_environment,
+    ])
   )
-  const repositoryFilePathOptions = computed(() => buildPathTree(repositoryFiles.value))
-
-  function cleanParams(params: Record<string, any>) {
-    const result: Record<string, any> = {}
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== '' && value !== null && value !== undefined) {
-        result[key] = value
-      }
-    })
-    return result
-  }
+  const bindingScopeKey = computed(() =>
+    JSON.stringify([identityScopeKey.value, query.project_product, viewEpoch.value])
+  )
+  const canCloseBindings = () =>
+    !yamlSaving.value &&
+    !bindingSaving.value &&
+    !mutations.pending.value &&
+    !mutations.confirming.value &&
+    !yamlEditorVisible.value &&
+    !bindingEditorVisible.value
+  const bindings = useYamlBindings({
+    contextKey: () => bindingScopeKey.value,
+    blocked: () => !canCloseBindings(),
+  })
+  const bindingDrawer = bindings.drawer,
+    loadBindings = bindings.loadBindings
+  const editorScopeKey = computed(() =>
+    JSON.stringify([bindingScopeKey.value, bindingDrawer.record?.id])
+  )
+  const requestKey = computed(() => JSON.stringify(requestParams()))
+  const writeScopeKey = computed(() =>
+    JSON.stringify([editorScopeKey.value, bindingDrawer.visible, requestKey.value])
+  )
+  const mutations = useYamlMutations({
+    contextKey: () => writeScopeKey.value,
+    blocked: () =>
+      !active ||
+      !isPageRoute() ||
+      yamlSaving.value ||
+      bindingSaving.value ||
+      yamlEditorVisible.value ||
+      bindingEditorVisible.value,
+    applied: onMutationApplied,
+  })
+  const writeBusy = computed(() => !!mutations.pending.value || mutations.confirming.value)
+  const contentScopeKey = computed(() =>
+    JSON.stringify([
+      editorScopeKey.value,
+      bindingDrawer.visible,
+      yamlEditorVisible.value,
+      bindingEditorVisible.value,
+      contentEpoch.value,
+    ])
+  )
+  const yamlColumns = grayPageConfig.columns,
+    bindingColumns = grayPageConfig.yamlBindingColumns
 
   function requestParams() {
-    return cleanParams({
-      page: pagination.page,
-      pageSize: pagination.pageSize,
-      project_product: getOptionId(query.project_product),
-      name: query.name,
-      status__in: Array.isArray(query.status) ? query.status.join(',') : undefined,
-    })
+    return queryParams(query, pagination.page, pagination.pageSize)
   }
-
-  function isCommonEnvironment(value: any) {
-    return value === null || value === undefined || value === ''
-  }
-
-  function formatEnvironmentText(value: any) {
-    if (isCommonEnvironment(value)) {
-      return '环境通用'
+  function invalidateList(clear = true) {
+    ++listSequence
+    listLoading.value = false
+    listError.value = false
+    if (clear) {
+      rows.value = []
+      pagination.setTotalSize(0)
     }
-    return findEnvironmentOption(value)?.title || String(value)
   }
-
-  function environmentColor(value: any) {
-    if (isCommonEnvironment(value)) {
-      return 'gray'
+  async function onSearch(): Promise<boolean> {
+    if (!active || !isPageRoute()) {
+      listLoading.value = false
+      return false
     }
-    const optionIndex = findEnvironmentOptionIndex(value)
-    if (optionIndex >= 0) {
-      return enumStore.colors?.[optionIndex + 1] || enumStore.colors?.[optionIndex] || 'gray'
-    }
-    const numericValue = Number(value)
-    if (Number.isFinite(numericValue)) {
-      return enumStore.colors?.[numericValue] || 'gray'
-    }
-    return 'gray'
-  }
-
-  function findEnvironmentOption(value: any) {
-    const index = findEnvironmentOptionIndex(value)
-    return index >= 0 ? enumStore.environment_type?.[index] : undefined
-  }
-
-  function findEnvironmentOptionIndex(value: any) {
-    const text = String(value)
-    return (enumStore.environment_type || []).findIndex((item: any) => {
-      return [item.key, item.value, item.title].some((itemValue) => String(itemValue) === text)
-    })
-  }
-
-  function repositoryLabel(item: any) {
-    return `${item.name || '-'} / ${formatEnvironmentText(item.test_env)} / ${item.branch || '-'}`
-  }
-
-  function normalizeBindings(bindings: any[]) {
-    return Array.isArray(bindings) ? bindings.filter((item) => item?.status !== 0) : []
-  }
-
-  function visibleBindings(bindings: any[]) {
-    return normalizeBindings(bindings).slice(0, 3)
-  }
-
-  function hiddenBindings(bindings: any[]) {
-    return normalizeBindings(bindings).slice(3)
-  }
-
-  function bindingLabel(binding: any) {
-    return `${formatEnvironmentText(binding?.repository?.test_env)} / ${
-      binding?.repository?.name || '-'
-    }`
-  }
-
-  function normalizeRepoPath(value: any) {
-    return String(value || '')
-      .trim()
-      .replace(/\\/g, '/')
-      .replace(/^\/+|\/+$/g, '')
-  }
-
-  function normalizePathValue(value: any) {
-    if (Array.isArray(value)) {
-      return String(value[value.length - 1] || '').trim()
-    }
-    return String(value || '').trim()
-  }
-
-  function buildPathTree(paths: string[]) {
-    const root: any[] = []
-    const nodeMap = new Map<string, any>()
-    paths
-      .map((item) => normalizeRepoPath(item))
-      .filter(Boolean)
-      .sort()
-      .forEach((filePath) => {
-        const parts = filePath.split('/')
-        let parentChildren = root
-        let currentPath = ''
-        parts.forEach((part) => {
-          currentPath = currentPath ? `${currentPath}/${part}` : part
-          let node = nodeMap.get(currentPath)
-          if (!node) {
-            node = { label: part, value: currentPath, children: [] }
-            nodeMap.set(currentPath, node)
-            parentChildren.push(node)
-          }
-          parentChildren = node.children
-        })
-      })
-    return pruneEmptyChildren(root)
-  }
-
-  function pruneEmptyChildren(nodes: any[]) {
-    return nodes.map((node) => {
-      if (!node.children?.length) {
-        const { children, ...rest } = node
-        return rest
-      }
-      return { ...node, children: pruneEmptyChildren(node.children) }
-    })
-  }
-
-  async function loadRepositories() {
-    const res = await getGrayRepository({})
-    repositoryList.value = res.data || []
-  }
-
-  async function onSearch() {
-    const requestId = beginRequest()
-    table.tableLoading.value = true
+    const sequence = ++listSequence,
+      context = identityScopeKey.value,
+      epoch = viewEpoch.value,
+      params = requestParams(),
+      key = JSON.stringify(params)
+    const current = () =>
+      active &&
+      isPageRoute() &&
+      sequence === listSequence &&
+      context === identityScopeKey.value &&
+      epoch === viewEpoch.value &&
+      key === requestKey.value
+    listLoading.value = true
+    listError.value = false
     try {
-      const res = await getGrayYamlFile(requestParams())
-      if (!isLatestRequest(requestId)) return
-      table.handleSuccess(res)
-      pagination.setTotalSize(res.totalSize || 0)
+      const response = await getGrayYamlFile(params)
+      if (!current()) return false
+      const result = yamlPage(response, params.project_product ?? null)
+      if (result.rows.length > params.pageSize) throw Error('Invalid page length')
+      const lastPage = Math.max(1, Math.ceil(result.total / params.pageSize))
+      if (pagination.page > lastPage) {
+        pagination.page = lastPage
+        return await onSearch()
+      }
+      rows.value = result.rows
+      pagination.setTotalSize(result.total)
+      return true
+    } catch (loadFailure0) {
+      if (current()) (reportLoadError(loadFailure0, "加载失败，请重试", false), listError.value = true)
+      return false
     } finally {
-      if (isLatestRequest(requestId)) table.tableLoading.value = false
+      if (current()) listLoading.value = false
     }
-    }
-
-  function onSidebarFilterChange(filter: { projectProduct: any }) {
-    query.project_product = filter.projectProduct
-    pagination.page = 1
-    onSearch()
   }
-
+  async function loadEnums() {
+    if (!active || !isPageRoute()) return
+    const sequence = ++enumSequence,
+      context = identityScopeKey.value,
+      epoch = viewEpoch.value
+    const current = () =>
+      active &&
+      context === identityScopeKey.value &&
+      epoch === viewEpoch.value &&
+      sequence === enumSequence
+    enumLoading.value = true
+    enumError.value = false
+    try {
+      await enumStore.getEnum()
+    } catch (loadFailure1) {
+      if (current()) (reportLoadError(loadFailure1, "加载失败，请重试", false), enumError.value = true)
+    } finally {
+      if (current()) enumLoading.value = false
+    }
+  }
+  function onSidebarFilterChange(filter: { projectProduct: Selection }) {
+    const id = selectionId(filter.projectProduct)
+    if (id === query.project_product) return
+    query.project_product = id
+    pagination.page = 1
+    void onSearch()
+  }
   function onSearchRefresh() {
     pagination.page = 1
-    onSearch()
+    void onSearch()
   }
-
   function onReset() {
-    Object.keys(query).forEach((key) => {
-      query[key] = key === 'status' ? [] : undefined
-    })
-    sidebarResetKey.value += 1
-    onSearchRefresh()
+    Object.assign(query, createQuery())
+    pagination.page = 1
+    sidebarResetKey.value++
+    void onSearch()
   }
-
-  function openDialog(dialog: any, target: any, data: any) {
-    Object.keys(target).forEach((key) => delete target[key])
-    Object.assign(target, data)
-    dialog.value?.show()
+  function actionBlocked() {
+    return (
+      !active ||
+      !isPageRoute() ||
+      yamlSaving.value ||
+      bindingSaving.value ||
+      writeBusy.value ||
+      yamlEditorVisible.value ||
+      bindingEditorVisible.value
+    )
   }
-
   function onAdd() {
-    openDialog(yamlDialogRef, form, { project_product: null, effect_wait_seconds: 10, status: 1 })
-    void prefillNavigationModel(navigationCreateRef.value, form)
+    if (actionBlocked() || bindingDrawer.visible) return
+    const defaults = navigationCreateRef.value?.getCreateDefaults()
+    yamlEditorRef.value?.open(undefined, defaults?.projectProduct)
   }
-
-  function onEdit(record: any) {
-    openDialog(yamlDialogRef, form, {
-      ...record,
-      project_product: record.project_product?.id || record.project_product,
-    })
-  }
-
-  async function onSubmit() {
-    try {
-      if (!form.project_product) {
-        Message.warning('请选择项目/产品')
-        return
-      }
-      if (!form.name) {
-        Message.warning('请输入配置名称')
-        return
-      }
-      const payload = {
-        ...form,
-        project_product: getOptionId(form.project_product),
-      }
-      form.id ? await putGrayYamlFile(payload) : await postGrayYamlFile(payload)
-      Message.success('保存成功')
-      yamlDialogRef.value?.close()
-      await onSearch()
-    } finally {
-      yamlDialogRef.value?.setConfirmLoading(false)
-    }
-  }
-
-  async function onModifyYamlStatus(newValue: boolean, id: number) {
-    try {
-      const res = await putGrayYamlFile({ id, status: newValue ? 1 : 0 })
-      const success = res.code === 200
-      if (success) {
-        Message.success(res.msg || '状态更新成功')
-        await onSearch()
-      }
-      return success
-    } catch (error) {
-      return false
-    }
-  }
-
-  async function onModifyBindingStatus(newValue: boolean, id: number) {
-    try {
-      const res = await putGrayYamlFileBinding({ id, status: newValue ? 1 : 0 })
-      const success = res.code === 200
-      if (success) {
-        Message.success(res.msg || '状态更新成功')
-        await loadBindings(bindingDrawer.record?.id)
-        await onSearch()
-      }
-      return success
-    } catch (error) {
-      return false
-    }
-  }
-
-  async function onContent(record: any) {
-    const binding = normalizeBindings(record.bindings)[0]
-    if (!binding) {
-      Message.warning('请先为配置文件增加仓库绑定')
+  function onEdit(record: YamlRecord) {
+    if (actionBlocked() || bindingDrawer.visible || !rows.value.some((row) => row.id === record.id))
       return
+    yamlEditorRef.value?.open(record)
+  }
+  async function onYamlSaved() {
+    const context = identityScopeKey.value,
+      epoch = viewEpoch.value,
+      key = requestKey.value
+    contentEpoch.value++
+    if (
+      !(await onSearch()) &&
+      active &&
+      epoch === viewEpoch.value &&
+      context === identityScopeKey.value &&
+      key === requestKey.value
+    )
+      Message.error('配置已保存，列表读取失败，请重试查询')
+  }
+  async function onBindingSaved(yamlId: number) {
+    const context = editorScopeKey.value,
+      epoch = viewEpoch.value,
+      key = requestKey.value
+    contentEpoch.value++
+    const reads = [onSearch()]
+    if (bindingDrawer.visible && bindingDrawer.record?.id === yamlId)
+      reads.push(loadBindings(yamlId))
+    const result = await Promise.all(reads)
+    if (
+      active &&
+      context === editorScopeKey.value &&
+      epoch === viewEpoch.value &&
+      key === requestKey.value &&
+      result.some((loaded) => !loaded)
+    )
+      Message.error('绑定已保存，列表读取失败，请重试查询')
+  }
+  function yamlTarget(id: number): MutationTarget | null {
+    const row = rows.value.find((row) => row.id === id),
+      ownerId = selectionId(row?.project_product)
+    return row && ownerId ? { kind: 'yaml', id: row.id, ownerId, label: row.name } : null
+  }
+  function bindingTarget(id: number): MutationTarget | null {
+    const row = bindingDrawer.visible && bindingDrawer.dataList.find((row) => row.id === id)
+    return row && row.yaml_file === bindingDrawer.record?.id
+      ? { kind: 'binding', id: row.id, ownerId: row.yaml_file, label: row.file_path }
+      : null
+  }
+  function onModifyYamlStatus(checked: boolean, id: number) {
+    const target = yamlTarget(id)
+    return target ? mutations.changeStatus(target, checked) : Promise.resolve(false)
+  }
+  function onModifyBindingStatus(checked: boolean, id: number) {
+    const target = bindingTarget(id)
+    return target ? mutations.changeStatus(target, checked) : Promise.resolve(false)
+  }
+  function onDelete(record: YamlRecord) {
+    const target = yamlTarget(record.id)
+    if (target) mutations.confirmDelete(target)
+  }
+  function onDeleteBinding(record: BindingRecord) {
+    const target = bindingTarget(record.id)
+    if (target) mutations.confirmDelete(target)
+  }
+  async function onMutationApplied(target: MutationTarget, status?: number): Promise<boolean> {
+    invalidateList(false)
+    contentEpoch.value++
+    if (target.kind === 'yaml') {
+      if (status === undefined) {
+        const last = rows.value.length === 1 && rows.value[0].id === target.id
+        rows.value = rows.value.filter((row) => row.id !== target.id)
+        if (last && pagination.page > 1) pagination.page--
+      } else rows.value = rows.value.map((row) => (row.id === target.id ? { ...row, status } : row))
+      return onSearch()
     }
-    actionLoading.value = `content-${record.id}`
-    try {
-      const res = await getGrayYamlFileContent({ id: record.id, binding_id: binding.id })
-      contentDrawer.title = record.name
-      contentDrawer.filePath = res.data?.file_path || binding.file_path || ''
-      contentDrawer.content = res.data?.content || ''
-      contentDrawer.visible = true
-    } finally {
-      actionLoading.value = ''
-    }
+    if (!bindingDrawer.visible || bindingDrawer.record?.id !== target.ownerId) return false
+    bindings.applyMutation(target.id, status)
+    const result = await Promise.all([onSearch(), loadBindings(target.ownerId)])
+    return result.every(Boolean)
   }
-
-  function onDelete(record: any) {
-    Modal.confirm({
-      title: '删除配置文件',
-      content: `确认删除 ${record.name}？`,
-      onOk: async () => {
-        actionLoading.value = `delete-${record.id}`
-        try {
-          await deleteGrayYamlFile(record.id)
-          await onSearch()
-        } finally {
-          actionLoading.value = ''
-        }
-      },
-    })
+  function rowLoading(kind: MutationTarget['kind'], action: 'status' | 'delete', id: number) {
+    const pending = mutations.pending.value
+    return pending?.kind === kind && pending.action === action && pending.id === id
   }
-
-  async function onBindingManage(record: any) {
-    bindingDrawer.record = record
-    bindingDrawer.title = `${record.name} 仓库绑定`
-    bindingDrawer.visible = true
-    await loadBindings(record.id)
+  function onBindingManage(record: YamlRecord) {
+    if (actionBlocked() || !rows.value.some((row) => row.id === record.id)) return
+    bindings.open(record)
   }
-
-  async function loadBindings(yamlFileId: any) {
-    bindingDrawer.loading = true
-    try {
-      const res = await getGrayYamlFileBinding({ yaml_file: yamlFileId, page: 1, pageSize: 200 })
-      bindingDrawer.dataList = res.data || []
-    } finally {
-      bindingDrawer.loading = false
-    }
-  }
-
   function onBindingAdd() {
-    if (!bindingDrawer.record?.id) {
-      Message.warning('请先选择配置文件')
+    if (actionBlocked() || !bindingDrawer.visible || !bindingDrawer.record) return
+    bindingEditorRef.value?.open(bindingDrawer.record)
+  }
+  function onBindingEdit(record: BindingRecord) {
+    if (actionBlocked() || !bindingTarget(record.id) || !bindingDrawer.record) return
+    bindingEditorRef.value?.open(bindingDrawer.record, record)
+  }
+  function onBindingContent(record: BindingRecord) {
+    if (actionBlocked() || !bindingTarget(record.id)) return
+    const yamlId = selectionId(bindingDrawer.record?.id),
+      bindingId = selectionId(record.id),
+      repositoryId = selectionId(record.repository)
+    if (!yamlId || !bindingId || !repositoryId || selectionId(record.yaml_file) !== yamlId) {
+      Message.warning('绑定信息已变化，请重新查询后查看')
       return
     }
-    repositoryFiles.value = []
-    openDialog(bindingDialogRef, bindingForm, { yaml_file: bindingDrawer.record.id, status: 1 })
-  }
-
-  async function onBindingEdit(record: any) {
-    repositoryFiles.value = record.file_path ? [record.file_path] : []
-    openDialog(bindingDialogRef, bindingForm, {
-      ...record,
-      yaml_file: record.yaml_file?.id || record.yaml_file || bindingDrawer.record?.id,
-      repository: record.repository?.id || record.repository,
-    })
-    await loadRepositoryFiles(bindingForm.repository)
-  }
-
-  async function onBindingRepositoryChange() {
-    bindingForm.file_path = undefined
-    await loadRepositoryFiles(bindingForm.repository)
-  }
-
-  async function loadRepositoryFiles(repositoryId: any) {
-    if (!repositoryId) {
-      repositoryFiles.value = []
-      return
-    }
-    repositoryFilePathLoading.value = true
-    try {
-      const res = await getGrayYamlRepositoryFiles({ repository_id: repositoryId })
-      repositoryFiles.value = Array.isArray(res.data) ? res.data : []
-    } finally {
-      repositoryFilePathLoading.value = false
-    }
-  }
-
-  async function onBindingSubmit() {
-    try {
-      if (!bindingForm.repository) {
-        Message.warning('请选择所属仓库')
-        return
-      }
-      if (!bindingForm.file_path) {
-        Message.warning('请选择文件路径')
-        return
-      }
-      const payload = {
-        ...bindingForm,
-        yaml_file: bindingForm.yaml_file || bindingDrawer.record?.id,
-        file_path: normalizePathValue(bindingForm.file_path),
-      }
-      bindingForm.id
-        ? await putGrayYamlFileBinding(payload)
-        : await postGrayYamlFileBinding(payload)
-      Message.success('保存成功')
-      bindingDialogRef.value?.close()
-      await loadBindings(payload.yaml_file)
-      await onSearch()
-    } finally {
-      bindingDialogRef.value?.setConfirmLoading(false)
-    }
-  }
-
-  async function onBindingContent(record: any) {
-    const yamlFileId = record.yaml_file?.id || record.yaml_file || bindingDrawer.record?.id
-    actionLoading.value = `binding-content-${record.id}`
-    try {
-      const res = await getGrayYamlFileContent({ id: yamlFileId, binding_id: record.id })
-      contentDrawer.title = bindingDrawer.record?.name || record.yaml_file?.name || '配置文件'
-      contentDrawer.filePath = res.data?.file_path || record.file_path || ''
-      contentDrawer.content = res.data?.content || ''
-      contentDrawer.visible = true
-    } finally {
-      actionLoading.value = ''
-    }
-  }
-
-  function onDeleteBinding(record: any) {
-    Modal.confirm({
-      title: '删除仓库绑定',
-      content: `确认删除 ${record.file_path}？`,
-      onOk: async () => {
-        actionLoading.value = `binding-delete-${record.id}`
-        try {
-          await deleteGrayYamlFileBinding(record.id)
-          await loadBindings(bindingDrawer.record?.id)
-          await onSearch()
-        } finally {
-          actionLoading.value = ''
-        }
-      },
+    contentDrawerRef.value?.open({
+      yamlId,
+      bindingId,
+      repositoryId,
+      title: bindingDrawer.record?.name || '配置文件',
+      filePath: record.file_path,
     })
   }
-
-  onMounted(async () => {
-    await loadRepositories()
+  function formatEnvironmentText(value: number | null | undefined) {
+    if (value == null) return '环境通用'
+    return (
+      enumStore.environment_type.find((option) => String(option.key) === String(value))?.title ??
+      String(value)
+    )
+  }
+  function environmentColor(value: number | null | undefined) {
+    return value == null ? 'gray' : enumStore.colors[value] || 'gray'
+  }
+  function repositoryLabel(item: Repository | number | null) {
+    return item && typeof item === 'object'
+      ? `${item.name || '-'} / ${formatEnvironmentText(item.test_env)} / ${item.branch || '-'}`
+      : item == null
+      ? '-'
+      : `ID ${item}`
+  }
+  function visibleBindings(bindings: BindingRecord[]) {
+    return bindings.filter((row) => row.status !== 0).slice(0, 3)
+  }
+  function hiddenBindings(bindings: BindingRecord[]) {
+    return bindings.filter((row) => row.status !== 0).slice(3)
+  }
+  function bindingLabel(binding: BindingRecord) {
+    const repository =
+      binding.repository && typeof binding.repository === 'object' ? binding.repository : null
+    return `${formatEnvironmentText(repository?.test_env)} / ${repository?.name || '-'}`
+  }
+  function invalidatePage() {
+    viewEpoch.value++
+    ++enumSequence
+    enumLoading.value = false
+    enumError.value = false
+    invalidateList()
+  }
+  watch(requestKey, () => invalidateList(), { flush: 'sync' })
+  watch(
+    identityScopeKey,
+    () => {
+      invalidatePage()
+      pagination.page = 1
+      if (mounted && active && isPageRoute()) {
+        void onSearch()
+        void loadEnums()
+      }
+    },
+    { flush: 'sync' }
+  )
+  onMounted(() => {
+    mounted = true
+    void onSearch()
+    void loadEnums()
+  })
+  onDeactivated(() => {
+    active = false
+    invalidatePage()
+  })
+  onActivated(() => {
+    if (active) return
+    active = true
+    if (mounted) {
+      void onSearch()
+      void loadEnums()
+    }
+  })
+  onBeforeUnmount(() => {
+    active = false
+    invalidatePage()
   })
 </script>
 
@@ -742,31 +637,30 @@
   .mango-gray-toolbar {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
+    gap: var(--m-page-gap);
+  }
+  .mango-gray-error {
+    color: var(--m-danger);
   }
 
-  .mango-gray-form {
-    :deep(.arco-form-item) {
-      margin-bottom: 12px;
-    }
+  :global(.mango-gray-binding-panel .arco-drawer-body) {
+    padding: var(--m-page-gap);
+    overflow: hidden;
   }
-
-  .mango-gray-code-drawer {
+  :global(.mango-gray-binding-panel .arco-drawer-header),
+  :global(.mango-gray-binding-panel .arco-drawer-footer) {
+    padding-inline: var(--m-page-gap);
+  }
+  .mango-gray-binding-drawer {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    height: 100%;
     min-height: 0;
+    gap: var(--m-page-gap);
   }
-
-  .mango-gray-code-drawer__path {
-    overflow: hidden;
-    padding: 8px 10px;
-    border: 1px solid var(--m-border);
-    border-radius: var(--m-radius-sm);
-    background: var(--m-surface-soft);
-    color: var(--m-text-2);
-    font-size: 13px;
-    line-height: 20px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .mango-gray-binding-drawer > .arco-table {
+    flex: 1 1 auto;
+    min-height: 0;
   }
 </style>

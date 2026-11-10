@@ -1,14 +1,12 @@
 import { FormItem } from '@/types/components'
 import { createIdSearchValue } from '@/utils/id-search'
 import { reactive, ref } from 'vue'
-import { Message } from '@arco-design/web-vue'
-import { useTable, useTableColumn } from '@/hooks/table'
+import { useTableIndexColumn, useTableColumn } from '@/hooks/table'
 import { updateTimeColumn, updateUserColumn } from '@/utils/update-user'
 
-const table = useTable()
 export const tableScrollX = 1810
 
-export const conditionItems: Array<FormItem> = reactive([
+export const createConditionItems = (): FormItem[] => reactive([
   {
     key: 'id',
     label: 'ID',
@@ -40,103 +38,8 @@ export const conditionItems: Array<FormItem> = reactive([
     },
   },
 ])
-export const formItems: FormItem[] = reactive([
-  {
-    label: '昵称',
-    key: 'name',
-    value: ref(''),
-    placeholder: '请输入用户昵称',
-    required: true,
-    type: 'input',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '登录邮箱',
-    key: 'username',
-    value: ref(''),
-    type: 'input',
-    required: true,
-    placeholder: '请输入登录邮箱',
-    validator: function () {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(this.value || ''))) {
-        Message.error('请输入正确的登录邮箱')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '登录邮箱',
-    key: 'email',
-    value: ref(''),
-    type: 'input',
-    required: true,
-    placeholder: '请输入登录邮箱',
-    validator: function () {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(this.value || ''))) {
-        Message.error('请输入正确的邮箱地址')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '密码',
-    key: 'password',
-    value: ref(''),
-    type: 'input',
-    required: false,
-    placeholder: '请输入用户密码',
-    validator: function () {
-      // 判断value是否包含汉字
-      const reg = new RegExp('[\\u4E00-\\u9FFF]+', 'g')
-      if (reg.test(this.value)) {
-        Message.error('不能输入汉字')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '绑定角色',
-    key: 'role',
-    value: ref(''),
-    type: 'select',
-    required: false,
-    placeholder: '请选择用户角色，留空为游客',
-    validator: function () {
-      if (this.value === null && this.value === '') {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '超级管理员',
-    key: 'is_super_admin',
-    value: ref(false),
-    type: 'switch',
-    required: false,
-    placeholder: '',
-  },
-  {
-    label: '所属部门',
-    key: 'department_ids',
-    value: ref([]),
-    type: 'department-select',
-    required: false,
-    placeholder: '请选择用户所属部门',
-  },
-])
 export const tableColumns = useTableColumn([
-  table.indexColumn,
+  { ...useTableIndexColumn(), align: 'center' },
   {
     title: '昵称',
     key: 'name',
@@ -144,11 +47,15 @@ export const tableColumns = useTableColumn([
     align: 'left',
 
     width: 200,
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '登录邮箱',
     key: 'username',
     dataIndex: 'username',
+    ellipsis: true,
+    tooltip: true,
     align: 'left',
     width: 200,
   },
@@ -156,6 +63,8 @@ export const tableColumns = useTableColumn([
     title: '角色',
     key: 'role',
     dataIndex: 'role',
+    ellipsis: true,
+    tooltip: true,
     align: 'left',
     width: 200,
   },
@@ -180,6 +89,8 @@ export const tableColumns = useTableColumn([
     title: '登录IP',
     key: 'ip',
     dataIndex: 'ip',
+    ellipsis: true,
+    tooltip: true,
     align: 'left',
     width: 170,
   },
@@ -189,8 +100,8 @@ export const tableColumns = useTableColumn([
     dataIndex: 'last_login_time',
     width: 180,
   },
-  updateUserColumn(),
-  updateTimeColumn(),
+  { ...updateUserColumn(), key: 'update_user' },
+  { ...updateTimeColumn(), key: 'update_time' },
   {
     title: '操作',
     key: 'actions',

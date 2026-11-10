@@ -15,6 +15,7 @@
           <strong>{{ visitCount }}</strong>
         </div>
       </div>
+
       <div
         v-if="dailyActivity.length"
         class="mango-activity-rank__trend"
@@ -50,20 +51,23 @@
           type="button"
           class="mango-activity-rank__retry"
           @click="loadNextPage"
-        >
-          加载失败，点击重试
-        </button>
+        ></button>
         <div v-else-if="!hasMore" class="mango-activity-rank__load-state">已加载全部用户</div>
       </div>
-      <div v-else-if="!loading" class="mango-empty-state mango-activity-rank__empty">
-        暂无活跃度数据
-      </div>
+
     </mango-panel-spin>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { reportLoadError } from '@/utils/load-error'
+
+  import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
+  import { useRoute } from 'vue-router'
+  import useUserStore from '@/store/modules/user'
+  import { scaleDensityPixels } from '@/hooks/useDisplayDensity'
+  import { emptyHomeActivity, readHomeActivity } from '../../records'
+  import { homeActivityPageSize as pageSize } from '../../config'
   import { getSystemActivityLevel } from '@/api/system'
 
   interface ActivityRankItem {
@@ -73,79 +77,35 @@
     percent: number
   }
 
-  interface DailyActivityItem {
-    date: string
-    active_users: number
-  }
-
   const loading = ref(false)
   const loadingMore = ref(false)
   const loadMoreFailed = ref(false)
+  const loadFailed = ref(false)
   const currentPage = ref(1)
-  const rankTotal = ref(0)
-  const pageSize = 30
-  let requestSequence = 0
-  const rawUserIds = ref<string[]>([])
-  const rawNames = ref<string[]>([])
-  const rawCounts = ref<number[]>([])
-  const activeUsers = ref(0)
-  const activityRate = ref(0)
-  const visitCount = ref(0)
-  const dailyActivity = ref<DailyActivityItem[]>([])
+  const activity = ref(emptyHomeActivity())
+  const rankTotal = computed(() => activity.value.total)
+  const activeUsers = computed(() => activity.value.activeUsers)
+  const activityRate = computed(() => activity.value.activityRate)
+  const visitCount = computed(() => activity.value.visitCount)
+  const dailyActivity = computed(() => activity.value.daily)
+  const route = useRoute(), user = useUserStore(), entryPath = route.path
+  const contextKey = computed(() => JSON.stringify([
+    route.fullPath, user.userId, user.roleId, user.token, user.selected_environment,
+  ]))
+  let requestSequence = 0, active = true, mounted = false
+  const available = () => active && route.path === entryPath
+  function invalidate() { requestSequence++; loading.value = false; loadingMore.value = false }
   const maxDailyActivity = computed(() =>
     Math.max(...dailyActivity.value.map((item) => item.active_users), 0)
   )
 
   const rankItems = computed<ActivityRankItem[]>(() => {
-    const max = Math.max(...rawCounts.value, 0)
-    return rawNames.value
-      .map((name, index) => {
-        const count = Number(rawCounts.value[index] || 0)
-        return {
-          id: rawUserIds.value[index] || name,
-          name,
-          count,
-          percent: max > 0 ? Math.max(4, Math.round((count / max) * 100)) : 0,
-        }
-      })
-      .sort((prev, next) => next.count - prev.count)
+    const max = Math.max(...activity.value.rows.map(row => row.count), 0)
+    return activity.value.rows.map(row => ({
+      ...row, percent: max > 0 ? Math.max(4, Math.round(row.count / max * 100)) : 0,
+    })).sort((prev, next) => next.count - prev.count)
   })
   const hasMore = computed(() => rankItems.value.length < rankTotal.value)
-
-  function normalizeActivityData(payload: any, append = false) {
-    const userIds = Array.isArray(payload?.user_ids) ? payload.user_ids : []
-    const names = Array.isArray(payload?.name) ? payload.name : []
-    const counts = Array.isArray(payload?.total_logins) ? payload.total_logins : []
-    const incoming = names.map((item: any, index: number) => ({
-      id: String(userIds[index] ?? item ?? index),
-      name: String(item || '-'),
-      count: Number(counts[index] || 0),
-    }))
-    const merged = append
-      ? [
-          ...rawNames.value.map((name, index) => ({
-            id: rawUserIds.value[index],
-            name,
-            count: rawCounts.value[index],
-          })),
-          ...incoming,
-        ]
-      : incoming
-    const unique = Array.from(new Map(merged.map((item) => [item.id, item])).values())
-    rawUserIds.value = unique.map((item) => item.id)
-    rawNames.value = unique.map((item) => item.name)
-    rawCounts.value = unique.map((item) => item.count)
-    rankTotal.value = Number(payload?.rank_total ?? payload?.active_users ?? unique.length)
-    activeUsers.value = Number(payload?.active_users || 0)
-    activityRate.value = Number(payload?.activity_rate || 0)
-    visitCount.value = Number(payload?.visit_count || 0)
-    dailyActivity.value = Array.isArray(payload?.daily_activity)
-      ? payload.daily_activity.map((item: any) => ({
-          date: String(item?.date || ''),
-          active_users: Number(item?.active_users || 0),
-        }))
-      : []
-  }
 
   function dailyBarHeight(value: number) {
     if (!maxDailyActivity.value) return 4
@@ -156,47 +116,53 @@
     return value.replace('-', '/')
   }
 
-  function activityLevel(reset = false) {
-    if (loading.value || loadingMore.value || (!reset && !hasMore.value)) return
+  async function activityLevel(reset = false) {
+    if (!available() || loading.value || loadingMore.value || (!reset && !hasMore.value)) return
     const targetPage = reset ? 1 : currentPage.value + 1
-    const sequence = ++requestSequence
+    const sequence = ++requestSequence, context = contextKey.value
+    const current = () => available() && sequence === requestSequence && context === contextKey.value
     loadMoreFailed.value = false
-    if (reset) loading.value = true
+    if (reset) { loading.value = true; loadFailed.value = false }
     else loadingMore.value = true
-    getSystemActivityLevel({ page: targetPage, pageSize })
-      .then((res) => {
-        if (sequence !== requestSequence) return
-        normalizeActivityData(res.data, !reset)
-        currentPage.value = targetPage
-      })
-      .catch((error) => {
-        if (sequence !== requestSequence) return
-        console.log(error)
-        if (!reset) loadMoreFailed.value = true
-      })
-      .finally(() => {
-        if (sequence !== requestSequence) return
-        loading.value = false
-        loadingMore.value = false
-      })
+    try {
+      const next = readHomeActivity(await getSystemActivityLevel({ page: targetPage, pageSize }))
+      if (!current()) return
+      const rows = reset ? next.rows : [...activity.value.rows, ...next.rows]
+      activity.value = { ...next, rows: next.total === 0 ? [] : [...new Map(rows.map(row => [row.id, row])).values()].slice(0, next.total) }
+      currentPage.value = targetPage
+      loadFailed.value = false
+    } catch (loadFailure0) {
+      if (!current()) return
+      if (reset) (reportLoadError(loadFailure0, "加载失败，请重试", false), loadFailed.value = true)
+      else (reportLoadError(loadFailure0, "加载失败，请重试", false), loadMoreFailed.value = true)
+    } finally {
+      if (current()) { loading.value = false; loadingMore.value = false }
+    }
   }
 
   function loadNextPage() {
-    activityLevel(false)
+    return activityLevel(false)
   }
 
   function handleRankScroll(event: Event) {
     const target = event.currentTarget as HTMLElement
-    if (target.scrollTop + target.clientHeight >= target.scrollHeight - 48) loadNextPage()
+    if (target.scrollTop + target.clientHeight >= target.scrollHeight - scaleDensityPixels(48)) loadNextPage()
   }
 
-  onMounted(() => {
-    activityLevel(true)
+  watch(contextKey, () => {
+    invalidate()
+    activity.value = emptyHomeActivity()
+    currentPage.value = 1
+    loadFailed.value = false
+    loadMoreFailed.value = false
+    if (mounted) void activityLevel(true)
+  }, { flush: 'sync' })
+  onMounted(() => { mounted = true; void activityLevel(true) })
+  onDeactivated(() => { active = false; invalidate() })
+  onActivated(() => {
+    if (mounted && !active) { active = true; void activityLevel(true) }
   })
-
-  onBeforeUnmount(() => {
-    requestSequence += 1
-  })
+  onBeforeUnmount(() => { active = false; mounted = false; invalidate() })
 </script>
 
 <style lang="less" scoped>

@@ -14,6 +14,10 @@ from src.apps.data_factory.models import (
 
 class DataFactoryQuerySelector:
     @staticmethod
+    def resource_cleanup_aliases(ids, product_id):
+        return DataFactoryDatasourceAlias.objects.filter(id__in=ids, project_product_id=product_id)
+
+    @staticmethod
     def executions_for_case_attempt(detail_id, attempt):
         from django.db.models.fields.json import KeyTransform
         from src.apps.data_factory.constants import CLEANUP_REPORT_CONTEXT_KEY

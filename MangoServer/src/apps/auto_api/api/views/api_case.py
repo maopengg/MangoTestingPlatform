@@ -71,6 +71,7 @@ from src.common.responses.model_crud import (
 from src.common.responses.response_data import ResponseData
 from src.common.responses.response_msg import (
     RESPONSE_MSG_0001,
+    RESPONSE_MSG_0001,
     RESPONSE_MSG_0002,
     RESPONSE_MSG_0009,
     RESPONSE_MSG_0023,
@@ -140,6 +141,9 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
     @staticmethod
     def validate_case_config(config: dict, project_product_id=None) -> dict:
         validators = {
+            'resource_cleanup': lambda value: ApiCaseMutationService.validate_config(
+                {'resource_cleanup': value}, project_product_id,
+            )['resource_cleanup'],
             'callback_checks': lambda value: ApiCaseMutationService.validate_config(
                 {'callback_checks': value}, project_product_id,
             )['callback_checks'],
@@ -384,6 +388,24 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
 
 class ApiCaseViews(ViewSet):
+    @error_response('api')
+    def resource_cleanup_results(self, request):
+        from src.apps.auto_api.api.serializers.api_case import ApiResourceResultsQuery
+        from src.apps.auto_api.selectors.resource_cleanup import ApiResourceCleanupSelector
+        query = ApiResourceResultsQuery(data=request.query_params)
+        query.is_valid(raise_exception=True)
+        return ResponseData.success(RESPONSE_MSG_0001, ApiResourceCleanupSelector.results(
+            user=getattr(request.user, 'user_obj', None), **query.validated_data))
+
+    @error_response('api')
+    def resource_cleanup_retry(self, request):
+        from src.apps.auto_api.api.serializers.api_case import ApiResourceCleanupCommand
+        from src.apps.auto_api.services.resource_cleanup import ApiResourceCleanupRetryService
+        command = ApiResourceCleanupCommand(data=request.data)
+        command.is_valid(raise_exception=True)
+        return ResponseData.success(RESPONSE_MSG_0001, ApiResourceCleanupRetryService.retry(
+            user=getattr(request.user, 'user_obj', None), **command.validated_data))
+
     model = ApiCase
     serializer_class = ApiCaseSerializers
 

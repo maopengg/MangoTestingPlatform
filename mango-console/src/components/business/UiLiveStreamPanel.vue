@@ -233,7 +233,8 @@
 </template>
 
 <script lang="ts" setup>
-  import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+  import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
+  import { useRoute } from 'vue-router'
   import { Message } from '@arco-design/web-vue'
   import { IconDesktop, IconRefresh } from '@arco-design/web-vue/es/icon'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
@@ -243,6 +244,7 @@
     startUiLiveStreamSession,
   } from '@/api/uitest/live-stream'
   import useUserStore from '@/store/modules/user'
+  import usePermissionStore from '@/store/modules/permission'
 
   const props = defineProps<{
     visible: boolean
@@ -272,6 +274,34 @@
   }>()
 
   const socket = ref<WebSocket | null>(null)
+  const userStore = useUserStore(), permissionStore = usePermissionStore(), route = useRoute(), pagePath = route.path
+  let connectionVersion = 0, componentActive = true, disposed = false
+  let connectionRequest: Promise<void> | null = null
+  const closingSessions = new Set<Promise<void>>()
+  const connectionIdentity = () => JSON.stringify([route.path, route.fullPath, props.executionType, props.executionId, props.resourceId, props.readOnly, props.actuatorUsername, userStore.userId, userStore.roleId, userStore.token, userStore.selected_environment, permissionStore.permissionKeys])
+  const canView = () => !disposed && componentActive && props.visible && route.path === pagePath && document.visibilityState === 'visible'
+  const canConnect = () => canView() && props.executionId !== '' && props.executionId != null
+  function captureConnection() {
+    const version = connectionVersion, identity = connectionIdentity()
+    return () => canConnect() && version === connectionVersion && identity === connectionIdentity()
+  }
+  function closeRemoteSession(id: string): Promise<void> {
+    const request = Promise.resolve().then(async () => {
+      try { await closeUiLiveStreamSession(id, true) } catch { /* 后端会话租约负责回收无法确认关闭的资源。 */ }
+    }).finally(() => closingSessions.delete(request))
+    closingSessions.add(request)
+    return request
+  }
+  function sessionRecord(value: unknown): Record<string, unknown> {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('实时画面会话响应无效')
+    return value as Record<string, unknown>
+  }
+  async function expireWorkspace() {
+    const identity = connectionIdentity(), executionId = props.executionId
+    workspaceExpired.value = true
+    await disconnect(false)
+    if (canConnect() && identity === connectionIdentity()) emit('workspace-expired', executionId)
+  }
   const frameRef = ref<HTMLImageElement | null>(null)
   const viewportRef = ref<HTMLElement | null>(null)
   const imeInputRef = ref<HTMLTextAreaElement | null>(null)
@@ -388,68 +418,84 @@
     return `${protocol}//${host}${path}?token=${encodeURIComponent(token)}`
   }
 
-  async function connect() {
-    if (!props.executionId || connecting.value) return
+  function connect(): Promise<void> {
+    if (!canConnect()) return Promise.resolve()
+    if (connectionRequest) {
+      const current = captureConnection()
+      return connectionRequest.then(() => { if (current() && !socket.value && !connecting.value) return connect() })
+    }
+    if (closingSessions.size) {
+      const current = captureConnection()
+      return Promise.all([...closingSessions]).then(() => { if (current()) return connect() })
+    }
+    if (connecting.value || socket.value?.readyState === WebSocket.OPEN || socket.value?.readyState === WebSocket.CONNECTING) return Promise.resolve()
+    const current = captureConnection(), executionId = props.executionId
+    const executionType = props.executionType, token = userStore.token
+    const options = { resourceId: props.resourceId, readOnly: props.readOnly, actuatorUsername: props.actuatorUsername }
     connecting.value = true
     errorMessage.value = ''
     streamCompleted.value = false
     closedByUser.value = false
-    try {
-      liveLog('开始创建直播会话')
-      const response = await createUiLiveStreamSession(props.executionType, props.executionId, {
-        resourceId: props.resourceId,
-        readOnly: props.readOnly,
-        actuatorUsername: props.actuatorUsername,
-      })
-      const session = response.data || {}
-      streamId.value = session.stream_id
-      liveLog('直播会话创建成功，开始订阅', { subscribeUrl: session.subscribe_url })
-      const userStore = useUserStore()
-      const ws = new WebSocket(realtimeWebSocketUrl(session.subscribe_url, userStore.token))
-      ws.binaryType = 'arraybuffer'
-      socket.value = ws
-      ws.onopen = () => {
-        liveLog('订阅 WebSocket 已连接')
-        workspaceExpired.value = false
-        connected.value = true
-        emit('stream-connection', true)
+    const request = Promise.resolve().then(async () => {
+      let createdId = ''
+      try {
+        if (!current()) return
+        liveLog('开始创建直播会话')
+        const response = sessionRecord(await createUiLiveStreamSession(executionType, executionId, options))
+        const session = sessionRecord(response.data)
+        if (typeof session.stream_id === 'string') createdId = session.stream_id
+        if (!current()) { if (createdId) await closeRemoteSession(createdId); return }
+        if (response.code !== 200 || !createdId || typeof session.subscribe_url !== 'string' || !session.subscribe_url) throw new Error('实时画面会话响应无效')
+        streamId.value = createdId
+        const ws = new WebSocket(realtimeWebSocketUrl(session.subscribe_url, token))
+        ws.binaryType = 'arraybuffer'
+        socket.value = ws
+        const ownsSocket = () => current() && socket.value === ws
+        ws.onopen = () => {
+          if (!ownsSocket()) return
+          workspaceExpired.value = false
+          connected.value = true
+          emit('stream-connection', true)
+          connecting.value = false
+          reconnectAttempt = 0
+        }
+        ws.onmessage = event => { if (ownsSocket()) void handleMessage(event, ownsSocket) }
+        ws.onerror = () => { if (ownsSocket()) errorMessage.value = '实时画面连接异常' }
+        ws.onclose = () => {
+          if (!ownsSocket()) return
+          socket.value = null
+          streamId.value = ''
+          void closeRemoteSession(createdId)
+          connected.value = false
+          connecting.value = false
+          emit('stream-connection', false)
+          controlling.value = false
+          finishControlAcquire(false)
+          stopRenew()
+          if (!closedByUser.value) scheduleReconnect()
+        }
+      } catch (error: unknown) {
+        if (createdId) await closeRemoteSession(createdId)
+        if (!current()) return
+        streamId.value = ''
         connecting.value = false
-        reconnectAttempt = 0
+        errorMessage.value = normalizeErrorMessage(error, '创建实时画面会话失败')
+        if (workspaceExecutionMode.value && isWorkspaceExpiredMessage(errorMessage.value)) {
+          await expireWorkspace()
+          return
+        }
+        if (!closedByUser.value) scheduleReconnect()
+      } finally {
+        if (connectionRequest === request) connectionRequest = null
+        if (current() && !socket.value) connecting.value = false
       }
-      ws.onmessage = handleMessage
-      ws.onerror = () => {
-        liveLog('订阅 WebSocket 异常')
-        errorMessage.value = '实时画面连接异常'
-      }
-      ws.onclose = (event) => {
-        liveLog('订阅 WebSocket 已关闭', {
-          closedByUser: closedByUser.value,
-          code: (event as CloseEvent)?.code,
-          reason: (event as CloseEvent)?.reason,
-        })
-        if (socket.value !== ws) return
-        connected.value = false
-        emit('stream-connection', false)
-        controlling.value = false
-        finishControlAcquire(false)
-        stopRenew()
-        if (!closedByUser.value && props.visible) scheduleReconnect()
-      }
-    } catch (error: any) {
-      connecting.value = false
-      errorMessage.value = normalizeErrorMessage(error, '创建实时画面会话失败')
-      liveLog('创建直播会话失败', { error: errorMessage.value })
-      if (workspaceExecutionMode.value && isWorkspaceExpiredMessage(errorMessage.value)) {
-        workspaceExpired.value = true
-        await disconnect(false)
-        emit('workspace-expired', props.executionId)
-        return
-      }
-      if (!closedByUser.value && props.visible) scheduleReconnect()
-    }
+    })
+    connectionRequest = request
+    return request
   }
 
-  async function handleMessage(event: MessageEvent) {
+  async function handleMessage(event: MessageEvent, current = captureConnection()) {
+    if (!current()) return
     if (event.data instanceof ArrayBuffer) {
       receivedFrameCount += 1
       if (receivedFrameCount === 1 || receivedFrameCount % 100 === 0) {
@@ -478,13 +524,13 @@
       publisherRestartCount.value = 0
       try {
         await startUiLiveStreamSession(streamId.value, readyTicket.value)
+        if (!current()) return
         startPublisherWaitTimeout()
       } catch (error: any) {
+        if (!current()) return
         errorMessage.value = normalizeErrorMessage(error, '启动实时画面失败')
         if (workspaceExecutionMode.value && isWorkspaceExpiredMessage(errorMessage.value)) {
-          workspaceExpired.value = true
-          await disconnect(false)
-          emit('workspace-expired', props.executionId)
+          await expireWorkspace()
           return
         }
         Message.error(errorMessage.value)
@@ -504,13 +550,13 @@
       refreshPages()
       scheduleWheelFlush()
       await nextTick()
+      if (!current()) return
       frameRef.value?.focus()
     } else if (message.type === 'control_denied' || message.type === 'error') {
       controlLoading.value = false
       const deniedMessage = String(message.message || '')
       if (workspaceExecutionMode.value && isWorkspaceExpiredMessage(deniedMessage)) {
-        await disconnect(false)
-        emit('workspace-expired', props.executionId)
+        await expireWorkspace()
         return
       }
       if (deniedMessage.includes('远程控制事件')) {
@@ -845,18 +891,22 @@
 
   async function refreshPages() {
     if (!connected.value || readOnlyMode.value) return
+    const current = captureConnection()
     pageLoading.value = true
     startPageRequestTimeout()
     const ok = await ensureControl()
+    if (!current()) return
     if (ok) sendControl({ event_type: 'list_pages' })
     else finishPageRequest()
   }
 
   async function switchPage(pageId: string | number) {
     if (!pageId || readOnlyMode.value) return
+    const current = captureConnection()
     pageLoading.value = true
     startPageRequestTimeout()
     const ok = await ensureControl()
+    if (!current()) return
     if (ok) sendControl({ event_type: 'switch_page', page_id: pageId })
     else finishPageRequest()
   }
@@ -873,10 +923,12 @@
 
   async function closeActivePage() {
     if (!activePageId.value || browserPages.value.length <= 1 || readOnlyMode.value) return
+    const current = captureConnection(), pageId = activePageId.value
     pageLoading.value = true
     startPageRequestTimeout()
     const ok = await ensureControl()
-    if (ok) sendControl({ event_type: 'close_page', page_id: activePageId.value })
+    if (!current()) return
+    if (ok) sendControl({ event_type: 'close_page', page_id: pageId })
     else finishPageRequest()
   }
 
@@ -932,9 +984,10 @@
 
   async function sendWorkspaceCommand(eventType: string, data: Record<string, any> = {}) {
     if (readOnlyMode.value) return false
+    const current = captureConnection()
     if (!controlling.value) {
       const acquired = await ensureControl()
-      if (!acquired) return false
+      if (!acquired || !current()) return false
     }
     const pointerData = eventType === 'pick_element' ? { ...lastPointer, ...data } : data
     sendControl({ event_type: eventType, ...pointerData })
@@ -989,11 +1042,13 @@
   }
   async function onMouseDown(event: MouseEvent) {
     if (readOnlyMode.value) return
+    const current = captureConnection()
     if (interactionMode.value === 'record') flushRecordedText()
     viewportRef.value?.focus()
     const currentPointer = pointer(event)
     if (!currentPointer) return
     await ensureControl()
+    if (!current()) return
     lastPointer = currentPointer
     pendingMouseDown = {
       button: buttonName(event.button),
@@ -1007,6 +1062,7 @@
   }
   async function onMouseUp(event: MouseEvent) {
     if (readOnlyMode.value) return
+    const current = captureConnection()
     const currentPointer = pointer(event)
     if (!currentPointer) {
       pendingMouseDown = null
@@ -1016,6 +1072,7 @@
     lastPointer = currentPointer
     if (interactionMode.value === 'select') {
       const ok = await ensureControl()
+      if (!current()) return
       if (ok) sendControl({ event_type: 'pick_element', ...currentPointer })
       pendingMouseDown = null
       mouseDragging = false
@@ -1059,6 +1116,7 @@
   }
   async function onWheel(event: WheelEvent) {
     if (readOnlyMode.value) return
+    const current = captureConnection()
     if (interactionMode.value === 'select') return
     const currentPointer = pointer(event)
     if (!currentPointer) return
@@ -1068,6 +1126,7 @@
     wheelDeltaX += delta.deltaX
     wheelDeltaY += delta.deltaY
     if (!controlling.value) await ensureControl()
+    if (!current()) return
     scheduleWheelFlush()
   }
   function onKeyDown(event: KeyboardEvent) {
@@ -1207,16 +1266,18 @@
   }
 
   function scheduleReconnect() {
-    if (reconnectTimer.value) return
+    if (reconnectTimer.value || !canConnect()) return
+    const current = captureConnection()
     const delay = Math.min(10000, 1000 * 2 ** Math.min(reconnectAttempt++, 3))
     reconnectTimer.value = window.setTimeout(() => {
       reconnectTimer.value = null
-      connect()
+      if (current()) void connect()
     }, delay)
   }
 
   function schedulePublisherRestart() {
     if (publisherRestartTimer.value || closedByUser.value || !props.visible) return
+    const current = captureConnection()
     publisherRestartCount.value += 1
     if (workspaceExecutionMode.value && publisherRestartCount.value >= 3) {
       liveLog('连续无帧，停止自动重建实时工作区', {
@@ -1227,12 +1288,13 @@
     }
     publisherRestartTimer.value = window.setTimeout(() => {
       publisherRestartTimer.value = null
-      if (props.visible && !closedByUser.value) restart()
+      if (current() && !closedByUser.value) void restart()
     }, 2000)
   }
 
   async function retryPublisherStart() {
     if (publisherRestartTimer.value || closedByUser.value || !props.visible) return
+    const current = captureConnection()
     publisherRestartCount.value += 1
     if (!streamId.value || !readyTicket.value) {
       schedulePublisherRestart()
@@ -1247,14 +1309,17 @@
     }
     try {
       await startUiLiveStreamSession(streamId.value, readyTicket.value)
+      if (!current()) return
       startPublisherWaitTimeout()
     } catch (error: any) {
+      if (!current()) return
       errorMessage.value = normalizeErrorMessage(error, '重新启动推流失败')
       schedulePublisherRestart()
     }
   }
 
   async function disconnect(closeRemote = true) {
+    connectionVersion++
     closedByUser.value = true
     if (reconnectTimer.value) window.clearTimeout(reconnectTimer.value)
     reconnectTimer.value = null
@@ -1274,6 +1339,9 @@
     const currentStreamId = streamId.value
     socket.value?.close()
     socket.value = null
+    pendingMouseDown = null
+    mouseDragging = false
+    clickEffects.value = []
     connected.value = false
     connecting.value = false
     browserPages.value = []
@@ -1284,16 +1352,16 @@
     readyTicket.value = ''
     receivedFrameCount = 0
     if (closeRemote && currentStreamId) {
-      try {
-        await closeUiLiveStreamSession(currentStreamId)
-      } catch (_) {}
+      await closeRemoteSession(currentStreamId)
     }
   }
 
   async function restart() {
+    const identity = connectionIdentity()
     if (workspaceExecutionMode.value) {
       await disconnect(true)
-      if (workspaceExpired.value || !props.executionId) {
+      if (!canView() || identity !== connectionIdentity()) return
+      if (workspaceExpired.value || props.executionId === '' || props.executionId == null) {
         workspaceExpired.value = false
         emit('reconnect-workspace')
       } else {
@@ -1301,13 +1369,13 @@
       }
       return
     }
-    if (!props.executionId) {
+    if (props.executionId === '' || props.executionId == null) {
       await disconnect(false)
-      emit('reconnect-workspace')
+      if (!disposed && componentActive && props.visible && identity === connectionIdentity()) emit('reconnect-workspace')
       return
     }
     await disconnect(!workspaceExecutionMode.value)
-    await connect()
+    if (canConnect() && identity === connectionIdentity()) await connect()
   }
   function updateVisible(value: boolean) {
     emit('update:visible', value)
@@ -1319,9 +1387,9 @@
   watch(
     () => props.visible,
     (value) => {
-      if (value) connect()
-      else disconnect()
-    }
+      if (value) void connect()
+      else void disconnect()
+    }, { flush: 'sync' }
   )
   watch(interactionMode, (value) => {
     flushRecordedText()
@@ -1333,29 +1401,29 @@
     }
     emit('interaction-mode', value)
   })
-  watch(
-    () => [props.executionType, props.executionId],
-    async () => {
-      if (!props.visible) return
-      if (!props.executionId) {
-        await disconnect(false)
-        return
-      }
-      if (workspaceExecutionMode.value) {
-        await disconnect(false)
-        await connect()
-        return
-      }
-      await restart()
-    }
-  )
+  function refreshConnection() {
+    if (recordedTextTimer) window.clearTimeout(recordedTextTimer)
+    if (recordedClickTimer) window.clearTimeout(recordedClickTimer)
+    recordedTextTimer = null; recordedClickTimer = null
+    recordedTextBuffer = ''; pendingRecordedClick = null
+    const closing = disconnect()
+    const current = captureConnection()
+    void closing.then(() => { if (current()) void connect() })
+  }
+  function visibilityChanged() { if (document.visibilityState === 'visible') void connect(); else void disconnect() }
+  watch(connectionIdentity, refreshConnection, { flush: 'sync' })
+  onActivated(() => { componentActive = true; void connect() })
+  onDeactivated(() => { componentActive = false; void disconnect() })
   onBeforeUnmount(() => {
+    disposed = true
+    document.removeEventListener('visibilitychange', visibilityChanged)
     flushRecordedText()
     flushRecordedClick()
     disconnect()
   })
   onMounted(() => {
-    if (props.visible && props.executionId) {
+    document.addEventListener('visibilitychange', visibilityChanged)
+    if (canConnect()) {
       liveLog('组件挂载时 visible=true，主动连接')
       connect()
     }
@@ -1482,7 +1550,7 @@
     height: 8px;
     border-radius: 999px;
     background: var(--m-primary);
-    box-shadow: 0 0 0 0 rgba(var(--primary-6), 0.28);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--m-primary) 28%, transparent);
     pointer-events: none;
     transform: translate(-50%, -50%);
     animation: mango-live-click-effect 460ms ease-out forwards;
@@ -1490,12 +1558,12 @@
   @keyframes mango-live-click-effect {
     0% {
       opacity: 0.95;
-      box-shadow: 0 0 0 0 rgba(var(--primary-6), 0.38);
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--m-primary) 38%, transparent);
       transform: translate(-50%, -50%) scale(1);
     }
     100% {
       opacity: 0;
-      box-shadow: 0 0 0 18px rgba(var(--primary-6), 0);
+      box-shadow: 0 0 0 18px transparent;
       transform: translate(-50%, -50%) scale(1.5);
     }
   }

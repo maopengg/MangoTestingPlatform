@@ -1,11 +1,9 @@
 <template>
-  <TableBody ref="tableBody" plain class="mango-detail-workbench-page">
+  <TableBody plain class="mango-detail-workbench-page">
     <template #header>
       <TableHeader title="项目绑定">
         <template #header-extra>
-          <a-button  size="small" type="primary" :loading="repositoryLoading" @click="onAdd">
-            导入项目
-          </a-button>
+          <a-button size="small" type="primary" @click="onAdd"> 导入项目 </a-button>
         </template>
       </TableHeader>
     </template>
@@ -54,14 +52,15 @@
             </div>
           </div>
 
+
           <div class="mango-pytest-product-page__table-region">
             <a-table
               class="mango-native-scroll-table mango-pytest-product-page__table"
-              :scroll="{ x: 1090, y: '100%' }"
+              :scroll="{ x: tableScroll.x, y: tableScroll.y }"
               :bordered="false"
               :columns="tableColumns"
-              :data="table.dataList"
-              :loading="table.tableLoading.value"
+              :data="rows"
+              :loading="tableLoading"
               :pagination="false"
               :row-class="bindingRowClass"
               @row-click="selectBinding"
@@ -127,9 +126,18 @@
                   <template v-else-if="item.key === 'actions'" #cell="{ record }">
                     <MangoTableActions
                       :actions="[
-    { label: '编辑', onClick: () => onUpdate(record) },
-    { label: '删除', danger: true, onClick: () => onDelete(record) },
-]"
+                        {
+                          label: '编辑',
+                          disabled: deletingIds.includes(record.id),
+                          onClick: () => onUpdate(record),
+                        },
+                        {
+                          label: '删除',
+                          danger: true,
+                          loading: deletingIds.includes(record.id),
+                          onClick: () => onDelete(record),
+                        },
+                      ]"
                     />
                   </template>
                 </a-table-column>
@@ -217,10 +225,7 @@
               >
             </div>
           </section>
-          <div
-            v-else-if="!table.tableLoading.value"
-            class="mango-pytest-product-page__detail-empty"
-          >
+          <div v-else-if="!tableLoading" class="mango-pytest-product-page__detail-empty">
             选择一条项目绑定后查看目录链路和配置详情
           </div>
         </div>
@@ -231,466 +236,219 @@
     </template>
   </TableBody>
 
-  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
-    <template #content>
-      <a-form :model="formModel">
-        <a-form-item
-          v-for="item of formItems"
-          :key="item.key"
-          :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
-          :label="item.label"
-        >
-          <template v-if="item.type === 'input'">
-            <a-input v-model="item.value" :placeholder="item.placeholder" />
-          </template>
-          <template v-else-if="item.type === 'textarea'">
-            <a-textarea
-              v-model="item.value"
-              :auto-size="{ minRows: 3, maxRows: 5 }"
-              :placeholder="item.placeholder"
-            />
-          </template>
-          <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
-            <a-cascader
-              v-model="item.value"
-              :options="projectInfo.projectProduct"
-              :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-            />
-          </template>
-          <template v-else-if="item.type === 'repository-directory'">
-            <a-cascader
-              v-model="item.value"
-              :disabled="!data.isAdd"
-              :loading="repositoryDirectoryLoading"
-              :options="repositoryDirectoryOptions"
-              :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              check-strictly
-              @change="onProjectDirectoryChange"
-            />
-          </template>
-          <template v-else-if="item.type === 'pytest-repository'">
-            <a-select
-              v-model="item.value"
-              :disabled="!data.isAdd"
-              :loading="repositoryLoading"
-              :options="repositoryOptions"
-              :placeholder="item.placeholder"
-              allow-search
-              @change="onImportRepositoryChange"
-            />
-          </template>
-          <template v-else-if="item.type === 'cascader' && item.key === 'test_dir'">
-            <a-cascader
-              v-model="item.value"
-              :loading="testDirectoryLoading"
-              :options="testDirectoryOptions"
-              :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              check-strictly
-              multiple
-              :max-tag-count="2"
-            />
-          </template>
-
-          <template v-else-if="item.type === 'select' && item.key === 'auto_type'">
-            <a-select
-              v-model="item.value"
-              :field-names="fieldNames"
-              :options="enumStore.test_case_type"
-              :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              value-key="key"
-            />
-          </template>
-        </a-form-item>
-      </a-form>
-    </template>
-  </ModalDialog>
+  <PytestBindingEditor ref="editor" @saved="onSaved" />
 </template>
 
 <script lang="ts" setup>
+import { reportLoadError } from '@/utils/load-error'
+
   import { formatProjectProductPath } from '@/utils/business-format'
-  import { usePagination, useTable } from '@/hooks/table'
-  import { ModalDialogType } from '@/types/components'
+  import { usePagination } from '@/hooks/table'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { computed, nextTick, onMounted, reactive, ref } from 'vue'
-  import { getFormItems } from '@/utils/datacleaning'
-  import { fieldNames } from '@/setting'
-  import { formItems, tableColumns } from './config'
+  import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
+  import { useRoute } from 'vue-router'
+  import { tableColumns, tableScroll } from './config'
   import { useProject } from '@/store/modules/get-project'
   import { useEnum } from '@/store/modules/get-enum'
-  import {
-    deletePytestProduct,
-    getPytestProduct,
-    getPytestProductTestDirectories,
-    postPytestProductImport,
-    putPytestProduct,
-  } from '@/api/pytest/product'
+  import useUserStore from '@/store/modules/user'
+  import { deletePytestProduct, getPytestProduct } from '@/api/pytest/product'
   import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
-  import { useLatestRequest } from '@/hooks/use-latest-request'
-  import {
-    getPytestRepositories,
-    getPytestRepositoryDirectories,
-    type PytestRepository,
-  } from '@/api/pytest/repository'
+  import PytestBindingEditor from './components/PytestBindingEditor.vue'
+  import { checkBindingResponse, readBindingList } from './binding'
+  import type { BindingRecord } from './binding'
 
-  const projectInfo = useProject()
-  const modalDialogRef = ref<ModalDialogType | null>(null)
-  const pagination = usePagination(doRefresh, () => table.tableLoading)
-  const table = useTable()
-  const { beginRequest, isLatestRequest } = useLatestRequest()
+  const projectInfo = useProject(),
+    enumStore = useEnum(),
+    user = useUserStore(),
+    route = useRoute()
+  const editor = ref<InstanceType<typeof PytestBindingEditor> | null>(null)
+  const tableLoading = ref(false),
+    listFailed = ref(false)
+  const rows = ref<BindingRecord[]>([]),
+    selectedId = ref<number | null>(null)
   const selectedProjectProduct = ref<string | number | null>(null)
-  const formModel = ref({})
-  const enumStore = useEnum()
-  const testDirectoryLoading = ref(false)
-  interface TestDirectoryOption {
-    label: string
-    value: string
-    children?: TestDirectoryOption[]
-    fileCount?: number
-    stale?: boolean
-  }
-  const testDirectoryOptions = ref<TestDirectoryOption[]>([])
-  const repositoryDirectoryLoading = ref(false)
-  const repositoryDirectoryOptions = ref<TestDirectoryOption[]>([])
-  const repositories = ref<PytestRepository[]>([])
-  const repositoryLoading = ref(false)
-  const repositoryOptions = computed(() =>
-    repositories.value.map((item) => ({
-      label: item.name,
-      value: item.id,
-    }))
+  const pagination = usePagination(doRefresh, tableLoading)
+  const deletingIds = ref<number[]>([])
+  const selectedBinding = computed(
+    () => rows.value.find((row) => row.id === selectedId.value) ?? null
   )
-  const selectedBinding = ref<any | null>(null)
-  const bindingMetrics = computed(() => {
-    const rows = Array.isArray(table.dataList) ? table.dataList : []
-    return {
-      bindings: pagination.pageCount || rows.length,
-      repositories: new Set(rows.map((item: any) => item.repository?.id).filter(Boolean)).size,
-      cases: rows.reduce((total: number, item: any) => total + Number(item.case_count || 0), 0),
-      directories: rows.reduce(
-        (total: number, item: any) => total + testDirectories(item).length,
-        0
-      ),
+  const bindingMetrics = computed(() => ({
+    bindings: pagination.pageCount,
+    repositories: new Set(rows.value.flatMap((row) => (row.repository ? [row.repository.id] : [])))
+      .size,
+    cases: rows.value.reduce((total, row) => total + row.case_count, 0),
+    directories: rows.value.reduce((total, row) => total + row.test_dir.length, 0),
+  }))
+  let version = 0,
+    request = 0,
+    confirmationVersion = 0,
+    active = true,
+    disposed = false
+  let pending: { key: string; promise: Promise<void> } | null = null
+  let confirmation: ReturnType<typeof Modal.confirm> | null = null
+  const available = () =>
+    !disposed && active && (typeof document === 'undefined' || !document.hidden)
+  const current = (context: number) => available() && context === version
+  function testDirectories(record: BindingRecord): string[] {
+    return record.test_dir
+  }
+  function selectBinding(record: BindingRecord): void {
+    if (available() && rows.value.some((row) => row.id === record.id)) selectedId.value = record.id
+  }
+  function bindingRowClass(record: BindingRecord): string {
+    return record.id === selectedId.value ? 'mango-pytest-product-page__row--selected' : ''
+  }
+  function onAdd(): void {
+    if (available()) editor.value?.open()
+  }
+  function onUpdate(record: BindingRecord): void {
+    const row = rows.value.find((row) => row.id === record.id)
+    if (available() && row && !deletingIds.value.includes(row.id)) editor.value?.open(row)
+  }
+  function invalidate(clear = false): void {
+    version++
+    request++
+    confirmationVersion++
+    pending = null
+    tableLoading.value = false
+    confirmation?.close()
+    confirmation = null
+    editor.value?.close()
+    if (clear) {
+      rows.value = []
+      selectedId.value = null
+      pagination.pageCount = 0
+      listFailed.value = false
     }
-  })
-
-  const data: any = reactive({
-    isAdd: false,
-    updateId: 0,
-    actionTitle: '新增',
-  })
-
-  function testDirectories(record: any): string[] {
-    if (!Array.isArray(record?.test_dir)) return []
-    return record.test_dir.map((item: unknown) => String(item)).filter(Boolean)
   }
-
-  function selectBinding(record: any) {
-    selectedBinding.value = record
+  function doRefresh(): Promise<void> {
+    if (!available()) return Promise.resolve()
+    const query = {
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+      ...(selectedProjectProduct.value !== null && selectedProjectProduct.value !== ''
+        ? { project_product: selectedProjectProduct.value }
+        : {}),
+    }
+    const key = JSON.stringify([version, query])
+    if (pending?.key === key) return pending.promise
+    const context = version,
+      read = ++request
+    tableLoading.value = true
+    listFailed.value = false
+    const promise = (async () => {
+      try {
+        const result = readBindingList(await getPytestProduct(query))
+        if (!current(context) || read !== request) return
+        rows.value = result.rows
+        pagination.setTotalSize(result.total)
+        selectedId.value =
+          rows.value.find((row) => row.id === selectedId.value)?.id ?? rows.value[0]?.id ?? null
+      } catch (loadFailure0) {
+        if (current(context) && read === request) (reportLoadError(loadFailure0, "加载失败，请重试", false), listFailed.value = true)
+      } finally {
+        if (current(context) && read === request) {
+          tableLoading.value = false
+          pending = null
+        }
+      }
+    })()
+    pending = { key, promise }
+    return promise
   }
-
-  function bindingRowClass(record: any) {
-    return record.id === selectedBinding.value?.id ? 'mango-pytest-product-page__row--selected' : ''
+  function onNavigationFilterChange(filter: { projectProduct: string | number | null }): void {
+    if (!available()) return
+    invalidate(true)
+    selectedProjectProduct.value = filter.projectProduct
+    pagination.page = 1
+    void doRefresh()
   }
-
-  function onDelete(record: any) {
-    Modal.confirm({
-      title: '提示',
-      content: '该删除只会删除数据库数据，不会影响git文件！是否要删除此数据？',
+  async function onSaved(): Promise<void> {
+    if (!available()) return
+    invalidate()
+    await Promise.allSettled([doRefresh(), projectInfo.projectPytestName()])
+  }
+  function onDelete(record: BindingRecord): void {
+    if (
+      !available() ||
+      !rows.value.some((row) => row.id === record.id) ||
+      deletingIds.value.includes(record.id)
+    )
+      return
+    confirmation?.close()
+    const context = version,
+      window = ++confirmationVersion,
+      id = record.id
+    const confirmationCurrent = () => current(context) && window === confirmationVersion
+    confirmation = Modal.confirm({
+      title: '删除项目绑定',
+      content: '该删除只会删除数据库数据，不会影响 Git 文件！是否删除此数据？',
       cancelText: '取消',
       okText: '删除',
-      onBeforeOk: () => {
-        return deletePytestProduct(record.id)
-          .then((res) => {
-            Message.success(res.msg)
-          })
-          .catch(() => undefined)
-          .finally(() => {
-            doRefresh()
-            projectInfo.projectPytestName()
-          })
+      onCancel: () => {
+        if (window === confirmationVersion) {
+          confirmationVersion++
+          confirmation = null
+        }
+      },
+      onBeforeOk: async () => {
+        if (
+          !confirmationCurrent() ||
+          deletingIds.value.includes(id) ||
+          !rows.value.some((row) => row.id === id)
+        )
+          return false
+        deletingIds.value = [...deletingIds.value, id]
+        try {
+          checkBindingResponse(await deletePytestProduct(id))
+          if (!confirmationCurrent()) return false
+          Message.success('删除成功')
+          // 已发出的列表请求可能仍包含被删除记录，必须先失效。
+          request++
+          pending = null
+          if (rows.value.length === 1 && pagination.page > 1) pagination.page--
+          await Promise.allSettled([doRefresh(), projectInfo.projectPytestName()])
+          return confirmationCurrent()
+        } catch {
+          if (confirmationCurrent()) Message.error('删除失败，请重试')
+          return false
+        } finally {
+          deletingIds.value = deletingIds.value.filter((value) => value !== id)
+        }
       },
     })
   }
-
-  function onDataForm() {
-    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      let value = getFormItems(formItems)
-      if (data.isAdd) {
-        postPytestProductImport(value)
-          .then((res) => {
-            modalDialogRef.value?.toggle()
-            Message.success(res.msg)
-            doRefresh()
-            projectInfo.projectPytestName()
-          })
-          .catch(() => undefined)
-          .finally(() => {
-            modalDialogRef.value?.setConfirmLoading(false)
-          })
-      } else {
-        value['id'] = data.updateId
-        putPytestProduct(value)
-          .then((res) => {
-            modalDialogRef.value?.toggle()
-            Message.success(res.msg)
-            doRefresh()
-            projectInfo.projectPytestName()
-          })
-          .catch(() => undefined)
-          .finally(() => {
-            modalDialogRef.value?.setConfirmLoading(false)
-          })
-      }
-    } else {
-      modalDialogRef.value?.setConfirmLoading(false)
-    }
+  watch(
+    () => [user.userId, user.roleId, user.token, user.selected_environment, route.fullPath],
+    () => {
+      invalidate(true)
+      pagination.page = 1
+      void doRefresh()
+    },
+    { flush: 'sync' }
+  )
+  function visibilityChanged(): void {
+    if (typeof document !== 'undefined' && document.hidden) invalidate()
+    else void doRefresh()
   }
-
-  function buildTestDirectoryTree(discoveredOptions: any[], configuredDirectories: string[]) {
-    const topLevelOptions: TestDirectoryOption[] = []
-    const optionMap = new Map<string, TestDirectoryOption>()
-    const discoveredValues = new Set(discoveredOptions.map((option: any) => option.value))
-
-    function ensureDirectoryPath(directory: string, stale = false) {
-      let children = topLevelOptions
-      let currentPath = ''
-      directory
-        .split('/')
-        .filter(Boolean)
-        .forEach((segment) => {
-          currentPath = currentPath ? `${currentPath}/${segment}` : segment
-          let node = optionMap.get(currentPath)
-          if (!node) {
-            node = { label: segment, value: currentPath, children: [], fileCount: 0 }
-            optionMap.set(currentPath, node)
-            children.push(node)
-          }
-          if (stale && currentPath === directory) node.stale = true
-          children = node.children || []
-        })
-    }
-
-    discoveredOptions
-      .filter((option: any) => option.value !== '.')
-      .forEach((option: any) => {
-        const directory = String(option.value)
-        ensureDirectoryPath(directory)
-        const fileCount = Number(option.file_count) || 0
-        let currentPath = ''
-        directory
-          .split('/')
-          .filter(Boolean)
-          .forEach((segment) => {
-            currentPath = currentPath ? `${currentPath}/${segment}` : segment
-            const node = optionMap.get(currentPath)
-            if (node) node.fileCount = (node.fileCount || 0) + fileCount
-          })
-      })
-
-    configuredDirectories
-      .filter(
-        (directory) =>
-          directory !== '.' &&
-          !discoveredValues.has(directory) &&
-          (optionMap.get(directory)?.fileCount || 0) === 0
-      )
-      .forEach((directory) => ensureDirectoryPath(directory, true))
-
-    function finishLabels(options: TestDirectoryOption[]) {
-      options.sort((left, right) => left.value.localeCompare(right.value))
-      options.forEach((option) => {
-        const name = option.value.split('/').at(-1) || option.value
-        option.label = option.stale ? `${name}（当前配置，当前分支未发现）` : name
-        if (option.children?.length) {
-          finishLabels(option.children)
-        } else {
-          delete option.children
-        }
-      })
-    }
-    finishLabels(topLevelOptions)
-
-    const totalFileCount = discoveredOptions.reduce(
-      (total: number, option: any) => total + (Number(option.file_count) || 0),
-      0
-    )
-    const showProjectRoot = totalFileCount > 0 || configuredDirectories.includes('.')
-    return [...(showProjectRoot ? [{ label: '项目根目录', value: '.' }] : []), ...topLevelOptions]
-  }
-
-  function buildRepositoryDirectoryTree(options: any[]) {
-    const roots: TestDirectoryOption[] = []
-    const optionMap = new Map<string, TestDirectoryOption>()
-    options.forEach((option: any) => {
-      let children = roots
-      let currentPath = ''
-      String(option.value)
-        .split('/')
-        .filter(Boolean)
-        .forEach((segment) => {
-          currentPath = currentPath ? `${currentPath}/${segment}` : segment
-          let node = optionMap.get(currentPath)
-          if (!node) {
-            node = { label: segment, value: currentPath, children: [] }
-            optionMap.set(currentPath, node)
-            children.push(node)
-          }
-          children = node.children || []
-        })
-    })
-    const finish = (nodes: TestDirectoryOption[]) => {
-      nodes.sort((left, right) => left.value.localeCompare(right.value))
-      nodes.forEach((node) => {
-        if (node.children?.length) finish(node.children)
-        else delete node.children
-      })
-    }
-    finish(roots)
-    return roots
-  }
-
-  async function loadRepositoryDirectoryOptions() {
-    repositoryDirectoryLoading.value = true
-    try {
-      const repositoryItem = formItems.find((item) => item.key === 'repository')
-      const repositoryId = Number(repositoryItem?.value || 0)
-      if (!repositoryId) {
-        repositoryDirectoryOptions.value = []
-        return
-      }
-      const res = await getPytestRepositoryDirectories(repositoryId)
-      repositoryDirectoryOptions.value = buildRepositoryDirectoryTree(
-        Array.isArray(res.data) ? res.data : []
-      )
-    } finally {
-      repositoryDirectoryLoading.value = false
-    }
-  }
-
-  async function loadTestDirectoryOptions(item: any) {
-    const configuredDirectories = Array.isArray(item.test_dir) ? item.test_dir : []
-    testDirectoryOptions.value = buildTestDirectoryTree([], configuredDirectories)
-    testDirectoryLoading.value = true
-    try {
-      const repositoryItem = formItems.find((formItem) => formItem.key === 'repository')
-      const repositoryId =
-        Number(item.repository?.id || item.repository || repositoryItem?.value || 0) || undefined
-      const res = await getPytestProductTestDirectories(item.id, item.file_name, repositoryId)
-      const discoveredOptions = Array.isArray(res.data) ? res.data : []
-      testDirectoryOptions.value = buildTestDirectoryTree(discoveredOptions, configuredDirectories)
-    } catch {
-      // 请求失败时保留已有配置，避免弹窗中已保存的目录不可见。
-    } finally {
-      testDirectoryLoading.value = false
-    }
-  }
-
-  async function onProjectDirectoryChange(projectPath: string) {
-    if (!data.isAdd || !projectPath) return
-    const nameItem = formItems.find((item) => item.key === 'name')
-    const testDirItem = formItems.find((item) => item.key === 'test_dir')
-    if (nameItem) nameItem.value = projectPath.split('/').at(-1) || projectPath
-    if (testDirItem) testDirItem.value = []
-    await loadTestDirectoryOptions({ file_name: projectPath, test_dir: [] })
-  }
-
-  async function onImportRepositoryChange(repositoryId: number) {
-    const fileNameItem = formItems.find((item) => item.key === 'file_name')
-    const testDirItem = formItems.find((item) => item.key === 'test_dir')
-    if (fileNameItem) fileNameItem.value = ''
-    if (testDirItem) testDirItem.value = []
-    repositoryDirectoryOptions.value = []
-    if (repositoryId) await loadRepositoryDirectoryOptions()
-  }
-
-  async function loadRepositories() {
-    repositoryLoading.value = true
-    try {
-      const res = await getPytestRepositories()
-      repositories.value = Array.isArray(res.data) ? res.data : []
-    } finally {
-      repositoryLoading.value = false
-    }
-  }
-
-  async function onAdd() {
-    data.actionTitle = '导入项目'
-    data.isAdd = true
-    data.updateId = 0
-    formItems.forEach((item) => {
-      item.value = item.multiple || item.key === 'test_dir' ? [] : ''
-    })
-    const repositoryItem = formItems.find((item) => item.key === 'repository')
-    if (repositoryItem) repositoryItem.value = repositories.value[0]?.id || ''
-    testDirectoryOptions.value = []
-    modalDialogRef.value?.toggle()
-    await loadRepositoryDirectoryOptions()
-  }
-
-  function onUpdate(item: any) {
-    data.actionTitle = '编辑'
-    data.isAdd = false
-    data.updateId = item.id
-    modalDialogRef.value?.toggle()
-    nextTick(async () => {
-      formItems.forEach((it) => {
-        const propName = item[it.key]
-        if (Array.isArray(propName)) {
-          it.value = propName
-        } else if (typeof propName === 'object' && propName !== null) {
-          it.value = propName.id
-        } else {
-          it.value = propName
-        }
-      })
-      await loadRepositoryDirectoryOptions()
-      await loadTestDirectoryOptions(item)
-    })
-  }
-
-  function onNavigationFilterChange(filter: { projectProduct: string | number | null }) {
-    selectedProjectProduct.value = filter.projectProduct
-    pagination.page = 1
-    selectedBinding.value = null
-    doRefresh()
-  }
-
-  function doRefresh() {
-    const requestId = beginRequest()
-    table.tableLoading.value = true
-    const value: Record<string, any> = {}
-    if (selectedProjectProduct.value !== null && selectedProjectProduct.value !== '') {
-      value['project_product'] = selectedProjectProduct.value
-    }
-    value['page'] = pagination.page
-    value['pageSize'] = pagination.pageSize
-    getPytestProduct(value)
-      .then((res) => {
-        if (!isLatestRequest(requestId)) return
-        table.handleSuccess(res)
-        pagination.setTotalSize((res as any).totalSize)
-        const currentId = selectedBinding.value?.id
-        selectedBinding.value =
-          table.dataList.find((item: any) => item.id === currentId) || table.dataList[0] || null
-      })
-      .catch(() => undefined)
-      .finally(() => {
-        if (isLatestRequest(requestId)) table.tableLoading.value = false
-      })
-  }
-
   onMounted(() => {
-    nextTick(async () => {
-      await loadRepositories()
-    })
+    if (typeof document !== 'undefined')
+      document.addEventListener('visibilitychange', visibilityChanged)
+    void doRefresh()
+  })
+  onActivated(() => {
+    active = true
+    void doRefresh()
+  })
+  onDeactivated(() => {
+    active = false
+    invalidate()
+  })
+  onBeforeUnmount(() => {
+    disposed = true
+    invalidate(true)
+    if (typeof document !== 'undefined')
+      document.removeEventListener('visibilitychange', visibilityChanged)
   })
 </script>
 

@@ -22,6 +22,7 @@
             <small>次</small>
           </div>
         </div>
+
         <div ref="fullYearSalesChart" class="chart-item"></div>
       </div>
     </mango-panel-spin>
@@ -29,14 +30,16 @@
 </template>
 <script lang="ts">
   import useEcharts from '@/hooks/useEcharts'
-  import { defineComponent, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+  import { computed, defineComponent, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
   import { dispose } from 'echarts/core'
+  import { useHomeSnapshot } from '../../composables/use-home-snapshot'
+  import { emptyExecutionTrend, readExecutionTrend } from '../../records'
+  import { scaleDensityPixels } from '@/hooks/useDisplayDensity'
   import { getSystemCaseResultWeekSum } from '@/api/system'
 
   export default defineComponent({
     name: 'FullYearSalesChart',
     setup() {
-      const loading = ref(true)
       const fullYearSalesChart = ref<HTMLDivElement | null>(null)
       let resizeObserver: ResizeObserver | null = null
       let resizeFrame = 0
@@ -48,58 +51,47 @@
         ui: token('--m-chart-2', '#22c55e'),
         pytest: token('--m-chart-3', '#f6c143'),
       })
-      let interval: any = null
-      let data: any = reactive([])
-      const summary = reactive({ api: 0, ui: 0, pytest: 0 })
+      let drawGeneration = 0
+      const { snapshot: data, loading, loadFailed, reload: caseResultWeekSum, isAvailable } = useHomeSnapshot({
+        read: getSystemCaseResultWeekSum, parse: readExecutionTrend, empty: emptyExecutionTrend,
+        onInvalidate: clearChart,
+      })
+      const summary = computed(() => ({
+        api: data.value.api_count.reduce((sum, value) => sum + value, 0),
+        ui: data.value.ui_count.reduce((sum, value) => sum + value, 0),
+        pytest: data.value.pytest_count.reduce((sum, value) => sum + value, 0),
+      }))
 
-      function sumValues(values: unknown) {
-        return Array.isArray(values)
-          ? values.reduce((total, value) => total + Number(value || 0), 0)
-          : 0
-      }
-
-      function updateSummary() {
-        summary.api = sumValues(data.api_count)
-        summary.ui = sumValues(data.ui_count)
-        summary.pytest = sumValues(data.pytest_count)
+      function clearChart() {
+        drawGeneration++
+        if (resizeFrame) window.cancelAnimationFrame(resizeFrame)
+        resizeFrame = 0
+        visibleLabelSignature = ''
+        if (fullYearSalesChart.value) dispose(fullYearSalesChart.value)
       }
 
       function formatNumber(value: number) {
         return Number(value || 0).toLocaleString('zh-CN')
       }
 
-      function caseResultWeekSum() {
-        loading.value = true
-        getSystemCaseResultWeekSum()
-          .then((res) => {
-            data = res.data
-            updateSummary()
-            init()
-          })
-          .catch(console.log)
-          .finally(() => {
-            loading.value = false
-          })
-      }
-
       function getVisibleLabelIndexes() {
-        const labels = Array.isArray(data.labels)
-          ? data.labels.map((item: any) => String(item))
+        const labels = Array.isArray(data.value.labels)
+          ? data.value.labels.map((item: string) => String(item))
           : []
         if (!labels.length) return new Set<number>()
 
         const chartWidth = fullYearSalesChart.value?.clientWidth || 0
         const canvas = document.createElement('canvas')
         const context = canvas.getContext('2d')
-        if (context) context.font = '12px system-ui'
+        if (context) context.font = `${scaleDensityPixels(12)}px system-ui`
         const widestLabel = Math.max(
-          ...labels.map((label: string) => context?.measureText(label).width || label.length * 7),
-          72
+          ...labels.map((label: string) => context?.measureText(label).width || label.length * scaleDensityPixels(7)),
+          scaleDensityPixels(72)
         )
-        const availableWidth = Math.max(0, chartWidth - 48)
+        const availableWidth = Math.max(0, chartWidth - scaleDensityPixels(48))
         const visibleCount = Math.max(
           2,
-          Math.min(labels.length, Math.floor(availableWidth / (widestLabel + 18)))
+          Math.min(labels.length, Math.floor(availableWidth / (widestLabel + scaleDensityPixels(18))))
         )
 
         if (visibleCount >= labels.length) {
@@ -120,7 +112,7 @@
       }
 
       function updateResponsiveAxisLabels() {
-        if (!fullYearSalesChart.value) return
+        if (!isAvailable() || !fullYearSalesChart.value) return
         const visibleIndexes = getVisibleLabelIndexes()
         const signature = [...visibleIndexes].join(',')
         if (signature === visibleLabelSignature) return
@@ -135,6 +127,8 @@
       }
 
       const init = () => {
+        if (!isAvailable()) return
+        const generation = ++drawGeneration
         const option = {
           color: [testTypeColors().ui, testTypeColors().api, testTypeColors().pytest],
           grid: {
@@ -156,7 +150,7 @@
               lineHeight: 18,
             },
             padding: 9,
-            formatter(params: any[]) {
+            formatter(params: Array<{ axisValueLabel?: string; name?: string; marker?: string; seriesName?: string; value?: number | string }>) {
               if (!params?.length) return ''
               return [
                 `<strong>${params[0].axisValueLabel || params[0].name}</strong>`,
@@ -168,7 +162,7 @@
           },
           xAxis: {
             type: 'category',
-            data: Array.isArray(data.labels) && data.labels.length ? data.labels : [],
+            data: Array.isArray(data.value.labels) && data.value.labels.length ? data.value.labels : [],
             axisLine: {
               show: true,
               lineStyle: {
@@ -258,7 +252,7 @@
               type: 'line',
               name: 'UI 用例',
               yAxisIndex: 1,
-              data: data.ui_count || [],
+              data: data.value.ui_count || [],
               symbol: 'circle',
               symbolSize: 6,
               smooth: true,
@@ -280,7 +274,7 @@
               type: 'line',
               name: 'API 场景',
               yAxisIndex: 0,
-              data: data.api_count || [],
+              data: data.value.api_count || [],
               symbol: 'circle',
               symbolSize: 6,
               smooth: true,
@@ -302,7 +296,7 @@
               type: 'line',
               name: 'Pytest 用例',
               yAxisIndex: 1,
-              data: data.pytest_count || [],
+              data: data.value.pytest_count || [],
               symbol: 'circle',
               symbolSize: 6,
               smooth: true,
@@ -323,51 +317,57 @@
           ],
         }
         nextTick(() => {
-          if (fullYearSalesChart.value) {
+          if (isAvailable() && generation === drawGeneration && fullYearSalesChart.value) {
             useEcharts(fullYearSalesChart.value as HTMLDivElement).setOption(option)
             updateChart()
           }
         })
       }
       const updateChart = () => {
-        if (!fullYearSalesChart.value) {
+        if (!isAvailable() || !fullYearSalesChart.value) {
           return
         }
         if (resizeFrame) {
           window.cancelAnimationFrame(resizeFrame)
         }
+        const generation = drawGeneration
         resizeFrame = window.requestAnimationFrame(() => {
-          if (fullYearSalesChart.value) {
+          if (isAvailable() && generation === drawGeneration && fullYearSalesChart.value) {
             useEcharts(fullYearSalesChart.value as HTMLDivElement).resize()
             updateResponsiveAxisLabels()
           }
           resizeFrame = 0
         })
       }
-      onMounted(() => {
-        nextTick(async () => {
-          await caseResultWeekSum()
-          updateChart()
-        })
+      function stopChart() {
+        window.removeEventListener('mango-theme-change', init)
+        window.removeEventListener('mango-density-change', updateChart)
+        window.removeEventListener('resize', updateChart)
+        resizeObserver?.disconnect()
+        resizeObserver = null
+        clearChart()
+      }
+      function startChart() {
+        stopChart()
+        if (!isAvailable()) return
         window.addEventListener('mango-theme-change', init)
+        window.addEventListener('mango-density-change', updateChart)
         window.addEventListener('resize', updateChart)
-        if (fullYearSalesChart.value) {
+        if (fullYearSalesChart.value && typeof ResizeObserver !== 'undefined') {
           resizeObserver = new ResizeObserver(updateChart)
           resizeObserver.observe(fullYearSalesChart.value)
         }
-      })
-      onBeforeUnmount(() => {
-        window.removeEventListener('mango-theme-change', init)
-        window.removeEventListener('resize', updateChart)
-        resizeObserver?.disconnect()
-        if (resizeFrame) {
-          window.cancelAnimationFrame(resizeFrame)
-        }
-        dispose(fullYearSalesChart.value as HTMLDivElement)
-        clearInterval(interval)
-      })
+        init()
+      }
+      watch(data, init, { flush: 'post' })
+      onMounted(startChart)
+      onActivated(startChart)
+      onDeactivated(stopChart)
+      onBeforeUnmount(stopChart)
       return {
         loading,
+        loadFailed,
+        caseResultWeekSum,
         fullYearSalesChart,
         summary,
         formatNumber,

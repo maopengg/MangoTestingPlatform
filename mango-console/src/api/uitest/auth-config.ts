@@ -21,49 +21,49 @@ export function putUiAuthConfig(data: UiAuthConfigPayload) {
   })
 }
 
-export function deleteUiAuthConfig(id: number | string[] | number[]) {
+export function deleteUiAuthConfig(id: number | string | string[] | number[]) {
   return deleted({
     url: '/ui/auth/config',
     data: () => ({ id }),
   })
 }
 
-export function putUiAuthConfigStatus(id: number, status: number) {
+export function putUiAuthConfigStatus(id: number | string, status: number) {
   return put({
     url: '/ui/auth/config/status',
     data: () => ({ id, status }),
   })
 }
 
-export function postUiAuthConfigRefresh(id: number) {
+export function postUiAuthConfigRefresh(id: number | string) {
   return post({
     url: '/ui/auth/config/refresh',
     data: () => ({ id }),
   })
 }
 
-export function postUiAuthConfigClear(id: number) {
+export function postUiAuthConfigClear(id: number | string) {
   return post({
     url: '/ui/auth/config/clear',
     data: () => ({ id }),
   })
 }
 
-export function getUiAuthConfigCache(id: number) {
+export function getUiAuthConfigCache(id: number | string) {
   return get({
     url: '/ui/auth/config/cache',
     data: () => ({ id }),
   })
 }
 
-export function postUiAuthConfigAutoStart(id: number) {
+export function postUiAuthConfigAutoStart(id: number | string) {
   return post({
     url: '/ui/auth/config/auto/start',
     data: () => ({ id }),
   })
 }
 
-export function postUiAuthConfigAutoCapture(id: number) {
+export function postUiAuthConfigAutoCapture(id: number | string) {
   return post({
     url: '/ui/auth/config/auto/capture',
     data: () => ({ id }),

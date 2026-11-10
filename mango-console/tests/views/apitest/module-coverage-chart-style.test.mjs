@@ -66,6 +66,18 @@ test('initial chart render tolerates getOption returning undefined', () => {
   }
 })
 
+test('five-state analysis uses a separate two-column legend, without overlapping pie labels', () => {
+  assert.match(source, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/)
+  assert.match(source, /v-for="item in entryData"/)
+  assert.match(source, /:aria-pressed="gapFilter === item.filter"/)
+  assert.match(source, /@click="gapFilter = item.filter"/)
+  const analysis = source.slice(source.indexOf('if (entryChart.value)'), source.indexOf('if (coverageChart.value)'))
+  assert.match(analysis, /legend: \{ show: false \}/)
+  assert.match(analysis, /label: \{ show: false \}/)
+  assert.match(analysis, /labelLine: \{ show: false \}/)
+  assert.match(analysis, /data: entryData.value/)
+})
+
 test('scan click, status tooltip, theme updates and resize lifecycle are preserved', () => {
   assert.match(source, /gapFilter.value = event.dataIndex === 1 \? 'scan' : 'all'/)
   assert.match(source, /statusPercent\(item.value\)/)
