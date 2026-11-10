@@ -40,8 +40,8 @@
             class="mango-system-settings__panel"
             @scroll.passive="handlePanelScroll"
           >
-
-
+            
+            
             <div class="mango-system-settings__level-filter">
               <div
                 class="mango-system-settings__level-options"

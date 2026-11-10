@@ -21,8 +21,8 @@
     </template>
 
     <template #default>
-
-
+      
+      
       <div v-if="taskConfigLoading && !taskConfig" class="mango-section-card mango-timing-case-initial-loading">
         <a-spin :loading="true" tip="正在读取定时任务配置..." />
       </div>
@@ -48,8 +48,8 @@
             </a-button>
           </div>
 
-
-
+          
+          
           <a-alert v-if="bindingError" type="error">{{ bindingError }}</a-alert>
 
           <div class="mango-soft-panel mango-timing-case-filter">
@@ -318,9 +318,9 @@
             </div>
           </div>
 
-
-
-
+          
+          
+          
           <a-alert v-if="deletionError" type="error">{{ deletionError }}</a-alert>
 
           <div class="mango-soft-panel mango-timing-case-bound-filter">

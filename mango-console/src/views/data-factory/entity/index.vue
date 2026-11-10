@@ -95,8 +95,8 @@
             </a-space></div
           >
         </template>
-
-
+        
+        
         <a-table
           class="mango-native-scroll-table"
           :columns="visibleTableColumns"

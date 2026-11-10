@@ -252,7 +252,7 @@
       </a-tabs>
     </div>
     <a-modal v-model:visible="detailVisible" title="流程自愈详情" :footer="false" :width="720" @cancel="detailSequence++; detailLoading = false; selectedDetail = null">
-
+      
       <a-spin :loading="detailLoading">
         <a-descriptions v-if="selectedDetail" :column="2" bordered size="small">
           <a-descriptions-item label="触发原因">{{ triggerText(selectedDetail.trigger) }}</a-descriptions-item>

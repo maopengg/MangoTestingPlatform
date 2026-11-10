@@ -5,7 +5,7 @@
     </p>
     <p v-if="notice" class="mango-datasource-performance__error" role="status">{{ notice }}</p>
     <p v-if="modelError" class="mango-datasource-performance__error" role="alert">{{ modelError }}</p>
-
+    
     <section v-for="kind in kinds" :key="kind.key" class="mango-datasource-performance__section">
       <h4>{{ kind.label }}</h4>
       <div v-for="field in budgetFields" :key="field.key" class="mango-system-settings__row">

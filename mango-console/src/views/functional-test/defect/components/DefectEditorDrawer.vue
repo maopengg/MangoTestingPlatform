@@ -10,9 +10,9 @@
     :esc-to-close="!saving"
     @cancel="reset"
   >
-
-
-
+    
+    
+    
     <a-alert v-if="saveError" type="error" class="mango-defect-editor__error"
       >保存失败，输入及已上传附件已保留，请重试。</a-alert
     >

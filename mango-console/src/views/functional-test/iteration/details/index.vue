@@ -15,7 +15,7 @@
         <a-alert v-if="iterationId === null" type="error"
           >迭代 ID 无效，请返回列表重新选择。</a-alert
         >
-
+        
         <a-alert v-if="mutations.error.value" type="error">{{ mutations.error.value }}</a-alert>
         <mango-panel-spin :loading="detailRegion.loading.value">
           <div class="mango-iteration-detail__summary">

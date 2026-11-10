@@ -15,7 +15,7 @@
           <strong>{{ visitCount }}</strong>
         </div>
       </div>
-
+      
       <div
         v-if="dailyActivity.length"
         class="mango-activity-rank__trend"
@@ -54,7 +54,7 @@
         ></button>
         <div v-else-if="!hasMore" class="mango-activity-rank__load-state">已加载全部用户</div>
       </div>
-
+      
     </mango-panel-spin>
   </div>
 </template>

@@ -63,7 +63,7 @@
         class="mango-functional-grid__spin"
         :loading="loading || renderLoading || incrementalLoading"
       >
-
+        
         <div v-show="!renderError" ref="container" class="mango-functional-grid__sheet"></div>
       </mango-panel-spin>
     </div>

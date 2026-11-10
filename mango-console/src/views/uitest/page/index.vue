@@ -76,9 +76,9 @@
           </a-space>
         </template>
         <div class="mango-ui-page-body">
-
-
-
+          
+          
+          
           <a-alert v-if="actionError" type="error" closable @close="actionError = ''">{{
             actionError
           }}</a-alert>

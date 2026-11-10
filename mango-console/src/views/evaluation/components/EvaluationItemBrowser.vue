@@ -108,7 +108,7 @@
           "
         />
       </template>
-
+      
     </MangoPanelSpin>
     <EvaluationDrawer
       v-model:visible="snapshotVisible"

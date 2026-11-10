@@ -5,8 +5,8 @@
         <a-tab-pane key="py" title="Python 文件" data-testid="qa-views-pytest-case-tab-pane-python-文件" />
         <a-tab-pane v-if="hasFeature" key="feature" title="Feature 文件" data-testid="qa-views-pytest-case-tab-pane-feature-文件" />
       </a-tabs>
-
-
+      
+      
       <mango-panel-spin :loading="activeFile.loading" class="mango-pytest-source-editor__spin">
         <template v-if="activeFile.failed"></template>
         <CodeEditor v-else-if="activeFile.snapshot" :key="fileType" v-model="activeFile.draft" :readonly="saving || confirmationOpen" :line-actions="fileType === 'py' ? lineActions : []" :placeholder="fileType === 'py' ? '输入python代码' : '输入 Gherkin 语法'" @line-action="runMethod" />

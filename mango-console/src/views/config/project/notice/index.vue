@@ -35,7 +35,7 @@
           </div>
           <a-tag size="small">{{ pagination.pageCount || 0 }}</a-tag>
         </div>
-
+        
         <div class="mango-project-notice-table">
           <a-table
             class="mango-native-scroll-table"

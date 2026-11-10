@@ -8,7 +8,7 @@
   >
     <div class="mango-ui-ai-heal">
       <div v-if="infoLoading" class="mango-soft-panel" role="status">正在加载元素自愈信息…</div>
-
+      
       <div v-if="applyError" class="mango-ui-ai-heal__error" role="alert">{{ applyError }}</div>
       <div class="mango-ui-ai-heal__summary">
         <div v-for="item in summaryCards" :key="item.label" class="mango-ui-ai-heal__card">
@@ -64,7 +64,7 @@
 
       <section class="mango-ui-ai-heal__section">
         <div class="mango-ui-ai-heal__head"><h3>基线历史</h3><span>最近 10 次有效基线采集记录</span></div>
-
+        
         <a-table :loading="snapshotsLoading" :data="snapshotHistoryRows" :pagination="false" :bordered="false" size="small" :scroll="{ x: 1170 }">
           <template #columns>
             <a-table-column title="采集时间" data-index="create_time" :width="180" align="center" />
@@ -84,7 +84,7 @@
 
       <section class="mango-ui-ai-heal__section">
         <div class="mango-ui-ai-heal__head"><h3>自愈历史</h3><span>最近 20 次自愈执行和写回记录</span></div>
-
+        
         <a-table :loading="healsLoading" :data="healHistoryRows" :pagination="false" :bordered="false" size="small" :scroll="{ x: 1220 }">
           <template #columns>
             <a-table-column title="触发时间" data-index="create_time" :width="180" align="center" />

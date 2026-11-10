@@ -8,7 +8,7 @@
     >
       <template v-if="error && !data"></template>
       <div v-else-if="data || loading" class="mango-coverage-overview__layout">
-
+        
         <div v-if="!loading && !data?.modules.length" class="mango-empty-state"
           >当前范围暂无模块，请选择项目/产品或创建模块。</div
         >

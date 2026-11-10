@@ -73,7 +73,7 @@
           </aside>
           <section class="mango-pytest-source-panel">
             <a-button v-if="metadataLoading" type="text" size="small" loading disabled>加载用例信息</a-button>
-
+            
             <div v-if="selectedExplorerRecord" class="mango-pytest-source-panel__header">
               <div class="mango-pytest-source-panel__identity">
                 <div class="mango-pytest-source-panel__title-row">
@@ -254,7 +254,7 @@
             <a-button v-else-if="methodsFailed" type="text" size="small" @click="source.loadMethods">重试</a-button>
             <a-button v-if="sourceFiles.feature.loading" type="text" size="small" loading disabled>检查 Feature 文件</a-button>
             <a-button v-else-if="sourceFiles.feature.failed" type="text" size="small" @click="source.loadFile('feature')">重试</a-button>
-
+            
             <mango-panel-spin :loading="explorerSourceLoading" class="mango-pytest-source-panel__body">
               <CodeEditor
                 v-if="selectedExplorerFileNode && currentFile.snapshot && !currentFile.failed"

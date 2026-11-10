@@ -134,11 +134,11 @@
           </a-space>
         </template>
         <div class="mango-defect-page__feedback">
-
-
-
-
-
+          
+          
+          
+          
+          
           <a-alert v-if="mutationError" type="error">{{ mutationError }}</a-alert>
           <a-alert v-if="columnStorageError" type="warning"
             >列设置暂未保存。<a-button size="mini" @click="saveColumns">重试保存</a-button></a-alert

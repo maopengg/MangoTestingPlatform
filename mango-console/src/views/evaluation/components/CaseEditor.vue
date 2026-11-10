@@ -220,7 +220,7 @@
                     />
                   </a-form-item>
                 </div>
-
+                
                 <GraderEditor
                   v-model="config.grading.default_graders"
                   :catalog="catalog"
@@ -228,7 +228,7 @@
                   :disabled="false"
                   title="默认评分项"
                 />
-
+                
               </a-form>
             </template>
             <template #policy>

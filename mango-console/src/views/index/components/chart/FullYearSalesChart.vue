@@ -22,7 +22,7 @@
             <small>次</small>
           </div>
         </div>
-
+        
         <div ref="fullYearSalesChart" class="chart-item"></div>
       </div>
     </mango-panel-spin>

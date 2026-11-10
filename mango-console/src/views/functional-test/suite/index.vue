@@ -2,7 +2,7 @@
   <TableBody plain class="mango-detail-workbench-page" :sticky-horizontal-scroll="false">
     <template #header>
       <TableHeader :title="pageTitle" />
-
+      
     </template>
     <template #default>
       <ProjectProductNavigationWorkbench
@@ -191,7 +191,7 @@
         </template>
         <div v-if="activeView === 'suite'" class="mango-functional-case-list-workbench">
           <section class="mango-functional-case-list-main">
-
+            
             <div ref="suiteTableShellRef" class="mango-functional-suite-table">
               <a-table
                 class="mango-native-scroll-table"
@@ -435,7 +435,7 @@
               </a-form>
             </div>
             <div ref="caseTableShellRef" class="mango-functional-case-table-shell">
-
+              
               <a-table
                 class="mango-functional-case-list-table mango-native-scroll-table"
                 :bordered="false"

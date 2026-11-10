@@ -7,7 +7,7 @@
     }"
   >
     <template v-if="history">
-
+      
       <div class="mango-evaluation-history">
         <aside class="mango-evaluation-history-sidebar"
           ><ExecutionHistoryList
@@ -61,7 +61,7 @@
           </a-space></div
         >
         <MangoPanelSpin :loading="recordLoading" class="mango-execution-record-spin">
-
+          
           <div v-if="!record" class="mango-empty-state"
             >此 Case 在当前环境尚无执行结果，可从“执行”开始。</div
           >
@@ -166,8 +166,8 @@
               ? '以下评分配置来自本次执行快照，修改当前用例不会改变历史结果。'
               : '以下为当前用例的评分配置，尚未执行，不代表实际得分。'
           }}</p>
-
-
+          
+          
           <a-table
             :columns="displayColumns"
             :data="displayRows"

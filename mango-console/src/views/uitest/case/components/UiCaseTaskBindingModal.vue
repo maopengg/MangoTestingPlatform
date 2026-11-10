@@ -1,7 +1,7 @@
 <template>
   <a-modal modal-class="mango-simple-form-modal" v-model:visible="visible" title="设为定时任务" :width="560" :on-before-ok="save" :closable="!saving" :mask-closable="!saving" :cancel-button-props="{ disabled: saving }" @cancel="close">
     <a-alert v-if="error" type="error">{{ error }}</a-alert>
-
+    
     <a-form auto-label-width class="mango-simple-form" :model="draft" :disabled="saving" layout="horizontal">
       <a-form-item class="mango-simple-form-item" label="项目产品" required><ProjectProductSelect v-model="draft.product" placeholder="请选择项目产品" @change="productChanged" /></a-form-item>
       <a-form-item class="mango-simple-form-item" label="模块"><ProductModuleSelect v-model="draft.module" :project-product-id="draft.product" :disabled="caseOptionId(draft.product) === null" :auto-clear="false" :selectable-level="0" show-all-option placeholder="全部模块" @change="loadTasks()" /></a-form-item>

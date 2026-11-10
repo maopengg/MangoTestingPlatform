@@ -139,12 +139,12 @@
               ]"
             >
               <div v-if="!resourceSuiteId" class="mango-empty-state">需求版本 ID 无效</div>
-
-
-
-
-
-
+              
+              
+              
+              
+              
+              
               <mango-panel-spin v-if="hasActiveContextField" :loading="resourceLoading">
                 <div class="mango-functional-resource-pane">
                   <div v-if="!activeResources.length" class="mango-empty-state">暂无上下文资料</div>
@@ -637,7 +637,7 @@
     @cancel="closeApiDetails"
   >
     <MangoPanelSpin :loading="apiDetailsLoading" class="mango-functional-api-case-panel">
-
+      
       <component
         :is="ApiCaseDetails"
         v-if="available && apiCaseDetailVisible && apiCaseDetailId && ApiCaseDetails"

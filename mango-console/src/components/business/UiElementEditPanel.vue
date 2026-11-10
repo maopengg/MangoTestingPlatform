@@ -7,7 +7,7 @@
     @cancel="visible = false"
   >
     <a-spin :loading="loading" class="mango-ui-element-edit-spin">
-
+      
       <div v-if="saveError" class="mango-ui-element-identity-warning" role="alert">{{ saveError }}</div>
       <a-form
         :model="form"

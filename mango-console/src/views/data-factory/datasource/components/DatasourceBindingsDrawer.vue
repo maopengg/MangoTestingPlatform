@@ -14,7 +14,7 @@
         >
         <a-button size="small" :loading="loading" @click="loadBindings">刷新</a-button>
       </a-space>
-
+      
       <a-table
         class="mango-native-scroll-table"
         :scroll="{ x: bindingScrollX, y: '100%' }"

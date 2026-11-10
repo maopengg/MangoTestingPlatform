@@ -1,7 +1,7 @@
 <template>
   <a-modal modal-class="mango-simple-form-modal" v-model:visible="editorVisible" :title="editingId === null ? '新增授权' : '编辑授权'" :width="560" :mask-closable="false" :ok-loading="saving" :on-before-ok="onSubmit" @cancel="close">
       <a-alert v-if="saveError" type="error">{{ saveError }}</a-alert>
-
+      
       <a-alert v-for="item in optionErrors" :key="item.key" type="error">{{ item.error }} <a-button size="small" :loading="item.loading" @click="item.retry">重试加载</a-button></a-alert>
       <a-form auto-label-width ref="formRef" :model="form" layout="horizontal" class="mango-ui-auth-editor mango-simple-form" :disabled="locked">
         <a-form-item label="项目/产品" class="mango-form-item__require mango-simple-form-item">

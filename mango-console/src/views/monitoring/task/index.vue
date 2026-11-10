@@ -43,7 +43,7 @@
                 @clear="onTaskSearch"
               />
             </div>
-
+            
             <mango-panel-spin
               :loading="taskListLoading"
               class="mango-monitoring-task-page__list-spin"
@@ -98,9 +98,9 @@
           <main class="mango-monitoring-task-page__detail">
             <mango-panel-spin :loading="workspaceLoading" class="mango-monitoring-workspace__loading">
               <div v-if="workspaceTask" class="mango-monitoring-workspace">
-
+                
                 <a-alert v-if="saveFailed" type="error">代码保存失败，当前草稿已保留。<template #action><a-button size="small" :loading="fileSaving" @click="saveWorkspaceCode(false)">重试</a-button></template></a-alert>
-
+                
                 <div class="mango-monitoring-workspace__summary">
                   <div class="mango-monitoring-workspace__identity">
                     <div class="mango-monitoring-workspace__title-row">
@@ -228,7 +228,7 @@
       <div class="mango-monitoring-log-panel__description">
         窗口打开期间每 2 秒自动刷新当前任务最近 500 行日志。
       </div>
-
+      
       <div class="mango-monitoring-log-panel__editor">
         <CodeEditor
           ref="logEditorRef"

@@ -36,7 +36,7 @@
 
     <template #default>
       <div class="mango-monitoring-report">
-
+        
         <a-table
           :scroll="{ x: reportTableScrollX }"
           :bordered="false"

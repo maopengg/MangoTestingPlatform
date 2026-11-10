@@ -2,7 +2,7 @@
   <TableBody plain class="mango-detail-workbench-page">
     <template #header><TableHeader title="执行器管理" /></template>
     <div class="mango-equipment-page">
-
+      
       <mango-panel-spin :loading="listLoading" class="mango-equipment-spin">
         <div class="mango-equipment-grid">
           <section
@@ -80,7 +80,7 @@
               >
             </footer>
           </section>
-
+          
         </div>
       </mango-panel-spin>
     </div>

@@ -50,7 +50,7 @@
 
           <MangoPanelSpin class="mango-variable-catalog" :loading="catalogLoading && !randomList.length">
           <a-space direction="vertical" fill :size="scaleDensityPixels(12)">
-
+            
             <div class="mango-variable-section-tip">
               <template v-if="currentClassGroup?.typeValue === 'performance'">
                 仅此分类的 perf_* 方法可编译到 k6：在API自动化 Case 中填写表达式并发布，性能运行时每次命中都会生成新值，无需预建大量参数组。
@@ -102,7 +102,7 @@
                 />
               </div>
             </div>
-
+            
           </a-space>
           </MangoPanelSpin>
         </a-space>

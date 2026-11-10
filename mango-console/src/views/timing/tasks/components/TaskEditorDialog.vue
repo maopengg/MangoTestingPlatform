@@ -1,7 +1,7 @@
 <template>
   <ModalDialog ref="dialog" :title="recordId === null ? '新增' : '编辑'" width="min(760px, calc(100vw - 32px))" @confirm="save" @cancel="close">
     <template #content>
-
+      
       <a-alert v-if="saveError" type="error" class="mango-task-editor-error">{{ saveError }}</a-alert>
       <a-form :model="form" layout="horizontal" class="mango-task-form" :disabled="saving">
         <section class="mango-task-form-group">

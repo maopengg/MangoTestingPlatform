@@ -122,3 +122,4 @@ export async function mountException(options = {}) {
   return { router, root, nodes, hashes, refreshes, enumReads, warnings, user,
     dispose() { app.unmount(); globalThis.window = originalWindow } }
 }
+

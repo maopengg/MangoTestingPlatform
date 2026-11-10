@@ -117,7 +117,7 @@
         :show-add-button="!source.binding?.ref_id"
         @update:configs="saveFactory"
       />
-
+      
     </div>
   </section>
 </template>

@@ -18,7 +18,7 @@
         </a-form-item>
       </a-form>
       <a-button v-if="optionsError && !options.length" size="small" :loading="optionsLoading" @click="retryOptions">重新加载</a-button>
-
+      
     </div>
     <a-alert>实时生成 HTML 报告，不会重新执行 Case。</a-alert>
     <p role="status" :class="{ 'mango-offline-export__error': error }">{{ statusText }}</p>

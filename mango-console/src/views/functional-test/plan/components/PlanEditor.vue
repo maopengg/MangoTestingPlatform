@@ -12,9 +12,9 @@
     <a-alert v-if="saveError" type="error" class="mango-plan-editor__notice"
       >保存失败，草稿已保留，请重试。</a-alert
     >
-
-
-
+    
+    
+    
     <a-form class="mango-simple-form" :model="form" layout="horizontal" auto-label-width :disabled="saving">
       <a-grid class="mango-simple-form-fields" :cols="2" :col-gap="scaleDensityPixels(16)">
         <a-grid-item class="mango-simple-form-fields" :span="2"

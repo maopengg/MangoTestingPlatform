@@ -51,7 +51,7 @@
           </div>
           <div class="ui-case-panel-body ui-case-step-compose-body">
             <div v-if="caseConfigurationLoading" class="mango-soft-panel" role="status">正在加载用例配置…</div>
-
+            
             <div v-if="caseConfigurationSaveError || caseGlobalSaving || caseConfigurationDirty" class="mango-soft-panel" role="status">
               <span :class="{ 'mango-ui-step-structure-error': caseConfigurationSaveError }">{{ caseConfigurationSaveError || (caseGlobalSaving ? '正在保存用例配置…' : '配置尚未保存') }}</span>
               <a-button size="small" :loading="caseGlobalSaving" :disabled="!caseRecord" @click="upDataCase">保存配置</a-button>
@@ -284,7 +284,7 @@
 
               <a-tab-pane key="2" title="执行编排" data-testid="qa-views-uitest-case-details-tab-pane-执行编排">
                 <section class="ui-case-step-table-drop">
-
+                  
                   <div v-if="stepStructureError" class="mango-soft-panel mango-ui-step-structure-error" role="alert">{{ stepStructureError }}</div>
                   <div v-if="stepExecutionError" class="mango-soft-panel mango-ui-step-structure-error" role="alert">{{ stepExecutionError }} <a-button size="small" :loading="stepRunning" @click="retryStepExecution()">重试</a-button></div>
                   <div v-if="stepStructurePending?.kind === 'sort'" class="mango-soft-panel" role="status">正在保存步骤顺序…</div>
@@ -527,7 +527,7 @@
   >
     <div class="mango-ui-case-page-step-panel">
       <div v-if="pageStepDetailLoading" class="mango-soft-panel" role="status"><a-spin :size="scaleDensityPixels(16)" /> 正在读取页面步骤…</div>
-
+      
       <PageStepsDetails
         v-if="pageStepDetailVisible && pageStepDetailTarget"
         :key="`${uiCaseId}-${pageStepDetailTarget.pageStepsId}`"

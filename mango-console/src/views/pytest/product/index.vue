@@ -52,7 +52,7 @@
             </div>
           </div>
 
-
+          
           <div class="mango-pytest-product-page__table-region">
             <a-table
               class="mango-native-scroll-table mango-pytest-product-page__table"

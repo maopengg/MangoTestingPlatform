@@ -14,7 +14,7 @@
     @cancel="close"
   >
     <a-alert v-if="error" type="error">{{ error }}</a-alert>
-
+    
     <a-form auto-label-width :model="draft" layout="horizontal" class="mango-public-editor mango-simple-form">
       <div class="mango-public-editor__fields mango-simple-form-fields">
         <a-form-item label="项目/产品" class="mango-form-item__require mango-simple-form-item">
@@ -78,7 +78,7 @@
           >
         </div>
       </a-form-item>
-
+      
       <a-form-item
         :label="draft.type === 2 ? '自定义代码' : 'value'"
         class="mango-form-item__require mango-simple-form-item"

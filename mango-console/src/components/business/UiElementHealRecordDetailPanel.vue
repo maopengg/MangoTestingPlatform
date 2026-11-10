@@ -6,7 +6,7 @@
     :footer="false"
     unmount-on-close
   >
-
+    
     <MangoPanelSpin :loading="loading">
     <div v-if="detail" class="mango-ui-heal-detail">
       <section

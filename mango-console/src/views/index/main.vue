@@ -18,7 +18,7 @@
           <p class="mango-home-panel-description"
             >按项目汇总定时任务执行报告，比较执行量与最终结果</p
           >
-
+          
           <ProjectQualityChart :data="projectQualityRows" :loading="projectQualityLoading" />
         </div>
         <div class="item mango-section-card">
@@ -35,7 +35,7 @@
             <template #icon><IconArrowRight /></template>
           </a-button>
           <p class="mango-home-panel-description">按真实用例与场景数汇总最终执行质量</p>
-
+          
           <StatusChart
             :success="reportCounts.success"
             :fail="reportCounts.fail"

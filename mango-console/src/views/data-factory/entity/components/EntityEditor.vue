@@ -13,8 +13,8 @@
     @cancel="close"
   >
     <a-alert v-if="syncError" type="error">{{ syncError }}</a-alert>
-
-
+    
+    
     <a-form
       :disabled="entitySaving"
       :model="entityForm"

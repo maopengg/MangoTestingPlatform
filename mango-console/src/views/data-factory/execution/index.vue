@@ -89,8 +89,8 @@
             </a-button>
           </a-space>
         </template>
-
-
+        
+        
         <a-table
           class="mango-native-scroll-table"
           :columns="visibleTableColumns"

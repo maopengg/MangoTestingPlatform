@@ -83,8 +83,8 @@
             >
           </a-space>
         </template>
-
-
+        
+        
         <a-table
           class="mango-native-scroll-table"
           :scroll="{ x: tableScrollX, y: '100%' }"

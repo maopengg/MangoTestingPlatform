@@ -18,8 +18,8 @@
     <div class="mango-detail-workbench">
       <div v-if="caseId === null" class="mango-empty-state">请提供有效的用例 ID</div>
       <template v-else>
-
-
+        
+        
         <MangoPanelSpin :loading="loading" class="mango-functional-case-details__body">
           <div v-if="detail" class="mango-functional-case-details__grid">
             <section class="mango-section-card">
@@ -107,7 +107,7 @@
               </a-descriptions>
             </section>
           </div>
-
+          
         </MangoPanelSpin>
       </template>
     </div>

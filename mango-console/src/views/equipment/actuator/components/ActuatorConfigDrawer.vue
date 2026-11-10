@@ -11,7 +11,7 @@
       class="mango-actuator-read-panel"
       tip="执行器配置读取中..."
     >
-
+      
       <div v-if="ready" class="mango-actuator-config-drawer" :inert="saving ? '' : undefined">
         <section class="mango-section-card">
           <div class="mango-section-title">

@@ -42,7 +42,7 @@
     <template #default>
       <div v-if="currentPageId === null" class="mango-soft-panel" role="alert">缺少有效页面ID，请返回后重新进入。</div>
       <div v-if="pageLoading || metadataLoading" class="mango-soft-panel" role="status">正在加载页面信息与元素操作选项…</div>
-
+      
       <div v-if="actionError || checks.error.value" class="mango-element-page-error" role="alert">{{ actionError || checks.error.value }}</div>
       <div class="mango-workbench-scroll-x mango-ui-element-workbench-scroll">
         <div class="mango-ui-element-workbench">
@@ -55,7 +55,7 @@
               <a-tag size="small">{{ elementCategoryCount }}</a-tag>
             </div>
             <a-input-search v-model="categoryKeyword" allow-clear placeholder="搜索分类" data-testid="qa-views-uitest-page-elements-input-search-搜索分类" />
-
+            
             <MangoPanelSpin :loading="categoryLoading" class="mango-ui-element-category-tree">
               <a-tree
                 v-model:selected-keys="selectedCategoryKeys"
@@ -74,7 +74,7 @@
                 <a-button  size="small" status="danger" :loading="deleting" @click="onDelete(null)" data-testid="qa-views-uitest-page-elements-button-批量删除">批量删除</a-button>
               </a-space>
             </div>
-
+            
             <StickyHorizontalTable :scroll-x="TABLE_SCROLL_X">
               <a-table
                 class="mango-ui-element-table mango-native-scroll-table"

@@ -33,8 +33,8 @@
 
     <div class="mango-step-recorder__content">
       <div v-if="methodsLoading || elementsLoading" class="mango-soft-panel" role="status">正在加载操作与元素选项…</div>
-
-
+      
+      
       <div class="mango-step-recorder__toolbar">
         <a-dropdown trigger="click">
           <a-button size="mini" data-testid="qa-components-business-uisteprecorderpanel-button-插入节点">插入节点</a-button>

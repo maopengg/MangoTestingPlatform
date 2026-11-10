@@ -11,12 +11,12 @@
     <mango-panel-spin :loading="editorLoading" class="mango-task-group-editor__spin">
       <a-form :model="form" :disabled="editorLocked" layout="horizontal" class="mango-task-group-editor">
         <div class="mango-task-group-editor__configuration">
-
-
-
-
-
-
+          
+          
+          
+          
+          
+          
         <section class="mango-task-group-editor__section">
           <header class="mango-task-group-editor__section-header">
             <div>
@@ -154,7 +154,7 @@
             请先选择项目/产品，再选择需要拆分的模块
           </div>
           <div v-else class="mango-task-group-editor__tree">
-
+            
             <a-tree
               v-model:expanded-keys="expandedModuleKeys"
               :checked-keys="form.module_ids"

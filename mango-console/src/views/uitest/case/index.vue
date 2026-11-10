@@ -162,9 +162,9 @@
           </TableTabs>
         </template>
 
-
-
-
+      
+      
+      
       <a-alert v-if="actions.error.value" type="error">{{ actions.error.value }}</a-alert>
       <a-table
         class="mango-native-scroll-table"

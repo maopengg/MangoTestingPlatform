@@ -11,7 +11,7 @@
     "
   >
     <section class="mango-entity-log-panel">
-
+      
       <a-table
         class="mango-native-scroll-table"
         :columns="entityStatusLogColumns"

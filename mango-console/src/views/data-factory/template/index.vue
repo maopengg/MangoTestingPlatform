@@ -111,7 +111,7 @@
             >新增场景模板</a-button
           >
         </template>
-
+        
         <a-table
           class="mango-native-scroll-table"
           :scroll="{ x: templateScrollX, y: '100%' }"

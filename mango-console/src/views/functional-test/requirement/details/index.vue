@@ -45,7 +45,7 @@
       </a-space>
     </header>
     <a-alert v-if="suiteId === null" type="error">需求版本 ID 无效，请返回列表重新打开。</a-alert>
-
+    
     <a-alert v-if="navigationError" type="error">跳转失败，请再次点击对应操作重试。</a-alert>
     <a-alert v-if="transitionError" type="error"
       >状态更新失败，请重试。<a-button
@@ -78,7 +78,7 @@
       <a-tabs v-model:active-key="activeTab">
         <a-tab-pane key="detail" title="详细信息">
           <div class="mango-requirement-detail__options">
-
+            
           </div>
           <MangoPanelSpin :loading="loading.suite" class="mango-requirement-detail__form-panel">
             <section class="mango-section-card">
@@ -237,7 +237,7 @@
                 ></a-space
               >
             </div>
-
+            
             <a-alert v-if="unbindError" type="error"
               >取消关联失败，请再次点击对应操作重试。</a-alert
             >
@@ -282,7 +282,7 @@
         </a-tab-pane>
         <a-tab-pane key="plans" :title="'测试计划（' + plans.length + '）'">
           <section class="mango-section-card">
-
+            
             <a-table
               :data="plans"
               :columns="planColumns"
@@ -326,7 +326,7 @@
                 >新增缺陷</a-button
               ></div
             >
-
+            
             <a-table
               :data="defects"
               :columns="defectColumns"
@@ -350,7 +350,7 @@
         </a-tab-pane>
         <a-tab-pane key="resources" :title="'相关文档（' + resources.length + '）'">
           <section class="mango-section-card">
-
+            
             <a-list :data="resources" :loading="loading.resources">
               <template #item="{ item }"
                 ><a-list-item

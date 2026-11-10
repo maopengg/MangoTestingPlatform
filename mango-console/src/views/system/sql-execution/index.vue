@@ -44,8 +44,8 @@
     </template>
 
     <template #default>
-
-
+      
+      
       <a-table
         :scroll="{ x: tableScrollX }"
         :bordered="false"

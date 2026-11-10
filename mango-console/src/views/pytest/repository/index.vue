@@ -49,7 +49,7 @@
           </div>
         </div>
 
-
+        
         <div class="mango-workbench-scroll-x"
           ><div class="mango-pytest-repository-page__workbench">
             <aside class="mango-pytest-repository-page__tree-panel">
@@ -110,7 +110,7 @@
                   :loading="filePreviewLoading"
                   class="mango-pytest-repository-page__preview-body"
                 >
-
+                  
                   <template v-if="filePreviewFailed"></template>
                   <CodeEditor
                     v-else-if="!isMarkdownPreview"

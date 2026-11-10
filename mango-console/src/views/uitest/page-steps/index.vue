@@ -88,10 +88,10 @@
           </a-space>
         </template>
         <div class="mango-ui-step-list-body">
-
-
-
-
+          
+          
+          
+          
           <a-alert v-if="actionError" type="error" closable @close="actionError = ''">{{
             actionError
           }}</a-alert>

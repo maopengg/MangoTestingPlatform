@@ -13,7 +13,7 @@
     <a-alert v-if="saveError" type="error" class="mango-case-plan__notice"
       >加入失败，选择已保留，请重试。</a-alert
     >
-
+    
     <a-form auto-label-width class="mango-simple-form" :model="joinForm" layout="horizontal" :disabled="saving">
       <a-form-item class="mango-simple-form-item" label="测试计划" required>
         <a-select
@@ -44,8 +44,8 @@
     <a-alert v-else-if="saveError" type="error" class="mango-case-plan__notice"
       >创建失败，输入已保留，请重试。</a-alert
     >
-
-
+    
+    
     <a-form auto-label-width class="mango-simple-form" :model="form" layout="horizontal" :disabled="saving || createdPlanId !== null">
       <div class="mango-case-plan__fields mango-simple-form-fields">
         <div class="mango-case-plan__wide mango-simple-form-fields">

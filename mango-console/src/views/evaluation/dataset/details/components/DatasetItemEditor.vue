@@ -59,7 +59,7 @@
                 @change="changeItemGradingMode"
             /></a-form-item>
           </div>
-
+          
           <MangoPanelSpin
             v-if="itemForm.grading_config.mode === 'replace'"
             :loading="catalogLoading"

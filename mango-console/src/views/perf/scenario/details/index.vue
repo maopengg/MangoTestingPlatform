@@ -17,7 +17,7 @@
     </template>
     <template #default>
       <a-alert v-if="!id" type="error" class="mango-perf-read-error">场景 ID 无效，请返回列表重新进入。</a-alert>
-
+      
       <a-alert v-if="refreshBeforeWrite" type="warning" class="mango-perf-read-error">
         保存期间离开了当前页面，请重新加载以确认保存结果。
         <template #action><a-button size="small" :loading="loading" :disabled="saving" @click="retryDetails">重新加载</a-button></template>
@@ -36,7 +36,7 @@
                     >查看用例详情</a-button
                   >
                 </div>
-
+                
                 <a-form layout="horizontal" :model="form" auto-label-width>
                   <a-form-item label="已发布 Case" required>
                     <a-select
@@ -235,7 +235,7 @@
       <a-button v-if="scriptPreview" size="mini" :loading="scriptPreviewCopying" :disabled="scriptPreviewLoading" @click="copyScriptPreview">复制当前内容</a-button>
     </template>
     <MangoPanelSpin :loading="scriptPreviewLoading" class="mango-perf-script-preview">
-
+      
       <template v-if="scriptPreview">
         <a-alert type="info" class="mango-perf-script-preview__notice">
           预览基于已保存的场景配置。执行器运行同一份脚本模板，场景快照通过环境变量注入；测试环境、分片、运行号和密钥在执行时才填入。快照按敏感字段规则脱敏，仍请勿对外分享。

@@ -1,7 +1,7 @@
 <template>
   <BaseSidePanel v-model:visible="visible" :title="title" width="72%" @cancel="close">
     <div class="mango-step-reference-body">
-
+      
       <div class="mango-step-reference-summary">当前步骤被 {{ rows.length }} 个用例引用</div>
       <a-table
         class="mango-native-scroll-table mango-step-reference-table"

@@ -6,7 +6,7 @@
     :width="1180"
     :footer="false"
   >
-
+    
     <div class="mango-entity-rule-toolbar">
       <a-tag color="arcoblue">当前表：{{ entityRuleRecord?.table_name || '-' }}</a-tag>
     </div>

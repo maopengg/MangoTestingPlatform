@@ -247,11 +247,11 @@
           </a-tabs>
         </template>
         <div class="mango-task-feedback">
-
-
+          
+          
           <a-alert v-if="operationError" type="error">{{ operationError }}</a-alert>
           <template v-if="activeTab === 'tasks'">
-
+            
           </template>
         </div>
         <StickyHorizontalTable v-if="activeTab === 'tasks'" :scroll-x="3090">

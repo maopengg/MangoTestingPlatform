@@ -39,7 +39,7 @@
         >{{ overview.error_message }}</a-alert
       >
       <div class="mango-detail-workbench mango-perf-run-workbench">
-
+          
           <mango-panel-spin :loading="overviewLoading" class="mango-perf-overview-spin">
           <section
             class="mango-section-card mango-perf-run-summary"
@@ -135,8 +135,8 @@
                 }}</span
               >
             </div>
-
-
+            
+            
             <mango-panel-spin :loading="metricsLoading">
             <div v-if="points.length" class="mango-perf-chart-grid">
               <div class="mango-soft-panel mango-perf-chart-panel"
@@ -166,7 +166,7 @@
                 ><h2>负载阶段</h2><p>按执行顺序查看每个阶段的目标、达成情况和响应表现。</p></div
               ></div
             >
-
+            
             <mango-panel-spin :loading="stagesLoading">
             <div class="mango-perf-stage-flow">
               <article
@@ -232,7 +232,7 @@
                 ></a-tab-pane
               >
               <a-tab-pane key="validity" :title="`有效性门禁 ${validity.length}`">
-
+                
                 <mango-panel-spin :loading="validityLoading"><RunValidityGrid :rows="validity" /></mango-panel-spin>
               </a-tab-pane>
               <a-tab-pane key="thresholds" title="性能目标"

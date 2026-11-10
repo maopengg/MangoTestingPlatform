@@ -13,7 +13,7 @@
     @cancel="close"
   >
     <a-alert v-if="error" type="error">{{ error }}</a-alert>
-
+    
     <a-form auto-label-width class="mango-simple-form" :model="draft" :disabled="saving" layout="horizontal">
       <a-form-item class="mango-simple-form-item" label="项目/产品" required
         ><ProjectProductSelect

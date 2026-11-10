@@ -13,7 +13,7 @@
     unmount-on-close
     @cancel="close"
   >
-
+    
     <a-form auto-label-width class="mango-simple-form" :model="draft" layout="horizontal" :disabled="saving">
       <a-form-item class="mango-simple-form-item" label="测试环境" required>
         <a-select

@@ -2,7 +2,7 @@
   <TableBody>
     <main class="mango-personal-page">
       <section class="mango-section-card mango-personal-profile" :aria-busy="loading">
-
+        
         <a-spin :loading="loading" class="mango-personal-profile__loading">
         <header class="mango-personal-profile__header">
           <div class="mango-personal-profile__identity">

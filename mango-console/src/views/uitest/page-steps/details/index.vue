@@ -59,18 +59,18 @@
     </template>
 
     <template #default>
-
+      
       <a-alert v-if="actionError || flowSave.error.value || elementChecks.error.value || stepDebug.error.value" type="error">{{ actionError || flowSave.error.value || elementChecks.error.value || stepDebug.error.value }}</a-alert>
-
+      
       <a-spin v-if="stepResources.loading.steps" :size="scaleDensityPixels(16)" tip="加载步骤配置" />
       <a-spin v-if="stepResources.loading.aliases" :size="scaleDensityPixels(16)" tip="加载逻辑数据源" />
       <a-spin v-if="stepResources.loading.elements" :size="scaleDensityPixels(16)" tip="加载元素" />
       <a-spin v-if="stepResources.loading.details" :size="scaleDensityPixels(16)" tip="加载节点" />
-
-
-
-
-
+      
+      
+      
+      
+      
       <div class="mango-workbench-scroll-x mango-ui-step-layout">
       <div
         :class="[

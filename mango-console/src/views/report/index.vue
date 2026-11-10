@@ -98,10 +98,10 @@
               </template>
             </a-form-item>
           </a-form>
-
+          
         </template>
         <div class="mango-workbench-scroll-x report-chart-scroll">
-
+          
           <div class="report-chart-grid">
             <section class="report-chart-card status-card mango-section-card">
               <Title title="执行报告结果分布" />
@@ -126,7 +126,7 @@
             </section>
           </div>
         </div>
-
+        
         <StickyHorizontalTable :scroll-x="2180" content-class="report-table-region">
           <a-table
             :bordered="false"

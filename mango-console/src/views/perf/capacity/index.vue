@@ -12,7 +12,7 @@
 
     <template #default>
       <div class="mango-perf-capacity-page">
-
+        
         <a-alert type="info">
           发压能力用于保护执行器本身。开始性能测试前，平台会根据场景峰值、已选执行器和可用容量进行校验；容量不足时禁止执行，避免执行器过载导致结果失真。
         </a-alert>

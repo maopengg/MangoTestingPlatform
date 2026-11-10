@@ -46,3 +46,4 @@ export function setup(overrides = {}) {
     visibility(value) { doc.visibilityState = value; doc.dispatchEvent(new Event('visibilitychange')) },
     close() { callbacks.unmount.forEach(f => f()); scope.stop(); globalThis.document = previous } }
 }
+

@@ -78,7 +78,7 @@
     </div>
   </div>
   <a-drawer v-model:visible="schemaVisible" :title="schemaTitle" :width="900" :footer="false">
-
+    
     <a-table
       :columns="schemaColumns"
       :data="schema?.columns || []"

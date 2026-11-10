@@ -16,7 +16,7 @@
       <a-alert v-if="executeError" type="error"
         >执行失败或结果未确认，请先在执行记录核对，再重新预览。</a-alert
       >
-
+      
       <section class="mango-feature-preview__config">
         <div class="mango-feature-preview__heading"
           ><strong>灰度配置</strong
@@ -119,7 +119,7 @@
           ></a-form-item
         >
       </a-form>
-
+      
       <MangoPanelSpin :loading="loading" class="mango-feature-preview__output">
         <section
           ><strong>原文</strong

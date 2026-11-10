@@ -13,7 +13,7 @@
     >
     <a-spin :loading="categoryLoading" class="mango-library-case-editor__categories">
       <span v-if="categoryLoading">正在加载分类选项…</span>
-
+      
     </a-spin>
     <a-form :model="form" layout="horizontal" :disabled="saving" class="mango-library-case-editor">
       <div class="mango-library-case-editor__fields">

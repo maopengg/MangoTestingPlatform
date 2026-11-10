@@ -326,7 +326,7 @@
         </section>
 
         <div v-if="elementsLoading" class="mango-soft-panel" role="status">正在加载页面元素…</div>
-
+        
         <section v-if="supportsElementTools && pickedElement" class="mango-soft-panel">
           <div class="mango-ui-live-workbench-panel__section-head">
             <strong>采集元素</strong>

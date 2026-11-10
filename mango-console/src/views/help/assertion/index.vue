@@ -9,7 +9,7 @@
             <p>验证断言函数的入参、预期值和结果反馈</p>
           </div>
         </div>
-
+        
         <MangoPanelSpin
           class="mango-assertion-panel"
           :loading="catalogLoading && !assertionList.length"
@@ -140,7 +140,7 @@
                   </div>
                 </div>
               </div>
-
+              
             </a-space>
           </a-space>
         </MangoPanelSpin>

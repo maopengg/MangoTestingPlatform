@@ -31,7 +31,7 @@
           />
         </template>
         <div v-if="listError || usersError || enumsError || enumsLoading || operationError || taskError" class="mango-ui-auth-feedback">
-
+          
           <a-alert v-if="operationError" type="error">{{ operationError }}</a-alert>
           <a-alert v-if="taskError" type="error">{{ taskError }}</a-alert>
         </div>

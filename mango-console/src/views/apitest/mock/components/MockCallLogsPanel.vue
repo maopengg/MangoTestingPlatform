@@ -50,7 +50,7 @@
             >
           </div>
         </div>
-
+        
         <div class="mango-mock-log-table-region">
           <a-table
             class="mango-native-scroll-table mango-mock-log-table"

@@ -35,8 +35,8 @@
     </template>
 
     <template #default>
-
-
+      
+      
       <a-table
         :bordered="false"
         :columns="tableColumns"

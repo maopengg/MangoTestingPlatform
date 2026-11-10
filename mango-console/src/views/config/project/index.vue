@@ -35,7 +35,7 @@
     </template>
 
     <template #default>
-
+      
       <TableTabs>
         <template #extra>
           <a-space>

@@ -36,7 +36,7 @@
         </a-space>
       </div>
 
-
+      
 
       <a-table
         class="mango-native-scroll-table mango-pytest-batch-editor__table"
@@ -157,7 +157,7 @@
           </a-table-column>
         </template>
         <template #empty>
-
+          
         </template>
       </a-table>
     </div>

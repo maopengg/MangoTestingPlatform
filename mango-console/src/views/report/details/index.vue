@@ -1,7 +1,7 @@
 <template>
   <div class="report-lab mango-report-detail-page" :class="{ 'standalone-report-container': isShareReportRoute }">
     <a-alert v-if="reportInfo?.retained_summary" type="info">本次执行成功，已按保留策略清理完整报告，仅保留执行质量摘要。</a-alert>
-
+    
     <mango-panel-spin :loading="reportInfoLoading" class="mango-report-head-spin">
     <section class="report-head">
       <div class="head-main">
@@ -82,7 +82,7 @@
     </section>
     </mango-panel-spin>
 
-
+    
     <div class="mango-workbench-scroll-x report-overview-scroll">
       <section class="overview-grid">
         <div class="result-stack">

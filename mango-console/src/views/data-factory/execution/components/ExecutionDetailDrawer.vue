@@ -10,7 +10,7 @@
       }
     "
   >
-
+    
     <MangoPanelSpin :loading="detailLoading">
       <a-tabs v-if="detail" v-model:active-key="activeTab">
         <a-tab-pane

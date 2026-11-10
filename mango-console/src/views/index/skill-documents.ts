@@ -136,3 +136,4 @@ export function renderMarkdown(value: string) {
     if (inCode) html.push(`<pre><code>${escapeHtml(codeLines.join('\n'))}</code></pre>`)
     return html.join('')
   }
+

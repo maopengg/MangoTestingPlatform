@@ -14,8 +14,8 @@
     <a-alert v-if="saveError" type="error" class="mango-gray-binding-editor__error"
       >保存失败，输入已保留，请重试。</a-alert
     >
-
-
+    
+    
     <a-form auto-label-width class="mango-simple-form" :model="form" layout="horizontal" :disabled="saving">
       <a-form-item label="所属仓库" class="mango-form-item__require mango-simple-form-item"
         ><a-select

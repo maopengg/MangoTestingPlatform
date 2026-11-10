@@ -153,3 +153,4 @@ test('defect page and both private windows compile scripts, templates and styles
     for (const style of descriptor.styles) assert.deepEqual(compileStyle({ source: style.content, filename, id: file, scoped: style.scoped, preprocessLang: style.lang }).errors, [])
   }
 })
+

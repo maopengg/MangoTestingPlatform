@@ -55,8 +55,8 @@
             >
           </a-space>
         </template>
-
-
+        
+        
         <a-table
           :scroll="{ x: tableScrollX, y: '100%' }"
           class="mango-test-files-table mango-native-scroll-table"

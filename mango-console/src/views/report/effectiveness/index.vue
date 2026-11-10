@@ -133,7 +133,7 @@
       </TableHeader>
     </template>
     <template #default>
-
+      
       <div id="mango-effectiveness-report-image" class="mango-effectiveness-report-document">
         <div class="mango-effectiveness-paper-page mango-effectiveness-paper-page--summary">
           <span class="mango-effectiveness-paper-page__number">01 / 07 · 质量摘要</span>

@@ -10,7 +10,7 @@
       <a-alert class="mango-case-library__history-notice" type="info">
         每条用例最多保留最近 20 个历史版本，超过后会自动清理最早版本。
       </a-alert>
-
+      
       <div v-if="historyVersions.length" class="mango-case-library__history">
         <div class="mango-case-library__history-list">
           <button
@@ -110,7 +110,7 @@
           </div>
         </div>
       </div>
-
+      
     </MangoPanelSpin>
   </a-drawer>
 </template>

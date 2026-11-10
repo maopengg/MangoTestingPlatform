@@ -11,7 +11,7 @@
     <a-alert v-if="saveError" type="error" class="mango-suite-list-case-editor__notice"
       >保存失败，输入已保留。若版本冲突，请核对最新记录后重试。</a-alert
     >
-
+    
     <a-form :model="form" layout="horizontal" :disabled="saving">
       <a-grid :cols="2" :col-gap="16">
         <a-grid-item

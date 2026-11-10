@@ -46,9 +46,9 @@
           </a-space>
         </template>
         <div class="mango-iteration-page__table">
-
-
-
+          
+          
+          
           <a-alert v-if="navigationError" type="error">详情页面打开失败，请重新点击排期。</a-alert>
           <a-table
             class="mango-native-scroll-table"

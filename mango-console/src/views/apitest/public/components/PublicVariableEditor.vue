@@ -74,7 +74,7 @@
           >
         </div>
       </a-form-item>
-
+      
       <a-form-item
         :label="draft.type === 2 ? '自定义代码' : 'value'"
         class="mango-form-item__require mango-simple-form-item"

@@ -114,3 +114,4 @@ class FletPagesTests(TestCase):
             app.refresh_activity()
         self.assertTrue(app.recent_result.visible)
         self.assertEqual(app.recent_result.value, "最近结果：失败 · 断言未通过")
+

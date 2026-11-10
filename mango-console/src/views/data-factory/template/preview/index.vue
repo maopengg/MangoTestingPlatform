@@ -69,11 +69,11 @@
     </template>
 
     <template #default>
-
-
-
-
-
+      
+      
+      
+      
+      
       <mango-panel-spin
         :loading="initialPageLoading"
         class="mango-preview-spin mango-workbench-scroll-x mango-scene-config-workbench-scroll"

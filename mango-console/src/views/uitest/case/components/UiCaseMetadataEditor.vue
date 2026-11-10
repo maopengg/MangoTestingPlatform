@@ -1,8 +1,8 @@
 <template>
   <a-modal modal-class="mango-simple-form-modal" v-model:visible="visible" :title="editingId === null ? '新增用例' : '编辑用例'" :width="560" :on-before-ok="save" :closable="!saving" :mask-closable="!saving" :cancel-button-props="{ disabled: saving }" @cancel="close">
     <a-alert v-if="error" type="error">{{ error }}</a-alert>
-
-
+    
+    
     <a-form auto-label-width :model="draft" :disabled="saving" layout="horizontal" class="mango-ui-case-metadata-form mango-simple-form">
       <a-form-item class="mango-simple-form-item" label="项目/产品" required><ProjectProductSelect v-model="draft.project_product" placeholder="请选择项目产品" @change="draft.module = null" /></a-form-item>
       <a-form-item class="mango-simple-form-item" label="模块" required><ProductModuleSelect v-model="draft.module" :project-product-id="draft.project_product" :auto-clear="false" placeholder="请选择模块" /></a-form-item>
