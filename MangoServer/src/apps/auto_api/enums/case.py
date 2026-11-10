@@ -46,9 +46,9 @@ class ApiCaseScenarioLayerEnum(BaseEnum):
     @classmethod
     def obj(cls):
         return {
-            0: "接口/组件层",
-            1: "Integration集成",
-            2: "E2E端到端",
+            0: "接口/组件级",
+            1: "模块级",
+            2: "端到端",
         }
 
 

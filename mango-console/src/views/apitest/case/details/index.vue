@@ -526,6 +526,7 @@
                                 :active-key="workspaceTabs.tabsKey"
                                 :edit-locked="caseEditLocked"
                                 :verifying="assertionVerifyLoadingId === item.id"
+                                :protocol-saving="protocolSavingId === item.id"
                                 :schema-loading="schemaLoadingId === item.id"
                                 :compare-open="Boolean(item.__assertion_compare_open)"
                                 :compare-results="getAssertionResultData(item)"
@@ -541,6 +542,7 @@
                                 :sql-method-options="sqlAssertionMethodOptions"
                                 @change="tabsChange($event)"
                                 @save="blurSave"
+                                @save-protocol="saveProtocolExpectation(item, $event)"
                                 @verify="verifyAssertions"
                                 @toggle-compare="
                                   item.__assertion_compare_open = !item.__assertion_compare_open
@@ -2132,6 +2134,27 @@
 
   function upDataCaseWithoutScenarioRefresh() {
     upDataCase({ refreshScenario: false })
+  }
+
+  const protocolSavingId = ref<number | null>(null)
+  async function saveProtocolExpectation(item: ApiCaseScenario, value: import('@/types/api-test/case-parameter').ApiProtocolExpectation) {
+    if (!ensureCaseEditable() || protocolSavingId.value !== null) return
+    const id = item.id
+    const isCurrent = requests.capture()
+    protocolSavingId.value = id
+    try {
+      const response = await saveParameter({id, protocol_expectation: value})
+      if (!response || !isCurrent()) return
+      const current = scenarios.value.find(scenario => scenario.id === id)
+      if (current) {
+        applyScenarioPatch({id, changes: {body_config: {...current.body_config, protocol_expectation: value}}})
+      }
+      Message.success(response.msg)
+    } catch {
+      // 保存失败保留协议断言表单草稿，允许重试。
+    } finally {
+      protocolSavingId.value = null
+    }
   }
 
   function blurSave(key: string, item: unknown, id: number) {

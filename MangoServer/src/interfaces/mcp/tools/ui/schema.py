@@ -77,12 +77,12 @@ def register_schema_tools(mcp):
                     "environment": _enum_options(EnvironmentEnum),
                 },
                 "ui_case_fields": {
-                    "scenario_layer": "与 API case 一致：0=接口/组件层、1=Integration集成、2=E2E端到端。",
+                    "scenario_layer": "与 API case 一致：0=接口/组件级（单个接口或组件）、1=模块级（同一模块内多个接口、组件协作）、2=端到端（跨多个模块的完整业务链路）。",
                     "scenario_type": "正常/异常/边界/权限/数据/流程。",
                     "scenario_tags": {
                         "description": "执行场景，与 API、Pytest Case 和定时任务共用同一枚举。",
                         "selection_guidance": [
-                            "UI case 的 API/Integration/E2E 分层放在 scenario_layer，不放在 scenario_tags。",
+                            "UI case 的接口/组件级、模块级、端到端分层放在 scenario_layer，不放在 scenario_tags。",
                             "production_inspection=生产巡检，用于生产只读健康检查；UI case 使用该场景时不允许包含 SQL 前后置、页面步骤 SQL、SQL 断言或数据工厂造数/清理。",
                             "production_regression=生产回归，允许覆盖生产回归流程，但不允许任何数据库操作。",
                         ],

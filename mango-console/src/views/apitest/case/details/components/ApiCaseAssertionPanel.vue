@@ -6,35 +6,7 @@
     @tab-click="emit('change', String($event))"
   >
     <template #extra>
-      <a-space>
-        <a-button v-if="canAdd" size="small" type="primary" :disabled="editLocked" @click="addItem"
-          >增加</a-button
-        >
-        <a-button
-          v-if="canAddGroup"
-          size="small"
-          type="outline"
-          :disabled="editLocked"
-          @click="addOrGroup"
-          >增加或关系</a-button
-        >
-        <a-button
-          v-if="activeKey === '31'"
-          size="small"
-          type="outline"
-          :aria-pressed="compareOpen"
-          @click="emit('toggle-compare')"
-          >{{ compareOpen ? '收起对照' : '对照结果' }}</a-button
-        >
-        <a-button
-          v-if="activeKey !== '36'"
-          size="small"
-          type="outline"
-          :loading="verifying"
-          @click="emit('verify', draft)"
-          >一键验证</a-button
-        >
-      </a-space>
+      <MangoTableActions :actions="toolbarActions" :max-inline="1" />
     </template>
     <a-tab-pane key="30" title="JSON一致">
       <div class="m-2"
@@ -47,14 +19,6 @@
           :show-drawer-button="false"
           :edit-disabled="editLocked"
           @edit="openJsonAssertion"
-        />
-        <MangoJsonEditDrawer
-          v-model:visible="jsonEditVisible"
-          :model-value="jsonEditText"
-          title="编辑 JSON 一致断言"
-          description="仅断言已配置的 JSON 字段；留空可清除该断言。"
-          placeholder="请输入期望的响应JSON"
-          @save="saveJsonAssertion"
         />
       </div>
     </a-tab-pane>
@@ -281,13 +245,12 @@
             >自动生成</a-button
           ></a-space
         >
-        <a-textarea
-          v-model="draft.ass_schema"
-          :disabled="editLocked"
-          :auto-size="fixedRows"
-          allow-clear
-          placeholder="请输入响应结构"
-          @blur="save('ass_schema')"
+        <JsonDisplay
+          :data="draft.ass_schema ?? ''"
+          show-edit-button
+          :show-drawer-button="false"
+          :edit-disabled="editLocked || schemaLoading"
+          @edit="openJsonAssertion('ass_schema')"
         />
       </div>
     </a-tab-pane>
@@ -307,7 +270,24 @@
     <a-tab-pane key="36" title="回调">
       <slot name="callback"></slot>
     </a-tab-pane>
+    <a-tab-pane key="37" title="协议断言">
+      <ApiCaseProtocolAssertions
+        :scenario-id="draft.id"
+        :value="draft.body_config?.protocol_expectation"
+        :edit-locked="editLocked"
+        :saving="protocolSaving"
+        @save="emit('save-protocol', $event)"
+      />
+    </a-tab-pane>
   </a-tabs>
+  <MangoJsonEditDrawer
+    v-model:visible="jsonEditVisible"
+    :model-value="jsonEditText"
+    :title="jsonEditField === 'ass_schema' ? '编辑结构化断言' : '编辑 JSON 一致断言'"
+    :description="jsonEditField === 'ass_schema' ? '使用 JSON Schema 校验响应结构；留空可清除场景配置。' : '仅断言已配置的 JSON 字段；留空可清除该断言。'"
+    :placeholder="jsonEditField === 'ass_schema' ? '请输入响应结构' : '请输入期望的响应JSON'"
+    @save="saveJsonAssertion"
+  />
 </template>
 
 <script setup lang="ts">
@@ -321,6 +301,9 @@
   import KeyValueList from '@/components/forms/KeyValueList.vue'
   import GeneralAssertionEditor from '@/components/forms/GeneralAssertionEditor.vue'
   import TipMessage from '@/components/feedback/TipMessage.vue'
+  import MangoTableActions from '@/components/table/MangoTableActions.vue'
+  import ApiCaseProtocolAssertions from './ApiCaseProtocolAssertions.vue'
+  import type { ApiProtocolExpectation } from '@/types/api-test/case-parameter'
 
   type AssertionField =
     | 'ass_json_all'
@@ -336,6 +319,7 @@
       activeKey: string
       editLocked: boolean
       verifying: boolean
+      protocolSaving?: boolean
       schemaLoading: boolean
       compareOpen: boolean
       compareResults?: any[] | null
@@ -354,6 +338,7 @@
       compareResults: () => [],
       compareSource: 'runtime',
       compareStale: false,
+      protocolSaving: false,
     }
   )
   const emit = defineEmits<{
@@ -362,6 +347,7 @@
     (event: 'verify', scenario: ApiCaseScenario): void
     (event: 'toggle-compare'): void
     (event: 'generate-schema'): void
+    (event: 'save-protocol', value: ApiProtocolExpectation): void
   }>()
   const { draft } = useApiCaseScenarioDraft(
     () => props.item,
@@ -371,10 +357,12 @@
   const fixedRows = { minRows: 9, maxRows: 9 }
   const jsonEditVisible = ref(false)
   const jsonEditText = ref('')
+  const jsonEditField = ref<'ass_json_all' | 'ass_schema'>('ass_json_all')
   watch(() => [props.item.id, props.editLocked], () => { jsonEditVisible.value = false })
-  function openJsonAssertion() {
-    if (props.editLocked) return
-    const value = draft.value.ass_json_all
+  function openJsonAssertion(field: 'ass_json_all' | 'ass_schema' = 'ass_json_all') {
+    if (props.editLocked || (field === 'ass_schema' && props.schemaLoading)) return
+    jsonEditField.value = field
+    const value = draft.value[field]
     jsonEditText.value = typeof value === 'string' ? value : value == null ? '' : stringifyLosslessJson(value, 2)
     jsonEditVisible.value = true
   }
@@ -382,14 +370,14 @@
     if (props.editLocked) return
     if (value.trim()) {
       try { parseLosslessJson(value) } catch {
-        Message.error('JSON一致断言格式不正确，请修正后保存')
+        Message.error(jsonEditField.value === 'ass_schema' ? '结构化断言JSON格式不正确，请修正后保存' : 'JSON一致断言格式不正确，请修正后保存')
         return
       }
     }
     jsonEditVisible.value = false
     if (value === jsonEditText.value) return
-    draft.value.ass_json_all = value
-    save('ass_json_all')
+    draft.value[jsonEditField.value] = value
+    save(jsonEditField.value)
   }
   const relationOptions = [
     { label: '且', value: 'AND' },
@@ -401,7 +389,13 @@
     { label: '缓存变量', value: 'cache' },
   ]
   const canAdd = computed(() => ['31', '32', '35'].includes(props.activeKey))
-  const canAddGroup = computed(() => props.activeKey === '32')
+  const canAddGroup = computed(() => ['31', '32'].includes(props.activeKey))
+  const toolbarActions = computed(() => [
+    { label: '增加', hidden: !canAdd.value, disabled: props.editLocked, onClick: addItem },
+    { label: '增加关系组', hidden: !canAddGroup.value, overflow: true, disabled: props.editLocked, onClick: addOrGroup },
+    { label: props.compareOpen ? '收起对照' : '对照结果', hidden: props.activeKey !== '31', overflow: true, onClick: () => emit('toggle-compare') },
+    { label: props.verifying ? '验证中…' : '一键验证', hidden: ['36', '37'].includes(props.activeKey), overflow: canAdd.value, loading: props.verifying, disabled: props.verifying, onClick: () => emit('verify', draft.value) },
+  ])
   const assertionRowKeys = new WeakMap<object, number>()
   let assertionRowSequence = 0
   function getAssertionRowKey(assertion: object) {
@@ -697,6 +691,13 @@
   }
   function addOrGroup() {
     if (props.editLocked) return
+    if (props.activeKey === '31') {
+      const groupName = `关系组${Date.now()}`
+      draft.value.ass_jsonpath.push(
+        { ...newJsonpathAssertion(), group_name: groupName, group_logic: 'OR' },
+        { ...newJsonpathAssertion(), group_name: groupName, group_logic: 'OR' }
+      )
+    }
     if (props.activeKey === '32') {
       const groupName = `或关系${Date.now().toString().slice(-4)}`
       draft.value.ass_general.push(

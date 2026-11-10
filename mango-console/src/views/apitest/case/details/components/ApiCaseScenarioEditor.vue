@@ -11,20 +11,13 @@
   >
     <a-form auto-label-width class="mango-simple-form" :model="draft" layout="horizontal">
       <a-form-item class="mango-simple-form-item"
-        v-for="item of basicFormItems"
-        v-show="isParameterFormItemVisible(item)"
+        v-for="item of formParameterItems"
         :key="item.key"
         :class="[item.required ? 'mango-form-item__require' : 'mango-form-item__no_require']"
         :label="item.label"
       >
         <template v-if="item.type === 'input'">
           <a-input v-model="item.value" :placeholder="item.placeholder" />
-        </template>
-        <template v-else-if="item.type === 'select'">
-          <div class="scenario-protocol-expectation-control">
-            <a-select v-model="item.value" :options="item.optionItems" />
-            <span class="scenario-allow-failure-control__hint">{{ item.placeholder }}</span>
-          </div>
         </template>
         <template v-else-if="item.type === 'switch'">
           <div class="scenario-allow-failure-control">
@@ -33,24 +26,6 @@
           </div>
         </template>
       </a-form-item>
-      <a-collapse v-if="supportsHttpExpectation" v-model:active-key="advancedKeys" :bordered="false" class="mango-scenario-advanced">
-        <a-collapse-item key="protocol" :header="draft.protocol_expectation_mode === 'auto' ? '高级配置（可选）' : '高级配置（已自定义）'">
-          <a-form-item
-            v-for="item of protocolFormItems"
-            v-show="isParameterFormItemVisible(item)"
-            :key="item.key"
-            class="mango-simple-form-item"
-            :class="item.required ? 'mango-form-item__require' : 'mango-form-item__no_require'"
-            :label="item.label"
-          >
-            <div v-if="item.type === 'select'" class="scenario-protocol-expectation-control">
-              <a-select v-model="item.value" :options="item.optionItems" />
-              <span class="scenario-protocol-expectation-control__hint">{{ item.placeholder }}</span>
-            </div>
-            <a-input v-else v-model="item.value" :placeholder="item.placeholder" />
-          </a-form-item>
-        </a-collapse-item>
-      </a-collapse>
     </a-form>
   </a-modal>
 </template>
@@ -75,12 +50,6 @@
   const editingId = ref<number | null>(null)
   const draft = reactive(scenarioFormValues())
   const formParameterItems = createScenarioFormItems()
-  const basicFormItems = formParameterItems.filter(item => !String(item.key).startsWith('protocol_expectation_'))
-  const protocolFormItems = formParameterItems.filter(item => String(item.key).startsWith('protocol_expectation_'))
-  const advancedKeys = ref<string[]>([])
-  const supportsHttpExpectation = computed(() => !['mcp', 'grpc', 'websocket'].includes(
-    String(selectedStep.value?.api_info?.protocol_type || 'http').toLowerCase()
-  ))
   for (const item of formParameterItems) {
     const key = item.key as keyof typeof draft
     Object.defineProperty(item, 'value', {
@@ -112,21 +81,13 @@
     selectedStep.value = step
     editingId.value = scenario ? Number(scenario.id) : null
     Object.assign(draft, scenarioFormValues(scenario))
-    advancedKeys.value = draft.protocol_expectation_mode === 'auto' ? [] : ['protocol']
     visible.value = true
-  }
-  function isParameterFormItemVisible(item: { key: string | number }) {
-    const protocol = String(selectedStep.value?.api_info?.protocol_type || 'http').toLowerCase()
-    if (['mcp', 'grpc', 'websocket'].includes(protocol))
-      return !String(item.key).startsWith('protocol_expectation_')
-    return item.key !== 'protocol_expectation_codes' || draft.protocol_expectation_mode === 'codes'
   }
   async function save(): Promise<boolean> {
     const step = selectedStep.value
     if (saving.value || props.editLocked || !visible.value || !step) return false
     if (
       !formParameterItems
-        .filter(isParameterFormItemVisible)
         .every((item) => !item.validator || item.validator())
     )
       return false
@@ -169,22 +130,7 @@
     gap: 8px;
   }
 
-  .scenario-protocol-expectation-control {
-    display: flex;
-    width: 100%;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .scenario-protocol-expectation-control__hint {
-    color: var(--m-muted);
-    font-size: 12px;
-  }
-
   .scenario-allow-failure-control__hint {
     color: var(--m-warning);
-  }
-  .mango-scenario-advanced {
-    width: 100%;
   }
 </style>

@@ -7,6 +7,7 @@ from src.apps.auto_api.enums.case import (
 )
 from src.apps.test_center.enums import CaseLevelEnum
 from src.apps.auto_api.schemas.callback import CallbackRule
+from src.apps.auto_api.enums.assertion import ApiDefaultAssertionCheck
 from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.interfaces.mcp.common import ok
 from .helpers import (
@@ -264,11 +265,11 @@ def register_schema_tools(mcp):
                         "default": 0,
                         "enum_source": "ApiCaseScenarioLayerEnum",
                         "enum": ApiCaseScenarioLayerEnum.obj(),
-                        "description": "测试层级。创建 API case 时必须明确选择：0=接口/组件层、1=Integration集成、2=E2E端到端。",
+                        "description": "测试层级：0=接口/组件级（单个接口或组件）、1=模块级（同一模块内多个接口、组件协作）、2=端到端（跨多个模块的完整业务链路）。值不变。",
                         "coverage_distribution": {
-                            "0_api_component": "接口/组件层，建议约 70%。用于单接口、组件能力、契约、参数、边界、异常、权限等底层能力校验，是主要覆盖层。",
-                            "1_Integration": "Integration集成，建议约 20%。用于跨模块、跨服务、数据库、消息、第三方协作验证。",
-                            "2_E2E": "E2E端到端，建议约 10%。用于核心用户路径和完整业务闭环验证。",
+                            "0_api_component": "接口/组件级，建议约 70%。用于单个接口或单个组件的契约、参数、边界、异常、权限等局部能力校验。",
+                            "1_Integration": "模块级，建议约 20%。用于同一模块内多个接口、组件的协作验证。",
+                            "2_E2E": "端到端，建议约 10%。用于跨多个模块的完整业务链路验证。",
                         },
                     },
                     "scenario_type": {
@@ -283,13 +284,13 @@ def register_schema_tools(mcp):
                         "default": [],
                         "enum_source": "ApiCaseScenarioTagEnum",
                         "enum": ApiCaseScenarioTagEnum.obj(),
-                        "description": "执行场景，与 UI、Pytest Case 共用同一枚举；定时任务只开放其中适用于自动回归的子集。不要把 API/Integration/E2E 放在这里。",
+                        "description": "执行场景，与 UI、Pytest Case 共用同一枚举；定时任务只开放其中适用于自动回归的子集。不要把接口/组件级、模块级、端到端放在这里。",
                         "selection_guidance": [
                             "可选值为回归测试、发布验证、冒烟验证、稳定性监测、数据校验、效果评测、生产巡检、生产回归、临时验证、性能测试。",
                             "稳定性监测仅用于生产环境；效果评测、临时验证和性能测试仅供 Case 标记，定时任务不可选且不会动态匹配。",
                             "生产巡检仅适用于 GET 或 POST 不提交数据的查询接口，不允许包含数据库增删改。",
                             "生产回归可以包含增删改接口，但不允许任何数据库操作，包括 SQL 前后置、SQL 断言和数据工厂造数/清理。",
-                            "API/Integration/E2E 属于 scenario_layer，不属于 scenario_tags。",
+                            "接口/组件级、模块级、端到端属于 scenario_layer，不属于 scenario_tags。",
                         ],
                     },
                     "scenario_description": {
@@ -404,6 +405,12 @@ def register_schema_tools(mcp):
                         "type": "str",
                         "required": True,
                         "description": "场景参数名称。",
+                    },
+                    "protocol_expectation": {
+                        "type": "dict | null",
+                        "description": "协议断言配置，缺省跟随系统。inherit_system=true 继承系统开关及检查项；false 则仅使用 checks 列表，不叠加系统项，空列表停用协议默认断言。真实连接/超时异常仍失败。保存于 body_config.protocol_expectation，不作为请求体发送。旧 mode/status_codes 配置继续兼容，选择新配置后替换旧 HTTP 预期。",
+                        "checks": ApiDefaultAssertionCheck.get_option(),
+                        "example": {"inherit_system": False, "checks": ["http_status", "graphql_errors"]},
                     },
                     "error_retry": {
                         "type": "int | null",
@@ -687,17 +694,17 @@ def register_schema_tools(mcp):
                     "scenario_tags": ApiCaseScenarioTagEnum.obj(),
                 },
                 "scenario_layer_usage": {
-                    "required": "创建 API case 时必须选择 scenario_layer。未传时 MCP 默认 0=接口/组件层。",
+                    "required": "创建 API case 时必须选择 scenario_layer。未传时 MCP 默认 0=接口/组件级。",
                     "coverage_distribution": {
-                        "接口/组件层": "约 70%。单接口、组件能力、契约、边界、异常校验，是主要覆盖层。",
-                        "Integration集成": "约 20%。跨模块、跨服务、数据库/消息/第三方协作验证。",
-                        "E2E端到端": "约 10%。核心用户路径、完整业务闭环验证。",
+                        "接口/组件级": "约 70%。单个接口或组件的局部能力校验。",
+                        "模块级": "约 20%。同一模块内多个接口、组件协作验证。",
+                        "端到端": "约 10%。跨多个模块的完整业务链路验证。",
                     },
                     "recommended_combinations": {
                         "普通接口或组件用例": {"scenario_layer": 0, "scenario_tags": []},
                         "冒烟接口或组件用例": {"scenario_layer": 0, "scenario_tags": ["smoke_verification"]},
                         "回归接口或组件用例": {"scenario_layer": 0, "scenario_tags": ["routine_regression"]},
-                        "跨服务集成用例": {"scenario_layer": 1, "scenario_tags": ["routine_regression"]},
+                        "模块内协作用例": {"scenario_layer": 1, "scenario_tags": ["routine_regression"]},
                         "生产只读巡检用例": {"scenario_layer": 0, "scenario_tags": ["production_inspection"]},
                         "生产回归用例": {"scenario_layer": 0, "scenario_tags": ["production_regression"]},
                     },
@@ -705,7 +712,7 @@ def register_schema_tools(mcp):
                 "file_upload_usage": FILE_UPLOAD_USAGE,
                 "notes": [
                     "创建 API 全局变量时使用 test_env_ids；例如 [1] 表示原来的 test_env=1，[] 表示环境通用。",
-                    "API case 的 scenario_layer 默认 0=接口/组件层；scenario_type 默认 0=正常场景；scenario_tags 保存执行场景字符串数组；scenario_description 可为空。",
+                    "API case 的 scenario_layer 默认 0=接口/组件级；scenario_type 默认 0=正常场景；scenario_tags 保存执行场景字符串数组；scenario_description 可为空。",
                     "production_inspection=生产巡检，仅用于 GET 或 POST 不提交数据的查询接口，不允许包含数据库增删改。",
                     "production_regression=生产回归，可以包含增删改接口，但不允许任何数据库操作，包括 SQL 前后置、SQL 断言和数据工厂造数/清理。",
                     "API 文件上传参数不要直接传本地路径；先用 upload_system_file 上传，再在 body_config.files 中通过 file_id 引用。",

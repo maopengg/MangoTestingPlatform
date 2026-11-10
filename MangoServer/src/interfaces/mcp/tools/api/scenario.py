@@ -60,6 +60,7 @@ def register_scenario_tools(mcp):
             posterior_func: str | None = None,
             preview_token: str | None = None,
             confirm_text: str | None = None,
+            protocol_expectation: dict | None = None,
     ) -> dict:
         """给步骤创建一个场景参数。
 
@@ -76,6 +77,7 @@ def register_scenario_tools(mcp):
         断言关系可传 group_name/group_logic；group_logic=AND 是且，OR 是或，不传默认 AND。
         如果 method 的参数只有 actual、没有 expect，例如 p_is_none/p_is_true/p_is_false，expect 传 null。
         场景执行统一使用该步骤绑定的 ApiInfo 协议和请求体类型。
+        protocol_expectation 为协议断言 JSON，缺省跟随系统；inherit_system=true 表示继承，false 时 checks 为本场景完整检查项列表（不叠加系统项），空列表停用默认检查但不放行连接/超时异常。检查项 key 见 /system/enum 的 api_default_assertion_check。保存在 body_config.protocol_expectation，不会作为请求数据发送。
         body_config/sse_config 是场景级数据，必须匹配步骤绑定 ApiInfo 的 body_type/protocol_type；sse_config 暂时保留，后续会并入 body_config。
         protocol_type=mcp 时 body_config 表示 Tool Arguments；如需执行配置，放到 body_config.mcp_config，支持 expected_result、validate_input_schema、timeout_seconds。
         protocol_type=grpc 时 body_config 推荐标准包装 {source_type:"value", body:{...}}，也兼容直接请求 Message 简写；如需执行配置，放到 body_config.grpc_config，支持 target、expected_status、timeout_seconds、ignore_unknown_fields、include_default_values。expected_status 默认 OK，ANY 表示不按 gRPC status 自动失败。一期只支持 unary RPC。
@@ -102,6 +104,7 @@ def register_scenario_tools(mcp):
             "headers": headers or [],
             "params": _json_string(params),
             "body_config": body_config,
+            "protocol_expectation": protocol_expectation,
             "sse_config": sse_config,
             "front_sql": front_sql or [],
             "front_func": front_func,
@@ -140,6 +143,7 @@ def register_scenario_tools(mcp):
         """更新场景参数。fields 使用 ApiCaseDetailedParameter 字段名。
 
         字段格式见 get_api_case_schema.api_case_scenario_fields。fields.headers 非空时会覆盖 API case 的 front_headers。
+        fields.protocol_expectation 可保存协议断言 JSON：inherit_system=true 跟随系统，false 时 checks 仅使用所选检查项，不叠加默认项；详见 schema。普通名称/重试修改不要传此字段，以保留已有协议配置。
         前后置函数遵循 get_api_case_schema.execution_rules.function_usage：JSON/变量、提取、常规断言优先现有配置；仅不可表达的计算/解码才写函数，不改响应或吞错刷通过。改已有脚本须保留类型、动态值、测试意图及断言强度。
         fields.allow_failure=true 时，场景在全部重试后仍失败会标记为警告并继续执行后续步骤。
         fields.front_sql/fields.posterior_sql 每条 SQL 必须传 datasource_alias；可传 test_envs 多选执行环境，不传、null 或 [] 表示全部环境执行。

@@ -31,7 +31,7 @@
           v-for="(item, index) in visibleAssertions"
           :key="index"
           class="mango-assertion-grid__row mango-assertion-grid__item"
-          :class="item.status === 1 ? 'mango-assertion-grid__item--pass' : 'mango-assertion-grid__item--fail'"
+          :class="rowStatusClass(item)"
         >
           <div class="mango-assertion-grid__cell mango-assertion-grid__group" :data-group-tone="groupTones.get(item.group_name?.trim() || '')" :style="groupStyle(item)">
             <a-tooltip :content="getGroupNameText(item)" mini>
@@ -119,6 +119,10 @@
       '--m-assertion-group-hue': `${(index * 137.507764) % 360}deg`,
       '--m-assertion-group-strength': index % 2 === 0 ? '24%' : '40%',
     }
+  }
+  function rowStatusClass(item: AssertionItem) {
+    if (!item.group_name?.trim()) return undefined
+    return item.status === 1 ? 'mango-assertion-grid__item--pass' : 'mango-assertion-grid__item--fail'
   }
   const onlyFailed = ref(false)
   const failedCount = computed(() => assertionData.value.filter(item => Number(item.status) === 0).length)
@@ -287,7 +291,7 @@
     align-self: stretch;
     display: flex;
     align-items: center;
-    background: var(--m-surface-soft);
+    background: var(--m-surface);
     color: var(--m-text-2);
   }
   .mango-assertion-grid__group[data-group-tone] {

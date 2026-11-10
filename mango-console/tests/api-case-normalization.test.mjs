@@ -54,11 +54,11 @@ test('scenario create/edit/copy owns isolated drafts, normalizes protocol expect
   })
   const original=scenario({body_config:{protocol_expectation:{mode:'codes',status_codes:[400,422]}}})
   h.exposed.open(step,'edit',original);h.draft.name='renamed'
-  assert.equal(original.name,'Example scenario');assert.equal(h.draft.protocol_expectation_codes,'400,422')
+  assert.equal(original.name,'Example scenario');assert.equal('protocol_expectation_codes' in h.draft,false)
   const first=h.save();await h.save();assert.equal(writes.length,1)
   pending[0].reject(Error('failure'));assert.equal(await first,false);assert.equal(h.visible.value,true)
   const retry=h.save();pending[1].resolve({msg:'ok'});assert.equal(await retry,true);assert.equal(h.visible.value,false)
-  assert.equal(writes[1][1].id,11);assert.deepEqual(writes[1][1].protocol_expectation.status_codes,[400,422])
+  assert.equal(writes[1][1].id,11);assert.equal('protocol_expectation' in writes[1][1],false)
   h.exposed.open(step,'copy',original);const copy=h.save();pending[2].resolve({msg:'ok'});await copy;assert.equal(writes[2][0],'copy')
   h.exposed.open({...step,api_info:{...step.api_info,protocol_type:'grpc'}});h.draft.name='gRPC'
   const create=h.save();pending[3].resolve({msg:'ok'});await create

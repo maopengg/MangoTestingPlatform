@@ -60,6 +60,12 @@ class ProtocolCallOutcomeService:
         values = SystemConfigService.get(API_DEFAULT_ASSERTION_CHECKS_KEY, default=Check.defaults())
         return frozenset(item for item in Check if item.value in values)
 
+    @staticmethod
+    def scenario_checks(expectation: dict) -> frozenset[Check] | None:
+        if expectation.get('inherit_system') is not False:
+            return None
+        return frozenset(item for item in Check if item.value in expectation.get('checks', []))
+
     @classmethod
     def evaluate(
             cls,

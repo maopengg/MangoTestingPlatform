@@ -83,7 +83,7 @@ def register_case_complete_tools(mcp):
         scenarios[].front_sql/scenarios[].posterior_sql 每条 SQL 必须传 datasource_alias；可传 test_envs 多选执行环境，
         不传、null 或 [] 表示全部环境执行；先调用 list_data_factory_datasource_aliases 查询数据库。
         SQL 的 key 支持单个缓存变量，也支持 id,name 这种英文逗号分隔多 key；查询结果取第一行，按列名优先、列顺序兜底写入多个缓存变量。
-        scenario_layer 表示测试分层：0=接口/组件层、1=Integration集成、2=E2E端到端；scenario_tags 使用公共执行场景枚举。
+        scenario_layer 表示测试层级：0=接口/组件级（单个接口或组件）、1=模块级（同一模块内多个接口、组件协作）、2=端到端（跨多个模块的完整业务链路）；scenario_tags 使用公共执行场景枚举。
         production_inspection=生产巡检，仅用于 GET 或 POST 不提交数据的查询接口，不允许包含数据库增删改。
         production_regression=生产回归，可包含增删改接口，但不允许任何数据库操作。
         """

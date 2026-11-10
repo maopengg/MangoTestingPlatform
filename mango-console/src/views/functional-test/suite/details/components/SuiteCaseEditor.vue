@@ -77,7 +77,7 @@
         ></a-grid-item>
         <a-grid-item :span="2"
           ><a-alert type="info" class="mango-suite-case-editor__tip"
-            >层级建议：接口/组件层约 70%，Integration 集成约 20%，E2E 端到端约
+            >层级建议：接口/组件级约 70%，模块级约 20%，端到端约
             10%。验证类型用于区分正常、异常、边界、权限、数据和流程；执行场景统一使用回归、发布验证、冒烟、稳定性监测、数据校验、效果评测、生产巡检和生产回归。</a-alert
           ></a-grid-item
         >

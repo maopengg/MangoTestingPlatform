@@ -101,55 +101,6 @@ export function createScenarioFormItems(): FormItem[] {
       },
     },
     {
-      label: '预期调用结果',
-      key: 'protocol_expectation_mode',
-      value: ref('auto'),
-      type: 'select',
-      required: true,
-      placeholder: '默认沿用系统默认断言与场景断言规则；选择其他选项仅覆盖当前场景的 HTTP 状态码判断。',
-      optionItems: [
-        { label: '继承系统配置（推荐）', value: 'auto' },
-        { label: '正常成功（HTTP 2xx）', value: 'success' },
-        { label: '指定 HTTP 状态码', value: 'codes' },
-        { label: '任意状态（不推荐）', value: 'any' },
-      ],
-      reset: function () {
-        this.value = 'auto'
-      },
-    },
-    {
-      label: '预期状态码',
-      key: 'protocol_expectation_codes',
-      value: ref(''),
-      type: 'input',
-      required: false,
-      placeholder: '多个状态码用英文逗号分隔，例如：400,422',
-      reset: function () {
-        this.value = ''
-      },
-      validator: function () {
-        const mode = formParameterItems.find(
-          (item) => item.key === 'protocol_expectation_mode'
-        )?.value
-        if (mode !== 'codes') return true
-        const parts = String(this.value || '')
-          .split(',')
-          .map((code) => code.trim())
-          .filter(Boolean)
-        const valid =
-          parts.length > 0 &&
-          parts.every((code) => {
-            const statusCode = Number(code)
-            return Number.isInteger(statusCode) && statusCode >= 100 && statusCode <= 599
-          })
-        if (!valid) {
-          Message.error('请输入100到599之间的HTTP状态码，多个状态码用英文逗号分隔')
-          return false
-        }
-        return true
-      },
-    },
-    {
       label: '失败重试',
       key: 'error_retry',
       value: ref(''),

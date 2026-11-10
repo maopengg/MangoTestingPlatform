@@ -91,7 +91,7 @@ export interface ApiCaseScenario
   __persistedHeaders?: number[]
   runtime_result_outdated?: boolean
   body_config?: {
-    protocol_expectation?: { mode?: string; status_codes?: number[] }
+    protocol_expectation?: import('@/types/api-test/case-parameter').ApiProtocolExpectation
     [key: string]: unknown
   } | null
   ass_json_all?: unknown

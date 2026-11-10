@@ -275,6 +275,8 @@ class ApiTestCaseParameterMixin:
                         require_http_success=(
                             scenario_protocol_expectation(parameter.body_config).get('mode') == 'success'
                         ),
+                        default_checks=ProtocolCallOutcomeService.scenario_checks(
+                            scenario_protocol_expectation(parameter.body_config)),
                     )
                     request_summary = {
                         'code': res_model.response.code,

@@ -6,7 +6,7 @@ from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
 from src.apps.auto_api.enums import ApiCaseReleaseStatusEnum, ApiClientEnum
-from src.apps.auto_api.enums.case import ApiCaseScenarioTagEnum
+from src.apps.auto_api.enums.case import ApiCaseScenarioTagEnum, ApiCaseScenarioLayerEnum
 from src.apps.functional_test.services.common import ENUM_FIELD_MAP
 from src.apps.system.api.views.system_api import SystemViews
 from src.apps.system.services.enum_catalog import EnumCatalogService
@@ -17,6 +17,16 @@ from src.apps.test_center.enums.environment import EnvironmentEnum
 
 
 class EnumCatalogTests(SimpleTestCase):
+    def test_case_layer_display_names_change_without_changing_values(self):
+        self.assertEqual((ApiCaseScenarioLayerEnum.API.value,
+                          ApiCaseScenarioLayerEnum.INTEGRATION.value,
+                          ApiCaseScenarioLayerEnum.E2E.value), (0, 1, 2))
+        self.assertEqual(EnumCatalogService.catalog()['api_case_scenario_layer'], [
+            {'key': 0, 'title': '接口/组件级'},
+            {'key': 1, 'title': '模块级'},
+            {'key': 2, 'title': '端到端'},
+        ])
+
     def test_datasource_audit_enums_are_explicitly_registered(self):
         from src.apps.data_factory.enums.audit import DatasourceAuditSourceEnum, DatasourceAuditStageEnum
         from src.apps.data_factory.enums.cleanup_resource import EsCleanupModeEnum

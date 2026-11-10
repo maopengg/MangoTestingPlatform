@@ -1,9 +1,9 @@
 <template>
   <div v-if="true" class="mango-callback-panel">
-    <a-alert v-if="view !== 'results' && configurationBlock" type="warning">{{
+    <a-alert v-if="view !== 'results' && configurationBlock" class="mango-callback-panel__notice" type="warning">{{
       configurationBlock
     }}</a-alert>
-    <a-alert v-if="view !== 'results'"
+    <a-alert v-if="view !== 'results'" class="mango-callback-panel__notice"
       >先配置独立测试应用的 Mock 回调地址。触发请求可使用
       <code v-text="'${{callback_run_id}}'"></code
       >，每次执行自动生成；回调须透传此标识。触发场景需关闭失败重试。</a-alert
@@ -790,6 +790,9 @@
 <style scoped>
   .mango-callback-panel {
     min-width: 0;
+  }
+  .mango-callback-panel__notice {
+    margin-bottom: var(--m-page-gap);
   }
   .mango-callback-panel :deep(.arco-table) {
     margin-top: var(--m-page-gap);

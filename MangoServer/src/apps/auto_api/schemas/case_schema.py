@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field, ValidationError
 from rest_framework import serializers
 
 from src.apps.auto_api.enums.case import ApiCaseScenarioTagEnum
+from src.apps.auto_api.enums.assertion import ApiDefaultAssertionCheck
 from src.apps.auto_api.exceptions import (
     API_TEST_ENVIRONMENT_EXECUTION_REQUIRED,
     AUTO_API_CASE_SCHEMA_INVALID,
@@ -150,6 +151,8 @@ def merge_scenario_protocol_config(
     independent columns. Old callers may still send those keys during the
     transition, so normalize them into body_config before persistence.
     """
+    if protocol_expectation is None and isinstance(body_config, dict):
+        protocol_expectation = body_config.get('protocol_expectation')
     if mcp_config in (None, '') and grpc_config in (None, '') and protocol_expectation in (None, ''):
         return body_config
     body = dict(body_config or {}) if isinstance(body_config, dict) else {}
@@ -183,6 +186,18 @@ def merge_scenario_protocol_config(
             'mode': mode,
             'status_codes': status_codes,
         }
+        if 'inherit_system' in protocol_expectation:
+            inherit_system = protocol_expectation['inherit_system']
+            checks = protocol_expectation.get('checks', [])
+            if type(inherit_system) is not bool or not isinstance(checks, list) or any(
+                    not isinstance(check, str) or check not in {item.value for item in ApiDefaultAssertionCheck}
+                    for check in checks):
+                raise serializers.ValidationError('协议断言需指定是否继承系统配置及已注册的检查项列表')
+            body['protocol_expectation'] = {
+                'mode': 'auto', 'status_codes': [],
+                'inherit_system': inherit_system,
+                'checks': [] if inherit_system else list(dict.fromkeys(checks)),
+            }
     return body or None
 
 

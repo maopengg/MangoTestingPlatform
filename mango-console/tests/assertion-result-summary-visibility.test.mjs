@@ -46,6 +46,15 @@ test('assertion result component compiles', () => {
   const script = compileScript(descriptor, {id: 'assertion-summary'})
   assert.deepEqual(compileTemplate({source: descriptor.template.content, filename, id: 'assertion-summary', compilerOptions: {bindingMetadata: script.bindings}}).errors, [])
 })
+test('ungrouped assertions use plain row backgrounds regardless of result', () => {
+  const code = source.slice(source.indexOf('  const assertionData ='), source.indexOf('  watch(failedCount'))
+  const {rowStatusClass} = new Function('props', 'computed', 'ref', ts.transpileModule(code, {}).outputText + '; return {rowStatusClass}')({data: []}, computed, ref)
+  for (const group_name of [undefined, null, '', '   ']) {
+    for (const status of [0, 1]) assert.equal(rowStatusClass({group_name, status}), undefined)
+  }
+  assert.equal(rowStatusClass({group_name: 'group', status: 1}), 'mango-assertion-grid__item--pass')
+  assert.equal(rowStatusClass({group_name: 'group', status: 0}), 'mango-assertion-grid__item--fail')
+})
 test('at least 50 groups receive unique theme-derived hues without cycling', () => {
   const code = source.slice(source.indexOf('  const assertionData ='), source.indexOf('  watch(failedCount'))
   const data = Array.from({length: 50}, (_, index) => ({source_type: 'jsonpath', group_name: `group-${index}`, status: index % 2}))

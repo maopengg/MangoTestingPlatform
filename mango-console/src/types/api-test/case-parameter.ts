@@ -44,6 +44,7 @@ export interface ApiRequestFileItem {
 
 export interface ApiCaseParameterPayload {
   id?: number
+  protocol_expectation?: ApiProtocolExpectation
   case_detailed?: number | string
   api_info?: number | string
   error_retry?: number | null
@@ -72,6 +73,13 @@ export interface ApiCaseParameterPayload {
   posterior_func?: string | null
   status?: number
   result_data?: ApiCaseStepResult | JsonObject | null
+}
+
+export interface ApiProtocolExpectation {
+  mode?: string
+  status_codes?: number[]
+  inherit_system?: boolean
+  checks?: string[]
 }
 
 export interface ApiCaseParameterQuery {

@@ -36,6 +36,9 @@ class ApiTestCaseProtocolMixin:
         if mode == 'success':
             return [], False
 
+        if expectation.get('inherit_system') is False:
+            return [], 'http_status' not in expectation.get('checks', [])
+
         if mode in {'', 'auto'} and cls.has_user_configured_assertions(parameter):
             # 自动模式下，收到有效 HTTP 响应后由用户断言决定业务结果。
             # code=None 等连接级失败不会被 accept_any_http_status 放行。

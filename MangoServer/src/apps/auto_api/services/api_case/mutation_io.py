@@ -214,11 +214,11 @@ class ApiCaseParameterMutationService:
     }
 
     @classmethod
-    def clean_payload(cls, payload: dict) -> dict:
+    def clean_payload(cls, payload: dict, existing_body_config=None) -> dict:
         cleaned = dict(payload)
         if any(field in cleaned for field in ("body_config", "mcp_config", "grpc_config", "protocol_expectation")):
             cleaned["body_config"] = merge_scenario_protocol_config(
-                cleaned.get("body_config"),
+                cleaned.get("body_config", existing_body_config),
                 cleaned.get("mcp_config"),
                 cleaned.get("grpc_config"),
                 cleaned.get("protocol_expectation"),
@@ -252,7 +252,7 @@ class ApiCaseParameterMutationService:
         instance = ApiCaseDetailedParameter.objects.select_for_update().get(id=parameter_id)
         before_snapshot = ApiConfigSnapshotService.capture_for_instance(instance).snapshot
         data = ApiCaseParameterValidationService.validate(
-            cls.clean_payload(payload),
+            cls.clean_payload(payload, instance.body_config),
             instance,
         )
         try:

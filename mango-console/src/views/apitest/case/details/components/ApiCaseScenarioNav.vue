@@ -28,10 +28,10 @@
   }>()
 
   const tabs = [
-    { key: '1', label: '前置准备', countKey: 'front', slot: 'front' },
     { key: '0', label: '请求配置', countKey: 'request', slot: 'request' },
+    { key: '1', label: '前置准备', countKey: 'front', slot: 'front' },
     { key: '2', label: '响应结果', countKey: 'response', slot: 'response' },
-    { key: '4', label: '响应处理', countKey: 'posterior', slot: 'posterior' },
+    { key: '4', label: '后置处理', countKey: 'posterior', slot: 'posterior' },
     { key: '3', label: '断言配置', countKey: 'assertion', slot: 'assertion' },
     { key: '6', label: '断言结果', countKey: 'assertionResult', slot: 'assertion-result' },
     { key: '5', label: '运行缓存', countKey: 'runtime', slot: 'runtime' },
