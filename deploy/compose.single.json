@@ -172,7 +172,7 @@
       "healthcheck": {
         "test": ["CMD", "python", "manage.py", "check_scheduler"],
         "interval": "15s",
-        "timeout": "10s",
+        "timeout": "30s",
         "start_period": "40s",
         "retries": 4
       },

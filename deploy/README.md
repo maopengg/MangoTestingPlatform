@@ -70,7 +70,7 @@ readinessProbe:
   exec:
     command: [python, manage.py, check_scheduler]
   periodSeconds: 15
-  timeoutSeconds: 10
+  timeoutSeconds: 30
 startupProbe:
   exec:
     command: [python, manage.py, check_scheduler]
