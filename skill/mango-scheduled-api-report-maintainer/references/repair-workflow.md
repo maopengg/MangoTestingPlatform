@@ -313,7 +313,7 @@
 
 ## 11. 每批汇报与自动续批
 
-每个执行项完成调查及必要的精确重试后，执行入口 Skill 的“报告原因类型与 MCP 回写”。原因分类使用报告页面枚举，通过 `update_test_report_case_diagnosis` 写入该 `test_suite_detail_id` 的 `failure_reason` 和 `failure_description`，再读回验证；不改变 `is_excluded`。批次汇报列出回写成功/失败的执行项 ID，禁止把回写失败称为保存成功。处理结论与原因分类各司其职，不把 `修复成功` 等处理结论当成原因类型。
+每个执行项完成调查及必要的精确重试后，执行入口 Skill 的“报告原因类型与 MCP 回写”。原因分类使用报告页面枚举，通过 `update_test_report_case_diagnosis` 写入该 `test_suite_detail_id` 的 `failure_reason` 和 `failure_description`，再读回验证；默认不传 `is_excluded`，保持原开关。只有另有明确历史排除/恢复授权时，按入口“排除统计开关”传 `true`/`false` 并验证原始失败保留。批次汇报列出回写成功/失败的执行项 ID，禁止把回写失败称为保存成功。处理结论与原因分类各司其职，不把 `修复成功` 等处理结论当成原因类型。
 
 每批先输出以下固定汇总表，列名和信息不得省略或用笼统状态代替：
 
