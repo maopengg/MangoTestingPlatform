@@ -534,6 +534,7 @@ export function getInterfaceAnalysisData(summary: {
   analysis_gap_count: number
   analysis_review_count?: number
   deferred_analysis_count: number
+  excluded_interface_count?: number
 }) {
   return [
     {
@@ -550,6 +551,12 @@ export function getInterfaceAnalysisData(summary: {
       value: summary.deferred_analysis_count,
       status: 'deferred',
       filter: 'analysis_deferred',
+    },
+    {
+      name: '已排除',
+      value: summary.excluded_interface_count || 0,
+      status: 'excluded',
+      filter: 'analysis_excluded',
     },
   ]
 }

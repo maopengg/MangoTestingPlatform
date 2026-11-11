@@ -40,12 +40,14 @@ test('overview shows scan, interface entry, interface coverage and Case automati
   assert.doesNotMatch(index, /coverage_gap|clearGapFilter/)
 })
 
-test('analysis header shows excluded count separately from the analysis pie', () => {
+test('analysis pie includes excluded interfaces without changing the completion rate denominator', () => {
   const header = source.slice(source.indexOf('<h2>② 接口分析进度'), source.indexOf('ref="entryChart"'))
-  assert.match(header, /v-if="!loading && data"/)
-  assert.match(header, /已排除 \{\{ data.summary.excluded_interface_count \}\} 个接口，不计入分析完成率/)
+  assert.doesNotMatch(header, /已排除/)
   const partition = config.slice(config.indexOf('export function getInterfaceAnalysisData'), config.indexOf('export function getInterfaceCoverageData'))
-  assert.doesNotMatch(partition, /excluded_interface_count/)
+  assert.match(partition, /name: '已排除'/)
+  assert.match(partition, /summary.excluded_interface_count \|\| 0/)
+  assert.match(source, /rate\(props.data.summary.analysis_rate\)/)
+  assert.match(source, /分析完成率 = 已分析 \/ 未排除接口/)
 })
 
 test('module scan pie uses project-level scan summary', () => {
@@ -72,19 +74,20 @@ test('interface analysis pie partitions analysis states independently of ApiInfo
     analysis_gap_count: 1,
     analysis_review_count: 4,
     deferred_analysis_count: 3,
+    excluded_interface_count: 5,
     bound_count: 100,
   })
   assert.deepEqual(
     rows.map((row) => row.value),
-    [7, 2, 1, 4, 3]
+    [7, 2, 1, 4, 3, 5]
   )
   assert.deepEqual(
     rows.map((row) => row.status),
-    ['completed', 'pending', 'gap', 'review', 'deferred']
+    ['completed', 'pending', 'gap', 'review', 'deferred', 'excluded']
   )
   assert.equal(
     rows.reduce((sum, row) => sum + row.value, 0),
-    17
+    22
   )
   assert.match(source, /query.analysis_statuses = \[analysis.status\]/)
   assert.match(index, /filters.analysis_statuses = \[...drillQuery.analysis_statuses\]/)

@@ -35,10 +35,7 @@
                 <header class="mango-section-title"
                   ><div class="mango-section-title__main"
                     ><h2>② 接口分析进度</h2
-                    ><p>业务全景图和场景分析</p
-                    ><p v-if="!loading && data"
-                      >已排除 {{ data.summary.excluded_interface_count }} 个接口，不计入分析完成率</p
-                    ></div
+                    ><p>业务全景图和场景分析</p></div
                   ></header
                 >
                 <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
@@ -364,6 +361,7 @@
       if (gapFilter.value === 'analysis_gap') return row.analysis_gap_count > 0
       if (gapFilter.value === 'analysis_review') return (row.analysis_review_count || 0) > 0
       if (gapFilter.value === 'analysis_deferred') return row.deferred_analysis_count > 0
+      if (gapFilter.value === 'analysis_excluded') return (row.excluded_interface_count || 0) > 0
       if (gapFilter.value === 'covered') return row.covered_interface_count > 0
       if (gapFilter.value === 'partial') return row.partial_interface_count > 0
       if (gapFilter.value === 'uncovered') return row.uncovered_interface_count > 0
@@ -526,10 +524,20 @@
             token('--m-danger'),
             token('--m-primary'),
             token('--m-chart-5'),
+            token('--m-muted'),
           ],
-          tooltip,
+          tooltip: {
+            ...tooltip,
+            formatter: (item: { name: string; value: number }) =>
+              `${item.name}：${item.value.toLocaleString('zh-CN')} 个接口\n分析完成率 = 已分析 / 未排除接口`,
+          },
           series: [{
             ...donutSeries(entryChart.value, entryData.value),
+            label: {
+              ...donutSeries(entryChart.value, entryData.value).label,
+              formatter: (item: { name: string; value: number }) =>
+                `${item.name}\n${item.value.toLocaleString('zh-CN')} 个`,
+            },
             data: entryData.value,
           }],
         },
