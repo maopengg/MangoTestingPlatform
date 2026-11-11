@@ -554,7 +554,7 @@ def gateway_config(root,v):
             routes+=f'    location {prefix} {{ proxy_request_buffering off; proxy_buffering off; proxy_pass {scheme}://{endpoint}{tail}; }}\n'
     for i,(prefix,upstream) in enumerate(json.loads(v['EXTRA_HTTP_ROUTES']).items()):
         parsed=urlsplit(upstream)
-        routes+=f'''    location = {prefix.rstrip('/')} {{ return 302 {prefix}; }}
+        routes+=f'''    location = {prefix.rstrip('/')} {{ absolute_redirect off; return 302 {prefix}; }}
     location {prefix} {{
         resolver 127.0.0.11 valid=30s;
         set $extra_upstream_{i} {parsed.netloc};

@@ -90,6 +90,7 @@ class UnifiedDeploymentTests(unittest.TestCase):
         b.render(self.root,v);s=(self.root/'deploy/generated/gateway.conf').read_text()
         self.assertIn('location /attendance/',s);self.assertIn('attendance-workbench:80',s)
         self.assertIn('proxy_set_header X-Forwarded-Prefix /attendance/;',s)
+        self.assertIn('absolute_redirect off; return 302 /attendance/;',s)
         self.assertIn('proxy_set_header Host $http_host;',s)
         self.assertIn('location /minio/',s);self.assertIn('location /mango-file/',s)
         self.assertIn('proxy_pass http://minio:9000/',s)
