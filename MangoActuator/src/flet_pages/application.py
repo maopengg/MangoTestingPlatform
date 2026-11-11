@@ -39,6 +39,8 @@ class FletActuatorApplication:
 
     def __init__(self, page: ft.Page):
         self.page = page
+        # 原生隐藏启动不一定同步到 Python 的属性，先显式隐藏才能可靠触发后续显示更新。
+        page.window.visible = False
         self.bridge = AsyncRuntimeBridge()
         self.bridge.start()
         self.user_id = None
@@ -141,6 +143,7 @@ class FletActuatorApplication:
         self.page.window.center()
         self.page.window.visible = True
         self.page.update()
+        self.page.window.to_front()
 
     def endpoint(self):
         host = is_valid_url((self.host.value or "").strip())

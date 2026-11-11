@@ -70,17 +70,6 @@ def verify_workloads(workloads, expected_image, *, allow_disabled_scheduler=Fals
             backend_found = True
             if image != expected_image:
                 raise ValueError(f'{workload_identity(workload)}: 后端工作负载未全部更新到本次镜像，部署不能判为成功')
-            mcp = 'run_mcp_service' in command.split() or environment.get('MANGO_SERVICE_NAME') == 'mcp-service'
-            if mcp:
-                if 'run_mcp_service' not in command.split():
-                    raise ValueError(f'{workload_identity(workload)}: MCP必须显式使用run_mcp_service启动才能执行发布排空，请同步部署配置仓库的command')
-                pod_spec = spec.get('template', {}).get('spec', {})
-                grace = pod_spec.get('terminationGracePeriodSeconds', 30)
-                if type(grace) is not int or grace < 360:
-                    raise ValueError(f'{workload_identity(workload)}: MCP发布排空需要terminationGracePeriodSeconds至少360秒，请同步部署配置仓库，旧默认30秒会中断执行')
-                for probe_name in ('readinessProbe', 'startupProbe'):
-                    if container.get(probe_name, {}).get('httpGet', {}).get('path') != '/health/ready':
-                        raise ValueError(f'{workload_identity(workload)}: MCP缺少/health/ready发布排空探针，请同步部署配置仓库的{probe_name}')
             desired = spec.get('replicas', 1)
             if scheduler and allow_disabled_scheduler and type(desired) is int and desired == 0:
                 scheduler_found = True

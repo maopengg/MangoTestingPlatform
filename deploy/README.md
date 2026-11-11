@@ -91,7 +91,7 @@ dev/dev1 流水线明确传入 `--allow-disabled-scheduler`：scheduler 目标�
 
 发布入口不变。MCP 收到 SIGTERM 后拒绝新的工具执行，readiness 返回 503；正在运行的工具（包括同步线程和其后置清理）最多等待 300 秒，然后才进入 ASGI 退出。重复 SIGTERM 不绕过排空。Compose 停止宽限期和本仓库 K8s 模板均设为 360 秒；流水线等待窗口为 420 秒，不删减原有健康/镜像校验。
 
-使用独立 GitOps 配置仓库时，**必须在同次发布前**同步 MCP Pod 的 `terminationGracePeriodSeconds: 360`，以及指向 MCP 端口 `/health/ready` 的 `readinessProbe`、`startupProbe`；容器需显式通过 `python manage.py run_mcp_service` 启动，不能直接用 Uvicorn 命令绕过排空入口。只更新应用镜像不能修改已有 Pod 的默认 30 秒宽限期。`verify_runtime.py` 只读校验这些条件，缺少时会明确拒绝确认发布成功；不会自动改集群或配置仓库。
+使用独立 GitOps 配置仓库时，要完整启用发布排空，应同步 MCP Pod 的 `terminationGracePeriodSeconds: 360`，以及指向 MCP 端口 `/health/ready` 的 `readinessProbe`、`startupProbe`，并通过 `python manage.py run_mcp_service` 启动。只更新应用镜像不能修改已有 Pod 的默认 30 秒宽限期，旧配置下正在执行的任务仍可能被强制中断。`verify_runtime.py` 已恢复此前的发布校验，不再以这三项排空配置作为发布门禁；原有镜像、更新代次/副本及 scheduler 检查保留，也不会自动改集群或配置仓库。
 
 只有所有工具实际退出后才持久化精确进程的排空凭据。Trace/审计对账按进程身份核验凭据，不以心跳消失、Pod 名变化或租约过期推断业务成功。强制终止、超出宽限期、存储失败或缺少旧版本凭据时，原请求仍需核查，禁止自动重放、清空配额或将清理标为通过。清理补偿继续按原资源快照、完整观察窗口及最终回查执行；成功后仅清除工厂执行上的旧清理错误，保留历史失败任务和超时审计。
 

@@ -70,6 +70,8 @@ powershell -ExecutionPolicy Bypass -File scripts/build_windows_tk.ps1
 产物输出到 `dist/`，临时构建文件输出到 `runtime/pyinstaller/`。Windows 生成单文件 `.exe`，macOS 生成 `.app` 应用包。
 
 桌面默认入口使用 `src/flet_pages/`，包含页面外壳、配置表单、主题、异步事件桥和托盘。
+`desktop_main.py` 仅调用桌面入口；命令行分发和启动辅助在 `src/flet_pages/launcher.py`，
+打包、资源处理和产物自检在 `src/flet_pages/packaging.py`。
 Flet 版本固定为 `0.28.3`，与 Python 3.10 及当前 PyInstaller 构建配套；桌面客户端随包发布。
 macOS 将桌面客户端放在应用包的 `Contents/Helpers/`，使用独立的应用标识与芒果图标，
 后台启动器不显示 Dock 图标，不依赖用户目录里的通用 `Flet.app`。构建后会重新进行本地签名。

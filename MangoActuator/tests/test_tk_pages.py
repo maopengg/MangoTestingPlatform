@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
-import desktop_main
+from src.flet_pages import launcher
 from src.enums.tools_enum import CacheKeyEnum
 from src.services.runtime import RuntimeInstanceAlreadyRunning, RuntimeInstanceLock
 from src.tk_pages.application import TkActuatorApplication
@@ -30,13 +30,14 @@ class TkPagesContractTests(TestCase):
         self.assertEqual(visible_files, {"README.md", "desktop_main.py", "headless_main.py"})
 
     def test_actuator_source_does_not_import_legacy_ui_toolkits(self):
-        source = "\n".join(
-            path.read_text(encoding="utf-8")
-            for path in (ACTUATOR_ROOT / "src").rglob("*.py")
-        ).lower()
-        self.assertNotIn("pyside6", source)
-        self.assertNotIn("mangoui", source)
-        self.assertNotIn("qasync", source)
+        imports = set()
+        for path in (ACTUATOR_ROOT / "src").rglob("*.py"):
+            for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+                if isinstance(node, ast.Import):
+                    imports.update(alias.name.split(".")[0].lower() for alias in node.names)
+                elif isinstance(node, ast.ImportFrom):
+                    imports.add((node.module or "").split(".")[0].lower())
+        self.assertTrue({"pyside6", "mangoui", "qasync"}.isdisjoint(imports))
 
     def test_visible_config_keys_are_backed_by_cache_keys(self):
         cache_keys = {item.value for item in CacheKeyEnum}
@@ -95,7 +96,8 @@ class TkPagesContractTests(TestCase):
 
     def test_default_entry_uses_flet_application(self):
         entry = (ACTUATOR_ROOT / "desktop_main.py").read_text(encoding="utf-8")
-        self.assertIn("run_flet_application", entry)
+        self.assertIn("from src.flet_pages.launcher import main", entry)
+        self.assertIn("run_flet_application", (ACTUATOR_ROOT / "src/flet_pages/launcher.py").read_text(encoding="utf-8"))
         tree = ast.parse(entry)
         imported_modules = {
             alias.name.split(".")[0]
@@ -172,10 +174,10 @@ class TkPagesContractTests(TestCase):
         error = RuntimeInstanceAlreadyRunning("已有实例（PID 123）")
         with (
             patch("src.flet_pages.application.run_flet_application", side_effect=error),
-            patch.object(desktop_main, "_show_duplicate_instance_warning") as show_warning,
+            patch.object(launcher, "_show_duplicate_instance_warning") as show_warning,
             patch("src.tools.log_collector.log.warning") as log_warning,
         ):
-            desktop_main.run_desktop()
+            launcher.run_desktop()
         show_warning.assert_called_once_with(str(error))
         log_warning.assert_called_once_with(str(error))
 

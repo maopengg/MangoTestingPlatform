@@ -24,7 +24,7 @@ class FletPagesTests(TestCase):
         changed.assert_called_once()
 
     def make_app(self):
-        page = Mock(window=SimpleNamespace(center=Mock()), controls=[])
+        page = Mock(window=SimpleNamespace(center=Mock(), to_front=Mock()), controls=[])
         with patch("src.flet_pages.application.AsyncRuntimeBridge"), patch(
             "src.flet_pages.application.SetConfig.get_remembered_login", return_value=("", "", False)
         ):
@@ -39,7 +39,7 @@ class FletPagesTests(TestCase):
         self.assertIsNotNone(app.log_view())
 
     def test_login_is_prepared_and_centered_before_window_is_shown(self):
-        page = Mock(window=SimpleNamespace(center=Mock(), visible=False), controls=[])
+        page = Mock(window=SimpleNamespace(center=Mock(), to_front=Mock(), visible=True), controls=[])
         visible_at_update = []
         page.update.side_effect = lambda: visible_at_update.append(page.window.visible)
         with patch("src.flet_pages.application.AsyncRuntimeBridge"), patch(
