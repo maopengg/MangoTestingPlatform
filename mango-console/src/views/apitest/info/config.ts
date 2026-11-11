@@ -418,17 +418,11 @@ export const protocolMethodTitles: Record<string, string> = {
   websocket: 'WEBSOCKET_CONNECT',
 }
 export const importTemplateFileName = '接口批量上传模版.xlsx'
+export const boundCaseScrollX = 960
 export const boundCaseColumns = [
-  { title: 'Case ID', slotName: 'case_id', width: 80, align: 'center' as const },
-  { title: '用例名称', dataIndex: 'case_name', width: 190, ellipsis: true, tooltip: true },
+  { title: 'ID', slotName: 'case_id', width: 90, align: 'center' as const },
+  { title: '用例名称', dataIndex: 'case_name', ellipsis: true, tooltip: true },
   { title: '负责人', dataIndex: 'case_people_name', width: 100, ellipsis: true, tooltip: true },
-  { title: '最新更新人', dataIndex: 'update_user_name', width: 110, ellipsis: true, tooltip: true },
-  { title: '更新时间', dataIndex: 'update_time', width: 180 },
-  {
-    title: '操作',
-    slotName: 'actions',
-    fixed: 'right' as const,
-    width: 160,
-    align: 'center' as const,
-  },
+  { title: '执行场景', slotName: 'scenario_tags', width: 180 },
+  { title: '更新时间', dataIndex: 'update_time', width: 180, ellipsis: true, tooltip: true },
 ]

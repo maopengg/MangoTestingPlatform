@@ -45,6 +45,19 @@ function factory(read = async kind => response(kind === 'modules' ? modules('Mod
 
 const sidebarFilename = 'src/components/business/ProjectProductNavigationSidebar.vue'
 const selectFilename = 'src/components/business/ProjectProductSelect.vue'
+test('same-project product selector is anchored to the case product instead of the global project',()=>{
+  const f=factory(), a=f.root()
+  a.store.projectProduct=[
+    {value:1,label:'Case project',children:[{value:10,label:'A'},{value:11,label:'B'}]},
+    {value:2,label:'Other project',children:[{value:20,label:'C'}]},
+  ]
+  const h=productSelect(a,{sameProjectAsProductId:11})
+  assert.deepEqual(h.productOptions.value.map(p=>p.value),[1])
+  assert.deepEqual(h.productOptions.value[0].children.map(p=>p.value),[10,11])
+  h.props.sameProjectAsProductId=999
+  assert.deepEqual(h.productOptions.value,[])
+  h.close();a.close()
+})
 function productSelect(owner, values = {}) {
   const descriptor = parse(readFileSync(selectFilename, 'utf8'), { filename: selectFilename }).descriptor
   const props = vue.reactive({ modelValue: null, currentProjectOnly: false, ...values }), events = []

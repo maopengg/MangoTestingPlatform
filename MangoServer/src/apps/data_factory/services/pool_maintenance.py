@@ -10,6 +10,20 @@ class DatasourcePoolMaintenance:
     _pid = None
 
     @classmethod
+    def close_idle_pools(cls):
+        from src.apps.data_factory.services.datasource_pool import DatasourcePoolRegistry
+        from src.apps.data_factory.services.protocol_pool import ProtocolPoolRegistry
+        from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService
+        # 只关闭闲置物理连接，并结算已有精确关闭证明；不碰在用连接或未知操作占用。
+        for name, callback in (
+            ('sql_shutdown', DatasourcePoolRegistry.close_all),
+            ('protocol_shutdown', ProtocolPoolRegistry.close_all),
+            ('connection_settlement', DatasourceGovernorService.flush_closed_connections),
+            ('operation_settlement', DatasourceGovernorService.flush_pending_releases),
+        ):
+            cls.run(name, callback)
+
+    @classmethod
     def run(cls, name, callback):
         from src.common.logging import log
         from django.db import close_old_connections

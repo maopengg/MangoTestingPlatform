@@ -201,6 +201,7 @@ class DataFactoryExecutionRecovery:
                 resolved += 1
             if execution.error_message == cls.LEGACY_OVERDUE_ERROR:
                 execution.error_message = None
+            DataFactoryCleanup.clear_resolved_cleanup_error(execution)
             execution.save(update_fields=[
                 'cleanup_status',
                 'cleanup_time',

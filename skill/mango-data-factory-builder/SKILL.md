@@ -21,6 +21,7 @@ description: 通过 Mango 测试平台 MCP 发现、创建、修复、编排、�
 - 更新前读取完整对象。`items`、`post_insert_updates`、`output_config`、`cleanup_resources` 及字段替换列表是整表替换，必须提交完整目标列表。更新模板时省略 `cleanup_resources` 保留原规则，传 `[]` 清空后续执行规则，不改变历史执行快照。
 - 模板执行和清理会增删真实业务数据，必须先执行对应影响预览、核对实际影响并原样传递 token/确认文本。用户已授权在指定非生产环境创建/修复并完整验证时，该范围的工厂执行和执行结束清理已获授权，满足工具确认协议即可，不重复询问。只有未授权执行、环境/数据行/数量明显超出范围、清理影响非本轮数据或出现新风险时才再确认。配置预览不写业务数据，可正常使用。
 - 工厂只拥有执行记录内的行。API/UI 消费工厂数据又创建持久子表、关联、业务、审计或异步数据时，Case 必须保存独立、失败也执行的后置清理。先清理 Case 创建的后代，再清理工厂数据；不得假定删除工厂根行就足够发布。
+- API 新建 SQL/ES 资源的登记、数组身份映射、负向创建、重复名称及历史清理恢复，必须读取 [API 资源清理编写教程](../mango-api-case-builder/references/api-created-resource-cleanup.md)，并查询当前 `get_api_case_resource_cleanup_schema`。使用 Case 的 `resource_cleanup`，不是模板的 `cleanup_resources`；不能把 API 数据登记成工厂执行所有物。具体配置只维护在该教程，不复制另一套规则。
 - SQL 零残留不能证明 ES 已清理。涉及索引副作用时，执行前读取 [关联 ES 清理](references/execution-and-acceptance.md#关联-es-清理)，核实文档 ID 来源与所有权快照；SQL 主键与 ES 文档 ID 不同时显式配置 `document_id_field`，禁止猜测、缺值回退或接管无快照的历史文档。
 
 ## 业务身份与共享作用域隔离

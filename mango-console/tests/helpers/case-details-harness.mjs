@@ -19,6 +19,7 @@ export function harness(name, bindings, overrides={}) {
     '@/utils/form':{isValidInteger:v=>Number.isInteger(Number(v))&&Number(v)>=0},
     '@/setting':{fieldNames:{label:'title',value:'key'}},
     '@/store/modules/get-enum':{useEnum:()=>({})},
+    '@/store/modules/user':{default:()=>({})},
     '@/hooks/useDisplayDensity':{scaleDensityPixels:v=>v},
     '@/utils/lossless-json':{cloneLosslessJson:v=>v==null?v:JSON.parse(JSON.stringify(v))},
     ...overrides.modules,

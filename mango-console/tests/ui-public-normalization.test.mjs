@@ -144,6 +144,7 @@ test('new variable saves common environment and default status without hidden SQ
         type: 0,
         test_envs: [],
         name: 'Example',
+        tags: [],
         key: 'key',
         value: 'false',
         datasource_alias: null,

@@ -10,6 +10,9 @@ from src.apps.auto_api.api.views.api_case_detailed import ApiCaseDetailedCRUD
 
 class ApiCaseStepUpdateTests(SimpleTestCase):
     def setUp(self):
+        guard = patch.object(ApiCaseStepService, 'validate_project')
+        self.project_guard = guard.start()
+        self.addCleanup(guard.stop)
         self.step = SimpleNamespace(
             id=10, case_id=1, api_info_id=20, pinned_api_info_revision_id=30,
             execution_config={}, save=Mock(),
@@ -30,6 +33,7 @@ class ApiCaseStepUpdateTests(SimpleTestCase):
         mutate.side_effect = lambda case_id, **kw: kw['operation'](None)
         resolve.return_value = (object(), 50)
         self.run_update()
+        self.project_guard.assert_called_once_with(1, 40)
         self.assertEqual((self.step.api_info_id, self.step.pinned_api_info_revision_id), (40, 50))
         self.assertEqual(self.step.execution_config, {'is_recovery': True})
         self.assertEqual(self.step.update_user_id, 4)
@@ -59,6 +63,7 @@ class ApiCaseStepUpdateTests(SimpleTestCase):
         objects.select_for_update.return_value.get.return_value = self.step
         mutate.side_effect = lambda case_id, **kw: kw['operation'](None)
         self.run_update(20, 30)
+        self.project_guard.assert_not_called()
         resolve.assert_not_called()
         self.assertEqual(self.step.pinned_api_info_revision_id, 30)
 

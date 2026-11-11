@@ -12,7 +12,7 @@ from sqlalchemy import create_engine, event, text
 from src.apps.auto_api.enums.resource_cleanup import ApiResourceCleanupStatus as State
 from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.models import ApiCase, ApiCaseExecutionTrace, ApiCaseExecutionResource
-from src.apps.auto_api.schemas.resource_cleanup import ApiResourceProof
+from src.apps.auto_api.schemas.resource_cleanup import ApiResourceProof, ApiResourceVersionUpdate
 from src.apps.auto_api.services.resource_cleanup import ApiResourceExecutionManager as Manager, ApiResourceCleanupService as Service
 from src.apps.auto_api.services.resource_cleanup_io import ApiResourceCleanupIO as IO
 from src.apps.auto_api.tests.test_resource_cleanup import rule_data, proof_data, document
@@ -53,6 +53,9 @@ class ResourceLedgerDatabaseTests(unittest.TestCase):
         self.deleted = []
         self.interrupt = False
         self.engine = create_engine('sqlite:///:memory:')
+        self.addCleanup(self.engine.dispose)
+        # 生产registry的dispose归还引擎租借；内存夹具不能因此销毁数据库。
+        self.stack.enter_context(patch.object(self.engine, 'dispose'))
         @event.listens_for(self.engine, 'before_cursor_execute', retval=True)
         def sqlite_fixture_sql(connection, cursor, statement, parameters, context, executemany):
             # SQLite无这两个MySQL语法，仅在隔离夹具适配，生产语句与提交事件保持原样。
@@ -132,6 +135,42 @@ class ResourceLedgerDatabaseTests(unittest.TestCase):
         self.assertTrue(record.proof['es_verified'])
         self.assertGreaterEqual(self.clock, 16)
         self.assert_zero_and_other_untouched()
+
+    def test_same_execution_confirmed_version_update_cleans_latest_version_and_preserves_origin(self):
+        update = {'trigger_step_key': 'step-11', 'api_info_id': 21, 'request_id_in_url': True,
+                  'response_id_path': 'data.id', 'response_version_path': 'data.version',
+                  'success_response': {'success': True}}
+        self.rule['version_updates'] = [update]
+        self.manager.rules[0].version_updates = [ApiResourceVersionUpdate.model_validate(update)]
+        record = self.create()
+        self.manager.activate(11, 31)
+        attempt = self.manager.before_request(SimpleNamespace(method='POST', protocol_type='http',
+            url='https://example.com/projects/9001/update', request_body={}), 21, 0)
+        with self.engine.begin() as sql:
+            sql.exec_driver_sql("UPDATE project SET version='3' WHERE id='9001'")
+        self.documents['8001']['_source']['sourceVersion'] = '3'
+        self.manager.after_response(attempt, SimpleNamespace(code=200,
+            json={'success': True, 'data': {'id': '9001', 'version': '3'}}))
+        record.refresh_from_db()
+        self.assertEqual(record.proof['root']['version'], '2')
+        self.assertEqual(record.proof['version_transitions'][0]['root_after']['version'], '3')
+        self.manager.cleanup()
+        record.refresh_from_db()
+        self.assertEqual(record.status, State.CLEANED.value)
+        self.assert_zero_and_other_untouched()
+
+    def test_external_version_change_remains_blocked_without_deleting_sql_or_es(self):
+        record = self.create()
+        with self.engine.begin() as sql:
+            sql.exec_driver_sql("UPDATE project SET version='99' WHERE id='9001'")
+        self.documents['8001']['_source']['sourceVersion'] = '99'
+        with self.assertRaises(AutoApiError):
+            self.manager.cleanup()
+        record.refresh_from_db()
+        self.assertEqual(record.status, State.FAILED.value)
+        self.assertIn('8001', self.documents)
+        with self.engine.connect() as sql:
+            self.assertEqual(sql.exec_driver_sql("SELECT version FROM project WHERE id='9001'").scalar(), '99')
 
     def test_timeout_without_response_discovers_only_original_unique_key(self):
         record = self.create(respond=False)

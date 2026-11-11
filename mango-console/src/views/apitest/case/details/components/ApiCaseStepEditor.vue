@@ -11,6 +11,14 @@
     @cancel="close"
   >
     <a-form auto-label-width class="mango-simple-form" :model="draft" layout="horizontal" :disabled="saving">
+      <a-form-item class="mango-simple-form-item mango-form-item__require" label="项目/产品">
+        <ProjectProductSelect
+          v-model="selectedProductId"
+          :same-project-as-product-id="projectProductId"
+          :allow-clear="false"
+          @change="changeProduct"
+        />
+      </a-form-item>
       <a-form-item class="mango-simple-form-item"
         v-for="item of formItems"
         :key="item.key"
@@ -24,7 +32,7 @@
         <template v-else-if="item.type === 'cascader' && item.key === 'module'">
           <ProductModuleSelect
             v-model="item.value"
-            :project-product-id="projectProductId"
+            :project-product-id="selectedProductId"
             :placeholder="item.placeholder"
             @change="getModuleApi"
           />
@@ -60,6 +68,7 @@
   import { onBeforeUnmount, onDeactivated, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import ProductModuleSelect from '@/components/business/ProductModuleSelect.vue'
+  import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { getApiInfoName } from '@/api/apitest/info'
@@ -78,6 +87,7 @@
     editingId = ref<string | number | null>(null),
     saving = ref(false),
     optionsLoading = ref(false)
+  const selectedProductId = ref<string | number | null>(null)
   const draft = reactive<{
     module: string | number | null
     api_info: string | number | null
@@ -116,6 +126,8 @@
     close()
     editingId.value = step?.id ?? null
     executionConfig = { ...step?.execution_config }
+    const product = step?.api_info.project_product
+    selectedProductId.value = (typeof product === 'object' ? product?.id : product) ?? props.projectProductId
     const module = step?.api_info.module
     const moduleId = typeof module === 'object' ? module?.id ?? null : module ?? null
     Object.assign(draft, {
@@ -165,6 +177,12 @@
       .finally(() => {
         if (token === optionRequest) optionsLoading.value = false
       })
+  }
+
+  function changeProduct(value: string | number | Array<string | number>) {
+    selectedProductId.value = Array.isArray(value) ? value.at(-1) ?? null : value
+    draft.module = null
+    getModuleApi('', false)
   }
 
   function loadApiInfoRevisions(apiInfoId: number | string) {

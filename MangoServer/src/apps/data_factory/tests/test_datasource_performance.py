@@ -69,6 +69,30 @@ class DatasourcePerformanceTests(SimpleTestCase):
         for permit in [*permits, cleanup]:
             Governor.release(permit)
 
+    def test_reserved_cleanup_capacity_cannot_be_given_to_aged_normal_waiter(self):
+        from src.apps.data_factory.schemas.performance import DatasourceGovernorState, DatasourceWaiter
+        group = Governor.target_policy(self.target, self.policy)[2]
+        state = DatasourceGovernorState(tokens=20, normal_tokens=15, updated_at=self.store.now,
+            waiters={'old': DatasourceWaiter(lane='normal', created_at=self.store.now-10, expires_at=self.store.now+30)})
+        self.store.values[f'group:{group}:control'] = state.model_dump(mode='json')
+        with patch.object(Governor, 'lane', return_value=DatasourceQueueLaneEnum.CLEANUP):
+            permit = Governor.acquire(self.target, wait=False)
+        self.assertIsNotNone(permit)
+        Governor.release(permit)
+        self.assertIn('old', self.store.values[f'group:{group}:control']['waiters'])
+
+    def test_local_probe_queue_does_not_mix_cleanup_and_normal_lanes(self):
+        from src.apps.data_factory.services.datasource_wait import DatasourceAdmissionProbeService as Probe
+        group = Governor.target_policy(self.target, self.policy)[2]
+        normal_key = (group, 'operation', 'normal')
+        with patch.object(Probe, '_due', {}), patch.object(Probe, '_pid', __import__('os').getpid()):
+            Probe.congested(normal_key, 'normal_head', self.store.now - 10)
+            with patch.object(Probe, 'delay', wraps=Probe.delay) as delay, \
+                    patch.object(Governor, 'lane', return_value=DatasourceQueueLaneEnum.CLEANUP):
+                permit = Governor.acquire(self.target)
+            self.assertEqual(delay.call_args.args[0], (group, 'operation', 'cleanup'))
+            Governor.release(permit)
+
     def test_hundred_cases_create_verify_cleanup_with_bounded_connections_and_zero_residue(self):
         import sqlite3
         import tempfile

@@ -13,7 +13,7 @@
         v-if="hasOverflow"
         class="mango-execution-scene-grid__more"
         size="small"
-        aria-label="查看更多执行场景"
+        :aria-label="overflowLabel"
       >
         ...
       </a-tag>
@@ -34,10 +34,14 @@
       values?: unknown
       options?: EnumOption[] | null
       colors?: string[]
+      maxVisibleTags?: 3 | 4
+      overflowLabel?: string
     }>(),
     {
       options: () => [],
       colors: () => [],
+      maxVisibleTags: 4,
+      overflowLabel: '查看更多执行场景',
     }
   )
 
@@ -48,9 +52,9 @@
         )
       : []
   )
-  const hasOverflow = computed(() => normalizedValues.value.length > 4)
+  const hasOverflow = computed(() => normalizedValues.value.length > props.maxVisibleTags)
   const visibleValues = computed(() =>
-    normalizedValues.value.slice(0, hasOverflow.value ? 3 : 4)
+    normalizedValues.value.slice(0, hasOverflow.value ? 3 : props.maxVisibleTags)
   )
   const tooltipContent = computed(() => normalizedValues.value.map(tagTitle).join('、'))
 

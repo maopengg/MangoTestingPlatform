@@ -224,6 +224,7 @@
     "mcp_service": {
       "image": "mango-server:single",
       "restart": "unless-stopped",
+      "stop_grace_period": "360s",
       "environment": {
         "TZ": "Asia/Shanghai",
         "DJANGO_ENV": "master",

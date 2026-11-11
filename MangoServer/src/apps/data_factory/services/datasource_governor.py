@@ -246,6 +246,9 @@ class DatasourceGovernorService:
 
     @staticmethod
     def outcome_unknown(error):
+        from src.apps.data_factory.services.data_source_error import DataSourceErrorService
+        if DataSourceErrorService.confirmed_rejection(error):
+            return False
         from urllib.error import HTTPError
         from src.apps.data_factory.exceptions import DATASOURCE_AUDIT_COMPLETION_FAILED
         seen = set()
@@ -253,10 +256,15 @@ class DatasourceGovernorService:
             seen.add(id(error))
             if getattr(error, '_datasource_outcome_unknown', False):
                 return True
+            if getattr(error, 'connection_invalidated', False):
+                return True
+            sqlstate = getattr(error, 'sqlstate', None) or getattr(error, 'pgcode', None)
+            if isinstance(sqlstate, str) and (sqlstate.startswith('08') or sqlstate == '40003'):
+                return True
             if isinstance(error, HTTPError):
                 return error.code >= 500
             number = error.args[0] if getattr(error, 'args', None) else None
-            if number in (2006, 2013, 2055):
+            if number in (1158, 1159, 1160, 1161, 1184, 2006, 2013, 2014, 2055):
                 return True
             if number == 2003 or isinstance(error, (ConnectionRefusedError, socket.gaierror)):
                 return False
@@ -339,6 +347,8 @@ class DatasourceGovernorService:
             return None
         owner = uuid.uuid4().hex
         lane = cls.lane()
+        # 本地轮询合并也必须隔离通道，否则被普通容量挡住的队首会阻止清理探测预留名额。
+        probe_key = (group, kind.value, lane.value)
         from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService
         case_owner = DataFactoryCleanupScheduleService.current_owner()
         permit_created = False
@@ -392,7 +402,8 @@ class DatasourceGovernorService:
             if uses_rate and not rate_only and lane == DatasourceQueueLaneEnum.CLEANUP:
                 normal_capacity = (sum(value.lane != DatasourceQueueLaneEnum.CLEANUP for value in active)
                                    < budget.concurrency - budget.cleanup_reserved)
-                if normal_capacity and state.normal_tokens >= 1:
+                cleanup_active = sum(value.lane == DatasourceQueueLaneEnum.CLEANUP for value in active)
+                if cleanup_active >= budget.cleanup_reserved and normal_capacity and state.normal_tokens >= 1:
                     # 持续清理不能永久抢占普通通道；等待老化后让普通请求先取得空闲份额。
                     older = older or any(value.kind == kind and value.lane == DatasourceQueueLaneEnum.NORMAL
                                          and now - value.created_at >= 1 for value in state.waiters.values())
@@ -430,13 +441,13 @@ class DatasourceGovernorService:
                 next_log = Timing.diagnose(wait_started, next_log, phase=wait_phase, database_id=target.id,
                                            wait_id=owner, group=group)
                 if wait:
-                    delay = DatasourceAdmissionProbeService.delay((group, kind.value), owner)
+                    delay = DatasourceAdmissionProbeService.delay(probe_key, owner)
                     if delay > 0:
                         with Timing.waiting(wait_phase):
                             DatasourceWaitService.pause(delay)
                         continue
                 if cls.change(group, claim, expected_policy=policy):
-                    DatasourceAdmissionProbeService.finished((group, kind.value), owner)
+                    DatasourceAdmissionProbeService.finished(probe_key, owner)
                     return group, owner
                 if not wait or blocked_by_suspect:
                     raise cls.infrastructure_error(
@@ -445,12 +456,12 @@ class DatasourceGovernorService:
                                 '本次调用不等待执行名额，未因等待超时退出'), database_id=target.id)
                 if kind == DatasourcePermitKindEnum.CONNECTION:
                     cls.relieve_connection_pressure(group)
-                DatasourceAdmissionProbeService.congested((group, kind.value), owner, queued_at)
+                DatasourceAdmissionProbeService.congested(probe_key, owner, queued_at)
                 with Timing.waiting(wait_phase):
                     DatasourceWaitService.pause(random.uniform(0.08, 0.16))
         except BaseException as error:
             from src.apps.data_factory.services.datasource_wait import DatasourceAdmissionProbeService
-            DatasourceAdmissionProbeService.finished((group, kind.value), owner)
+            DatasourceAdmissionProbeService.finished(probe_key, owner)
             from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
             DatasourceInfrastructureService.capture(error)
             error._datasource_not_sent = True

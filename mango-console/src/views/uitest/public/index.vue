@@ -60,6 +60,7 @@
         </template>
         <template #toolbar>
           <a-space wrap>
+            <a-button size="small" :disabled="!tagSelectedIds.length || editingBusy" @click="tagBatchRef?.open(tagSelectedIds)">批量设置分类</a-button>
             <a-button size="small" type="primary" :disabled="editingBusy" @click="onAdd"
               >新增</a-button
             >
@@ -67,15 +68,19 @@
             <a-alert v-if="actionError" type="error">{{ actionError }}</a-alert>
           </a-space>
         </template>
+        <VariableTagWorkbench ref="tagWorkbenchRef" v-model="activeTag" :query="categoryQuery" :read="getUiPublic"
+          @update:model-value="onSearchRefresh">
         <a-table
           class="mango-native-scroll-table"
-          :scroll="{ x: TABLE_SCROLL_X, y: '100%' }"
+          :scroll="{ x: TABLE_SCROLL_X + 120, y: '100%' }"
           :bordered="false"
           :columns="tableColumns"
           :data="rows"
           :loading="listLoading"
           :pagination="false"
           row-key="id"
+          :row-selection="{ selectedRowKeys: tagSelectedIds, showCheckedAll: true }"
+          @selection-change="tagSelectedIds = $event"
         >
           <template #columns>
             <a-table-column
@@ -91,6 +96,12 @@
             >
               <template v-if="item.key === 'index'" #cell="{ record }">
                 {{ record.id }}
+              </template>
+              <template v-else-if="item.key === 'tags'" #cell="{ record }"><VariableTagCell :tags="record.tags" /></template>
+              <template v-else-if="item.key === 'case_reference_count'" #cell="{ record }">
+                <span v-if="record.status === 1" class="mango-muted-text">不统计默认开启</span>
+                <a-link v-else-if="referenceCounts[String(record.id)] != null" @click="referenceCasesRef?.open(record)">{{ referenceCounts[String(record.id)] }}</a-link>
+                <span v-else>{{ referencesLoading ? '查询中…' : '-' }}</span>
               </template>
               <template v-else-if="item.key === 'test_env'" #cell="{ record }">
                 <a-tag v-if="record.test_envs.length === 0" color="gray" size="small"
@@ -158,12 +169,15 @@
             </a-table-column>
           </template>
         </a-table>
+        </VariableTagWorkbench>
         <template #footer>
           <TableFooter :pagination="pagination" />
         </template>
       </ProjectProductNavigationWorkbench>
     </template>
   </TableBody>
+  <VariableTagBatchDialog ref="tagBatchRef" kind="ui" :context-key="JSON.stringify(categoryQuery)"
+    :options="tagWorkbenchRef?.names || []" @saved="onSaved" />
   <PublicVariableEditor
     ref="editorRef"
     :type-options="typeOptions"
@@ -174,9 +188,14 @@
     @saved="onSaved"
     @retry-options="loadEnums"
   />
+  <ApiInfoBoundCases ref="referenceCasesRef" domain="ui" reference-mode :read-cases="getUiPublicReferenceCases" />
 </template>
 <script setup lang="ts">
 import { reportLoadError } from '@/utils/load-error'
+import VariableTagWorkbench from '@/components/business/VariableTagWorkbench.vue'
+import VariableTagCell from '@/components/business/VariableTagCell.vue'
+import VariableTagBatchDialog from '@/components/business/VariableTagBatchDialog.vue'
+import { variableTagFilter } from '@/components/business/variable-tags'
 
   import { computed, onMounted, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
@@ -193,7 +212,10 @@ import { reportLoadError } from '@/utils/load-error'
   import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
   import MangoTableActions from '@/components/table/MangoTableActions.vue'
   import PublicVariableEditor from './components/PublicVariableEditor.vue'
-  import { createConditionItems, tableColumns, TABLE_SCROLL_X } from './config'
+  import { createConditionItems, tableColumns as baseTableColumns, TABLE_SCROLL_X } from './config'
+  import ApiInfoBoundCases from '@/views/apitest/info/components/ApiInfoBoundCases.vue'
+  import { useCaseReferenceCounts } from '@/hooks/useCaseReferenceCounts'
+  import { getUiPublicReferenceCounts, getUiPublicReferenceCases } from '@/api/uitest/public'
   import {
     COMMON_ENV_VALUE,
     publicId,
@@ -208,6 +230,11 @@ import { reportLoadError } from '@/utils/load-error'
   } from './public-records'
   const enumStore = useEnum(),
     conditionItems = createConditionItems()
+  const activeTag = ref<string | null>(null)
+  const tagSelectedIds = ref<Array<string | number>>([])
+  const tagWorkbenchRef = ref<InstanceType<typeof VariableTagWorkbench> | null>(null)
+  const tagBatchRef = ref<InstanceType<typeof VariableTagBatchDialog> | null>(null)
+  const categoryQuery = computed(() => publicQuery(getFormItems(conditionItems), 1, pagination.pageSize))
   const projectProductCondition = computed(() =>
     conditionItems.find((item) => item.key === 'project_product')
   )
@@ -218,6 +245,11 @@ import { reportLoadError } from '@/utils/load-error'
   const rows = ref<PublicRow[]>([]),
     listLoading = ref(false),
     listError = ref('')
+  const referenceCasesRef = ref<InstanceType<typeof ApiInfoBoundCases> | null>(null)
+  const { tableColumns, loading: referencesLoading, counts: referenceCounts } = useCaseReferenceCounts(
+    () => rows.value, baseTableColumns, getUiPublicReferenceCounts, () => listLoading.value,
+    () => referenceCasesRef.value?.close()
+  )
   const userOptions = ref<PublicOption[]>([]),
     usersLoading = ref(false),
     usersError = ref('')
@@ -257,6 +289,7 @@ import { reportLoadError } from '@/utils/load-error'
     usersLoading.value = false
     enumsLoading.value = false
     rows.value = []
+    tagSelectedIds.value = []
     userOptions.value = []
     typeOptions.value = []
     environments.value = []
@@ -294,12 +327,13 @@ import { reportLoadError } from '@/utils/load-error'
     try {
       const result = readPublicList(
         await getUiPublic(
-          publicQuery(getFormItems(conditionItems), pagination.page, pagination.pageSize)
+          { ...publicQuery(getFormItems(conditionItems), pagination.page, pagination.pageSize), ...variableTagFilter(activeTag.value) }
         )
       )
       if (!current()) return
       rows.value = result.rows
       pagination.setTotalSize(result.total)
+      tagSelectedIds.value = []
     } catch (loadFailure0) {
       if (current()) (reportLoadError(loadFailure0, "变量列表加载失败，请重试", false), listError.value = '变量列表加载失败，请重试')
     } finally {
@@ -350,6 +384,7 @@ import { reportLoadError } from '@/utils/load-error'
     void loadEnums()
   }
   function resetConditions() {
+    activeTag.value = null
     conditionItems.forEach((item) => {
       item.value = item.multiple || item.key === 'test_envs' ? [] : ''
     })
@@ -363,6 +398,7 @@ import { reportLoadError } from '@/utils/load-error'
     void doRefresh()
   }
   function onNavigationFilterChange({ projectProduct: product }: { projectProduct: unknown }) {
+    activeTag.value = null
     if (projectProductCondition.value) projectProductCondition.value.value = publicOptionId(product)
     onSearchRefresh()
   }
@@ -378,6 +414,7 @@ import { reportLoadError } from '@/utils/load-error'
   }
   function onSaved() {
     ++listSequence
+    void tagWorkbenchRef.value?.refreshAfterMutation()
     void doRefresh()
   }
   function onDelete(record: PublicRow) {
@@ -409,6 +446,7 @@ import { reportLoadError } from '@/utils/load-error'
             if (!rows.value.length && pagination.page > 1) pagination.page--
             Message.success('删除成功')
             await doRefresh()
+            void tagWorkbenchRef.value?.refreshAfterMutation()
           }
           return true
         } catch {
@@ -439,6 +477,7 @@ import { reportLoadError } from '@/utils/load-error'
       const row = rows.value.find((row) => String(row.id) === key)
       if (row) row.status = status
       await doRefresh()
+      void tagWorkbenchRef.value?.refreshAfterMutation()
       return true
     } catch {
       if (valid()) actionError.value = '状态更新失败，请重试'

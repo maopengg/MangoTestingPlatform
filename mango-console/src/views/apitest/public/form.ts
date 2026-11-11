@@ -39,6 +39,7 @@ export function createPublicDraft(
 ): PublicDraft {
   return {
     project_product: record ? getOptionId(record.project_product) : product,
+    tags: [...(record?.tags ?? [])],
     type: record?.type ?? null,
     test_envs: environmentSelectValue(record),
     name: record?.name ?? '',
@@ -53,6 +54,7 @@ export function publicPayload(draft: PublicDraft) {
     type: draft.type,
     test_envs: normalizeEnvironmentValues(draft.test_envs),
     name: draft.name,
+    tags: [...draft.tags],
     key: draft.key,
     value: draft.type === 2 && !draft.value ? codeVariableExample : draft.value,
     datasource_alias: draft.type === 1 ? draft.datasource_alias : null,

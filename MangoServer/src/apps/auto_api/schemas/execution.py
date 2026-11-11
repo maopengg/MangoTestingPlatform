@@ -301,6 +301,7 @@ class ApiStepExecutionContext(StrictSchema):
     user_id: int | None = None
     trace_id: str | None = None
     executed_at: str
+    product_cache_keys: list[str] | None = None
 
 
 class ApiCaseStepResult(StrictSchema):
@@ -338,6 +339,7 @@ class ApiCaseExecutionResult(StrictSchema):
     recovery_status: int | None = None
     recovery_errors: list[str] = Field(default_factory=list)
     infrastructure_blocked: bool = False
+    execution_finalized: bool = False
     # 仅保留运行／投递摘要；最终回调断言明细归属于触发步骤的 ass。
     callback_results: list[dict[str, Any]] = Field(default_factory=list)
     resource_cleanup_results: list[dict[str, Any]] = Field(default_factory=list)

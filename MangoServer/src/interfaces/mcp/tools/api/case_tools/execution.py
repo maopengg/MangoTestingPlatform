@@ -4,7 +4,10 @@ from typing import Literal
 
 from mangotools.enums import StatusEnum
 
-from src.apps.auto_api.enums.execution_trace import ApiCaseTraceSourceType
+from src.apps.auto_api.enums.execution_trace import ApiCaseTraceSourceType, ApiCaseTraceStepType
+from src.apps.auto_api.schemas.resource_cleanup import (
+    ApiResourceEsIdentityMapping, ApiResourceChildMapping, ApiResourceRejectionRecovery,
+)
 from src.apps.auto_api.selectors.querysets import ApiQuerySelector
 from src.apps.auto_api.services.api_case.batch_execution import ApiCaseBatchExecutionService
 from src.apps.auto_api.services.test_case.test_case import TestCase
@@ -32,6 +35,11 @@ def register_case_execution_tools(mcp):
         仅test/dev。先创建Case与步骤；触发步骤单场景且不重试。创建请求的唯一名称需引用
         ${{api_resource_<key>}}；身份来源为本轮租户、创建人缓存。响应ID、groupId及版本分别映射。
         SQL只接受已保存的表/字段规则，不接受自由SQL。自动清理失败会使Case不能通过；重试只处理原台账。
+        ES数组可使用projects[].projectId与projects[].projectVersion，必须同一数组且仅含本轮唯一对象。
+        负向创建需显式配置rejection_response={"success":false}；有创建ID仍登记清理，拒绝后完整观察无新增。
+        name_source_key仅复用同执行前序资源的名称；同名意外创建的新记录单独登记，原资源不被接管。
+        version_updates登记同执行后续写步骤：请求必须引用原业务ID，响应必须返回相同ID及新版本，
+        SQL回读须一致，才能为清理采用该版本；不自动采用数据库当前版本。
         """
         from src.apps.auto_api.schemas.resource_cleanup import ApiResourceCleanupRules
         return ok(ApiResourceCleanupRules.model_json_schema())
@@ -45,15 +53,28 @@ def register_case_execution_tools(mcp):
                                                      page=page, page_size=page_size))
 
     @mcp.tool()
-    def cleanup_api_case_resources(case_id: int, resource_id: int, preview: bool = True) -> dict:
+    def cleanup_api_case_resources(case_id: int, resource_id: int, preview: bool = True,
+                                  identity_mapping: ApiResourceEsIdentityMapping | None = None,
+                                  child_mapping: list[ApiResourceChildMapping] | None = None,
+                                  rejection_recovery: ApiResourceRejectionRecovery | None = None) -> dict:
         """预览或重试指定原执行资源清理，默认仅预览；preview=false才清理。
 
         原执行必须已结束或有进程替换证据。只使用原冻结的环境、规则及所有权证据，
         不重新执行业务创建，不按名称前缀发现目标，不修改历史业务断言为通过。
+        identity_mapping仅可更正es_business_id_path、es_version_path，例如projects[].projectId及
+        projects[].projectVersion；先preview=true核验SQL与ES身份，再实际清理。原冻结目标不变，
+        更正单独记录操作者及时间；数组必须仅含本轮唯一对象，不支持删除共享文档。
+        child_mapping只可将原快照中已不存在的附属表映射到当前真实表及外键字段，
+        原租户、根身份、数据源及行数上限均不变；先预览验证，原快照不覆盖。
+        rejection_recovery仅补核历史明确拒绝契约，如{"rejection_response":{"success":false}}。
+        必须有原执行已结束、完整结果校验和、精确步骤请求及拒绝响应证据；仍执行完整无新增观察，
+        不接受调用者自报“已拒绝/已清理”，不覆盖原规则或把业务失败改为通过。
         """
         from src.apps.auto_api.services.resource_cleanup import ApiResourceCleanupRetryService
         return ok(ApiResourceCleanupRetryService.retry(user=current_user(), case_id=case_id,
-                                                       resource_id=resource_id, preview=preview))
+                                                       resource_id=resource_id, preview=preview,
+                                                       identity_mapping=identity_mapping, child_mapping=child_mapping,
+                                                       rejection_recovery=rejection_recovery))
 
     @mcp.tool()
     def run_api_case(
@@ -73,31 +94,33 @@ def register_case_execution_tools(mcp):
         try:
             user = current_user(user_id)
             env_id = _selected_env(user.id, test_env_id)
-            run_result = TestCase(
+            runner = TestCase(
                 user_id=user.id,
                 test_env=env_id,
                 case_id=case_id,
                 trace_source_type=ApiCaseTraceSourceType.MCP,
                 revision_id=revision_id,
                 release_id=release_id,
-            ).test_case(case_sort).model_dump()
+            )
+            run_result = runner.test_case(case_sort).model_dump()
             effective_revision_id = run_result.get("case_revision_id")
             effective_release_id = run_result.get("case_release_id")
-            execution_result = ExecutionResultService.save_result(
-                source_type=ExecutionResultService.SOURCE_MCP,
-                target_type=ExecutionResultService.TARGET_API_CASE,
-                target_id=case_id,
-                revision_id=effective_revision_id,
-                release_id=effective_release_id,
-                test_env=env_id,
-                status=run_result.get("status"),
-                error_message=run_result.get("error_message"),
-                result_data=run_result,
-                trigger_user_id=user.id,
-                trace_id=run_result.get("trace_id"),
-            )
-        except Exception as exc:
-            return fail(str(exc), "API_CASE_RUN_FAILED")
+            with runner.trace_recorder.guard(ApiCaseTraceStepType.REPORT_WRITE.value):
+                execution_result = ExecutionResultService.save_result(
+                    source_type=ExecutionResultService.SOURCE_MCP,
+                    target_type=ExecutionResultService.TARGET_API_CASE,
+                    target_id=case_id,
+                    revision_id=effective_revision_id,
+                    release_id=effective_release_id,
+                    test_env=env_id,
+                    status=run_result.get("status"),
+                    error_message=run_result.get("error_message"),
+                    result_data=run_result,
+                    trigger_user_id=user.id,
+                    trace_id=run_result.get("trace_id"),
+                )
+        except MangoServerError as exc:
+            return fail(exc.msg, "API_CASE_RUN_FAILED")
         payload = {
             "case_id": case_id,
             "test_env_id": env_id,
@@ -164,8 +187,6 @@ def register_case_execution_tools(mcp):
                     "context_id": context_id,
                 },
             )
-        except Exception as exc:
-            return fail(str(exc), "API_CASE_STEP_DEBUG_FAILED")
         if StatusEnum.SUCCESS.value != run_result.get("status"):
             return fail(
                 run_result.get("error_message") or "API case 当前步骤调试失败",

@@ -13,6 +13,7 @@ export interface PublicDatasource {
   disabled?: boolean
 }
 export interface PublicRecord {
+  tags?: string[]
   id: number
   project_product: PublicProduct | PublicEntityId | null
   type: number
@@ -27,6 +28,7 @@ export interface PublicRecord {
   update_time?: string
 }
 export interface PublicDraft {
+  tags: string[]
   project_product: PublicEntityId | PublicEntityId[] | null
   type: number | null
   test_envs: PublicEnvironment[]

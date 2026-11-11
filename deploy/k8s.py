@@ -109,7 +109,13 @@ def render_k8s(root,v):
             c['env']=[env_item(k) if k in SECRETS else {'name':k,'value':x.replace('mango_gateway','mango-gateway')} for k,x in svc['environment'].items()]
             c['command']=svc['command'];vols=[runtime];mounts=[{'name':'runtime','mountPath':'/app/runtime','subPath':'actuator'}]
         if mounts:c['volumeMounts']=mounts
-        workloads.append(obj('Deployment',name,{'replicas':1,'strategy':{'type':'Recreate'},'selector':{'matchLabels':{'app':name}},'template':pod(name,c,vols)}))
+        template=pod(name,c,vols)
+        if key=='mcp_service':
+            template['spec']['terminationGracePeriodSeconds']=360
+            probe={'httpGet':{'path':'/health/ready','port':8010},'periodSeconds':5,'timeoutSeconds':5}
+            c['readinessProbe']=probe;c['startupProbe']={**probe,'failureThreshold':60}
+            template['spec']['containers'][0].update(readinessProbe=c['readinessProbe'], startupProbe=c['startupProbe'])
+        workloads.append(obj('Deployment',name,{'replicas':1,'strategy':{'type':'Recreate'},'selector':{'matchLabels':{'app':name}},'template':template}))
     if v['K8S_INGRESS_HOST']:
         spec={'rules':[{'host':v['K8S_INGRESS_HOST'],'http':{'paths':[{'path':'/','pathType':'Prefix','backend':{'service':{'name':'mango-gateway','port':{'number':80}}}}]}}]}
         if v['K8S_INGRESS_CLASS']:spec['ingressClassName']=v['K8S_INGRESS_CLASS']

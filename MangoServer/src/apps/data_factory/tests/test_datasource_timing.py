@@ -60,10 +60,13 @@ class DatasourceTimingTests(SimpleTestCase):
                 patch('src.apps.data_factory.services.datasource_timing.log.debug') as log, \
                 Audit.source({'case_id': 12, 'source_stage': 'cleanup', 'password': 'AUTO_SECRET',
                               'sql': 'AUTO_PRIVATE_SQL'}):
-            next_log = Timing.diagnose(0, 30, phase=Phase.LOCAL_POOL, database_id=1)
+            next_log = Timing.diagnose(0, 30, phase=Phase.LOCAL_POOL, database_id=1,
+                                      wait_kind='capacity', checked_out=3, pool_size=3)
             Timing.diagnose(0, next_log, phase=Phase.LOCAL_POOL, database_id=1)
         log.assert_called_once()
         self.assertIn('case_id', str(log.call_args))
+        self.assertIn('capacity', str(log.call_args))
+        self.assertIn('checked_out=%s pool_size=%s', log.call_args.args[0])
         self.assertNotIn('AUTO_SECRET', str(log.call_args))
         self.assertNotIn('AUTO_PRIVATE_SQL', str(log.call_args))
 

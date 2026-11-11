@@ -40,6 +40,14 @@ test('overview shows scan, interface entry, interface coverage and Case automati
   assert.doesNotMatch(index, /coverage_gap|clearGapFilter/)
 })
 
+test('analysis header shows excluded count separately from the analysis pie', () => {
+  const header = source.slice(source.indexOf('<h2>② 接口分析进度'), source.indexOf('ref="entryChart"'))
+  assert.match(header, /v-if="!loading && data"/)
+  assert.match(header, /已排除 \{\{ data.summary.excluded_interface_count \}\} 个接口，不计入分析完成率/)
+  const partition = config.slice(config.indexOf('export function getInterfaceAnalysisData'), config.indexOf('export function getInterfaceCoverageData'))
+  assert.doesNotMatch(partition, /excluded_interface_count/)
+})
+
 test('module scan pie uses project-level scan summary', () => {
   assert.match(source, /props.data\?\.project_inventory_summary/)
   assert.match(source, /value: projectScanSummary.value\?\.inventoried_count/)

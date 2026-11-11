@@ -189,6 +189,7 @@ class ApiInfoBoundCaseSerializers(serializers.ModelSerializer):
             'case_id',
             'case_name',
             'case_status',
+            'scenario_tags',
             'case_people_id',
             'case_people_name',
             'update_user_name',

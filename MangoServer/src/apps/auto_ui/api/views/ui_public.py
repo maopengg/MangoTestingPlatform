@@ -10,16 +10,38 @@ from rest_framework.viewsets import ViewSet
 
 from src.apps.auto_ui.api.serializers.ui_public import UiPublicSerializers, UiPublicSerializersC
 from src.apps.auto_ui.enums import UiPublicTypeEnum
-from src.apps.auto_ui.models import UiPublic
+from src.apps.auto_ui.models import UiPublic, UiCase
+from src.apps.auto_ui.api.serializers.configuration_reference import ConfigurationReferenceCountsQuery, ConfigurationReferenceCasesQuery
+from src.apps.auto_ui.selectors.configuration_references import UiConfigurationReferenceSelector
+from src.common.responses.configuration_references import ConfigurationReferenceViewsMixin
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
 from src.common.responses.response_msg import (
     RESPONSE_MSG_0021,
+    RESPONSE_MSG_0001,
 )
+from src.apps.auto_ui.selectors.public_variable import UiPublicTagSelector
+from src.apps.auto_ui.services.asset_mutation import UiAssetMutationService
 
 
 class UiPublicCRUD(ModelCRUD):
+    def list_response(self, request, books, paging):
+        if request.query_params.get('tag_summary') == 'true':
+            return ResponseData.success(RESPONSE_MSG_0001, UiPublicTagSelector.summarize(books))
+        books = UiPublicTagSelector.filter(books, request.query_params.get('tag'),
+                                          request.query_params.get('untagged') == 'true')
+        return super().list_response(request, books, paging)
+
+    @error_response('ui')
+    def put(self, request):
+        if 'tag_operation' not in request.data:
+            return super().put(request)
+        scoped = self.filter_queryset_by_data_scope(request, self.queryset.all())
+        result = UiAssetMutationService.set_public_tags(scoped, request.data.get('ids'), request.data.get('tags'),
+                                                       request.data.get('tag_operation'), self.get_operator_id(request))
+        return ResponseData.success(RESPONSE_MSG_0001, result)
+
     model = UiPublic
     queryset = UiPublic.objects.filter(type__in=UiPublicTypeEnum.get_key_list())
     serializer_class = UiPublicSerializersC
@@ -31,7 +53,11 @@ class UiPublicCRUD(ModelCRUD):
     ]
 
 
-class UiPublicViews(ViewSet):
+class UiPublicViews(ConfigurationReferenceViewsMixin, ViewSet):
+    reference_case_model = UiCase
+    reference_selector = staticmethod(UiConfigurationReferenceSelector.public_variables)
+    reference_counts_query = ConfigurationReferenceCountsQuery
+    reference_cases_query = ConfigurationReferenceCasesQuery
     model = UiPublic
     serializer_class = UiPublicSerializers
 

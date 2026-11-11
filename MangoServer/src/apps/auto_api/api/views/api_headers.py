@@ -8,7 +8,10 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.apps.auto_api.api.serializers.api_headers import ApiHeadersSerializers, ApiHeadersSerializersC
-from src.apps.auto_api.models import ApiHeaders
+from src.apps.auto_api.models import ApiHeaders, ApiCase
+from src.apps.auto_api.api.serializers.configuration_reference import ConfigurationReferenceCountsQuery, ConfigurationReferenceCasesQuery
+from src.apps.auto_api.selectors.configuration_references import ApiConfigurationReferenceSelector
+from src.common.responses.configuration_references import ConfigurationReferenceViewsMixin
 from src.apps.auto_api.services.api_header import ApiHeaderDeleteService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
@@ -52,6 +55,10 @@ class ApiHeadersCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
         return ResponseData.success(RESPONSE_MSG_0005)
 
 
-class ApiHeadersViews(ViewSet):
+class ApiHeadersViews(ConfigurationReferenceViewsMixin, ViewSet):
+    reference_case_model = ApiCase
+    reference_selector = staticmethod(ApiConfigurationReferenceSelector.headers)
+    reference_counts_query = ConfigurationReferenceCountsQuery
+    reference_cases_query = ConfigurationReferenceCasesQuery
     model = ApiHeaders
     serializer_class = ApiHeadersSerializers

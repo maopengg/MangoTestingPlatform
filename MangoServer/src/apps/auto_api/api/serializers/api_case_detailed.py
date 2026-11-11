@@ -11,6 +11,7 @@ from src.apps.auto_api.api.serializers.api_info_mutation import ApiInfoSerialize
 from src.apps.auto_api.models import ApiCaseDetailed
 from src.apps.auto_api.schemas.recovery import ApiStepExecutionConfig
 from src.apps.auto_api.services.api_info.runtime import ApiInfoRuntimeService
+from src.apps.auto_api.services.api_case.step import ApiCaseStepService
 from src.apps.user.formatters import format_user_simple
 from src.common.validators.serializer_fields import RelatedObjectField
 
@@ -18,6 +19,14 @@ from src.common.validators.serializer_fields import RelatedObjectField
 class ApiCaseDetailedSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
+    def validate(self, attrs):
+        case = attrs.get('case') or getattr(self.instance, 'case', None)
+        api_info = attrs.get('api_info') or getattr(self.instance, 'api_info', None)
+        if case and api_info and (self.instance is None or self.instance.api_info_id != api_info.id
+                                 or self.instance.case_id != case.id):
+            ApiCaseStepService.validate_project(case.id, api_info.id)
+        return attrs
 
     def validate_execution_config(self, value):
         return ApiStepExecutionConfig.parse_config(value).model_dump(exclude_defaults=True)

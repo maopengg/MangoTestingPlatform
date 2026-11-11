@@ -18,6 +18,7 @@ from src.apps.data_factory.enums.audit import DatasourceAuditSourceEnum, Datasou
 from src.apps.data_factory.enums.cleanup_resource import EsCleanupModeEnum
 from src.apps.auto_api.enums.module_coverage import ModuleCoverageInterfaceCoverageStatus, ModuleCoveragePolicy, ModuleCoverageAnalysisStatus
 
+from src.common.enums.variable_tags import VariableTagOperationEnum
 from src.apps.auto_api.enums import (
     ApiCaseConfigurationFilterEnum,
     ApiAuthRefreshModeEnum,
@@ -127,6 +128,7 @@ class EnumCatalogService:
             'cline_type': ClientTypeEnum.get_option(),
             'method': MethodEnum.get_option(),
             'api_public_type': ApiPublicTypeEnum.get_option(),
+            'variable_tag_operation': VariableTagOperationEnum.get_option(),
             'api_auth_type': ApiAuthTypeEnum.get_option(),
             'api_auth_refresh_mode': ApiAuthRefreshModeEnum.get_option(),
             'api_auth_refresh_status': ApiAuthRefreshStatusEnum.get_option(),

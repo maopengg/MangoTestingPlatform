@@ -6,6 +6,7 @@
 import mimetypes
 import json
 from dataclasses import dataclass
+from copy import deepcopy
 from functools import partial
 from typing import Any
 
@@ -72,6 +73,7 @@ class PublicBase(BaseRequest):
         self.target_auth_scope = None
         self._auth_context_signature = None
         self._auth_injected_cache = {}
+        self._public_injected_cache = {}
         self.automation_type = AutoTypeEnum.API.value
 
     def init_headers(self, project_product_id: int):
@@ -93,13 +95,21 @@ class PublicBase(BaseRequest):
         scope_key = (project_product_id, test_env, self.automation_type)
         if self.is_test_object == scope_key:
             return
-        self.is_test_object = scope_key
+        self.clear_auth_injections(force=True)
+        self.clear_public_injections()
+        self._auth_context_signature = None
+        self.target_auth_scope = None
+        self.is_public = None
+        self.is_test_object = None
+        self.test_object = None
+        self.test_data.delete_cache('url')
         self.close_db_connections()
         self.test_object = func_test_object_value(test_env,
                                                   project_product_id,
                                                   self.automation_type)
         if self.test_object.value or not (getattr(self.test_object, 'target_config', {}) or {}).get('selector'):
             self.test_data.set_cache('url', TestTargetService.resolve(self.test_object, self.test_data))
+        self.is_test_object = scope_key
         log.api.debug(f'初始化测试对象：{self.test_object.id}')
 
     def execute_data_source(
@@ -153,23 +163,49 @@ class PublicBase(BaseRequest):
         scope_key = (project_product_id, test_env, tuple(front_public_ids), tuple(front_auth_config_ids))
         if self.is_public == scope_key:
             return
-        self.is_public = scope_key
         self.target_auth_scope = (project_product_id, test_env, front_auth_config_ids, self.current_api_info_id)
         api_public = ApiCaseGlobalVariableService.list_public(project_product_id, test_env, front_public_ids)
         log.api.debug(f'开始初始化全局变量！')
-        for i in api_public:
-            if i.type == ApiPublicTypeEnum.SQL.value:
-                self.__sql(i, test_env)
-            elif i.type == ApiPublicTypeEnum.CUSTOM.value:
-                self.__custom(i)
-            elif i.type == ApiPublicTypeEnum.CODE.value:
-                self.__code(i, project_product_id, test_env)
+        before = deepcopy(self.test_data.get_all())
+        completed = False
+        try:
+            for i in api_public:
+                if i.type == ApiPublicTypeEnum.SQL.value:
+                    self.__sql(i, test_env)
+                elif i.type == ApiPublicTypeEnum.CUSTOM.value:
+                    self.__custom(i)
+                elif i.type == ApiPublicTypeEnum.CODE.value:
+                    self.__code(i, project_product_id, test_env)
+            completed = True
+        finally:
+            after = self.test_data.get_all()
+            for key in before.keys() | after.keys():
+                if (key in before) != (key in after) or before.get(key) != after.get(key):
+                    self._public_injected_cache.setdefault(key, (key in before, before.get(key)))
+            if not completed:
+                self.clear_public_injections()
+                self.target_auth_scope = None
+                self.is_public = None
+                self.test_data.delete_cache('url')
+        self.is_public = scope_key
 
-    def clear_auth_injections(self):
+    def clear_public_injections(self):
+        # 仅撤销产品配置注入的键；步骤响应提取等运行数据继续用于跨产品传值。
+        for key, (existed, previous) in self._public_injected_cache.items():
+            if existed:
+                self.test_data.set_cache(key, previous)
+            else:
+                self.test_data.delete_cache(key)
+        self._public_injected_cache.clear()
+
+    def product_cache_keys(self) -> list[str]:
+        return sorted({'url'} | self._public_injected_cache.keys() | self._auth_injected_cache.keys())
+
+    def clear_auth_injections(self, *, force=False):
         current = self.test_data.get_all()
         for key, (existed, previous, injected) in self._auth_injected_cache.items():
             # 前置明确改写的值属于调用方，不随旧授权一起撤销。
-            if key not in current or current[key] != injected:
+            if not force and (key not in current or current[key] != injected):
                 continue
             if existed:
                 self.test_data.set_cache(key, previous)

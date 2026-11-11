@@ -410,7 +410,8 @@ class DataFactoryCleanupScheduleService:
                 execution.cleanup_status = (DataFactoryCleanupStatusEnum.SUCCESS.value if items and not skipped
                                             else DataFactoryCleanupStatusEnum.SKIPPED.value)
                 execution.cleanup_time = timezone.now()
-                CleanupPersistenceService.save(execution, ['cleanup_status', 'cleanup_time', 'update_time'])
+                DataFactoryCleanup.clear_resolved_cleanup_error(execution)
+                CleanupPersistenceService.save(execution, ['cleanup_status', 'cleanup_time', 'error_message', 'update_time'])
                 ExecutorTaskService.finish_cleanup_step(lease, progress, success=True)
                 DataFactoryCleanup.sync_workbench_todo(execution)
             except Exception as error:

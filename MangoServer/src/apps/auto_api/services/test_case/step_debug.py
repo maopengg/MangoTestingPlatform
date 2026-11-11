@@ -28,6 +28,7 @@ class ApiCaseStepSnapshot:
     cache_data: dict
     data_factory_cache_data: dict
     executed_at: str
+    product_cache_keys: list[str] | None = None
 
 
 @dataclass
@@ -118,12 +119,21 @@ class ApiCaseStepDebugContextService:
         )
         previous_step = previous_steps[-1]
         previous_snapshot = snapshots[-1]
+        cache_data = copy.deepcopy(previous_snapshot.cache_data)
+        crosses_products = any(item.api_info.project_product_id != step.case.project_product_id
+                               for item in [*previous_steps, step])
+        if crosses_products and previous_snapshot.product_cache_keys is not None:
+            for key in previous_snapshot.product_cache_keys:
+                cache_data.pop(key, None)
+        elif crosses_products:
+            # 旧快照没有产品配置的键归属，不能把旧凭据带入另一产品。
+            raise AutoApiError(API_TEST_ENVIRONMENT_USER_INVALID)
         return ApiCaseStepDebugState(
             step=step,
             context_id=normalized_context_id,
             snapshot_id=uuid4().hex,
             parent_snapshot_id=previous_snapshot.snapshot_id,
-            cache_data=copy.deepcopy(previous_snapshot.cache_data),
+            cache_data=cache_data,
             data_factory_cache_data=copy.deepcopy(previous_snapshot.data_factory_cache_data),
             restored_from_step_id=previous_step.id,
             restored_from_step_name=previous_step.api_info.name,
@@ -221,6 +231,7 @@ class ApiCaseStepDebugContextService:
             cache_data=cache_data,
             data_factory_cache_data=data_factory_cache_data,
             executed_at=latest_context.get('executed_at'),
+            product_cache_keys=latest_context.get('product_cache_keys'),
         )
 
     @classmethod

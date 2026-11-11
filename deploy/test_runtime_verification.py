@@ -52,6 +52,23 @@ class RuntimeVerificationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             verify_workloads([resource], IMAGE)
 
+    def test_mcp_requires_stop_grace_and_drain_readiness(self):
+        resource = workload()
+        resource['metadata']['name'] = 'example-mcp'
+        pod = resource['spec']['template']['spec']
+        container = pod['containers'][0]
+        container['command'] = ['python', 'manage.py', 'run_mcp_service']
+        with self.assertRaisesRegex(ValueError, '360'):
+            verify_workloads([workload(), resource], IMAGE)
+        pod['terminationGracePeriodSeconds'] = 360
+        with self.assertRaisesRegex(ValueError, 'readinessProbe'):
+            verify_workloads([workload(), resource], IMAGE)
+        container['readinessProbe'] = {'httpGet': {'path': '/health/ready', 'port': 8010}}
+        with self.assertRaisesRegex(ValueError, 'startupProbe'):
+            verify_workloads([workload(), resource], IMAGE)
+        container['startupProbe'] = container['readinessProbe'].copy()
+        verify_workloads([workload(), resource], IMAGE)
+
     def test_all_backend_replicas_must_be_current_and_ready(self):
         for field, value in [('readyReplicas', 0), ('updatedReplicas', 0), ('observedGeneration', 1)]:
             resource = workload()

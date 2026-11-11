@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head><meta charset="UTF-8"><title>资产引用Case展示验证</title></head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import * as Vue from 'vue'
+      import { compile } from '@vue/compiler-dom'
+      import { createPinia } from 'pinia'
+      import { Table, Button, Link, Pagination, Drawer, Spin } from '@arco-design/web-vue'
+      import '@arco-design/web-vue/dist/arco.css'
+      import '../../src/styles/index.css'
+      import { applyDisplayDensity } from '../../src/hooks/useDisplayDensity'
+      import { useCaseReferenceCounts } from '../../src/hooks/useCaseReferenceCounts'
+      import ApiInfoBoundCases from '../../src/views/apitest/info/components/ApiInfoBoundCases.vue'
+      import BaseSidePanel from '../../src/components/overlays/BaseSidePanel.vue'
+      import MangoTableActions from '../../src/components/table/MangoTableActions.vue'
+      import TableFooter from '../../src/components/table/TableFooter.vue'
+      import ExecutionSceneTagGrid from '../../src/components/display/ExecutionSceneTagGrid.vue'
+
+      applyDisplayDensity('auto')
+      Vue.createApp({
+        components: { ApiInfoBoundCases },
+        setup() {
+          const rows = Vue.ref([{ id: 1, name: '默认开启变量', status: 1 }, { id: 2, name: '显式引用变量', status: 0 }])
+          const drawer = Vue.ref(null), reads = Vue.ref(0)
+          const state = useCaseReferenceCounts(() => rows.value,
+            [{ key: 'name', title: '变量', dataIndex: 'name', width: 220 },
+             { key: 'status', title: '默认开启', dataIndex: 'status', width: 100 },
+             { key: 'project_product', title: '项目/产品' }],
+            async () => { reads.value++; return { data: { 2: 21 } } }, () => false,
+            () => drawer.value?.close())
+          const columns = Vue.computed(() => state.tableColumns.value.map(column => column.key === 'case_reference_count'
+            ? { ...column, slotName: 'references' } : column))
+          return { rows, drawer, reads, columns, ...state, readCases: async (id, page, pageSize) => ({
+            totalSize: id === 2 ? 21 : 0,
+            data: id !== 2 ? [] : Array.from({ length: Math.min(pageSize, 21 - (page - 1) * pageSize) }, (_, index) => ({
+              case_id: 100 + (page - 1) * pageSize + index, case_name: `示例Case ${(page - 1) * pageSize + index + 1}`,
+              case_people_name: '演示负责人', update_user_name: '演示用户', update_time: '2026-01-01 12:00:00',
+              project_product_id: 1,
+            })),
+          }) }
+        },
+        render: new Function('Vue', compile(`<section class="mango-reference-fixture">
+          <span>统计请求次数：{{ reads }}</span>
+          <a-table :data="rows" :columns="columns" :pagination="false" :scroll="{x:'100%'}">
+            <template #references="{record}">
+              <span v-if="record.status === 1" class="mango-muted-text">不统计默认开启</span>
+              <a-link v-else @click="drawer.open(record)">{{counts[record.id]}}</a-link>
+            </template>
+          </a-table>
+          <ApiInfoBoundCases ref="drawer" reference-mode :read-cases="readCases" />
+        </section>`).code)(Vue),
+      }).use(createPinia()).component('ATable', Table).component('AButton', Button).component('ALink', Link)
+        .component('APagination', Pagination).component('ADrawer', Drawer).component('ASpin', Spin)
+        .component('BaseSidePanel', BaseSidePanel).component('MangoTableActions', MangoTableActions)
+        .component('TableFooter', TableFooter).component('ExecutionSceneTagGrid', ExecutionSceneTagGrid).mount('#app')
+    </script>
+    <style>.mango-reference-fixture { padding: var(--m-page-gap); display: grid; gap: var(--m-page-gap); }</style>
+  </body>
+</html>

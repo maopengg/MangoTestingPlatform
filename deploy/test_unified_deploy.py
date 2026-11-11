@@ -42,6 +42,16 @@ class UnifiedDeploymentTests(unittest.TestCase):
         (self.root/'.env').write_text("MYSQL_DATABASE=mango_server\nMANGO_DATA_DIR="+str(data)+'\n')
         with self.assertRaisesRegex(ValueError,'MYSQL_PASSWORD'):b.initialize(self.root/'.env')
 
+    def test_mcp_shutdown_budget_and_readiness_are_rendered(self):
+        v=values()
+        d=b.render(self.root,v)
+        self.assertEqual(d['services']['mcp_service']['stop_grace_period'],'360s')
+        k=render_k8s(self.root,v)
+        resource=next(x for x in k['workloads'] if x['metadata']['name']=='mcp-service')
+        spec=resource['spec']['template']['spec']
+        self.assertEqual(spec['terminationGracePeriodSeconds'],360)
+        self.assertEqual(spec['containers'][0]['readinessProbe']['httpGet']['path'],'/health/ready')
+
     def test_automatic_public_storage_url_is_recomputed_after_site_change(self):
         (self.root/'.env').write_text("FILE_STORAGE_BACKEND=minio\nPUBLIC_URL=http://first.example.com\nMANGO_DATA_DIR="+str(self.root/'data')+'\n')
         first=b.initialize(self.root/'.env')

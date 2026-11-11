@@ -250,7 +250,8 @@ class SchedulerSystemJobService:
                 ExecutionStatusProjectionService,
             )
 
-            return ExecutionStatusProjectionService.reconcile()
+            from src.apps.auto_api.services.execution_trace.reconciliation import ApiTraceReconciliationService
+            return {**ExecutionStatusProjectionService.reconcile(), **ApiTraceReconciliationService.reconcile()}
         except Exception as error:
             log.system.error(f'scheduler-service 修复执行状态一致性失败：{error}')
             raise

@@ -26,9 +26,11 @@ from src.common.database.mysql_lock import acquire_mysql_lock, release_mysql_loc
 from src.common.exceptions import MangoServerError
 from src.common.logging import log
 from ..step_debug import ApiCaseStepDebugContextService
+from src.apps.auto_api.services.execution_trace.recorder import trace_lifecycle
 
 
 class ApiTestCaseExecutionMixin:
+    @trace_lifecycle(ApiCaseTraceStepType.CASE_START.value)
     def test_case(self, case_sort: int | None = None, parametrize: dict | list | None = None) -> ApiCaseExecutionResult:
         from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
         with DatasourceInfrastructureService.scope():
@@ -225,6 +227,7 @@ class ApiTestCaseExecutionMixin:
                             return self.api_case_result
                 self.update_test_case(self.case_id, TaskEnum.FAIL.value)
                 return self.api_case_result
+            self.api_case_result.execution_finalized = True
             report_step = self.trace_recorder.start_step(
                 ApiCaseTraceStepType.REPORT_WRITE,
                 '回写用例结果',
@@ -348,6 +351,7 @@ class ApiTestCaseExecutionMixin:
                 f'error={error_message}'
             )
 
+    @trace_lifecycle(ApiCaseTraceStepType.CASE_START.value)
     def debug_step(
             self,
             case_detailed_id: int,

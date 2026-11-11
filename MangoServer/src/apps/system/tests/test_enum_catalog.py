@@ -17,6 +17,16 @@ from src.apps.test_center.enums.environment import EnvironmentEnum
 
 
 class EnumCatalogTests(SimpleTestCase):
+    def test_public_variable_labels_use_number_prefixes_without_changing_values(self):
+        expected = [
+            {'key': 0, 'title': '① 自定义'},
+            {'key': 1, 'title': '② SQL'},
+            {'key': 2, 'title': '③ 代码变量'},
+        ]
+        catalog = EnumCatalogService.catalog()
+        self.assertEqual(catalog['api_public_type'], expected)
+        self.assertEqual(catalog['ui_public'], expected)
+
     def test_case_layer_display_names_change_without_changing_values(self):
         self.assertEqual((ApiCaseScenarioLayerEnum.API.value,
                           ApiCaseScenarioLayerEnum.INTEGRATION.value,

@@ -31,6 +31,7 @@
           <template v-if="usersFailed"><a-button size="small" :loading="userOptionsLoading" @click="loadUsers"
               >重新加载</a-button></template>
           <a-space>
+            <a-button size="small" :disabled="!selectedRowKeys.length" @click="tagBatchRef?.open(selectedRowKeys)">批量设置分类</a-button>
             <div>
               <a-button
                 size="small"
@@ -52,9 +53,11 @@
             </div>
           </a-space>
         </template>
+        <VariableTagWorkbench ref="tagWorkbenchRef" v-model="activeTag" :query="categoryQuery" :read="getApiPublic"
+          @update:model-value="onSearchRefresh">
         <a-table
           class="mango-native-scroll-table"
-          :scroll="{ x: tableScrollX, y: '100%' }"
+          :scroll="{ x: tableScrollX + 120, y: '100%' }"
           :bordered="false"
           :columns="tableColumns"
           :data="rows"
@@ -78,6 +81,12 @@
             >
               <template v-if="item.key === 'index'" #cell="{ record }">
                 {{ record.id }}
+              </template>
+              <template v-else-if="item.key === 'tags'" #cell="{ record }"><VariableTagCell :tags="record.tags" /></template>
+              <template v-else-if="item.key === 'case_reference_count'" #cell="{ record }">
+                <span v-if="record.status === 1" class="mango-muted-text">不统计默认开启</span>
+                <a-link v-else-if="referenceCounts[String(record.id)] != null" @click="referenceCasesRef?.open(record)">{{ referenceCounts[String(record.id)] }}</a-link>
+                <span v-else>{{ referencesLoading ? '查询中…' : '-' }}</span>
               </template>
               <template v-else-if="item.key === 'test_env'" #cell="{ record }">
                 <a-tag v-if="normalizeEnvironmentList(record.test_envs).length === 0" size="small"
@@ -147,17 +156,28 @@
             </a-table-column>
           </template>
         </a-table>
+        </VariableTagWorkbench>
         <template #footer>
           <TableFooter :pagination="pagination" />
         </template>
       </ProjectProductNavigationWorkbench>
     </template>
   </TableBody>
+  <VariableTagBatchDialog ref="tagBatchRef" kind="api" :context-key="JSON.stringify(categoryQuery)"
+    :options="tagWorkbenchRef?.names || []" @saved="onSaved" />
   <PublicVariableEditor ref="editorRef" @saved="onSaved" />
+  <ApiInfoBoundCases ref="referenceCasesRef" reference-mode :read-cases="getApiPublicReferenceCases" />
 </template>
 
 <script lang="ts" setup>
 import { reportLoadError } from '@/utils/load-error'
+import VariableTagWorkbench from '@/components/business/VariableTagWorkbench.vue'
+import VariableTagCell from '@/components/business/VariableTagCell.vue'
+import VariableTagBatchDialog from '@/components/business/VariableTagBatchDialog.vue'
+import { variableTagFilter } from '@/components/business/variable-tags'
+import ApiInfoBoundCases from '@/views/apitest/info/components/ApiInfoBoundCases.vue'
+import { useCaseReferenceCounts } from '@/hooks/useCaseReferenceCounts'
+import { getApiPublicReferenceCounts, getApiPublicReferenceCases } from '@/api/apitest/public'
 
   import {
     computed,
@@ -175,7 +195,7 @@ import { reportLoadError } from '@/utils/load-error'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import {
-    tableColumns,
+    tableColumns as baseTableColumns,
     createConditionItems,
     tableScrollX,
     COMMON_ENV_VALUE,
@@ -194,6 +214,13 @@ import { reportLoadError } from '@/utils/load-error'
     editorRef = ref<InstanceType<typeof PublicVariableEditor>>()
   const enumStore = useEnum(),
     conditionItems = createConditionItems()
+  const activeTag = ref<string | null>(null)
+  const tagWorkbenchRef = ref<InstanceType<typeof VariableTagWorkbench> | null>(null)
+  const tagBatchRef = ref<InstanceType<typeof VariableTagBatchDialog> | null>(null)
+  const categoryQuery = computed(() => {
+    const { page, pageSize, tag, untagged, ...query } = requestParams()
+    return query
+  })
   const headerConditionItems = computed(() =>
     conditionItems.filter((item) => item.key !== 'project_product')
   )
@@ -203,6 +230,11 @@ import { reportLoadError } from '@/utils/load-error'
   const sidebarResetKey = ref(0),
     table = useTable(),
     rows = computed(() => table.dataList as PublicRecord[])
+  const referenceCasesRef = ref<InstanceType<typeof ApiInfoBoundCases> | null>(null)
+  const { tableColumns, loading: referencesLoading, counts: referenceCounts } = useCaseReferenceCounts(
+    () => rows.value, baseTableColumns, getApiPublicReferenceCounts, () => table.tableLoading.value,
+    () => referenceCasesRef.value?.close()
+  )
   const pagination = usePagination(
     () => doRefresh(true),
     () => table.tableLoading
@@ -235,7 +267,7 @@ import { reportLoadError } from '@/utils/load-error'
       if (value === '' || value == null || (Array.isArray(value) && !value.length))
         delete query[key]
     }
-    return { ...query, page: pagination.page, pageSize: pagination.pageSize }
+    return { ...query, ...variableTagFilter(activeTag.value), page: pagination.page, pageSize: pagination.pageSize }
   }
   async function doRefresh(showLoading = true) {
     if (!pageActive) return
@@ -270,10 +302,12 @@ import { reportLoadError } from '@/utils/load-error'
     void doRefresh(true)
   }
   function onSidebarFilterChange({ projectProduct }: { projectProduct: string | number | null }) {
+    activeTag.value = null
     if (projectProductCondition.value) projectProductCondition.value.value = projectProduct
     onSearchRefresh()
   }
   function onResetSearch() {
+    activeTag.value = null
     conditionItems.forEach((item) => {
       item.value = item.multiple || item.key === 'test_envs' ? [] : ''
     })
@@ -289,6 +323,7 @@ import { reportLoadError } from '@/utils/load-error'
   }
   function onSaved() {
     selectedRowKeys.value = []
+    void tagWorkbenchRef.value?.refreshAfterMutation()
     void doRefresh(true)
   }
   function onDelete(record: PublicRecord | null) {
@@ -328,6 +363,7 @@ import { reportLoadError } from '@/utils/load-error'
             )
               pagination.page--
             await doRefresh(true)
+            void tagWorkbenchRef.value?.refreshAfterMutation()
           }
           return true
         } catch {
@@ -356,6 +392,7 @@ import { reportLoadError } from '@/utils/load-error'
       if (target) target.status = status
       invalidateRequests()
       await doRefresh(false)
+      void tagWorkbenchRef.value?.refreshAfterMutation()
       return true
     } catch {
       return false

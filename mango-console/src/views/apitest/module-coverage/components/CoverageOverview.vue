@@ -35,32 +35,20 @@
                 <header class="mango-section-title"
                   ><div class="mango-section-title__main"
                     ><h2>② 接口分析进度</h2
-                    ><p>业务全景图和场景分析</p></div
+                    ><p>业务全景图和场景分析</p
+                    ><p v-if="!loading && data"
+                      >已排除 {{ data.summary.excluded_interface_count }} 个接口，不计入分析完成率</p
+                    ></div
                   ></header
                 >
                 <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
                   <div
                     v-if="loading || data?.summary.interface_count"
                     ref="entryChart"
-                    class="mango-coverage-overview__chart mango-coverage-overview__analysis-chart"
+                    class="mango-coverage-overview__chart"
                     role="img"
                     :aria-label="entryDescription"
                   ></div>
-                  <div v-if="data?.summary.interface_count" class="mango-coverage-overview__analysis-legend">
-                    <button
-                      v-for="item in entryData"
-                      :key="item.status"
-                      type="button"
-                      class="mango-coverage-overview__analysis-state"
-                      :data-state="item.status"
-                      :aria-pressed="gapFilter === item.filter"
-                      @click="gapFilter = item.filter"
-                    >
-                      <i aria-hidden="true"></i>
-                      <span>{{ item.name }}</span>
-                      <small>{{ item.value.toLocaleString('zh-CN') }} 个 · {{ data.summary.interface_count ? ((item.value / data.summary.interface_count) * 100).toFixed(2) : '0.00' }}%</small>
-                    </button>
-                  </div>
                   <div v-if="!loading && !data?.summary.interface_count" class="mango-empty-state mango-coverage-overview__chart-empty"
                     >暂无已发现接口</div
                   >
@@ -540,21 +528,8 @@
             token('--m-chart-5'),
           ],
           tooltip,
-          title: {
-            text: rate(props.data.summary.analysis_rate),
-            subtext: '分析完成率',
-            left: 'center',
-            top: '35%',
-            textStyle: { color: token('--m-text'), fontSize: 24, fontWeight: 600 },
-            subtextStyle: { color: token('--m-muted'), fontSize: 11 },
-          },
-          legend: { show: false },
           series: [{
             ...donutSeries(entryChart.value, entryData.value),
-            center: ['50%', '50%'],
-            radius: ['64%', '86%'],
-            label: { show: false },
-            labelLine: { show: false },
             data: entryData.value,
           }],
         },
@@ -748,50 +723,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-  .mango-coverage-overview__analysis-chart {
-    height: 156px;
-  }
-  .mango-coverage-overview__analysis-legend {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 4px 12px;
-    padding-top: 4px;
-  }
-  .mango-coverage-overview__analysis-state {
-    display: grid;
-    grid-template-columns: 8px minmax(0, 1fr);
-    column-gap: 6px;
-    align-items: center;
-    min-width: 0;
-    padding: 2px 0;
-    border: 0;
-    background: transparent;
-    color: var(--m-text-2);
-    font: inherit;
-    font-size: 12px;
-    line-height: 18px;
-    text-align: left;
-    cursor: pointer;
-    i {
-      width: 8px;
-      height: 8px;
-      border-radius: 2px;
-      background: var(--m-chart-5);
-    }
-    small {
-      grid-column: 2;
-      color: var(--m-muted);
-      font-size: 11px;
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
-    }
-    &[data-state='completed'] i { background: var(--m-success); }
-    &[data-state='pending'] i { background: var(--m-warning); }
-    &[data-state='gap'] i { background: var(--m-danger); }
-    &[data-state='review'] i { background: var(--m-primary); }
-    &:hover, &[aria-pressed='true'] { color: var(--m-primary); }
-    &:focus-visible { outline: 2px solid var(--m-primary); outline-offset: 2px; }
   }
   .mango-coverage-overview__toolbar {
     display: flex;

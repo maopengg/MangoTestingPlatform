@@ -10,6 +10,7 @@ export interface PublicAlias extends PublicRelation {
   disabled?: boolean
 }
 export interface PublicRow {
+  tags?: string[]
   id: PublicId
   project_product: (PublicRelation & { project: PublicRelation | null }) | null
   type: number
@@ -23,6 +24,7 @@ export interface PublicRow {
   update_time: string
 }
 export interface PublicDraft {
+  tags: string[]
   project_product: PublicId | PublicId[] | null
   type: number | null
   test_envs: PublicId[]
@@ -116,6 +118,7 @@ export function readPublicRow(value: unknown): PublicRow {
     throw Error('变量类型或状态格式不正确')
   return {
     id: requiredId(row.id),
+    tags: Array.isArray(row.tags) ? row.tags.filter((tag): tag is string => typeof tag === 'string') : [],
     project_product: product ? { ...product, project: relation(productData.project) } : null,
     type,
     status,
@@ -176,6 +179,7 @@ export function createPublicDraft(
 ): PublicDraft {
   return {
     project_product: row?.project_product?.id ?? product,
+    tags: [...(row?.tags ?? [])],
     type: row?.type ?? null,
     test_envs: row?.test_envs.length ? [...row.test_envs] : [COMMON_ENV_VALUE],
     name: row?.name ?? '',
@@ -197,6 +201,7 @@ export function publicPayload(draft: PublicDraft, id: PublicId | null) {
     type: draft.type,
     test_envs: draft.test_envs.includes(COMMON_ENV_VALUE) ? [] : environmentList(draft.test_envs),
     name: draft.name,
+    tags: [...draft.tags],
     key: draft.key,
     value: draft.value,
     datasource_alias: draft.type === 1 ? draft.datasource_alias : null,

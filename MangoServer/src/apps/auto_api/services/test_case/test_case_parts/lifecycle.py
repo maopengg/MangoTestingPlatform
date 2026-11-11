@@ -9,7 +9,8 @@ from uuid import uuid4
 from mangotools.enums import StatusEnum
 from mangotools.enums import TaskEnum
 
-from src.apps.auto_api.enums.execution_trace import ApiCaseTraceSourceType
+from src.apps.auto_api.enums.execution_trace import ApiCaseTraceSourceType, ApiCaseTraceStepType
+from src.apps.auto_api.services.execution_trace.recorder import trace_lifecycle
 from src.apps.auto_api.exceptions import (
     API_VERSION_CASE_REVISION_CONFIG_FAILED,
     AutoApiError,
@@ -35,6 +36,7 @@ from ...base.case_base import CaseBase
 
 
 class ApiTestCaseLifecycleMixin:
+    @trace_lifecycle(ApiCaseTraceStepType.CASE_START.value)
     def __init__(self,
                  user_id: int,
                  test_env: int,
@@ -59,6 +61,12 @@ class ApiTestCaseLifecycleMixin:
         self.debug_context_state: ApiCaseStepDebugState | None = None
         self.revision_selection = None
         self.revision_aggregate = None
+
+        self.trace_recorder = ApiCaseExecutionTraceRecorder()
+        trace = self.trace_recorder.create_trace(ApiCaseExecutionContext(
+            source_type=self.get_trace_source_type(), user_id=user_id, test_env=test_env,
+            case_id=case_id, test_suite_id=test_suite, test_suite_detail_id=test_suite_details,
+        ))
 
         self.test_setup = APIBaseTestSetup(db_context=db_context)
         if revision_id is not None or release_id is not None:
@@ -133,30 +141,20 @@ class ApiTestCaseLifecycleMixin:
             version_label=(self.revision_selection.version_label if self.revision_selection else None),
             config_checksum=(self.revision_selection.checksum if self.revision_selection else None),
         )
-        self.trace_recorder = ApiCaseExecutionTraceRecorder()
-        trace = self.trace_recorder.create_trace(ApiCaseExecutionContext(
-            source_type=self.get_trace_source_type(),
-            user_id=user_id,
-            test_env=test_env,
-            case_id=case_id,
-            case_name=self.api_case.name,
-            test_suite_id=test_suite,
-            test_suite_detail_id=test_suite_details,
-            summary={
-                'project_product_id': self.api_case.project_product_id,
-                'project_product_name': self.api_case.project_product.name,
-                'case_revision_id': self.api_case_result.case_revision_id,
-                'case_revision_no': self.api_case_result.case_revision_no,
-                'case_release_id': self.api_case_result.case_release_id,
-                'version_label': self.api_case_result.version_label,
-                'config_checksum': self.api_case_result.config_checksum,
-                'api_revision_dependencies': (
-                    list(self.revision_aggregate.api_revision_dependencies)
-                    if self.revision_aggregate is not None
-                    else []
-                ),
-            },
-        ))
+        self.trace_recorder.update_metadata(self.api_case.name, {
+            'project_product_id': self.api_case.project_product_id,
+            'project_product_name': self.api_case.project_product.name,
+            'case_revision_id': self.api_case_result.case_revision_id,
+            'case_revision_no': self.api_case_result.case_revision_no,
+            'case_release_id': self.api_case_result.case_release_id,
+            'version_label': self.api_case_result.version_label,
+            'config_checksum': self.api_case_result.config_checksum,
+            'api_revision_dependencies': (
+                list(self.revision_aggregate.api_revision_dependencies)
+                if self.revision_aggregate is not None
+                else []
+            ),
+        })
         if trace:
             self.api_case_result.trace_id = trace.trace_id
         self.execution_context_id = self.api_case_result.trace_id or uuid4().hex

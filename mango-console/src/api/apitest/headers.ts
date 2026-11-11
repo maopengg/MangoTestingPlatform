@@ -1,5 +1,12 @@
 import { deleted, get, post, put } from '@/api/http'
 
+export function getApiHeaderReferenceCounts(ids: Array<string | number>) {
+  return get({ url: '/api/headers/reference-counts', data: () => ({ ids: ids.join(',') }) })
+}
+export function getApiHeaderReferenceCases(id: string | number, page = 1, pageSize = 20) {
+  return get({ url: '/api/headers/reference-cases', data: () => ({ id, page, pageSize }) })
+}
+
 export function getApiHeaders(data: object) {
   return get({
     url: '/api/headers',

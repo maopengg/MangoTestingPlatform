@@ -81,3 +81,6 @@ class ApiResourceCleanupCommand(serializers.Serializer):
     case_id = serializers.IntegerField(min_value=1)
     resource_id = serializers.IntegerField(min_value=1)
     preview = serializers.BooleanField(default=True)
+    identity_mapping = serializers.DictField(required=False, allow_null=True)
+    child_mapping = serializers.ListField(child=serializers.DictField(), max_length=10, required=False, allow_null=True)
+    rejection_recovery = serializers.DictField(required=False, allow_null=True)

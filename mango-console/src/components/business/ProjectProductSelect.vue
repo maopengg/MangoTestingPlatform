@@ -53,6 +53,10 @@ import { reportLoadError } from '@/utils/load-error'
       type: Boolean,
       default: false,
     },
+    sameProjectAsProductId: {
+      type: [String, Number],
+      default: null,
+    },
   })
 
   const emit = defineEmits(['update:modelValue', 'change'])
@@ -64,6 +68,11 @@ import { reportLoadError } from '@/utils/load-error'
   let pending: { version: number; promise: Promise<void> } | null = null
   const available = () => mounted && active && !disposed && (typeof document === 'undefined' || !document.hidden)
   const productOptions = computed(() => {
+    if (props.sameProjectAsProductId != null) {
+      return projectInfo.projectProduct.filter(project => project.children?.some(
+        product => String(product.value) === String(props.sameProjectAsProductId)
+      ))
+    }
     const selectedProject = 'selectValue' in projectInfo ? projectInfo.selectValue : null
     if (!props.currentProjectOnly || !selectedProject) {
       return projectInfo.projectProduct

@@ -81,6 +81,14 @@ class ApiResourceRuleTests(SimpleTestCase):
         with self.assertRaises(ValidationError):
             ApiResourceCleanupRules.model_validate({'rules': [rule_data(), rule_data(key='other')]})
 
+    def test_rejection_requires_explicit_false_contract_and_distinct_source(self):
+        for change in ({'rejection_response': {'success': True}}, {'rejection_response': {'success': 0}},
+                       {'rejection_response': {'success': 'false'}}, {'name_source_key': 'project'}):
+            with self.subTest(change=change), self.assertRaises(ValidationError):
+                ApiResourceCleanupRule.model_validate(rule_data(**change))
+        rule = ApiResourceCleanupRule.model_validate(rule_data(rejection_response={'success': False}))
+        self.assertIs(rule.rejection_response['success'], False)
+
     def test_owner_and_external_version_strict(self):
         rule, proof = ApiResourceCleanupRule.model_validate(rule_data()), proof_data()
         IO.check_document(document(), rule, proof)
@@ -100,6 +108,61 @@ class ApiResourceRuleTests(SimpleTestCase):
             row = {**proof.root, key: 'other'}
             with self.subTest(field=key), self.assertRaises(AutoApiError):
                 Service.verify_response(rule, proof, row)
+
+    def test_array_owner_and_version_are_checked_on_same_single_element(self):
+        rule = ApiResourceCleanupRule.model_validate(rule_data(
+            es_business_id_path='projects[].projectId', es_version_path='projects[].projectVersion'))
+        proof = proof_data()
+        doc = document(_source={'tenantId': '123', 'groupId': '8001',
+            'projects': [{'projectId': '9001', 'projectVersion': '2'}]})
+        IO.check_document(doc, rule, proof)
+        for elements in ([], [{'projectId': 'other', 'projectVersion': '2'}],
+                         [{'projectId': '9001', 'projectVersion': '3'}],
+                         [{'projectId': '9001', 'projectVersion': '2'}, {'projectId': 'other', 'projectVersion': '2'}],
+                         [{'projectId': '9001'}, {'projectVersion': '2'}], [None]):
+            changed = deepcopy(doc)
+            changed['_source']['projects'] = elements
+            with self.subTest(elements=elements), self.assertRaises(AutoApiError):
+                IO.check_document(changed, rule, proof)
+
+    def test_array_paths_cannot_miscombine_or_guess(self):
+        for paths in (('projects[].projectId', 'sourceVersion'),
+                      ('projects[].projectId', 'others[].projectVersion'),
+                      ('projects[0].projectId', 'projects[0].projectVersion'),
+                      ('projects[*].projectId', 'projects[*].projectVersion')):
+            with self.subTest(paths=paths), self.assertRaises(ValidationError):
+                ApiResourceCleanupRule.model_validate(rule_data(
+                    es_business_id_path=paths[0], es_version_path=paths[1]))
+        # 已冻结的旧规则不自动猜测数组路径。
+        with self.assertRaises(AutoApiError):
+            IO.check_document(document(_source={'tenantId': '123', 'groupId': '8001', 'sourceVersion': '2',
+                'projects': [{'projectId': '9001', 'projectVersion': '2'}]}),
+                ApiResourceCleanupRule.model_validate(rule_data()), proof_data())
+
+    def test_es_source_filter_removes_only_array_marker(self):
+        rule = ApiResourceCleanupRule.model_validate(rule_data(
+            es_business_id_path='projects[].projectId', es_version_path='projects[].projectVersion'))
+        with patch.object(ES, 'document') as read:
+            IO.document(Mock(), rule, proof_data())
+        self.assertEqual(read.call_args.kwargs['tenant_path'],
+                         'tenantId,projects.projectId,groupId,projects.projectVersion')
+
+    def test_read_only_user_cannot_amend_cleanup_mapping(self):
+        with patch('src.apps.user.services.permission.PermissionMenuService.permission_keys_for_user',
+                   return_value={'api.case:read'}), self.assertRaises(AutoApiError):
+            Retry.retry(user=SimpleNamespace(id=99), case_id=1, resource_id=5,
+                identity_mapping={'es_business_id_path': 'projects[].projectId',
+                                  'es_version_path': 'projects[].projectVersion'})
+
+    def test_missing_child_table_blocks_before_request_with_business_error(self):
+        from sqlalchemy.exc import ProgrammingError
+        error = ProgrammingError('statement', {}, Exception(1146, 'private database detail'))
+        connection = Mock()
+        connection.execute.side_effect = error
+        with self.assertRaises(AutoApiError) as caught:
+            IO.validate_children(connection, ApiResourceCleanupRule.model_validate(rule_data()))
+        self.assertIn('创建请求尚未发送', caught.exception.msg)
+        self.assertNotIn('private database detail', caught.exception.msg)
 
     def test_binding_environment_is_fail_closed(self):
         for env in (None, 1, 2, 4, 5):
@@ -266,6 +329,71 @@ class ApiResourceLifecycleTests(SimpleTestCase):
         self.assertFalse(self.record.proof['sql_cleaned'])
         self.assertEqual(self.record.status, State.FAILED.value)
 
+    def test_identity_correction_is_verified_and_audited_without_rewriting_snapshot(self):
+        mapping = {'es_business_id_path': 'projects[].projectId', 'es_version_path': 'projects[].projectVersion'}
+        doc = document(_source={'tenantId': '123', 'groupId': '8001',
+            'projects': [{'projectId': '9001', 'projectVersion': '2'}]})
+        original = deepcopy(self.record.rule)
+        with patch.object(IO, 'find', return_value=dict(self.proof.root)), \
+             patch.object(IO, 'document', return_value=doc):
+            Service.correct_identity(self.record, self.rule, self.proof, mapping, 4, persist=False)
+            self.assertIsNone(self.proof.es_identity_correction)
+            self.persist.assert_not_called()
+            Service.correct_identity(self.record, self.rule, self.proof, mapping, 4)
+        self.assertEqual(self.record.rule, original)
+        self.assertEqual(self.proof.es_identity_correction.operator_id, 4)
+        self.assertTrue(self.proof.es_identity_correction.corrected_at)
+
+    def test_identity_correction_cannot_change_targets_or_accept_foreign_sql(self):
+        from src.apps.auto_api.schemas.resource_cleanup import ApiResourceEsIdentityMapping
+        with self.assertRaises(ValidationError):
+            ApiResourceEsIdentityMapping.model_validate({'es_business_id_path': 'projects[].projectId',
+                'es_version_path': 'projects[].projectVersion', 'document_id': 'other'})
+        with patch.object(IO, 'find', return_value={**self.proof.root, 'version': '999'}), \
+             self.assertRaises(AutoApiError):
+            Service.correct_identity(self.record, self.rule, self.proof,
+                {'es_business_id_path': 'projects[].projectId', 'es_version_path': 'projects[].projectVersion'}, 4)
+        self.persist.assert_not_called()
+
+    def test_shared_document_correction_does_not_persist(self):
+        doc = document(_source={'tenantId': '123', 'groupId': '8001', 'projects': [
+            {'projectId': '9001', 'projectVersion': '2'}, {'projectId': 'foreign', 'projectVersion': '2'}]})
+        with patch.object(IO, 'find', return_value=dict(self.proof.root)), \
+             patch.object(IO, 'document', return_value=doc), self.assertRaises(AutoApiError):
+            Service.correct_identity(self.record, self.rule, self.proof,
+                {'es_business_id_path': 'projects[].projectId', 'es_version_path': 'projects[].projectVersion'}, 4)
+        self.persist.assert_not_called()
+
+    def test_child_correction_preserves_frozen_root_tenant_order_and_limits(self):
+        mapping = [{'original_table': 'project_field_value', 'table': 'field_value', 'foreign_key': 'business_id'}]
+        original = deepcopy(self.record.rule)
+        with patch.object(IO, 'find', return_value=dict(self.proof.root)), \
+             patch.object(IO, 'verify_child_mapping') as verify:
+            Service.correct_children(self.record, self.rule, self.proof, mapping, 4, persist=False)
+            self.persist.assert_not_called()
+            Service.correct_children(self.record, self.rule, self.proof, mapping, 4)
+            self.assertEqual(verify.call_count, 2)
+        self.assertEqual(self.record.rule, original)
+        changed = Service.children_rule(self.rule, self.proof.child_corrections)
+        self.assertEqual(changed.children[1].table, 'field_value')
+        self.assertEqual(changed.children[1].foreign_key, 'business_id')
+        self.assertEqual(changed.children[1].root_field, self.rule.children[1].root_field)
+        self.assertEqual(changed.children[1].tenant_field, self.rule.children[1].tenant_field)
+        self.assertEqual(changed.children[1].max_rows, self.rule.children[1].max_rows)
+
+    def test_rejection_observation_does_not_skip_window_or_accept_created_row(self):
+        rule = ApiResourceCleanupRule.model_validate(rule_data(rejection_response={'success': False}))
+        proof = proof_data()
+        proof.root = {}
+        proof.rejection_confirmed = True
+        now = [0]
+        with patch.object(IO, 'find', return_value=None):
+            Service.observe_rejection(self.record, rule, proof, Mock(), clock=lambda: now[0],
+                pause=lambda seconds: now.__setitem__(0, now[0] + seconds))
+        self.assertGreaterEqual(now[0], 16)
+        with patch.object(IO, 'find', return_value={'id': 'new'}), self.assertRaises(AutoApiError):
+            Service.observe_rejection(self.record, rule, proof, Mock(), clock=lambda: 0, pause=Mock())
+
     def test_retry_clean_sql_only_verifies_original_targets(self):
         self.record.proof['sql_cleaned'] = True
         Service.cleanup(self.record)
@@ -314,6 +442,30 @@ class ApiResourceLifecycleTests(SimpleTestCase):
 
 
 class ApiResourceRequestTests(SimpleTestCase):
+    def test_rejection_captured_before_assertions_but_partial_identity_is_not_accepted(self):
+        rule = ApiResourceCleanupRule.model_validate(rule_data(rejection_response={'success': False}))
+        proof = proof_data()
+        proof.root = {}
+        record = SimpleNamespace(rule=rule.model_dump(mode='json'), proof=proof.model_dump(mode='json'))
+        manager = Manager(Mock(), Mock(), Mock(), [rule.model_dump()])
+        with patch.object(Service, 'persist') as save:
+            manager.after_response(record, SimpleNamespace(code=200, json={'success': False, 'data': None}))
+            self.assertTrue(save.call_args.args[1].rejection_confirmed)
+        for response in ({'success': True}, {'success': False, 'data': {'projectId': '9001'}}):
+            with patch.object(Service, 'persist') as save:
+                manager.after_response(record, SimpleNamespace(code=200, json=response))
+                save.assert_not_called()
+
+    def test_reused_name_requires_preceding_current_execution_marker(self):
+        setup = SimpleNamespace(test_data=Mock())
+        manager = Manager(Mock(), Mock(), setup, [rule_data(key='seed', trigger_step_key='step-9'),
+                                                rule_data(name_source_key='seed')])
+        with self.assertRaises(AutoApiError):
+            manager.activate(10, 30)
+        manager.markers['seed'] = 'AUTO_same_execution'
+        manager.activate(10, 30)
+        self.assertEqual(manager.markers['project'], manager.markers['seed'])
+
     def test_registration_does_not_require_es_absent(self):
         setup = SimpleNamespace(test_data=Mock())
         setup.test_data.get_cache.side_effect = lambda key: {'tenant': '123', 'employee': '456'}[key]
@@ -324,6 +476,7 @@ class ApiResourceRequestTests(SimpleTestCase):
         target = proof_data().sql_target
         record = SimpleNamespace(id=8, cleanup_token='')
         with patch.object(IO, 'binding', return_value=(Mock(), target)), \
+             patch.object(IO, 'validate_children'), \
              patch.object(IO, 'sql', return_value=nullcontext(Mock())), \
              patch.object(IO, 'find', return_value=None), \
              patch.object(ES, 'resolve_index', return_value=('project_123', 'uuid')), \

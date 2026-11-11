@@ -1,6 +1,7 @@
 """Business exceptions owned by this Django app."""
 
 from src.common.exceptions.base import MangoServerError
+from .definitions import API_CASE_TRACE_INTERRUPTED
 
 
 class TestSuiteStopped(Exception):
@@ -184,6 +185,7 @@ from .definitions import (
     API_TASK_NAME_EXECUTION_TOO_LONG,
     API_TEST_ENVIRONMENT_EXECUTION_REQUIRED,
     API_CASE_STEP_NOT_FOUND,
+    API_CASE_STEP_PROJECT_MISMATCH,
     API_CACHE_STEP_NOT_FOUND,
     API_TEST_ENVIRONMENT_USER_INVALID,
     API_HEADER_REQUEST_DELETE_INVALID,
@@ -335,6 +337,7 @@ class AutoApiError(MangoServerError):
 
 
 __all__ = ['AutoApiError', 'API_RECOVERY_CONFIG_INVALID', 'API_CASE_REVISION_SUMMARY_INVALID',
+           'API_CASE_TRACE_INTERRUPTED',
            'API_EXTRACTION_CONFIG_INVALID',
            'API_AUTH_PUBLIC_VARIABLES_INVALID', 'API_AUTH_CONTEXT_MISMATCH', 'API_AUTH_TARGET_INVALID',
            'TestSuiteStopped',
@@ -351,6 +354,7 @@ __all__ = ['AutoApiError', 'API_RECOVERY_CONFIG_INVALID', 'API_CASE_REVISION_SUM
            'API_TASK_NAME_EXECUTION_TOO_LONG',
            'API_TEST_ENVIRONMENT_EXECUTION_REQUIRED',
            'API_CASE_STEP_NOT_FOUND',
+           'API_CASE_STEP_PROJECT_MISMATCH',
            'API_CACHE_STEP_NOT_FOUND',
            'API_TEST_ENVIRONMENT_USER_INVALID',
            'API_HEADER_REQUEST_DELETE_INVALID',

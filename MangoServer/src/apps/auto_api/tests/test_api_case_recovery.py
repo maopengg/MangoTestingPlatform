@@ -233,7 +233,8 @@ class ApiCaseRecoveryTests(SimpleTestCase):
         })
         result = runtime.test_case()
         self.assertEqual(result.status, 0)
-        self.assertIn('main failure', result.error_message)
+        self.assertIn('平台内部异常', result.error_message)
+        self.assertNotIn('main failure', result.error_message)
         self.assertIn('恢复失败', result.error_message)
 
     def test_stopped_report_only_saves_evidence_without_changing_status(self):

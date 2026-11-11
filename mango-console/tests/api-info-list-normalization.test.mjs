@@ -6,9 +6,10 @@ import ts from 'typescript'
 import { computed, reactive, ref } from 'vue'
 import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
 import { harness, deferred, flush } from './helpers/case-details-harness.mjs'
+import { loadTableHooks } from './helpers/table-hooks.mjs'
 
 const base=path.resolve('src/views/apitest/info')
-const tableConfig={useTableIndexColumn:()=>({key:'index'}),useTableColumn:items=>items}
+const tableConfig={useTableIndexColumn:()=>({key:'index'}),useTableColumn:items=>items,usePagination:loadTableHooks().usePagination}
 const enums={method:[{key:0,title:'GET'},{key:1,title:'POST'},{key:7,title:'MCP_CALL'},{key:8,title:'GRPC_CALL'},{key:9,title:'WEBSOCKET_CONNECT'}]}
 const row=(id=1)=>({id,name:'Example API',url:'/example',protocol_type:'http',method:0,body_type:'json',status:1,project_product:{id:2,name:'Example'},module:{id:3},published_release_id:10,published_revision_id:11})
 function component(name,bindings,api={},options={}) {

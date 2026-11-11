@@ -57,6 +57,23 @@ class CleanupScheduleTests(SimpleTestCase):
         self.assertTrue(self.mocks[1].call_args.args[1]['sql_done'])
         self.assertEqual(self.execution.cleanup_status, 0)
 
+    def test_cleanup_success_clears_old_cleanup_error_but_not_creation_failure(self):
+        for execution_status, cleanup_status, expected in ((1, 1, None), (0, 1, 'AUTO_ERROR'),
+                                                           (1, 2, 'AUTO_ERROR'), (1, 0, 'AUTO_ERROR')):
+            execution = SimpleNamespace(status=execution_status, cleanup_status=cleanup_status,
+                                        error_message='AUTO_ERROR')
+            DataFactoryCleanup.clear_resolved_cleanup_error(execution)
+            self.assertEqual(execution.error_message, expected)
+
+    def test_finalized_cleanup_persists_cleared_error_with_status(self):
+        self.execution.status, self.execution.error_message = 1, 'AUTO_OLD_CLEANUP_FAILURE'
+        self.mocks[8].return_value = None
+        with patch.object(CleanupPersistenceService, 'save') as save:
+            Schedule.run_next()
+        self.assertEqual(self.execution.cleanup_status, 1)
+        self.assertIsNone(self.execution.error_message)
+        self.assertIn('error_message', save.call_args.args[1])
+
     def test_parent_reconciles_exact_request_after_persisted_cleanup_success(self):
         from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
         from src.apps.data_factory.schemas.cleanup_resource import (

@@ -13,9 +13,15 @@ from src.apps.data_factory.services.datasource import DataFactoryDatasourceResol
 from src.apps.test_center.services.product_module import ProductModuleService
 from src.common.exceptions import SAVE_VALIDATION_FAILED
 from src.common.utils.environment_scope import sync_test_env_attrs
+from src.common.utils.variable_tags import normalize_variable_tags
+from src.common.database.variable_tags import update_variable_tags
 
 
 class UiAssetMutationService:
+    @staticmethod
+    def set_public_tags(queryset, ids, tags, operation, operator_id):
+        return update_variable_tags(queryset, ids, tags, operation, operator_id)
+
     @staticmethod
     def create_page_step(payload: dict) -> dict:
         ProductModuleService.validate_crud_binding(PageSteps, payload)
@@ -73,6 +79,8 @@ class UiAssetMutationService:
     @staticmethod
     def _validate_public_variable(payload: dict, instance: UiPublic | None = None) -> dict:
         data = dict(payload)
+        if 'tags' in data:
+            data['tags'] = normalize_variable_tags(data['tags'])
         sync_test_env_attrs(data, instance)
         public_type = data.get("type", instance.type if instance else None)
         if public_type not in UiPublicTypeEnum.get_key_list():

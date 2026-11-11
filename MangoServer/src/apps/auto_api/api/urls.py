@@ -16,7 +16,7 @@ from src.apps.auto_api.api.views.api_case_version import (
     ApiCaseReleaseViews,
     ApiCaseRevisionViews,
 )
-from src.apps.auto_api.api.views.api_headers import ApiHeadersCRUD
+from src.apps.auto_api.api.views.api_headers import ApiHeadersCRUD, ApiHeadersViews
 from src.apps.auto_api.api.views.api_info import ApiInfoCRUD, ApiInfoViews
 from src.apps.auto_api.api.views.api_info_version import ApiInfoReleaseViews, ApiInfoRevisionViews
 from src.apps.auto_api.api.views.api_mock import ApiMockConfigCRUD, ApiMockConfigViews
@@ -132,6 +132,8 @@ urlpatterns = [
     path("case/detailed/parameter/schema", ApiCaseDetailedParameterViews.as_view({'put': 'put_auto_schema'})),
     #
     path("public", ApiPublicCRUD.as_view()),
+    path("public/reference-counts", ApiPublicViews.as_view({'get': 'reference_counts'})),
+    path("public/reference-cases", ApiPublicViews.as_view({'get': 'reference_cases'})),
     path("public/status", ApiPublicViews.as_view({'put': 'put_status'})),
     #
     path("auth/config", ApiAuthConfigCRUD.as_view()),
@@ -143,6 +145,8 @@ urlpatterns = [
     path("auth/config/cache", ApiAuthConfigViews.as_view({'get': 'cache'})),
     #
     path("headers", ApiHeadersCRUD.as_view()),
+    path("headers/reference-counts", ApiHeadersViews.as_view({'get': 'reference_counts'})),
+    path("headers/reference-cases", ApiHeadersViews.as_view({'get': 'reference_cases'})),
     #
     path("grpc/service", GrpcServiceDefinitionCRUD.as_view()),
     path("grpc/method", GrpcMethodDefinitionCRUD.as_view()),

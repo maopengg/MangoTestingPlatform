@@ -50,7 +50,7 @@
         </template>
         <a-table
           class="mango-native-scroll-table"
-          :scroll="{ x: 1480, y: '100%' }"
+          :scroll="{ x: 1600, y: '100%' }"
           :bordered="false"
           :columns="tableColumns"
           :data="batchSelectableDataList"
@@ -74,6 +74,11 @@
             >
               <template v-if="item.key === 'index'" #cell="{ record }">
                 {{ record.id }}
+              </template>
+              <template v-else-if="item.key === 'case_reference_count'" #cell="{ record }">
+                <span v-if="record.status === 1" class="mango-muted-text">不统计默认开启</span>
+                <a-link v-else-if="referenceCounts[String(record.id)] != null" @click="referenceCasesRef?.open(record)">{{ referenceCounts[String(record.id)] }}</a-link>
+                <span v-else>{{ referencesLoading ? '查询中…' : '-' }}</span>
               </template>
               <template v-else-if="item.key === 'client'" #cell="{ record }">
                 <a-tag
@@ -124,6 +129,7 @@
     </template>
   </TableBody>
   <HeaderEditor ref="editorRef" @saved="onSaved" />
+  <ApiInfoBoundCases ref="referenceCasesRef" reference-mode :read-cases="getApiHeaderReferenceCases" />
 </template>
 
 <script lang="ts" setup>
@@ -143,7 +149,10 @@
   import { useLatestRequest } from '@/hooks/use-latest-request'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
-  import { tableColumns, createConditionItems } from './config'
+  import { tableColumns as baseTableColumns, createConditionItems } from './config'
+  import ApiInfoBoundCases from '@/views/apitest/info/components/ApiInfoBoundCases.vue'
+  import { useCaseReferenceCounts } from '@/hooks/useCaseReferenceCounts'
+  import { getApiHeaderReferenceCounts, getApiHeaderReferenceCases } from '@/api/apitest/headers'
   import HeaderEditor from './components/HeaderEditor.vue'
   import ProjectProductNavigationWorkbench from '@/components/business/ProjectProductNavigationWorkbench.vue'
   import ApiResourceSearchFilters from '@/components/business/ApiResourceSearchFilters.vue'
@@ -166,6 +175,11 @@
   const sidebarResetKey = ref(0)
   const table = useTable()
   const rows = computed(() => table.dataList as HeaderRecord[])
+  const referenceCasesRef = ref<InstanceType<typeof ApiInfoBoundCases> | null>(null)
+  const { tableColumns, loading: referencesLoading, counts: referenceCounts } = useCaseReferenceCounts(
+    () => rows.value, baseTableColumns, getApiHeaderReferenceCounts, () => table.tableLoading.value,
+    () => referenceCasesRef.value?.close()
+  )
   const pagination = usePagination(
     () => doRefresh(true),
     () => table.tableLoading

@@ -16,6 +16,8 @@ from src.apps.auto_ui.api.views.ui_page_steps_detailed import PageStepsDetailedC
 from src.apps.auto_ui.api.views.ui_public import UiPublicCRUD, UiPublicViews
 
 urlpatterns = [
+    path("public/reference-counts", UiPublicViews.as_view({'get': 'reference_counts'})),
+    path("public/reference-cases", UiPublicViews.as_view({'get': 'reference_cases'})),
     path("live-stream/session", LiveStreamViews.as_view({'post': 'create_session'})),
     path("live-stream/session/<str:stream_id>/start", LiveStreamViews.as_view({'post': 'start_session'})),
     path("live-stream/session/<str:stream_id>", LiveStreamViews.as_view({'delete': 'close_session'})),

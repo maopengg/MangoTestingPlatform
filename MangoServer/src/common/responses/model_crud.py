@@ -311,27 +311,23 @@ class ModelCRUD(GenericAPIView):
             if test_envs_filter is not None:
                 books = books.filter(test_envs_filter)
             books = self.filter_queryset_by_data_scope(request, books)
-            if paging or self.default_page_size is not None:
-                data_list, count = self.paging_list(
-                    request.query_params.get("pageSize") or self.default_page_size,
-                    request.query_params.get("page") or 1,
-                    books,
-                    self.get_serializer_class()
-                )
-                return ResponseData.success(RESPONSE_MSG_0001, data_list, count)
-            serializer = self.get_serializer_class()
-            try:
-                books = serializer.setup_eager_loading(books)
-            except FieldError:
-                pass
-            return ResponseData.success(
-                RESPONSE_MSG_0001,
-                serializer(instance=books, many=True).data,
-                books.count()
-            )
+            return self.list_response(request, books, paging)
         except S3Error as error:
             log.system.error(f'GET请求发送异常，请排查问题：{error}, error:{traceback.print_exc()}')
             return ResponseData.fail(RESPONSE_MSG_0026)
+
+    def list_response(self, request, books, paging):
+        if paging or self.default_page_size is not None:
+            data_list, count = self.paging_list(
+                request.query_params.get('pageSize') or self.default_page_size,
+                request.query_params.get('page') or 1, books, self.get_serializer_class())
+            return ResponseData.success(RESPONSE_MSG_0001, data_list, count)
+        serializer = self.get_serializer_class()
+        try:
+            books = serializer.setup_eager_loading(books)
+        except FieldError:
+            pass
+        return ResponseData.success(RESPONSE_MSG_0001, serializer(instance=books, many=True).data, books.count())
 
     @error_response('system')
     def post(self, request: Request):

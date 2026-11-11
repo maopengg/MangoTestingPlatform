@@ -1,5 +1,8 @@
 import os
 import uuid
+import socket
+from functools import wraps
+from contextlib import contextmanager
 from typing import Any
 
 import time
@@ -11,10 +14,35 @@ from src.apps.auto_api.services.execution_trace.context import ApiCaseExecutionC
 from src.common.logging import log
 
 
+def trace_lifecycle(stage):
+    def decorate(function):
+        @wraps(function)
+        def guarded(self, *args, **kwargs):
+            try:
+                return function(self, *args, **kwargs)
+            except BaseException as error:
+                recorder = getattr(self, 'trace_recorder', None)
+                if recorder is not None:
+                    recorder.abort_trace(error, stage)
+                raise
+        return guarded
+    return decorate
+
+
 class ApiCaseExecutionTraceRecorder:
-    """API case 执行链路记录器。所有记录失败都只打日志，不影响主执行流程。"""
+    """API Case Trace，记录失败不覆盖原执行异常。
+
+    summary生命周期字段：execution_owner={process_token, process_started_at}；
+    review_required为布尔；interrupted_stage为Trace阶段；exception_type仅保存类名。
+    对账额外保存reconciled_at（ISO时间）、execution_result_id（精确结果ID或null）。
+    """
 
     SUMMARY_TEXT_LIMIT = 1000
+
+    @staticmethod
+    def interrupt_open_steps(trace_id, ended, message):
+        ApiCaseExecutionStep.objects.filter(trace_id=trace_id, status=ApiCaseTraceStatus.PROCEED).update(
+            status=ApiCaseTraceStatus.FAIL, finished_at=ended, error_message=message, update_time=ended)
 
     @staticmethod
     def interrupt_report_attempt(detail_id, pushed_at, message, control):
@@ -46,6 +74,7 @@ class ApiCaseExecutionTraceRecorder:
 
     def create_trace(self, context: ApiCaseExecutionContext) -> ApiCaseExecutionTrace | None:
         try:
+            from src.apps.system.services.runtime_center.process_identity import RuntimeProcessIdentity
             now = timezone.now()
             self._start_time = time.time()
             self.trace = ApiCaseExecutionTrace.objects.create(
@@ -58,9 +87,9 @@ class ApiCaseExecutionTraceRecorder:
                 user_id=context.user_id,
                 test_env=context.test_env,
                 status=ApiCaseTraceStatus.PROCEED,
-                worker_name=context.worker_name or os.getenv('HOSTNAME'),
+                worker_name=context.worker_name or os.getenv('HOSTNAME') or socket.gethostname(),
                 started_at=now,
-                summary=self._safe_summary(context.summary),
+                summary={**self._safe_summary(context.summary), 'execution_owner': RuntimeProcessIdentity.current()},
             )
             return self.trace
         except Exception as error:
@@ -116,6 +145,32 @@ class ApiCaseExecutionTraceRecorder:
     def fail_trace(self, error_message: str | None, summary: Any = None):
         self._close_trace(ApiCaseTraceStatus.FAIL, error_message=error_message, summary=summary)
 
+    def abort_trace(self, error, stage):
+        from src.common.exceptions import MangoServerError
+        from src.apps.auto_api.exceptions import API_CASE_TRACE_INTERRUPTED
+        expected = isinstance(error, MangoServerError)
+        message = error.msg if expected else API_CASE_TRACE_INTERRUPTED.message
+        self.fail_trace(message, {'review_required': not expected, 'interrupted_stage': stage,
+                                 'exception_type': type(error).__name__})
+
+    @contextmanager
+    def guard(self, stage):
+        try:
+            yield
+        except BaseException as error:
+            self.abort_trace(error, stage)
+            raise
+
+    def update_metadata(self, case_name, summary):
+        if self.trace is None:
+            return
+        try:
+            self.trace.case_name = case_name
+            self.trace.summary = {**self.trace.summary, **self._safe_summary(summary)}
+            self.trace.save(update_fields=['case_name', 'summary', 'update_time'])
+        except Exception:
+            log.api.exception('API执行链路初始化信息保存失败')
+
     def _close_step(
             self,
             step: ApiCaseExecutionStep | None,
@@ -158,6 +213,7 @@ class ApiCaseExecutionTraceRecorder:
                 self.trace.summary = {
                     **existing_summary,
                     **self._safe_summary(summary),
+                    'review_required': isinstance(summary, dict) and summary.get('review_required') is True,
                 }
             self.trace.save(update_fields=[
                 'status',

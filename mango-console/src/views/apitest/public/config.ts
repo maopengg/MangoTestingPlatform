@@ -110,7 +110,7 @@ export const tableColumns = useTableColumn([
     title: '类型',
     key: 'type',
     dataIndex: 'type',
-    width: 150,
+    width: 100,
   },
   {
     title: '参数名称',
@@ -144,6 +144,9 @@ export const tableColumns = useTableColumn([
     key: 'status',
     dataIndex: 'status',
     width: 90,
+  },
+  {
+    title: '分类标签', key: 'tags', dataIndex: 'tags', width: 200, align: 'left', ellipsis: true, tooltip: true,
   },
   {
     title: '逻辑数据库',

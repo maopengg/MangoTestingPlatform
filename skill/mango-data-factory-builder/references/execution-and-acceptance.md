@@ -26,6 +26,8 @@
 
 工厂行按执行记录中的精确 SQL 主键清理；关联 ES 仅按执行时已冻结的资源快照验证/清理，不自动发现或接管其他资源。
 
+若资源由被测 API 创建，而非工厂 INSERT，则改读 [API 创建资源的编写与清理](../../mango-api-case-builder/references/api-created-resource-cleanup.md)，使用 Case `resource_cleanup` 及其台账；本节模板 `cleanup_resources` 的插入前 ES 基线与字段映射不能直接套用到 API 响应后的资源登记。
+
 - cleanup_order小先，子关联先父根，不并发清依赖。
 - 执行结束清理在请求/提取/断言/后续失败也运行，缺清理记录按路径配置问题查。
 - 手动重试前 `preview_cleanup_data_factory_execution_impact`，核执行项、库、主键、顺序、跳过项。原授权非生产本轮精确行无需打断；扩围/归属未知需确认。然后 `cleanup_data_factory_execution` 带token/文本。

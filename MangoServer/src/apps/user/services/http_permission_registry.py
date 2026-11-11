@@ -38,6 +38,12 @@ NOTICE_OPTION_PERMISSIONS = _option_permissions(
 
 
 HTTP_PERMISSION_RULES = {
+    ('src.apps.auto_api.api.views.api_pulic.ApiPublicViews', 'reference_counts', 'get'): 'api.public:read',
+    ('src.apps.auto_api.api.views.api_pulic.ApiPublicViews', 'reference_cases', 'get'): 'api.public:read',
+    ('src.apps.auto_api.api.views.api_headers.ApiHeadersViews', 'reference_counts', 'get'): 'api.headers:read',
+    ('src.apps.auto_api.api.views.api_headers.ApiHeadersViews', 'reference_cases', 'get'): 'api.headers:read',
+    ('src.apps.auto_ui.api.views.ui_public.UiPublicViews', 'reference_counts', 'get'): 'ui.public:read',
+    ('src.apps.auto_ui.api.views.ui_public.UiPublicViews', 'reference_cases', 'get'): 'ui.public:read',
     ('src.apps.auto_api.api.views.api_auth_config.ApiAuthConfigCRUD', 'delete', 'delete'): 'api.auth_config:remove',
     ('src.apps.auto_api.api.views.api_auth_config.ApiAuthConfigCRUD', 'get', 'get'): 'api.auth_config:read',
     ('src.apps.auto_api.api.views.api_auth_config.ApiAuthConfigCRUD', 'post', 'post'): 'api.auth_config:add',

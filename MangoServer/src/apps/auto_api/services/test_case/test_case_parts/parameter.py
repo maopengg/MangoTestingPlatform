@@ -549,6 +549,8 @@ class ApiTestCaseParameterMixin:
         ApiCase.objects.filter(id=case_id).update(status=status)
 
     def update_test_case_detailed_parameter(self, parameter_id, result_data: ApiCaseStepResult):
+        if result_data.execution_context is not None:
+            result_data.execution_context.product_cache_keys = self.test_setup.product_cache_keys()
         ApiCaseDetailedParameter.objects.filter(
             id=parameter_id,
             case_detailed__case_id=self.case_id,

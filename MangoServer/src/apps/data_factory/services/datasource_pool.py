@@ -28,7 +28,8 @@ class DatasourceQueuePool(QueuePool):
                     raise
             next_log = Timing.diagnose(started, next_log, phase=Phase.LOCAL_POOL,
                                       database_id=getattr(self, '_mango_database_id', None), wait_id=wait_id,
-                                      group=getattr(self, '_mango_instance_group', None))
+                                      group=getattr(self, '_mango_instance_group', None), wait_kind='capacity',
+                                      checked_out=self.checkedout(), pool_size=self.size())
             with Timing.waiting(Phase.LOCAL_POOL):
                 DatasourceWaitService.pause()
 
@@ -114,29 +115,30 @@ class DatasourcePoolRegistry:
             time.sleep(5)
             def maintain():
                 nonlocal renewed
+                # 控制库可能排队或断连；不能持注册表锁等待，否则所有借还池都会被拖住。
+                DatasourceGovernorService.flush_pending_releases()
+                DatasourceGovernorService.flush_closed_connections()
+                policy = DatasourceGovernorService.policy()
                 with DatasourceTimingService.locked(cls._lock):
-                    DatasourceGovernorService.flush_pending_releases()
-                    DatasourceGovernorService.flush_closed_connections()
-                    cls.prune(DatasourceGovernorService.policy().pool_idle_seconds)
+                    cls.prune(policy.pool_idle_seconds)
                     groups = {getattr(engine, '_mango_instance_group', None)
                               for engine, _, _, _ in cls._engines.values()}
-                    for group in groups - {None}:
-                        if DatasourceGovernorService.connection_pressure(group):
-                            cls.relieve_pressure(group)
-                    if time.monotonic() - renewed >= 15:
-                        cls.renew_live_connections()
-                        renewed = time.monotonic()
+                for group in groups - {None}:
+                    if DatasourceGovernorService.connection_pressure(group):
+                        cls.relieve_pressure(group)
+                if time.monotonic() - renewed >= 15:
+                    cls.renew_live_connections()
+                    renewed = time.monotonic()
             DatasourcePoolMaintenance.run('sql', maintain)
 
     @classmethod
     def renew_live_connections(cls):
         from src.apps.data_factory.services.datasource_connection import GovernedDbapiConnection
-        with DatasourceTimingService.locked(cls._lock):
-            stale = DatasourceGovernorService.renew_connections(GovernedDbapiConnection.live_permits())
-            # 不复活过期租约；仅关闭闲置池的真实连接，再按 close 证明核销。
-            # checkedout 中的操作必须自行完成/回滚，不能由维护线程中断。
-            for group in {permit[0] for permit in stale}:
-                cls.relieve_pressure(group)
+        stale = DatasourceGovernorService.renew_connections(GovernedDbapiConnection.live_permits())
+        # 不复活过期租约；仅关闭闲置池的真实连接，再按 close 证明核销。
+        # checkedout 中的操作必须自行完成/回滚，不能由维护线程中断。
+        for group in {permit[0] for permit in stale}:
+            cls.relieve_pressure(group)
 
     @classmethod
     def close_all(cls):

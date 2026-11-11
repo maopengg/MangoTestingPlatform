@@ -54,6 +54,7 @@ export interface ApiCaseStep {
   pinned_api_info_revision?: number | null
   api_info: {
     id: CaseEntityId
+    project_product?: CaseEntityId | { id: CaseEntityId } | null
     module?: CaseEntityId | { id: CaseEntityId } | null
     name?: string
     method?: number | string

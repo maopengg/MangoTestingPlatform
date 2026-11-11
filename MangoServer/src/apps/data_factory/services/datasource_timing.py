@@ -64,7 +64,8 @@ class DatasourceTimingService:
         started = monotonic()
         next_log = started + 30
         while not lock.acquire(blocking=False):
-            next_log = DatasourceTimingService.diagnose(started, next_log, phase=Phase.LOCAL_POOL)
+            next_log = DatasourceTimingService.diagnose(started, next_log, phase=Phase.LOCAL_POOL,
+                                                       wait_kind='registry_lock')
             with DatasourceTimingService.waiting(Phase.LOCAL_POOL):
                 DatasourceWaitService.pause(0.01)
         try:
@@ -78,7 +79,8 @@ class DatasourceTimingService:
         DatasourceTimingService.add(Phase.SCHEDULER_RESUME, resume_seconds)
 
     @staticmethod
-    def diagnose(started, next_log, *, phase, database_id=None, wait_id=None, group=None):
+    def diagnose(started, next_log, *, phase, database_id=None, wait_id=None, group=None,
+                 wait_kind=None, checked_out=None, pool_size=None):
         now = monotonic()
         if now < next_log:
             return next_log
@@ -92,7 +94,8 @@ class DatasourceTimingService:
             'case_id', 'case_source_id', 'execution_id', 'source_id', 'test_env', 'source_stage',
         ) if key in source and isinstance(source[key], (int, str))}
         log.debug('event=datasource_long_wait request_id=%s wait_id=%s database_id=%s group=%s '
-                  'phase=%s elapsed_ms=%.2f context=%s',
+                  'phase=%s wait_kind=%s checked_out=%s pool_size=%s elapsed_ms=%.2f context=%s',
                   getattr(getattr(handle, 'record', None), 'request_id', None), wait_id,
-                  database_id, group, phase.value, (now - started) * 1000, context)
+                  database_id, group, phase.value, wait_kind, checked_out, pool_size,
+                  (now - started) * 1000, context)
         return now + 30

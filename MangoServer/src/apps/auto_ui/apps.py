@@ -6,4 +6,4 @@ class AutoUiConfig(AppConfig):
     name = 'src.apps.auto_ui'
 
     def ready(self):
-        return
+        from src.apps.auto_ui import signals  # noqa: F401

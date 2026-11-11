@@ -10,6 +10,9 @@ class SystemError(MangoServerError):
     pass
 
 
+SYSTEM_MCP_DRAINING = ErrorDefinition(code=38050, message='MCP服务正在发布排空，本次调用尚未开始执行。请重新连接后重试；已开始的调用仍等待执行和清理完成，请勿重复提交写操作')
+
+
 SYSTEM_RUNTIME_KV_INVALID = ErrorDefinition(code=38045, message='运行态存储参数无效，请检查模块、键、类型、大小或有效期')
 SYSTEM_RUNTIME_KV_TYPE_MISMATCH = ErrorDefinition(code=38046, message='运行态存储值不是整数计数器')
 SYSTEM_RUNTIME_KV_OVERFLOW = ErrorDefinition(code=38047, message='运行态存储计数超出有符号64位整数范围')

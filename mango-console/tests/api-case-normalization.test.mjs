@@ -5,6 +5,53 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
 import { harness, method, deferred, flush, step, scenario } from './helpers/case-details-harness.mjs'
 
+test('initial current-version selection reloads the case record before loading product-dependent panels',async()=>{
+  const h=harness('ApiCaseStepTable','rowActions')
+  const {createCaseRequestScope}=h.load('request-scope.ts'),requests=createCaseRequestScope()
+  const pending=deferred(),calls=[],record=ref(null)
+  const loadRecord=method('ensureCaseRecord',{
+    apiCaseId:ref(5751),requests,getApiCase:()=>pending.promise,
+    setCaseRecord:r=>{record.value=r;calls.push('record')},normalizeCaseRecord:r=>r,
+  })
+  const showCurrent=method('showCurrentConfiguration',{
+    requests,invalidateParameterLoad(){},invalidateExecutionResultLoad(){},clearPanelCache(){},
+    jsonEditDrawer:{visible:false},selectedCaseVersionDetail:ref(null),caseVersionPayloadActive:ref(false),
+    caseVersionEditUnlocked:ref(false),snapshotParametersByStep:new Map(),liveCaseRecord:ref(null),
+    setCaseRecord(){},normalizeCaseRecord:r=>r,ensureCaseRecord:loadRecord,
+    doRefresh:async()=>calls.push('steps'),loadCaseDataFactoryCount:async()=>calls.push('factory'),
+    refreshSelectedRuntimeResult:async()=>calls.push('result'),
+  })
+  const initial=loadRecord()
+  showCurrent()
+  pending.resolve({data:[{id:5751,project_product:{id:3}}]})
+  await initial;await flush()
+  assert.equal(record.value.project_product.id,3)
+  assert.deepEqual(calls,['record','steps','factory','result'])
+  h.close()
+})
+
+test('product selection defaults to the case, restores existing bindings and discards old product responses',async()=>{
+  const request=deferred()
+  const h=harness('ApiCaseStepEditor','draft,selectedProductId,changeProduct,apiOptions,getModuleApi',{
+    api:{getApiInfoName:()=>request.promise},
+  })
+  h.exposed.open()
+  assert.equal(h.selectedProductId.value,2)
+  h.getModuleApi(1)
+  Object.assign(h.draft,{module:1,api_info:20,pinned_api_info_revision:30})
+  h.changeProduct([7,3])
+  assert.equal(h.selectedProductId.value,3)
+  assert.equal(h.draft.module,null)
+  assert.equal(h.draft.api_info,'')
+  assert.equal(h.draft.pinned_api_info_revision,'')
+  request.resolve({data:[{key:20,title:'old'}]});await flush()
+  assert.equal(h.apiOptions.value.length,0)
+  h.exposed.open({...step,api_info:{...step.api_info,project_product:3}})
+  assert.equal(h.selectedProductId.value,3)
+  assert.equal(h.draft.api_info,20)
+  h.close()
+})
+
 test('step selection ignores old module responses and retains failed form without duplicate saves', async()=>{
   const pending=[],writes=[],save=deferred()
   const h=harness('ApiCaseStepEditor','draft,apiOptions,optionsLoading,getModuleApi,loadApiInfoRevisions,save,visible,saving',{

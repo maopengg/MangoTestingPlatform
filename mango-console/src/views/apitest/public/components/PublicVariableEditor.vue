@@ -57,6 +57,10 @@
           placeholder="SQL 多值用英文逗号分隔；代码变量 key 仅作标识"
         />
       </a-form-item>
+      <a-form-item label="分类标签" class="mango-simple-form-item">
+        <VariableTagSelect v-model="draft.tags" :product-id="getOptionId(draft.project_product)"
+          :read="getApiPublic" :disabled="saving" />
+      </a-form-item>
       <a-form-item v-if="draft.type === 1" label="逻辑数据库" class="mango-form-item__require mango-simple-form-item">
         <div class="mango-public-editor__alias">
           <a-select
@@ -99,6 +103,8 @@
 </template>
 <script setup lang="ts">
 import { reportLoadError } from '@/utils/load-error'
+import VariableTagSelect from '@/components/business/VariableTagSelect.vue'
+import { getApiPublic } from '@/api/apitest/public'
 
   import { computed, onBeforeUnmount, onDeactivated, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'

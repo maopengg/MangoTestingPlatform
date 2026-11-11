@@ -43,6 +43,13 @@ from .infrastructure import DatasourceInfrastructureService
 
 
 class DataFactoryCleanup:
+    @staticmethod
+    def clear_resolved_cleanup_error(execution):
+        # 创建本身失败时必须保留原失败；仅清理成功不代表造数/业务成功。
+        if (getattr(execution, 'status', None) == DataFactoryExecutionStatusEnum.SUCCESS.value
+                and execution.cleanup_status == DataFactoryCleanupStatusEnum.SUCCESS.value):
+            execution.error_message = None
+
     CLEANABLE_STATUSES = {
         DataFactoryCleanupStatusEnum.NOT_CLEANED.value,
         DataFactoryCleanupStatusEnum.FAIL.value,
@@ -274,7 +281,8 @@ class DataFactoryCleanup:
                 if all_items
                 else DataFactoryCleanupStatusEnum.SKIPPED.value
             )
-            CleanupPersistenceService.save(execution, ['cleanup_time', 'cleanup_status', 'update_time'])
+            cls.clear_resolved_cleanup_error(execution)
+            CleanupPersistenceService.save(execution, ['cleanup_time', 'cleanup_status', 'error_message', 'update_time'])
             transaction.on_commit(lambda: cls.sync_workbench_todo(execution))
             return {
                 "execution_id": execution.id,
@@ -388,6 +396,7 @@ class DataFactoryCleanup:
             execution.cleanup_status = DataFactoryCleanupStatusEnum.SKIPPED.value
         else:
             execution.cleanup_status = DataFactoryCleanupStatusEnum.SUCCESS.value
+        cls.clear_resolved_cleanup_error(execution)
         CleanupPersistenceService.save(execution)
         transaction.on_commit(lambda: cls.sync_workbench_todo(execution))
 

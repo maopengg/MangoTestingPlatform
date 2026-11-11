@@ -284,7 +284,9 @@ def _authenticated_tool_method(mcp, domain: str):
                         return auth_error
                     user = user_from_auth_token()
                     try:
-                        result = filter_scoped_result(user, await func(*args, **kwargs))
+                        from src.apps.system.services.runtime_center.mcp_execution import McpExecutionLifecycle
+                        with McpExecutionLifecycle.admit():
+                            result = filter_scoped_result(user, await func(*args, **kwargs))
                     except Exception as exc:
                         result, status_code = _mcp_failure_result(
                             exc,
@@ -322,7 +324,9 @@ def _authenticated_tool_method(mcp, domain: str):
                     return auth_error
                 user = user_from_auth_token()
                 try:
-                    result = filter_scoped_result(user, func(*args, **kwargs))
+                    from src.apps.system.services.runtime_center.mcp_execution import McpExecutionLifecycle
+                    with McpExecutionLifecycle.admit():
+                        result = filter_scoped_result(user, func(*args, **kwargs))
                 except Exception as exc:
                     result, status_code = _mcp_failure_result(
                         exc,

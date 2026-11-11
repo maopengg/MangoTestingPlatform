@@ -34,6 +34,42 @@ class DataSourceErrorService:
     """把不同驱动和协议的错误统一转成可直接展示的业务错误。"""
 
     @staticmethod
+    def confirmed_rejection(error):
+        """只认驱动返回的服务器错误码；未知异常、断连及提交结果丢失不能推定拒绝。"""
+        seen = set()
+        rejected = False
+        while isinstance(error, BaseException) and id(error) not in seen:
+            seen.add(id(error))
+            if isinstance(error, (OSError, TimeoutError)) or 'Timeout' in type(error).__name__:
+                return False
+            if (getattr(error, '_datasource_outcome_unknown', False)
+                    or getattr(error, 'connection_invalidated', False)):
+                return False
+            from src.apps.data_factory.exceptions import DATASOURCE_AUDIT_COMPLETION_FAILED, DATASOURCE_SETTLEMENT_FAILED
+            if getattr(error, 'code', None) in (DATASOURCE_AUDIT_COMPLETION_FAILED.code, DATASOURCE_SETTLEMENT_FAILED.code):
+                return False
+            number = error.args[0] if error.args else None
+            sqlstate = getattr(error, 'sqlstate', None) or getattr(error, 'pgcode', None)
+            if type(number) is int:
+                if number in (2006, 2013, 2055):
+                    return False
+                # 只列确定拒绝语句的错误；服务端通信错误也可能使用1000段，不能整段放行。
+                rejected |= number in {
+                    1044, 1045, 1049, 1050, 1051, 1052, 1054, 1060, 1061, 1062, 1064,
+                    1091, 1109, 1110, 1136, 1142, 1143, 1146, 1149, 1205, 1213,
+                    1222, 1241, 1242, 1264, 1265, 1292, 1304, 1305, 1364, 1366,
+                    1406, 1451, 1452, 1582, 1690, 3065, 3140, 3141, 3143,
+                }
+            if isinstance(sqlstate, str) and len(sqlstate) == 5:
+                if sqlstate.startswith('08') or sqlstate in ('40003', '08007'):
+                    return False
+                rejected |= sqlstate[:2] in ('22', '23', '28', '3D', '3F', '40', '42', '53', '54') or sqlstate == '57014'
+            reason = getattr(error, 'reason', None)
+            error = getattr(error, 'orig', None) or error.__cause__ or (
+                reason if isinstance(reason, BaseException) else None)
+        return rejected
+
+    @staticmethod
     def safe_detail(database, error: Exception) -> str:
         original = getattr(error, 'orig', None)
         detail = str(original or error).strip() or error.__class__.__name__

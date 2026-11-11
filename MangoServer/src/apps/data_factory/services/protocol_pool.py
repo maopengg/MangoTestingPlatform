@@ -145,24 +145,27 @@ class ProtocolPoolRegistry:
             time.sleep(5)
             def maintain():
                 nonlocal renewed
+                DatasourceGovernorService.flush_pending_releases()
+                DatasourceGovernorService.flush_closed_connections()
+                policy = DatasourceGovernorService.policy()
                 with DatasourceTimingService.locked(cls._lock):
-                    DatasourceGovernorService.flush_pending_releases()
-                    DatasourceGovernorService.flush_closed_connections()
-                    cls.prune(DatasourceGovernorService.policy().pool_idle_seconds)
+                    cls.prune(policy.pool_idle_seconds)
                     groups = {entry.get('group') for entry in cls._entries.values()} - {None}
-                    for group in groups:
-                        if DatasourceGovernorService.connection_pressure(group):
-                            cls.relieve_pressure(group)
-                    if time.monotonic() - renewed >= 15:
-                        cls.renew_live_connections()
-                        renewed = time.monotonic()
+                for group in groups:
+                    if DatasourceGovernorService.connection_pressure(group):
+                        cls.relieve_pressure(group)
+                if time.monotonic() - renewed >= 15:
+                    cls.renew_live_connections()
+                    renewed = time.monotonic()
             DatasourcePoolMaintenance.run('protocol', maintain)
 
     @classmethod
     def renew_live_connections(cls):
         with DatasourceTimingService.locked(cls._lock):
-            stale = DatasourceGovernorService.renew_connections(
-                [permit for entry in cls._entries.values() for permit in entry['permits']])
+            permits = [permit for entry in cls._entries.values() for permit in entry['permits']]
+        # 网络续期只处理快照中的精确 owner；新借用不扩大配额，也不等待该注册表锁。
+        stale = DatasourceGovernorService.renew_connections(permits)
+        with DatasourceTimingService.locked(cls._lock):
             if stale:
                 for entry in cls._entries.values():
                     if any(permit in stale for permit in entry['permits']):

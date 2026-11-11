@@ -19,9 +19,13 @@ from src.apps.user.formatters import format_user_simple
 from src.common.utils.environment_scope import normalize_test_envs, sync_test_env_attrs, test_envs_titles
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.common.validators.serializer_fields import RelatedObjectField
+from src.common.utils.variable_tags import normalize_variable_tags
 
 
 class ApiPublicSerializers(serializers.ModelSerializer):
+    def validate_tags(self, value):
+        return normalize_variable_tags(value)
+
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 

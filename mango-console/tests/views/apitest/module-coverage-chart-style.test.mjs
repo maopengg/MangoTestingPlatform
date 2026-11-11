@@ -66,16 +66,15 @@ test('initial chart render tolerates getOption returning undefined', () => {
   }
 })
 
-test('five-state analysis uses a separate two-column legend, without overlapping pie labels', () => {
-  assert.match(source, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/)
-  assert.match(source, /v-for="item in entryData"/)
-  assert.match(source, /:aria-pressed="gapFilter === item.filter"/)
-  assert.match(source, /@click="gapFilter = item.filter"/)
+test('analysis shares ring, labels and legend layout with the adjacent charts', () => {
+  assert.doesNotMatch(source, /__analysis-chart|__analysis-legend|__analysis-state/)
   const analysis = source.slice(source.indexOf('if (entryChart.value)'), source.indexOf('if (coverageChart.value)'))
-  assert.match(analysis, /legend: \{ show: false \}/)
-  assert.match(analysis, /label: \{ show: false \}/)
-  assert.match(analysis, /labelLine: \{ show: false \}/)
+  assert.match(analysis, /\.\.\.donutStyle\(/)
+  assert.match(analysis, /\.\.\.donutSeries\(entryChart.value, entryData.value\)/)
+  assert.doesNotMatch(analysis, /legend:|label:|labelLine:|radius:|center:/)
   assert.match(analysis, /data: entryData.value/)
+  assert.match(analysis, /rate\(props.data.summary.analysis_rate\)/)
+  assert.match(analysis, /gapFilter.value = entryData.value\[event.dataIndex\]\?\.filter/)
 })
 
 test('scan click, status tooltip, theme updates and resize lifecycle are preserved', () => {

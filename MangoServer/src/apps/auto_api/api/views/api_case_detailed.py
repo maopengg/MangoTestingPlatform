@@ -9,7 +9,7 @@ from src.apps.auto_api.exceptions import (
     API_VERSION_CASE_NOT_FOUND,
     AutoApiError,
 )
-from src.apps.auto_api.models import ApiCaseDetailed, ApiCase
+from src.apps.auto_api.models import ApiCaseDetailed, ApiCase, ApiInfo
 from src.apps.auto_api.services.api_case.step import ApiCaseStepService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
@@ -82,6 +82,9 @@ class ApiCaseDetailedCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
         data.pop('module', None)
         case_id = request.data.get('case')
         case = self.get_case_for_update(case_id)
+        api_info = ApiInfo.objects.get(id=request.data.get('api_info'))
+        if not self.has_instance_data_scope_permission(request, api_info):
+            return ResponseData.fail(RESPONSE_MSG_0210)
         before_snapshot = self.capture_config_snapshot(case).snapshot
         result = ApiCaseStepService.create_step_with_default_parameter(
             case_id=case.id,

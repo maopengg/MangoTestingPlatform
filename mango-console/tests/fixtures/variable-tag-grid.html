@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head><meta charset="UTF-8"><title>分类标签展示验证</title></head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import * as Vue from 'vue'
+      import { compile } from '@vue/compiler-dom'
+      import { createPinia } from 'pinia'
+      import { Table, Tag, Tooltip } from '@arco-design/web-vue'
+      import '@arco-design/web-vue/dist/arco.css'
+      import '../../src/styles/index.css'
+      import VariableTagCell from '../../src/components/business/VariableTagCell.vue'
+      import { applyDisplayDensity } from '../../src/hooks/useDisplayDensity'
+
+      applyDisplayDensity('auto')
+      Vue.createApp({
+        components: { VariableTagCell },
+        setup: () => ({ rows: [[], ['文昂租户'], ['文昂租户', '事件回调'],
+          ['文昂租户', '事件回调', '合同摘要'],
+          ['文昂租户', '事件回调', '合同摘要', '翻译测试'],
+          Array.from({ length: 20 }, (_, index) => `长分类标签名称${index + 1}`)] }),
+        render: new Function('Vue', compile(`<a-table :data="rows.map((tags,id)=>({id,tags,count:tags.length,note:'复用执行场景布局与全局调色板'}))"
+          :columns="[{title:'数量',dataIndex:'count',width:100},{title:'分类标签',slotName:'tags',width:200},{title:'说明',dataIndex:'note'}]"
+          :pagination="false" :scroll="{x:'100%'}">
+          <template #tags="{record}"><VariableTagCell :tags="record.tags" /></template>
+        </a-table>`).code)(Vue),
+      }).use(createPinia()).component('ATable', Table)
+        .component('ATag', Tag).component('ATooltip', Tooltip).mount('#app')
+    </script>
+  </body>
+</html>

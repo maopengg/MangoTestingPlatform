@@ -249,6 +249,7 @@ def register_case_crud_tools(mcp):
     ) -> dict:
         """给 API case 添加接口步骤，并自动创建默认场景参数。
 
+        支持同一项目下跨产品接口；执行时按每个接口所属产品加载被测地址、公共变量和授权，不支持跨项目。
         推荐传 api_info_release_id 或 api_info_revision_id，步骤会固定到对应 API Revision。
         只传 api_info_id 时，默认固定当前已发布 API Revision；如果接口尚未发布，会拒绝添加。
         如果目的是把已有步骤换成另一个接口，不要编辑原步骤的 api_info；

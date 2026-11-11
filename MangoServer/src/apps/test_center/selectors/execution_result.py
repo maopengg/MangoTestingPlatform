@@ -5,6 +5,20 @@ from src.apps.user.services.permission import PermissionMenuService, ProjectProd
 
 class ExecutionResultAccessSelector:
     @staticmethod
+    def api_resource_evidence_result(trace):
+        from src.apps.test_center.models import ExecutionResult
+        return ExecutionResult.objects.filter(trace_id=trace.trace_id, target_type='api_case',
+            target_id=trace.case_id, test_env=trace.test_env, trigger_user_id=trace.user_id,
+        ).order_by('-id').first()
+
+    @staticmethod
+    def exact_api_trace_result(trace):
+        from src.apps.test_center.models import ExecutionResult
+        return ExecutionResult.objects.filter(trace_id=trace.trace_id, target_type='api_case',
+            target_id=trace.case_id, test_env=trace.test_env, trigger_user_id=trace.user_id,
+            source_type='mcp').order_by('-id').first()
+
+    @staticmethod
     def visible_queryset(queryset, user, target_access):
         if user is None:
             return queryset.none()

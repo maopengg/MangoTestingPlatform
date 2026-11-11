@@ -5,6 +5,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 from src.apps.monitoring.models import ServiceHeartbeat
+from src.apps.system.enums import RuntimeServiceName
 from src.common.decorators.retry import async_task_db_connection
 from src.common.logging import log
 
@@ -141,6 +142,37 @@ class ServiceHeartbeatService:
             status=1,
             last_seen_at__gte=cutoff_time,
         ).order_by('instance_name'))
+
+    @staticmethod
+    def completed_mcp_process(owner, started_at):
+        """仅信任该进程全部工具已排空的持久凭据，不以离线/租约到期推断完成。"""
+        from django.utils.dateparse import parse_datetime
+        if (not isinstance(owner, dict) or not isinstance(owner.get('process_token'), str)
+                or not isinstance(owner.get('process_started_at'), str) or not owner['process_started_at']):
+            return False
+        row = ServiceHeartbeat.objects.filter(service_name=RuntimeServiceName.MCP,
+            instance_name='mcp-exit:' + owner['process_token'], status=0).first()
+        metadata = row.metadata if row and isinstance(row.metadata, dict) else {}
+        try:
+            ended = parse_datetime(metadata.get('drained_at') or '')
+            draining = parse_datetime(metadata.get('draining_at') or '')
+            if ended and timezone.is_naive(ended):
+                ended = timezone.make_aware(ended)
+            if draining and timezone.is_naive(draining):
+                draining = timezone.make_aware(draining)
+        except (TypeError, ValueError):
+            return False
+        if started_at is None:
+            return False
+        if timezone.is_naive(started_at):
+            started_at = timezone.make_aware(started_at)
+        now = timezone.now()
+        if timezone.is_naive(now):
+            now = timezone.make_aware(now)
+        return bool(metadata.get('process_token') == owner['process_token']
+                    and metadata.get('process_started_at') == owner.get('process_started_at')
+                    and type(metadata.get('active_tools')) is int and metadata['active_tools'] == 0
+                    and ended and draining and started_at <= ended <= now and draining <= ended)
 
     @classmethod
     def count_online_instances(cls, service_name: str) -> int:

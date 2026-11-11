@@ -32,7 +32,7 @@ export function createConditionItems() {
   enableMultiSelectSearch(items)
   return reactive(items)
 }
-export const TABLE_SCROLL_X = 2020
+export const TABLE_SCROLL_X = 2200
 export const codeVariableExample = `def variable(context):
     """
     函数名字和参数不可以改。
@@ -57,7 +57,7 @@ export const tableColumns: Array<TableColumnData & { key: string | number }> = [
     title: '类型',
     key: 'type',
     dataIndex: 'type',
-    width: 120,
+    width: 100,
     align: 'center',
   },
   {
@@ -102,6 +102,9 @@ export const tableColumns: Array<TableColumnData & { key: string | number }> = [
     dataIndex: 'status',
     align: 'center',
     width: 100,
+  },
+  {
+    title: '分类标签', key: 'tags', dataIndex: 'tags', width: 200, align: 'left', ellipsis: true, tooltip: true,
   },
 
   { ...updateUserColumn(), key: 'update_user', align: 'left', ellipsis: true, tooltip: true },

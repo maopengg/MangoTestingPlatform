@@ -129,25 +129,17 @@ class McpRuntimeTests(TestCase):
     def test_run_mcp_service_uses_import_string_for_multi_worker(self):
         from src.processes.mcp import runner
 
-        with patch.object(runner, 'Thread') as thread_cls, \
-                patch.object(runner, 'Event') as event_cls, \
-                patch.object(runner.uvicorn, 'run') as uvicorn_run:
-            event = Mock()
-            event_cls.return_value = event
-            thread = Mock()
-            thread_cls.return_value = thread
-
+        with patch.object(runner, 'DrainingMcpServer') as server, \
+                patch.object(runner.uvicorn.Config, 'bind_socket') as bind, \
+                patch('uvicorn.supervisors.Multiprocess') as supervisor:
             runner.run_mcp_service('127.0.0.1', 8010, workers=3)
-
-        thread.start.assert_called_once()
-        event.set.assert_called_once()
-        uvicorn_run.assert_called_once_with(
-            runner.MCP_ASGI_APPLICATION,
-            host='127.0.0.1',
-            port=8010,
-            workers=3,
-            access_log=access_log_enabled(),
-        )
+        config = server.call_args.args[0]
+        self.assertEqual(config.app, runner.MCP_ASGI_APPLICATION)
+        self.assertEqual(config.workers, 3)
+        self.assertEqual(config.access_log, access_log_enabled())
+        self.assertEqual(supervisor.call_args.kwargs['target'], server.return_value.run)
+        supervisor.return_value.run.assert_called_once()
+        bind.return_value.close.assert_called_once()
 
     def test_run_realtime_service_uses_environment_access_log_setting(self):
         from src.processes.realtime import runner

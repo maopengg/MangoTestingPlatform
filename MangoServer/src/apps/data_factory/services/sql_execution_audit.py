@@ -328,6 +328,9 @@ class SqlExecutionAuditService:
             status='running',
             slow_threshold_ms=threshold_ms,
         )
+        from src.apps.system.services.runtime_center.process_identity import RuntimeProcessIdentity
+        # 本机生成的进程UUID不是授权token；单独存储，不能被通用凭据脱敏抹掉。
+        values['source_detail']['execution_owner'] = RuntimeProcessIdentity.current()
         using = cls.database_alias()
         try:
             try:
@@ -427,7 +430,13 @@ class SqlExecutionAuditService:
             record.error_message = error.msg
         if isinstance(error_code, int):
             record.error_message = f'[{error_code}] {record.error_message}'
-        outcome_unknown = bool(getattr(error, '_datasource_outcome_unknown', False)) if row_limit_error else not not_sent
+        from src.apps.data_factory.services.data_source_error import DataSourceErrorService
+        if not_sent or DataSourceErrorService.confirmed_rejection(error):
+            outcome_unknown = False
+        elif row_limit_error:
+            outcome_unknown = bool(getattr(error, '_datasource_outcome_unknown', False))
+        else:
+            outcome_unknown = True
         record.source_detail = {**record.source_detail, 'outcome_unknown': outcome_unknown,
                                 'error_category': type(error).__name__,
                                 'error_code': error_code if isinstance(error_code, int) else None}
@@ -484,10 +493,17 @@ class SqlExecutionAuditService:
         from datetime import timedelta
         from django.utils import timezone
         # 只标识长时间未回写的结果不确定记录；绝不根据超时自动重执行。
-        cutoff = timezone.now() - timedelta(days=1)
+        from src.apps.system.services.runtime_center.heartbeat import ServiceHeartbeatService
+        now = timezone.now()
+        cutoff = now - timedelta(days=1)
         recovered = 0
-        for record in SqlExecutionRecord.objects.filter(status='running', update_time__lt=cutoff).order_by('id')[:batch_size]:
-            detail = {**record.source_detail, 'outcome_unknown': True}
+        for record in SqlExecutionRecord.objects.filter(status='running', update_time__lt=now-timedelta(minutes=1)).order_by('id')[:batch_size]:
+            owner = (record.source_detail or {}).get('execution_owner')
+            drained = ServiceHeartbeatService.completed_mcp_process(owner, getattr(record, 'create_time', record.update_time))
+            if not drained and record.update_time >= cutoff:
+                continue
+            detail = {**record.source_detail, 'outcome_unknown': True,
+                      'execution_owner_completed': drained}
             recovered += SqlExecutionRecord.objects.filter(id=record.id, status='running', update_time=record.update_time).update(
                 status='fail', source_detail=detail, update_time=timezone.now(),
                 error_message='执行进程未回写终态，实际结果不确定，请核查，禁止自动重放',

@@ -14,7 +14,7 @@ class ApiCasePosteriorFailureTests(SimpleTestCase):
         base = CaseBase.__new__(CaseBase)
         base.test_env = 0
         base.api_case = SimpleNamespace(id=1, project_product_id=1, posterior_sql=[
-            None, {'key': '', 'value': 'DELETE FROM demo WHERE id=2'}])
+            None, {'key': '', 'value': 'DELETE FROM demo WHERE id=2'}], front_public=[], front_auth_config=[])
         base.test_setup = Mock()
         base.test_setup.test_data.replace.side_effect = lambda value: value
         base.case_data_factory = Mock()
@@ -27,7 +27,9 @@ class ApiCasePosteriorFailureTests(SimpleTestCase):
 
     def test_stopping_during_posterior_still_attempts_factory_cleanup(self):
         base = CaseBase.__new__(CaseBase)
-        base.api_case = SimpleNamespace(posterior_sql=[{}])
+        base.api_case = SimpleNamespace(project_product_id=1, posterior_sql=[{}], front_public=[], front_auth_config=[])
+        base.test_env = 0
+        base.test_setup = Mock()
         base._CaseBase__posterior_sql = Mock(side_effect=KeyboardInterrupt())
         base.case_data_factory = Mock()
         with self.assertRaises(KeyboardInterrupt):
@@ -39,7 +41,7 @@ class ApiCasePosteriorFailureTests(SimpleTestCase):
         base.test_env = 0
         base.api_case = SimpleNamespace(id=1, project_product_id=1, posterior_sql=[
             {'key': '', 'test_envs': [1], 'value': 'DELETE FROM demo WHERE id=1'},
-            {'key': '', 'test_envs': [0], 'value': 'DELETE FROM demo WHERE id=2'}])
+            {'key': '', 'test_envs': [0], 'value': 'DELETE FROM demo WHERE id=2'}], front_public=[], front_auth_config=[])
         base.test_setup = Mock()
         base.test_setup.test_data.replace.side_effect = lambda value: value
         base.case_data_factory = Mock()
@@ -55,7 +57,7 @@ class ApiCasePosteriorFailureTests(SimpleTestCase):
         base.api_case = SimpleNamespace(id=1, project_product_id=1, posterior_sql=[
             {'key': '', 'value': 'DELETE FROM demo WHERE id=1'},
             {'key': '', 'value': 'DELETE FROM demo WHERE id=2'},
-            {'key': '', 'value': 'DELETE FROM demo WHERE id=3'}])
+            {'key': '', 'value': 'DELETE FROM demo WHERE id=3'}], front_public=[], front_auth_config=[])
         base.test_setup = Mock()
         base.test_setup.test_data.replace.side_effect = lambda value: value
         base.case_data_factory = Mock()

@@ -9,9 +9,10 @@ from src.apps.auto_api.exceptions import (
     API_VERSION_CASE_SCENARIO_INVALID,
     API_VERSION_CASE_STEP_ORDER_INVALID,
     API_CASE_STEP_NOT_FOUND,
+    API_CASE_STEP_PROJECT_MISMATCH,
     AutoApiError,
 )
-from src.apps.auto_api.models import ApiCaseDetailed, ApiCaseDetailedParameter, ApiInfoRelease, ApiInfoRevision
+from src.apps.auto_api.models import ApiCase, ApiInfo, ApiCaseDetailed, ApiCaseDetailedParameter, ApiInfoRelease, ApiInfoRevision
 from src.apps.auto_api.services.api_case.mutation import ApiCaseAggregateMutationService
 from src.apps.auto_api.schemas.recovery import ApiStepExecutionConfig
 from src.apps.auto_api.services.api_info.runtime import ApiInfoRuntimeService
@@ -27,6 +28,13 @@ class ApiCaseStepCreateResult:
 
 class ApiCaseStepService:
     """API Case 步骤与默认场景的通用创建/版本解析逻辑。"""
+
+    @staticmethod
+    def validate_project(case_id: int, api_info_id: int) -> None:
+        case_project = ApiCase.objects.filter(id=case_id).values_list('project_product__project_id', flat=True).first()
+        api_project = ApiInfo.objects.filter(id=api_info_id).values_list('project_product__project_id', flat=True).first()
+        if case_project is None or api_project is None or case_project != api_project:
+            raise AutoApiError(API_CASE_STEP_PROJECT_MISMATCH)
 
     @staticmethod
     def configure_recovery(step_id: int, config: dict, *, operator_id=None, source='page') -> dict:
@@ -59,6 +67,8 @@ class ApiCaseStepService:
 
         def operation(_):
             step = ApiCaseDetailed.objects.select_for_update().get(id=step_id)
+            if step.api_info_id != api_info_id:
+                cls.validate_project(step.case_id, api_info_id)
             revision_id = pinned_api_info_revision_id
             if (step.api_info_id, step.pinned_api_info_revision_id) != (api_info_id, revision_id):
                 _, revision_id = cls.resolve_api_runtime(
@@ -133,6 +143,7 @@ class ApiCaseStepService:
             pinned_api_info_revision_id: int | None = None,
             execution_config: dict | None = None,
     ) -> ApiCaseStepCreateResult:
+        cls.validate_project(case_id, api_info_id)
         config = ApiStepExecutionConfig.parse_config(
             {} if execution_config is None else execution_config,
         ).model_dump(exclude_defaults=True)

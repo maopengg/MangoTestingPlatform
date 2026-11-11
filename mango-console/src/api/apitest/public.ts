@@ -1,5 +1,12 @@
 import { deleted, get, post, put } from '@/api/http'
 
+export function getApiPublicReferenceCounts(ids: Array<string | number>) {
+  return get({ url: '/api/public/reference-counts', data: () => ({ ids: ids.join(',') }) })
+}
+export function getApiPublicReferenceCases(id: string | number, page = 1, pageSize = 20) {
+  return get({ url: '/api/public/reference-cases', data: () => ({ id, page, pageSize }) })
+}
+
 export function getApiPublic(data: object) {
   return get({
     url: '/api/public',

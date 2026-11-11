@@ -835,9 +835,10 @@
   )
   const apiProjectProductId = computed(
     () =>
+      caseRecord.value.project_product?.id ||
+      scalarId(caseRecord.value.project_product) ||
       props.projectProductId ||
       scalarId(route.query.project_product) ||
-      caseRecord.value.project_product?.id ||
       initialRecord?.project_product?.id ||
       ''
   )
@@ -1200,9 +1201,14 @@
     if (liveCaseRecord.value) {
       setCaseRecord(normalizeCaseRecord(liveCaseRecord.value))
     }
-    void Promise.all([doRefresh(), loadCaseDataFactoryCount()]).then(() =>
-      refreshSelectedRuntimeResult()
-    )
+    const isCurrent = requests.capture()
+    void ensureCaseRecord().then(async () => {
+      if (!isCurrent() || caseVersionPayloadActive.value) return
+      await Promise.all([doRefresh(), loadCaseDataFactoryCount()])
+      if (isCurrent()) await refreshSelectedRuntimeResult()
+    }).catch(() => {
+      // 公共请求层展示加载错误，不以空记录覆盖已有 Case 配置。
+    })
   }
 
   function ensureCaseEditable() {

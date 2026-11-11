@@ -9,4 +9,4 @@ class ApiPublicTypeEnum(BaseEnum):
 
     @classmethod
     def obj(cls):
-        return {0: "自定义-第一加载", 1: "SQL-第二加载", 2: "代码变量-第三加载"}
+        return {0: "① 自定义", 1: "② SQL", 2: "③ 代码变量"}

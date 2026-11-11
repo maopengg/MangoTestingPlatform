@@ -21,8 +21,15 @@ class ApiResourceCleanupSelector:
                 'step_id': record.step_id, 'parameter_id': record.parameter_id, 'test_env': record.test_env,
                 'rule_key': record.rule_key, 'status': record.status, 'error_message': record.error_message,
                 'sql_cleaned': proof.sql_cleaned, 'es_verified': proof.es_verified,
+                'creation_rejected': proof.rejection_confirmed,
+                'es_verification_required': not (proof.rejection_confirmed and not proof.root),
                 'index': proof.index, 'document_id': proof.root.get(record.rule['document_id_field']),
-                'unknown_permits_count': len(proof.unknown_permits)}
+                'unknown_permits_count': len(proof.unknown_permits),
+                'version_transition_count': len(proof.version_transitions),
+                'original_version': proof.root.get(record.rule.get('version_field', 'version')),
+                'current_version': (proof.version_transitions[-1].root_after if proof.version_transitions else proof.root
+                                    ).get(record.rule.get('version_field', 'version')),
+                'rejection_recovered': proof.rejection_evidence is not None}
 
     @classmethod
     def results(cls, *, user, case_id, trace_id=None, resource_id=None, page=1, page_size=10):

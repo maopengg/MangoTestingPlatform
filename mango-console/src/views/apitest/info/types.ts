@@ -51,6 +51,7 @@ export interface UserOption {
 export interface BoundApiCase {
   case_id: ApiEntityId
   case_name: string
+  scenario_tags?: Array<number | string>
   project_product_id?: ApiEntityId | null
   case_people_name?: string | null
   update_user_name?: string | null

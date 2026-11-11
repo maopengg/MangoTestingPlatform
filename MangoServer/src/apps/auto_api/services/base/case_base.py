@@ -71,6 +71,11 @@ class CaseBase:
         errors = []
         try:
             try:
+                self.test_setup.init_test_object(self.api_case.project_product_id, self.test_env)
+                self.test_setup.init_public(
+                    self.api_case.project_product_id, self.test_env,
+                    self.api_case.front_public, self.api_case.front_auth_config,
+                )
                 if self.api_case.posterior_sql:
                     self.__posterior_sql(self.api_case.posterior_sql)
             except Exception as error:

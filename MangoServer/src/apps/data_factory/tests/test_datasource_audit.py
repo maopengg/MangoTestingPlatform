@@ -373,7 +373,8 @@ class DatasourceAuditTests(SimpleTestCase):
     def test_stale_recovery_only_marks_unknown_and_never_executes(self, reconcile, objects):
         from django.utils import timezone
         target = record()
-        target.update_time = timezone.now()
+        from datetime import timedelta
+        target.update_time = timezone.now() - timedelta(days=2)
         objects.filter.return_value.order_by.return_value = [target]
         objects.filter.return_value.update.return_value = 1
         with patch.object(DataSourceExecutionService, 'execute_backend') as backend:
@@ -382,6 +383,27 @@ class DatasourceAuditTests(SimpleTestCase):
         values = objects.filter.return_value.update.call_args.kwargs
         self.assertEqual(values['status'], 'fail')
         self.assertTrue(values['source_detail']['outcome_unknown'])
+
+    @patch('src.apps.data_factory.services.sql_execution_audit.SqlExecutionRecord.objects')
+    @patch.object(Audit, 'reconcile_slow', return_value=0)
+    def test_recent_running_audit_requires_exact_completed_owner_evidence(self, reconcile, objects):
+        from datetime import timedelta
+        from django.utils import timezone
+        from src.apps.system.services.runtime_center.heartbeat import ServiceHeartbeatService
+        target = record()
+        target.update_time = target.create_time = timezone.now()-timedelta(minutes=2)
+        target.source_detail = {'execution_owner': {'process_token': 'AUTO_OWNER'}}
+        objects.filter.return_value.order_by.return_value = [target]
+        objects.filter.return_value.update.return_value = 1
+        with patch.object(ServiceHeartbeatService, 'completed_mcp_process', return_value=False):
+            self.assertEqual(Audit.recover_stale()['recovered_audit_count'], 0)
+            objects.filter.return_value.update.assert_not_called()
+        with patch.object(ServiceHeartbeatService, 'completed_mcp_process', return_value=True):
+            self.assertEqual(Audit.recover_stale()['recovered_audit_count'], 1)
+        changes = objects.filter.return_value.update.call_args.kwargs
+        self.assertTrue(changes['source_detail']['outcome_unknown'])
+        self.assertTrue(changes['source_detail']['execution_owner_completed'])
+        self.assertEqual(changes['status'], 'fail')
 
     @patch('src.apps.data_factory.services.data_source_execution.DatasourceTargetService.resolve')
     @patch('src.apps.data_factory.services.data_source_execution.DataFactoryDatasourceResolver')

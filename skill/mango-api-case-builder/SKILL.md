@@ -1,6 +1,6 @@
 ---
 name: mango-api-case-builder
-description: 依据权威接口和场景证据，规划、创建、完整验证 API Case 并提交预发布，正式发布由用户页面手动完成。覆盖 API Info 绑定、请求、断言、前置数据和清理；报告排查与重试由报告修复 Skill 负责。
+description: 依据权威接口和场景证据，规划、创建、完整验证 API Case 并提交预发布，正式发布由用户页面手动完成。覆盖 API Info 绑定、请求、断言、前置数据，以及 API 新建资源的 SQL/ES 失败安全清理、数组身份映射和负向创建；报告排查与重试由报告修复 Skill 负责。
 ---
 
 # API Case 创建与维护
@@ -18,6 +18,8 @@ description: 依据权威接口和场景证据，规划、创建、完整验证 
 本 Skill 不盘点后端接口或设计新覆盖，不从执行报告/任务选失败项，不上传诊断 Markdown，不重试报告行、整报告或任务。请求源自定时 API 报告时，使用 [定时报告修复 Skill](../mango-scheduled-api-report-maintainer/SKILL.md)，由其负责范围、授权、发布和原失败行精确重试；它不适用于手工/临时报告。
 
 平台操作只走 mango-test-platform MCP，禁止平台 SQL、ORM、shell、直连 HTTP 或后端 service 绕过读取/修改平台元数据。缺安全能力则停止对应操作并报告。需要数据工厂时，完整读取 [数据工厂 Skill](../mango-data-factory-builder/SKILL.md) 及其按操作路由的参考资料。
+
+涉及 API 新建 SQL/ES 资源、负向创建可能意外落库、重复名称、删除后的索引残留或历史清理失败时，必须先读 [API 创建资源的编写与清理](references/api-created-resource-cleanup.md)，再读取当前 MCP 的 `get_api_case_resource_cleanup_schema` 和工具签名。不能沿用旧执行“平台不支持数组”的结论，也不能把“代码已支持”当作目标服务已部署或 Case 已配置。
 
 ## 必要上下文
 
@@ -165,7 +167,7 @@ description: 依据权威接口和场景证据，规划、创建、完整验证 
 
 - **前置 `front_func`：** 仅用于平台配置、变量和现有数据方法无法表达的请求计算或编码，例如接口特有签名；每场景前置 SQL 后、请求前执行，接收 `(self, request)` 并返回 `ApiExecutionRequest`。
 - **后置 `posterior_func`：** 仅用于现有提取/断言无法处理的响应解码或派生计算；在响应提取、场景后置 SQL/等待之后、文件处理和断言之前执行，接收 `(self, response)` 并返回 `ApiExecutionResponse`。取得响应不等于业务成功，保留原始响应证据，不改状态码/业务字段、不吞错或伪造结果来通过断言。
-- **失败清理：** 场景 `posterior_*` 依赖请求返回且前序后处理成功，不能作兜底；必须覆盖失败的清理放实际支持的 Case 级 `posterior_sql` 或工厂 cleanup，工厂只清其拥有的数据，API 副作用由 Case 先清。需业务 API 撤销且没有失败安全编排能力时记录能力缺口，不用场景函数或最后一步冒充 finally；生产仍禁 SQL/工厂，不扩大写授权。
+- **失败清理：** 场景 `posterior_*` 依赖请求返回且前序后处理成功，不能作兜底。API 新建 SQL/ES 资源优先用 Case `resource_cleanup`，工厂只清其拥有的数据；仅 SQL 副作用可用已证明失败安全的 Case 级 `posterior_sql`，不能用它冒充 ES 清理。需业务 API 撤销且没有失败安全编排能力时记录能力缺口，不用场景函数或最后一步冒充 finally；生产仍禁 SQL/工厂，不扩大写授权。
 
 函数使用前记录“现有配置缺什么、函数负责什么、输入输出及副作用”，无必要则留空。保存回读并完整验证请求、原始响应、断言与失败清理；修改已有冗余函数时保留类型、动态值、测试意图和断言强度，不批量删除未审计脚本。
 
@@ -193,6 +195,8 @@ Case 涉及的每条持久数据都纳入一个清理设计，即使由不同组
 3. 按依赖顺序：API 后代/关联 → API 父行 → 工厂子行/根行。
 4. 删除限定本轮返回 ID 或合法 `AUTO...` 唯一业务键加必需租户条件；不得仅宽泛外键、名称、时间段或共享工厂根删无关数据。
 5. 清理幂等：已不存在为成功，连接/权限失败仍显示失败。
+
+API 创建的 SQL/ES 资源按 [编写教程](references/api-created-resource-cleanup.md) 配置原生 `resource_cleanup`，不登记为工厂创建；保存完整规则列表并回读。区分 SQL 自增主键、业务 ID、ES 文档 ID 和业务版本，负向场景也必须覆盖意外创建。业务断言与清理判定独立：业务失败但清理成功仍失败，业务通过但清理失败不能提交预发布。
 
 候选最终审核及 `update_api_case_publication_status(target_status="prepublished", revision_id=...)` 前，MCP 回读完整编辑态，对照已保存 Case 后置和工厂绑定核验副作用清单。消费工厂数据后 API 创建行无精确、失败安全清理时 Case 不完整，不提交，先补清理或报告阻塞。MCP 看不到足够配置则报能力缺口，不提交。包括定时报告修复在内，Case 均止于预发布，正式发布交用户在页面手动完成；API Info 验证后可直接发布。`target_status="unpublished"` 为驳回，不属于成功构建流程。
 

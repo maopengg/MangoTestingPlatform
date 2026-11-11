@@ -88,6 +88,7 @@ class ApiPublic(models.Model):
         db_index=True,
     )
     name = models.CharField(verbose_name="名称", max_length=64)
+    tags = models.JSONField(verbose_name="分类标签", default=list, blank=True)
     key = models.CharField(verbose_name="键", max_length=128)
     value = models.TextField(verbose_name="值")
     datasource_alias = models.ForeignKey(

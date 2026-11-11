@@ -52,6 +52,108 @@ class DatasourcePoolTests(SimpleTestCase):
         dispose.assert_called_once()
         self.assertFalse(SqlPools._engines)
 
+    def test_sql_slow_lease_renewal_does_not_block_shared_engine_borrowers(self):
+        from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService as Governor
+        entered, finish = threading.Event(), threading.Event()
+        engine = SimpleNamespace(dispose=Mock(), pool=SimpleNamespace(checkedout=lambda: 0))
+        SqlPools.get_engine(self.target, 5, lambda policy: engine).dispose()
+
+        def renew(permits):
+            entered.set()
+            if not finish.wait(3):
+                raise AssertionError('renewal was never released')
+            return set()
+
+        def borrow(_):
+            value = SqlPools.get_engine(self.target, 5, lambda policy: self.fail('shared pool rebuilt'))
+            value.dispose()
+            return value is engine
+
+        outcomes = []
+        with patch.object(Governor, 'renew_connections', side_effect=renew):
+            renewal = Thread(target=SqlPools.renew_live_connections)
+            renewal.start()
+            try:
+                self.assertTrue(entered.wait(1))
+                jobs = [Thread(target=lambda: outcomes.extend(borrow(index) for index in range(25)))
+                        for _ in range(4)]
+                for job in jobs:
+                    job.start()
+                for job in jobs:
+                    job.join(timeout=1)
+                    self.assertFalse(job.is_alive())
+                self.assertEqual(outcomes, [True] * 100)
+                self.assertTrue(renewal.is_alive())
+            finally:
+                finish.set()
+                renewal.join(timeout=1)
+        self.assertEqual(next(iter(SqlPools._engines.values()))[3], 0)
+
+    def test_protocol_slow_lease_renewal_does_not_block_borrow_or_return(self):
+        from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService as Governor
+        entered, finish = threading.Event(), threading.Event()
+        client = Mock()
+
+        def renew(permits):
+            entered.set()
+            if not finish.wait(3):
+                raise AssertionError('renewal was never released')
+            return set()
+
+        with ProtocolPools.borrow(self.target, 'redis', lambda size: client):
+            with patch.object(Governor, 'renew_connections', side_effect=renew):
+                renewal = Thread(target=ProtocolPools.renew_live_connections)
+                renewal.start()
+                try:
+                    self.assertTrue(entered.wait(1))
+                    with ProtocolPools.borrow(self.target, 'redis', lambda size: self.fail('pool rebuilt')) as value:
+                        self.assertIs(value, client)
+                    self.assertTrue(renewal.is_alive())
+                finally:
+                    finish.set()
+                    renewal.join(timeout=1)
+        self.assertEqual(next(iter(ProtocolPools._entries.values()))['active'], 0)
+
+    def test_reaper_control_settlement_never_holds_registry_lock(self):
+        from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService as Governor
+        for registry in (SqlPools, ProtocolPools):
+            with self.subTest(registry=registry.__name__):
+                entered, finish, available = threading.Event(), threading.Event(), threading.Event()
+                failures = []
+
+                def flush():
+                    entered.set()
+                    finish.wait(3)
+                    registry._pid = -1
+
+                def probe():
+                    try:
+                        with registry._lock:
+                            available.set()
+                    except BaseException as error:
+                        failures.append(error)
+
+                with patch('src.apps.data_factory.services.datasource_pool.time.sleep'), \
+                        patch.object(Governor, 'flush_pending_releases', side_effect=flush), \
+                        patch.object(Governor, 'flush_closed_connections'), \
+                        patch.object(Governor, 'connection_pressure', return_value=False), \
+                        patch.object(registry, 'renew_live_connections'):
+                    worker = Thread(target=registry.reap)
+                    borrower = None
+                    worker.start()
+                    try:
+                        self.assertTrue(entered.wait(1))
+                        borrower = Thread(target=probe)
+                        borrower.start()
+                        self.assertTrue(available.wait(1))
+                    finally:
+                        finish.set()
+                        worker.join(timeout=1)
+                        if borrower is not None:
+                            borrower.join(timeout=1)
+                        registry._pid = os.getpid()
+                self.assertFalse(failures)
+
     def test_protocol_operation_permit_is_taken_only_after_pool_is_borrowed(self):
         from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService as Governor
         order = []
