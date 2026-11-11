@@ -558,6 +558,11 @@ def gateway_config(root,v):
     location {prefix} {{
         resolver 127.0.0.11 valid=30s;
         set $extra_upstream_{i} {parsed.netloc};
+        proxy_set_header X-Forwarded-Prefix {prefix};
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         rewrite ^{prefix}(.*)$ /$1 break;
         proxy_pass {parsed.scheme}://$extra_upstream_{i};
     }}
