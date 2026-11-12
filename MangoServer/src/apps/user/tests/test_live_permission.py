@@ -7,10 +7,14 @@ from django.test import SimpleTestCase
 from src.apps.auto_ui.api.views.ui_live_stream import LiveStreamViews
 from src.apps.auto_ui.selectors.live_stream_permission import LiveStreamPermissionSelector
 from src.apps.user.middleware.permission import MenuActionPermission
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.tests.permission_fixtures import install_legacy_endpoint_snapshot
 
 
 class LivePermissionTests(SimpleTestCase):
+    def setUp(self):
+        install_legacy_endpoint_snapshot(self)
+
     def test_grant_for_a_different_ui_page_does_not_control_target_or_other_user(self):
         view = LiveStreamViews()
         view.action = 'create_workspace'

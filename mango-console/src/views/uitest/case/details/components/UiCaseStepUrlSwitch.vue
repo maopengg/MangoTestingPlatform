@@ -1,11 +1,13 @@
 <template>
   <span class="mango-ui-step-url-switch">
     <a-switch :model-value="enabled" :loading="saving" :before-change="save" aria-label="切换步骤 URL" />
-    <span v-if="error" class="mango-ui-step-url-switch__error" role="alert">{{ error }}</span>
+    <MangoRequestFeedback v-if="error" :message="(error)" />
   </span>
 </template>
 
 <script setup lang="ts">
+import { requestFailureMessage } from '@/utils/load-error'
+
 import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Message } from '@arco-design/web-vue'
@@ -28,7 +30,7 @@ async function save(next: unknown): Promise<boolean> {
   const value: 0 | 1 = next ? 1 : 0
   let caseId: number | string, recordId: number | string
   try { caseId = requiredUiCaseAssetId(props.caseId); recordId = requiredUiCaseAssetId(props.recordId) }
-  catch { error.value = '步骤或用例ID异常，请重新加载核对'; return false }
+  catch (requestFailure) { error.value = requestFailureMessage(requestFailure, '步骤或用例ID异常，请重新加载核对'); return false }
   const snapshot = { caseId, recordId, value }
   const key = identity(), sequence = version
   const current = () => available() && key === identity() && sequence === version
@@ -37,8 +39,8 @@ async function save(next: unknown): Promise<boolean> {
     uiCaseAssetResponse(await putUiCaseStepsDetailed({ id: snapshot.recordId, switch_step_open_url: value }, snapshot.caseId))
     if (!current()) return false
     emit('saved', snapshot); Message.success('切换 URL 设置已保存'); return true
-  } catch {
-    if (current()) error.value = '保存失败，请重试'
+  } catch (requestFailure) {
+    if (current()) error.value = requestFailureMessage(requestFailure, '保存失败，请重试')
     return false
   } finally { saving.value = false }
 }

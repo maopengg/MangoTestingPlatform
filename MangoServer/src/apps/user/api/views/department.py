@@ -23,6 +23,7 @@ class DepartmentViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('user')
     def get_product_scope(self, request: Request):
+        """获取部门项目产品授权范围"""
         department_id = request.query_params.get('department_id')
         queryset = DepartmentProjectProductPermission.objects.filter(department_id=department_id)
         serializer = DepartmentProjectProductPermissionSerializersC.setup_eager_loading(queryset)
@@ -32,6 +33,7 @@ class DepartmentViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('user')
     def put_product_scope(self, request: Request):
+        """保存部门项目产品授权范围"""
         department_id = request.data.get('department_id')
         project_product_ids = request.data.get('project_product_ids') or []
         DepartmentProjectProductPermission.objects.filter(department_id=department_id).delete()

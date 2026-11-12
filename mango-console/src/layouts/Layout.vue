@@ -34,9 +34,8 @@
   import UserTokenExpiredInterceptor from '@/api/interceptors/UserTokenExpiredInterceptor'
   import useAxios from '@/hooks/useAxios'
   import useAppConfigStore from '@/store/modules/app-config'
-  import { useChangeMenuWidth } from '@/hooks/useMenuWidth'
   import { applyDisplayDensity } from '@/hooks/useDisplayDensity'
-  import { DeviceType, DisplayDensity } from '@/store/types'
+  import { DeviceType } from '@/store/types'
   import CustomRequestInterceptor from '@/api/interceptors/CustomRequestInterceptor'
 
   export default defineComponent({
@@ -45,19 +44,6 @@
       const settingRef = ref()
       const searchContentRef = ref()
       const appStore = useAppConfigStore()
-      const persistedDensity = appStore.displayDensity || DisplayDensity.AUTO
-      appStore.changeDisplayDensity(persistedDensity)
-      // 189px 与 210px 均为旧版默认值；迁移到当前宽度，用户自定义值保持不变。
-      if (
-        appStore.sideWidth === 189 ||
-        appStore.sideWidth === 203 ||
-        appStore.sideWidth === 210
-      ) {
-        appStore.changeSideWidth(199)
-      } else {
-        useChangeMenuWidth(appStore.sideWidth)
-      }
-      appStore.applyCurrentThemePreset()
       const emitter = useEmit()
       const axios = useAxios()
       axios.interceptors.request.use((config) => {

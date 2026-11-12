@@ -38,7 +38,7 @@
     </template>
     <template #default>
       <div v-if="caseExecutionRecovering" class="mango-soft-panel" role="status">正在核对执行任务…</div>
-      <div v-if="caseExecutionError" class="mango-soft-panel mango-ui-step-structure-error" role="alert">{{ caseExecutionError }} <a-button size="small" :loading="caseExecutionRecovering" :disabled="caseSubmitting" @click="recoverCaseExecution()">重试核对</a-button></div>
+      <MangoRequestFeedback v-if="caseExecutionError" :message="(caseExecutionError)"><a-button size="small" :loading="caseExecutionRecovering" :disabled="caseSubmitting" @click="recoverCaseExecution()">重试核对</a-button></MangoRequestFeedback>
       <div
         class="ui-case-workbench mango-detail-workbench mango-detail-workbench--fill mango-detail-workbench--flex mango-workbench-scroll-x"
       >
@@ -53,13 +53,11 @@
             <div v-if="caseConfigurationLoading" class="mango-soft-panel" role="status">正在加载用例配置…</div>
             
             <div v-if="caseConfigurationSaveError || caseGlobalSaving || caseConfigurationDirty" class="mango-soft-panel" role="status">
-              <span :class="{ 'mango-ui-step-structure-error': caseConfigurationSaveError }">{{ caseConfigurationSaveError || (caseGlobalSaving ? '正在保存用例配置…' : '配置尚未保存') }}</span>
+              <MangoRequestFeedback :message="caseConfigurationSaveError" />
+              <span>{{ caseGlobalSaving ? '正在保存用例配置…' : '配置尚未保存' }}</span>
               <a-button size="small" :loading="caseGlobalSaving" :disabled="!caseRecord" @click="upDataCase">保存配置</a-button>
             </div>
-            <div v-for="item in configurationOptionErrors" :key="item.label" class="mango-soft-panel mango-ui-step-structure-error" role="alert">
-              {{ item.message }}
-              <a-button size="small" :loading="item.loading" @click="item.retry">重试{{ item.label }}</a-button>
-            </div>
+            <MangoRequestFeedback v-for="item in configurationOptionErrors" :key="item.label" :message="item.message"><a-button size="small" :loading="item.loading" @click="item.retry">重试{{ item.label }}</a-button></MangoRequestFeedback>
             <a-tabs
               class="ui-case-step-tabs"
               :active-key="caseTab"
@@ -285,8 +283,8 @@
               <a-tab-pane key="2" title="执行编排" data-testid="qa-views-uitest-case-details-tab-pane-执行编排">
                 <section class="ui-case-step-table-drop">
                   
-                  <div v-if="stepStructureError" class="mango-soft-panel mango-ui-step-structure-error" role="alert">{{ stepStructureError }}</div>
-                  <div v-if="stepExecutionError" class="mango-soft-panel mango-ui-step-structure-error" role="alert">{{ stepExecutionError }} <a-button size="small" :loading="stepRunning" @click="retryStepExecution()">重试</a-button></div>
+                  <MangoRequestFeedback v-if="stepStructureError" :message="(stepStructureError)" />
+                  <MangoRequestFeedback v-if="stepExecutionError" :message="(stepExecutionError)"><a-button size="small" :loading="stepRunning" @click="retryStepExecution()">重试</a-button></MangoRequestFeedback>
                   <div v-if="stepStructurePending?.kind === 'sort'" class="mango-soft-panel" role="status">正在保存步骤顺序…</div>
                   <mango-panel-spin :loading="stepTableLoading" class="ui-case-step-card-spin">
                     <div
@@ -424,7 +422,7 @@
         </section>
         <section class="ui-case-panel ui-case-unified-step-panel">
           <div v-if="caseResultLoading" class="mango-soft-panel" role="status"><a-spin :size="scaleDensityPixels(16)" /> 正在读取执行结果…</div>
-          <div v-if="caseResultError" class="mango-soft-panel" role="alert">{{ caseResultError }} <a-button size="small" :loading="caseResultLoading" @click="loadLatestUiCaseExecutionResult()">重试</a-button></div>
+          <MangoRequestFeedback v-if="caseResultError" :message="(caseResultError)"><a-button size="small" :loading="caseResultLoading" @click="loadLatestUiCaseExecutionResult()">重试</a-button></MangoRequestFeedback>
           <PageStepsDetails
             v-if="selectedCaseStep && getPageStepId(selectedCaseStep) !== ''"
             :key="`case-${uiCaseId}-step-${selectedCaseStep.id}-page-step-${getPageStepId(selectedCaseStep)}`"
@@ -494,7 +492,7 @@
             </a-button>
           </a-space>
         </div>
-        <div v-if="caseLiveError" class="mango-soft-panel mango-ui-step-structure-error" role="alert">{{ caseLiveError }} <a-button size="small" :loading="caseActuatorLoading" @click="loadCaseActuatorOptions()">重试</a-button></div>
+        <MangoRequestFeedback v-if="caseLiveError" :message="(caseLiveError)"><a-button size="small" :loading="caseActuatorLoading" @click="loadCaseActuatorOptions()">重试</a-button></MangoRequestFeedback>
         <div v-if="!caseActuatorLoading && !caseLiveError && !caseActuatorOptions.length" class="ui-case-live-notice">
           暂无支持 Web 直播的在线执行器，请启动本人执行器或开放其他执行器。
         </div>

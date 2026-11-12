@@ -18,9 +18,9 @@ from src.apps.system.enums import (
     ServerToolsCommandEnum,
     SystemConfigManagementLevelEnum,
 )
-from src.apps.system.services.assertion_catalog import AssertionCatalogService
-from src.apps.system.services.enum_catalog import EnumCatalogService
-from src.apps.system.services.logging_level import LoggingLevelService
+from src.apps.system.services.catalog.assertion_catalog import AssertionCatalogService
+from src.apps.system.services.catalog.enum_catalog import EnumCatalogService
+from src.apps.system.services.configuration.logging_level import LoggingLevelService
 from src.apps.system.services.socket_link.message_service import SocketMessageService
 from src.common.decorators.error_response import error_response
 from src.common.exceptions import MangoServerError
@@ -125,8 +125,8 @@ class SystemViews(ViewSet):
 
     @staticmethod
     def _upsert_method_cache(key: str, value, describe: str):
-        from src.apps.system.services.cache_data import CacheDataService
-        from src.apps.system.services.system_config import SystemConfigService
+        from src.apps.system.services.configuration.cache_data import CacheDataService
+        from src.apps.system.services.configuration.system_config import SystemConfigService
 
         data = {
             'describe': describe,
@@ -142,13 +142,13 @@ class SystemViews(ViewSet):
 
     @staticmethod
     def _get_cache_value(key: str):
-        from src.apps.system.services.system_config import SystemConfigService
+        from src.apps.system.services.configuration.system_config import SystemConfigService
 
         return SystemConfigService.get(key)
 
     @staticmethod
     def _get_method_cache_value(key: str):
-        from src.apps.system.services.system_config import SystemConfigService
+        from src.apps.system.services.configuration.system_config import SystemConfigService
 
         return SystemConfigService.get(key, default={})
 
@@ -161,6 +161,7 @@ class SystemViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def enum_api(self, request: Request):
+        """获取系统显式注册的枚举选项"""
         return ResponseData.success(
             RESPONSE_MSG_0076,
             EnumCatalogService.catalog(),
@@ -179,6 +180,7 @@ class SystemViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def random_data(self, request: Request):
+        """执行测试数据生成方法并返回结果"""
         name = (request.GET.get("name") or "").strip()
         if name.startswith("${{") and name.endswith("}}"):
             name = name[3:-2].strip()
@@ -210,6 +212,7 @@ class SystemViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def method_cache_refresh(self, request: Request):
+        """刷新测试数据、断言或 UI 操作方法目录"""
         cache_type = (request.data.get('type') or '').strip()
         if cache_type == 'all':
             types = ['test_data', 'api_assertion', 'ui_operation']
@@ -270,6 +273,7 @@ class SystemViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def assertion_test(self, request: Request):
+        """测试断言方法"""
         groups = request.data.get('assertions')
         if isinstance(groups, list):
             return ResponseData.success(
@@ -303,6 +307,7 @@ class SystemViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def set_debug_log(self, request: Request):
+        """设置系统调试日志级别"""
         is_debug = request.data.get('is_debug')
         data = (
             LoggingLevelService.set_debug(is_debug)

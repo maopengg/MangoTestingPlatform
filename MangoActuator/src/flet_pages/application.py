@@ -38,9 +38,8 @@ class FletActuatorApplication:
     TITLES = {"home": "运行概览", "logs": "实时日志", "web": "WEB 配置", "android": "Android 配置", "ios": "iOS 配置", "pc": "PC 配置", "pytest": "Pytest 配置", "settings": "系统设置", "user": "用户信息"}
 
     def __init__(self, page: ft.Page):
+        log.info("桌面客户端已连接，开始初始化登录页")
         self.page = page
-        # 原生隐藏启动不一定同步到 Python 的属性，先显式隐藏才能可靠触发后续显示更新。
-        page.window.visible = False
         self.bridge = AsyncRuntimeBridge()
         self.bridge.start()
         self.user_id = None
@@ -139,11 +138,10 @@ class FletActuatorApplication:
         self.page.controls = [ft.Container(self.login_card, width=360, padding=20, expand=True,
                                            alignment=ft.alignment.center)]
         self.page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-        self.page.update()
-        self.page.window.center()
         self.page.window.visible = True
-        self.page.update()
-        self.page.window.to_front()
+        self.page.window.focused = True
+        self.page.window.center()
+        log.info("执行器登录窗口已显示")
 
     def endpoint(self):
         host = is_valid_url((self.host.value or "").strip())
@@ -289,7 +287,7 @@ class FletActuatorApplication:
             return
         data = response.data[0] if isinstance(response.data, list) else response.data
         self.user_details.controls = [detail_row(label, data.get(key) or "-") for label, key in
-                                      (("昵称", "name"), ("账号", "username"), ("角色", "role"), ("邮箱", "mailbox"))]
+                                      (("昵称", "name"), ("账号", "username"), ("角色", "role"))]
 
     def home(self):
         self.connection = ft.Text("连接正常" if self.connected else "等待连接", size=12,
@@ -513,6 +511,7 @@ def run_flet_application():
             loop.default_exception_handler(context)
 
         asyncio.get_running_loop().set_exception_handler(report_loop_error)
-        await ft.app_async(target=start_page, view=ft.AppView.FLET_APP_HIDDEN)
+        log.info("正在启动执行器桌面客户端")
+        await ft.app_async(target=start_page, view=ft.AppView.FLET_APP)
 
     asyncio.run(run())

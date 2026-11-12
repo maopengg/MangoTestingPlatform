@@ -16,9 +16,9 @@ from src.apps.auto_api.schemas.config_fields import API_INFO_CONFIG_FIELDS
 from src.apps.auto_api.services.api_info.config import ApiInfoConfigService
 from src.apps.auto_api.services.api_case.parameter_validation import ApiCaseParameterValidationService
 from src.apps.auto_api.services.api_info.runtime import ApiInfoRuntimeService
-from src.apps.auto_api.services.config.version import ApiConfigDiffService
-from src.apps.auto_api.services.config.version import ApiConfigSnapshotService
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.auto_api.services.configuration.version import ApiConfigDiffService
+from src.apps.auto_api.services.configuration.version import ApiConfigSnapshotService
+from src.apps.test_center.services.project.product_module import ProductModuleService
 from src.common.database import ModelMutationValidationError, save_model
 from src.common.exceptions import SAVE_VALIDATION_FAILED, UPDATE_VALIDATION_FAILED
 

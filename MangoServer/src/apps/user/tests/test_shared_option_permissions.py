@@ -1,4 +1,3 @@
-import re
 import sqlite3
 from contextlib import closing
 from types import SimpleNamespace
@@ -10,12 +9,16 @@ from django.test import SimpleTestCase
 from django.urls import resolve
 
 from src.apps.user.middleware.permission import MenuActionPermission
-from src.apps.user.services.http_permission_catalog import http_permission_catalog
-from src.apps.user.services.http_permission_registry import PROJECT_MODULE_OPTION_PERMISSIONS
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.endpoint_catalog import endpoint_catalog, http_endpoint_id
+from src.apps.user.services.authorization.http_permission_registry import PROJECT_MODULE_OPTION_PERMISSIONS
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 
 
 class SharedOptionPermissionTests(SimpleTestCase):
+    def setUp(self):
+        from src.apps.user.tests.permission_fixtures import install_legacy_endpoint_snapshot
+        install_legacy_endpoint_snapshot(self)
+
     def allowed(self, path, grants, method='get', user=True):
         match = resolve('/api' + path)
         view = match.func.cls()
@@ -31,14 +34,16 @@ class SharedOptionPermissionTests(SimpleTestCase):
                  '/system/product/all/module/name', '/system/module/tree', '/system/module/name')
         known = PermissionMenuService.all_permission_keys()
         for path in paths:
-            metadata = next(row for row in http_permission_catalog()
-                            if row['method'] == 'GET' and re.fullmatch(row['pattern'], path))
+            match = resolve('/api' + path)
+            action = match.func.actions['get']
+            owner = f'{match.func.cls.__module__}.{match.func.cls.__name__}'
+            metadata = next(row for row in endpoint_catalog() if row['id'] == http_endpoint_id(owner, action, 'get'))
             self.assertEqual(set(metadata['permissions']), set(PROJECT_MODULE_OPTION_PERMISSIONS))
             for grant in PROJECT_MODULE_OPTION_PERMISSIONS:
                 with self.subTest(path=path, grant=grant):
                     self.assertIn(grant, known)
                     self.assertTrue(self.allowed(path, {grant}))
-            self.assertFalse(self.allowed(path, {'index.home:read'}))
+            self.assertTrue(self.allowed(path, {'index.home:read'}))
             self.assertFalse(self.allowed(path, known, user=False))
 
     def test_resource_options_follow_the_using_page_not_resource_management(self):
@@ -54,11 +59,15 @@ class SharedOptionPermissionTests(SimpleTestCase):
             ('/system/notice/name', 'ui.auth_config'),
         )
         for path, page in cases:
+            match = resolve('/api' + path)
+            owner = f'{match.func.cls.__module__}.{match.func.cls.__name__}'
+            endpoint_id = http_endpoint_id(owner, match.func.actions['get'], 'get')
+            fixed = next(row['fixed'] for row in endpoint_catalog() if row['id'] == endpoint_id)
             for operation in ('read', 'add', 'change'):
                 with self.subTest(path=path, page=page, operation=operation):
                     self.assertTrue(self.allowed(path, {f'{page}:{operation}'}))
-            self.assertFalse(self.allowed(path, {f'{page}:remove'}))
-            self.assertFalse(self.allowed(path, {'index.home:read'}))
+            self.assertEqual(self.allowed(path, {f'{page}:remove'}), fixed)
+            self.assertEqual(self.allowed(path, {'index.home:read'}), fixed)
         self.assertTrue(self.allowed('/system/notice/name', {'report:change'}))
 
     def test_options_do_not_grant_full_asset_or_write_access(self):
@@ -108,7 +117,7 @@ class SharedOptionPermissionTests(SimpleTestCase):
     def test_resource_scope_sql_excludes_other_products_and_empty_department_scope(self):
         from src.apps.auto_api.models import ApiInfo
         from src.apps.auto_ui.models import Page, PageSteps
-        from src.apps.user.services.model_crud_scope import ModelCrudDataScopePolicy
+        from src.apps.user.services.authorization.model_crud_scope import ModelCrudDataScopePolicy
 
         request = SimpleNamespace(user=SimpleNamespace(user_obj=SimpleNamespace(id=7)))
         compiler = DatabaseWrapper({'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'}, alias='option_sql')

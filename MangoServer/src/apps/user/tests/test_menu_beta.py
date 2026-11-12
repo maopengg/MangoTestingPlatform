@@ -1,6 +1,6 @@
 from django.test import SimpleTestCase
 
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.user.services.authorization.permission import PermissionMenuService
 
 
 class MenuBetaConfigTests(SimpleTestCase):
@@ -65,7 +65,6 @@ class MenuBetaConfigTests(SimpleTestCase):
                 '监控中心',
                 '报告分析',
                 '数据工厂',
-                '灰度管理',
                 '测试配置',
                 '设备中心',
                 '任务调度',

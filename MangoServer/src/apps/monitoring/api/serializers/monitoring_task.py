@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from src.apps.monitoring.enums import MonitoringTaskStatusEnum
 from src.apps.monitoring.models import MonitoringTask
-from src.apps.monitoring.services.task_mutation import MonitoringTaskMutationService
+from src.apps.monitoring.services.tasks.task_mutation import MonitoringTaskMutationService
 from src.apps.test_center.formatters.related import format_notice_group
 from src.apps.test_center.formatters.related import format_project_product
 from src.apps.user.formatters import format_user_simple

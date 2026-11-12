@@ -3,9 +3,9 @@ from __future__ import annotations
 from mangotools.enums import TaskEnum
 
 from src.apps.auto_ui.selectors.querysets import UiQuerySelector
-from src.apps.auto_ui.services.asset_mutation import UiAssetMutationService
-from src.apps.auto_ui.services.step_ordering import UiStepOrderingService
-from src.apps.auto_ui.services.test_case.test_case import TestCase
+from src.apps.auto_ui.services.assets.asset_mutation import UiAssetMutationService
+from src.apps.auto_ui.services.page_steps.step_ordering import UiStepOrderingService
+from src.apps.auto_ui.services.execution.cases.test_case import TestCase
 from src.interfaces.mcp.audit import mcp_current_user_id, mcp_with_update_user
 from .helpers import (
     PageStepDetailMutationService,

@@ -15,12 +15,9 @@ from src.apps.auto_ui.api.views.ui_page import PageCRUD
 from src.apps.auto_ui.enums import ElementExpEnum
 from src.apps.auto_ui.exceptions import AutoUiError, UI_ELEMENT_CATEGORY_REQUIRED
 from src.apps.auto_ui.models import Page, PageElement
-from src.apps.auto_ui.services.element_ai import (
-    ElementAiLocatorRecommendationService,
-    ElementAiService,
-)
-from src.apps.auto_ui.services.element_ai.data_sanitizer import ElementAiDataSanitizer
-from src.apps.auto_ui.services.test_case.test_case import TestCase
+from src.apps.auto_ui.services.elements.ai import ElementAiLocatorRecommendationService, ElementAiService
+from src.apps.auto_ui.services.elements.ai.data_sanitizer import ElementAiDataSanitizer
+from src.apps.auto_ui.services.execution.cases.test_case import TestCase
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -59,12 +56,14 @@ class PageElementCRUD(ModelCRUD):
 
     @classmethod
     def inside_post(cls, data: dict) -> dict:
+        """处理UI 页面元素新增时的业务逻辑"""
         if cls._category_is_empty(data):
             raise AutoUiError(UI_ELEMENT_CATEGORY_REQUIRED)
         return super().inside_post(data)
 
     @classmethod
     def inside_put(cls, _id: int, data: dict) -> dict:
+        """处理UI 页面元素修改时的业务逻辑"""
         instance = cls.model.objects.get(pk=_id)
         if cls._category_is_empty(data, instance):
             raise AutoUiError(UI_ELEMENT_CATEGORY_REQUIRED)
@@ -72,12 +71,13 @@ class PageElementCRUD(ModelCRUD):
 
     @error_response('ui')
     def post(self, request: Request):
+        """新增UI 页面元素"""
         if self._category_is_empty(request.data):
             return ResponseData.fail(RESPONSE_MSG_0204)
         serializer = self.serializer(data=request.data)
         if not serializer.is_valid():
             return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
-        from src.apps.auto_ui.services.element_service import PageElementService
+        from src.apps.auto_ui.services.elements.element_service import PageElementService
 
         instance, created = PageElementService.upsert_element(
             serializer.validated_data,
@@ -88,6 +88,7 @@ class PageElementCRUD(ModelCRUD):
 
     @error_response('ui')
     def put(self, request: Request):
+        """修改UI 页面元素"""
         instance_id = request.data.get('id') if not isinstance(request, dict) else request.get('id')
         try:
             instance = self.model.objects.get(pk=instance_id)
@@ -105,7 +106,8 @@ class PageElementViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('ui')
     def identity(self, request: Request):
-        from src.apps.auto_ui.services.element_service import PageElementService
+        """检查 UI 元素标识是否已存在"""
+        from src.apps.auto_ui.services.elements.element_service import PageElementService
 
         serializer = UiElementIdentityQuerySerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
@@ -115,6 +117,7 @@ class PageElementViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('ui')
     def open_browser(self, request: Request):
+        """打开UI 页面元素调试浏览器"""
         serializer = UiOpenElementPageBrowserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
@@ -131,7 +134,8 @@ class PageElementViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('ui')
     def check_element(self, request: Request):
-        from src.apps.auto_ui.services.element_service import PageElementService
+        """在执行器中检查 UI 页面元素"""
+        from src.apps.auto_ui.services.elements.element_service import PageElementService
 
         if not PageElementCRUD().filter_queryset_by_data_scope(
                 request, PageElement.objects.filter(id=request.data.get('element_id')),
@@ -151,7 +155,8 @@ class PageElementViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('ui')
     def scan_page(self, request: Request):
-        from src.apps.auto_ui.services.element_service import PageElementService
+        """扫描页面并采集 UI 元素"""
+        from src.apps.auto_ui.services.elements.element_service import PageElementService
 
         serializer = UiElementPageScanSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -168,6 +173,7 @@ class PageElementViews(ViewSet):
     @action(methods=['PUT'], detail=False)
     @error_response('ui')
     def apply_check_result(self, request: Request):
+        """将元素检查结果应用到元素配置"""
         data = ElementAiService.apply_deep_check_task_result(
             request.data.get('element_id'),
             request.data.get('task_id'),
@@ -178,6 +184,7 @@ class PageElementViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('ui')
     def post_upload_element(self, request):
+        """从上传文件导入 UI 元素"""
         uploaded_file = request.FILES['file']
         records = read_excel_records(uploaded_file)
         expression_mapping = ElementExpEnum.reversal_obj()
@@ -281,7 +288,7 @@ class PageElementViews(ViewSet):
         :param request:
         :return:
         """
-        from src.apps.auto_ui.services.element_service import PageElementService
+        from src.apps.auto_ui.services.elements.element_service import PageElementService
 
         PageElementService.set_iframe(
             request.data.get('id'),
@@ -293,12 +300,14 @@ class PageElementViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('ui')
     def category(self, request: Request):
+        """获取 UI 元素分类"""
         data = ElementAiService.category_list(request.query_params.get('page_id') or request.query_params.get('id'))
         return ResponseData.success(RESPONSE_MSG_0080, data)
 
     @action(methods=['get'], detail=False)
     @error_response('ui')
     def ai_info(self, request: Request):
+        """获取 UI 元素智能定位信息"""
         data = ElementAiService.ai_info(
             request.query_params.get('element_id') or request.query_params.get('id'),
             request.query_params.get('test_env')
@@ -308,6 +317,7 @@ class PageElementViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('ui')
     def ai_snapshots(self, request: Request):
+        """获取 UI 元素快照列表"""
         data = ElementAiService.snapshot_history(
             request.query_params.get('element_id') or request.query_params.get('id'),
             request.query_params.get('test_env'),
@@ -319,6 +329,7 @@ class PageElementViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('ui')
     def ai_snapshot_detail(self, request: Request):
+        """获取 UI 元素快照详情"""
         data = ElementAiService.snapshot_detail(
             request.query_params.get('snapshot_id') or request.query_params.get('id'),
             request.query_params.get('element_id'),
@@ -328,6 +339,7 @@ class PageElementViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('ui')
     def ai_heal_records(self, request: Request):
+        """获取 UI 元素自愈记录"""
         data = ElementAiService.heal_history(
             request.query_params.get('element_id') or request.query_params.get('id'),
             request.query_params.get('test_env'),
@@ -339,6 +351,7 @@ class PageElementViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('ui')
     def ai_heal_record_detail(self, request: Request):
+        """获取 UI 元素自愈记录详情"""
         data = ElementAiService.heal_record_detail(
             request.query_params.get('record_id') or request.query_params.get('id'),
             request.query_params.get('element_id'),
@@ -348,12 +361,14 @@ class PageElementViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('ui')
     def ai_snapshot(self, request: Request):
+        """创建 UI 元素快照"""
         data = ElementAiService.save_snapshot(request.data)
         return ResponseData.success(RESPONSE_MSG_0002, data)
 
     @action(methods=['post'], detail=False)
     @error_response('ui')
     def ai_locator_recommend(self, request: Request):
+        """获取 UI 元素定位器推荐"""
         data = ElementAiLocatorRecommendationService.recommend(
             request.data,
             self._request_user_id(request.user),
@@ -363,18 +378,21 @@ class PageElementViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('ui')
     def ai_heal_record(self, request: Request):
+        """保存 UI 元素自愈记录"""
         data = ElementAiService.save_heal_record(request.data)
         return ResponseData.success(RESPONSE_MSG_0002, data)
 
     @action(methods=['post'], detail=False)
     @error_response('ui')
     def runtime_result(self, request: Request):
+        """保存 UI 元素运行检查结果"""
         data = ElementAiService.save_runtime_result(request.data)
         return ResponseData.success(RESPONSE_MSG_0002, data)
 
     @action(methods=['put'], detail=False)
     @error_response('ui')
     def ai_heal_record_apply(self, request: Request):
+        """应用 UI 元素自愈定位结果"""
         data = ElementAiService.apply_heal_record(
             request.data.get('record_id'),
             request.data.get('candidate_index', 0),

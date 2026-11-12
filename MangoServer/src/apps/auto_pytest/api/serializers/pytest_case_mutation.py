@@ -11,7 +11,7 @@ from src.apps.auto_pytest.exceptions import (
     PYTEST_FILE_PARSE_FAILED,
 )
 from src.apps.auto_pytest.models import PytestCase
-from src.apps.auto_pytest.services.case_publication import PytestCasePublicationService
+from src.apps.auto_pytest.services.assets.case_publication import PytestCasePublicationService
 
 
 class PytestCaseSerializers(serializers.ModelSerializer):

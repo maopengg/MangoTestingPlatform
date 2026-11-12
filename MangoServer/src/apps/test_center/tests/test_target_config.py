@@ -9,7 +9,7 @@ from pydantic import ValidationError
 
 from src.apps.test_center.api.serializers.test_object import TestObjectSerializers
 from src.apps.test_center.exceptions import TestCenterError
-from src.apps.test_center.services.test_target import TestTargetService
+from src.apps.test_center.services.environment.test_target import TestTargetService
 
 
 class TestTargetConfigTests(SimpleTestCase):
@@ -81,7 +81,7 @@ class TestTargetConfigTests(SimpleTestCase):
         self.assertNotEqual(first, resolve_test_target('', self.config, cache.get))
 
     def test_api_request_uses_current_cache(self):
-        from src.apps.auto_api.services.base.api_base_test_setup import APIBaseTestSetup
+        from src.apps.auto_api.services.execution.base.api_base_test_setup import APIBaseTestSetup
         from src.common.testing import ObtainTestData
         setup = APIBaseTestSetup.__new__(APIBaseTestSetup)
         setup.test_data = ObtainTestData()
@@ -95,7 +95,7 @@ class TestTargetConfigTests(SimpleTestCase):
         self.assertEqual(cleaned.url, 'https://tenant-b.example.com/api/contracts')
 
     def test_api_auth_fingerprint_isolates_selector_values(self):
-        from src.apps.auto_api.services.base.api_base_test_setup.auth_manager import ApiAuthManager
+        from src.apps.auto_api.services.execution.base.api_base_test_setup.auth_manager import ApiAuthManager
         from src.common.testing import ObtainTestData
         target = SimpleNamespace(value='', target_config=self.config, project_product_id=1, environment=0)
         data = ObtainTestData()
@@ -108,7 +108,7 @@ class TestTargetConfigTests(SimpleTestCase):
         self.assertNotEqual(south, manager._target_scope(config))
 
     def test_dynamic_auth_is_loaded_after_case_variable_is_available(self):
-        from src.apps.auto_api.services.base.api_base_test_setup import APIBaseTestSetup
+        from src.apps.auto_api.services.execution.base.api_base_test_setup import APIBaseTestSetup
         from src.common.testing import ObtainTestData
         setup = APIBaseTestSetup.__new__(APIBaseTestSetup)
         setup.test_object = SimpleNamespace(value='', target_config=self.config)
@@ -120,7 +120,7 @@ class TestTargetConfigTests(SimpleTestCase):
         request = MagicMock()
         request.__iter__.return_value = []
         request.url = '/api/contracts'
-        with patch('src.apps.auto_api.services.base.api_base_test_setup.auth_manager.ApiAuthManager.load') as load:
+        with patch('src.apps.auto_api.services.execution.base.api_base_test_setup.auth_manager.ApiAuthManager.load') as load:
             setup.request_data_clean(request)
             load.assert_called_once_with(1, 0, setup, [5])
         self.assertIsNone(setup.current_api_info_id)

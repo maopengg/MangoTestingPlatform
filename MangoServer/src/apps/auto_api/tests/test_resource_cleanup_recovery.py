@@ -8,12 +8,10 @@ from pydantic import ValidationError
 
 from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.schemas.resource_cleanup import ApiResourceCleanupRule, ApiResourceRejectionRecovery
-from src.apps.auto_api.services.resource_cleanup import (
-    ApiResourceCleanupService as Service, ApiResourceExecutionManager as Manager,
-)
-from src.apps.auto_api.services.resource_cleanup_io import ApiResourceCleanupIO as IO
+from src.apps.auto_api.services.resource_cleanup.resource_cleanup import ApiResourceCleanupService as Service, ApiResourceExecutionManager as Manager
+from src.apps.auto_api.services.resource_cleanup.resource_cleanup_io import ApiResourceCleanupIO as IO
 from src.apps.auto_api.tests.test_resource_cleanup import rule_data, proof_data, document
-from src.apps.test_center.services.execution_result import ExecutionResultService as Results
+from src.apps.test_center.services.results.execution_result import ExecutionResultService as Results
 
 SQL_CONTEXT = IO.sql
 
@@ -71,8 +69,8 @@ class HistoricalRejectionTests(SimpleTestCase):
             Service.observe_rejection(self.record, self.rule, self.proof, Mock(), clock=lambda: 0, pause=Mock())
 
     def test_read_only_user_cannot_request_historical_recovery(self):
-        from src.apps.auto_api.services.resource_cleanup import ApiResourceCleanupRetryService
-        with patch('src.apps.user.services.permission.PermissionMenuService.permission_keys_for_user',
+        from src.apps.auto_api.services.resource_cleanup.resource_cleanup import ApiResourceCleanupRetryService
+        with patch('src.apps.user.services.authorization.permission.PermissionMenuService.permission_keys_for_user',
                    return_value={'api.case:read'}), self.assertRaises(AutoApiError):
             ApiResourceCleanupRetryService.retry(user=SimpleNamespace(id=99), case_id=1, resource_id=19,
                 rejection_recovery={'rejection_response': {'success': False}})
@@ -134,7 +132,7 @@ class VersionEvidenceTests(SimpleTestCase):
         self.manager.activate(11, 31)
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)
-        self.stack.enter_context(patch('src.apps.auto_api.services.resource_cleanup.ApiCaseExecutionResource.objects', self.query))
+        self.stack.enter_context(patch('src.apps.auto_api.services.resource_cleanup.resource_cleanup.ApiCaseExecutionResource.objects', self.query))
         self.stack.enter_context(patch.object(Service, 'claim', return_value=nullcontext(True)))
         self.stack.enter_context(patch.object(Service, 'context', return_value={}))
         self.stack.enter_context(patch.object(IO, 'binding', return_value=(Mock(), self.proof.sql_target)))
@@ -172,7 +170,7 @@ class VersionEvidenceTests(SimpleTestCase):
         self.persist.assert_not_called()
 
     def test_es_lag_accepts_only_owned_history_and_never_deletes_old_version(self):
-        from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService as ES
+        from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as ES
         attempt = self.attempt()
         self.find.return_value = {**self.proof.root, 'version': '3'}
         self.manager.after_response(attempt, SimpleNamespace(code=200,
@@ -218,7 +216,7 @@ class VersionEvidenceTests(SimpleTestCase):
     def test_lease_is_returned_even_on_sql_error(self):
         engine = MagicMock()
         engine.connect.return_value.__enter__ = Mock(side_effect=RuntimeError('fixture'))
-        with patch('src.apps.auto_api.services.resource_cleanup_io.DataFactoryDatasource.create_engine', return_value=engine):
+        with patch('src.apps.auto_api.services.resource_cleanup.resource_cleanup_io.DataFactoryDatasource.create_engine', return_value=engine):
             with self.assertRaises(RuntimeError):
                 with SQL_CONTEXT(Mock(), {}):
                     pass

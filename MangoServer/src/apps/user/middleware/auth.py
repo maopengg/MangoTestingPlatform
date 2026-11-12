@@ -10,7 +10,7 @@ from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
 from src.apps.user.models import User
-from src.apps.user.services.permission import AuthUserContext
+from src.apps.user.services.authorization.permission import AuthUserContext
 
 
 class JwtQueryParamsAuthentication(BaseAuthentication):

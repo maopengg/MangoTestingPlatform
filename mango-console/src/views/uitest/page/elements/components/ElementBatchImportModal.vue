@@ -1,7 +1,7 @@
 <template>
   <a-modal :visible="visible" title="批量增加页面元素" :width="560" :footer="false" @update:visible="emit('update:visible', $event)">
     <div class="mango-element-import">
-      <div v-if="error" class="mango-element-import__error" role="alert">{{ error }}</div>
+      <MangoRequestFeedback v-if="error" :message="(error)" />
       <section class="mango-soft-panel mango-element-import__row">
         <div><strong>下载模板</strong><span>按模板格式填写页面元素。</span></div>
         <a-button size="small" :loading="downloading" @click="downloadTemplate">下载模板</a-button>
@@ -17,6 +17,8 @@
   </a-modal>
 </template>
 <script setup lang="ts">
+import { requestFailureMessage } from '@/utils/load-error'
+
   import { ref, shallowRef, watch } from 'vue'
   import { getUiElementUpload } from '@/api/uitest/element'
   import { useLiveWorkbenchScope } from '@/hooks/use-live-workbench-scope'
@@ -38,7 +40,7 @@
       if (!current()) return false
       emit('saved')
       if (props.visible && version === windowVersion) emit('update:visible', false)
-    } catch (reason) { if (current() && props.visible && version === windowVersion) error.value = liveError(reason, '导入失败，请重试') }
+    } catch (reason) { if (current() && props.visible && version === windowVersion) error.value = requestFailureMessage(reason, liveError(reason, '导入失败，请重试')) }
     finally { uploading.value = false }
     return false
   }
@@ -55,7 +57,7 @@
       url = URL.createObjectURL(blob)
       const link = document.createElement('a'); link.href = url; link.download = filename
       document.body.appendChild(link); link.click(); link.remove()
-    } catch (reason) { if (current() && version === windowVersion) error.value = liveError(reason, '模板下载失败，请重试') }
+    } catch (reason) { if (current() && version === windowVersion) error.value = requestFailureMessage(reason, liveError(reason, '模板下载失败，请重试')) }
     finally { if (url) URL.revokeObjectURL(url); downloading.value = false }
   }
 </script>

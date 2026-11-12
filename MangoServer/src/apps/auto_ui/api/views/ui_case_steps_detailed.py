@@ -12,8 +12,8 @@ from rest_framework.viewsets import ViewSet
 from src.apps.auto_ui.api.serializers.ui_case_steps_detailed import UiCaseStepsDetailedSerializers, \
     UiCaseStepsDetailedSerializersC
 from src.apps.auto_ui.models import UiCaseStepsDetailed
-from src.apps.auto_ui.services.case_step_cache import UiCaseStepCacheService
-from src.apps.auto_ui.services.step_ordering import UiStepOrderingService
+from src.apps.auto_ui.services.cases.case_step_cache import UiCaseStepCacheService
+from src.apps.auto_ui.services.page_steps.step_ordering import UiStepOrderingService
 from src.common.decorators.error_response import error_response
 from src.common.responses import (
     RESPONSE_MSG_0049,
@@ -33,6 +33,7 @@ class UiCaseStepsDetailedCRUD(ModelCRUD):
 
     @error_response('ui')
     def get(self, request: Request):
+        """获取UI 用例步骤列表或指定记录"""
         books = self.model.objects.filter(case=request.GET.get('case_id')).order_by('case_sort')
         try:
             books = self.serializer_class.setup_eager_loading(books)
@@ -43,6 +44,7 @@ class UiCaseStepsDetailedCRUD(ModelCRUD):
                                                           many=True).data, )
 
     def callback(self, _id):
+        """刷新步骤变更后的所属流程摘要"""
         data = {'id': _id, 'case_flow': ''}
         run = self.model.objects.filter(case=_id).order_by('case_sort')
         for i in run:
@@ -60,6 +62,7 @@ class UiCaseStepsDetailedViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('ui')
     def post_case_cache_data(self, request: Request):
+        """刷新 UI 用例步骤缓存数据"""
         result = UiCaseStepCacheService.refresh(
             case_step_id=request.query_params.get('id'),
             case_id=request.query_params.get('case_id'),

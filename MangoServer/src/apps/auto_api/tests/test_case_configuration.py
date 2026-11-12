@@ -7,7 +7,7 @@ from django.test import SimpleTestCase
 from src.apps.auto_api.api.views.api_case import ApiCaseViews
 from src.apps.auto_api.selectors.case_configuration import ApiCaseConfigurationSelector
 from src.apps.user.middleware.permission import MenuActionPermission
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 
 
 class ApiCaseConfigurationTests(SimpleTestCase):

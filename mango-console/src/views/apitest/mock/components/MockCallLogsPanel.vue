@@ -7,30 +7,30 @@
             class="mango-mock-log-filters"
             :model="logs.filters"
             layout="horizontal"
-            @keyup.enter="loadLogs(1)"
+            @keyup.enter="autoSearch.run"
           >
             <a-form-item label="Trace ID"
-              ><a-input v-model="logs.filters.trace_id" allow-clear
+              ><a-input @blur="autoSearch.schedule" @clear="autoSearch.schedule" @mouseleave="autoSearch.schedule" v-model="logs.filters.trace_id" allow-clear
             /></a-form-item>
             <a-form-item label="请求路径"
-              ><a-input v-model="logs.filters.request_path" allow-clear
+              ><a-input @blur="autoSearch.schedule" @clear="autoSearch.schedule" @mouseleave="autoSearch.schedule" v-model="logs.filters.request_path" allow-clear
             /></a-form-item>
             <a-form-item label="断言结果">
-              <a-select
+              <a-select @change="autoSearch.schedule"
                 v-model="logs.filters.assertion_passed"
                 allow-clear
                 :options="assertionLogOptions"
               />
             </a-form-item>
             <a-form-item label="状态码"
-              ><a-input-number v-model="logs.filters.response_status" :min="100" :max="599"
+              ><a-input-number @blur="autoSearch.schedule" @mouseleave="autoSearch.schedule" v-model="logs.filters.response_status" :min="100" :max="599"
             /></a-form-item>
           </a-form>
           <div class="mango-mock-log-toolbar__actions">
-            <a-button size="small" type="primary" :loading="logs.loading" @click="loadLogs(1)"
+            <a-button size="small" type="primary" :loading="logs.loading" @click="autoSearch.run"
               >查询</a-button
             >
-            <a-button size="small" @click="resetLogFilters">重置</a-button>
+            <a-button size="small" @click="autoSearch.cancel(); resetLogFilters(); autoSearch.sync()">重置</a-button>
             <a-button size="small" :loading="logs.loading" @click="refreshLogs">刷新</a-button>
             <a-button
               size="small"
@@ -183,7 +183,7 @@
           }}</a-descriptions-item>
         </a-descriptions>
 
-        <a-alert v-if="logs.selected.error_message" type="error">
+        <a-alert data-feedback-kind="execution-result" v-if="logs.selected.error_message" type="error">
           {{ logs.selected.error_message }}
         </a-alert>
 
@@ -267,6 +267,8 @@
   </BaseSidePanel>
 </template>
 <script lang="ts" setup>
+  import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
+
 import { reportLoadError } from '@/utils/load-error'
 
   import { computed, onActivated, onBeforeUnmount, onDeactivated, reactive, ref, watch } from 'vue'
@@ -566,6 +568,8 @@ import { reportLoadError } from '@/utils/load-error'
     active = true
     if (props.visible) void loadLogs(1)
   })
+
+  const autoSearch = useDebouncedSearch(() => loadLogs(1), () => logs.filters, { enabled: () => props.visible && active })
 </script>
 <style scoped>
   .mango-mock-side-panel-content {

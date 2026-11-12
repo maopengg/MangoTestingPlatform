@@ -1,7 +1,7 @@
 from django.test import TestCase
 
 from src.apps.auto_api.models import ApiInfo, ApiInfoHttpConfig, ApiCase, ApiCaseRevision, ModuleCoverageCase
-from src.apps.auto_api.services.module_coverage import ModuleCoverageService as Service
+from src.apps.auto_api.services.coverage.module_coverage import ModuleCoverageService as Service
 from src.apps.auto_api.tests.test_module_coverage import ModuleCoverageLifecycleTests as Helpers
 from src.apps.test_center.models import ProductModule
 from src.apps.user.models import User

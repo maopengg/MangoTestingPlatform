@@ -15,8 +15,8 @@ from src.apps.user.api.views.user import (
     double_md5,
 )
 from src.apps.user.exceptions import USER_CREDENTIAL_USER_NOT_ALLOWED, UserError
-from src.apps.user.services.credential import UserCredentialService
-from src.apps.user.services.password import encode_plain_password, verify_password_digest
+from src.apps.user.services.authentication.credential import UserCredentialService
+from src.apps.user.services.authentication.password import encode_plain_password, verify_password_digest
 
 
 class UserSecurityTests(SimpleTestCase):
@@ -39,7 +39,7 @@ class UserSecurityTests(SimpleTestCase):
         self.assertEqual(email, "user@example.com")
         ensure_email_available.assert_called_once_with("user@example.com", exclude_user_id=2)
 
-    @patch("src.apps.user.services.credential.SystemConfigService.get", return_value="")
+    @patch("src.apps.user.services.authentication.credential.SystemConfigService.get", return_value="")
     def test_missing_mail_config_points_to_system_settings(self, _get_config):
         with self.assertRaisesRegex(UserError, "系统运维 → 配置管理 → 邮箱配置"):
             UserCredentialService._mail_config()
@@ -180,7 +180,7 @@ class UserSecurityTests(SimpleTestCase):
         self.assertFalse(create_kwargs["is_super_admin"])
 
     @patch(
-        'src.apps.system.services.system_config.SystemConfigService.get_registration_config',
+        'src.apps.system.services.configuration.system_config.SystemConfigService.get_registration_config',
         return_value={'allow_registration': False, 'disabled_message': '注册功能已关闭'},
     )
     def test_register_endpoint_honors_backend_switch(self, _config):
@@ -193,7 +193,7 @@ class UserSecurityTests(SimpleTestCase):
         self.assertEqual(response.data["msg"], "注册功能已关闭")
 
     @patch(
-        'src.apps.system.services.system_config.SystemConfigService.get_registration_config',
+        'src.apps.system.services.configuration.system_config.SystemConfigService.get_registration_config',
         return_value={'allow_registration': False, 'disabled_message': '注册功能已关闭'},
     )
     def test_super_admin_can_bypass_public_registration_switch(self, _config):

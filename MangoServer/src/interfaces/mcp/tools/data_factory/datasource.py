@@ -3,16 +3,12 @@ from __future__ import annotations
 from mangotools.enums import StatusEnum
 
 from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
-from src.apps.data_factory.services.data_source_execution_request import DataSourceExecutionRequestService
-from src.apps.data_factory.services.datasource import (
-    DataFactoryDatasourceMutationService,
-    DataFactoryDatasourceResolver,
-    is_missing_value,
-)
-from src.apps.data_factory.services.datasource_target import DatasourceTargetService
-from src.apps.data_factory.services.discover import DataFactoryDiscover
+from src.apps.data_factory.services.datasource.data_source_execution_request import DataSourceExecutionRequestService
+from src.apps.data_factory.services.datasource.datasource import DataFactoryDatasourceMutationService, DataFactoryDatasourceResolver, is_missing_value
+from src.apps.data_factory.services.datasource.datasource_target import DatasourceTargetService
+from src.apps.data_factory.services.schema.discover import DataFactoryDiscover
 from src.apps.test_center.exceptions import TEST_ENVIRONMENT_REQUIRED, TestCenterError
-from src.apps.test_center.services.data_source import DataSourceConnectionService
+from src.apps.test_center.services.datasource.data_source import DataSourceConnectionService
 from src.apps.test_center.enums.data_source import DataSourceTypeEnum
 from src.apps.data_factory.enums.audit import DatasourceAuditSourceEnum, DatasourceAuditStageEnum
 from src.interfaces.mcp.audit import mcp_current_user_id

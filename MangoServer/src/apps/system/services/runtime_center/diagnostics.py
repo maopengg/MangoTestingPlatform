@@ -3,7 +3,7 @@ from django.conf import settings
 from src.apps.system.enums import RuntimeServiceName
 from src.apps.system.services.runtime_center.heartbeat import ServiceHeartbeatService
 from src.apps.system.services.runtime_center.queue_stats import QueueStatsService
-from src.apps.system.services.system_config import SystemConfigService
+from src.apps.system.services.configuration.system_config import SystemConfigService
 from src.apps.task_center.services.scheduling.system_job import SystemJobService
 
 

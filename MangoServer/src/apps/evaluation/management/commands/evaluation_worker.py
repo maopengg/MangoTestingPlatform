@@ -3,7 +3,7 @@ import socket
 import time
 import uuid
 from django.core.management.base import BaseCommand
-from src.apps.evaluation.services.execution import EvaluationCaseExecutionService
+from src.apps.evaluation.services.execution.execution import EvaluationCaseExecutionService
 
 
 class Command(BaseCommand):

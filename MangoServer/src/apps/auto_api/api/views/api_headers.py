@@ -12,7 +12,7 @@ from src.apps.auto_api.models import ApiHeaders, ApiCase
 from src.apps.auto_api.api.serializers.configuration_reference import ConfigurationReferenceCountsQuery, ConfigurationReferenceCasesQuery
 from src.apps.auto_api.selectors.configuration_references import ApiConfigurationReferenceSelector
 from src.common.responses.configuration_references import ConfigurationReferenceViewsMixin
-from src.apps.auto_api.services.api_header import ApiHeaderDeleteService
+from src.apps.auto_api.services.configuration.api_header import ApiHeaderDeleteService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -30,6 +30,7 @@ class ApiHeadersCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @error_response('system')
     def delete(self, request: Request):
+        """删除API 请求头配置"""
         header_ids = list(dict.fromkeys(
             int(header_id) for header_id in request.query_params.getlist('id[]')
         ))

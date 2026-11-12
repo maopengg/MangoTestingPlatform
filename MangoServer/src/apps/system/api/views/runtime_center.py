@@ -27,12 +27,14 @@ class RuntimeCenterViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def overview(self, request: Request):
+        """获取运行中心概览"""
         user = getattr(getattr(request, 'user', None), 'user_obj', None)
         return ResponseData.success(RESPONSE_MSG_0001, RuntimeOverviewService.visible_overview(user))
 
     @action(methods=['get'], detail=False)
     @error_response('system')
     def services(self, request: Request):
+        """获取运行服务在线状态"""
         RuntimeOverviewService.report_core_api()
         return ResponseData.success(
             RESPONSE_MSG_0001,
@@ -42,16 +44,19 @@ class RuntimeCenterViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def queues(self, request: Request):
+        """获取运行任务队列状态"""
         return ResponseData.success(RESPONSE_MSG_0001, QueueStatsService.get_stats())
 
     @action(methods=['get'], detail=False)
     @error_response('system')
     def diagnostics(self, request: Request):
+        """获取运行中心配置诊断结果"""
         return ResponseData.success(RESPONSE_MSG_0001, DiagnosticsService.list_diagnostics())
 
     @action(methods=['get'], detail=False)
     @error_response('system')
     def recent_errors(self, request: Request):
+        """获取最近系统异常记录"""
         page = max(int(request.query_params.get('page') or 1), 1)
         page_size = min(max(int(request.query_params.get('pageSize') or RecentErrorsService.DEFAULT_LIMIT), 1), 100)
         rows, total = RecentErrorsService.paginate_errors(
@@ -67,6 +72,7 @@ class RuntimeCenterViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def report_frontend_error(self, request: Request):
+        """接收前端异常上报"""
         try:
             model = FrontendErrorReport.model_validate(request.data or {})
         except ValidationError as error:

@@ -14,7 +14,7 @@ from src.apps.system.enums import (
 from src.apps.system.enums import ServerApiCommandEnum, ServerPytestCommandEnum, ServerToolsCommandEnum, \
     ServerUiCommandEnum
 from src.apps.system.exceptions import SystemError
-from src.apps.system.services.system_config import SystemConfigService
+from src.apps.system.services.configuration.system_config import SystemConfigService
 from src.apps.task_center.exceptions import EXECUTOR_TASK_EXECUTOR_TASK_PARAMETER_EXECUTION_INVALID
 from src.apps.task_center.services.execution.executor_task import ExecutorTaskService
 from src.apps.user.models import User

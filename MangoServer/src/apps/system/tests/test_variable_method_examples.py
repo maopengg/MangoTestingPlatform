@@ -44,7 +44,7 @@ class VariableMethodExampleTests(SimpleTestCase):
         self.assertTrue(success['success'])
         self.assertEqual(len(success['data']['value']), 8)
 
-    @patch('src.apps.system.services.system_config.SystemConfigService.get_environment_display_names', return_value={})
+    @patch('src.apps.system.services.configuration.system_config.SystemConfigService.get_environment_display_names', return_value={})
     def test_api_schema_random_examples_use_registered_methods(self, _):
         schema = registered_tools(register_schema_tools)['get_api_case_schema']()
         text = json.dumps(schema, ensure_ascii=False)

@@ -11,9 +11,7 @@
     :esc-to-close="!saving"
     @update:visible="onVisibleChange"
   >
-    <a-alert v-if="saveError" type="error" class="mango-suite-binding__error"
-      >绑定失败，输入已保留，请重试。</a-alert
-    >
+    <MangoRequestFeedback v-if="saveError" :message="&quot;绑定失败，输入已保留，请重试。&quot;" />
     <a-form auto-label-width class="mango-simple-form" :model="form" layout="horizontal" :disabled="saving">
       <a-form-item class="mango-simple-form-item" label="自动化类型"
         ><a-select v-model="form.automation_type" :options="typeOptions" :field-names="fieldNames"
@@ -25,6 +23,8 @@
   </a-modal>
 </template>
 <script setup lang="ts">
+import { requestFailureMessage } from '@/utils/load-error'
+
   import { onActivated, onBeforeUnmount, onDeactivated, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { postManualAutomationBind } from '@/api/functional-test'
@@ -119,8 +119,8 @@
       reset()
       Message.success('绑定成功')
       emit('changed', target.suiteId)
-    } catch {
-      if (current(version)) saveError.value = true
+    } catch (requestFailure) {
+      if (current(version)) saveError.value = requestFailureMessage(requestFailure, true, "绑定失败，输入已保留，请重试。")
     } finally {
       saving.value = false
       emit('busy', false)

@@ -17,7 +17,7 @@ from src.apps.auto_api.selectors.querysets import ApiQuerySelector
 from src.apps.auto_api.services.api_case.step import ApiCaseStepService
 from src.apps.auto_api.services.api_info.runtime import ApiInfoRuntimeService
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
-from src.apps.test_center.services.execution_result import ExecutionResultService
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
 from src.interfaces.mcp.audit import mcp_current_user_id
 from src.interfaces.mcp.common import (
     fail,

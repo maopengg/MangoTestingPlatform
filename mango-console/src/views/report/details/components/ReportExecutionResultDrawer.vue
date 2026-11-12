@@ -7,7 +7,7 @@
       <mango-panel-spin :loading="detailLoading" class="mango-report-result-spin">
         <template v-if="detailError"></template>
         <div v-else-if="!hasDetail" class="mango-empty-state">
-          <a-alert v-if="selectedCase?.error_message" type="error">{{ selectedCase.error_message }}</a-alert>
+          <a-alert data-feedback-kind="execution-result" v-if="selectedCase?.error_message" type="error">{{ selectedCase.error_message }}</a-alert>
           <span>{{ detailLoading ? '正在加载执行结果' : '本次执行没有生成测试结果' }}</span>
         </div>
         <ElementTestReport v-else-if="target?.caseType === 0 && selectedCase" :result-data="selectedCase" />

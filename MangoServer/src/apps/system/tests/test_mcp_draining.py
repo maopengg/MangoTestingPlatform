@@ -65,12 +65,12 @@ class McpDrainTests(SimpleTestCase):
             self.beat.assert_not_called()
 
     def test_idle_pool_shutdown_keeps_other_cleanup_attempts_after_one_close_failure(self):
-        from src.apps.data_factory.services.pool_maintenance import DatasourcePoolMaintenance
-        with patch('src.apps.data_factory.services.datasource_pool.DatasourcePoolRegistry.close_all', side_effect=OSError()), \
-                patch('src.apps.data_factory.services.protocol_pool.ProtocolPoolRegistry.close_all') as protocol, \
-                patch('src.apps.data_factory.services.datasource_governor.DatasourceGovernorService.flush_closed_connections') as closed, \
-                patch('src.apps.data_factory.services.datasource_governor.DatasourceGovernorService.flush_pending_releases') as pending, \
-                patch('src.apps.data_factory.services.pool_maintenance.DatasourcePoolMaintenance._states', {}):
+        from src.apps.data_factory.services.pool.pool_maintenance import DatasourcePoolMaintenance
+        with patch('src.apps.data_factory.services.pool.datasource_pool.DatasourcePoolRegistry.close_all', side_effect=OSError()), \
+                patch('src.apps.data_factory.services.pool.protocol_pool.ProtocolPoolRegistry.close_all') as protocol, \
+                patch('src.apps.data_factory.services.governance.datasource_governor.DatasourceGovernorService.flush_closed_connections') as closed, \
+                patch('src.apps.data_factory.services.governance.datasource_governor.DatasourceGovernorService.flush_pending_releases') as pending, \
+                patch('src.apps.data_factory.services.pool.pool_maintenance.DatasourcePoolMaintenance._states', {}):
             DatasourcePoolMaintenance.close_idle_pools()
         protocol.assert_called_once()
         closed.assert_called_once()
@@ -97,7 +97,7 @@ class McpDrainTests(SimpleTestCase):
     def test_server_does_not_set_uvicorn_exit_before_tools_finish(self):
         import uvicorn
         server = DrainingMcpServer(uvicorn.Config('example:app'))
-        with patch('src.apps.data_factory.services.pool_maintenance.DatasourcePoolMaintenance.close_idle_pools') as close:
+        with patch('src.apps.data_factory.services.pool.pool_maintenance.DatasourcePoolMaintenance.close_idle_pools') as close:
             with Lifecycle.admit():
                 server.handle_exit(15, None)
                 self.assertFalse(server.should_exit)

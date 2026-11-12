@@ -13,7 +13,7 @@ from src.apps.auto_ui.schemas.step_healing import validate_condition_group, vali
 from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.apps.test_center.formatters.related import format_product_module
 from src.apps.test_center.formatters.related import format_project_product
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.test_center.services.project.product_module import ProductModuleService
 from src.apps.user.formatters import format_user_simple
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.common.validators.serializer_fields import RelatedObjectField

@@ -4,6 +4,17 @@ import type { ExecutionAdminCondition } from './config'
 import { normalizeIdSearchValue } from '@/utils/id-search'
 
 export type ExecutionAdminId = string | number
+export type ExecutionResultJson = { state: 'available'; value: unknown } | { state: 'cleaned' | 'empty' }
+
+export function parseExecutionResultJson(response: unknown, expectedId: ExecutionAdminId): ExecutionResultJson {
+  const detail = object(success(response).data)
+  if (String(id(detail.id)) !== String(expectedId) || typeof detail.result_cleaned !== 'boolean' || typeof detail.has_result_data !== 'boolean')
+    throw new Error('执行结果响应不匹配')
+  if (detail.result_cleaned) return { state: 'cleaned' }
+  if (!detail.has_result_data) return { state: 'empty' }
+  if (detail.result_too_large || detail.result_data == null) throw new Error('完整结果文件不可读取')
+  return { state: 'available', value: detail.result_data }
+}
 export interface ExecutionAdminOption { key: ExecutionAdminId; title: string }
 export type ExecutionAdminOptionKey = 'source_type' | 'target_type' | 'status' | 'test_env' | 'result_state' | 'is_latest' | 'trigger_user_id'
 export interface ExecutionAdminConfig {

@@ -29,7 +29,7 @@ from src.apps.auto_api.services.api_case.mutation_io import ApiCaseParameterMuta
 from src.apps.auto_api.services.api_case.parameter_copy import ApiCaseParameterCopyService
 from src.apps.auto_api.services.api_case.schema import ApiCaseScenarioSchemaService
 from src.apps.auto_api.services.api_case.step import ApiCaseStepService
-from src.apps.auto_api.services.base.assertion_verification import ApiAssertionVerificationService
+from src.apps.auto_api.services.execution.base.assertion_verification import ApiAssertionVerificationService
 from src.common.decorators.error_response import error_response
 from src.common.responses.json_response import ensure_jsonpath_source, extract_jsonpath_value
 from src.common.responses.model_crud import ModelCRUD
@@ -67,6 +67,7 @@ class ApiCaseDetailedParameterCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @classmethod
     def clean_deprecated_fields(cls, data: dict) -> dict:
+        """移除参数场景中已废弃的字段"""
         cleaned = data.copy()
         if any(field in cleaned for field in ('body_config', 'mcp_config', 'grpc_config', 'protocol_expectation')):
             cleaned['body_config'] = merge_scenario_protocol_config(
@@ -81,6 +82,7 @@ class ApiCaseDetailedParameterCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @classmethod
     def inside_post(cls, data: dict, *, record_config: bool = True) -> dict:
+        """处理API 用例参数场景新增时的业务逻辑"""
         return ApiCaseParameterMutationService.create(
             data,
             record_config=record_config,
@@ -89,6 +91,7 @@ class ApiCaseDetailedParameterCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @classmethod
     def inside_put(cls, _id: int, data: dict, *, record_config: bool = True) -> dict:
+        """处理API 用例参数场景修改时的业务逻辑"""
         return ApiCaseParameterMutationService.update(
             _id,
             data,
@@ -98,6 +101,7 @@ class ApiCaseDetailedParameterCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @staticmethod
     def refresh_case_flow(case_detailed_id):
+        """刷新参数场景所属的用例流程"""
         case_detailed = ApiCaseDetailed.objects.filter(id=case_detailed_id).first()
         if not case_detailed:
             return
@@ -106,6 +110,7 @@ class ApiCaseDetailedParameterCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @error_response('api')
     def post(self, request: Request):
+        """新增API 用例参数场景"""
         data = request.data.copy()
         data.pop('api_info', None)
         case_detailed = ApiCaseDetailed.objects.get(id=data.get('case_detailed'))
@@ -127,6 +132,7 @@ class ApiCaseDetailedParameterCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @error_response('api')
     def put(self, request: Request):
+        """修改API 用例参数场景"""
         parameter = self.model.objects.get(id=request.data.get('id'))
         return_data = ApiCaseAggregateMutationService.mutate(
             parameter.case_detailed.case_id,
@@ -143,6 +149,7 @@ class ApiCaseDetailedParameterCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @error_response('api')
     def delete(self, request: Request):
+        """删除API 用例参数场景"""
         _id = request.query_params.get('id')
         id_list = [int(id_str) for id_str in request.query_params.getlist('id[]')]
         if _id:
@@ -178,6 +185,7 @@ class ApiCaseDetailedParameterViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('api')
     def verify_assertions(self, request: Request):
+        """使用指定执行结果验证场景断言"""
         parameter_id = request.data.get('id')
         if parameter_id in [None, '']:
             raise AutoApiError(AUTO_API_API_CASE_DETAILED_PARAMETER_SCENARIO_ASSERTION_PARAMETER_REQUIRED)
@@ -198,6 +206,7 @@ class ApiCaseDetailedParameterViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('api')
     def post_extract_response_after(self, request: Request):
+        """测试响应提取表达式"""
         expression = request.data.get('expression')
         _type = request.data.get('type')
         response = request.data.get('response')
@@ -242,6 +251,7 @@ class ApiCaseDetailedParameterViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('api')
     def put_auto_schema(self, request):
+        """根据执行结果生成场景 JSON Schema 断言"""
         result = ApiCaseScenarioSchemaService.generate(
             request.data.get('id'),
             operator_id=ApiCaseDetailedParameterCRUD.get_operator_id(request),
@@ -252,6 +262,7 @@ class ApiCaseDetailedParameterViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('api')
     def copy_parameter(self, request: Request):
+        """复制 API 用例参数场景"""
         source_id = request.data.get('id')
         new_parameter = ApiCaseParameterCopyService.copy(
             int(source_id),

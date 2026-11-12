@@ -11,9 +11,9 @@ from rest_framework.viewsets import ViewSet
 from src.apps.auto_pytest.api.serializers.pytest_product import PytestProductSerializers, PytestProductSerializersC
 from src.apps.auto_pytest.api.views.pytest_repository import _can_browse_all_repositories, _repository
 from src.apps.auto_pytest.models import PytestProduct
-from src.apps.auto_pytest.services.product_sync import PytestProductSyncService
+from src.apps.auto_pytest.services.synchronization.product_sync import PytestProductSyncService
 from src.apps.test_center.models import ProductModule
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -35,9 +35,11 @@ class PytestProductCRUD(ModelCRUD):
 
     @error_response('pytest')
     def post(self, request: Request):
+        """新增Pytest 产品"""
         return ResponseData.fail(RESPONSE_MSG_0314)
 
     def filter_queryset_by_data_scope(self, request: Request, queryset):
+        """按当前用户的数据范围筛选Pytest 产品"""
         queryset = super().filter_queryset_by_data_scope(request, queryset)
         return queryset.filter(id__in=PytestProductSyncService.active_project_ids())
 
@@ -63,6 +65,7 @@ class PytestProductViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('pytest')
     def pytest_import(self, request: Request):
+        """同步导入 Pytest 产品及用例"""
         repository = _repository(
             request.data.get('repository_id') or request.data.get('repository'),
             request,
@@ -93,6 +96,7 @@ class PytestProductViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('pytest')
     def pytest_test_directories(self, request: Request):
+        """获取 Pytest 产品可用测试目录"""
         product_id = request.query_params.get('id')
         project_path = request.query_params.get('project_path')
         if product_id:

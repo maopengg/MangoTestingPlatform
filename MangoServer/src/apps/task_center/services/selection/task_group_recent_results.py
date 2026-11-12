@@ -8,7 +8,7 @@ from src.apps.task_center.selectors.querysets import ScheduleFireQuerySelector
 from src.apps.task_center.services.selection.recent_results import TaskRecentResultService
 from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.apps.test_center.models import TestSuiteDetails
-from src.apps.test_center.services.test_suite.summary import TestSuiteSummaryService
+from src.apps.test_center.services.reporting.test_suite.summary import TestSuiteSummaryService
 
 
 class TaskGroupRecentResultService:

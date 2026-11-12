@@ -8,8 +8,8 @@ from rest_framework import serializers
 from src.apps.auto_pytest.api.serializers.mixins import ProductModuleBindingSerializerMixin
 from src.apps.auto_pytest.api.serializers.pytest_repository import PytestRepositorySerializer
 from src.apps.auto_pytest.models import PytestProduct
-from src.apps.auto_pytest.services.git_management.repository_service import RepositoryGitService
-from src.apps.auto_pytest.services.product_sync import PytestProductSyncService
+from src.apps.auto_pytest.services.repository.repository_service import RepositoryGitService
+from src.apps.auto_pytest.services.synchronization.product_sync import PytestProductSyncService
 from src.apps.test_center.formatters.related import format_project_product
 from src.apps.user.formatters import format_user_simple
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector

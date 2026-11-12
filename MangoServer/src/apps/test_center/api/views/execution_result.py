@@ -10,10 +10,10 @@ from rest_framework.viewsets import ViewSet
 
 from src.apps.auto_api.models import ApiCase
 from src.apps.test_center.models import ExecutionResult
-from src.apps.test_center.services.api_case_diagnosis import ApiCaseDiagnosisService
-from src.apps.test_center.services.assertion_diagnosis import AssertionDiagnosisService
-from src.apps.test_center.services.execution_result import ExecutionResultService
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.test_center.services.diagnostics.api_case_diagnosis import ApiCaseDiagnosisService
+from src.apps.test_center.services.diagnostics.assertion_diagnosis import AssertionDiagnosisService
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
 from src.common.responses import (
     ResponseData,
@@ -34,6 +34,7 @@ class ExecutionResultViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def analyze_assertions(self, request: Request):
+        """分析自动化执行结果中的失败断言"""
         return ResponseData.success(
             RESPONSE_MSG_0001,
             AssertionDiagnosisService.analyze(request.data.get('assertions')),
@@ -61,6 +62,7 @@ class ExecutionResultViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def preview_case_analysis(self, request: Request):
+        """预览 API 用例失败分析范围"""
         result = self._case_analysis_result(request, request.query_params.get('result_id'))
         if result is None:
             return ResponseData.fail(RESPONSE_MSG_0210)
@@ -69,6 +71,7 @@ class ExecutionResultViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def analyze_case(self, request: Request):
+        """分析 API 用例执行失败原因"""
         result = self._case_analysis_result(request, request.data.get('result_id'))
         if result is None:
             return ResponseData.fail(RESPONSE_MSG_0210)
@@ -82,6 +85,7 @@ class ExecutionResultViews(ViewSet):
 
     @staticmethod
     def build_filters(request: Request) -> dict | None:
+        """解析执行结果查询条件"""
         filters = {}
         for key in ['source_type', 'target_type']:
             value = request.query_params.get(key)
@@ -102,6 +106,7 @@ class ExecutionResultViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_list(self, request: Request):
+        """获取自动化执行结果列表"""
         filters = self.build_filters(request)
         if filters is None:
             return ResponseData.fail(RESPONSE_MSG_0003)
@@ -114,6 +119,7 @@ class ExecutionResultViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_detail(self, request: Request):
+        """获取自动化执行结果详情"""
         result_id = request.query_params.get('id')
         if not result_id or not str(result_id).isdigit():
             return ResponseData.fail(RESPONSE_MSG_0003)
@@ -125,6 +131,7 @@ class ExecutionResultViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_content(self, request: Request):
+        """读取并流式返回完整执行结果文件"""
         result_id = request.query_params.get('id')
         if not result_id or not str(result_id).isdigit():
             return ResponseData.fail(RESPONSE_MSG_0003)
@@ -139,6 +146,7 @@ class ExecutionResultViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_latest(self, request: Request):
+        """获取最新完整执行结果"""
         filters = self.build_filters(request)
         if filters is None:
             return ResponseData.fail(RESPONSE_MSG_0003)
@@ -164,6 +172,7 @@ class ExecutionResultViews(ViewSet):
 
     @classmethod
     def build_admin_filters(cls, request: Request) -> dict | None:
+        """解析执行结果管理页查询条件"""
         filters = {}
         integer_filters = {
             'id': 'id',
@@ -269,6 +278,7 @@ class ExecutionResultViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def admin_list(self, request: Request):
+        """获取执行结果管理列表"""
         filters = self.build_admin_filters(request)
         if filters is None:
             return ResponseData.fail(RESPONSE_MSG_0003)
@@ -287,6 +297,7 @@ class ExecutionResultViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def admin_config(self, request: Request):
+        """获取完整执行结果保留策略与清理统计"""
         from src.apps.task_center.services.scheduling.system_job import SystemJobService
 
         data = ExecutionResultService.admin_config()
@@ -306,6 +317,7 @@ class ExecutionResultViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def admin_cleanup(self, request: Request):
+        """清理过期完整执行结果并保留执行记录"""
         retention_days = ExecutionResultService.retention_days()
         result = ExecutionResultService.cleanup_expired(
             retention_days,

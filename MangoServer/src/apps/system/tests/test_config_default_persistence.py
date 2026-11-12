@@ -6,14 +6,7 @@ from django.test import SimpleTestCase
 
 from src.apps.system.api.views.cache_data import CacheDataCRUD, CacheDataViews
 from src.apps.system.enums import CacheDataKey2Enum
-from src.apps.system.services.system_config import (
-    API_WORKER_DESIRED_COUNT_DEFAULT,
-    API_WORKER_DESIRED_COUNT_KEY,
-    DEPRECATED_SYSTEM_CONFIG_KEYS,
-    get_config_definition_map,
-    SystemConfigDefinition,
-    SystemConfigService,
-)
+from src.apps.system.services.configuration.system_config import API_WORKER_DESIRED_COUNT_DEFAULT, API_WORKER_DESIRED_COUNT_KEY, DEPRECATED_SYSTEM_CONFIG_KEYS, get_config_definition_map, SystemConfigDefinition, SystemConfigService
 
 
 class ConfigDefaultPersistenceTests(SimpleTestCase):
@@ -85,7 +78,7 @@ class ConfigDefaultPersistenceTests(SimpleTestCase):
         obj.update_user_id = update_user_id
         obj.save = Mock()
         with ExitStack() as stack:
-            prefix = 'src.apps.system.services.system_config.'
+            prefix = 'src.apps.system.services.configuration.system_config.'
             stack.enter_context(patch(prefix + 'SYSTEM_CONFIG_REGISTRY', [definition]))
             stack.enter_context(patch(prefix + 'SYSTEM_INTERNAL_CONFIG_REGISTRY', []))
             manager = stack.enter_context(patch(prefix + 'CacheData.objects'))

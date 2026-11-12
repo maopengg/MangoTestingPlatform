@@ -12,7 +12,7 @@ from src.apps.auto_api.enums.execution_trace import ApiCaseTraceStatus, ApiCaseT
 from src.apps.auto_api.exceptions import AutoApiError, API_CASE_STEP_DEBUG_BUSY
 from src.apps.auto_api.services.execution_trace.recorder import ApiCaseExecutionTraceRecorder
 from src.apps.auto_api.services.execution_trace.reconciliation import ApiTraceReconciliationService as Reconcile
-from src.apps.auto_api.services.test_case.test_case import TestCase as RuntimeCase
+from src.apps.auto_api.services.execution.cases.test_case import TestCase as RuntimeCase
 
 
 class TraceLifecycleTests(SimpleTestCase):
@@ -28,9 +28,9 @@ class TraceLifecycleTests(SimpleTestCase):
         self.runtime.user_id = 4
 
     def test_initialization_failure_after_trace_creation_is_closed(self):
-        with patch('src.apps.auto_api.services.test_case.test_case_parts.lifecycle.ApiCaseExecutionTraceRecorder',
+        with patch('src.apps.auto_api.services.execution.cases.test_case_parts.lifecycle.ApiCaseExecutionTraceRecorder',
                    return_value=self.recorder), patch.object(self.recorder, 'create_trace', return_value=self.trace), \
-                patch('src.apps.auto_api.services.test_case.test_case_parts.lifecycle.APIBaseTestSetup',
+                patch('src.apps.auto_api.services.execution.cases.test_case_parts.lifecycle.APIBaseTestSetup',
                       side_effect=AutoApiError(API_CASE_STEP_DEBUG_BUSY)):
             with self.assertRaises(AutoApiError):
                 RuntimeCase(user_id=4, test_env=0, case_id=3425)
@@ -39,7 +39,7 @@ class TraceLifecycleTests(SimpleTestCase):
         self.assertFalse(self.trace.summary['review_required'])
 
     def test_invalid_debug_context_and_busy_lock_close_trace_before_any_step(self):
-        path = 'src.apps.auto_api.services.test_case.test_case_parts.execution.'
+        path = 'src.apps.auto_api.services.execution.cases.test_case_parts.execution.'
         for context_error in (True, False):
             self.trace.finished_at = None
             with patch(path + 'ApiCaseStepDebugContextService.prepare',
@@ -52,7 +52,7 @@ class TraceLifecycleTests(SimpleTestCase):
             release.assert_not_called()
 
     def test_actual_execution_cancellation_marks_review_and_releases_debug_lock(self):
-        path = 'src.apps.auto_api.services.test_case.test_case_parts.execution.'
+        path = 'src.apps.auto_api.services.execution.cases.test_case_parts.execution.'
         with patch(path + 'ApiCaseStepDebugContextService.prepare'), \
                 patch(path + 'acquire_mysql_lock', return_value=True), \
                 patch(path + 'release_mysql_lock') as release, \
@@ -165,7 +165,7 @@ class TraceReconciliationTests(SimpleTestCase):
         self.assertEqual(Reconcile.reconcile()['trace_reconciled'], 1)
 
     def test_file_backed_final_result_requires_verified_contents(self):
-        from src.apps.test_center.services.execution_result import ExecutionResultService
+        from src.apps.test_center.services.results.execution_result import ExecutionResultService
         payload = {'trace_id': 'AUTO_TRACE', 'status': 1, 'execution_finalized': True,
                    'infrastructure_blocked': False}
         checksum = ExecutionResultService.calc_result_checksum(payload)

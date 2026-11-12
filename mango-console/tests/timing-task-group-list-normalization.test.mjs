@@ -108,7 +108,7 @@ test('delete uses the confirmed ID, deduplicates writes and treats subsequent li
 })
 test('delete rejection keeps the confirmation open and allows retry without early success', async t => {
   let fail=true;const h=setupGroupList({deleteScheduledTaskGroup:async()=>({code:fail?403:200})});t.after(h.close);await h.mount();h.deleteGroup(groupRow());const modal=h.confirmations[0]
-  assert.equal(await modal.config.onBeforeOk(),false);assert.equal(modal.closed,false);assert.equal(h.messages.length,0);fail=false;assert.equal(await modal.config.onBeforeOk(),true)
+  assert.equal(await modal.config.onBeforeOk(),false);assert.equal(modal.closed,false);assert.equal(h.messages.length,1);assert.equal(h.messages[0][0],'error');fail=false;assert.equal(await modal.config.onBeforeOk(),true)
 })
 test('notice loading, fixed batch zero and send retry are isolated from list state and duplicate submissions', async t => {
   const pending=deferred();let fail=true;const h=setupGroupList({resendTaskGroupNotice:()=>fail?Promise.resolve({code:403}):pending.promise});t.after(h.close);await h.mount();await h.openResendNotice(groupRow())

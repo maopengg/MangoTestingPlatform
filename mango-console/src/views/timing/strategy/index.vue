@@ -47,15 +47,14 @@
       <a-form auto-label-width class="mango-simple-form" :model="form" layout="horizontal">
         <a-form-item class="mango-form-item__require mango-simple-form-item" label="定时器介绍"><a-input v-model="form.name" placeholder="请输入定时器的介绍" /></a-form-item>
         <a-form-item class="mango-form-item__require mango-simple-form-item" label="cron"><a-input v-model="form.cron" placeholder="请输入正确的cron表达式" /></a-form-item>
-        <a-alert v-if="saveError" type="error">{{ saveError }}</a-alert>
+        <MangoRequestFeedback v-if="saveError" :message="(saveError)" />
       </a-form>
     </template>
   </ModalDialog>
 </template>
 
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import { Message, Modal } from '@arco-design/web-vue'
@@ -163,7 +162,7 @@ import { reportLoadError } from '@/utils/load-error'
       if (key === identity()) needsList = true
       if (!valid()) return
       closeEditor(); Message.success(message); refreshAttempted = true; await doRefresh()
-    } catch { if (valid()) saveError.value = '保存失败，请检查输入并重试' }
+    } catch (requestFailure) { if (valid()) saveError.value = requestFailureMessage(requestFailure, '保存失败，请检查输入并重试') }
     finally {
       saving.value = false
       if (valid()) modalDialogRef.value?.setConfirmLoading(false)

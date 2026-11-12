@@ -15,7 +15,7 @@ from src.apps.functional_test.models import (
     FunctionalRequirementTask,
     FunctionalTestDefect,
 )
-from src.apps.functional_test.services.requirement import FunctionalRequirementService
+from src.apps.functional_test.services.requirements.requirement import FunctionalRequirementService
 
 
 class FunctionalRequirementManagementTests(SimpleTestCase):

@@ -5,7 +5,7 @@ from django.core.cache import cache
 from django.test import SimpleTestCase, override_settings
 
 from src.apps.auto_ui.exceptions import AutoUiError
-from src.apps.auto_ui.services.element_ai import ElementAiLocatorRecommendationService
+from src.apps.auto_ui.services.elements.ai import ElementAiLocatorRecommendationService
 
 
 @override_settings(
@@ -30,7 +30,7 @@ class ElementAiLocatorRecommendationServiceTest(SimpleTestCase):
             }]
         }
 
-    @patch("src.apps.auto_ui.services.element_ai.locator_recommendation.AgentModelGateway.json_chat")
+    @patch("src.apps.auto_ui.services.elements.ai.locator_recommendation.AgentModelGateway.json_chat")
     def test_generates_safe_first_batch_and_caches_snapshot(self, json_chat):
         json_chat.return_value = self._response(
             {
@@ -81,7 +81,7 @@ class ElementAiLocatorRecommendationServiceTest(SimpleTestCase):
         )
         self.assertEqual(result["candidates"][1]["exp"], 9)
 
-    @patch("src.apps.auto_ui.services.element_ai.locator_recommendation.AgentModelGateway.json_chat")
+    @patch("src.apps.auto_ui.services.elements.ai.locator_recommendation.AgentModelGateway.json_chat")
     def test_returns_up_to_five_candidates_for_browser_validation(self, json_chat):
         json_chat.return_value = self._response(*[
             {
@@ -101,7 +101,7 @@ class ElementAiLocatorRecommendationServiceTest(SimpleTestCase):
         self.assertEqual(len(result["candidates"]), 5)
         self.assertEqual(result["diagnostics"]["available_count"], 5)
 
-    @patch("src.apps.auto_ui.services.element_ai.locator_recommendation.AgentModelGateway.json_chat")
+    @patch("src.apps.auto_ui.services.elements.ai.locator_recommendation.AgentModelGateway.json_chat")
     def test_refresh_batch_reuses_snapshot_and_filters_previous_locator(self, json_chat):
         first = {
             "strategy": "text",
@@ -132,7 +132,7 @@ class ElementAiLocatorRecommendationServiceTest(SimpleTestCase):
         self.assertEqual(len(refreshed["candidates"]), 1)
         self.assertEqual(refreshed["candidates"][0]["strategy"], "role")
 
-    @patch("src.apps.auto_ui.services.element_ai.locator_recommendation.AgentModelGateway.json_chat")
+    @patch("src.apps.auto_ui.services.elements.ai.locator_recommendation.AgentModelGateway.json_chat")
     def test_refresh_batch_uses_sanitized_user_guidance(self, json_chat):
         json_chat.side_effect = [
             self._response(reason="缺少上下文"),
@@ -170,7 +170,7 @@ class ElementAiLocatorRecommendationServiceTest(SimpleTestCase):
         self.assertIn("surrounding_text 是排除条件", "\n".join(prompt["rules"]))
         self.assertEqual(len(result["candidates"]), 1)
 
-    @patch("src.apps.auto_ui.services.element_ai.locator_recommendation.AgentModelGateway.json_chat")
+    @patch("src.apps.auto_ui.services.elements.ai.locator_recommendation.AgentModelGateway.json_chat")
     def test_refresh_without_guidance_fields_preserves_previous_guidance(self, json_chat):
         json_chat.side_effect = [
             self._response(reason="需要更多上下文"),
@@ -212,7 +212,7 @@ class ElementAiLocatorRecommendationServiceTest(SimpleTestCase):
                 user_id=1,
             )
 
-    @patch("src.apps.auto_ui.services.element_ai.locator_recommendation.AgentModelGateway.json_chat")
+    @patch("src.apps.auto_ui.services.elements.ai.locator_recommendation.AgentModelGateway.json_chat")
     def test_accepts_common_model_field_aliases(self, json_chat):
         json_chat.return_value = {
             "choices": [{
@@ -240,7 +240,7 @@ class ElementAiLocatorRecommendationServiceTest(SimpleTestCase):
         self.assertEqual(result["candidates"][0]["strategy"], "role")
         self.assertEqual(result["diagnostics"]["invalid_count"], 0)
 
-    @patch("src.apps.auto_ui.services.element_ai.locator_recommendation.AgentModelGateway.json_chat")
+    @patch("src.apps.auto_ui.services.elements.ai.locator_recommendation.AgentModelGateway.json_chat")
     def test_accepts_safe_direct_playwright_expression(self, json_chat):
         json_chat.return_value = self._response({
             "locator": 'page.get_by_text("提交", exact=True)',
@@ -255,7 +255,7 @@ class ElementAiLocatorRecommendationServiceTest(SimpleTestCase):
         self.assertEqual(len(result["candidates"]), 1)
         self.assertEqual(result["candidates"][0]["loc"], 'get_by_text("提交", exact=True)')
 
-    @patch("src.apps.auto_ui.services.element_ai.locator_recommendation.AgentModelGateway.json_chat")
+    @patch("src.apps.auto_ui.services.elements.ai.locator_recommendation.AgentModelGateway.json_chat")
     def test_reports_when_all_candidates_are_duplicates(self, json_chat):
         json_chat.return_value = self._response({
             "strategy": "text",
@@ -278,7 +278,7 @@ class ElementAiLocatorRecommendationServiceTest(SimpleTestCase):
         self.assertEqual(result["diagnostics"]["duplicate_count"], 1)
         self.assertIn("重复", result["diagnostics"]["message"])
 
-    @patch("src.apps.auto_ui.services.element_ai.locator_recommendation.AgentModelGateway.json_chat")
+    @patch("src.apps.auto_ui.services.elements.ai.locator_recommendation.AgentModelGateway.json_chat")
     def test_reports_ai_reason_when_model_cannot_generate_candidates(self, json_chat):
         json_chat.return_value = self._response(
             reason="目标只有普通 div 标签，缺少文本、角色和稳定属性，无法可靠区分"
@@ -296,7 +296,7 @@ class ElementAiLocatorRecommendationServiceTest(SimpleTestCase):
             "目标只有普通 div 标签，缺少文本、角色和稳定属性，无法可靠区分",
         )
 
-    @patch("src.apps.auto_ui.services.element_ai.locator_recommendation.AgentModelGateway.json_chat")
+    @patch("src.apps.auto_ui.services.elements.ai.locator_recommendation.AgentModelGateway.json_chat")
     def test_reports_empty_model_content_instead_of_unknown_reason(self, json_chat):
         json_chat.return_value = {
             "choices": [{"message": {"content": {}}}],
@@ -315,7 +315,7 @@ class ElementAiLocatorRecommendationServiceTest(SimpleTestCase):
         self.assertEqual(result["diagnostics"]["model_attempts"], 2)
         self.assertEqual(json_chat.call_count, 2)
 
-    @patch("src.apps.auto_ui.services.element_ai.locator_recommendation.AgentModelGateway.json_chat")
+    @patch("src.apps.auto_ui.services.elements.ai.locator_recommendation.AgentModelGateway.json_chat")
     def test_retries_empty_response_and_uses_second_response(self, json_chat):
         json_chat.side_effect = [
             {"choices": [{"finish_reason": "stop", "message": {"content": ""}}]},
@@ -342,7 +342,7 @@ class ElementAiLocatorRecommendationServiceTest(SimpleTestCase):
             {"type": "disabled"},
         )
 
-    @patch("src.apps.auto_ui.services.element_ai.locator_recommendation.AgentModelGateway.json_chat")
+    @patch("src.apps.auto_ui.services.elements.ai.locator_recommendation.AgentModelGateway.json_chat")
     def test_reports_reasoning_only_response_without_logging_content(self, json_chat):
         json_chat.return_value = {
             "choices": [{
@@ -367,7 +367,7 @@ class ElementAiLocatorRecommendationServiceTest(SimpleTestCase):
         self.assertIn("仅返回了推理内容", result["diagnostics"]["message"])
         self.assertNotIn("内部推理内容", result["diagnostics"]["message"])
 
-    @patch("src.apps.auto_ui.services.element_ai.locator_recommendation.AgentModelGateway.json_chat")
+    @patch("src.apps.auto_ui.services.elements.ai.locator_recommendation.AgentModelGateway.json_chat")
     def test_reports_reasoning_token_exhaustion_as_truncated_output(self, json_chat):
         json_chat.return_value = {
             "choices": [{
@@ -386,7 +386,7 @@ class ElementAiLocatorRecommendationServiceTest(SimpleTestCase):
 
         self.assertIn("最终 JSON 被截断", result["diagnostics"]["message"])
 
-    @patch("src.apps.auto_ui.services.element_ai.locator_recommendation.AgentModelGateway.json_chat")
+    @patch("src.apps.auto_ui.services.elements.ai.locator_recommendation.AgentModelGateway.json_chat")
     def test_reports_empty_candidate_list_without_model_reason(self, json_chat):
         json_chat.return_value = self._response()
 
@@ -401,7 +401,7 @@ class ElementAiLocatorRecommendationServiceTest(SimpleTestCase):
             "AI 明确返回了空候选列表，但未按约定说明无法生成的原因（已自动重试 1 次，仍未获得定位器候选）",
         )
 
-    @patch("src.apps.auto_ui.services.element_ai.locator_recommendation.AgentModelGateway.json_chat")
+    @patch("src.apps.auto_ui.services.elements.ai.locator_recommendation.AgentModelGateway.json_chat")
     def test_reports_missing_candidate_contract_fields(self, json_chat):
         json_chat.return_value = {
             "choices": [{"message": {"content": {"summary": "无法判断"}}}],

@@ -8,7 +8,7 @@ from src.apps.auto_api.models import ApiCase, ApiCaseRelease, ApiCaseRevision
 from src.apps.auto_api.enums.case import ApiCaseReleaseStatusEnum
 from src.apps.auto_api.services.api_case.version import ApiCaseRevisionService
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
 from src.common.responses.response_data import ResponseData
 from src.common.responses.response_msg import RESPONSE_MSG_0001, RESPONSE_MSG_0002, RESPONSE_MSG_0158, RESPONSE_MSG_0210
@@ -18,6 +18,7 @@ class ApiCaseVersionScopeMixin:
 
     @staticmethod
     def has_case_scope(request: Request, case_id: int) -> bool:
+        """检查当前用户对 API 用例的访问范围"""
         user = getattr(getattr(request, 'user', None), 'user_obj', None)
         if user is None or PermissionMenuService.is_effective_super_admin(user):
             return True
@@ -29,6 +30,7 @@ class ApiCaseVersionScopeMixin:
 
     @staticmethod
     def operator_id(request: Request) -> int | None:
+        """获取当前操作用户 ID"""
         user = getattr(request, 'user', None)
         if isinstance(user, dict):
             return user.get('id')
@@ -37,6 +39,7 @@ class ApiCaseVersionScopeMixin:
 
     @classmethod
     def owner_context(cls, request: Request, case_id: int) -> dict:
+        """获取用例归属信息与操作上下文"""
         project_product_id = ApiCase.objects.filter(id=case_id).values_list(
             'project_product_id',
             flat=True,
@@ -72,6 +75,7 @@ class ApiCaseRevisionViews(ApiCaseVersionScopeMixin, ViewSet):
 
     @error_response('api')
     def list(self, request: Request):
+        """获取API 用例修订列表"""
         case_id = request.query_params.get('case_id')
         if not case_id:
             return ResponseData.fail(RESPONSE_MSG_0158)
@@ -99,6 +103,7 @@ class ApiCaseRevisionViews(ApiCaseVersionScopeMixin, ViewSet):
 
     @error_response('api')
     def version_detail(self, request: Request):
+        """获取API 用例修订的版本快照详情"""
         revision = ApiCaseRevision.objects.filter(id=request.query_params.get('id')).select_related(
             'operator',
             'api_case',
@@ -120,6 +125,7 @@ class ApiCaseRevisionViews(ApiCaseVersionScopeMixin, ViewSet):
 
     @error_response('api')
     def create_revision(self, request: Request):
+        """根据当前编辑内容创建API 用例修订"""
         case_id = request.data.get('case_id')
         if not case_id:
             return ResponseData.fail(RESPONSE_MSG_0158)
@@ -144,6 +150,7 @@ class ApiCaseRevisionViews(ApiCaseVersionScopeMixin, ViewSet):
 
     @error_response('api')
     def checkout_revision(self, request: Request):
+        """将指定API 用例修订恢复到编辑态"""
         case_id = request.data.get('case_id')
         revision_id = request.data.get('revision_id')
         if not case_id or not revision_id:
@@ -163,6 +170,7 @@ class ApiCaseRevisionViews(ApiCaseVersionScopeMixin, ViewSet):
 
     @error_response('api')
     def checkout_impact(self, request: Request):
+        """预览检出 API 用例修订的影响范围"""
         case_id = request.query_params.get('case_id')
         revision_id = request.query_params.get('revision_id')
         if not case_id or not revision_id:
@@ -177,6 +185,7 @@ class ApiCaseRevisionViews(ApiCaseVersionScopeMixin, ViewSet):
 
     @error_response('api')
     def delete_revision(self, request: Request):
+        """删除指定API 用例修订"""
         case_id = request.data.get('case_id') or request.query_params.get('case_id')
         revision_id = request.data.get('revision_id') or request.query_params.get(
             'revision_id') or request.query_params.get('id')
@@ -195,6 +204,7 @@ class ApiCaseReleaseViews(ApiCaseVersionScopeMixin, ViewSet):
 
     @error_response('api')
     def list(self, request: Request):
+        """获取API 用例发布版本列表"""
         case_id = request.query_params.get('case_id')
         if not case_id:
             return ResponseData.fail(RESPONSE_MSG_0158)
@@ -214,6 +224,7 @@ class ApiCaseReleaseViews(ApiCaseVersionScopeMixin, ViewSet):
 
     @error_response('api')
     def unpublish(self, request: Request):
+        """撤销 API 用例当前发布版本"""
         case_id = request.data.get('case_id')
         release_id = request.data.get('release_id')
         if not case_id or not release_id:
@@ -233,6 +244,7 @@ class ApiCasePrepublicationViews(ApiCaseVersionScopeMixin, ViewSet):
 
     @error_response('api')
     def review(self, request: Request):
+        """获取 API 用例预发布审核信息"""
         case_id = request.query_params.get('case_id')
         if not str(case_id or '').isdigit():
             return ResponseData.fail(RESPONSE_MSG_0158)
@@ -247,6 +259,7 @@ class ApiCasePrepublicationViews(ApiCaseVersionScopeMixin, ViewSet):
 
     @error_response('api')
     def submit(self, request: Request):
+        """提交 API 用例修订进行预发布审核"""
         case_id = request.data.get('case_id')
         revision_id = request.data.get('revision_id')
         if not case_id or not revision_id:
@@ -261,6 +274,7 @@ class ApiCasePrepublicationViews(ApiCaseVersionScopeMixin, ViewSet):
 
     @error_response('api')
     def approve(self, request: Request):
+        """审核 API 用例预发布修订"""
         case_id = request.data.get('case_id')
         if not case_id:
             return ResponseData.fail(RESPONSE_MSG_0158)
@@ -278,6 +292,7 @@ class ApiCasePrepublicationViews(ApiCaseVersionScopeMixin, ViewSet):
 
     @error_response('api')
     def revert(self, request: Request):
+        """撤回 API 用例预发布申请"""
         case_id = request.data.get('case_id') or request.query_params.get('case_id')
         if not case_id:
             return ResponseData.fail(RESPONSE_MSG_0158)

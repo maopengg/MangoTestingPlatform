@@ -3,19 +3,19 @@ from types import SimpleNamespace
 from unittest.mock import patch
 from django.test import SimpleTestCase
 from src.apps.evaluation.schemas.answer import EvaluationAnswering, EvaluationAnswerModelSnapshot
-from src.apps.evaluation.services.answer import answer_model_snapshot, generate_answer
-from src.apps.evaluation.services.ai import model_snapshot
-from src.apps.evaluation.services.execution import EvaluationCaseExecutionService
-from src.apps.evaluation.services.graders import MemoryQAGrader
-from src.apps.evaluation.services.grading import validate_bindings
+from src.apps.evaluation.services.model.answer import answer_model_snapshot, generate_answer
+from src.apps.evaluation.services.model.ai import model_snapshot
+from src.apps.evaluation.services.execution.execution import EvaluationCaseExecutionService
+from src.apps.evaluation.services.grading.graders import MemoryQAGrader
+from src.apps.evaluation.services.grading.grading import validate_bindings
 from src.apps.evaluation.schemas.case import EvaluationGraderBinding
 from src.apps.evaluation.exceptions import EvaluationError
-from src.apps.evaluation.services.validation import invalid_config
+from src.apps.evaluation.services.assets.validation import invalid_config
 
 
 class MemoryQATests(SimpleTestCase):
     def setUp(self):
-        resolver = patch("src.apps.evaluation.services.ai.EvaluationAiProfileService.resolve",
+        resolver = patch("src.apps.evaluation.services.model.ai.EvaluationAiProfileService.resolve",
             return_value=(SimpleNamespace(id="test-ai", name="测试 AI"), self.model()))
         resolver.start()
         self.addCleanup(resolver.stop)
@@ -40,7 +40,7 @@ class MemoryQATests(SimpleTestCase):
     def test_answer_generation_never_receives_gold_or_annotation(self):
         sample = self.sample()
         sample["context"]["annotation"] = "GOLD_ONLY_MARKER"
-        with patch("src.apps.evaluation.services.ai.AiService.json_chat", return_value={"choices": [{"message": {"content": {"answer": "Beijing"}}}]}) as chat:
+        with patch("src.apps.evaluation.services.model.ai.AiService.json_chat", return_value={"choices": [{"message": {"content": {"answer": "Beijing"}}}]}) as chat:
             frozen = EvaluationAnswerModelSnapshot.model_validate(answer_model_snapshot("test-ai"))
             result = generate_answer(settings=EvaluationAnswering(), frozen_model=frozen,
                 dataset_item=SimpleNamespace(**sample), retrieved=[{"content": "Alice moved to Beijing."}])
@@ -52,7 +52,7 @@ class MemoryQATests(SimpleTestCase):
         self.assertIn("retrieval", result)
 
     def test_model_change_rejects_before_generation(self):
-        with patch("src.apps.evaluation.services.ai.AiService.json_chat") as chat:
+        with patch("src.apps.evaluation.services.model.ai.AiService.json_chat") as chat:
             snapshot = {**answer_model_snapshot("test-ai"), "model": "changed-model"}
             with self.assertRaises(EvaluationError):
                 generate_answer(settings=EvaluationAnswering(), frozen_model=EvaluationAnswerModelSnapshot(**snapshot), dataset_item=SimpleNamespace(**self.sample()), retrieved={"top_items": []})
@@ -65,20 +65,20 @@ class MemoryQATests(SimpleTestCase):
             ("omission", "I do not know", "I do not know", 0, False),
             ("correct", "Beijing", "not in answer", None, True),
         ]:
-            with self.subTest(category=category, quote=quote), patch("src.apps.evaluation.services.ai.AiService.json_chat", return_value={"choices": [{"message": {"content": self.judgment(category, quote)}}]}):
+            with self.subTest(category=category, quote=quote), patch("src.apps.evaluation.services.model.ai.AiService.json_chat", return_value={"choices": [{"message": {"content": self.judgment(category, quote)}}]}):
                 result = MemoryQAGrader.evaluate(dataset_item=self.sample(), actual={"answer": answer}, config={"_judge_snapshot": self.judge_snapshot()}, metric_key="qa", threshold=100)
                 self.assertEqual(result.metrics[0].score, expected_score)
                 self.assertEqual(result.requires_review, review)
                 self.assertEqual(result.metrics[0].raw_value["classification"], category)
 
     def test_retrieval_cannot_be_mistaken_for_final_answer(self):
-        with patch("src.apps.evaluation.services.ai.AiService.json_chat") as chat:
+        with patch("src.apps.evaluation.services.model.ai.AiService.json_chat") as chat:
             with self.assertRaises(EvaluationError):
                 MemoryQAGrader.evaluate(dataset_item=self.sample(), actual={"top_items": []}, config={}, metric_key="qa", threshold=100)
             chat.assert_not_called()
 
     def test_direct_answer_text_can_be_judged(self):
-        with patch("src.apps.evaluation.services.ai.AiService.json_chat", return_value={"choices": [{"message": {"content": self.judgment()}}]}):
+        with patch("src.apps.evaluation.services.model.ai.AiService.json_chat", return_value={"choices": [{"message": {"content": self.judgment()}}]}):
             result = MemoryQAGrader.evaluate(dataset_item=self.sample(), actual="Beijing", config={"_judge_snapshot": self.judge_snapshot()}, metric_key="qa", threshold=100)
         self.assertEqual(result.metrics[0].score, 100)
 
@@ -87,7 +87,7 @@ class MemoryQATests(SimpleTestCase):
             validate_bindings([EvaluationGraderBinding(grader_key="memory_qa", grader_version=2, metric_key="qa", hard_gate=True)])
 
     def test_zero_threshold_does_not_make_hallucination_pass(self):
-        with patch("src.apps.evaluation.services.ai.AiService.json_chat", return_value={"choices": [{"message": {"content": self.judgment("hallucination", "Shanghai")}}]}):
+        with patch("src.apps.evaluation.services.model.ai.AiService.json_chat", return_value={"choices": [{"message": {"content": self.judgment("hallucination", "Shanghai")}}]}):
             result = MemoryQAGrader.evaluate(dataset_item=self.sample(), actual={"answer": "Shanghai"}, config={"_judge_snapshot": self.judge_snapshot()}, metric_key="qa", threshold=0)
         self.assertFalse(result.metrics[0].passed)
 
@@ -100,7 +100,7 @@ class MemoryQATests(SimpleTestCase):
         adapter.execute.return_value = {"output": {"top_items": []}}
         config = SimpleNamespace(answering=EvaluationAnswering(), answer_model=None,
             execution=SimpleNamespace(retry_count=0, item_timeout_seconds=600), grading=EvaluationGradingConfig())
-        with patch.object(EvaluationCaseExecutionService, "_save_grade_results"), patch.object(EvaluationItemResult, "save"), patch.object(EvaluationItemResult, "grade_results", MagicMock()), patch("src.apps.evaluation.services.execution.EvaluationAttemptService.start", return_value=1), patch("src.apps.evaluation.services.execution.EvaluationAttemptService.finish"), patch("src.apps.evaluation.services.execution.generate_answer", side_effect=invalid_config("模拟回答生成失败")):
+        with patch.object(EvaluationCaseExecutionService, "_save_grade_results"), patch.object(EvaluationItemResult, "save"), patch.object(EvaluationItemResult, "grade_results", MagicMock()), patch("src.apps.evaluation.services.execution.execution.EvaluationAttemptService.start", return_value=1), patch("src.apps.evaluation.services.execution.execution.EvaluationAttemptService.finish"), patch("src.apps.evaluation.services.execution.execution.generate_answer", side_effect=invalid_config("模拟回答生成失败")):
             EvaluationCaseExecutionService._execute_item_core(SimpleNamespace(created_by_id=1), row, config, adapter, SimpleNamespace(executor_config={}), SimpleNamespace(), SimpleNamespace())
         self.assertEqual(row.execution_status, "failed")
         self.assertEqual(row.verdict, "invalid")

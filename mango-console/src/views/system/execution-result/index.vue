@@ -50,9 +50,7 @@
           {{ config?.next_cleanup_at || '-' }}。清理只移除完整 JSON 或结果文件，执行记录会保留。
           当前有 {{ config?.expired_pending_count ?? '-' }} 条过期结果待清理。
         </a-alert>
-        <div v-else class="mango-execution-admin-error" role="alert">
-          {{ configError }} <a-button size="small" :loading="configLoading" @click="loadConfig">重试</a-button>
-        </div>
+        <MangoRequestFeedback v-else :message="configError"><a-button size="small" :loading="configLoading" @click="loadConfig">重试</a-button></MangoRequestFeedback>
       </a-spin>
       
       
@@ -133,6 +131,9 @@
             <template v-else-if="item.key === 'result_size'" #cell="{ record }">
               {{ formatBytes(record.result_size) }}
             </template>
+            <template v-else-if="item.key === 'actions'" #cell="{ record }">
+              <MangoTableActions :actions="[{ label: '查看结果', loading: resultDrawer?.loading && String(resultDrawer.selectedId) === String(record.id), onClick: () => openResult(record) }]" />
+            </template>
             <template
               v-else-if="
                 ['test_suite', 'test_suite_detail', 'revision_id', 'release_id'].includes(
@@ -152,6 +153,7 @@
       <TableFooter :pagination="pagination" />
     </template>
   </TableBody>
+  <ExecutionResultJsonDrawer ref="resultDrawer" :context-key="identity()" />
 </template>
 
 <script lang="ts" setup>
@@ -174,6 +176,10 @@ import { reportLoadError } from '@/utils/load-error'
   import type { ExecutionAdminConfig, ExecutionAdminRow, ExecutionAdminOption, ExecutionAdminOptionKey } from './execution-admin'
   import { useExecutionAdminRead } from './composables/useExecutionAdminRead'
   import TableTabs from '@/components/table/TableTabs.vue'
+  import MangoTableActions from '@/components/table/MangoTableActions.vue'
+  import ExecutionResultJsonDrawer from './components/ExecutionResultJsonDrawer.vue'
+
+  const resultDrawer = ref<InstanceType<typeof ExecutionResultJsonDrawer> | null>(null)
 
   const route = useRoute(), pagePath = route.path, user = useUserStore(), permission = usePermissionStore(), enumStore = useEnum()
   const conditionItems = createConditionItems(), rows = ref<ExecutionAdminRow[]>([]), config = ref<ExecutionAdminConfig | null>(null)
@@ -198,6 +204,9 @@ import { reportLoadError } from '@/utils/load-error'
   const enumRead = useExecutionAdminRead({ available, context, read: () => enumStore.getEnum(), apply: () => {}, clear: () => {}, message: '枚举颜色加载失败，请重试' })
   const { loading: enumLoading, error: enumError, run: loadEnums } = enumRead
   const cleanupReady = computed(() => config.value !== null && !configLoading.value && !configError.value)
+  function openResult(record: ExecutionAdminRow) {
+    if (available()) void resultDrawer.value?.open(record.id)
+  }
   function selectOptions(key: string | number): ExecutionAdminOption[] {
     if (key === 'trigger_user_id') return userOptions.value
     switch (key) {
@@ -273,6 +282,7 @@ import { reportLoadError } from '@/utils/load-error'
   }
   function pause() {
     epoch++; needsLoad = true
+    resultDrawer.value?.close()
     listRead.invalidate(); configRead.invalidate(); usersRead.invalidate(); enumRead.invalidate()
     confirmation?.close(); confirmation = null
   }

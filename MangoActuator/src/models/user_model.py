@@ -23,10 +23,8 @@ class ActuatorUserProfile(BaseModel):
     username: str
     role: int | dict | None = None
     ip: str | None = None
-    mailbox: list[str] | None = None
     selected_project: int | None = None
     selected_environment: int | None = None
-    last_login_time: datetime | None = None
     config: UserConfigModel | None = None
 
     def update(self, **kwargs):

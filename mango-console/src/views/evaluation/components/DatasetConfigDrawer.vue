@@ -100,7 +100,7 @@
                 "
             /></template>
           </a-table>
-          <a-alert v-if="previewError" type="error">{{ previewError }}</a-alert>
+          <a-alert data-feedback-kind="validation" v-if="previewError" type="error">{{ previewError }}</a-alert>
           <JsonDisplay
             v-if="previewResult !== undefined"
             :data="previewResult"
@@ -119,7 +119,7 @@
           /></a-form-item>
         </div>
       </section>
-      <a-alert v-if="error" type="error">{{ error }}</a-alert>
+      <MangoRequestFeedback v-if="error" :message="(error)" />
     </a-form>
     <template #footer-buttons
       ><a-space
@@ -133,8 +133,7 @@
   </BaseSidePanel>
 </template>
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, onBeforeUnmount, onDeactivated, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
@@ -263,9 +262,9 @@ import { reportLoadError } from '@/utils/load-error'
       visible.value = false
       Message.success('数据集配置已保存')
       return true
-    } catch {
+    } catch (requestFailure) {
       if (visible.value && current === generation)
-        error.value = '数据集配置保存失败，草稿已保留，请重试'
+        error.value = requestFailureMessage(requestFailure, '数据集配置保存失败，草稿已保留，请重试')
       return false
     } finally {
       saving.value = false

@@ -1,4 +1,4 @@
-from src.apps.user.services.http_permission_registry import permission_for_view
+from src.apps.user.services.authorization.http_permission_registry import permission_for_view
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -9,9 +9,9 @@ from src.apps.auto_api.api.serializers.api_auth_config_mutation import ApiAuthCo
 from src.apps.auto_api.api.views.api_auth_config import ApiAuthConfigViews, ApiAuthConfigCRUD
 from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.models import ApiAuthConfig
-from src.apps.auto_api.services.api_auth_config import ApiAuthConfigService
+from src.apps.auto_api.services.authentication.api_auth_config import ApiAuthConfigService
 from src.apps.auto_api.services.api_case.global_variable import ApiCaseGlobalVariableService
-from src.apps.auto_api.services.base.api_base_test_setup.auth_manager import ApiAuthManager
+from src.apps.auto_api.services.execution.base.api_base_test_setup.auth_manager import ApiAuthManager
 from src.common.testing import ObtainTestData
 from src.interfaces.mcp.tools.api.auth_config import _write_payload, register_api_auth_config_tools
 
@@ -139,7 +139,7 @@ class AuthTargetTests(SimpleTestCase):
             self.assertEqual(child.test_data.get_cache('url'), 'https://example.org')
             self.assertEqual(child.test_data.get_cache('tenant_id'), 'default')
             return {'token': 'example'}
-        with patch('src.apps.auto_api.services.base.api_base_test_setup.APIBaseTestSetup', return_value=child), \
+        with patch('src.apps.auto_api.services.execution.base.api_base_test_setup.APIBaseTestSetup', return_value=child), \
                 patch.object(manager, '_refresh_cache_data', side_effect=authenticate):
             manager._refresh_in_isolated_context(config)
         self.assertEqual(caller_data.get_cache('tenant_id'), 'other')

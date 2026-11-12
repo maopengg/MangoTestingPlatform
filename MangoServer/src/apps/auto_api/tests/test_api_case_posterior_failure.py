@@ -4,12 +4,24 @@ from unittest.mock import Mock, patch
 from django.test import SimpleTestCase
 from mangotools.enums import StatusEnum
 
-from src.apps.auto_api.services.test_case.test_case import TestCase as ApiRuntimeTestCase
-from src.apps.auto_api.services.base.case_base import CaseBase
+from src.apps.auto_api.services.execution.cases.test_case import TestCase as ApiRuntimeTestCase
+from src.apps.auto_api.services.execution.base.case_base import CaseBase
 from src.apps.auto_api.exceptions import AutoApiError
 
 
 class ApiCasePosteriorFailureTests(SimpleTestCase):
+    def test_empty_posterior_does_not_load_front_public_again(self):
+        base = CaseBase.__new__(CaseBase)
+        base.test_env = 0
+        base.api_case = SimpleNamespace(project_product_id=1, posterior_sql=[], front_public=[743], front_auth_config=[])
+        base.test_setup = Mock()
+        base.case_data_factory = Mock()
+        base.case_posterior_main()
+        base.test_setup.init_test_object.assert_called_once_with(1, 0)
+        base.test_setup.init_public_for_cleanup.assert_not_called()
+        base.test_setup.init_public.assert_not_called()
+        base.case_data_factory.cleanup.assert_called_once()
+
     def test_invalid_legacy_item_does_not_skip_later_cleanup_or_hide_failure(self):
         base = CaseBase.__new__(CaseBase)
         base.test_env = 0
@@ -18,7 +30,7 @@ class ApiCasePosteriorFailureTests(SimpleTestCase):
         base.test_setup = Mock()
         base.test_setup.test_data.replace.side_effect = lambda value: value
         base.case_data_factory = Mock()
-        with patch('src.apps.auto_api.services.base.case_base.execute_data_source_operation') as execute:
+        with patch('src.apps.auto_api.services.execution.base.case_base.execute_data_source_operation') as execute:
             with self.assertRaises(AutoApiError) as caught:
                 base.case_posterior_main()
         execute.assert_called_once()
@@ -45,8 +57,8 @@ class ApiCasePosteriorFailureTests(SimpleTestCase):
         base.test_setup = Mock()
         base.test_setup.test_data.replace.side_effect = lambda value: value
         base.case_data_factory = Mock()
-        with patch('src.apps.auto_api.services.base.sql_environment.EnvironmentEnum.get_key_list', return_value=[0, 1]), \
-                patch('src.apps.auto_api.services.base.case_base.execute_data_source_operation') as execute:
+        with patch('src.apps.auto_api.services.execution.base.sql_environment.EnvironmentEnum.get_key_list', return_value=[0, 1]), \
+                patch('src.apps.auto_api.services.execution.base.case_base.execute_data_source_operation') as execute:
             base.case_posterior_main()
         execute.assert_called_once()
         self.assertEqual(execute.call_args.args[2]['value'], 'DELETE FROM demo WHERE id=2')
@@ -62,7 +74,7 @@ class ApiCasePosteriorFailureTests(SimpleTestCase):
         base.test_setup.test_data.replace.side_effect = lambda value: value
         base.case_data_factory = Mock()
         base.case_data_factory.cleanup.side_effect = RuntimeError('factory-cleanup-failed')
-        with patch('src.apps.auto_api.services.base.case_base.execute_data_source_operation',
+        with patch('src.apps.auto_api.services.execution.base.case_base.execute_data_source_operation',
                    side_effect=[RuntimeError('first-failed'), {'result': []}, RuntimeError('third-failed')]) as execute:
             with self.assertRaises(AutoApiError) as caught:
                 base.case_posterior_main()

@@ -3,6 +3,9 @@
 from src.common.exceptions.base import MangoServerError
 
 from .definitions import (
+    DATASOURCE_LIMIT_RETIREMENT_BLOCKED,
+    DATA_FACTORY_UNIQUE_VALUE_CONFLICT,
+    DATA_SOURCE_SERVER_QUERY_LIMIT_EXCEEDED,
     DATA_FACTORY_ENTITY_ACTIVATION_INVALID,
     DATA_FACTORY_FIELD_DEPENDENCY_ENTITY_REQUIRED,
     DATA_FACTORY_FIELD_GENERATOR_CONFIG_INVALID,
@@ -209,11 +212,18 @@ from .definitions import (
 )
 
 
+class DatasourcePolicyRefreshRequired(Exception):
+    """准入尚未发生时的内部重读信号，不是用例失败或已发送请求的重试。"""
+    def __init__(self, policy):
+        self.policy = policy
+        super().__init__('datasource admission policy refreshed')
+
+
 class DataFactoryError(MangoServerError):
     pass
 
 
-__all__ = ['DataFactoryError',
+__all__ = ['DataFactoryError', 'DatasourcePolicyRefreshRequired', 'DATASOURCE_LIMIT_RETIREMENT_BLOCKED',
            'DATA_FACTORY_ENTITY_ACTIVATION_INVALID',
            'DATA_SOURCE_QUERY_RESULT_LIMIT_EXCEEDED',
            'DATA_FACTORY_CLEANUP_COORDINATION_FAILED',
@@ -319,4 +329,6 @@ __all__ = ['DataFactoryError',
            'SQL_AUDIT_REPLAY_FAILED',
            'DATA_FACTORY_FIELD_DEPENDENCY_ENTITY_REQUIRED',
            'DATA_FACTORY_FIELD_GENERATOR_CONFIG_INVALID',
+           'DATA_FACTORY_UNIQUE_VALUE_CONFLICT',
+           'DATA_SOURCE_SERVER_QUERY_LIMIT_EXCEEDED',
            ]

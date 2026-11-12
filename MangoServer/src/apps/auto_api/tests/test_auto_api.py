@@ -33,16 +33,16 @@ from src.apps.auto_api.models import (
 )
 from src.apps.auto_api.schemas.case_schema import ApiParametrizeSuite, validate_sql_item_list
 from src.apps.auto_api.schemas.execution import ApiStepExecutionContext, ApiExecutionRequest, ApiExecutionResponse
-from src.apps.auto_api.services.base.api_base_test_setup import APIBaseTestSetup
-from src.apps.auto_api.services.base.api_base_test_setup.base_request import BaseRequest
-from src.apps.auto_api.services.base.api_base_test_setup.request_body import prepare_request_body
-from src.apps.auto_api.services.base.assertion_verification import ApiAssertionVerificationService
-from src.apps.auto_api.services.base.case_base import CaseBase
-from src.apps.auto_api.services.base.case_parameter import CaseParameter
-from src.apps.auto_api.services.base.sql_environment import should_execute_sql
-from src.apps.auto_api.services.config.version import ApiConfigSnapshotService, ApiConfigDiffService
+from src.apps.auto_api.services.execution.base.api_base_test_setup import APIBaseTestSetup
+from src.apps.auto_api.services.execution.base.api_base_test_setup.base_request import BaseRequest
+from src.apps.auto_api.services.execution.base.api_base_test_setup.request_body import prepare_request_body
+from src.apps.auto_api.services.execution.base.assertion_verification import ApiAssertionVerificationService
+from src.apps.auto_api.services.execution.base.case_base import CaseBase
+from src.apps.auto_api.services.execution.base.case_parameter import CaseParameter
+from src.apps.auto_api.services.execution.base.sql_environment import should_execute_sql
+from src.apps.auto_api.services.configuration.version import ApiConfigSnapshotService, ApiConfigDiffService
 from src.apps.auto_api.services.execution_trace.builder import ApiCaseExecutionTraceBuilder
-from src.apps.auto_api.services.test_case.step_debug import ApiCaseStepDebugContextService
+from src.apps.auto_api.services.execution.cases.step_debug import ApiCaseStepDebugContextService
 from src.apps.task_center.models import Tasks, TasksDetails, TimeTasks
 from src.apps.task_center.services.selection.api_concurrency import ApiConcurrencyService
 from src.apps.test_center.enums import TestCaseTypeEnum
@@ -559,7 +559,7 @@ class ApiCaseBatchExecutionTests(TestCase):
             username='batch_execution_user',
             password='pwd',
             is_super_admin=True,
-            selected_environment=0,
+            config=[{'key': 'selected_environment', 'value': 0}],
         )
         self.case = ApiCase.objects.create(
             project_product=self.product,
@@ -2174,7 +2174,7 @@ class ApiAssertionVerificationServiceTests(SimpleTestCase):
                 'select_related',
                 return_value=queryset,
         ), patch(
-            'src.apps.auto_api.services.base.assertion_verification.APIBaseTestSetup',
+            'src.apps.auto_api.services.execution.base.assertion_verification.APIBaseTestSetup',
             return_value=test_setup,
         ):
             result = ApiAssertionVerificationService.verify(

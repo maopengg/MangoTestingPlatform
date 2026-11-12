@@ -5,9 +5,9 @@ from django.test import SimpleTestCase
 from sqlalchemy.dialects.mysql import dialect
 
 from src.apps.data_factory.exceptions import DataFactoryError
-from src.apps.data_factory.services.discover import DataFactoryDiscover
-from src.apps.data_factory.services.datasource import DataFactoryDatasource
-from src.apps.data_factory.services.schema_monitor import DataFactorySchemaMonitorService
+from src.apps.data_factory.services.schema.discover import DataFactoryDiscover
+from src.apps.data_factory.services.datasource.datasource import DataFactoryDatasource
+from src.apps.data_factory.services.schema.schema_monitor import DataFactorySchemaMonitorService
 
 
 class GeneratedKeyRecoveryTests(SimpleTestCase):
@@ -78,7 +78,7 @@ class GeneratedKeyRecoveryTests(SimpleTestCase):
 
     def scan(self, fail=False):
         from src.apps.data_factory.models import DataFactoryEntity, DataFactoryDatasourceBinding
-        from src.apps.data_factory.services.datasource_target import DatasourceTargetService
+        from src.apps.data_factory.services.datasource.datasource_target import DatasourceTargetService
 
         entity = SimpleNamespace(id=89, name='隔离记录', datasource_alias_id=22, table_name=self.table_name)
         database = SimpleNamespace(id=22, cache_key=(22, 'test_schema'), password='')

@@ -24,7 +24,7 @@ from src.apps.auto_api.schemas.config_fields import (
     default_api_case_config,
 )
 from src.apps.auto_api.schemas.version import ApiCaseRevisionPayloadModel
-from src.apps.auto_api.services.config.version import ApiConfigSnapshotService
+from src.apps.auto_api.services.configuration.version import ApiConfigSnapshotService
 
 
 @dataclass(frozen=True)
@@ -184,7 +184,6 @@ class ApiExecutableSnapshotService:
                     parameter_payload['resolved_headers'],
                     parameter_payload['missing_header_ids'],
                 ) = cls.resolve_parameter_headers(parameter)
-                parameter_payload['gray_configs'] = []
                 step_payload['api_case_detailed_parameter'].append(parameter_payload)
             step_payloads.append(step_payload)
             api_revision_dependencies.append({
@@ -201,7 +200,6 @@ class ApiExecutableSnapshotService:
             runtime={
                 'resolved_front_headers': resolved_front_headers,
                 'missing_front_header_ids': missing_front_header_ids,
-                'gray_configs': [],
                 'dependency_freeze_level': 'case_api_snapshot_v3',
                 'unsupported_dependency_types': unsupported_dependency_types,
             },
@@ -278,19 +276,6 @@ class ApiExecutableSnapshotService:
         ]
         return {header.key: header.value for header in headers}, missing_ids
 
-    @staticmethod
-    def has_active_gray_configs(case_id: int) -> bool:
-        from src.apps.gray_config.enums import GrayCaseTypeEnum
-        from src.apps.gray_config.models import AutomationCaseGrayConfig
-
-        return AutomationCaseGrayConfig.objects.filter(
-            case_type=GrayCaseTypeEnum.API.value,
-            status=StatusEnum.SUCCESS.value,
-        ).filter(
-            models.Q(api_case_id=case_id) |
-            models.Q(api_case_detailed__case_id=case_id) |
-            models.Q(api_case_detailed_parameter__case_detailed__case_id=case_id)
-        ).exists()
 
     @staticmethod
     def hydrate_model(model_class, payload: dict[str, Any]):

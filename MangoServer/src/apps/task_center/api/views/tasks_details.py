@@ -17,7 +17,7 @@ from src.apps.task_center.exceptions import (
 from src.apps.task_center.models import Tasks, TasksDetails
 from src.apps.task_center.services.selection.case_binding import TaskCaseBindingService
 from src.apps.test_center.enums import TestCaseTypeEnum
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.test_center.services.project.product_module import ProductModuleService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -43,6 +43,7 @@ from src.common.responses.response_msg import (
 
 
 def get_request_user_id(request: Request) -> int | None:
+    """获取当前请求用户 ID"""
     user = getattr(request, 'user', None)
     if isinstance(user, dict):
         return user.get('id')
@@ -51,12 +52,14 @@ def get_request_user_id(request: Request) -> int | None:
 
 
 def module_payload(module):
+    """构建定时任务模块配置响应"""
     if module is None:
         return None
     return {'id': module.id, 'name': module.name, 'full_path': module.get_full_path()}
 
 
 def binding_result_payload(result):
+    """构建定时任务用例绑定结果"""
     fields = ('created', 'updated', 'skipped')
     return {
         **{f'{key}_ids': getattr(result, f'{key}_ids') for key in fields},
@@ -65,6 +68,7 @@ def binding_result_payload(result):
 
 
 def task_case_binding_error(result):
+    """将任务用例绑定错误转换为接口响应"""
     if result.unpublished_ids:
         return RESPONSE_MSG_0279
     if result.type_mismatched_ids:
@@ -90,6 +94,7 @@ class TasksDetailsCRUD(ModelCRUD):
 
     @error_response('system')
     def delete(self, request: Request):
+        """删除定时任务用例绑定"""
         ids = [int(value) for value in request.query_params.getlist('id[]')]
         single_id = request.query_params.get('id')
         if single_id:
@@ -102,6 +107,7 @@ class TasksDetailsCRUD(ModelCRUD):
 
     @error_response('system')
     def get(self, request: Request):
+        """获取定时任务用例绑定列表或指定记录"""
         queryset = self.filter_queryset_by_data_scope(request, TasksDetails.objects.all())
         task_id = request.query_params.get('task_id')
         _type = request.query_params.get('type')
@@ -194,6 +200,7 @@ class TasksDetailsCRUD(ModelCRUD):
 
     @error_response('system')
     def post(self, request: Request):
+        """新增定时任务用例绑定"""
         _type = int(request.data.get('type'))
         task_id = int(request.data.get('task'))
         api_case_items = request.data.get('api_case_items')
@@ -327,6 +334,7 @@ class TasksDetailsViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_type_case_name(self, request: Request):
+        """按自动化类型获取可绑定用例名称"""
         _type = int(request.query_params.get('type'))
         task_id = request.query_params.get('task_id')
         task = None
@@ -420,6 +428,7 @@ class TasksDetailsViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def batch_set_cases(self, request: Request):
+        """批量设置定时任务绑定用例"""
         case_items = request.data.get('case_items')
         case_id_list = (
             [item.get('case_id') for item in case_items]

@@ -32,7 +32,7 @@ from src.apps.test_center.models import (
     TestSuiteDetails,
 )
 from src.apps.user.models import User
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.user.services.authorization.permission import PermissionMenuService
 
 
 class ApiCaseRevisionServiceTests(TestCase):
@@ -973,8 +973,8 @@ class ApiCaseRevisionServiceTests(TestCase):
         self.assertEqual(selection.checksum, revision_v1.checksum)
 
     def test_historical_revision_uses_frozen_shared_headers_without_current_queries(self):
-        from src.apps.auto_api.services.base.case_base import CaseBase
-        from src.apps.auto_api.services.base.case_parameter import CaseParameter
+        from src.apps.auto_api.services.execution.base.case_base import CaseBase
+        from src.apps.auto_api.services.execution.base.case_parameter import CaseParameter
 
         case_header = ApiHeaders.objects.create(
             project_product=self.product,
@@ -1011,7 +1011,7 @@ class ApiCaseRevisionServiceTests(TestCase):
             {'X-Scenario-Version': '{{ scenario_header_v1 }}'},
         )
         with patch(
-                'src.apps.auto_api.services.base.case_base.CaseDataFactory',
+                'src.apps.auto_api.services.execution.base.case_base.CaseDataFactory',
         ), patch.object(
             ApiHeaders.objects,
             'filter',
@@ -1078,7 +1078,7 @@ class ApiCaseRevisionServiceTests(TestCase):
         self.assertEqual(revision_v2.payload['data_factory_configs'][0]['sort'], 9)
 
     def test_runtime_test_case_uses_revision_aggregate(self):
-        from src.apps.auto_api.services.test_case.test_case import TestCase as RuntimeTestCase
+        from src.apps.auto_api.services.execution.cases.test_case import TestCase as RuntimeTestCase
 
         revision_v1 = ApiCaseRevisionService.record_current(self.case.id, source='test')
         self.case.name = '当前草稿 V2'
@@ -1087,7 +1087,7 @@ class ApiCaseRevisionServiceTests(TestCase):
         self.api_info.save(update_fields=['url', 'update_time'])
 
         with patch(
-                'src.apps.auto_api.services.base.api_base_test_setup.base_request.CacheDataValue.get_cache_value',
+                'src.apps.auto_api.services.execution.base.api_base_test_setup.base_request.CacheDataValue.get_cache_value',
                 return_value=15,
         ):
             runtime_case = RuntimeTestCase(
@@ -1120,7 +1120,7 @@ class ApiCaseRevisionServiceTests(TestCase):
         )
 
     def test_runtime_test_case_accepts_release_id_without_revision_id(self):
-        from src.apps.auto_api.services.test_case.test_case import TestCase as RuntimeTestCase
+        from src.apps.auto_api.services.execution.cases.test_case import TestCase as RuntimeTestCase
 
         revision = ApiCaseRevisionService.record_current(self.case.id, source='test')
         release = ApiCaseRevisionService._publish_revision(
@@ -1130,7 +1130,7 @@ class ApiCaseRevisionServiceTests(TestCase):
         )
 
         with patch(
-                'src.apps.auto_api.services.base.api_base_test_setup.base_request.CacheDataValue.get_cache_value',
+                'src.apps.auto_api.services.execution.base.api_base_test_setup.base_request.CacheDataValue.get_cache_value',
                 return_value=15,
         ):
             runtime_case = RuntimeTestCase(
@@ -1161,11 +1161,11 @@ class ApiCaseRevisionServiceTests(TestCase):
         self.assertEqual(case_data['published_version_label'], release.version_label)
 
     def test_runtime_rejects_frozen_checksum_mismatch(self):
-        from src.apps.auto_api.services.test_case.test_case import TestCase as RuntimeTestCase
+        from src.apps.auto_api.services.execution.cases.test_case import TestCase as RuntimeTestCase
 
         revision = ApiCaseRevisionService.record_current(self.case.id, source='test')
         with patch(
-                'src.apps.auto_api.services.base.api_base_test_setup.base_request.CacheDataValue.get_cache_value',
+                'src.apps.auto_api.services.execution.base.api_base_test_setup.base_request.CacheDataValue.get_cache_value',
                 return_value=15,
         ), self.assertRaises(AutoApiError):
             RuntimeTestCase(
@@ -1177,14 +1177,14 @@ class ApiCaseRevisionServiceTests(TestCase):
             )
 
     def test_api_request_uses_snapshot_api_without_reloading_current_row(self):
-        from src.apps.auto_api.services.base.api_base_test_setup import APIBaseTestSetup
+        from src.apps.auto_api.services.execution.base.api_base_test_setup import APIBaseTestSetup
         from src.apps.auto_api.schemas.execution import ApiExecutionRequest, ApiExecutionResponse
 
         revision = ApiCaseRevisionService.record_current(self.case.id, source='test')
         aggregate = ApiCaseRevisionService.load_execution_revision(revision.id)
         snapshot_api = aggregate.steps[0].api_info
         with patch(
-                'src.apps.auto_api.services.base.api_base_test_setup.base_request.CacheDataValue.get_cache_value',
+                'src.apps.auto_api.services.execution.base.api_base_test_setup.base_request.CacheDataValue.get_cache_value',
                 return_value=15,
         ):
             setup = APIBaseTestSetup()
@@ -1211,7 +1211,7 @@ class ApiCaseRevisionServiceTests(TestCase):
         self.assertEqual(result.code, 200)
 
     def test_revision_scenario_execution_uses_frozen_request_and_does_not_write_current_rows(self):
-        from src.apps.auto_api.services.test_case.test_case import TestCase as RuntimeTestCase
+        from src.apps.auto_api.services.execution.cases.test_case import TestCase as RuntimeTestCase
         from mangotools.enums import StatusEnum
         from src.apps.auto_api.schemas.execution import ApiExecutionResponse
 
@@ -1221,7 +1221,7 @@ class ApiCaseRevisionServiceTests(TestCase):
         self.parameter.body_config = {'json': {'contract_name': 'v2-current'}}
         self.parameter.save(update_fields=['body_config', 'update_time'])
         with patch(
-                'src.apps.auto_api.services.base.api_base_test_setup.base_request.CacheDataValue.get_cache_value',
+                'src.apps.auto_api.services.execution.base.api_base_test_setup.base_request.CacheDataValue.get_cache_value',
                 return_value=15,
         ):
             runtime_case = RuntimeTestCase(
@@ -1235,16 +1235,16 @@ class ApiCaseRevisionServiceTests(TestCase):
 
         with patch.object(runtime_case.test_setup, 'init_test_object'), \
                 patch.object(runtime_case.test_setup, 'init_public'), \
-                patch('src.apps.auto_api.services.test_case.test_case.GrayCaseExecutionRunner.apply_api_parameter',
+                patch('src.apps.auto_api.services.execution.cases.test_case.GrayCaseExecutionRunner.apply_api_parameter',
                       return_value=[]), \
-                patch('src.apps.auto_api.services.test_case.test_case.ParameterDataFactory.run_front'), \
-                patch('src.apps.auto_api.services.test_case.test_case.ParameterDataFactory.cleanup'), \
-                patch('src.apps.auto_api.services.test_case.test_case.CaseParameter.headers', return_value={}), \
-                patch('src.apps.auto_api.services.test_case.test_case.CaseParameter.front_main',
+                patch('src.apps.auto_api.services.execution.cases.test_case.ParameterDataFactory.run_front'), \
+                patch('src.apps.auto_api.services.execution.cases.test_case.ParameterDataFactory.cleanup'), \
+                patch('src.apps.auto_api.services.execution.cases.test_case.CaseParameter.headers', return_value={}), \
+                patch('src.apps.auto_api.services.execution.cases.test_case.CaseParameter.front_main',
                       side_effect=lambda request: request), \
-                patch('src.apps.auto_api.services.test_case.test_case.CaseParameter.posterior_main',
+                patch('src.apps.auto_api.services.execution.cases.test_case.CaseParameter.posterior_main',
                       return_value=response), \
-                patch('src.apps.auto_api.services.test_case.test_case.CaseParameter.ass_main',
+                patch('src.apps.auto_api.services.execution.cases.test_case.CaseParameter.ass_main',
                       return_value=([], StatusEnum.SUCCESS.value, None)), \
                 patch.object(runtime_case.test_setup, 'api_request', return_value=response) as api_request:
             execution_result = runtime_case.detailed_parameter(step)

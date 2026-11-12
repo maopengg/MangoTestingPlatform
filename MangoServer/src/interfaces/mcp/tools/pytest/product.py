@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from src.apps.auto_pytest.selectors.querysets import PytestQuerySelector
-from src.apps.auto_pytest.services.asset_mutation import PytestAssetMutationService
-from src.apps.auto_pytest.services.file_management import PytestFileManagementService
-from src.apps.auto_pytest.services.git_management.repository_lock import GitRepositoryLockService
+from src.apps.auto_pytest.services.assets.asset_mutation import PytestAssetMutationService
+from src.apps.auto_pytest.services.assets.file_management import PytestFileManagementService
+from src.apps.auto_pytest.services.repository.repository_lock import GitRepositoryLockService
 from src.interfaces.mcp.audit import mcp_current_user_id
 from src.interfaces.mcp.common import (
     create_dangerous_action_preview,

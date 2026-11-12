@@ -35,13 +35,6 @@
               <SnapshotSectionList :sections="frontAuthSections" empty-text="暂无授权配置" />
             </a-tab-pane>
             <a-tab-pane
-              key="gray"
-              title="灰度配置"
-              data-testid="qa-views-apitest-case-details-components-apicaseversionsnapshot-tab-pane-灰度配置"
-            >
-              <SnapshotSectionList :sections="caseGraySections" empty-text="暂无灰度配置" />
-            </a-tab-pane>
-            <a-tab-pane
               key="custom"
               title="自定义变量"
               data-testid="qa-views-apitest-case-details-components-apicaseversionsnapshot-tab-pane-自定义变量"
@@ -195,17 +188,6 @@
                     <SnapshotSectionList
                       :sections="scenarioFactorySections(scenario)"
                       empty-text="暂无数据工厂绑定"
-                      compact
-                    />
-                  </a-tab-pane>
-                  <a-tab-pane
-                    key="gray"
-                    title="灰度配置"
-                    data-testid="qa-views-apitest-case-details-components-apicaseversionsnapshot-tab-pane-灰度配置-2"
-                  >
-                    <SnapshotSectionList
-                      :sections="fieldSections(scenario, 'gray_configs', '灰度配置')"
-                      empty-text="暂无灰度配置"
                       compact
                     />
                   </a-tab-pane>
@@ -442,7 +424,6 @@
   const frontAuthSections = computed(() =>
     section(casePayload.value, 'front_auth_config', '授权配置')
   )
-  const caseGraySections = computed(() => section(runtimePayload.value, 'gray_configs', '灰度配置'))
   const frontCustomSections = computed(() =>
     section(casePayload.value, 'front_custom', '自定义变量')
   )
@@ -640,11 +621,17 @@
     flex: 1;
   }
 
+  .case-version-snapshot-tabs { display: flex; flex-direction: column; overflow: hidden; }
+  .case-version-snapshot-tabs :deep(> .arco-tabs-nav) { flex: none; }
+  .case-version-snapshot-tabs :deep(> .arco-tabs-content) { flex: 1; min-height: 0; overflow: hidden; padding-top: 1px; }
+
   .case-version-snapshot-tabs :deep(.arco-tabs-content),
   .case-version-snapshot-tabs :deep(.arco-tabs-content-list),
+  .case-version-snapshot-tabs :deep(.arco-tabs-content-item),
   .case-version-snapshot-tabs :deep(.arco-tabs-pane),
   .snapshot-left-tabs :deep(.arco-tabs-content),
   .snapshot-left-tabs :deep(.arco-tabs-content-list),
+  .snapshot-left-tabs :deep(.arco-tabs-content-item),
   .snapshot-left-tabs :deep(.arco-tabs-pane) {
     height: 100%;
     min-height: 0;

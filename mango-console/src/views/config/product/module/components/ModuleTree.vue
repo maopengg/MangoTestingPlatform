@@ -12,11 +12,11 @@
         <a-button size="small" @click="expandedKeys = []">全部收起</a-button>
       </a-space>
     </div>
-    <a-alert v-if="error" type="warning"
-      >{{ error }}
+    <MangoRequestFeedback v-if="error" :message="error"
+      >
       <a-button type="text" size="small" :loading="loading" @click="$emit('retry')"
         >重试</a-button
-      ></a-alert
+      ></MangoRequestFeedback
     >
     <MangoPanelSpin :loading="loading" class="mango-module-manager__panel">
       <a-tree

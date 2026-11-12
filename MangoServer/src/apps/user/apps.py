@@ -40,7 +40,7 @@ class UserConfig(AppConfig):
     def new_user(self):
         try:
             from src.apps.user.models import User
-            from src.apps.user.services.password import encode_plain_password
+            from src.apps.user.services.authentication.password import encode_plain_password
             if User.objects.exists():
                 return
             default_password = encode_plain_password(os.getenv('MANGO_INITIAL_ADMIN_PASSWORD', '123456'))

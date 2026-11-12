@@ -13,7 +13,7 @@ from src.apps.auto_ui.enums.live_stream import (
     LiveStreamEvent,
     LiveStreamRole,
 )
-from src.apps.auto_ui.services.executor_slot import ExecutorSlotLeaseService
+from src.apps.auto_ui.services.execution.executor_slot import ExecutorSlotLeaseService
 from src.apps.auto_ui.services.live_stream.constants import REALTIME_COMMAND_TTL_SECONDS
 from src.apps.auto_ui.services.live_stream.session_store import LiveStreamSessionStore
 from src.apps.auto_ui.services.live_stream.token_service import LiveStreamTokenService

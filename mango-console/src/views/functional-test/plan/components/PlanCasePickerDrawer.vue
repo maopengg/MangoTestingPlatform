@@ -9,12 +9,12 @@
     <div class="mango-plan-picker">
       <TableSearchPanel
         class="mango-plan-picker__search"
-        @search="loadCases"
-        @reset-search="resetSearch"
+        @search="autoSearch.run"
+        @reset-search="autoSearch.cancel(); resetSearch(); autoSearch.sync()"
       >
-        <a-form :model="filters" layout="inline" :disabled="saving" @keyup.enter="loadCases">
+        <a-form :model="filters" layout="inline" :disabled="saving" @keyup.enter="autoSearch.run">
           <a-form-item label="模块"
-            ><ProductModuleSelect
+            ><ProductModuleSelect @change="autoSearch.schedule"
               v-if="visible"
               v-model="filters.module"
               :project-product-id="subject?.productId"
@@ -24,15 +24,15 @@
               placeholder="全部模块"
           /></a-form-item>
           <a-form-item label="用例标题"
-            ><a-input v-model="filters.title" allow-clear
+            ><a-input @blur="autoSearch.schedule" @clear="autoSearch.schedule" @mouseleave="autoSearch.schedule" v-model="filters.title" allow-clear
           /></a-form-item>
           <a-form-item label="分类一"
-            ><a-input v-model="filters.category_level_1" allow-clear
+            ><a-input @blur="autoSearch.schedule" @clear="autoSearch.schedule" @mouseleave="autoSearch.schedule" v-model="filters.category_level_1" allow-clear
           /></a-form-item>
         </a-form>
       </TableSearchPanel>
       
-      <a-alert v-if="saveError" type="error">加入计划失败，已保留勾选项，请重试。</a-alert>
+      <MangoRequestFeedback v-if="saveError" :message="&quot;加入计划失败，已保留勾选项，请重试。&quot;" />
       <a-table
         class="mango-native-scroll-table mango-plan-picker__table"
         :data="rows"
@@ -69,8 +69,9 @@
   </a-drawer>
 </template>
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
+  import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
 
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import {
     onActivated,
     onBeforeUnmount,
@@ -241,8 +242,8 @@ import { reportLoadError } from '@/utils/load-error'
       Message.success('已加入计划')
       emit('changed', planId)
       return true
-    } catch {
-      if (current(version)) saveError.value = true
+    } catch (requestFailure) {
+      if (current(version)) saveError.value = requestFailureMessage(requestFailure, true, "加入计划失败，已保留勾选项，请重试。")
       return false
     } finally {
       saving.value = false
@@ -265,6 +266,8 @@ import { reportLoadError } from '@/utils/load-error'
     reset()
   })
   defineExpose({ open, isSaving, isOpen: () => visible.value })
+
+  const autoSearch = useDebouncedSearch(loadCases, () => filters, { enabled: () => visible.value && active && props.editable && !saving.value })
 </script>
 <style scoped>
   .mango-plan-picker {

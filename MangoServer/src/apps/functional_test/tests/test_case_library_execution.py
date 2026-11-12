@@ -1,4 +1,4 @@
-from src.apps.user.services.http_permission_registry import permission_for_view
+from src.apps.user.services.authorization.http_permission_registry import permission_for_view
 # -*- coding: utf-8 -*-
 from datetime import date
 from types import SimpleNamespace
@@ -30,11 +30,11 @@ from src.apps.functional_test.models import (
     ManualTestCase,
     ManualTestSuite,
 )
-from src.apps.functional_test.services.case_version import ManualTestCaseVersionService
-from src.apps.functional_test.services.defect import FunctionalTestDefectService
-from src.apps.functional_test.services.execution import FunctionalTestExecutionService
-from src.apps.functional_test.services.iteration import FunctionalTestIterationService
-from src.apps.functional_test.services.mutation import FunctionalTestMutationService
+from src.apps.functional_test.services.cases.case_version import ManualTestCaseVersionService
+from src.apps.functional_test.services.integration.defect import FunctionalTestDefectService
+from src.apps.functional_test.services.execution.execution import FunctionalTestExecutionService
+from src.apps.functional_test.services.requirements.iteration import FunctionalTestIterationService
+from src.apps.functional_test.services.cases.mutation import FunctionalTestMutationService
 from src.apps.system.api.views.system_api import SystemViews
 
 
@@ -275,7 +275,7 @@ class FunctionalTestPlanValidationTests(SimpleTestCase):
 
 
 class FunctionalTestSchedulingAndDefectTests(SimpleTestCase):
-    @patch('src.apps.system.services.system_config.SystemConfigService.get_environment_display_names', return_value={})
+    @patch('src.apps.system.services.configuration.system_config.SystemConfigService.get_environment_display_names', return_value={})
     def test_enum_api_exposes_research_quality_status_options(self, environment_names):
         response = SystemViews().enum_api(
             Request(APIRequestFactory().get("/api/system/enum")),

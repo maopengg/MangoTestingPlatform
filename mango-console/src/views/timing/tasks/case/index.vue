@@ -50,7 +50,7 @@
 
           
           
-          <a-alert v-if="bindingError" type="error">{{ bindingError }}</a-alert>
+          <MangoRequestFeedback v-if="bindingError" :message="(bindingError)" />
 
           <div class="mango-soft-panel mango-timing-case-filter">
             <a-form :model="addForm" layout="horizontal" @keyup.enter="loadCandidateCases">
@@ -321,7 +321,7 @@
           
           
           
-          <a-alert v-if="deletionError" type="error">{{ deletionError }}</a-alert>
+          <MangoRequestFeedback v-if="deletionError" :message="(deletionError)" />
 
           <div class="mango-soft-panel mango-timing-case-bound-filter">
             <a-form :model="boundFilter" layout="vertical">
@@ -529,14 +529,14 @@
             <p>当前列表根据任务保存的项目产品、模块、用例类型、测试场景和发布状态实时计算，仅供查看。</p>
           </div>
         </div>
-        <a-alert v-if="ruleError" type="error">{{ ruleError }}<a-button type="text" size="small" @click="loadRuleCases()">重试</a-button></a-alert>
+        <MangoRequestFeedback v-if="ruleError" :message="(ruleError)"><a-button type="text" size="small" @click="loadRuleCases()">重试</a-button></MangoRequestFeedback>
         <div class="mango-soft-panel mango-timing-case-rule-filter">
-          <a-form :model="ruleFilter" layout="inline" @keyup.enter="loadRuleCases(true)">
+          <a-form :model="ruleFilter" layout="inline" @keyup.enter="autoSearch.run">
             <a-form-item label="ID">
-              <a-input v-model="ruleFilter.caseId" allow-clear placeholder="请输入用例ID" @clear="loadRuleCases(true)" />
+              <a-input @blur="autoSearch.schedule" @mouseleave="autoSearch.schedule" v-model="ruleFilter.caseId" allow-clear placeholder="请输入用例ID" @clear="autoSearch.schedule" />
             </a-form-item>
             <a-form-item label="名称">
-              <a-input v-model="ruleFilter.caseName" allow-clear placeholder="请输入用例名称" @blur="loadRuleCases(true)" @clear="loadRuleCases(true)" />
+              <a-input @mouseleave="autoSearch.schedule" v-model="ruleFilter.caseName" allow-clear placeholder="请输入用例名称" @blur="autoSearch.schedule" @clear="autoSearch.schedule" />
             </a-form-item>
             <a-form-item label="用例类型">
               <a-select
@@ -548,7 +548,7 @@
                 :max-tag-count="1"
                 allow-clear
                 placeholder="全部类型"
-                @change="loadRuleCases(true)"
+                @change="autoSearch.schedule"
               />
             </a-form-item>
             <a-form-item label="模块">
@@ -559,7 +559,7 @@
                 :selectable-level="0"
                 :project-product-id="taskConfig?.project_product?.id"
                 placeholder="全部模块"
-                @change="loadRuleCases(true)"
+                @change="autoSearch.schedule"
               />
             </a-form-item>
             <a-form-item label="执行场景">
@@ -572,7 +572,7 @@
                 :max-tag-count="1"
                 allow-clear
                 placeholder="全部标签"
-                @change="loadRuleCases(true)"
+                @change="autoSearch.schedule"
               />
             </a-form-item>
           </a-form>
@@ -621,7 +621,7 @@
       </section>
       <div v-else class="mango-section-card mango-timing-case-initial-loading">
         <div class="mango-empty-state">
-          <p>{{ taskConfigError || '定时任务不存在或无权查看' }}</p>
+          <MangoRequestFeedback  :message="taskConfigError" />
           <a-button size="small" :loading="taskConfigLoading" @click="initializeTaskCases">重试</a-button>
         </div>
       </div>
@@ -630,8 +630,9 @@
 </template>
 
 <script lang="ts" setup>
-import { reportLoadError } from '@/utils/load-error'
+  import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
 
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import { useRoute } from 'vue-router'
@@ -1113,7 +1114,7 @@ import { reportLoadError } from '@/utils/load-error'
       if (selectionVersion === candidateRequestId && Number(addForm.type) === snapshot.type) addSelectionKeys.value = []
       needsReload = false; refreshAttempted = true
       await Promise.allSettled([loadBoundCaseKeys(), doRefresh()])
-    } catch { if (current()) bindingError.value = '添加用例失败，请重试' }
+    } catch (requestFailure) { if (current()) bindingError.value = requestFailureMessage(requestFailure, '添加用例失败，请重试') }
     finally { addLoading.value = false; if (!refreshAttempted || !current()) resume() }
   }
 
@@ -1148,7 +1149,7 @@ import { reportLoadError } from '@/utils/load-error'
           selectedRowKeys.value = selectedRowKeys.value.filter(key => !targetIds.includes(String(key)))
           needsReload = false; refreshAttempted = true
           await Promise.allSettled([loadBoundCaseKeys(), doRefresh()]); return true
-        } catch { if (current()) deletionError.value = '删除用例失败，请重试'; return false }
+        } catch (requestFailure) { if (current()) deletionError.value = requestFailureMessage(requestFailure, '删除用例失败，请重试'); return false }
         finally { deleteLoading.value = false; deletingIds.value = []; if (!refreshAttempted || !context()) resume() }
       },
     })
@@ -1325,6 +1326,8 @@ import { reportLoadError } from '@/utils/load-error'
   onActivated(() => { active = true; resume() })
   onDeactivated(() => { active = false; pause() })
   onBeforeUnmount(() => { disposed = true; pause(); document.removeEventListener('visibilitychange', visibilityChanged) })
+
+  const autoSearch = useDebouncedSearch(() => loadRuleCases(true), () => ruleFilter, { enabled: () => available() && !isManualScope.value })
 </script>
 
 <style lang="less" scoped>

@@ -1,4 +1,5 @@
 from copy import deepcopy
+from contextlib import nullcontext
 from datetime import timedelta
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -11,15 +12,15 @@ from django.utils import timezone
 from mangotools.enums import TaskEnum
 
 from src.apps.data_factory.schemas.performance import DatasourcePerformancePolicy
-from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService as Governor
+from src.apps.data_factory.services.governance.datasource_governor import DatasourceGovernorService as Governor
 from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
 from src.apps.task_center.services.execution.claim import ApiTaskClaimService as Claim
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.test_center.models import TestSuite, TestSuiteDetails
-from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService as Infrastructure
-from src.apps.test_center.services.test_suite.disposition import TestSuiteDispositionService
-from src.apps.test_center.services.test_suite.update_test_suite import UpdateTestSuite
-from src.apps.test_center.services.test_suite.retry import TestSuiteRetryService
+from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService as Infrastructure
+from src.apps.test_center.services.reporting.test_suite.disposition import TestSuiteDispositionService
+from src.apps.test_center.services.reporting.test_suite.update_test_suite import UpdateTestSuite
+from src.apps.test_center.services.reporting.test_suite.retry import TestSuiteRetryService
 from src.apps.auto_api.models import ApiCaseExecutionTrace, ApiCaseExecutionStep
 
 
@@ -113,6 +114,41 @@ class DatasourceClaimTests(TestCase):
         self.assertEqual(self.claim().test_suite, 2)
         self.assertEqual(self.details.filter(status=3).count(), 6)
 
+    def test_new_report_gets_turn_before_old_report_claims_every_remaining_slot(self):
+        self.add_cases(10)
+        self.assertEqual(self.claim().test_suite, 1)
+        other = self.suites.create(id=2, project_product_id=1, user_id=1, test_env=0,
+                                  api_concurrency_limit=100, status=2, is_notice=0)
+        self.add_cases(10, other)
+        self.assertEqual(self.claim().test_suite, 2)
+        self.assertEqual(self.claim().test_suite, 1)
+        self.assertEqual(self.claim().test_suite, 2)
+        self.assertEqual(self.details.filter(status=3).count(), 4)
+
+    def test_renewal_does_not_reorder_reports_after_dispatch(self):
+        self.add_cases(2)
+        first = self.resource_claim(platform_limit=2)
+        other = self.suites.create(id=2, project_product_id=1, user_id=1, test_env=0,
+                                  api_concurrency_limit=2, status=2, is_notice=0)
+        self.add_cases(2, other)
+        second = self.resource_claim(platform_limit=2)
+        self.assertEqual(second.test_suite, 2)
+        self.details.filter(id=first.test_suite_details).update(push_time=timezone.now() + timedelta(days=1))
+        order = Claim.candidate_suite_ids(timezone.now() - timedelta(hours=1), 3)
+        self.assertEqual(order[:2], [1, 2])
+
+    def test_candidate_scan_query_budget_does_not_grow_per_report(self):
+        from django.test.utils import CaptureQueriesContext
+        self.add_cases(3)
+        for index in range(2, 12):
+            suite = self.suites.create(id=index, project_product_id=1, user_id=1, test_env=0,
+                                      api_concurrency_limit=2, status=2, is_notice=0)
+            self.add_cases(2, suite)
+        with CaptureQueriesContext(self.connection) as captured:
+            order = Claim.candidate_suite_ids(timezone.now() - timedelta(hours=1), 3)
+        self.assertEqual(len(order), 11)
+        self.assertEqual(len(captured), 4)
+
     def test_legacy_empty_json_is_eligible_and_blocked_execution_is_never_replayed(self):
         self.add_cases(4)
         rows = list(self.details.order_by('id'))
@@ -133,8 +169,8 @@ class DatasourceClaimTests(TestCase):
 
     def test_blocking_ends_report_preserves_review_fence_and_allows_group_notice(self):
         from src.apps.data_factory.schemas.performance import DatasourceInfrastructureIssue
-        from src.apps.test_center.services.test_suite.send_notice import SendNotice
-        from src.apps.test_center.services.test_suite.retry import TestSuiteRetryService
+        from src.apps.test_center.services.reporting.test_suite.send_notice import SendNotice
+        from src.apps.test_center.services.reporting.test_suite.retry import TestSuiteRetryService
         from src.apps.test_center.exceptions import TestCenterError
         self.add_cases(1)
         command = self.claim()
@@ -157,9 +193,9 @@ class DatasourceClaimTests(TestCase):
         self.assertFalse(Infrastructure.block(row.id, command.attempt, [issue]))
 
     def test_block_review_requires_explicit_stopped_report_diagnosis_and_clean_resources(self):
-        from src.apps.test_center.services.test_suite.disposition import TestSuiteDispositionService as Disposition
-        from src.apps.test_center.services.test_suite.retry import TestSuiteRetryService
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+        from src.apps.test_center.services.reporting.test_suite.disposition import TestSuiteDispositionService as Disposition
+        from src.apps.test_center.services.reporting.test_suite.retry import TestSuiteRetryService
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
         from src.apps.test_center.exceptions import TestCenterError
         self.add_cases(1)
         command = self.claim()
@@ -168,11 +204,11 @@ class DatasourceClaimTests(TestCase):
         self.details.filter(id=command.test_suite_details).update(status=TaskEnum.STOPPED.value)
         values = {'failure_reason': 'platform', 'failure_description': '已独立核查原请求结果与零残留', 'is_excluded': False}
         raw_update = Disposition.update.__wrapped__
-        with patch('src.apps.test_center.services.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=True), \
+        with patch('src.apps.test_center.services.reporting.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=True), \
                 patch.object(DatasourceInfrastructureService, 'review_ready', return_value=False):
             with self.assertRaises(TestCenterError):
                 raw_update(Disposition, command.test_suite_details, values.copy(), user=SimpleNamespace(id=7))
-        with patch('src.apps.test_center.services.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=True), \
+        with patch('src.apps.test_center.services.reporting.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=True), \
                 patch.object(DatasourceInfrastructureService, 'review_ready', return_value=True):
             raw_update(Disposition, command.test_suite_details, values.copy(), user=SimpleNamespace(id=7))
         row = self.details.get(id=command.test_suite_details)
@@ -183,15 +219,15 @@ class DatasourceClaimTests(TestCase):
             TestSuiteRetryService.ensure_infrastructure_reviewed(row)
 
     def test_blocked_only_report_can_be_reviewed_without_stopping_or_changing_results(self):
-        from src.apps.test_center.services.test_suite.disposition import TestSuiteDispositionService as Disposition
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+        from src.apps.test_center.services.reporting.test_suite.disposition import TestSuiteDispositionService as Disposition
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
         self.add_cases(2)
         commands = [self.claim(), self.claim()]
         for command in commands:
             Infrastructure.block(command.test_suite_details, command.attempt, [])
         self.assertFalse(Infrastructure.has_live_details(self.suite.id))
         raw_update = Disposition.update.__wrapped__
-        with patch('src.apps.test_center.services.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=True), \
+        with patch('src.apps.test_center.services.reporting.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=True), \
                 patch.object(DatasourceInfrastructureService, 'review_ready', return_value=True):
             raw_update(Disposition, commands[0].test_suite_details,
                 {'failure_reason': 'platform', 'failure_description': '已核查旧请求与全部清理结果'},
@@ -204,7 +240,7 @@ class DatasourceClaimTests(TestCase):
         self.assertEqual(self.suites.get(id=self.suite.id).status, TaskEnum.FAIL.value)
 
     def test_pending_and_running_siblings_prevent_blocked_review(self):
-        from src.apps.test_center.services.test_suite.disposition import TestSuiteDispositionService as Disposition
+        from src.apps.test_center.services.reporting.test_suite.disposition import TestSuiteDispositionService as Disposition
         from src.apps.test_center.exceptions import TestCenterError
         self.add_cases(2)
         command = self.claim()
@@ -213,7 +249,7 @@ class DatasourceClaimTests(TestCase):
         for status in (TaskEnum.STAY_BEGIN.value, TaskEnum.PROCEED.value):
             self.details.exclude(id=command.test_suite_details).update(status=status, summary_data=None)
             self.assertTrue(Infrastructure.has_live_details(self.suite.id))
-            with patch('src.apps.test_center.services.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=True), \
+            with patch('src.apps.test_center.services.reporting.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=True), \
                     self.subTest(status=status), self.assertRaises(TestCenterError):
                 Disposition.update.__wrapped__(Disposition, command.test_suite_details,
                     {'failure_reason': 'platform', 'failure_description': '已核查'}, user=SimpleNamespace(id=7))
@@ -247,7 +283,7 @@ class DatasourceClaimTests(TestCase):
         self.assertEqual(self.details.exclude(id=command.test_suite_details).get().status, TaskEnum.STAY_BEGIN.value)
 
     def test_late_progress_cannot_resurrect_interrupted_execution(self):
-        from src.apps.test_center.services.test_suite.update_test_suite import UpdateTestSuite
+        from src.apps.test_center.services.reporting.test_suite.update_test_suite import UpdateTestSuite
         self.add_cases(1)
         command = self.claim()
         Infrastructure.block(command.test_suite_details, command.attempt, [])
@@ -285,7 +321,7 @@ class DatasourceClaimTests(TestCase):
         self.assertEqual(active.summary['execution_control'], control)
 
     def test_partial_passed_snapshot_does_not_turn_interrupted_report_into_success(self):
-        from src.apps.test_center.services.test_suite.summary import TestSuiteSummaryService
+        from src.apps.test_center.services.reporting.test_suite.summary import TestSuiteSummaryService
         self.add_cases(1)
         command = self.claim()
         self.details.filter(id=command.test_suite_details).update(
@@ -295,7 +331,7 @@ class DatasourceClaimTests(TestCase):
         self.assertEqual((counter['success'], counter['fail'], counter['proceed']), (0, 2, 0))
 
     def test_interrupted_notice_uses_normal_idempotent_delivery_without_unlocking_retry(self):
-        from src.apps.test_center.services.test_suite.send_notice import SendNotice
+        from src.apps.test_center.services.reporting.test_suite.send_notice import SendNotice
         from src.apps.system.enums import TestSuiteNoticeEnum
         self.add_cases(1)
         command = self.claim()
@@ -306,7 +342,7 @@ class DatasourceClaimTests(TestCase):
         notice = SendNotice.__new__(SendNotice)
         notice.test_suite = suite
         with patch('src.apps.task_center.services.scheduling.task_group_execution.ScheduledTaskGroupExecutionService.complete_test_suite', return_value=False), \
-                patch('src.apps.test_center.services.test_suite.send_notice.NoticeMain') as sender:
+                patch('src.apps.test_center.services.reporting.test_suite.send_notice.NoticeMain') as sender:
             notice.send_test_suite()
             notice.send_test_suite()
         sender.return_value.notice_main.assert_called_once_with(self.suite.id)
@@ -315,18 +351,18 @@ class DatasourceClaimTests(TestCase):
         self.assertTrue(row.summary_data['meta']['execution_control']['requires_review'])
 
     def test_blocked_review_still_requires_clean_resources_and_cannot_exclude(self):
-        from src.apps.test_center.services.test_suite.disposition import TestSuiteDispositionService as Disposition
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+        from src.apps.test_center.services.reporting.test_suite.disposition import TestSuiteDispositionService as Disposition
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
         from src.apps.test_center.exceptions import TestCenterError
         self.add_cases(1)
         command = self.claim()
         Infrastructure.block(command.test_suite_details, command.attempt, [])
-        with patch('src.apps.test_center.services.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=True), \
+        with patch('src.apps.test_center.services.reporting.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=True), \
                 patch.object(DatasourceInfrastructureService, 'review_ready', return_value=False):
             with self.assertRaises(TestCenterError):
                 Disposition.update.__wrapped__(Disposition, command.test_suite_details,
                     {'failure_reason': 'platform', 'failure_description': '已核查'}, user=SimpleNamespace(id=7))
-        with patch('src.apps.test_center.services.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=True):
+        with patch('src.apps.test_center.services.reporting.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=True):
             with self.assertRaises(TestCenterError):
                 Disposition.update.__wrapped__(Disposition, command.test_suite_details,
                     {'is_excluded': True}, user=SimpleNamespace(id=7))
@@ -335,8 +371,8 @@ class DatasourceClaimTests(TestCase):
         self.assertFalse(row.is_excluded)
 
     def test_retry_rechecks_resource_safety_and_same_attempt_after_review(self):
-        from src.apps.test_center.services.test_suite.retry import TestSuiteRetryService
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+        from src.apps.test_center.services.reporting.test_suite.retry import TestSuiteRetryService
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
         from src.apps.test_center.exceptions import TestCenterError
         self.add_cases(1)
         command = self.claim()
@@ -364,18 +400,18 @@ class DatasourceClaimTests(TestCase):
             self.assertIn('执行轮次', raised.exception.msg)
 
     def test_review_then_retry_reuses_original_report_and_only_resets_target(self):
-        from src.apps.test_center.services.test_suite.disposition import TestSuiteDispositionService as Disposition
-        from src.apps.test_center.services.test_suite.retry import TestSuiteRetryService as Retry
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+        from src.apps.test_center.services.reporting.test_suite.disposition import TestSuiteDispositionService as Disposition
+        from src.apps.test_center.services.reporting.test_suite.retry import TestSuiteRetryService as Retry
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
         self.add_cases(2)
         commands = [self.claim(), self.claim()]
         first_id, second_id = [command.test_suite_details for command in commands]
         Infrastructure.block(first_id, commands[0].attempt, [])
         self.details.filter(id=second_id).update(status=TaskEnum.SUCCESS.value, success=1)
-        with patch('src.apps.test_center.services.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=True), \
+        with patch('src.apps.test_center.services.reporting.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=True), \
                 patch.object(DatasourceInfrastructureService, 'review_ready', return_value=True), \
                 patch.object(Retry, 'refresh_current_api_release'), \
-                patch('src.apps.test_center.services.test_suite.retry.TestSuiteExecutionResultService.clear_result') as clear:
+                patch('src.apps.test_center.services.reporting.test_suite.retry.TestSuiteExecutionResultService.clear_result') as clear:
             Disposition.update.__wrapped__(Disposition, first_id,
                 {'failure_reason': 'platform', 'failure_description': '已核查旧执行与全部清理结果'},
                 user=SimpleNamespace(id=7))
@@ -390,7 +426,7 @@ class DatasourceClaimTests(TestCase):
         clear.assert_called_once_with([first_id])
 
     def test_late_recovery_summary_cannot_erase_unknown_result_review_fence(self):
-        from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService
+        from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService
         self.add_cases(1)
         command = self.claim()
         Infrastructure.block(command.test_suite_details, command.attempt, [])
@@ -401,7 +437,7 @@ class DatasourceClaimTests(TestCase):
         self.assertTrue(row.summary_data['meta']['execution_control']['requires_review'])
 
     def test_stale_progress_object_cannot_erase_persisted_block(self):
-        from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService as Results
+        from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService as Results
         self.add_cases(1)
         command = self.claim()
         stale = self.details.get(id=command.test_suite_details)
@@ -414,7 +450,7 @@ class DatasourceClaimTests(TestCase):
         self.assertEqual(row.status, TaskEnum.FAIL.value)
 
     def test_lazy_summary_backfill_cannot_erase_block_or_termination(self):
-        from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService as Results
+        from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService as Results
         self.add_cases(1)
         command = self.claim()
         Infrastructure.block(command.test_suite_details, command.attempt, [])
@@ -429,7 +465,7 @@ class DatasourceClaimTests(TestCase):
         self.assertEqual(row.summary_data['meta']['termination'], {'reason': 'timeout'})
 
     def test_late_summary_from_old_attempt_does_not_overwrite_new_attempt(self):
-        from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService as Results
+        from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService as Results
         self.add_cases(1)
         command = self.claim()
         stale = self.details.get(id=command.test_suite_details)
@@ -438,7 +474,7 @@ class DatasourceClaimTests(TestCase):
         self.assertTrue(self.details.get(id=stale.id).summary_data['meta']['new_attempt'])
 
     def test_old_attempt_backfill_cannot_overwrite_new_attempt(self):
-        from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService as Results
+        from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService as Results
         self.add_cases(1)
         command = self.claim()
         self.details.filter(id=command.test_suite_details).update(retry=2, summary_data={'children': [], 'meta': {'new_attempt': True}})
@@ -449,7 +485,7 @@ class DatasourceClaimTests(TestCase):
         self.assertTrue(self.details.get(id=command.test_suite_details).summary_data['meta']['new_attempt'])
 
     def test_old_attempt_payload_is_rejected_before_creating_latest_result(self):
-        from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService as Results
+        from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService as Results
         self.add_cases(1)
         command = self.claim()
         stale = self.details.get(id=command.test_suite_details)

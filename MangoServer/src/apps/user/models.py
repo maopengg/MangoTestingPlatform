@@ -28,6 +28,8 @@ class Role(models.Model):
                                     on_delete=models.SET_NULL, null=True, blank=True)
     name = models.CharField(verbose_name="角色名称", max_length=64)
     description = models.CharField(verbose_name="角色描述", max_length=64, null=True, blank=True)
+    # {version: 1, menu_keys: [菜单键], endpoint_permissions: {接口ID: endpoint_allow|endpoint_deny}}
+    authorization = models.JSONField(verbose_name="角色授权配置", default=dict, blank=True)
 
     class Meta:
         db_table = 'role'
@@ -50,14 +52,8 @@ class User(models.Model):
     password = models.CharField(verbose_name="登录密码", max_length=1024)
     role = models.ForeignKey(to=Role, to_field="id", on_delete=models.SET_NULL, null=True)
     ip = models.CharField(verbose_name="登录IP", max_length=64, null=True, blank=True)
-    # 已废弃：登录邮箱统一使用 username，仅保留历史表结构兼容。
-    mailbox = models.JSONField(verbose_name="邮箱", max_length=64, default=list, blank=True)
-    # 已废弃：新逻辑统一读写 config.personal_cache.preferences.selected_environment。
-    selected_environment = models.SmallIntegerField(verbose_name="选中的环境ID", null=True, blank=True)
-    last_login_time = models.DateTimeField(verbose_name="修改时间", null=True, blank=True)
-    # personal_cache 结构：{group_key: {"title": str, "items": {
-    # cache_key: {"title": str, "value": JSONValue, "value_type": str}}}}
-    config = models.JSONField(verbose_name="用户配置", default=dict, blank=True)
+    # [{key, name, value, value_type, description, clearable, updated_at}]，统一由 UserConfigService 维护。
+    config = models.JSONField(verbose_name="用户配置", default=list, blank=True)
     api_key = models.CharField(verbose_name="MCP APIKey", max_length=128, unique=True, null=True, blank=True)
     is_super_admin = models.BooleanField(verbose_name="是否超级管理员", default=False)
 
@@ -134,22 +130,6 @@ class UserDepartment(models.Model):
         unique_together = ('user', 'department')
 
 
-class RoleMenuPermission(models.Model):
-    """角色菜单与按钮权限表"""
-    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    update_user = models.ForeignKey(to=User, to_field="id", related_name="role_menu_permission_update_user",
-                                    on_delete=models.SET_NULL, null=True, blank=True)
-    role = models.ForeignKey(to=Role, to_field="id", on_delete=models.CASCADE)
-    permission_key = models.CharField(verbose_name="权限标识", max_length=128)
-    permission_type = models.CharField(verbose_name="权限类型", max_length=16, default='page')
-
-    class Meta:
-        db_table = 'role_menu_permission'
-        ordering = ['id']
-        unique_together = ('role', 'permission_key')
-
-
 class DepartmentProjectProductPermission(models.Model):
     """部门可访问项目产品表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
@@ -174,7 +154,7 @@ class DepartmentProjectProductPermission(models.Model):
 class UserLogs(models.Model):
     """用户登录日志表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    user = models.ForeignKey(to=User, to_field="id", on_delete=models.SET_NULL, null=True)
+    user = models.ForeignKey(to=User, to_field="id", on_delete=models.SET_NULL, null=True, blank=True)
     source_type = models.CharField(verbose_name="来源类型", max_length=64, null=True, blank=True)
     ip = models.CharField(verbose_name="IP", max_length=64, null=True, blank=True)
 

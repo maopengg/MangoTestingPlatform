@@ -30,7 +30,7 @@
       /></a-form-item>
       <a-form-item class="mango-simple-form-item" label="说明"><a-textarea v-model="form.description" /></a-form-item>
     </a-form>
-    <a-alert v-if="saveError" type="error">{{ saveError }}</a-alert>
+    <MangoRequestFeedback v-if="saveError" :message="(saveError)" />
     <template #footer>
       <a-space class="mango-modal-dialog-footer-actions">
         <a-button :disabled="savingDataset" @click="close">取消</a-button>
@@ -41,6 +41,8 @@
 </template>
 
 <script setup lang="ts">
+import { requestFailureMessage } from '@/utils/load-error'
+
   import { computed, onBeforeUnmount, onDeactivated, reactive, ref, watch } from 'vue'
   import { createEvaluationDataset, updateEvaluationDataset } from '@/api/evaluation'
   import { useEvaluationEnums } from '../../components/useEvaluationEnums'
@@ -91,9 +93,9 @@
       visible.value = false
       emit('saved')
       return true
-    } catch {
+    } catch (requestFailure) {
       if (current === generation && visible.value)
-        saveError.value = '数据集保存失败，草稿已保留，请重试'
+        saveError.value = requestFailureMessage(requestFailure, '数据集保存失败，草稿已保留，请重试')
       return false
     } finally {
       savingDataset.value = false

@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from src.apps.auto_api.enums import ApiAuthRefreshModeEnum, ApiAuthTypeEnum
 from src.apps.auto_api.models import ApiAuthConfig
-from src.apps.auto_api.services.api_auth_config import ApiAuthConfigService
+from src.apps.auto_api.services.authentication.api_auth_config import ApiAuthConfigService
 
 
 class ApiAuthConfigSerializers(serializers.ModelSerializer):

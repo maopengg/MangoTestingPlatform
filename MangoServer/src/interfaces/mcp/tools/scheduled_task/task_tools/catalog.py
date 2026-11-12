@@ -7,7 +7,7 @@ from pydantic import Field
 
 from src.apps.task_center.exceptions import TaskCenterError
 from src.apps.task_center.selectors.querysets import TaskCenterQuerySelector
-from src.apps.test_center.services.diagnostic_markdown import DiagnosticMarkdownService
+from src.apps.test_center.services.diagnostics.diagnostic_markdown import DiagnosticMarkdownService
 from src.interfaces.mcp.common import (
     fail,
     ok,

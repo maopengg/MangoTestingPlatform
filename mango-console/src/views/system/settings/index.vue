@@ -330,7 +330,7 @@
                             class="mango-system-settings__input"
                             @blur="saveItem(group, item)"
                           />
-                          <span v-if="itemValueError(item)" role="alert" class="mango-system-settings__test-result--error">{{ itemValueError(item) }}</span>
+                          <span data-feedback-kind="validation" v-if="itemValueError(item)" role="alert" class="mango-system-settings__test-result--error">{{ itemValueError(item) }}</span>
                           <span
                             v-if="itemSaving(item)"
                             class="mango-system-settings__help"
@@ -708,7 +708,7 @@ import { reportLoadError } from '@/utils/load-error'
       description: 'Worker、执行器与实时工作区容量',
       groupKeys: ['runtime'],
     },
-    { key: 'datasource-performance', title: '数据源性能保护', description: '实例限流、连接预算与清理容量', groupKeys: ['datasource_performance'] },
+    { key: 'datasource-performance', title: '数据源连接与清理', description: '连接复用、物理连接总量与严格清理', groupKeys: ['datasource_performance'] },
   ]
 
   const settingsGroups = ref<ConfigGroup[]>([])

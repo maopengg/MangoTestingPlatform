@@ -8,9 +8,7 @@
     :esc-to-close="!saving"
     @update:visible="onVisibleChange"
   >
-    <a-alert v-if="saveError" type="error" class="mango-suite-case-editor__error"
-      >保存失败，输入已保留。若版本冲突，请核对最新记录后重试。</a-alert
-    >
+    <MangoRequestFeedback v-if="saveError" :message="&quot;保存失败，输入已保留。若版本冲突，请核对最新记录后重试。&quot;" />
     
     <a-form :model="form" layout="horizontal" :disabled="saving">
       <a-grid :cols="2" :col-gap="16">
@@ -131,8 +129,7 @@
   </a-drawer>
 </template>
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, onActivated, onBeforeUnmount, onDeactivated, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
@@ -283,8 +280,8 @@ import { reportLoadError } from '@/utils/load-error'
       Message.success('保存成功')
       emit('changed', target.suiteId)
       return true
-    } catch {
-      if (current(version)) saveError.value = true
+    } catch (requestFailure) {
+      if (current(version)) saveError.value = requestFailureMessage(requestFailure, true, "保存失败，输入已保留。若版本冲突，请核对最新记录后重试。")
       return false
     } finally {
       saving.value = false

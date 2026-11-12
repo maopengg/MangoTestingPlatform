@@ -12,11 +12,8 @@ from src.apps.auto_ui.schemas.step_healing import (
     validate_condition_group,
     validate_healing_policy,
 )
-from src.apps.auto_ui.services.page_step_healing import (
-    AUTO_APPLIED_REVIEW_STATUS,
-    PageStepHealingService,
-)
-from src.apps.auto_ui.services.test_case.test_case import TestCase
+from src.apps.auto_ui.services.page_steps.page_step_healing import AUTO_APPLIED_REVIEW_STATUS, PageStepHealingService
+from src.apps.auto_ui.services.execution.cases.test_case import TestCase
 
 
 class PageStepHealingSchemaTest(SimpleTestCase):
@@ -208,11 +205,11 @@ class PageStepHealingSchemaTest(SimpleTestCase):
         detail = SimpleNamespace(id=9)
         detail_query.create.return_value = detail
         with (
-            patch('src.apps.auto_ui.services.page_step_healing.PageElement.objects.filter', return_value=element_query),
-            patch('src.apps.auto_ui.services.page_step_healing.PageStepsDetailed.objects.filter',
+            patch('src.apps.auto_ui.services.page_steps.page_step_healing.PageElement.objects.filter', return_value=element_query),
+            patch('src.apps.auto_ui.services.page_steps.page_step_healing.PageStepsDetailed.objects.filter',
                   return_value=detail_query),
-            patch('src.apps.auto_ui.services.page_step_healing.PageStepsDetailed.objects.create', return_value=detail),
-            patch('src.apps.auto_ui.services.page_step_healing.PageStepRecordingService._detail_payload',
+            patch('src.apps.auto_ui.services.page_steps.page_step_healing.PageStepsDetailed.objects.create', return_value=detail),
+            patch('src.apps.auto_ui.services.page_steps.page_step_healing.PageStepRecordingService._detail_payload',
                   return_value={'type': 0}),
         ):
             result = PageStepHealingService._insert_action(

@@ -17,7 +17,7 @@ class MockRequestLogCleanupTests(SimpleTestCase):
         self.assertEqual(job.handler, SchedulerSystemJobService.clean_mock_request_logs)
 
     @patch(
-        'src.apps.auto_api.services.mock_log_cleanup.MockRequestLogCleanupService.cleanup_before',
+        'src.apps.auto_api.services.mock.mock_log_cleanup.MockRequestLogCleanupService.cleanup_before',
         return_value=17,
     )
     @patch.object(SchedulerSystemJobService, 'retention_days', return_value=21)

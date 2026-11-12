@@ -85,9 +85,9 @@ def _selected_env(user_id: int | None, test_env_id: int | None) -> int:
     if test_env_id is not None:
         return test_env_id
     user = current_user(user_id)
-    from src.apps.user.services.user_cache import UserCacheService
+    from src.apps.user.services.preferences.user_config import UserConfigService
 
-    selected_environment = UserCacheService.selected_environment(user)
+    selected_environment = UserConfigService.selected_environment(user)
     if selected_environment is None:
         raise McpError(MCP_TEST_ENVIRONMENT_REQUIRED)
     return int(selected_environment)

@@ -18,9 +18,9 @@ from src.apps.functional_test.selectors.access_scope import (
     filter_manual_case_by_data_scope,
     has_manual_case_project_product_scope,
 )
-from src.apps.functional_test.services.case_version import ManualTestCaseVersionService
-from src.apps.functional_test.services.mutation import FunctionalTestMutationService
-from src.apps.functional_test.services.suite import ManualTestSuiteService
+from src.apps.functional_test.services.cases.case_version import ManualTestCaseVersionService
+from src.apps.functional_test.services.cases.mutation import FunctionalTestMutationService
+from src.apps.functional_test.services.suites.suite import ManualTestSuiteService
 from src.apps.test_center.models import ProductModule
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
@@ -95,6 +95,7 @@ class ManualTestCaseCRUD(ModelCRUD):
 
     @error_response("system")
     def get(self, request: Request):
+        """获取功能测试用例列表或指定记录"""
         query_dict = {}
         include_descendants = str(request.query_params.get("include_descendants") or "").lower() == "true"
         for key, values in dict(request.query_params.lists()).items():
@@ -145,6 +146,7 @@ class ManualTestCaseCRUD(ModelCRUD):
 
     @error_response("system")
     def post(self, request: Request):
+        """新增功能测试用例"""
         result = FunctionalTestMutationService.create_case(
             dict(request.data),
             self.get_request_user_id(request),
@@ -161,6 +163,7 @@ class ManualTestCaseCRUD(ModelCRUD):
 
     @error_response("system")
     def put(self, request: Request):
+        """修改功能测试用例"""
         instance = self.model.objects.filter(id=request.data.get("id")).first()
         if not instance:
             return ResponseData.fail(RESPONSE_MSG_0158)
@@ -182,6 +185,7 @@ class ManualTestCaseCRUD(ModelCRUD):
 
     @error_response("system")
     def delete(self, request: Request):
+        """删除功能测试用例"""
         ids = self._extract_delete_ids(request)
         if not ids:
             return ResponseData.fail(RESPONSE_MSG_0029)
@@ -223,6 +227,7 @@ class ManualTestCaseViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def batch_create(self, request: Request):
+        """批量创建功能测试用例"""
         result = FunctionalTestMutationService.bulk_create_cases(
             request.data.get("items"),
             ModelCRUD.get_operator_id(request),
@@ -247,6 +252,7 @@ class ManualTestCaseViews(ViewSet):
     @action(methods=["put"], detail=False)
     @error_response("system")
     def batch_update(self, request: Request):
+        """批量更新功能测试用例"""
         updates = request.data.get("updates")
         normalized, errors = FunctionalTestMutationService.normalize_bulk_case_updates(updates)
         if errors:
@@ -271,6 +277,7 @@ class ManualTestCaseViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def module_counts(self, request: Request):
+        """统计功能测试用例的模块分布"""
         project_product_id = int(request.query_params.get("project_product"))
         queryset = filter_manual_case_by_data_scope(request, ManualTestCase.objects.all())
         data = ManualTestSuiteService.module_counts(queryset, project_product_id)
@@ -279,6 +286,7 @@ class ManualTestCaseViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def case_modules(self, request: Request):
+        """获取功能测试用例模块分布"""
         queryset = filter_manual_case_by_data_scope(request, ManualTestCase.objects.filter(module__isnull=False))
         project_product_id = request.query_params.get("project_product_id")
         products_queryset = queryset
@@ -335,6 +343,7 @@ class ManualTestCaseViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def case_detail(self, request: Request):
+        """获取功能测试用例详情"""
         case = filter_manual_case_by_data_scope(request, ManualTestCase.objects.all()).get(
             id=request.query_params.get("id"))
         return ResponseData.success(RESPONSE_MSG_0001, ManualTestCaseSerializerC(instance=case).data)
@@ -342,6 +351,7 @@ class ManualTestCaseViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def category_options(self, request: Request):
+        """获取功能测试用例分类选项"""
         queryset = filter_manual_case_by_data_scope(request, ManualTestCase.objects.all())
         project_product_id = request.query_params.get("project_product")
         module_id = request.query_params.get("module")
@@ -374,6 +384,7 @@ class ManualTestCaseViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def versions(self, request: Request):
+        """获取功能测试用例版本记录"""
         case = filter_manual_case_by_data_scope(
             request,
             ManualTestCase.objects.all(),
@@ -390,6 +401,7 @@ class ManualTestCaseViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def rewrite_preview(self, request: Request):
+        """预览功能测试用例改写结果"""
         case = filter_manual_case_by_data_scope(request, ManualTestCase.objects.all()).get(
             id=request.data.get("case_id"))
         instruction = request.data.get("user_instruction") or ""
@@ -401,6 +413,7 @@ class ManualTestCaseViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def rewrite_confirm(self, request: Request):
+        """确认保存功能测试用例改写结果"""
         case = filter_manual_case_by_data_scope(request, ManualTestCase.objects.all()).get(
             id=request.data.get("case_id"))
         fields = request.data.get("fields") or {}

@@ -32,7 +32,7 @@
               <span v-if="data.durationText">耗时：{{ data.durationText }}</span>
               <span v-if="data.pageTitle">页面标题：{{ data.pageTitle }}</span>
               <span v-if="data.pageUrl">页面地址：{{ data.pageUrl }}</span>
-              <span v-if="data.errorMessage" class="mango-ui-case-result-popover__error">
+              <span data-feedback-kind="execution-result" v-if="data.errorMessage" class="mango-ui-case-result-popover__error">
                 错误：{{ data.errorMessage }}
               </span>
             </div>

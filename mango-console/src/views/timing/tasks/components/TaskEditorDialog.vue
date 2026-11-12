@@ -2,7 +2,7 @@
   <ModalDialog ref="dialog" :title="recordId === null ? '新增' : '编辑'" width="min(760px, calc(100vw - 32px))" @confirm="save" @cancel="close">
     <template #content>
       
-      <a-alert v-if="saveError" type="error" class="mango-task-editor-error">{{ saveError }}</a-alert>
+      <MangoRequestFeedback v-if="saveError" :message="(saveError)" />
       <a-form :model="form" layout="horizontal" class="mango-task-form" :disabled="saving">
         <section class="mango-task-form-group">
           <header class="mango-task-form-group__header"><strong>基础信息</strong><span>设置任务名称及所属产品、模块</span></header>
@@ -43,8 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
 import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useRoute } from 'vue-router'
@@ -206,7 +205,7 @@ async function save(): Promise<boolean> {
     if (key === identity() && available()) emit('saved')
     if (current()) { close(); Message.success(id === null ? '任务已新增' : '任务已保存') }
     return true
-  } catch { if (current()) saveError.value = '任务保存失败，请重试'; return false }
+  } catch (requestFailure) { if (current()) saveError.value = requestFailureMessage(requestFailure, '任务保存失败，请重试'); return false }
   finally { saving.value = false; if (version === editorVersion) dialog.value?.setConfirmLoading(false) }
 }
 function visibilityChanged() { if (document.visibilityState !== 'visible') close() }

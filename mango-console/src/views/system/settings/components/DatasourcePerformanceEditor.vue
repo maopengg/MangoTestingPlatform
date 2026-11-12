@@ -1,10 +1,10 @@
 <template>
   <div class="mango-datasource-performance">
     <p class="mango-datasource-performance__hint">
-      所有实例统一使用对应数据源类型的配置。同地址、同端口的连接共享限额，账号与权限仍隔离。同一实例请统一连接入口，避免多个域名被计为不同实例。清理保留容量不可关闭；等待清理不会提前判为通过。
+      Case 并发是主要执行控制，不再对 SQL、Redis、ES 操作另行限频。这里只保护同实例物理连接总量，保留清理连接容量；连接不足时等待，不能提前判为通过。
     </p>
     <p v-if="notice" class="mango-datasource-performance__error" role="status">{{ notice }}</p>
-    <p v-if="modelError" class="mango-datasource-performance__error" role="alert">{{ modelError }}</p>
+    <p data-feedback-kind="validation" v-if="modelError" class="mango-datasource-performance__error" role="alert">{{ modelError }}</p>
     
     <section v-for="kind in kinds" :key="kind.key" class="mango-datasource-performance__section">
       <h4>{{ kind.label }}</h4>
@@ -25,12 +25,11 @@
       <div v-for="item in runtime.rows" :key="item.group" class="mango-datasource-performance__instance">
         <div>连接 ID：{{ item.connections.join('、') }}</div>
         <p class="mango-datasource-performance__hint">
-          执行占用 {{ item.counts?.operation_active || 0 }} / {{ item.budget.concurrency }} ·
-          连接预留 {{ item.counts?.connection_active || 0 }} / {{ item.budget.connections }} ·
-          排队 {{ item.queued || 0 }} · 限流命中 {{ item.throttled || 0 }}
+          物理连接占用 {{ item.counts.connection_active + item.counts.connection_suspect }} / {{ item.budget.connections }} ·
+          {{ item.connection_waiting ? '正在等待可用连接' : '近期无连接容量等待' }}
         </p>
-        <p v-if="item.counts?.operation_suspect || item.counts?.connection_suspect" class="mango-datasource-performance__error">
-          存在结果未知的占用，仍计入限额；请核查执行记录与数据源状态，不会到期自动放行。
+        <p v-if="item.counts?.connection_suspect" class="mango-datasource-performance__error">
+          存在 {{ item.counts.connection_suspect }} 个关闭状态未确认的连接；请核查原连接和进程证据，不能按过期直接释放。
         </p>
       </div>
     </section>
@@ -48,13 +47,14 @@
         <div v-if="field.hint" class="mango-system-settings__aside"><span class="mango-system-settings__help">{{ field.hint }}</span></div>
       </div>
     </section>
-    <p v-if="error" class="mango-datasource-performance__error" role="alert">{{ error }}</p>
+    <p data-feedback-kind="validation" v-if="error" class="mango-datasource-performance__error" role="alert">{{ error }}</p>
     <span v-if="loading" role="status">正在保存数据源策略…</span>
   </div>
 </template>
 
 <script setup lang="ts">
   import { computed, reactive, ref, toRaw, watch } from 'vue'
+  import { reportLoadError } from '@/utils/load-error'
   import { createDatasourcePolicy, datasourcePolicyPayload, parseDatasourceRuntime } from '../datasource-policy'
   import type { DatasourceBudget, DatasourceSharedBudget, DatasourceKind, DatasourceField, DatasourcePolicy } from '../datasource-policy'
 
@@ -62,24 +62,14 @@
   const emit = defineEmits<{ (event: 'update:modelValue', value: DatasourcePolicy): void; (event: 'save'): void }>()
   const kinds: { key: DatasourceKind; label: string }[] = [{ key: 'mysql', label: 'MySQL' }, { key: 'redis', label: 'Redis' }, { key: 'elasticsearch', label: 'Elasticsearch' }]
   const budgetFields: DatasourceField<keyof DatasourceBudget>[] = [
-    { key: 'cleanup_backlog_limit', label: '自动清理积压水位（明细数）', min: 1, max: 10000, hint: '同实例待自动清理明细达到此数量后，新的工厂造数等待清理排空；不是Case并发上限。调高会增加未清理数据积压。' },
-    { key: 'concurrency', label: '数据源操作并发上限', min: 2, max: 64, hint: '同实例同时执行的数据源操作总量，包含清理；额度满时排队。不限制Case业务API并发，调高会增加数据源压力。' },
-    { key: 'requests_per_second', label: '数据源操作每秒请求', min: 2, max: 1000, hint: '同实例每秒补充的数据源操作额度，包含清理；不是业务API请求速率。调低会延长排队，调高会增加数据源负载。' },
-    { key: 'connections', label: '连接总数（含空闲）', min: 2, max: 128, hint: '同实例跨进程共享的物理连接预算，空闲池连接也计入。不是每个Worker各有此额度，需大于单池连接数以保留清理容量。' },
-    { key: 'cleanup_reserved', label: '清理保留并发', min: 1, max: 32, hint: '从操作并发总额中留给清理的名额，不额外增加总并发。不可关闭且须小于总并发，避免造数和查询占满后无法清理。' },
-    { key: 'cleanup_rate_percent', label: '清理保留速率（%）', min: 1, max: 90, hint: '总请求速率中留给清理的比例，不是额外额度。调高会减少普通操作可用速率；清理容量不能关闭。' },
-    { key: 'metadata_per_second', label: '元数据每秒请求', min: 1, max: 10, hint: '限制表结构、索引发现及连接测试等元数据操作的速率，同时受实例总速率限制；不限制业务API请求。' },
+    { key: 'connections', label: '物理连接总数（含空闲）', min: 2, max: 128, hint: '同实例跨进程共享的物理连接上限，不是SQL并发。已有连接可直接执行；容量满时只等待新连接，清理保留一个池的连接容量。' },
   ]
   const sharedFields: DatasourceField<keyof DatasourceSharedBudget>[] = [
-    { key: 'cleanup_consumer_threads', label: '清理消费线程数', min: 1, max: 16, hint: '每个scheduler处理正式报告清理任务的线程数，默认2个；无报告执行仍同步清理。保存后下一轮调整，缩容等待当前阶段完成，不扩大数据源总限额。' },
-    { key: 'queue_timeout_seconds', label: '排队凭据续期窗口（秒）', min: 1, max: 120, hint: '等待者定期续期其排队登记，停止续期的登记到期后移除。不是SQL超时，也不是Case最长排队时间。' },
-    { key: 'max_waiters', label: '实例等待队列上限', min: 1, max: 256, hint: '每个实例最多登记的等待者数量，默认256；未登记的操作继续等待。不是Case总数或业务API并发上限，调高会增加协调开销。' },
-    { key: 'permit_lease_seconds', label: '配额租约（秒）', min: 30, max: 3600, hint: '运行中的配额占用需在此窗口内续约；过期后先核查，不会自动释放结果未知的占用。设置过短会增加续约中断导致待核查的风险。' },
-    { key: 'pool_size', label: '单进程每池连接数', min: 1, max: 8, hint: '单个进程内每个连接池的连接额度，仍受同实例连接总预算限制；须小于实例连接总数，调高会增加连接占用。' },
-    { key: 'transaction_statement_budget', label: '事务 SQL 速率预留批量', min: 2, max: 64, hint: '事务开始前一次最多预留多少条SQL的速率额度，不限制事务SQL总数；后续不足时继续等待额度，不跳过SQL。' },
-    { key: 'pool_idle_seconds', label: '空闲池回收（秒）', min: 5, max: 600, hint: '连接池空闲超过此时长后可回收。调低可减少空闲占用，但会增加重建连接的开销；不会强行中断正在使用的连接。' },
-    { key: 'max_local_pools', label: '进程连接池数量上限', min: 1, max: 128, hint: '限制每个进程保留的连接池数量，不是物理连接总数；不同配置可能使用不同池，所有池仍受实例连接总预算约束。' },
-    { key: 'cleanup_completion_seconds', label: '清理处理预算（不含排队，秒）', min: 60, max: 3600, hint: '累计实际清理处理时间的上限，不含资源排队等待。超限后仍保留清理责任，不能提前判为通过；调低可能使清理无法完成。' },
+    { key: 'cleanup_consumer_threads', label: '清理消费线程数', min: 1, max: 16, hint: '每个scheduler默认2个线程；有正式报告的清理交给scheduler，无报告仍同步清理。必须等待清理和回查完成才汇总结果。' },
+    { key: 'pool_size', label: '单进程每池连接数', min: 1, max: 8, hint: '默认4个，连接用满后等待。普通与清理使用独立池，仍受实例物理连接总量保护；不限制业务API并发。' },
+    { key: 'pool_idle_seconds', label: '空闲池回收（秒）', min: 5, max: 600, hint: '默认60秒；只回收闲置连接，不中断使用中的连接。' },
+    { key: 'max_local_pools', label: '闲置连接池缓存上限', min: 1, max: 128, hint: '默认32个。超过时回收闲置池，不因活跃池较多拒绝Case或阻止另一个数据源连接。' },
+    { key: 'cleanup_completion_seconds', label: '清理处理预算（不含等待，秒）', min: 60, max: 3600, hint: '默认300秒；只计算实际处理，不包含连接或scheduler等待。超限保留清理责任，不能跳过校验或判为成功。' },
   ]
   const draft = reactive(createDatasourcePolicy({}))
   const error = ref(''), modelError = ref('')
@@ -88,6 +78,9 @@
     try { return { rows: parseDatasourceRuntime(props.runtimeStatus ?? []), error: '' } }
     catch { return { rows: [], error: '数据源运行状态格式异常，请重新读取系统配置' } }
   })
+  watch(() => runtime.value.error, message => {
+    if (message) reportLoadError(new Error(message), message)
+  }, { immediate: true })
   watch(() => props.modelValue, value => {
     if (lastEmission !== null && toRaw(value) === lastEmission) return
     try { Object.assign(draft, createDatasourcePolicy(value)); modelError.value = ''; error.value = '' }

@@ -6,9 +6,9 @@ from django.test import SimpleTestCase, override_settings
 from django.utils import timezone
 
 from src.apps.data_factory.models import Database
-from src.apps.data_factory.services.datasource_discovery import DataSourceDiscoveryService
-from src.apps.data_factory.services.datasource_target import DatasourceTargetService
-from src.apps.data_factory.services.discover import DataFactoryDiscover
+from src.apps.data_factory.services.datasource.datasource_discovery import DataSourceDiscoveryService
+from src.apps.data_factory.services.datasource.datasource_target import DatasourceTargetService
+from src.apps.data_factory.services.schema.discover import DataFactoryDiscover
 from src.apps.test_center.exceptions import TestCenterError
 
 
@@ -48,7 +48,7 @@ class DataSourceDiscoveryTests(SimpleTestCase):
         first = DatasourceTargetService.build(self.database, database_name='first')
         second = DatasourceTargetService.build(self.database, database_name='second')
         with patch.object(DataFactoryDiscover, 'get_tables', return_value=[{'name': 'orders'}]) as discover, \
-                patch('src.apps.data_factory.services.datasource_discovery.DataSourceConnectionService.timeout_seconds',
+                patch('src.apps.data_factory.services.datasource.datasource_discovery.DataSourceConnectionService.timeout_seconds',
                       return_value=5):
             DataSourceDiscoveryService.tables(first)
             DataSourceDiscoveryService.tables(first)
@@ -61,9 +61,9 @@ class DataSourceDiscoveryTests(SimpleTestCase):
         self.database.db_type = 1
         engine = MagicMock()
         engine.connect.return_value.__enter__.return_value.execute.return_value = [('app',)]
-        with patch('src.apps.data_factory.services.datasource_discovery.DataFactoryDatasource.create_engine',
+        with patch('src.apps.data_factory.services.datasource.datasource_discovery.DataFactoryDatasource.create_engine',
                    return_value=engine), \
-                patch('src.apps.data_factory.services.datasource_discovery.DataSourceConnectionService.timeout_seconds',
+                patch('src.apps.data_factory.services.datasource.datasource_discovery.DataSourceConnectionService.timeout_seconds',
                       return_value=5):
             self.assertEqual(['app'], DataSourceDiscoveryService.discover_database_names(
                 DatasourceTargetService.maintenance(self.database)))
@@ -81,11 +81,11 @@ class DataSourceDiscoveryTests(SimpleTestCase):
         connection = engine.connect.return_value.__enter__.return_value
         connection.execute.return_value.mappings.return_value = [{'name': 'scores', 'comment': '评分记录'}]
         with patch.object(DataSourceDiscoveryService, 'get_database', return_value=self.database), \
-                patch('src.apps.data_factory.services.datasource_discovery.DataFactoryDatasource.create_engine',
+                patch('src.apps.data_factory.services.datasource.datasource_discovery.DataFactoryDatasource.create_engine',
                       return_value=engine), \
-                patch('src.apps.data_factory.services.datasource_discovery.DataSourceConnectionService.timeout_seconds',
+                patch('src.apps.data_factory.services.datasource.datasource_discovery.DataSourceConnectionService.timeout_seconds',
                       return_value=5), \
-                patch('src.apps.data_factory.services.datasource_discovery.AiService.json_chat') as ai:
+                patch('src.apps.data_factory.services.datasource.datasource_discovery.AiService.json_chat') as ai:
             ai.return_value = {'choices': [{'message': {
                 'content': json.dumps({'alias': '评测库', 'reason': '评分用途', 'confidence': 'medium'})}}]}
             result = DataSourceDiscoveryService.suggest_alias(10, 'evaluation')
@@ -101,7 +101,7 @@ class DataSourceDiscoveryTests(SimpleTestCase):
     def test_alias_without_library_does_not_read_tables(self):
         with patch.object(DataSourceDiscoveryService, 'get_database', return_value=self.database), \
                 patch.object(DataSourceDiscoveryService, 'alias_metadata') as metadata, \
-                patch('src.apps.data_factory.services.datasource_discovery.AiService.json_chat') as ai:
+                patch('src.apps.data_factory.services.datasource.datasource_discovery.AiService.json_chat') as ai:
             ai.return_value = {
                 'choices': [{'message': {'content': '{"alias":"测试库","reason":"参考连接","confidence":"low"}'}}]}
             self.assertFalse(DataSourceDiscoveryService.suggest_alias(10)['metadata_available'])

@@ -25,6 +25,21 @@ PYDANTIC_BASES = {
     "TrimmedStrictSchema",
 }
 
+SERVICE_CAPABILITY_GROUPS = {
+    'auto_api': 'api_case api_import api_info authentication callbacks configuration coverage execution execution_trace mock protocols resource_cleanup',
+    'auto_pytest': 'assets execution reporting repository synchronization',
+    'auto_ui': 'assets authentication cases elements execution live_stream page_steps pages reporting',
+    'data_factory': 'assets cleanup datasource execution governance pool preview protocols recovery reporting schema sql',
+    'evaluation': 'assets dataset execution grading model reporting targets workflow',
+    'functional_test': 'cases execution integration requirements suites',
+    'monitoring': 'diagnostics execution logging tasks',
+    'perf': 'capacity compilation execution reporting scenario security',
+    'system': 'actuator ai catalog configuration coordination initialization notice runtime_center runtime_kv socket_link',
+    'task_center': 'execution scheduling selection workbench',
+    'test_center': 'datasource diagnostics environment project reporting results storage',
+    'user': 'account authentication authorization preferences audit',
+}
+
 
 def _python_files(root: Path):
     return (
@@ -80,6 +95,26 @@ def _enum_members(node: ast.ClassDef) -> dict[str, str]:
 
 
 class ArchitectureBoundaryTests(SimpleTestCase):
+    def test_service_implementations_live_in_registered_capability_groups(self):
+        violations = []
+        service_apps = {app.name for app in APPS_ROOT.iterdir()
+                        if (app / 'apps.py').is_file() and (app / 'services').is_dir()}
+        self.assertEqual(service_apps, set(SERVICE_CAPABILITY_GROUPS))
+        for app_name, groups in SERVICE_CAPABILITY_GROUPS.items():
+            root = APPS_ROOT / app_name / 'services'
+            allowed = set(groups.split())
+            for source in _python_files(root):
+                relative = source.relative_to(root)
+                if source.name == '__init__.py':
+                    continue
+                if len(relative.parts) == 1 or relative.parts[0] not in allowed:
+                    violations.append(str(source.relative_to(SRC_ROOT)))
+            actual = {directory.name for directory in root.iterdir()
+                      if directory.is_dir() and directory.name != '__pycache__'
+                      and any(path.name != '__init__.py' for path in _python_files(directory))}
+            self.assertEqual(allowed, actual, app_name)
+        self.assertEqual([], violations, 'Service 按 AGENTS.md 的业务能力分组，禁止根级平铺或未登记分类')
+
     # Temporary ceilings capture the pre-cleanup architecture debt. Each focused
     # migration removes its ceiling and replaces it with a zero-tolerance guard.
     DRF_SERIALIZERS_OUTSIDE_HTTP_BASELINE = 0

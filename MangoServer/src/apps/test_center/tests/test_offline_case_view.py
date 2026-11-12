@@ -6,7 +6,7 @@ from pathlib import Path
 
 from django.test import SimpleTestCase
 
-from src.apps.test_center.services.offline_report.renderer import ReportHtmlService
+from src.apps.test_center.services.reporting.offline_report.renderer import ReportHtmlService
 from src.apps.test_center.tests.test_offline_api_details import api_example
 from src.apps.test_center.tests.test_report_delivery import sample_snapshot
 
@@ -49,7 +49,7 @@ class OfflineCaseViewTests(SimpleTestCase):
         content = ReportHtmlService.render(snapshot, '示例平台').decode()
         scripts = re.findall(r'<script>(.*?)</script>', content, re.S)
         self.assertEqual(len(scripts), 1)
-        asset = Path(__file__).parents[1] / 'services/offline_report/assets/report.js'
+        asset = Path(__file__).parents[1] / 'services/reporting/offline_report/assets/report.js'
         self.assertEqual(scripts[0], asset.read_text())
         digest = base64.b64encode(hashlib.sha256(scripts[0].encode()).digest()).decode()
         self.assertIn(f"script-src 'sha256-{digest}'", content)

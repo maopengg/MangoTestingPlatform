@@ -24,6 +24,9 @@ export function reportId(value: unknown): ReportId | null {
   if (typeof value === 'number') return Number.isSafeInteger(value) && value >= 0 ? value : null
   return typeof value === 'string' && /^\d+$/.test(value) ? value : null
 }
+export function reportOptionValue(value: unknown): ReportId | null {
+  return typeof value === 'string' ? value.trim() || null : reportId(value)
+}
 export function reportNumber(value: unknown): number | null {
   if (typeof value !== 'number' && !(typeof value === 'string' && /^\d+(\.\d+)?$/.test(value))) return null
   return Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : null
@@ -47,8 +50,8 @@ export function parseReportRow(value: unknown): ReportRow | null {
     id, execution_name: reportText(row.execution_name), status: reportNumber(row.status),
     report_conclusion: reportNumber(row.report_conclusion), test_env: reportNumber(row.test_env),
     is_notice: reportNumber(row.is_notice), api_concurrency_limit: reportNumber(row.api_concurrency_limit),
-    execution_scope: reportId(row.execution_scope),
-    execution_scenes: Array.isArray(row.execution_scenes) ? row.execution_scenes.map(reportId).filter((item): item is ReportId => item !== null) : [],
+    execution_scope: reportOptionValue(row.execution_scope),
+    execution_scenes: Array.isArray(row.execution_scenes) ? row.execution_scenes.map(reportOptionValue).filter((item): item is ReportId => item !== null) : [],
     automation_types: Array.isArray(row.automation_types) ? row.automation_types.map(reportNumber).filter((item): item is number => item !== null) : [],
     diagnostic_file_path: reportText(row.diagnostic_file_path), create_time: reportText(row.create_time),
     execution_summary: Object.fromEntries(summaryKeys.map(key => [key, reportNumber(summary[key]) ?? 0])) as Record<ReportSummaryKey, number>,

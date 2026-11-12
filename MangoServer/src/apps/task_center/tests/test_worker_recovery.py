@@ -12,12 +12,207 @@ from src.apps.task_center.services.execution.claim import ApiTaskClaimService
 from src.apps.task_center.services.execution.worker_recovery import ApiWorkerRecoveryService as Recovery
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.test_center.models import Project, ProjectProduct, TestSuite, TestSuiteDetails
-from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService as Results
-from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService as Infrastructure
+from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService as Results
+from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService as Infrastructure
 from src.apps.user.models import User
 
 
 class ProcessIdentityTests(SimpleTestCase):
+    def setUp(self):
+        policy = patch('src.apps.data_factory.services.governance.datasource_governor.DatasourceGovernorService.policy')
+        policy.start()
+        self.addCleanup(policy.stop)
+        guard = patch('src.apps.data_factory.services.recovery.health_incident.DatasourceHealthIncidentService.safe_observe')
+        self.health = guard.start()
+        self.addCleanup(guard.stop)
+        progress = patch('src.apps.data_factory.services.reporting.execution_progress.'
+                         'DatasourceExecutionProgressService.for_attempts', return_value={})
+        self.activity = progress.start()
+        self.addCleanup(progress.stop)
+
+    def test_long_factory_operation_progress_does_not_raise_no_completion_alarm(self):
+        from src.processes.api_worker.runner import ApiWorkerRunner
+        runner = ApiWorkerRunner.__new__(ApiWorkerRunner)
+        runner.worker_name = 'AUTO_WORKER'
+        future = Future()
+        futures = {future: SimpleNamespace(test_suite=1, test_suite_details=2, case_id=3, attempt=4)}
+        wall = timezone.now()
+        stamp = (timezone.make_aware(wall, timezone.get_default_timezone())
+                 if timezone.is_naive(wall) else wall).timestamp()
+        with patch('src.processes.api_worker.runner.time.monotonic', return_value=0):
+            runner.execution_progress(futures)
+        self.activity.return_value = {2: stamp - 2}
+        with patch('src.processes.api_worker.runner.time.monotonic', return_value=601), \
+                patch('django.utils.timezone.now', return_value=wall):
+            values = runner.execution_progress(futures)
+        self.assertEqual(values['no_completion_seconds'], 601)
+        self.assertEqual(values['no_progress_seconds'], 2)
+        self.assertFalse(self.health.call_args.kwargs['active'])
+        self.assertFalse(future.done())
+        self.assertEqual(self.activity.call_args.args[0], {2: 4})
+
+    def test_progress_query_failure_does_not_break_worker_and_idle_resolves_incident(self):
+        from src.processes.api_worker.runner import ApiWorkerRunner
+        runner = ApiWorkerRunner.__new__(ApiWorkerRunner)
+        runner.worker_name = 'AUTO_WORKER'
+        future = Future()
+        futures = {future: SimpleNamespace(test_suite=1, test_suite_details=2, case_id=3, attempt=1)}
+        with patch('src.processes.api_worker.runner.time.monotonic', return_value=0):
+            runner.execution_progress(futures)
+        self.activity.return_value = None
+        self.health.reset_mock()
+        with patch('src.processes.api_worker.runner.time.monotonic', return_value=61):
+            runner.execution_progress(futures)
+        self.health.assert_not_called()
+        with patch('src.processes.api_worker.runner.time.monotonic', return_value=80):
+            runner.execution_progress({})
+        self.assertFalse(self.health.call_args.kwargs['active'])
+
+    def test_no_completion_warning_is_visible_without_debug_and_never_changes_results(self):
+        from src.processes.api_worker.runner import ApiWorkerRunner
+        runner = ApiWorkerRunner.__new__(ApiWorkerRunner)
+        runner.worker_name = 'AUTO_WORKER'
+        future = Future()
+        futures = {future: SimpleNamespace(test_suite=1, test_suite_details=2, case_id=3, attempt=1)}
+        with patch('src.processes.api_worker.runner.time.monotonic', return_value=0):
+            runner.execution_progress(futures)
+        with patch('src.processes.api_worker.runner.time.monotonic', return_value=61), \
+                self.assertLogs('api', level='WARNING') as captured:
+            values = runner.execution_progress(futures)
+            runner.execution_progress(futures)
+        self.assertEqual(len(captured.output), 1)
+        self.assertEqual(values['no_completion_seconds'], 61)
+        self.assertFalse(future.done())
+        future.set_result(None)
+        with patch('src.processes.api_worker.runner.time.monotonic', return_value=62):
+            values = runner.execution_progress(futures)
+        self.assertEqual(values['no_completion_seconds'], 0)
+        self.assertEqual(values['completed_waiting_settlement'], 1)
+
+    def test_completion_between_heartbeats_is_observed_before_future_is_removed(self):
+        from src.processes.api_worker.runner import ApiWorkerRunner
+        runner = ApiWorkerRunner.__new__(ApiWorkerRunner)
+        runner.worker_name = 'AUTO_WORKER'
+        runner.running, runner.poll_interval = True, 0.1
+        runner.thread_pool_size = runner.executor_size = 2
+        runner.last_recovery_at = float('inf')
+        runner.refresh_thread_pool_size = Mock()
+        runner.db_context_registry, runner.executor = Mock(), Mock()
+        first, second = Future(), Future()
+        runner.executor.submit.side_effect = [first, second]
+        runner.can_claim = Mock(side_effect=[True, True, False])
+        runner.claim = Mock(return_value=SimpleNamespace(test_suite=1, test_suite_details=2, case_id=3, attempt=1))
+        clock, observations = [0], []
+        def heartbeat(futures):
+            observations.append(runner.execution_progress(futures)['no_completion_seconds'])
+            if len(observations) == 2:
+                runner.stop()
+        runner.report_heartbeat = Mock(side_effect=heartbeat)
+        def complete(futures, **kwargs):
+            if not first.done():
+                clock[0] = 61
+                first.set_result(None)
+                return {first}, {second}
+            clock[0] = 62
+            second.set_result(None)
+            return {second}, set()
+        with patch('src.processes.api_worker.runner.time.monotonic', side_effect=lambda: clock[0]), \
+                patch('src.processes.api_worker.runner.wait', side_effect=complete), \
+                patch.object(Recovery, 'finish_unreported', return_value=False), \
+                patch('src.apps.data_factory.services.pool.datasource_pool.DatasourcePoolRegistry.close_all'), \
+                patch('src.apps.data_factory.services.pool.protocol_pool.ProtocolPoolRegistry.close_all'):
+            runner.run_forever()
+        self.assertEqual(observations, [0, 0])
+        self.assertEqual(runner.executor.submit.call_count, 2)
+        self.assertEqual(runner.claim.call_count, 2)
+        self.assertEqual(runner._last_completion_at, 62)
+
+    def test_same_completed_future_during_settlement_outage_does_not_reset_progress_forever(self):
+        from src.processes.api_worker.runner import ApiWorkerRunner
+        runner = ApiWorkerRunner.__new__(ApiWorkerRunner)
+        runner.worker_name = 'AUTO_WORKER'
+        future = Future()
+        future.set_result(None)
+        futures = {future: SimpleNamespace(test_suite=1, test_suite_details=2, case_id=3, attempt=1)}
+        runner.observe_completions({future}, now=10)
+        with patch('src.processes.api_worker.runner.time.monotonic', return_value=71), \
+                self.assertLogs('api', level='WARNING'):
+            runner.observe_completions({future})
+            values = runner.execution_progress(futures)
+        self.assertEqual(values['no_completion_seconds'], 61)
+        self.assertEqual(values['completed_waiting_settlement'], 1)
+
+    def test_fast_completion_resets_stall_diagnostic_without_altering_running_case(self):
+        from src.processes.api_worker.runner import ApiWorkerRunner
+        runner = ApiWorkerRunner.__new__(ApiWorkerRunner)
+        runner.worker_name = 'AUTO_WORKER'
+        runner._last_completion_at, runner._stalled_logged_at = 0, 60
+        finished, active = Future(), Future()
+        finished.set_exception(RuntimeError('AUTO_EXPECTED_FAILURE'))
+        with self.assertLogs('api', level='INFO') as logs:
+            runner.observe_completions({finished}, now=70)
+        self.assertIn('api_worker_execution_progress_restored', logs.output[0])
+        self.assertFalse(active.done())
+        self.assertIsNone(runner._stalled_logged_at)
+        self.assertEqual(runner._last_completion_at, 70)
+
+    def test_resource_wait_does_not_expand_worker_case_concurrency(self):
+        from src.processes.api_worker.runner import ApiWorkerRunner
+        runner = ApiWorkerRunner.__new__(ApiWorkerRunner)
+        runner.thread_pool_size = runner.executor_size = 1
+        first = Future()
+        self.assertFalse(runner.can_claim({first: None}))
+        first._mango_resource_parked = True
+        self.assertFalse(runner.can_claim({first: None}))
+        self.assertTrue(runner.can_claim({}))
+        second = Future()
+        self.assertFalse(runner.can_claim({first: None, second: None}))
+        self.assertFalse(first.done())
+
+    def test_invalid_upgrade_policy_prevents_claiming_any_case(self):
+        from src.processes.api_worker.runner import ApiWorkerRunner
+        from src.apps.data_factory.exceptions import DataFactoryError, DATASOURCE_POLICY_INVALID
+        runner = ApiWorkerRunner.__new__(ApiWorkerRunner)
+        runner.claim = Mock()
+        runner.executor = Mock()
+        runner.db_context_registry = Mock()
+        with patch('src.apps.data_factory.services.governance.datasource_governor.DatasourceGovernorService.policy',
+                   side_effect=DataFactoryError(DATASOURCE_POLICY_INVALID)), \
+                patch('src.apps.data_factory.services.pool.datasource_pool.DatasourcePoolRegistry.close_all'), \
+                patch('src.apps.data_factory.services.pool.protocol_pool.ProtocolPoolRegistry.close_all'), \
+                self.assertRaises(DataFactoryError):
+            runner.run_forever()
+        runner.claim.assert_not_called()
+        runner.executor.shutdown.assert_called_once_with(wait=True)
+        runner.db_context_registry.close_all.assert_called_once()
+
+    def test_replaced_worker_progress_incident_closes_only_after_all_old_slots_are_isolated(self):
+        now = timezone.now()
+        owner = {'worker_name': 'worker-0', 'process_token': 'a' * 32}
+        row = {'id': 7, 'retry': 2, 'push_time': now - timedelta(minutes=2), 'worker_owner': owner}
+        query = Mock()
+        for name in ('filter', 'exclude', 'annotate', 'order_by', 'values'):
+            getattr(query, name).return_value = query
+        heartbeat = SimpleNamespace(instance_name='worker-0')
+        for remaining in (True, False):
+            with self.subTest(remaining=remaining), \
+                    patch('src.apps.task_center.services.execution.worker_recovery.TestCenterQuerySelector.test_suite_details',
+                          return_value=query), \
+                    patch('src.apps.task_center.services.execution.worker_recovery.ServiceHeartbeatService.get_online_instances',
+                          return_value=[heartbeat]), \
+                    patch.object(Recovery, 'replacement_confirmed', return_value=True), \
+                    patch.object(Infrastructure, 'block', return_value=True) as block:
+                query.iterator.return_value = iter([row])
+                query.exists.return_value = remaining
+                self.health.reset_mock()
+                self.assertEqual(Recovery.recover(), 1)
+                block.assert_called_once_with(7, 2, [], expected_push_time=row['push_time'])
+                if remaining:
+                    self.health.assert_not_called()
+                else:
+                    self.health.assert_called_once_with('api-worker:worker-0:' + 'a' * 32,
+                                                        worker=True, active=False, metrics={})
+
     def test_stable_identity_changes_after_fork_and_does_not_expose_credentials(self):
         with patch.object(RuntimeProcessIdentity, '_pid', None), \
                 patch.object(RuntimeProcessIdentity, '_identity', None), \
@@ -39,6 +234,20 @@ class ProcessIdentityTests(SimpleTestCase):
         self.assertFalse(Recovery.replacement_confirmed({}, heartbeat, now - timedelta(hours=5), now))
         heartbeat.metadata['process_started_at'] = 'invalid'
         self.assertFalse(Recovery.replacement_confirmed({}, heartbeat, now - timedelta(hours=5), now))
+
+    def test_execution_end_recovery_requires_matching_replaced_process_not_just_elapsed_time(self):
+        now = timezone.now()
+        heartbeat = SimpleNamespace(instance_name='AUTO_WORKER', status=1, last_seen_at=now,
+            metadata={'process_token': 'b'*32, 'process_started_at': (now - timedelta(minutes=2)).isoformat()})
+        with patch('src.apps.task_center.services.execution.worker_recovery.ServiceHeartbeatService.get_online_instances',
+                   return_value=[heartbeat]):
+            self.assertTrue(Recovery.execution_owner_replaced('AUTO_WORKER', {'process_token': 'a'*32},
+                            now - timedelta(hours=1)))
+            self.assertFalse(Recovery.execution_owner_replaced('OTHER_WORKER', {'process_token': 'a'*32},
+                             now - timedelta(hours=1)))
+            self.assertFalse(Recovery.execution_owner_replaced('AUTO_WORKER', {'process_token': 'b'*32},
+                             now - timedelta(hours=1)))
+            self.assertFalse(Recovery.execution_owner_replaced('AUTO_WORKER', {}, now - timedelta(hours=1)))
 
     def test_finished_future_control_disconnect_keeps_receipt_without_executing_case_again(self):
         from django.db import OperationalError
@@ -87,8 +296,8 @@ class ProcessIdentityTests(SimpleTestCase):
         cleanup.is_alive.return_value = True
         runner.cleanup_threads = [cleanup]
         runner.dispatch_consumer_thread = None
-        with patch('src.apps.data_factory.services.datasource_pool.DatasourcePoolRegistry.close_all') as sql, \
-                patch('src.apps.data_factory.services.protocol_pool.ProtocolPoolRegistry.close_all') as protocol:
+        with patch('src.apps.data_factory.services.pool.datasource_pool.DatasourcePoolRegistry.close_all') as sql, \
+                patch('src.apps.data_factory.services.pool.protocol_pool.ProtocolPoolRegistry.close_all') as protocol:
             cleanup.join.side_effect = lambda: self.assertFalse(sql.called or protocol.called)
             runner.stop()
         cleanup.join.assert_called_once_with()
@@ -123,8 +332,8 @@ class ProcessIdentityTests(SimpleTestCase):
         with patch.object(Recovery, 'finish_unreported', side_effect=[OperationalError(2013, 'AUTO_CONTROL_LOST'), False]), \
                 patch('src.processes.api_worker.runner.connection.close'), \
                 patch('src.processes.api_worker.runner.time.sleep') as sleep, \
-                patch('src.apps.data_factory.services.datasource_pool.DatasourcePoolRegistry.close_all'), \
-                patch('src.apps.data_factory.services.protocol_pool.ProtocolPoolRegistry.close_all'):
+                patch('src.apps.data_factory.services.pool.datasource_pool.DatasourcePoolRegistry.close_all'), \
+                patch('src.apps.data_factory.services.pool.protocol_pool.ProtocolPoolRegistry.close_all'):
             runner.run_forever()
         runner.claim.assert_called_once()
         runner.executor.submit.assert_called_once()
@@ -219,13 +428,13 @@ class WorkerReplacementRecoveryTests(TestCase):
     def test_no_fixture_rows_skipped_cleanup_does_not_prevent_review(self):
         from src.apps.data_factory.constants import CLEANUP_REPORT_CONTEXT_KEY
         from src.apps.data_factory.models import DataFactoryExecution, DataFactoryExecutionItem
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
         execution = DataFactoryExecution.objects.create(execution_no='AUTO_EMPTY_EXECUTION',
             project_product_id=self.detail.project_product_id, status=0, cleanup_status=3,
             context={CLEANUP_REPORT_CONTEXT_KEY: {'parent_case_detail_id': self.detail.id, 'parent_attempt': 1}})
         with patch('src.apps.data_factory.services.execution_capacity.DatasourceExecutionCapacityService.'
                    'targets_by_scope', return_value={(self.detail.project_product_id, 0): {}}), \
-                patch('src.apps.data_factory.services.datasource_governor.DatasourceGovernorService.policy'):
+                patch('src.apps.data_factory.services.governance.datasource_governor.DatasourceGovernorService.policy'):
             self.assertTrue(DatasourceInfrastructureService.review_ready(self.detail))
             item = DataFactoryExecutionItem.objects.create(execution=execution, alias='AUTO_REMAINING', cleanup_status=3)
             self.assertFalse(DatasourceInfrastructureService.review_ready(self.detail))

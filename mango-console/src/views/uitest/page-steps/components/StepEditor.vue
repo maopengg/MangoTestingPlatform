@@ -12,7 +12,7 @@
     unmount-on-close
     @cancel="close"
   >
-    <a-alert v-if="error" type="error">{{ error }}</a-alert>
+    <MangoRequestFeedback v-if="error" :message="(error)" />
     
     <a-form auto-label-width class="mango-simple-form" :model="draft" :disabled="saving" layout="horizontal">
       <a-form-item class="mango-simple-form-item" label="项目/产品" required
@@ -48,8 +48,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { reactive, ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { postUiSteps, putUiSteps } from '@/api/uitest/page-steps'
@@ -146,8 +145,8 @@ import { reportLoadError } from '@/utils/load-error'
     let payload: ReturnType<typeof stepListPayload>
     try {
       payload = stepListPayload(draft, editingId.value)
-    } catch {
-      error.value = '请完整填写项目/产品、模块、所属页面和步骤名称'
+    } catch (requestFailure) {
+      error.value = requestFailureMessage(requestFailure, '请完整填写项目/产品、模块、所属页面和步骤名称')
       return false
     }
     const valid = scope.capture(),
@@ -167,8 +166,8 @@ import { reportLoadError } from '@/utils/load-error'
       close()
       emit('saved')
       return true
-    } catch {
-      if (current()) error.value = '保存失败，草稿已保留，请重试'
+    } catch (requestFailure) {
+      if (current()) error.value = requestFailureMessage(requestFailure, '保存失败，草稿已保留，请重试')
       return false
     } finally {
       saving.value = false

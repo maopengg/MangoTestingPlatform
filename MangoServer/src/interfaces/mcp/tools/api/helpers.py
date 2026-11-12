@@ -22,7 +22,7 @@ from src.apps.auto_api.selectors.querysets import ApiQuerySelector
 from src.apps.auto_api.services.api_case.version import ApiCaseRevisionService
 from src.apps.auto_api.services.api_info.runtime import ApiInfoRuntimeService
 from src.apps.system.enums import CacheDataKey2Enum
-from src.apps.system.services.cache_data_value import CacheDataValue
+from src.apps.system.services.configuration.cache_data_value import CacheDataValue
 from src.common.exceptions import MangoServerError
 from src.interfaces.mcp.common import (
     fail,

@@ -6,7 +6,7 @@ from mangotools.enums import StatusEnum
 
 from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.models import ApiHeaders
-from src.apps.auto_api.services.api_header import ApiHeaderDeleteService
+from src.apps.auto_api.services.configuration.api_header import ApiHeaderDeleteService
 
 
 class ApiHeadersDeleteTestCase(SimpleTestCase):
@@ -93,8 +93,8 @@ class ApiHeadersDeleteTestCase(SimpleTestCase):
 
 class ApiHeaderBatchDeleteServiceTestCase(SimpleTestCase):
 
-    @patch('src.apps.auto_api.services.api_header.ApiCaseDetailedParameter.objects.filter')
-    @patch('src.apps.auto_api.services.api_header.ApiCase.objects.filter')
+    @patch('src.apps.auto_api.services.configuration.api_header.ApiCaseDetailedParameter.objects.filter')
+    @patch('src.apps.auto_api.services.configuration.api_header.ApiCase.objects.filter')
     def test_multiple_products_are_rejected_before_usage_query(
             self,
             case_filter,
@@ -111,8 +111,8 @@ class ApiHeaderBatchDeleteServiceTestCase(SimpleTestCase):
         case_filter.assert_not_called()
         parameter_filter.assert_not_called()
 
-    @patch('src.apps.auto_api.services.api_header.ApiCaseDetailedParameter.objects.filter')
-    @patch('src.apps.auto_api.services.api_header.ApiCase.objects.filter')
+    @patch('src.apps.auto_api.services.configuration.api_header.ApiCaseDetailedParameter.objects.filter')
+    @patch('src.apps.auto_api.services.configuration.api_header.ApiCase.objects.filter')
     def test_case_usage_short_circuits_parameter_query(
             self,
             case_filter,

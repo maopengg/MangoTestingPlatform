@@ -243,7 +243,7 @@ class DangerousConfirmationTests(SimpleTestCase):
                 self.assertEqual(self.consume(preview)['error_code'], 'PREVIEW_EXPIRED')
 
     def test_confirmation_logs_do_not_contain_secrets_or_payloads(self):
-        with self.assertLogs('src.apps.system.services.mcp_confirmation', level='INFO') as captured:
+        with self.assertLogs('src.apps.system.services.coordination.mcp_confirmation', level='INFO') as captured:
             preview = self.issue()
             self.assertIsNone(self.consume(preview))
         logged = '\n'.join(captured.output)

@@ -429,7 +429,7 @@ def validate_data_source_operation_list(
     except (TypeError, ValueError) as error:
         raise AutoApiError(AUTO_API_CASE_SCHEMA_PROJECT_PRODUCT_PARAMETER_INVALID, value=(field_name,)) from error
 
-    from src.apps.data_factory.services.data_source_execution import DataSourceExecutionService
+    from src.apps.data_factory.services.datasource.data_source_execution import DataSourceExecutionService
 
     relational_types = DataSourceExecutionService.EXECUTABLE_RELATIONAL_TYPES
     for index, item in enumerate(result, start=1):

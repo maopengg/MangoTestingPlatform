@@ -12,8 +12,8 @@ from src.apps.data_factory.api.serializers.execution import (
     DataFactoryExecutionSerializerC,
 )
 from src.apps.data_factory.models import DataFactoryExecution, DataFactoryExecutionItem
-from src.apps.data_factory.services.cleanup import DataFactoryCleanup
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
+from src.apps.test_center.services.project.product_module import ProductModuleService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -35,6 +35,7 @@ class DataFactoryExecutionViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def detail_view(self, request: Request):
+        """获取数据工厂执行详情"""
         from src.apps.data_factory.models import SqlExecutionRecord
         from src.apps.data_factory.api.serializers.execution_item import DataFactoryExecutionItemSerializer, \
             DataFactoryExecutionItemSerializerC
@@ -67,12 +68,14 @@ class DataFactoryExecutionViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def context(self, request: Request):
+        """获取数据工厂执行上下文"""
         execution = DataFactoryExecution.objects.get(id=request.query_params.get('execution_id'))
         return ResponseData.success(RESPONSE_MSG_0001, execution.context)
 
     @action(methods=['post'], detail=False)
     @error_response('system')
     def cleanup(self, request: Request):
+        """清理数据工厂执行产生的数据"""
         result = DataFactoryCleanup.cleanup_execution_on_demand(
             request.data.get('execution_id')
         )
@@ -86,6 +89,7 @@ class DataFactoryExecutionViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def batch_cleanup(self, request: Request):
+        """批量清理数据工厂执行产生的数据"""
         serializer = DataFactoryExecutionBatchCleanupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         result = DataFactoryCleanup.batch_cleanup_executions(

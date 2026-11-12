@@ -15,8 +15,8 @@ from src.apps.auto_pytest.exceptions import (
 )
 from src.apps.auto_pytest.selectors.querysets import PytestQuerySelector
 from src.apps.auto_pytest.selectors.case_publication import PytestCasePublicationSelector
-from src.apps.auto_pytest.services.git_management.repository_service import RepositoryGitService
-from src.apps.auto_pytest.services.product_sync import PytestProductSyncService
+from src.apps.auto_pytest.services.repository.repository_service import RepositoryGitService
+from src.apps.auto_pytest.services.synchronization.product_sync import PytestProductSyncService
 from src.interfaces.mcp.common import (
     current_user,
     paginate_queryset,
@@ -60,9 +60,9 @@ def _selected_env(test_env_id: int | None) -> int:
     user = current_user()
     if test_env_id is not None:
         return test_env_id
-    from src.apps.user.services.user_cache import UserCacheService
+    from src.apps.user.services.preferences.user_config import UserConfigService
 
-    selected_environment = UserCacheService.selected_environment(user)
+    selected_environment = UserConfigService.selected_environment(user)
     if selected_environment is None:
         raise McpError(MCP_TEST_ENVIRONMENT_REQUIRED)
     return selected_environment

@@ -6,7 +6,7 @@ from django.utils import timezone
 from src.apps.system.services.runtime_center.system_error_event import SystemErrorEventService
 from src.apps.task_center.enums import ScheduleFireSourceTypeEnum, ScheduleFireStatusEnum
 from src.apps.task_center.models import ScheduleFire
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.user.services.authorization.permission import PermissionMenuService
 
 
 class RecentErrorsService:

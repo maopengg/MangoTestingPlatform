@@ -1,4 +1,4 @@
-from src.apps.user.services.http_permission_registry import permission_for_view
+from src.apps.user.services.authorization.http_permission_registry import permission_for_view
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -9,9 +9,9 @@ from src.apps.evaluation.enums import EvaluationTargetTypeEnum
 from src.apps.evaluation.exceptions import EvaluationError
 from src.apps.evaluation.schemas import EvaluationTargetBinding
 from src.apps.evaluation.selectors.target import interface_choices, published_interfaces
-from src.apps.evaluation.services.case import EvaluationCaseService
-from src.apps.evaluation.services.python_target import run_python_target
-from src.apps.evaluation.services.adapters import PythonTargetAdapter
+from src.apps.evaluation.services.assets.case import EvaluationCaseService
+from src.apps.evaluation.services.targets.python_target import run_python_target
+from src.apps.evaluation.services.targets.adapters import PythonTargetAdapter
 
 
 class TargetSelectionTests(SimpleTestCase):
@@ -60,7 +60,7 @@ class TargetSelectionTests(SimpleTestCase):
 
     def test_save_resolves_release_instead_of_trusting_client_version(self):
         raw = {"target": {"type": "api_info", "ref_id": 7, "version_ref": {"kind": "api_info_revision", "id": 999}}, "grading": {}}
-        with patch("src.apps.evaluation.services.case.validate_relation", side_effect=lambda values, _: values), \
+        with patch("src.apps.evaluation.services.assets.case.validate_relation", side_effect=lambda values, _: values), \
                 patch("src.apps.evaluation.selectors.target.published_interfaces") as query:
             query.return_value.filter.return_value.first.return_value = SimpleNamespace(published_release_id=42)
             values = EvaluationCaseService.normalize({"project_product": SimpleNamespace(id=8), "config": raw})
@@ -69,7 +69,7 @@ class TargetSelectionTests(SimpleTestCase):
 
     def test_unpublished_and_other_product_interface_cannot_be_saved(self):
         for interface in (None, SimpleNamespace(published_release_id=None)):
-            with patch("src.apps.evaluation.services.case.validate_relation", side_effect=lambda values, _: values), \
+            with patch("src.apps.evaluation.services.assets.case.validate_relation", side_effect=lambda values, _: values), \
                     patch("src.apps.evaluation.selectors.target.published_interfaces") as query:
                 query.return_value.filter.return_value.first.return_value = interface
                 with self.assertRaises(EvaluationError):
@@ -93,7 +93,7 @@ class TargetSelectionTests(SimpleTestCase):
 
     def test_python_adapter_never_exposes_expected_or_hidden_context(self):
         item = SimpleNamespace(input_data={"query": "问题"}, context={"target_visible": {"allowed": True}, "hidden": "secret"}, metadata={}, expected_output={"answer": "gold"})
-        with patch("src.apps.evaluation.services.python_target.run_python_target", return_value={"answer": "result"}) as run:
+        with patch("src.apps.evaluation.services.targets.python_target.run_python_target", return_value={"answer": "result"}) as run:
             PythonTargetAdapter.execute(target=SimpleNamespace(executor_config={"code": "code"}), dataset_item=item,
                 mapping=SimpleNamespace(input_variable="case_input", output_mapping={"paths": []}), execution=None, user_id=1)
         self.assertEqual(run.call_args.args[1:3], ({"case_input": {"query": "问题"}}, {"allowed": True}))

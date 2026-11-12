@@ -8,9 +8,9 @@ from src.apps.auto_api.api.serializers.api_info_version import ApiInfoRevisionDe
 from src.apps.auto_api.api.views.api_info import ApiInfoCRUD
 from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.services.api_info.runtime import ApiInfoRuntimeService
-from src.apps.auto_api.services.base.api_base_test_setup.auth_manager import ApiAuthManager
-from src.apps.auto_api.services.base.assertion_diagnostics import value_preview
-from src.apps.auto_api.services.config.version import ApiConfigSnapshotService
+from src.apps.auto_api.services.execution.base.api_base_test_setup.auth_manager import ApiAuthManager
+from src.apps.auto_api.services.execution.base.assertion_diagnostics import value_preview
+from src.apps.auto_api.services.configuration.version import ApiConfigSnapshotService
 
 
 class ApiConfigSnapshotSanitizationTests(SimpleTestCase):

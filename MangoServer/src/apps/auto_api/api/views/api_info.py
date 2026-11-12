@@ -43,9 +43,9 @@ from src.apps.auto_api.api.serializers.api_info_execution import (
     ApiInfoExecutionTargetQuery, ApiInfoExecutionQuery, ApiInfoRuntimeParametersQuery,
 )
 from src.apps.auto_api.services.api_info.runtime import ApiInfoRuntimeService
-from src.apps.auto_api.services.test_case.test_api_info import TestApiInfo
+from src.apps.auto_api.services.execution.cases.test_api_info import TestApiInfo
 from src.apps.test_center.models import ProjectProduct, ProductModule
-from src.apps.test_center.services.execution_result import ExecutionResultService
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -91,6 +91,7 @@ class ApiInfoCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
     ]
 
     def get_serializer_class(self):
+        """选择API 接口当前操作使用的序列化器"""
         if getattr(self.request, 'method', '').upper() == 'GET':
             if self.request.query_params.get('summary') == 'true':
                 return ApiInfoSummarySerializers
@@ -98,18 +99,21 @@ class ApiInfoCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
         return super().get_serializer_class()
 
     def is_valid_query_param(self, key: str) -> bool:
+        """检查API 接口查询参数是否合法"""
         if key == 'summary':
             return False
         return super().is_valid_query_param(key)
 
     @error_response('system')
     def get(self, request: Request):
+        """获取API 接口列表或指定记录"""
         query = ApiInfoListQuery(data=request.query_params)
         query.is_valid(raise_exception=True)
         return super().get(request)
 
     @staticmethod
     def split_identity_and_config(data: dict) -> tuple[dict, dict]:
+        """拆分API 接口基本信息与运行配置"""
         identity_fields = {'id', 'project_product', 'module', 'name', 'update_user'}
         identity = {key: value for key, value in data.items() if key in identity_fields}
         config = {key: value for key, value in data.items() if key in API_INFO_CONFIG_FIELDS}
@@ -130,12 +134,14 @@ class ApiInfoCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @classmethod
     def serializer_payload(cls, identity: dict, config: dict) -> dict:
+        """构建 API 接口写入序列化数据"""
         model_field_names = {field.name for field in cls.model._meta.concrete_fields}
         model_config = {key: value for key, value in config.items() if key in model_field_names}
         return {**identity, **model_config}
 
     @staticmethod
     def attach_runtime_config(instance: ApiInfo, config: dict):
+        """补充 API 接口运行配置"""
         for key, value in config.items():
             setattr(instance, key, value)
 
@@ -146,6 +152,7 @@ class ApiInfoCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
             current_runtime: ApiInfo,
             config: dict,
     ):
+        """补充合并后的 API 接口运行配置"""
         cls.attach_runtime_config(
             instance,
             ApiInfoRuntimeService.current_payload(current_runtime),
@@ -174,6 +181,7 @@ class ApiInfoCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @error_response('system')
     def post(self, request: Request):
+        """新增API 接口"""
         data = self.with_update_user(request, request.data)
         if data.get('protocol_type') in (ApiProtocolTypeEnum.MCP.value, ApiProtocolTypeEnum.GRPC.value):
             return ResponseData.fail(API_IMPORT_ONLY_CREATE_INVALID)
@@ -187,6 +195,7 @@ class ApiInfoCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @error_response('system')
     def put(self, request: Request):
+        """修改API 接口"""
         data = self.with_update_user(request, request.data)
         instance_id = request.data.get('id')
         try:
@@ -220,10 +229,12 @@ class ApiInfoCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @classmethod
     def inside_post(cls, data: dict, *, record_config: bool = True) -> dict:
+        """处理API 接口新增时的业务逻辑"""
         return cls._create_with_version(data, record_config=record_config)
 
     @classmethod
     def inside_put(cls, _id: int, data: dict, *, record_config: bool = True) -> dict:
+        """处理API 接口修改时的业务逻辑"""
         return cls._update_with_version(_id, data, record_config=record_config)
 
 
@@ -234,6 +245,7 @@ class ApiInfoViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('api')
     def get_execution_parameters(self, request: Request):
+        """获取 API 接口执行参数"""
         query = ApiInfoExecutionTargetQuery(data=request.query_params)
         query.is_valid(raise_exception=True)
         target = query.validated_data
@@ -249,6 +261,7 @@ class ApiInfoViews(ViewSet):
     @action(methods=['get', 'post'], detail=False)
     @error_response('api')
     def get_api_info_run(self, request: Request):
+        """执行指定 API 接口"""
         query = ApiInfoExecutionQuery(data=request.data if request.method == 'POST' else request.query_params)
         query.is_valid(raise_exception=True)
         target = query.validated_data
@@ -287,6 +300,7 @@ class ApiInfoViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('api')
     def api_info_batch_run(self, request: Request):
+        """批量执行 API 接口"""
         runtime_query = ApiInfoRuntimeParametersQuery(data=request.data)
         runtime_query.is_valid(raise_exception=True)
         runtime_parameters = runtime_query.validated_data['runtime_parameters']
@@ -427,6 +441,7 @@ class ApiInfoViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('api')
     def get_bound_cases(self, request: Request):
+        """获取引用 API 接口的用例"""
         api_info_id = request.query_params.get('id') or request.query_params.get('api_info_id')
         api_info = self.model.objects.filter(id=api_info_id).first()
         if not api_info:
@@ -449,6 +464,7 @@ class ApiInfoViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('api')
     def import_api(self, request: Request):
+        """导入 API 接口定义"""
         parsed = parse_import_curl(request.data.get('curl_command'))
         url_components = urlparse(parsed.url)
         path = url_components.path
@@ -477,6 +493,7 @@ class ApiInfoViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('api')
     def post_upload_api(self, request):
+        """从上传表格导入 API 接口"""
         uploaded_file = request.FILES['file']
         records = read_excel_records(uploaded_file)
         method_mapping = MethodEnum.reversal_obj()
@@ -529,4 +546,5 @@ class ApiInfoViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('api')
     def put_auto_schema(self, request):
+        """拒绝接口级场景断言生成并提示使用用例场景"""
         raise AutoApiError(AUTO_API_API_INFO_API_INFO_SCENARIO_ASSERTION_GENERATE_INVALID)

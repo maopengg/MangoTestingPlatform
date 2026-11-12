@@ -90,7 +90,7 @@
           <slot name="result" :detail="selectedDetail" :error-message="selectedErrorMessage">
             <div v-if="!selectedDetail" class="execution-result-history__empty mango-empty-state">请选择执行记录</div>
             <template v-else>
-              <a-alert
+              <a-alert data-feedback-kind="execution-result"
                 v-if="selectedErrorMessage && !selectedApiResult"
                 type="error"
                 class="execution-result-history__alert"

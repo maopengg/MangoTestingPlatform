@@ -4,7 +4,7 @@
       <a-button size="small" :disabled="loading || Boolean(modelError) || draft.length >= 50" @click="add">新增 AI</a-button>
       <a-button size="small" type="primary" :disabled="Boolean(modelError)" :loading="loading" @click="save">保存 AI 列表</a-button>
     </a-space>
-    <a-alert v-if="modelError" type="error">{{ modelError }}</a-alert>
+    <a-alert data-feedback-kind="validation" v-if="modelError" type="error">{{ modelError }}</a-alert>
     <div v-else-if="!draft.length" class="mango-empty-state">尚未配置效果测评 AI</div>
     <section v-for="(profile, index) in draft" :key="profile.id" class="mango-soft-panel">
       <div class="mango-section-title">

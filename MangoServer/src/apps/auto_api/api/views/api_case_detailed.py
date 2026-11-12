@@ -42,6 +42,7 @@ class ApiCaseDetailedCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @staticmethod
     def get_case_for_update(case_id: int) -> ApiCase:
+        """获取并锁定待修改的 API 用例"""
         try:
             return ApiCase.objects.select_for_update().get(id=case_id)
         except ApiCase.DoesNotExist as error:
@@ -49,6 +50,7 @@ class ApiCaseDetailedCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @error_response('api')
     def get(self, request: Request):
+        """获取API 用例步骤列表或指定记录"""
         case_id = request.query_params.get('case_id')
         api_info_id = request.query_params.get('api_info_id')
         if api_info_id:
@@ -78,6 +80,7 @@ class ApiCaseDetailedCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
     @error_response('api')
     @transaction.atomic
     def post(self, request: Request):
+        """新增API 用例步骤"""
         data = request.data.copy()
         data.pop('module', None)
         case_id = request.data.get('case')
@@ -106,6 +109,7 @@ class ApiCaseDetailedCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @error_response('api')
     def put(self, request: Request):
+        """修改API 用例步骤"""
         step = self.model.objects.select_related('case').get(id=request.data.get('id'))
         if not self.has_instance_data_scope_permission(request, step.case):
             return ResponseData.fail(RESPONSE_MSG_0210)
@@ -132,6 +136,7 @@ class ApiCaseDetailedCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @classmethod
     def update_case_flow(cls, _id):
+        """刷新 API 用例步骤流程摘要"""
         from src.apps.auto_api.services.api_case.mutation import ApiCaseAggregateMutationService
         return ApiCaseAggregateMutationService.rebuild_case_flow(_id)
 
@@ -141,6 +146,7 @@ class ApiCaseDetailedCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @error_response('api')
     def delete(self, request: Request):
+        """删除API 用例步骤"""
         step_id = request.query_params.get('id')
         if not step_id:
             return ResponseData.fail(RESPONSE_MSG_0029)
@@ -186,6 +192,7 @@ class ApiCaseDetailedViews(ViewSet):
     @error_response('api')
     @transaction.atomic
     def put_refresh_api_info(self, request: Request):
+        """刷新用例步骤引用的接口配置"""
         ApiCaseStepService.refresh_step_parameters(
             request.data.get('id'),
             operator_id=ApiCaseDetailedCRUD.get_operator_id(request),

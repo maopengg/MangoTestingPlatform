@@ -105,7 +105,7 @@ def validate_data_source_items(
         project_product_id: int | str | None = None,
 ):
     from src.apps.data_factory.models import DataFactoryDatasourceAlias
-    from src.apps.data_factory.services.data_source_execution import DataSourceExecutionService
+    from src.apps.data_factory.services.datasource.data_source_execution import DataSourceExecutionService
     from src.apps.test_center.enums.data_source import DataSourceTypeEnum
     from src.apps.test_center.enums.environment import EnvironmentEnum
     from mangotools.enums import StatusEnum

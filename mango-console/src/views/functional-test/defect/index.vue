@@ -10,16 +10,16 @@
         :model-value="navigationProjectProduct"
         :module-value="navigationModule"
         @filter-change="onNavigationFilterChange"
-        @search="search"
-        @reset-search="reset"
+        @search="autoSearch.run"
+        @reset-search="autoSearch.cancel(); reset(); autoSearch.sync()"
       >
         <template #search>
-          <a-form :model="filters" layout="inline" @keyup.enter="search">
+          <a-form :model="filters" layout="inline" @keyup.enter="autoSearch.run">
             <a-form-item label="关键词"
-              ><a-input v-model="filters.keyword" allow-clear placeholder="编号或标题"
+              ><a-input @blur="autoSearch.schedule" @clear="autoSearch.schedule" @mouseleave="autoSearch.schedule" v-model="filters.keyword" allow-clear placeholder="编号或标题"
             /></a-form-item>
             <a-form-item label="状态"
-              ><a-select
+              ><a-select @change="autoSearch.schedule"
                 v-model="filters.status"
                 :loading="enumsLoading"
                 :options="statusOptions"
@@ -27,7 +27,7 @@
                 allow-clear
             /></a-form-item>
             <a-form-item label="严重程度"
-              ><a-select
+              ><a-select @change="autoSearch.schedule"
                 v-model="filters.severity"
                 :loading="enumsLoading"
                 :options="severityOptions"
@@ -35,7 +35,7 @@
                 allow-clear
             /></a-form-item>
             <a-form-item label="优先级"
-              ><a-select
+              ><a-select @change="autoSearch.schedule"
                 v-model="filters.priority"
                 :loading="enumsLoading"
                 :options="priorityOptions"
@@ -43,7 +43,7 @@
                 allow-clear
             /></a-form-item>
             <a-form-item label="缺陷类型"
-              ><a-select
+              ><a-select @change="autoSearch.schedule"
                 v-model="filters.defect_type"
                 :loading="enumsLoading"
                 :options="typeOptions"
@@ -51,7 +51,7 @@
                 allow-clear
             /></a-form-item>
             <a-form-item label="缺陷来源"
-              ><a-select
+              ><a-select @change="autoSearch.schedule"
                 v-model="filters.source_type"
                 :loading="enumsLoading"
                 :options="sourceOptions"
@@ -59,7 +59,7 @@
                 allow-clear
             /></a-form-item>
             <a-form-item label="经办人"
-              ><a-select
+              ><a-select @change="autoSearch.schedule"
                 v-model="filters.assignee"
                 :loading="usersLoading"
                 :options="userOptions"
@@ -68,7 +68,7 @@
                 allow-clear
             /></a-form-item>
             <a-form-item label="报告人"
-              ><a-select
+              ><a-select @change="autoSearch.schedule"
                 v-model="filters.reporter"
                 :loading="usersLoading"
                 :options="userOptions"
@@ -77,7 +77,7 @@
                 allow-clear
             /></a-form-item>
             <a-form-item label="来源计划"
-              ><a-select
+              ><a-select @change="autoSearch.schedule"
                 v-model="filters.source_plan"
                 :loading="searchPlansLoading"
                 :options="searchPlanOptions"
@@ -85,10 +85,10 @@
                 allow-clear
             /></a-form-item>
             <a-form-item label="创建日期"
-              ><a-range-picker v-model="filters.create_range" value-format="YYYY-MM-DD" allow-clear
+              ><a-range-picker @change="autoSearch.schedule" v-model="filters.create_range" value-format="YYYY-MM-DD" allow-clear
             /></a-form-item>
             <a-form-item label="更新日期"
-              ><a-range-picker v-model="filters.update_range" value-format="YYYY-MM-DD" allow-clear
+              ><a-range-picker @change="autoSearch.schedule" v-model="filters.update_range" value-format="YYYY-MM-DD" allow-clear
             /></a-form-item>
           </a-form>
         </template>
@@ -139,7 +139,7 @@
           
           
           
-          <a-alert v-if="mutationError" type="error">{{ mutationError }}</a-alert>
+          <MangoRequestFeedback v-if="mutationError" :message="(mutationError)" />
           <a-alert v-if="columnStorageError" type="warning"
             >列设置暂未保存。<a-button size="mini" @click="saveColumns">重试保存</a-button></a-alert
           >
@@ -312,6 +312,8 @@
 </template>
 
 <script lang="ts" setup>
+  import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
+
 import { reportLoadError } from '@/utils/load-error'
 
   import {
@@ -820,6 +822,8 @@ import { reportLoadError } from '@/utils/load-error'
     mounted = false
     invalidate()
   })
+
+  const autoSearch = useDebouncedSearch(search, () => filters)
 </script>
 
 <style lang="less" scoped>

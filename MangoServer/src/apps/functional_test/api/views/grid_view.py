@@ -25,6 +25,7 @@ class FunctionalTestGridViewViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def list(self, request: Request):
+        """获取功能测试表格视图列表"""
         grid_key = self._validate_grid_key(request.query_params.get("grid_key"))
         queryset = FunctionalTestGridView.objects.filter(
             user_id=self._user_id(request), grid_key=grid_key
@@ -34,6 +35,7 @@ class FunctionalTestGridViewViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def save(self, request: Request):
+        """保存功能测试表格视图"""
         user_id = self._user_id(request)
         grid_key = self._validate_grid_key(request.data.get("grid_key"))
         name = str(request.data.get("name") or "默认视图").strip()
@@ -54,6 +56,7 @@ class FunctionalTestGridViewViews(ViewSet):
     @action(methods=["delete"], detail=False)
     @error_response("system")
     def delete(self, request: Request):
+        """删除功能测试表格视图"""
         count, _ = FunctionalTestGridView.objects.filter(
             id=request.data.get("id"), user_id=self._user_id(request), grid_key__in=self.allowed_grid_keys
         ).delete()

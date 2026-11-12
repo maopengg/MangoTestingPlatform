@@ -19,9 +19,7 @@ from src.apps.task_center.services.execution.status_reconciliation import (
 )
 from src.apps.task_center.services.scheduling.system_job import SystemJobService
 from src.apps.test_center.enums import TestCaseTypeEnum
-from src.apps.test_center.services.test_suite.timeout_recovery import (
-    TestSuiteTimeoutRecoveryService,
-)
+from src.apps.test_center.services.reporting.test_suite.timeout_recovery import TestSuiteTimeoutRecoveryService
 
 
 class ExecutionStatusProjectionTests(SimpleTestCase):
@@ -39,7 +37,7 @@ class ExecutionStatusProjectionTests(SimpleTestCase):
 
     @patch.object(ExecutionStatusProjectionService, "_has_newer_task", return_value=False)
     @patch(
-        "src.apps.auto_api.services.test_case.run_status."
+        "src.apps.auto_api.services.execution.cases.run_status."
         "ApiCaseRunStatusService.project_status"
     )
     def test_api_case_projects_result_status(self, project_status, _has_newer_task):
@@ -58,7 +56,7 @@ class ExecutionStatusProjectionTests(SimpleTestCase):
 
     @patch.object(ExecutionStatusProjectionService, "_has_newer_task", return_value=False)
     @patch(
-        "src.apps.auto_ui.services.execution_status."
+        "src.apps.auto_ui.services.execution.execution_status."
         "UiExecutionStatusService.project_case_status"
     )
     def test_terminal_failure_marks_ui_case_failed(self, project_status, _has_newer_task):
@@ -86,7 +84,7 @@ class ExecutionStatusProjectionTests(SimpleTestCase):
         project.assert_called_once_with(task, force_failure=True)
 
     @patch(
-        "src.apps.auto_api.services.test_case.run_status."
+        "src.apps.auto_api.services.execution.cases.run_status."
         "ApiCaseRunStatusService.project_status"
     )
     def test_api_completion_projects_immediately(self, project_status):
@@ -146,7 +144,7 @@ class ExecutionStatusProjectionTests(SimpleTestCase):
         self.assertEqual(result["skipped_count"], 1)
 
     @patch(
-        "src.apps.auto_pytest.services.execution_status."
+        "src.apps.auto_pytest.services.execution.execution_status."
         "PytestExecutionStatusService.project_status"
     )
     def test_test_suite_timeout_projects_pytest_business_status(self, project_status):

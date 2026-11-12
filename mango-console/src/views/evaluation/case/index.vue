@@ -9,16 +9,16 @@
         :module-value="filters.module"
         :reset-key="resetKey"
         @filter-change="sidebarChanged"
-        @search="search"
-        @reset-search="reset"
+        @search="autoSearch.run"
+        @reset-search="autoSearch.cancel(); reset(); autoSearch.sync()"
       >
         <template #search
-          ><a-form :model="filters" layout="inline" @keyup.enter="search">
+          ><a-form :model="filters" layout="inline" @keyup.enter="autoSearch.run">
             <a-form-item label="用例名称"
-              ><a-input v-model="filters.name" allow-clear placeholder="搜索用例"
+              ><a-input @blur="autoSearch.schedule" @clear="autoSearch.schedule" @mouseleave="autoSearch.schedule" v-model="filters.name" allow-clear placeholder="搜索用例"
             /></a-form-item>
             <a-form-item label="状态"
-              ><a-select
+              ><a-select @change="autoSearch.schedule"
                 v-model="filters.status"
                 :options="caseStatusOptions"
                 multiple
@@ -26,7 +26,7 @@
                 allow-clear
             /></a-form-item>
             <a-form-item label="目标类型"
-              ><a-select
+              ><a-select @change="autoSearch.schedule"
                 v-model="filters.target_type"
                 :options="targetTypeOptions"
                 multiple
@@ -156,6 +156,8 @@
   <CaseEditor ref="editor" @saved="load" />
 </template>
 <script setup lang="ts">
+  import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
+
 import { reportLoadError } from '@/utils/load-error'
 
   import { computed, reactive, ref } from 'vue'
@@ -413,4 +415,6 @@ import { reportLoadError } from '@/utils/load-error'
     confirmation = dialog
   }
   scope.start()
+
+  const autoSearch = useDebouncedSearch(search, () => filters)
 </script>

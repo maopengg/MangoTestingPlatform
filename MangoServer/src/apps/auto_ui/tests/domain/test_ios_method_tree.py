@@ -3,7 +3,7 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 
 from src.apps.auto_ui.enums import DriveTypeEnum
-from src.apps.auto_ui.services.page_step_detail import PageStepDetailMutationService
+from src.apps.auto_ui.services.page_steps.page_step_detail import PageStepDetailMutationService
 
 
 class IOSMethodTreeTests(SimpleTestCase):

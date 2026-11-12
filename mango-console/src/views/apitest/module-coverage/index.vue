@@ -14,29 +14,30 @@
         :model-value="projectProductId"
         :module-value="moduleId"
         @filter-change="onNavigationFilterChange"
-        @search="search"
-        @reset-search="resetFilters"
+        @search="autoSearch.run"
+        @reset-search="autoSearch.cancel(); resetFilters(); autoSearch.sync()"
       >
         <template #search>
-          <a-form :model="filters" layout="inline" @keyup.enter="search">
+          <a-form :model="filters" layout="inline" @keyup.enter="autoSearch.run">
             <a-form-item label="仓库">
-              <a-input v-model="filters.repository_key" allow-clear placeholder="仓库标识" />
+              <a-input @mouseleave="autoSearch.schedule" v-model="filters.repository_key" allow-clear placeholder="仓库标识" @blur="autoSearch.schedule" @clear="autoSearch.schedule" />
             </a-form-item>
             <a-form-item label="分支">
-              <a-input v-model="filters.branch" allow-clear placeholder="分支名称" />
+              <a-input @mouseleave="autoSearch.schedule" v-model="filters.branch" allow-clear placeholder="分支名称" @blur="autoSearch.schedule" @clear="autoSearch.schedule" />
             </a-form-item>
             <a-form-item v-if="activeTab === 'cases'" label="Case标题">
-              <a-input v-model="filters.name" allow-clear placeholder="Case标题" />
+              <a-input @mouseleave="autoSearch.schedule" v-model="filters.name" allow-clear placeholder="Case标题" @blur="autoSearch.schedule" @clear="autoSearch.schedule" />
             </a-form-item>
             <a-form-item v-if="activeTab === 'cases'" label="接口名称">
-              <a-input v-model="filters.interface_name" allow-clear placeholder="接口名称" />
+              <a-input @mouseleave="autoSearch.schedule" v-model="filters.interface_name" allow-clear placeholder="接口名称" @blur="autoSearch.schedule" @clear="autoSearch.schedule" />
             </a-form-item>
             <a-form-item v-if="activeTab === 'interfaces'" label="接口">
-              <a-input v-model="filters.name" allow-clear placeholder="接口名称或 URL" />
+              <a-input @mouseleave="autoSearch.schedule" v-model="filters.name" allow-clear placeholder="接口名称或 URL" @blur="autoSearch.schedule" @clear="autoSearch.schedule" />
             </a-form-item>
             <a-form-item v-if="activeTab === 'interfaces'" label="接口存续">
               <a-select
                 v-model="filters.interface_status"
+                @change="autoSearch.schedule"
                 allow-clear
                 placeholder="接口存续"
                 :options="interfaceStatusOptions"
@@ -45,6 +46,7 @@
             <a-form-item v-if="activeTab === 'interfaces'" label="ApiInfo">
               <a-select
                 v-model="filters.api_info_binding_status"
+                @change="autoSearch.schedule"
                 allow-clear
                 placeholder="绑定状态"
                 :options="apiInfoBindingOptions"
@@ -53,6 +55,7 @@
             <a-form-item v-if="activeTab === 'interfaces'" label="覆盖策略">
               <a-select
                 v-model="filters.coverage_policy"
+                @change="autoSearch.schedule"
                 allow-clear
                 placeholder="全部策略"
                 :options="enumStore.module_coverage_policy"
@@ -67,6 +70,7 @@
               >
                 <a-select
                   v-model="filters[item.key]"
+                  @change="autoSearch.schedule"
                   multiple
                   allow-clear
                   :max-tag-count="1"
@@ -75,14 +79,16 @@
                 />
               </a-form-item>
               <a-form-item label="处理原因">
-                <a-input
+                <a-input @mouseleave="autoSearch.schedule"
                   v-model="filters.coverage_reason"
+                  @blur="autoSearch.schedule"
+                  @clear="autoSearch.schedule"
                   allow-clear
                   placeholder="处理原因关键词"
                 />
               </a-form-item>
               <a-form-item label="ApiInfo编号">
-                <a-input-number
+                <a-input-number @blur="autoSearch.schedule" @mouseleave="autoSearch.schedule"
                   v-model="filters.api_info_id"
                   :min="1"
                   :precision="0"
@@ -93,6 +99,7 @@
             <a-form-item v-if="activeTab === 'cases'" label="当前状态">
               <a-select
                 v-model="filters.status"
+                @change="autoSearch.schedule"
                 allow-clear
                 placeholder="当前状态"
                 :options="statusOptions"
@@ -101,6 +108,7 @@
             <a-form-item v-if="activeTab === 'cases'" label="变更状态">
               <a-select
                 v-model="filters.change_status"
+                @change="autoSearch.schedule"
                 allow-clear
                 placeholder="变更状态"
                 :options="changeStatusOptions"
@@ -109,6 +117,7 @@
             <a-form-item v-if="activeTab === 'cases'" label="覆盖有效性">
               <a-select
                 v-model="filters.coverage_validity"
+                @change="autoSearch.schedule"
                 allow-clear
                 placeholder="覆盖有效性"
                 :options="validityOptions"
@@ -117,6 +126,7 @@
             <a-form-item v-if="activeTab === 'cases'" label="测试层级">
               <a-select
                 v-model="filters.scenario_layer"
+                @change="autoSearch.schedule"
                 allow-clear
                 placeholder="测试层级"
                 :options="enumStore.api_case_scenario_layer"
@@ -126,6 +136,7 @@
             <a-form-item v-if="activeTab === 'cases'" label="验证类型">
               <a-select
                 v-model="filters.scenario_type"
+                @change="autoSearch.schedule"
                 allow-clear
                 placeholder="验证类型"
                 :options="enumStore.api_case_scenario_type"
@@ -135,6 +146,7 @@
             <a-form-item v-if="activeTab === 'cases'" label="执行场景">
               <a-select
                 v-model="filters.scenario_tag"
+                @change="autoSearch.schedule"
                 allow-clear
                 placeholder="执行场景"
                 :options="enumStore.api_case_scenario_tag"
@@ -449,6 +461,8 @@
 </template>
 
 <script lang="ts" setup>
+  import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
+
 import { reportLoadError } from '@/utils/load-error'
 
   import {
@@ -812,6 +826,8 @@ import { reportLoadError } from '@/utils/load-error'
       void reloadAll()
     }
   })
+
+  const autoSearch = useDebouncedSearch(search, () => filters)
 </script>
 
 <style lang="less" scoped>

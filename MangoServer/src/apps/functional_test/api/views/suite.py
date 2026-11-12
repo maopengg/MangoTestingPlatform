@@ -12,8 +12,8 @@ from src.apps.functional_test.models import (
     ManualTestCase,
     ManualTestSuite,
 )
-from src.apps.functional_test.services.mutation import FunctionalTestMutationService
-from src.apps.functional_test.services.suite import ManualTestSuiteService
+from src.apps.functional_test.services.cases.mutation import FunctionalTestMutationService
+from src.apps.functional_test.services.suites.suite import ManualTestSuiteService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -42,6 +42,7 @@ class ManualTestSuiteCRUD(ModelCRUD):
 
     @error_response("system")
     def get(self, request: Request):
+        """获取功能测试集列表或指定记录"""
         query_dict = {}
         include_descendants = str(request.query_params.get("include_descendants") or "").lower() == "true"
         for key, values in dict(request.query_params.lists()).items():
@@ -78,6 +79,7 @@ class ManualTestSuiteCRUD(ModelCRUD):
 
     @error_response("system")
     def post(self, request: Request):
+        """新增功能测试集"""
         result = FunctionalTestMutationService.create_suite(
             self.with_update_user(request, request.data),
             self.get_request_user_id(request),
@@ -94,6 +96,7 @@ class ManualTestSuiteCRUD(ModelCRUD):
 
     @error_response("system")
     def put(self, request: Request):
+        """修改功能测试集"""
         instance = self.model.objects.filter(id=request.data.get("id")).first()
         if not instance:
             return ResponseData.fail(RESPONSE_MSG_0158)
@@ -116,6 +119,7 @@ class ManualTestSuiteCRUD(ModelCRUD):
 
     @error_response("system")
     def delete(self, request: Request):
+        """删除功能测试集"""
         suite_ids = [
             int(item)
             for item in (
@@ -147,6 +151,7 @@ class ManualTestSuiteViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def module_counts(self, request: Request):
+        """统计功能测试集的模块分布"""
         project_product_id = int(request.query_params.get("project_product"))
         queryset = self._scoped_queryset(request)
         data = ManualTestSuiteService.module_counts(queryset, project_product_id)
@@ -155,6 +160,7 @@ class ManualTestSuiteViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def context_candidates(self, request: Request):
+        """获取功能测试集可关联的上下文资料"""
         suite = self._scoped_queryset(request).select_related("module", "owner").get(
             id=request.query_params.get("suite_id")
         )
@@ -166,6 +172,7 @@ class ManualTestSuiteViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def create_version(self, request: Request):
+        """创建功能测试集版本"""
         previous = self._scoped_queryset(request).select_related("requirement").get(
             id=request.data.get("previous_version_id")
         )
@@ -211,6 +218,7 @@ class ManualTestSuiteViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def confirm_submit(self, request: Request):
+        """确认提交功能测试集"""
         suite = self._scoped_queryset(request).select_related("iteration_ref").get(id=request.data.get("id"))
         suite = ManualTestSuiteService.confirm_submit(
             suite,
@@ -221,6 +229,7 @@ class ManualTestSuiteViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def transition_status(self, request: Request):
+        """流转功能测试集状态"""
         suite = self._scoped_queryset(request).filter(id=request.data.get("id")).first()
         if not suite:
             return ResponseData.fail(RESPONSE_MSG_0210)
@@ -241,6 +250,7 @@ class ManualTestSuiteViews(ViewSet):
     @action(methods=["delete"], detail=False)
     @error_response("system")
     def unlink_cases(self, request: Request):
+        """解除功能测试集的用例关联"""
         suite = self._scoped_queryset(request).filter(id=request.data.get("suite_id")).first()
         if not suite:
             return ResponseData.fail(RESPONSE_MSG_0210)

@@ -96,7 +96,7 @@ class TkPagesContractTests(TestCase):
 
     def test_default_entry_uses_flet_application(self):
         entry = (ACTUATOR_ROOT / "desktop_main.py").read_text(encoding="utf-8")
-        self.assertIn("from src.flet_pages.launcher import main", entry)
+        self.assertIn("from src.flet_pages.launcher import desktop_version, run_desktop", entry)
         self.assertIn("run_flet_application", (ACTUATOR_ROOT / "src/flet_pages/launcher.py").read_text(encoding="utf-8"))
         tree = ast.parse(entry)
         imported_modules = {
@@ -176,8 +176,9 @@ class TkPagesContractTests(TestCase):
             patch("src.flet_pages.application.run_flet_application", side_effect=error),
             patch.object(launcher, "_show_duplicate_instance_warning") as show_warning,
             patch("src.tools.log_collector.log.warning") as log_warning,
+            patch("src.flet_pages.native_client.development_client_directory", return_value=ACTUATOR_ROOT),
         ):
-            launcher.run_desktop()
+            launcher.run_desktop(app_name="芒果执行器", project_root=ACTUATOR_ROOT)
         show_warning.assert_called_once_with(str(error))
         log_warning.assert_called_once_with(str(error))
 

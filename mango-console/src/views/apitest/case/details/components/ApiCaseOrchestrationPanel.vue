@@ -9,7 +9,7 @@
     </div>
     <mango-panel-spin :loading="loading" tip="配置加载中..." class="api-case-panel-loading">
       <div class="api-case-panel-body">
-        <a-tabs :active-key="activeKey" @tab-click="$emit('change', String($event))">
+        <a-tabs class="mango-api-case-orchestration-tabs" :active-key="activeKey" @tab-click="$emit('change', String($event))">
           <template #extra>
             <a-space v-if="showAdd && !editLocked">
               <a-button
@@ -115,7 +115,9 @@
 
   .api-case-panel-body {
     min-height: 0;
-    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     flex: 1;
     padding: var(--m-page-gap);
   }
@@ -128,7 +130,14 @@
 
   .api-case-panel-loading :deep(> .mango-panel-spin__content) {
     display: flex;
-    min-height: 100%;
+    height: 100%;
+    min-height: 0;
     flex-direction: column;
   }
+  .mango-api-case-orchestration-tabs { display: flex; flex: 1; flex-direction: column; height: 100%; min-height: 0; overflow: hidden; }
+  .mango-api-case-orchestration-tabs :deep(> .arco-tabs-nav) { flex: none; }
+  .mango-api-case-orchestration-tabs :deep(> .arco-tabs-content) { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; overflow: hidden; padding-top: 1px; }
+  .mango-api-case-orchestration-tabs :deep(> .arco-tabs-content > .arco-tabs-content-list) { flex: 1; width: 100%; height: 100%; min-width: 0; min-height: 0; }
+  .mango-api-case-orchestration-tabs :deep(> .arco-tabs-content > .arco-tabs-content-list > .arco-tabs-content-item) { height: 100%; min-height: 0; overflow: hidden; }
+  .mango-api-case-orchestration-tabs :deep(> .arco-tabs-content > .arco-tabs-content-list > .arco-tabs-content-item > .arco-tabs-pane) { height: 100%; min-height: 0; overflow: auto; overscroll-behavior: contain; }
 </style>

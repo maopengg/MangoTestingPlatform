@@ -60,7 +60,7 @@
 
     <template #default>
       
-      <a-alert v-if="actionError || flowSave.error.value || elementChecks.error.value || stepDebug.error.value" type="error">{{ actionError || flowSave.error.value || elementChecks.error.value || stepDebug.error.value }}</a-alert>
+      <MangoRequestFeedback v-if="actionError || flowSave.error.value || elementChecks.error.value || stepDebug.error.value" :message="(actionError || flowSave.error.value || elementChecks.error.value || stepDebug.error.value)" />
       
       <a-spin v-if="stepResources.loading.steps" :size="scaleDensityPixels(16)" tip="加载步骤配置" />
       <a-spin v-if="stepResources.loading.aliases" :size="scaleDensityPixels(16)" tip="加载逻辑数据源" />
@@ -254,9 +254,7 @@
                     message="Case 中仅允许修改节点入参；流程、节点、元素和执行方法均继承页面步骤，不可在此修改。"
                     margin-bottom="8px"
                   />
-                  <a-alert v-if="caseNodeInputs.error.value" type="error">
-                    {{ caseNodeInputs.error.value }}
-                  </a-alert>
+                  <MangoRequestFeedback v-if="caseNodeInputs.error.value" :message="(caseNodeInputs.error.value)" />
                   <TipMessage
                     v-if="conditionTipMessage"
                     :message="conditionTipMessage"
@@ -445,8 +443,7 @@
   />
 </template>
 <script lang="ts" setup>
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { scaleDensityPixels } from '@/hooks/useDisplayDensity'
   import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
@@ -1323,7 +1320,7 @@ import { reportLoadError } from '@/utils/load-error'
       })
       stepResponse(res)
       if (current()) Message.success(res.msg || '已通知执行器打开目标页面')
-    } catch { if (current()) actionError.value = '打开浏览器失败，请重试' } finally {
+    } catch (requestFailure) { if (current()) actionError.value = requestFailureMessage(requestFailure, '打开浏览器失败，请重试') } finally {
       browserOpening.value = false
     }
   }
@@ -1373,7 +1370,7 @@ import { reportLoadError } from '@/utils/load-error'
         flowData.value.nodes.forEach(node => { if (String(node.config?.ai_heal_record_id) === recordId && node.config) node.config.ai_review_status = 'confirmed' })
       }
       if (current()) { Message.success('AI 流程修复已确认'); await doRefreshSteps(id) }
-    } catch { if (current()) actionError.value = '确认修复失败，已接受的记录不会重复提交，请重试剩余记录' }
+    } catch (requestFailure) { if (current()) actionError.value = requestFailureMessage(requestFailure, '确认修复失败，已接受的记录不会重复提交，请重试剩余记录') }
     finally { healingReviewConfirming.value = false }
   }
 
@@ -1606,8 +1603,8 @@ import { reportLoadError } from '@/utils/load-error'
       await nextTick()
       if (current()) flowChartRef.value?.selectNode(nodeId)
       if (current()) Message.success(res.msg)
-    } catch {
-      if (current()) actionError.value = '节点复制失败，请重试'
+    } catch (requestFailure) {
+      if (current()) actionError.value = requestFailureMessage(requestFailure, '节点复制失败，请重试')
     } finally {
       nodeDuplicating.value = false
     }
@@ -1636,7 +1633,7 @@ import { reportLoadError } from '@/utils/load-error'
       nodeFormDrafts.delete(node.id); nodeDetails.value = nodeDetails.value.filter(item => String(item.id) !== String(id))
       if (selectedNode.value?.id === node.id) { selectedNode.value = null; nodeDraft.value = createNodeDraft(); nodeFields.value = [] }
       Message.success('节点已删除'); return true
-    } catch { if (current()) actionError.value = '节点删除失败，请重试'; return false }
+    } catch (requestFailure) { if (current()) actionError.value = requestFailureMessage(requestFailure, '节点删除失败，请重试'); return false }
     finally { nodeDeleting.value = false }
   }
 
@@ -1857,7 +1854,7 @@ import { reportLoadError } from '@/utils/load-error'
       }
       await doRefresh()
     } catch (error) {
-      if (current()) actionError.value = '节点保存失败，草稿已保留，请重试'
+      if (current()) actionError.value = requestFailureMessage(error, '节点保存失败，草稿已保留，请重试')
     } finally {
       formSaving.value = false
       if (current() && flowRevision.value !== savedFlowRevision.value) scheduleFlowSave()
@@ -2045,7 +2042,7 @@ import { reportLoadError } from '@/utils/load-error'
     if (elementDeepCheckLoading.value) return
     elementPreparing.value = true
     try { const element = await loadSelectedNodeElement(); if (element && current()) await elementChecks.start(element, 'deep') }
-    catch { if (current()) actionError.value = '元素深度检测准备失败，请重试' }
+    catch (requestFailure) { if (current()) actionError.value = requestFailureMessage(requestFailure, '元素深度检测准备失败，请重试') }
     finally { elementPreparing.value = false }
   }
   const handleStepElementCheckResult = elementChecks.workbenchResult

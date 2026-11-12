@@ -3,7 +3,6 @@ export type ApiCaseSnapshotRecord = Record<string, any>
 export interface ApiCaseDetailedParameterSnapshot extends ApiCaseSnapshotRecord {
   resolved_headers?: Record<string, any> | null
   missing_header_ids: any[]
-  gray_configs: ApiCaseSnapshotRecord[]
 }
 
 export interface ApiCaseDetailedSnapshot extends ApiCaseSnapshotRecord {
@@ -27,7 +26,6 @@ export interface ApiCaseDetailedSnapshot extends ApiCaseSnapshotRecord {
 export interface ApiCaseRevisionRuntimeSnapshot {
   resolved_front_headers: Record<string, any>
   missing_front_header_ids: any[]
-  gray_configs: ApiCaseSnapshotRecord[]
   dependency_freeze_level: string | null
   unsupported_dependency_types: string[]
 }
@@ -69,13 +67,11 @@ export function parseApiCaseRevisionPayload(value: unknown): ApiCaseRevisionPayl
       ).map((parameter) => ({
         ...parameter,
         missing_header_ids: toArray(parameter.missing_header_ids),
-        gray_configs: toArray(parameter.gray_configs),
       })),
     })),
     runtime: {
       resolved_front_headers: toRecord(runtime.resolved_front_headers),
       missing_front_header_ids: toArray(runtime.missing_front_header_ids),
-      gray_configs: toArray(runtime.gray_configs),
       dependency_freeze_level:
         typeof runtime.dependency_freeze_level === 'string'
           ? runtime.dependency_freeze_level

@@ -10,7 +10,7 @@ from django.test import SimpleTestCase, override_settings
 
 from src.apps.auto_ui.enums.live_stream import LiveStreamExecutionType
 from src.apps.auto_ui.exceptions import AutoUiError
-from src.apps.auto_ui.services.executor_slot import ExecutorSlotLeaseService
+from src.apps.auto_ui.services.execution.executor_slot import ExecutorSlotLeaseService
 from src.apps.auto_ui.services.live_stream.session_service import LiveStreamSessionService
 from src.apps.auto_ui.services.live_stream.workspace_service import (
     LiveWorkspaceRecord,

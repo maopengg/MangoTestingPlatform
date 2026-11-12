@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from src.apps.auto_ui.services.element_service import PageElementService
+from src.apps.auto_ui.services.elements.element_service import PageElementService
 from src.interfaces.mcp.common import paginate_list
 from .helpers import _ui_service_call
 from .helpers import (

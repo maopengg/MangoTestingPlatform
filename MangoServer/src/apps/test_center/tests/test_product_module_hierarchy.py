@@ -10,9 +10,9 @@ from src.apps.test_center.api.serializers.product_module_mutation import Product
 from src.apps.test_center.api.views.project import ProjectViews
 from src.apps.test_center.exceptions import TestCenterError
 from src.apps.test_center.models import ProductModule, Project, ProjectProduct
-from src.apps.test_center.services.product_module import ProductModuleService
-from src.apps.test_center.services.product_module_cache import ProductModuleCacheService
-from src.apps.test_center.services.project_product_cache import ProjectProductCacheService
+from src.apps.test_center.services.project.product_module import ProductModuleService
+from src.apps.test_center.services.project.product_module_cache import ProductModuleCacheService
+from src.apps.test_center.services.project.project_product_cache import ProjectProductCacheService
 
 
 class ModuleBindingSerializer(ProductModuleBindingSerializerMixin, serializers.Serializer):

@@ -15,9 +15,9 @@ from src.apps.data_factory.exceptions import (
     DATASOURCE_AUDIT_COMPLETION_FAILED,
 )
 from src.apps.data_factory.schemas.cleanup_resource import CleanupResourceState, EsCleanupRule, EsCleanupSnapshot
-from src.apps.data_factory.services.cleanup import DataFactoryCleanup
-from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService as Resources
-from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService as Audit, SqlExecutionAuditHandle
+from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
+from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as Resources
+from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditService as Audit, SqlExecutionAuditHandle
 from src.apps.test_center.enums.data_source import DataSourceTypeEnum
 
 
@@ -28,13 +28,12 @@ def owned_document(tenant='7'):
 
 class CleanupResourceTests(SimpleTestCase):
     def setUp(self):
+        persistence = patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionAuditService.confirm_resource_requests')
+        persistence.start()
+        self.addCleanup(persistence.stop)
         resolver = patch.object(Resources, 'resolve_index', side_effect=lambda target, name: (name, 'AUTO_INDEX_UUID'))
         resolver.start()
         self.addCleanup(resolver.stop)
-        governor = patch('src.apps.data_factory.services.datasource_governor.DatasourceGovernorService.operation',
-                         side_effect=lambda target, **kwargs: nullcontext())
-        governor.start()
-        self.addCleanup(governor.stop)
         self.rule = EsCleanupRule(datasource_alias_id=8, index_template='example_template_{tenant}',
                                   mode='delete_and_verify', timeout_seconds=3)
         self.version = timezone.now().isoformat()
@@ -64,12 +63,12 @@ class CleanupResourceTests(SimpleTestCase):
                 Resources.normalize([rules])
 
     @patch.object(Resources, 'resolve_binding')
-    @patch('src.apps.data_factory.services.cleanup_resource.DatasourceTargetService.resolve')
+    @patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve')
     @patch.object(Resources, 'sample', return_value=True)
     def test_checkpoint_keeps_full_window_and_two_separated_terminal_samples(self, sample, target, binding):
         from datetime import datetime, timezone as dt_timezone
         binding.return_value = self.binding
-        clock = lambda seconds: patch('src.apps.data_factory.services.cleanup_resource.timezone.now',
+        clock = lambda seconds: patch('src.apps.data_factory.services.cleanup.cleanup_resource.timezone.now',
                                       return_value=datetime.fromtimestamp(1800000000 + seconds, dt_timezone.utc))
         for seconds in (0, 2, 3):
             with clock(seconds):
@@ -83,13 +82,13 @@ class CleanupResourceTests(SimpleTestCase):
         self.assertTrue(self.item.cleanup_resources['results'][0]['success'])
 
     @patch.object(Resources, 'resolve_binding')
-    @patch('src.apps.data_factory.services.cleanup_resource.DatasourceTargetService.resolve')
+    @patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve')
     @patch.object(Resources, 'sample', return_value=True)
     def test_recovery_generation_restarts_observation_not_assume_absence(self, sample, target, binding):
         from datetime import datetime, timezone as dt_timezone
         binding.return_value = self.binding
         for seconds, generation in ((0, 0), (20, 1)):
-            with patch('src.apps.data_factory.services.cleanup_resource.timezone.now',
+            with patch('src.apps.data_factory.services.cleanup.cleanup_resource.timezone.now',
                        return_value=datetime.fromtimestamp(1800000000 + seconds, dt_timezone.utc)):
                 self.assertIsNotNone(Resources.advance(self.item, generation=generation))
         check = self.item.cleanup_resources['checkpoints'][0]
@@ -98,7 +97,7 @@ class CleanupResourceTests(SimpleTestCase):
         self.assertFalse(self.item.cleanup_resources['results'])
 
     @patch.object(Resources, 'resolve_binding')
-    @patch('src.apps.data_factory.services.cleanup_resource.DatasourceTargetService.resolve')
+    @patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve')
     @patch.object(Resources, 'sample', return_value=True)
     def test_multiple_resources_interleave_full_windows_instead_of_serial_waits(self, sample, target, binding):
         from datetime import datetime, timezone as dt_timezone
@@ -109,7 +108,7 @@ class CleanupResourceTests(SimpleTestCase):
         })
         self.item.cleanup_resources['snapshots'].append(other.model_dump(mode='json'))
         for seconds in (0, 0, 2, 2, 3, 3, 4, 4):
-            with patch('src.apps.data_factory.services.cleanup_resource.timezone.now',
+            with patch('src.apps.data_factory.services.cleanup.cleanup_resource.timezone.now',
                        return_value=datetime.fromtimestamp(1800000000 + seconds, dt_timezone.utc)):
                 result = Resources.advance(self.item, generation=0)
         self.assertIsNone(result)
@@ -122,7 +121,7 @@ class CleanupResourceTests(SimpleTestCase):
         self.assertIsNone(value[0]['document_id_field'])
 
     @patch.object(Resources, 'resolve_binding')
-    @patch('src.apps.data_factory.services.cleanup_resource.DatasourceTargetService.resolve')
+    @patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve')
     @patch.object(Resources, 'document', return_value=None)
     def test_business_id_mapping_is_separate_from_sql_primary_key(self, document, target, binding):
         binding.return_value = self.binding
@@ -157,8 +156,8 @@ class CleanupResourceTests(SimpleTestCase):
         document.assert_not_called()
         binding.assert_not_called()
 
-    @patch('src.apps.data_factory.services.cleanup_resource.DataFactoryDatasourceAlias.objects')
-    @patch('src.apps.data_factory.services.cleanup_resource.DataFactoryField.objects')
+    @patch('src.apps.data_factory.services.cleanup.cleanup_resource.DataFactoryDatasourceAlias.objects')
+    @patch('src.apps.data_factory.services.cleanup.cleanup_resource.DataFactoryField.objects')
     def test_mapping_must_be_an_entity_field(self, fields, aliases):
         fields.filter.return_value.values_list.return_value = ['_id', 'tenant_id']
         with self.assertRaises(DataFactoryError):
@@ -180,7 +179,7 @@ class CleanupResourceTests(SimpleTestCase):
             Resources.normalize([self.rule.model_dump(mode='json')] * 2)
 
     @patch.object(Resources, 'resolve_binding')
-    @patch('src.apps.data_factory.services.cleanup_resource.DatasourceTargetService.resolve')
+    @patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve')
     @patch.object(Resources, 'document')
     def test_capture_uses_real_id_and_rejects_existing_document(self, document, target, binding):
         binding.return_value = self.binding
@@ -197,13 +196,13 @@ class CleanupResourceTests(SimpleTestCase):
 
     def test_baseline_failure_before_commit_rolls_back_the_insert(self):
         from sqlalchemy import Column, Integer, MetaData, String, Table, create_engine, select, func
-        from src.apps.data_factory.services.runner import DataFactoryRunner
+        from src.apps.data_factory.services.execution.runner import DataFactoryRunner
         engine = create_engine('sqlite:///:memory:')
         table = Table('example', MetaData(), Column('id', Integer, primary_key=True), Column('name', String(32)))
         table.metadata.create_all(engine)
         entity = SimpleNamespace(table_name='example', primary_key='id')
         try:
-            with patch('src.apps.data_factory.services.runner_parts.persistence.DataFactoryDatasource.get_worker_engine', return_value=(engine, True)):
+            with patch('src.apps.data_factory.services.execution.parts.persistence.DataFactoryDatasource.get_worker_engine', return_value=(engine, True)):
                 def reject(_):
                     raise DataFactoryError(DATA_FACTORY_ES_CLEANUP_TIMEOUT)
                 with self.assertRaises(DataFactoryError):
@@ -241,7 +240,7 @@ class CleanupResourceTests(SimpleTestCase):
         with self.assertRaises(DataFactoryError):
             Resources.validate_snapshot(self.item)
 
-    @patch('src.apps.data_factory.services.cleanup_resource.DataFactoryDatasourceResolver')
+    @patch('src.apps.data_factory.services.cleanup.cleanup_resource.DataFactoryDatasourceResolver')
     def test_production_delete_is_forbidden_and_both_permissions_are_required(self, resolver):
         resolver.resolve_binding_by_env.return_value = self.binding
         from src.apps.test_center.enums.environment import EnvironmentEnum
@@ -254,10 +253,10 @@ class CleanupResourceTests(SimpleTestCase):
     def run_checks(self, responses, *, expect_failure=False, clock=None):
         clock = clock if clock is not None else [0]
         with patch.object(Resources, 'resolve_binding', return_value=self.binding), \
-                patch('src.apps.data_factory.services.cleanup_resource.DatasourceTargetService.resolve'), \
+                patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve'), \
                 patch.object(Resources, 'document', side_effect=responses) as document, \
-                patch('src.apps.data_factory.services.cleanup_resource.sleep', side_effect=lambda duration: clock.__setitem__(0, clock[0] + duration)), \
-                patch('src.apps.data_factory.services.cleanup_resource.monotonic', side_effect=lambda: clock[0]):
+                patch('src.apps.data_factory.services.cleanup.cleanup_resource.sleep', side_effect=lambda duration: clock.__setitem__(0, clock[0] + duration)), \
+                patch('src.apps.data_factory.services.cleanup.cleanup_resource.monotonic', side_effect=lambda: clock[0]):
             if expect_failure:
                 with self.assertRaises(DataFactoryError):
                     Resources.verify(self.item)
@@ -305,7 +304,7 @@ class CleanupResourceTests(SimpleTestCase):
         self.assertTrue(any(call.kwargs.get('realtime') is False for call in calls))
 
     def test_verified_timeout_resolves_only_its_request_and_keeps_original_audit(self):
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService as Infrastructure
         record = SimpleNamespace(request_id='AUTO_DELETE', database_id=10, source_detail={}, slow_threshold_ms=20000)
         handle = SqlExecutionAuditHandle(record, 0)
         timeout = DataFactoryError(DATA_SOURCE_ELASTICSEARCH_REQUEST_TIMEOUT)
@@ -324,7 +323,7 @@ class CleanupResourceTests(SimpleTestCase):
             self.assertEqual(self.item.cleanup_resources['uncertain_requests'][0]['request_id'], 'AUTO_DELETE')
 
     def test_failed_verification_and_pending_permit_cannot_resolve_timeout(self):
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService as Infrastructure
         from src.apps.data_factory.schemas.cleanup_resource import EsUncertainRequest, EsCleanupCheckResult, EsUnknownPermit
         state = Resources.state(self.item)
         state.uncertain_requests.append(EsUncertainRequest(
@@ -356,7 +355,7 @@ class CleanupResourceTests(SimpleTestCase):
         document.assert_not_called()
 
     @patch.object(Resources, 'resolve_binding')
-    @patch('src.apps.data_factory.services.cleanup_resource.DatasourceTargetService.resolve')
+    @patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve')
     @patch.object(Resources, 'document', return_value=None)
     def test_capture_freezes_alias_target_and_keeps_original_rule(self, document, target, binding):
         binding.return_value = self.binding
@@ -391,10 +390,10 @@ class CleanupResourceTests(SimpleTestCase):
             raise HTTPError(request.full_url, 404, '', {}, io.BytesIO(body))
 
         with patch.object(Resources, 'resolve_binding', return_value=self.binding), \
-                patch('src.apps.data_factory.services.cleanup_resource.DatasourceTargetService.resolve', return_value=target), \
-                patch('src.apps.data_factory.services.cleanup_resource.open_elasticsearch_request', side_effect=open_request), \
-                patch('src.apps.data_factory.services.cleanup_resource.sleep', side_effect=lambda duration: clock.__setitem__(0, clock[0] + duration)), \
-                patch('src.apps.data_factory.services.cleanup_resource.monotonic', side_effect=lambda: clock[0]), \
+                patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve', return_value=target), \
+                patch('src.apps.data_factory.services.cleanup.cleanup_resource.open_elasticsearch_request', side_effect=open_request), \
+                patch('src.apps.data_factory.services.cleanup.cleanup_resource.sleep', side_effect=lambda duration: clock.__setitem__(0, clock[0] + duration)), \
+                patch('src.apps.data_factory.services.cleanup.cleanup_resource.monotonic', side_effect=lambda: clock[0]), \
                 patch.object(Audit, 'start', side_effect=lambda **kwargs: SqlExecutionAuditHandle(
                     SimpleNamespace(database_id=10, datasource_type=20), 0)), \
                 patch.object(Audit, 'finish_success'), \
@@ -450,17 +449,17 @@ class CleanupResourceTests(SimpleTestCase):
         self.item.cleanup_resources['snapshots'][0]['rule']['mode'] = 'verify'
         clock = iter(range(100))
         with patch.object(Resources, 'resolve_binding', return_value=self.binding), \
-                patch('src.apps.data_factory.services.cleanup_resource.DatasourceTargetService.resolve'), \
+                patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve'), \
                 patch.object(Resources, 'document', return_value=owned_document()) as document, \
-                patch('src.apps.data_factory.services.cleanup_resource.sleep'), \
-                patch('src.apps.data_factory.services.cleanup_resource.monotonic', side_effect=lambda: next(clock)):
+                patch('src.apps.data_factory.services.cleanup.cleanup_resource.sleep'), \
+                patch('src.apps.data_factory.services.cleanup.cleanup_resource.monotonic', side_effect=lambda: next(clock)):
             with self.assertRaises(DataFactoryError):
                 Resources.verify(self.item)
         self.assertTrue(self.item.cleanup_resources['sql_cleaned'])
         self.assertFalse(self.item.cleanup_resources['results'][0]['success'])
         self.assertTrue(all(not call.kwargs.get('delete') for call in document.call_args_list))
 
-    @patch('src.apps.data_factory.services.cleanup_resource.open_elasticsearch_request')
+    @patch('src.apps.data_factory.services.cleanup.cleanup_resource.open_elasticsearch_request')
     def test_conditional_delete_has_no_free_query_and_no_unconditional_fallback(self, open_request):
         target = SimpleNamespace(extra_config={}, host='es.example.com', port=9200, user='', password='')
         response = open_request.return_value.__enter__.return_value
@@ -475,7 +474,7 @@ class CleanupResourceTests(SimpleTestCase):
             Resources.request_document(target, 'example_template_7', '1001', delete=True, timeout=2, expected={})
         self.assertEqual(open_request.call_count, 1)
 
-    @patch('src.apps.data_factory.services.cleanup_resource.open_elasticsearch_request')
+    @patch('src.apps.data_factory.services.cleanup.cleanup_resource.open_elasticsearch_request')
     def test_search_visible_check_is_exact_document_get_without_forcing_refresh(self, open_request):
         target = SimpleNamespace(extra_config={}, host='es.example.com', port=9200, user='', password='')
         response = open_request.return_value.__enter__.return_value
@@ -489,7 +488,7 @@ class CleanupResourceTests(SimpleTestCase):
         self.assertNotIn('refresh=', request.full_url)
 
     def test_wrapped_transport_timeout_is_distinct_from_tls_failure(self):
-        from src.apps.data_factory.services.data_source_error import DataSourceErrorService
+        from src.apps.data_factory.services.datasource.data_source_error import DataSourceErrorService
         target = SimpleNamespace(password='')
         for error in (TimeoutError(), URLError(TimeoutError())):
             with self.subTest(error=type(error).__name__), self.assertRaises(DataFactoryError) as result:
@@ -497,7 +496,7 @@ class CleanupResourceTests(SimpleTestCase):
             self.assertEqual(result.exception.code, 34183)
             self.assertTrue(Audit.is_timeout(result.exception))
 
-    @patch('src.apps.data_factory.services.cleanup_resource.open_elasticsearch_request')
+    @patch('src.apps.data_factory.services.cleanup.cleanup_resource.open_elasticsearch_request')
     def test_missing_index_is_not_mistaken_for_missing_document(self, open_request):
         target = SimpleNamespace(extra_config={}, host='es.example.com', port=9200, user='', password='')
         open_request.side_effect = HTTPError('https://es.example.com', 404, '', {}, io.BytesIO(b'{"error":{"type":"index_not_found_exception"}}'))
@@ -516,18 +515,18 @@ class CleanupResourceTests(SimpleTestCase):
         start.assert_called_once()
         finish.assert_called_once()
 
-    @patch('src.apps.data_factory.services.cleanup.DataFactoryExecutionItem.objects')
-    @patch('src.apps.data_factory.services.cleanup.DataFactoryExecution.objects')
+    @patch('src.apps.data_factory.services.cleanup.cleanup.DataFactoryExecutionItem.objects')
+    @patch('src.apps.data_factory.services.cleanup.cleanup.DataFactoryExecution.objects')
     def test_resource_failure_stays_failed_and_retry_does_not_delete_sql_again(self, executions, items):
         self.item.cleanup_resources['sql_cleaned'] = False
         executions.get.return_value = self.execution
         items.select_related.return_value.filter.return_value.order_by.return_value = [self.item]
         with patch.object(Resources, 'validate_snapshot', side_effect=lambda item: Resources.state(item)), \
                 patch.object(DataFactoryCleanup, 'validate_cleanup_item'), \
-                patch('src.apps.data_factory.services.cleanup.DatasourceTargetService.from_snapshot', return_value=SimpleNamespace(cache_key='target')), \
+                patch('src.apps.data_factory.services.cleanup.cleanup.DatasourceTargetService.from_snapshot', return_value=SimpleNamespace(cache_key='target')), \
                 patch.object(DataFactoryCleanup, 'cleanup_items_in_database_transaction') as delete_sql, \
                 patch.object(Resources, 'verify', side_effect=DataFactoryError(DATA_FACTORY_ES_CLEANUP_TIMEOUT)) as verify, \
-                patch('src.apps.data_factory.services.cleanup.transaction.on_commit', side_effect=lambda callback: callback()), \
+                patch('src.apps.data_factory.services.cleanup.cleanup.transaction.on_commit', side_effect=lambda callback: callback()), \
                 patch.object(DataFactoryCleanup, 'sync_workbench_todo') as todo:
             first = DataFactoryCleanup.cleanup_execution(5, defer_resources=True)
             self.assertEqual(first['pending'], 1)

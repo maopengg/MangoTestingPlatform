@@ -8,6 +8,21 @@ class PageOperationEnum(TextChoices):
     REMOVE = 'remove', '删除'
 
 
+class EndpointPermissionEffectEnum(TextChoices):
+    ALLOW = 'endpoint_allow', '允许'
+    DENY = 'endpoint_deny', '拒绝'
+
+
+class RoleAuthorizationVersionEnum(TextChoices):
+    ENDPOINT_V1 = 'endpoint_v1', '旧表接口授权快照'
+
+
+class FixedEndpointCategoryEnum(TextChoices):
+    SHARED_OPTIONS = 'shared_options', '公共选项'
+    DEFAULT_READ = 'default_read', '首页与帮助'
+    MCP_BASE = 'mcp_base', 'MCP 基础能力'
+
+
 class HttpPermissionBoundaryEnum(TextChoices):
     PUBLIC = 'public', '公开登录与下载'
     BOOTSTRAP = 'bootstrap', '登录用户权限初始化'

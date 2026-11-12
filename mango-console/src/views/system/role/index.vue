@@ -101,10 +101,10 @@
               </a-button>
             </div>
 
-            <div v-if="routeRefreshError" class="mango-role-error" role="alert">{{ routeRefreshError }} <a-button size="small" :loading="routeRefreshing" :disabled="writeBusy" @click="refreshOwnRoutes">刷新菜单</a-button></div>
+            <MangoRequestFeedback v-if="routeRefreshError" :message="(routeRefreshError)"><a-button size="small" :loading="routeRefreshing" :disabled="writeBusy" @click="refreshOwnRoutes">刷新菜单</a-button></MangoRequestFeedback>
             <mango-panel-spin :loading="permissionPanel.loading">
               <div v-if="permissionError" :class="{ 'mango-role-error': !permissionLoadFailed }">
-                <span v-if="!permissionLoadFailed" role="alert">{{ permissionError }}</span>
+                <MangoRequestFeedback v-if="!permissionLoadFailed" :message="(permissionError)" />
                 <a-button size="small" :loading="permissionPanel.loading" :disabled="writeBusy" @click="retryPermission">重新加载</a-button>
               </div>
               <template v-else-if="selectedRole">
@@ -114,10 +114,10 @@
                     <span class="mango-permission-summary__value">{{ selectedPageCount }}</span>
                   </div>
                   <div>
-                    <span class="mango-permission-summary__label">已选操作</span>
+                    <span class="mango-permission-summary__label">已授权接口</span>
                     <span class="mango-permission-summary__value">{{ selectedActionCount }}</span>
                   </div>
-                  <a-tag color="blue" size="small">首页默认开放</a-tag>
+                  <a-tag color="blue" size="small">首页与帮助默认开放</a-tag>
                 </div>
 
                 <div class="mango-permission-layout">
@@ -129,7 +129,7 @@
                           size="mini"
                           @click="expandPermissionTree(true)"
                           data-testid="qa-views-system-role-button-展开"
-                          >展开</a-button
+                          >展开当前</a-button
                         >
                         <a-button
                           size="mini"
@@ -141,50 +141,28 @@
                     </div>
                     <a-tree
                       :checked-keys="pageCheckedKeys"
-                      v-model:expanded-keys="permissionPanel.expandedKeys"
-                      v-model:selected-keys="permissionPanel.selectedKeys"
+                      :expanded-keys="permissionPanel.expandedKeys"
+                      :selected-keys="permissionPanel.selectedKeys"
                       :data="readonlyTreeData"
                       checkable
                       block-node
+                      action-on-node-click="expand"
                       @check="onPageCheck"
                       @select="onPageSelect"
+                      @expand="onPageExpand"
                     />
                   </section>
 
                   <section class="mango-permission-panel">
                     <div class="mango-permission-panel__header">
-                      <span>操作列表</span>
+                      <span>接口权限</span>
                       <span class="mango-permission-panel__sub">
                         {{ selectedPage?.title || '未选择页面' }} · {{ selectedPageActionCount }} 项
                       </span>
                     </div>
-                    <div v-if="selectedPage" class="mango-permission-actions">
-                      <a-alert v-if="selectedPage.key === homePermissionKey" type="info" show-icon>
-                        首页是登录后的基础权限，所有角色默认拥有。
-                      </a-alert>
-                      <template v-if="selectedPage.actions?.length">
-                        <a-checkbox
-                          v-for="action in selectedPage.actions"
-                          :key="action.permissionKey"
-                          :model-value="permissionPanel.checkedKeys.includes(action.permissionKey)"
-                          :disabled="
-                            isPermissionReadonly || permissionPanel.loading || permissionPanel.saving ||
-                            !permissionPanel.checkedKeys.includes(selectedPage.key)
-                          "
-                          @change="(checked) => onActionCheck(action.permissionKey, checked)"
-                        >
-                          <span class="mango-permission-action__content">
-                            <span class="mango-permission-action__name">{{
-                              action.permissionName
-                            }}</span>
-                            <span class="mango-permission-action__desc">
-                              {{ action.permissionDescription || '当前操作暂无描述' }}
-                            </span>
-                          </span>
-                        </a-checkbox>
-                      </template>
-                      <div v-else class="mango-empty-state">当前页面没有可单独授权的操作</div>
-                    </div>
+                    <EndpointPermissionEditor v-if="selectedPage" :menu-key="selectedPage.key"
+                      :groups="endpointGroups" :permissions="endpointOverrides" :readonly="isPermissionReadonly || !!selectedPage.displayOnly"
+                      @change="onEndpointChange" />
                     <div v-else class="mango-empty-state">请选择左侧页面</div>
                   </section>
                 </div>
@@ -225,13 +203,15 @@
 </template>
 
 <script lang="ts" setup>
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, onMounted, onActivated, onDeactivated, onBeforeUnmount, reactive, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import type { ModalDialogType } from '@/types/components'
   import { roleFormFields, roleEditorWidth } from './config'
-  import { collectTreeKeys, collectPageKeys, collectActionKeys, findPermissionNode, findParentKeys, uniqKeys, normalizeKeys, findFirstPageKey, markTreeCheckboxReadonly, homePermissionKey, isGuestRole, createRoleForm, parseRoles, parseRolePermissions, parsePermissionKeys, roleSuccess, roleMessage } from './role-permissions'
+  import EndpointPermissionEditor from './components/EndpointPermissionEditor.vue'
+  import { parseEndpointPermissions } from './endpoint-permissions'
+  import type { EndpointGroup, EndpointOverrides, EndpointEffect } from './endpoint-permissions'
+  import { collectTreeKeys, collectPageKeys, collectDisplayOnlyKeys, collectLockedPageKeys, findPermissionNode, findParentKeys, uniqKeys, normalizeKeys, findFirstPageKey, markTreeCheckboxReadonly, homePermissionKey, isGuestRole, createRoleForm, parseRoles, parseRolePermissions, parsePermissionKeys, roleSuccess, roleMessage } from './role-permissions'
   import type { RoleId, RoleRow, PermissionNode, PageCheckEvent } from './role-permissions'
   import usePermissionStore from '@/store/modules/permission'
   import useUserStore from '@/store/modules/user'
@@ -249,13 +229,17 @@ import { reportLoadError } from '@/utils/load-error'
   const permissionPanel = reactive<{ loading: boolean; saving: boolean; checkedKeys: string[]; expandedKeys: string[]; selectedKeys: string[]; treeData: PermissionNode[] }>({
     loading: false, saving: false, checkedKeys: [], expandedKeys: [], selectedKeys: [], treeData: [],
   })
+  const endpointGroups = ref<EndpointGroup[]>([]), endpointOverrides = ref<EndpointOverrides>({})
   const routeRefreshing = ref(false), routeRefreshError = ref('')
   const writeBusy = computed(() => saving.value || deletingId.value !== null || permissionPanel.saving || routeRefreshing.value)
   const selectedPage = computed(() => findPermissionNode(permissionPanel.treeData, permissionPanel.selectedKeys[0] || ''))
   const selectedPageCount = computed(() => permissionPanel.checkedKeys.filter(key => collectPageKeys(permissionPanel.treeData).filter(key => !findPermissionNode(permissionPanel.treeData, key)?.children.length).includes(key)).length)
-  const selectedActionCount = computed(() => permissionPanel.checkedKeys.filter(key => collectActionKeys(permissionPanel.treeData).includes(key)).length)
-  const selectedPageActionCount = computed(() => selectedPage.value?.actions.length || 0)
-  const pageCheckedKeys = computed(() => permissionPanel.checkedKeys.filter(key => collectPageKeys(permissionPanel.treeData).includes(key)))
+  const selectedActionCount = computed(() => Object.values(endpointOverrides.value).filter(value => value === 'endpoint_allow').length)
+  const selectedPageActionCount = computed(() => endpointGroups.value.find(group => group.menu_key === selectedPage.value?.key)?.endpoints.length || 0)
+  const pageCheckedKeys = computed(() => [
+    ...permissionPanel.checkedKeys.filter(key => collectPageKeys(permissionPanel.treeData).includes(key)),
+    ...collectDisplayOnlyKeys(permissionPanel.treeData),
+  ])
   const isSelectedGuestRole = computed(() => isGuestRole(selectedRole.value))
   const isPermissionReadonly = computed(() => isSelectedGuestRole.value || permissionPanel.loading || writeBusy.value || editorVisible.value || loadedRoleId.value === null)
   const canSavePermission = computed(() => !isPermissionReadonly.value && loadedRoleId.value === selectedRole.value?.id)
@@ -270,6 +254,7 @@ import { reportLoadError } from '@/utils/load-error'
   const identity = () => JSON.stringify([sessionKey(), permissionStore.permissionKeys])
   const current = (version: number, key: string) => available() && version === contextVersion && key === identity()
   function clearPermissions() {
+    endpointGroups.value = []; endpointOverrides.value = {}
     permissionRequestId++; loadedRoleId.value = null; permissionError.value = ''
     permissionLoadFailed.value = false
     Object.assign(permissionPanel, { loading: false, checkedKeys: [], expandedKeys: [], selectedKeys: [], treeData: [] })
@@ -308,6 +293,7 @@ import { reportLoadError } from '@/utils/load-error'
       const result = parseRolePermissions(await getUserRolePermission(id))
       if (!valid()) return
       permissionPanel.treeData = result.tree; permissionPanel.checkedKeys = result.checkedKeys
+      endpointGroups.value = result.groups; endpointOverrides.value = result.overrides
       permissionPanel.selectedKeys = [findFirstPageKey(result.tree)]; loadedRoleId.value = id
     } catch (error) {
       if (valid()) {
@@ -373,65 +359,61 @@ import { reportLoadError } from '@/utils/load-error'
     confirmation = handle
   }
   function expandPermissionTree(expanded: boolean) {
-    permissionPanel.expandedKeys = expanded ? collectTreeKeys(permissionPanel.treeData) : []
+    if (!expanded) { permissionPanel.expandedKeys = []; return }
+    const selected = permissionPanel.selectedKeys[0] || ''
+    const parents = findParentKeys(permissionPanel.treeData, selected)
+    const branch = permissionPanel.treeData.find(item => item.children.length)
+    permissionPanel.expandedKeys = parents.length ? parents : branch ? [branch.key] : []
+  }
+
+  function onPageExpand(keys: unknown, event: { expanded: boolean; node?: { key?: string | number } }) {
+    const key = String(event.node?.key ?? '')
+    const node = findPermissionNode(permissionPanel.treeData, key)
+    if (!node?.children.length) return
+    if (event.expanded) {
+      permissionPanel.expandedKeys = [...findParentKeys(permissionPanel.treeData, key), key]
+    } else {
+      const closed = new Set(collectTreeKeys([node]))
+      permissionPanel.expandedKeys = normalizeKeys(keys).filter(item => !closed.has(item))
+    }
   }
 
   function onPageSelect(keys: unknown) {
-    permissionPanel.selectedKeys = normalizeKeys(keys)
+    const selected = normalizeKeys(keys)
+    const node = findPermissionNode(permissionPanel.treeData, selected[0] || '')
+    if (node?.children.length) return
+    permissionPanel.selectedKeys = selected
   }
 
   function onPageCheck(keys: unknown, event?: PageCheckEvent) {
     if (!available() || isPermissionReadonly.value) return
-    const checkedPageKeys = normalizeKeys(keys)
-    const pageKeys = collectPageKeys(permissionPanel.treeData)
-    const actionKeys = collectActionKeys(permissionPanel.treeData)
-    let checkedActionKeys: string[] = []
-    let uncheckedPageKeys: string[] = []
-    if (event?.checked === true && event?.node?.key) {
-      const checkedNode = findPermissionNode(permissionPanel.treeData, String(event.node.key))
-      checkedActionKeys = checkedNode ? collectActionKeys([checkedNode]) : []
-    } else if (event?.checked === false && event?.node?.key) {
-      const uncheckedNode = findPermissionNode(permissionPanel.treeData, String(event.node.key))
-      uncheckedPageKeys = uncheckedNode
-        ? collectPageKeys([uncheckedNode])
-        : [String(event.node.key)]
-    } else if (!event) {
-      const previousPageKeys = permissionPanel.checkedKeys.filter((key) => pageKeys.includes(key))
-      const newlyCheckedPageKeys = checkedPageKeys.filter((key) => !previousPageKeys.includes(key))
-      checkedActionKeys = newlyCheckedPageKeys.flatMap((key) => {
-        const node = findPermissionNode(permissionPanel.treeData, key)
-        return (node?.actions || []).map((action) => action.permissionKey)
-      })
-      uncheckedPageKeys = previousPageKeys.filter((key) => !checkedPageKeys.includes(key))
-    }
-    const keptActionKeys = permissionPanel.checkedKeys.filter((key) => {
-      if (!actionKeys.includes(key)) return false
-      const pageKey = key.split(':')[0]
-      return !uncheckedPageKeys.includes(pageKey)
-    })
-    permissionPanel.checkedKeys = uniqKeys([
-      ...checkedPageKeys,
-      ...keptActionKeys,
-      ...checkedActionKeys,
-      homePermissionKey,
+    const validKeys = collectPageKeys(permissionPanel.treeData)
+    const before = new Set(permissionPanel.checkedKeys)
+    const selected = uniqKeys([
+      ...normalizeKeys(keys).filter(key => validKeys.includes(key)),
+      ...collectLockedPageKeys(permissionPanel.treeData), homePermissionKey,
     ])
+    const node = event?.node?.key === undefined ? null : findPermissionNode(permissionPanel.treeData, String(event.node.key))
+    const added = new Set(event?.checked && node ? collectPageKeys([node]) : selected.filter(key => !before.has(key)))
+    const removed = new Set([...before].filter(key => !selected.includes(key)))
+    const retained = new Set(endpointGroups.value.filter(group => selected.includes(group.menu_key))
+      .flatMap(group => group.endpoints.filter(item => !item.fixed).map(item => item.id)))
+    const overrides = { ...endpointOverrides.value }
+    for (const group of endpointGroups.value) {
+      if (removed.has(group.menu_key)) for (const item of group.endpoints) {
+        if (!item.fixed && !retained.has(item.id)) overrides[item.id] = 'endpoint_deny'
+      }
+      if (added.has(group.menu_key)) for (const item of group.endpoints) {
+        if (!item.fixed) overrides[item.id] = 'endpoint_allow'
+      }
+    }
+    permissionPanel.checkedKeys = selected
+    endpointOverrides.value = overrides
   }
 
-  function onActionCheck(actionKey: string, checked: boolean | (string | number | boolean)[]) {
-    if (!available() || isPermissionReadonly.value) return
-    const pageKey = actionKey.split(':')[0]
-    const parentKeys = findParentKeys(permissionPanel.treeData, pageKey)
-    if (checked === true) {
-      permissionPanel.checkedKeys = uniqKeys([
-        ...permissionPanel.checkedKeys,
-        ...parentKeys,
-        pageKey,
-        actionKey,
-        homePermissionKey,
-      ])
-      return
-    }
-    permissionPanel.checkedKeys = permissionPanel.checkedKeys.filter((key) => key !== actionKey)
+  function onEndpointChange(id: string, effect: EndpointEffect) {
+    if (!available() || isPermissionReadonly.value || selectedPage.value?.displayOnly) return
+    endpointOverrides.value = { ...endpointOverrides.value, [id]: effect }
   }
 
   async function refreshOwnRoutes(): Promise<void> {
@@ -451,21 +433,26 @@ import { reportLoadError } from '@/utils/load-error'
   }
   async function onSavePermission(): Promise<void> {
     if (!available() || !selectedRole.value || !canSavePermission.value) return
-    const roleId = selectedRole.value.id, keys = [...permissionPanel.checkedKeys]
+    const roleId = selectedRole.value.id, keys = permissionPanel.checkedKeys.filter(key => collectPageKeys(permissionPanel.treeData).includes(key))
+    const endpoints = { ...endpointOverrides.value }
     const context = contextVersion, key = identity(), session = sessionKey(), generation = permissionRequestId
     const valid = () => current(context, key) && generation === permissionRequestId && selectedRole.value?.id === roleId
     permissionPanel.saving = true
     let succeeded = false
     try {
-      const result = roleSuccess(await putUserRolePermission({ role_id: roleId, permission_keys: keys }))
+      const result = roleSuccess(await putUserRolePermission({ role_id: roleId, menu_keys: keys, endpoint_permissions: endpoints }))
       if (!valid()) {
         if (session === sessionKey() && String(roleId) === String(userStore.roleId)) pendingRouteSession = session
         return
       }
       succeeded = true
       // The write has succeeded even if its receipt or subsequent route refresh cannot be read.
-      try { permissionPanel.checkedKeys = parsePermissionKeys(result.data) }
-      catch { clearPermissions(); permissionError.value = '权限已保存，回执格式异常，请重新读取权限' }
+      try {
+        const receipt = result.data as { menu_keys: unknown; endpoint_permissions: unknown }
+        permissionPanel.checkedKeys = parsePermissionKeys(receipt.menu_keys)
+        endpointOverrides.value = parseEndpointPermissions([], receipt.endpoint_permissions).overrides
+      }
+      catch (requestFailure) { clearPermissions(); permissionError.value = requestFailureMessage(requestFailure, '权限已保存，回执格式异常，请重新读取权限') }
       Message.success(roleMessage(result, '保存成功'))
       if (session === sessionKey() && String(roleId) === String(userStore.roleId)) await refreshOwnRoutes()
     } catch (error) { if (valid()) Message.error(roleMessage(error, '权限保存失败，请重试')) }
@@ -556,7 +543,7 @@ import { reportLoadError } from '@/utils/load-error'
 
   .mango-role-list__header {
     min-height: 56px;
-    padding: 0 12px;
+    padding: 0 var(--m-card-padding);
   }
 
   .mango-role-list__title,
@@ -583,7 +570,7 @@ import { reportLoadError } from '@/utils/load-error'
     flex: 1;
     min-height: 0;
     overflow: auto;
-    padding: 10px;
+    padding: var(--m-card-padding);
   }
 
   .mango-role-item {
@@ -665,15 +652,15 @@ import { reportLoadError } from '@/utils/load-error'
 
   .mango-role-permission__header {
     min-height: 64px;
-    padding: 0 14px;
+    padding: 0 var(--m-card-padding);
   }
 
   .mango-permission-summary {
     display: flex;
     align-items: center;
     gap: 16px;
-    margin: 12px;
-    padding: 10px 12px;
+    margin: var(--m-card-padding);
+    padding: var(--m-card-padding);
     border: 1px solid var(--m-border);
     border-radius: var(--m-radius-md);
     background: var(--m-surface-soft);
@@ -697,7 +684,7 @@ import { reportLoadError } from '@/utils/load-error'
     gap: var(--m-page-gap);
     flex: 1;
     min-height: 0;
-    padding: 0 12px 12px;
+    padding: 0 var(--m-card-padding) var(--m-card-padding);
   }
 
   .mango-permission-panel {
@@ -716,7 +703,7 @@ import { reportLoadError } from '@/utils/load-error'
     height: auto;
     min-height: 0;
     overflow: auto;
-    padding: 6px 8px 10px;
+    padding: var(--m-page-gap) var(--m-card-padding) var(--m-card-padding);
   }
 
   .mango-permission-panel--tree :deep(.arco-tree-node),
@@ -727,7 +714,7 @@ import { reportLoadError } from '@/utils/load-error'
 
   .mango-permission-panel__header {
     min-height: 42px;
-    padding: 0 12px;
+    padding: 0 var(--m-card-padding);
     font-size: 13px;
   }
 

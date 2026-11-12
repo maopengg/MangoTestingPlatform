@@ -9,8 +9,8 @@ from django.utils import timezone
 from src.apps.data_factory.enums.performance import DatasourcePermitKindEnum
 from src.apps.data_factory.exceptions import DataFactoryError
 from src.apps.data_factory.schemas.performance import DatasourcePerformancePolicy
-from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService as Governor
-from src.apps.data_factory.services.permit_reconciliation import DatasourcePermitReconciliationService as Review
+from src.apps.data_factory.services.governance.datasource_governor import DatasourceGovernorService as Governor
+from src.apps.data_factory.services.recovery.permit_reconciliation import DatasourcePermitReconciliationService as Review
 from src.apps.system.enums.runtime_kv import RuntimeKVNamespaceEnum
 from src.apps.system.models import RuntimeKVEntry
 from src.apps.system.services.runtime_kv import RuntimeKV
@@ -32,7 +32,7 @@ class PermitReviewTransactionTests(TestCase):
         self.target = SimpleNamespace(id=1, db_type=0, host='mysql.example.com', port=3306)
 
     def test_receipt_and_permit_are_committed_or_rolled_back_together(self):
-        permit = Governor.acquire(self.target, kind=DatasourcePermitKindEnum.CONNECTION, wait=False)
+        permit = Governor.acquire(self.target, wait=False)
         Governor.release(permit, unknown=True)
         snapshot = Review.inspect(permit[0])[0]
         review = {'instance_group': permit[0], 'expected_permit': snapshot, 'reviewed_by': 'test-operator',
@@ -49,7 +49,7 @@ class PermitReviewTransactionTests(TestCase):
         self.assertFalse(Review.inspect(permit[0]))
         self.assertEqual(RuntimeKVEntry.objects.filter(key__startswith='review:').count(), 1)
         self.assertTrue(Review.reconcile(review, apply=True)['already_reconciled'])
-        from src.apps.system.services.system_config import SystemConfigService
+        from src.apps.system.services.configuration.system_config import SystemConfigService
         from mangotools.enums import CacheValueTypeEnum
         current = DatasourcePerformancePolicy().model_dump(mode='json')
         current['pool_size'] = 4

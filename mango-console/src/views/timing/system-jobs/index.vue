@@ -1,13 +1,13 @@
 <template>
   <TableBody content-flush>
     <template #header>
-      <TableHeader title="系统定时任务" @search="onSearch" @reset-search="onResetSearch">
+      <TableHeader title="系统定时任务" @search="autoSearch.run" @reset-search="autoSearch.cancel(); onResetSearch(); autoSearch.sync()">
         <template #search-content>
-          <a-form :model="conditionItems" layout="inline" @keyup.enter="onSearch">
+          <a-form :model="conditionItems" layout="inline" @keyup.enter="autoSearch.run">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
-              <a-input v-if="item.type === 'input'" v-model="item.value" :placeholder="item.placeholder" allow-clear @clear="onSearch" />
-              <a-select v-else-if="item.type === 'select'" v-model="item.value" :placeholder="item.placeholder" :options="item.optionItems"
-                :multiple="item.multiple" :max-tag-count="1" allow-search allow-clear @clear="onSearch" />
+              <a-input @blur="autoSearch.schedule" @mouseleave="autoSearch.schedule" v-if="item.type === 'input'" v-model="item.value" :placeholder="item.placeholder" allow-clear @clear="autoSearch.schedule" />
+              <a-select @change="autoSearch.schedule" v-else-if="item.type === 'select'" v-model="item.value" :placeholder="item.placeholder" :options="item.optionItems"
+                :multiple="item.multiple" :max-tag-count="1" allow-search allow-clear @clear="autoSearch.schedule" />
             </a-form-item>
           </a-form>
         </template>
@@ -40,6 +40,8 @@
 </template>
 
 <script lang="ts">
+  import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
+
 import { reportLoadError } from '@/utils/load-error'
 
   import { defineComponent, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
@@ -147,7 +149,8 @@ import { reportLoadError } from '@/utils/load-error'
       onActivated(() => { active = true; resume() })
       onDeactivated(() => { active = false; pause() })
       onBeforeUnmount(() => { disposed = true; pause(); document.removeEventListener('visibilitychange', visibilityChanged) })
-      return { tableColumns, tableScrollX, conditionItems, rows, listLoading, listError, pagination, rowKey, triggeringKeys,
+      const autoSearch = useDebouncedSearch(onSearch, () => conditionItems.map(item => [item.key, item.value]))
+      return { autoSearch, tableColumns, tableScrollX, conditionItems, rows, listLoading, listError, pagination, rowKey, triggeringKeys,
         buildQuery, onSearch, onResetSearch, doRefresh, statusColor, onTrigger }
     },
   })

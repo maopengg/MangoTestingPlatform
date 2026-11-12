@@ -7,9 +7,9 @@ from rest_framework.test import APIRequestFactory
 
 from src.apps.auto_api.enums import ApiCaseReleaseStatusEnum, ApiClientEnum
 from src.apps.auto_api.enums.case import ApiCaseScenarioTagEnum, ApiCaseScenarioLayerEnum
-from src.apps.functional_test.services.common import ENUM_FIELD_MAP
+from src.apps.functional_test.services.cases.common import ENUM_FIELD_MAP
 from src.apps.system.api.views.system_api import SystemViews
-from src.apps.system.services.enum_catalog import EnumCatalogService
+from src.apps.system.services.catalog.enum_catalog import EnumCatalogService
 from src.apps.task_center.enums.execution import AutomationExecutionSceneEnum
 from src.apps.task_center.exceptions import TaskCenterError
 from src.apps.task_center.services.selection.case_selection import ScheduledTaskCaseSelectionService
@@ -85,7 +85,7 @@ class EnumCatalogTests(SimpleTestCase):
                          ApiCaseConfigurationFilterEnum.get_option())
 
     def setUp(self):
-        patcher = patch('src.apps.system.services.system_config.SystemConfigService.get_environment_display_names',
+        patcher = patch('src.apps.system.services.configuration.system_config.SystemConfigService.get_environment_display_names',
                         return_value={})
         patcher.start()
         self.addCleanup(patcher.stop)

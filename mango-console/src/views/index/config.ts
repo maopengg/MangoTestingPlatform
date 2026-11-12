@@ -1,6 +1,7 @@
 export const homeLinks = {
   quality: '/report/effectiveness/index',
   reports: '/report/index',
+  tasks: '/timing/tasks/index',
   executor: 'https://www.alipan.com/s/8CmZdabwt4R',
   help: 'http://160.202.231.91:36696/',
 } as const

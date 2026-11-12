@@ -14,22 +14,21 @@
         </a-form-item>
         <a-form-item class="mango-simple-form-item" label="绑定角色">
           <a-select v-model="draft.role" :options="roleOptions" :field-names="fieldNames" :loading="roleLoading" placeholder="请选择用户角色，留空为游客" allow-clear allow-search />
-          <template v-if="roleError" #extra><span class="mango-user-editor__error">{{ roleError }}</span> <a-link @click="loadRoles">重试</a-link></template>
+          <template v-if="roleError" #extra><MangoRequestFeedback  :message="(roleError)" /> <a-link @click="loadRoles">重试</a-link></template>
         </a-form-item>
         <a-form-item class="mango-simple-form-item" label="超级管理员"><a-switch v-model="draft.is_super_admin" size="small" /></a-form-item>
         <a-form-item class="mango-simple-form-item" v-if="record !== null" label="所属部门">
           <a-select v-model="draft.department_ids" :options="departmentOptions" :field-names="fieldNames" :loading="departmentLoading" placeholder="请选择用户所属部门" multiple allow-clear allow-search />
-          <template v-if="departmentError" #extra><span class="mango-user-editor__error">{{ departmentError }}</span> <a-link @click="loadDepartments">重试</a-link></template>
+          <template v-if="departmentError" #extra><MangoRequestFeedback  :message="(departmentError)" /> <a-link @click="loadDepartments">重试</a-link></template>
         </a-form-item>
-        <a-alert v-if="saveError" type="error">{{ saveError }}</a-alert>
+        <MangoRequestFeedback v-if="saveError" :message="(saveError)" />
       </a-form>
     </template>
   </ModalDialog>
 </template>
 
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { fieldNames } from '@/setting'
@@ -108,7 +107,7 @@ import { reportLoadError } from '@/utils/load-error'
       emit('committed', id, context)
       if (!valid()) return
       closeEditor(); Message.success(message); emit('saved', id)
-    } catch { if (valid()) saveError.value = '保存失败，请检查输入并重试' }
+    } catch (requestFailure) { if (valid()) saveError.value = requestFailureMessage(requestFailure, '保存失败，请检查输入并重试') }
     finally {
       saving.value = false; emit('busy', false)
       if (valid()) dialog.value?.setConfirmLoading(false)

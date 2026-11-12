@@ -4,7 +4,7 @@ from django.test import SimpleTestCase
 
 from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.schemas.execution import ApiExecutionResponse
-from src.apps.auto_api.services.base.case_parameter import CaseParameter
+from src.apps.auto_api.services.execution.base.case_parameter import CaseParameter
 
 
 class DefaultAssertionGroupTests(SimpleTestCase):

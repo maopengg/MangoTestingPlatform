@@ -46,9 +46,9 @@ from src.apps.test_center.models import (
     TestSuite,
     TestSuiteDetails,
 )
-from src.apps.test_center.services.test_suite.summary import TestSuiteSummaryService
+from src.apps.test_center.services.reporting.test_suite.summary import TestSuiteSummaryService
 from src.apps.user.models import UserLogs, User
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
 from src.common.decorators.retry import db_connection_context
 from src.common.responses.response_data import ResponseData
@@ -106,7 +106,7 @@ class IndexViews(ViewSet):
 
     @classmethod
     def _cached_data(cls, request: Request, action_name: str, build_data):
-        from src.apps.system.services.system_config import SystemConfigService
+        from src.apps.system.services.configuration.system_config import SystemConfigService
 
         cache_key = cls._index_cache_key(request, action_name)
         cached_data = cache.get(cache_key)
@@ -333,6 +333,7 @@ class IndexViews(ViewSet):
     @error_response('system')
     def activity_level(self, request: Request):
         """
+        获取最近七天的用户活跃度、访问排行和每日趋势。
         @param request:
         @return:
         """
@@ -548,6 +549,7 @@ class IndexViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def pending_tasks(self, request: Request):
+        """获取首页待执行任务概览"""
         try:
             page = max(1, int(request.query_params.get('page') or 1))
         except (TypeError, ValueError):

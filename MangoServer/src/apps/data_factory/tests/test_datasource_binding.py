@@ -5,7 +5,7 @@ from django.test import SimpleTestCase
 
 from src.apps.data_factory.api.views.datasource_binding import DataFactoryDatasourceBindingCRUD
 from src.apps.data_factory.exceptions import DataFactoryError
-from src.apps.data_factory.services.datasource import DataFactoryDatasourceResolver
+from src.apps.data_factory.services.datasource.datasource import DataFactoryDatasourceResolver
 from src.apps.test_center.models import TestObject
 
 
@@ -46,7 +46,7 @@ class DataFactoryDatasourceBindingCRUDTests(SimpleTestCase):
 
 class DataFactoryDatasourceRuntimeStatusTests(SimpleTestCase):
 
-    @patch('src.apps.data_factory.services.datasource.TestObject.objects.get')
+    @patch('src.apps.data_factory.services.datasource.datasource.TestObject.objects.get')
     def test_entity_binding_reports_missing_test_object_as_business_error(self, get_test_object):
         get_test_object.side_effect = TestObject.DoesNotExist
         entity = SimpleNamespace(datasource_alias_id=9, name='订单')
@@ -74,7 +74,7 @@ class DataFactoryDatasourceRuntimeStatusTests(SimpleTestCase):
         with self.assertRaisesMessage(DataFactoryError, '当前逻辑数据源已停用，请启用后再执行'):
             DataFactoryDatasourceResolver.require_alias_enabled(self.binding(0))
 
-    @patch('src.apps.data_factory.services.datasource.SqlPermissionGuard.check')
+    @patch('src.apps.data_factory.services.datasource.datasource.SqlPermissionGuard.check')
     def test_enabled_alias_continues_to_permission_check(self, permission_check):
         binding = self.binding(1)
 
@@ -87,7 +87,7 @@ class DataFactoryDatasourceRuntimeStatusTests(SimpleTestCase):
         )
 
     @patch.object(DataFactoryDatasourceResolver, 'require_alias_enabled')
-    @patch('src.apps.data_factory.services.datasource.DataFactoryDatasourceBinding.objects.select_related')
+    @patch('src.apps.data_factory.services.datasource.datasource.DataFactoryDatasourceBinding.objects.select_related')
     def test_binding_resolution_checks_alias_status(self, select_related, require_alias_enabled):
         binding = SimpleNamespace(
             database=SimpleNamespace(source_category=1, db_type=0),

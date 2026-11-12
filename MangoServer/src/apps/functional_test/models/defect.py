@@ -111,11 +111,11 @@ class FunctionalTestDefectCase(models.Model):
                 name="functional_test_defect_case_exactly_one_target",
             ),
             models.UniqueConstraint(
-                fields=["defect", "case"], condition=Q(case__isnull=False),
+                fields=["defect", "case"],
                 name="functional_test_defect_case_unique_case",
             ),
             models.UniqueConstraint(
-                fields=["defect", "plan_case"], condition=Q(plan_case__isnull=False),
+                fields=["defect", "plan_case"],
                 name="functional_test_defect_case_unique_plan_case",
             ),
         ]

@@ -135,6 +135,34 @@ test('待开始/进行中静默轮询同时更新摘要、报告状态和当前�
   assert.equal(h.polling.enabled, true); assert.equal(h.summaryError.value, ''); assert.equal(h.summary.value.count, 10)
 })
 
+test('执行中每轮更新失败原因 Top，失败保留历史数据并在最终刷新成功后停止', async t => {
+  let message = '首次失败', failed = false, finished = false
+  const h = setup({
+    getSystemTestSuiteDetailsSummaryShare: () => summary({ stay_begin_count: finished ? 0 : 10 }),
+    getSystemTestSuiteDetailsFailureReasonsShare: () => {
+      if (failed) throw new Error('failure reasons unavailable')
+      return response({ category_count: 1, failure_count: 1, items: [{ message, count: 1, percent: 100 }] })
+    },
+  }); t.after(h.close)
+  h.mount(); await flush()
+  assert.equal(h.failureReasonSummary.value.items[0].message, '首次失败')
+  message = '最新失败'
+  await h.polling.refresh({ isCurrent: () => true })
+  assert.equal(h.failureReasonSummary.value.items[0].message, '最新失败')
+  assert.equal(h.failureReasonLoading.value, false)
+  assert.equal(h.polling.enabled, true)
+  failed = true; finished = true
+  await assert.rejects(h.polling.refresh({ isCurrent: () => true }))
+  assert.equal(h.failureReasonSummary.value.items[0].message, '最新失败')
+  assert.equal(h.failureReasonError.value, '')
+  assert.equal(h.polling.enabled, true)
+  failed = false; message = '最终失败'
+  await h.polling.refresh({ isCurrent: () => true })
+  assert.equal(h.failureReasonSummary.value.items[0].message, '最终失败')
+  assert.equal(h.failureReasonLoading.value, false)
+  assert.equal(h.polling.enabled, false)
+})
+
 test('首次摘要失败保留重试入口并启用轮询，恢复后加载真实类型', async t => {
   let failed = true
   const h = setup({ getSystemTestSuiteDetailsSummaryShare: () => { if (failed) throw new Error('failed'); return summary() } }); t.after(h.close)

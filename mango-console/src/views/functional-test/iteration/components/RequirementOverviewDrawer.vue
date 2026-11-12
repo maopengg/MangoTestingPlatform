@@ -38,12 +38,8 @@
     </template>
     <div class="mango-requirement-overview">
       
-      <a-alert v-if="unlinkError" type="error" class="mango-requirement-overview__notice"
-        >取消关联失败，勾选已保留，请重试。</a-alert
-      >
-      <a-alert v-if="navigationError" type="error" class="mango-requirement-overview__notice"
-        >页面打开失败，请重试。</a-alert
-      >
+      <MangoRequestFeedback v-if="unlinkError" :message="&quot;取消关联失败，勾选已保留，请重试。&quot;" />
+      <MangoRequestFeedback v-if="navigationError" :message="&quot;页面打开失败，请重试。&quot;" />
       <a-tabs v-model:active-key="activeTab">
         <a-tab-pane key="overview" title="概览">
           <mango-panel-spin
@@ -204,6 +200,8 @@
 </template>
 
 <script lang="ts" setup>
+import { requestFailureMessage } from '@/utils/load-error'
+
   import { computed, onActivated, onBeforeUnmount, onDeactivated, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import { useRoute, useRouter } from 'vue-router'
@@ -448,8 +446,8 @@
           emit('changed')
           void Promise.allSettled([suiteRegion.load(), casesRegion.load()])
           return true
-        } catch {
-          if (current(version)) unlinkError.value = true
+        } catch (requestFailure) {
+          if (current(version)) unlinkError.value = requestFailureMessage(requestFailure, true, "取消关联失败，勾选已保留，请重试。")
           return false
         } finally {
           unlinking.value = false
@@ -481,8 +479,8 @@
         if (failure) navigationError.value = true
         else close()
       }
-    } catch {
-      if (current(version)) navigationError.value = true
+    } catch (requestFailure) {
+      if (current(version)) navigationError.value = requestFailureMessage(requestFailure, true, "页面打开失败，请重试。")
     } finally {
       navigation.value = null
     }

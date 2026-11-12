@@ -4,12 +4,12 @@ from unittest.mock import Mock, patch
 from django.test import SimpleTestCase
 from mangotools.enums import StatusEnum
 
-from src.apps.auto_api.services.test_case.test_case import TestCase as ApiRuntimeTestCase
+from src.apps.auto_api.services.execution.cases.test_case import TestCase as ApiRuntimeTestCase
 
 
 class ApiCaseRuntimeAuditTests(SimpleTestCase):
 
-    @patch('src.apps.auto_api.services.test_case.test_case.ApiCase.objects.filter')
+    @patch('src.apps.auto_api.services.execution.cases.test_case.ApiCase.objects.filter')
     def test_case_status_update_does_not_touch_content_update_time(self, filter_mock):
         queryset = filter_mock.return_value
 
@@ -27,7 +27,7 @@ class ApiCaseRuntimeAuditTests(SimpleTestCase):
 
         step.save.assert_called_once_with(update_fields=['status', 'error_message'])
 
-    @patch('src.apps.auto_api.services.test_case.test_case.ApiCaseDetailedParameter.objects.filter')
+    @patch('src.apps.auto_api.services.execution.cases.test_case.ApiCaseDetailedParameter.objects.filter')
     def test_scenario_status_update_does_not_touch_content_update_time(self, filter_mock):
         runtime = object.__new__(ApiRuntimeTestCase)
         runtime.revision_aggregate = None

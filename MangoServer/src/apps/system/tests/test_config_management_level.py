@@ -3,13 +3,7 @@ from django.test import SimpleTestCase
 from src.apps.system.api.serializers.cache_data_mutation import CacheDataSerializers
 from src.apps.system.enums.cache import SystemConfigManagementLevelEnum
 from src.apps.system.models import CacheData
-from src.apps.system.services.system_config import (
-    API_WORKER_DESIRED_COUNT_DEFAULT,
-    API_WORKER_DESIRED_COUNT_KEY,
-    SYSTEM_CONFIG_REGISTRY,
-    SystemConfigDefinition,
-    SystemConfigService,
-)
+from src.apps.system.services.configuration.system_config import API_WORKER_DESIRED_COUNT_DEFAULT, API_WORKER_DESIRED_COUNT_KEY, SYSTEM_CONFIG_REGISTRY, SystemConfigDefinition, SystemConfigService
 
 
 class ConfigManagementLevelTests(SimpleTestCase):

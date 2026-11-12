@@ -193,7 +193,7 @@
       :on-before-cancel="() => !saving"
       :on-before-ok="saveRecording"
     >
-      <div v-if="saveError" class="mango-step-recorder__error" role="alert">{{ saveError }}</div>
+      <MangoRequestFeedback v-if="saveError" :message="(saveError)" />
       <a-form auto-label-width :model="recordingForm" class="mango-simple-form" layout="horizontal" :label-col-props="{ span: 5 }" :wrapper-col-props="{ span: 19 }">
         <a-form-item class="mango-simple-form-item" label="步骤名称" required
           ><a-input v-model="stepName" :max-length="64"
@@ -204,8 +204,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, onMounted, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { postUiPageStepRecordingCommit } from '@/api/uitest/page-steps'
@@ -691,7 +690,7 @@ import { reportLoadError } from '@/utils/load-error'
       emit('saved', res.data || {}, clientIds)
       return true
     } catch (error) {
-      if (valid()) saveError.value = liveError(error, '保存页面步骤失败，录制草稿已保留')
+      if (valid()) saveError.value = requestFailureMessage(error, liveError(error, '保存页面步骤失败，录制草稿已保留'))
       return false
     } finally {
       saving.value = false

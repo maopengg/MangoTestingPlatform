@@ -6,10 +6,7 @@ from typing import Any
 
 from django.utils import timezone
 
-from src.apps.test_center.services.database_connection import (
-    DatabaseConnection,
-    DatabaseConnectionFactory,
-)
+from src.apps.test_center.services.datasource.database_connection import DatabaseConnection, DatabaseConnectionFactory
 
 
 @dataclass
@@ -61,14 +58,14 @@ class WorkerDbContext:
 
     def get_data_factory_engine(self, database: Any):
         self.invalidate_changed_connection(database)
-        from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService
+        from src.apps.data_factory.services.governance.datasource_governor import DatasourceGovernorService
         key = f'{database.cache_key}:{DatasourceGovernorService.policy().pool_size}'
         cached = self.data_factory_engines.get(key)
         if cached:
             cached.last_used_at = timezone.now()
             return cached.value
 
-        from src.apps.data_factory.services.datasource import DataFactoryDatasource
+        from src.apps.data_factory.services.datasource.datasource import DataFactoryDatasource
         engine = DataFactoryDatasource.create_engine(database)
         self.data_factory_engines[key] = _CachedResource(engine, timezone.now(), database.id,
                                                                         database.update_time)

@@ -6,8 +6,8 @@ from django.test import SimpleTestCase
 from src.apps.data_factory.api.views.case_config import DataFactoryCaseConfigViews
 from src.apps.data_factory.api.views.template import DataFactoryTemplateViews
 from src.apps.data_factory.models import DataFactoryField
-from src.apps.data_factory.services.configuration_preview import DataFactoryConfigurationPreviewService as Preview
-from src.apps.data_factory.services.runner import DataFactoryRunner
+from src.apps.data_factory.services.preview.configuration_preview import DataFactoryConfigurationPreviewService as Preview
+from src.apps.data_factory.services.execution.runner import DataFactoryRunner
 
 
 class ConfigurationPreviewTests(SimpleTestCase):
@@ -22,8 +22,8 @@ class ConfigurationPreviewTests(SimpleTestCase):
                          side_effect=lambda node: children or [] if node.id == 1 else []),
             patch.object(DataFactoryRunner, 'preview_post_insert_updates', return_value=[]),
             patch(
-                'src.apps.data_factory.services.datasource.DataFactoryDatasourceResolver.resolve_entity_binding') as resolve,
-            patch('src.apps.data_factory.services.runtime_cache.DataFactoryRuntimeCache.build_test_data') as runtime,
+                'src.apps.data_factory.services.datasource.datasource.DataFactoryDatasourceResolver.resolve_entity_binding') as resolve,
+            patch('src.apps.data_factory.services.execution.runtime_cache.DataFactoryRuntimeCache.build_test_data') as runtime,
         ):
             result = Preview.preview(1)
         resolve.assert_not_called()

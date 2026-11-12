@@ -40,51 +40,26 @@ test('every datasource performance field has an explanation without implying a b
     const fields = new Function('budgetFields', `return ${initializers.get(name)}`)(budget)
     for (const field of fields) assert.ok(field.hint?.trim().length >= 10, `${name}.${field.key} needs a useful explanation`)
   }
-  assert.match(budget.find(field => field.key === 'concurrency').hint, /不限制Case业务API并发/)
+  assert.deepEqual(budget.map(field => field.key), ['connections'])
   const shared = new Function(`return ${initializers.get('sharedFields')}`)()
-  assert.match(shared.find(field => field.key === 'queue_timeout_seconds').hint, /不是Case最长排队时间/)
-  assert.match(shared.find(field => field.key === 'cleanup_completion_seconds').hint, /不含资源排队等待/)
+  assert.equal(shared.some(field => field.key === 'queue_timeout_seconds'), false)
+  assert.match(shared.find(field => field.key === 'cleanup_completion_seconds').hint, /不包含连接或scheduler等待/)
   assert.equal((component.template.content.match(/\{\{ field.hint \}\}/g) || []).length, 2)
   assert.doesNotMatch(component.template.content, /更严格的子配额|实例组合并与覆盖|新增子配额|新增实例组/)
   assert.doesNotMatch(component.scriptSetup.content, /scopeFields|instanceFields|function addScope|function addInstance/)
 })
 
-test('saving uniform datasource settings never resubmits retired overrides or subquotas', t => {
-  const raw = { mysql: { concurrency: 4 }, instances: [{ group: 'old', connection_ids: [1] }], scopes: [{ name: 'old' }] }
-  const before = structuredClone(raw)
-  const editor = harness('DatasourcePerformanceEditor', 'draft,save', { base: new URL('../../../../src/views/system/settings', import.meta.url).pathname, props: { modelValue: raw, loading: false } })
+test('settings exposes v2 connection controls rather than a second SQL scheduler', t => {
+  const editor = harness('DatasourcePerformanceEditor', 'draft,save', {
+    base: new URL('../../../../src/views/system/settings', import.meta.url).pathname,
+    props: { modelValue: { version: 2, mysql: { connections: 12 }, pool_size: 2 }, loading: false } })
   t.after(editor.close); editor.save()
   const payload = editor.events.find(([name]) => name === 'update:modelValue')[1]
-  assert.equal('instances' in payload, false)
-  assert.equal('scopes' in payload, false)
-  assert.equal(payload.mysql.concurrency, 4)
-  assert.deepEqual(raw, before)
-})
-
-test('relaxed datasource defaults match backend values and retain explicitly saved limits', t => {
-  const initialize = raw => {
-    const editor = harness('DatasourcePerformanceEditor', 'draft,save', { base: new URL('../../../../src/views/system/settings', import.meta.url).pathname, props: { modelValue: raw, loading: false } })
-    t.after(editor.close); return editor.draft
-  }
-  const defaults = initialize({})
-  for (const [kind, expected] of Object.entries({ mysql: [6, 30, 12], redis: [12, 75, 16], elasticsearch: [6, 15, 12] })) {
-    const value = defaults[kind]
-    assert.deepEqual([value.concurrency, value.requests_per_second, value.connections], expected)
-    assert.equal(value.cleanup_reserved, 2)
-    assert.equal(value.cleanup_rate_percent, 25)
-    assert.equal(value.cleanup_backlog_limit, 100)
-  }
-  assert.equal(defaults.pool_size, 3)
-  assert.equal(defaults.max_waiters, 256)
-  assert.equal(defaults.cleanup_consumer_threads, 2)
-  const saved = initialize({ mysql: { concurrency: 4, requests_per_second: 20, connections: 8, cleanup_reserved: 1 }, pool_size: 2, max_waiters: 100 })
-  assert.equal(saved.mysql.concurrency, 4)
-  assert.equal(saved.mysql.cleanup_reserved, 1)
-  assert.equal(saved.pool_size, 2)
-  assert.equal(saved.max_waiters, 100)
-  const low = initialize({ mysql: { concurrency: 2, connections: 3 } })
-  assert.equal(low.mysql.cleanup_reserved, 1)
-  assert.equal(low.pool_size, 2)
+  assert.equal(payload.version, 2)
+  assert.deepEqual(payload.mysql, { connections: 12 })
+  assert.equal(payload.pool_size, 2)
+  assert.equal('max_waiters' in payload, false)
+  assert.equal('cleanup_reserved' in payload.mysql, false)
 })
 
 test('callback enablement uses the existing integer switch and retains numeric payloads', () => {

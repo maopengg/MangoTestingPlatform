@@ -1,21 +1,21 @@
 <template>
   <TableBody content-flush>
     <template #header
-      ><TableHeader title="评测数据集" @search="onSearch" @reset-search="onResetSearch"
+      ><TableHeader title="评测数据集" @search="autoSearch.run" @reset-search="autoSearch.cancel(); onResetSearch(); autoSearch.sync()"
         ><template #search-content>
-          <a-form :model="filters" layout="inline" size="small" @keyup.enter="onSearch">
+          <a-form :model="filters" layout="inline" size="small" @keyup.enter="autoSearch.run">
             <a-form-item label="数据集名称"
-              ><a-input v-model="filters.name" allow-clear placeholder="请输入数据集名称"
+              ><a-input @blur="autoSearch.schedule" @clear="autoSearch.schedule" @mouseleave="autoSearch.schedule" v-model="filters.name" allow-clear placeholder="请输入数据集名称"
             /></a-form-item>
             <a-form-item label="任务类型"
-              ><a-input-tag
+              ><a-input-tag @change="autoSearch.schedule"
                 v-model="filters.task_type"
                 :max-tag-count="1"
                 allow-clear
                 placeholder="输入任务类型后回车"
             /></a-form-item>
             <a-form-item label="状态"
-              ><a-select
+              ><a-select @change="autoSearch.schedule"
                 v-model="filters.status"
                 :options="datasetStatusOptions"
                 multiple
@@ -115,6 +115,8 @@
 </template>
 
 <script setup lang="ts">
+  import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
+
 import { reportLoadError } from '@/utils/load-error'
 
   import { computed, reactive, ref } from 'vue'
@@ -309,6 +311,8 @@ import { reportLoadError } from '@/utils/load-error'
       })
   }
   scope.start()
+
+  const autoSearch = useDebouncedSearch(onSearch, () => filters)
 </script>
 
 <style scoped>

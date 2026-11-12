@@ -1,14 +1,15 @@
+import os
 import socket
 from concurrent.futures import FIRST_COMPLETED, wait
 
 import time
 from django.db import connection, DatabaseError
 
-from src.apps.auto_api.services.test_case.test_case import TestCase
+from src.apps.auto_api.services.execution.cases.test_case import TestCase
 from src.apps.system.enums import ExecutorTaskTypeEnum, RuntimeServiceName
 from src.apps.system.services.runtime_center.heartbeat import ServiceHeartbeatService
 from src.apps.system.services.runtime_center.system_error_event import SystemErrorEventSource
-from src.apps.system.services.system_config import SystemConfigService
+from src.apps.system.services.configuration.system_config import SystemConfigService
 from src.apps.task_center.services.execution.claim import ApiTaskClaimService
 from src.common.decorators.retry import async_task_db_connection
 from src.common.decorators.system_error import system_error_guard
@@ -55,9 +56,12 @@ class ApiWorkerRunner:
         service_name=RuntimeServiceName.API_WORKER,
     )
     def run_forever(self):
-        log.api.info(f'api-worker 启动：worker={self.worker_name}, thread_pool_size={self.thread_pool_size}')
         futures = {}
         try:
+            from src.apps.data_factory.services.governance.datasource_governor import DatasourceGovernorService
+            # 构造阶段已经启动非守护线程；启动校验失败也必须进入同一条资源回收路径。
+            DatasourceGovernorService.policy()
+            log.api.info(f'api-worker 启动：worker={self.worker_name}, thread_pool_size={self.thread_pool_size}')
             while self.running:
                 try:
                     self.refresh_thread_pool_size(futures)
@@ -72,7 +76,7 @@ class ApiWorkerRunner:
                     connection.close()
                     time.sleep(self.poll_interval)
                     continue
-                while self.running and len(futures) < self.current_claim_limit():
+                while self.running and self.can_claim(futures):
                     try:
                         case_model = self.claim()
                     except DatabaseError:
@@ -80,10 +84,13 @@ class ApiWorkerRunner:
                         connection.close()
                         break
                     if not case_model:
+                        self._next_claim_at = time.monotonic() + self.poll_interval
                         break
                     futures[self.executor.submit(self.execute, case_model)] = case_model
                 if futures:
-                    done, _ = wait(futures, timeout=self.poll_interval, return_when=FIRST_COMPLETED)
+                    # 协作等待不放大 Case 领取数；短轮询及时收口已完成 Future。
+                    done, _ = wait(futures, timeout=min(self.poll_interval, 0.1), return_when=FIRST_COMPLETED)
+                    self.observe_completions(done)
                     if done and not self.settle_finished(futures, done):
                         # 已完成 Future 的 wait 会立即返回；控制库异常时必须退避，不能空转轰击。
                         time.sleep(self.poll_interval)
@@ -95,6 +102,7 @@ class ApiWorkerRunner:
                 done, _ = wait(futures, timeout=self.poll_interval, return_when=FIRST_COMPLETED)
                 try:
                     self.report_heartbeat(futures)
+                    self.observe_completions(done)
                     if done and not self.settle_finished(futures, done):
                         time.sleep(self.poll_interval)
                 except DatabaseError:
@@ -102,8 +110,8 @@ class ApiWorkerRunner:
                     time.sleep(self.poll_interval)
             self.executor.shutdown(wait=True)
             self.db_context_registry.close_all()
-            from src.apps.data_factory.services.datasource_pool import DatasourcePoolRegistry
-            from src.apps.data_factory.services.protocol_pool import ProtocolPoolRegistry
+            from src.apps.data_factory.services.pool.datasource_pool import DatasourcePoolRegistry
+            from src.apps.data_factory.services.pool.protocol_pool import ProtocolPoolRegistry
             DatasourcePoolRegistry.close_all()
             ProtocolPoolRegistry.close_all()
 
@@ -141,6 +149,12 @@ class ApiWorkerRunner:
     def current_claim_limit(self):
         return min(self.thread_pool_size, self.executor_size)
 
+    def can_claim(self, futures):
+        # 驻留 Case 也计入 Worker 配置容量，不再用数据源等待上限扩容预取。
+        if time.monotonic() < getattr(self, '_next_claim_at', 0):
+            return False
+        return len(futures) < self.current_claim_limit()
+
     def refresh_thread_pool_size(self, futures: dict):
         now = time.monotonic()
         if now - self.last_config_refresh_at < self.config_refresh_interval:
@@ -175,7 +189,7 @@ class ApiWorkerRunner:
         log.api.info(f'api-worker 线程池已重建：worker={self.worker_name}, thread_pool_size={self.executor_size}')
 
     def report_heartbeat(self, futures: dict):
-        from src.apps.data_factory.services.pool_maintenance import DatasourcePoolMaintenance
+        from src.apps.data_factory.services.pool.pool_maintenance import DatasourcePoolMaintenance
         from src.apps.system.services.runtime_center.process_identity import RuntimeProcessIdentity
         ServiceHeartbeatService.beat_if_due(
             self,
@@ -183,16 +197,92 @@ class ApiWorkerRunner:
             instance_name=self.worker_name,
             metadata={
                 **RuntimeProcessIdentity.current(),
+                'pod_uid': os.getenv('POD_UID'),
+                'execution_loop_alive': self.running,
+                'executor_threads_alive': all(thread.is_alive() for thread in self.executor.threads),
                 'thread_pool_size': self.thread_pool_size,
                 'executor_size': self.executor_size,
                 'running_count': len(futures),
+                'resource_waiting_count': sum(bool(getattr(future, '_mango_resource_parked', False))
+                                              for future in futures),
                 'claim_limit': self.current_claim_limit(),
                 'lease_seconds': self.lease_seconds,
                 'poll_interval': self.poll_interval,
                 'db_idle_seconds': self.db_context_registry.idle_seconds,
                 'datasource_maintenance_healthy': DatasourcePoolMaintenance.healthy(),
+                **self.execution_progress(futures),
             },
         )
+
+    def observe_completions(self, finished, *, now=None):
+        previous = getattr(self, '_observed_finished', set())
+        if finished - previous:
+            self._last_completion_at = time.monotonic() if now is None else now
+            if getattr(self, '_stalled_logged_at', None) is not None:
+                log.api.info('event=api_worker_execution_progress_restored worker=%s', self.worker_name)
+                self._stalled_logged_at = None
+        self._observed_finished = previous | finished
+
+    def execution_progress(self, futures):
+        now = time.monotonic()
+        finished = {future for future in futures if future.done()}
+        # wait 后的完成项会在下一次心跳前被移除，必须在收口前记录，不能只扫描当前 Future。
+        self.observe_completions(finished, now=now)
+        self._observed_finished = finished
+        if not futures or not hasattr(self, '_last_completion_at'):
+            self._last_completion_at = now
+            if getattr(self, '_stalled_logged_at', None) is not None:
+                log.api.info('event=api_worker_execution_progress_restored worker=%s', self.worker_name)
+                self._stalled_logged_at = None
+        completion_elapsed = max(0, now - self._last_completion_at)
+        if not futures:
+            self._last_activity_at = now
+            self._progress_evidence_available = True
+        if futures and completion_elapsed >= 60 and now - getattr(self, '_activity_checked_at', float('-inf')) >= 15:
+            from datetime import timedelta
+            from django.utils import timezone
+            from src.apps.data_factory.services.reporting.execution_progress import DatasourceExecutionProgressService
+            wall_now = timezone.now()
+            activities = DatasourceExecutionProgressService.for_attempts(
+                {item.test_suite_details: item.attempt for item in futures.values()},
+                wall_now - timedelta(seconds=60))
+            self._progress_evidence_available = activities is not None
+            if activities:
+                wall_stamp = (timezone.make_aware(wall_now, timezone.get_default_timezone())
+                              if timezone.is_naive(wall_now) else wall_now).timestamp()
+                age = max(0, wall_stamp - max(activities.values()))
+                self._last_activity_at = max(getattr(self, '_last_activity_at', 0), now - age)
+            self._activity_checked_at = now
+        elapsed = max(0, now - max(self._last_completion_at, getattr(self, '_last_activity_at', 0)))
+        evidence_available = getattr(self, '_progress_evidence_available', True)
+        logged = getattr(self, '_stalled_logged_at', None)
+        if evidence_available and elapsed < 60 and logged is not None:
+            log.api.info('event=api_worker_execution_progress_restored worker=%s', self.worker_name)
+            self._stalled_logged_at = None
+        if futures and evidence_available and elapsed >= 60 and (logged is None or now - logged >= 60):
+            contexts = [{'report_id': item.test_suite, 'detail_id': item.test_suite_details,
+                         'case_id': item.case_id, 'attempt': item.attempt}
+                        for item in list(futures.values())[:10]]
+            log.api.warning('event=api_worker_no_progress worker=%s running_count=%s '
+                'no_completion_seconds=%.2f no_progress_seconds=%.2f executions=%s '
+                'action=inspect_datasource_wait_and_case_progress',
+                self.worker_name, len(futures), completion_elapsed, elapsed, contexts)
+            self._stalled_logged_at = now
+        if evidence_available and now - getattr(self, '_health_observed_at', float('-inf')) >= 15:
+            from src.apps.data_factory.services.recovery.health_incident import DatasourceHealthIncidentService
+            from src.apps.system.services.runtime_center.process_identity import RuntimeProcessIdentity
+            process = RuntimeProcessIdentity.current()['process_token']
+            items = list(futures.values())[:10]
+            DatasourceHealthIncidentService.safe_observe(f'api-worker:{self.worker_name}:{process}',
+                worker=True, active=bool(futures and elapsed >= 60), metrics={
+                    'no_completion_seconds': completion_elapsed, 'no_progress_seconds': elapsed,
+                    'waiting_count': sum(bool(getattr(future, '_mango_resource_parked', False)) for future in futures),
+                    'report_ids': list(dict.fromkeys(item.test_suite for item in items)),
+                    'detail_ids': [item.test_suite_details for item in items],
+                    'case_ids': [item.case_id for item in items]})
+            self._health_observed_at = now
+        return {'no_completion_seconds': round(completion_elapsed, 2),
+                'no_progress_seconds': round(elapsed, 2), 'completed_waiting_settlement': len(finished)}
 
     @async_task_db_connection(max_retries=1, retry_delay=1)
     def claim(self):
@@ -211,7 +301,7 @@ class ApiWorkerRunner:
         service_name=RuntimeServiceName.API_WORKER,
     )
     def execute(self, case_model):
-        from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService
+        from src.apps.data_factory.services.cleanup.cleanup_schedule import DataFactoryCleanupScheduleService
         db_context = self.db_context_registry.current()
         set_current_worker_db_context(db_context)
         cleanup_owner = DataFactoryCleanupScheduleService.set_owner(case_model.test_suite_details, case_model.attempt)
@@ -229,7 +319,7 @@ class ApiWorkerRunner:
                 config_checksum=case_model.config_checksum,
                 db_context=db_context,
             )
-            from src.apps.data_factory.services.datasource_wait import DatasourceWaitService
+            from src.apps.data_factory.services.governance.datasource_wait import DatasourceWaitService
             from src.apps.auto_api.exceptions import TestSuiteStopped
             last_pulse = 0
 

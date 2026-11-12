@@ -29,7 +29,7 @@ class CacheDataKeyEnum(BaseEnum):
 
     @classmethod
     def get_cache_value(cls, key):
-        from src.apps.system.services.system_config import SystemConfigService
+        from src.apps.system.services.configuration.system_config import SystemConfigService
         return SystemConfigService.get(key.name)
 
 

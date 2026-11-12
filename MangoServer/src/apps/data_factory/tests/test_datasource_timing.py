@@ -5,11 +5,11 @@ from unittest.mock import Mock, patch
 from django.test import SimpleTestCase
 
 from src.apps.data_factory.enums.performance import DatasourceTimingPhaseEnum as Phase
-from src.apps.data_factory.services.datasource_timing import DatasourceTimingService as Timing
-from src.apps.data_factory.services.datasource_wait import DatasourceWaitService as Waiting
-from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService as Governor
-from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService as Audit, SqlExecutionAuditHandle
-from src.apps.data_factory.services.sql_driver_audit import TimedResultCursor
+from src.apps.data_factory.services.governance.datasource_timing import DatasourceTimingService as Timing
+from src.apps.data_factory.services.governance.datasource_wait import DatasourceWaitService as Waiting
+from src.apps.data_factory.services.governance.datasource_governor import DatasourceGovernorService as Governor
+from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditService as Audit, SqlExecutionAuditHandle
+from src.apps.data_factory.services.sql.sql_driver_audit import TimedResultCursor
 from src.apps.task_center.services.execution.cooperative_executor import CooperativeCaseExecutor, cooperative_sleep
 from src.apps.test_center.enums.data_source import DataSourceTypeEnum
 
@@ -17,7 +17,7 @@ from src.apps.test_center.enums.data_source import DataSourceTypeEnum
 class DatasourceTimingTests(SimpleTestCase):
     def test_nested_measurements_are_exclusive_and_context_restores(self):
         clock = [0]
-        with patch('src.apps.data_factory.services.datasource_timing.monotonic', side_effect=lambda: clock[0]):
+        with patch('src.apps.data_factory.services.governance.datasource_timing.monotonic', side_effect=lambda: clock[0]):
             with Timing.scope():
                 with Timing.measure(Phase.EXECUTE):
                     clock[0] = 1
@@ -46,18 +46,17 @@ class DatasourceTimingTests(SimpleTestCase):
                 clock[0] += 2
         def wait(*args, **kwargs):
             clock[0] += 1
-        with patch('src.apps.data_factory.services.datasource_wait.monotonic', side_effect=lambda: clock[0]), \
-                patch('src.apps.data_factory.services.datasource_timing.monotonic', side_effect=lambda: clock[0]), \
-                patch.object(Governor, 'renew_waiting_operation', side_effect=renew), \
+        with patch('src.apps.data_factory.services.governance.datasource_wait.monotonic', side_effect=lambda: clock[0]), \
+                patch('src.apps.data_factory.services.governance.datasource_timing.monotonic', side_effect=lambda: clock[0]), \
                 patch('src.apps.task_center.services.execution.cooperative_executor.wait_until', side_effect=wait):
-            with Waiting.owner(None), Timing.waiting(Phase.LOCAL_POOL):
+            with Waiting.owner(renew), Timing.waiting(Phase.LOCAL_POOL):
                 Waiting.pause(1)
                 self.assertEqual(Waiting.elapsed(), 3)
                 self.assertEqual(Timing.snapshot(), {'control_io': 2000, 'local_pool': 1000, 'scheduler_resume': 0})
 
     def test_long_wait_logs_are_limited_and_do_not_include_operation_or_credentials(self):
-        with patch('src.apps.data_factory.services.datasource_timing.monotonic', return_value=31), \
-                patch('src.apps.data_factory.services.datasource_timing.log.debug') as log, \
+        with patch('src.apps.data_factory.services.governance.datasource_timing.monotonic', return_value=31), \
+                patch('src.apps.data_factory.services.governance.datasource_timing.log.warning') as log, \
                 Audit.source({'case_id': 12, 'source_stage': 'cleanup', 'password': 'AUTO_SECRET',
                               'sql': 'AUTO_PRIVATE_SQL'}):
             next_log = Timing.diagnose(0, 30, phase=Phase.LOCAL_POOL, database_id=1,
@@ -69,15 +68,6 @@ class DatasourceTimingTests(SimpleTestCase):
         self.assertIn('checked_out=%s pool_size=%s', log.call_args.args[0])
         self.assertNotIn('AUTO_SECRET', str(log.call_args))
         self.assertNotIn('AUTO_PRIVATE_SQL', str(log.call_args))
-
-    def test_physical_gate_is_not_acquired_before_connection_or_protocol_pool(self):
-        with patch.object(Governor, 'acquire') as acquire:
-            for kind in (DataSourceTypeEnum.MYSQL, DataSourceTypeEnum.POSTGRESQL,
-                         DataSourceTypeEnum.REDIS, DataSourceTypeEnum.ELASTICSEARCH):
-                with self.subTest(kind=kind), patch.object(Governor, 'target_policy', return_value=(None, None, 'group')):
-                    with Governor._operation(SimpleNamespace(db_type=kind.value)) as admission:
-                        self.assertIsNone(admission)
-            acquire.assert_not_called()
 
     def test_fetch_failure_is_timed_and_propagates_unchanged(self):
         error = RuntimeError('AUTO_FETCH_FAILURE')
@@ -145,8 +135,7 @@ class DatasourceTimingTests(SimpleTestCase):
                 waiting.set()
                 with Timing.locked(lock):
                     return Timing.snapshot()
-        with patch('django.db.connections.all', return_value=[]), \
-                patch.object(Governor, 'renew_waiting_operation'):
+        with patch('django.db.connections.all', return_value=[]):
             first = executor.submit(borrow)
             self.assertTrue(waiting.wait(1))
             executor.submit(release.set).result(timeout=1)

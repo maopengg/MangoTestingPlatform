@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from datetime import timedelta
 
 import time
-from django.db import OperationalError, connection
+from django.db import OperationalError, connection, transaction
 from django.db.models import Count, Prefetch, Q
 from django.utils import timezone
 from mangotools.enums import StatusEnum
@@ -28,7 +28,7 @@ from src.apps.data_factory.models import (
     DataFactoryExecutionItem,
 )
 from src.apps.system.enums import CacheDataKeyEnum
-from src.apps.system.services.system_config import SystemConfigService
+from src.apps.system.services.configuration.system_config import SystemConfigService
 from src.apps.task_center.enums import (
     WorkbenchTodoEventTypeEnum,
     WorkbenchTodoSeverityEnum,
@@ -38,14 +38,15 @@ from src.apps.task_center.enums import (
 from src.apps.task_center.models import WorkbenchTodo
 from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.apps.test_center.enums.data_source import DataSourceTypeEnum
-from src.apps.test_center.services.test_suite.base_notice import NoticeMain
-from src.apps.user.services.credential import UserCredentialService
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.test_center.services.reporting.test_suite.base_notice import NoticeMain
+from src.apps.user.services.authentication.credential import UserCredentialService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.logging import log
 
 
 class WorkbenchTodoService:
     DEFAULT_MANUAL_NOTICE_MINUTES = 24 * 60
+    CLEANUP_NOTIFICATION_GRACE = timedelta(minutes=5)
     RECONCILE_LOCK_NAME = 'mango_workbench_todo_reconcile'
     DEADLOCK_MAX_ATTEMPTS = 3
     DEADLOCK_BASE_DELAY_SECONDS = 0.02
@@ -402,15 +403,13 @@ class WorkbenchTodoService:
         if source_type == WorkbenchTodoSourceTypeEnum.UI_AUTH.value:
             if config.refresh_mode != UiAuthRefreshModeEnum.EXPIRE_NOTICE.value:
                 return False
-            from src.apps.auto_ui.services.ui_auth import UiAuthManager
+            from src.apps.auto_ui.services.authentication.ui_auth import UiAuthManager
 
             auth_manager = UiAuthManager
         elif source_type == WorkbenchTodoSourceTypeEnum.API_AUTH.value:
             if config.refresh_mode != ApiAuthRefreshModeEnum.EXPIRE_NOTICE.value:
                 return False
-            from src.apps.auto_api.services.base.api_base_test_setup.auth_manager import (
-                ApiAuthManager,
-            )
+            from src.apps.auto_api.services.execution.base.api_base_test_setup.auth_manager import ApiAuthManager
 
             auth_manager = ApiAuthManager
         else:
@@ -756,7 +755,7 @@ class WorkbenchTodoService:
 
     @classmethod
     def record_data_factory_cleanup_failure(cls, execution: DataFactoryExecution):
-        from src.apps.data_factory.services.execution_snapshot import get_insert_snapshot
+        from src.apps.data_factory.services.execution.execution_snapshot import get_insert_snapshot
 
         if execution.cleanup_status != DataFactoryCleanupStatusEnum.FAIL.value:
             return None
@@ -810,7 +809,7 @@ class WorkbenchTodoService:
             f'data-factory:execution:{execution.id}:cleanup-failed:'
             f'{cls._timestamp_key(occurred_at)}'
         )
-        return cls._upsert(event_key, {
+        return cls._upsert_cleanup_failure(event_key, {
             'source_type': WorkbenchTodoSourceTypeEnum.DATA_FACTORY_EXECUTION.value,
             'event_type': WorkbenchTodoEventTypeEnum.DATA_FACTORY_CLEANUP_FAILED.value,
             'source_id': execution.id,
@@ -835,6 +834,43 @@ class WorkbenchTodoService:
                 'errors': errors,
             },
         })
+
+    @classmethod
+    @transaction.atomic
+    def _upsert_cleanup_failure(cls, event_key: str, defaults: dict):
+        # 与发送端串行更新通知标记，避免巡检覆盖已发送状态后重复通知。
+        existing = WorkbenchTodo.objects.select_for_update().filter(event_key=event_key).first()
+        if existing and (existing.details or {}).get('cleanup_notification_sent_at'):
+            defaults['details']['cleanup_notification_sent_at'] = existing.details['cleanup_notification_sent_at']
+        return cls._upsert(event_key, defaults, notify_owner=False)
+
+    @classmethod
+    @transaction.atomic
+    def _notify_cleanup_failure_if_due(cls, todo_id: int) -> bool:
+        todo = WorkbenchTodo.objects.select_for_update().select_related(
+            'project_product__project',
+        ).filter(id=todo_id, event_type=WorkbenchTodoEventTypeEnum.DATA_FACTORY_CLEANUP_FAILED.value,
+                 status=WorkbenchTodoStatusEnum.PENDING.value).first()
+        if todo is None or (todo.details or {}).get('cleanup_notification_sent_at'):
+            return False
+        if timezone.now() < todo.create_time + cls.CLEANUP_NOTIFICATION_GRACE:
+            return False
+        # 不使用巡检开始时的执行快照；发送前重新确认，恢复及正在重试均不报旧失败。
+        execution = DataFactoryExecution.objects.filter(
+            id=todo.source_id, cleanup_status=DataFactoryCleanupStatusEnum.FAIL.value,
+        ).only('id', 'cleanup_time', 'update_time').first()
+        if execution is None:
+            return False
+        occurred_at = execution.cleanup_time or execution.update_time
+        if todo.event_key != (
+            f'data-factory:execution:{execution.id}:cleanup-failed:{cls._timestamp_key(occurred_at)}'
+        ):
+            return False
+        if not cls._notify_owner(todo):
+            return False
+        todo.details = {**(todo.details or {}), 'cleanup_notification_sent_at': timezone.now().isoformat()}
+        todo.save(update_fields=['details', 'update_time'])
+        return True
 
     @classmethod
     def resolve_data_factory_cleanup_todos(cls, execution_id: int) -> int:
@@ -881,12 +917,14 @@ class WorkbenchTodoService:
             ),
         )
         active_event_keys = set()
+        notification_ids = []
         created_count = 0
         for execution in cleanup_executions:
             todo = cls.record_data_factory_cleanup_failure(execution)
             if todo:
                 active_event_keys.add(todo.event_key)
                 created_count += 1
+                notification_ids.append(todo.id)
 
         stale_todos = WorkbenchTodo.objects.filter(
             source_type=WorkbenchTodoSourceTypeEnum.DATA_FACTORY_EXECUTION.value,
@@ -901,6 +939,8 @@ class WorkbenchTodoService:
             stale_todos,
             '系统自动检测：该执行已不满足清理失败待办条件；待手动清理请在执行记录中处理。',
         )
+        for todo_id in notification_ids:
+            cls._notify_cleanup_failure_if_due(todo_id)
         return {
             'data_factory_cleanup_todo_count': created_count,
             'resolved_data_factory_cleanup_todo_count': resolved_count,

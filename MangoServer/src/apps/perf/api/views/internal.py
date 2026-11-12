@@ -51,6 +51,7 @@ class PerfRunNodeViews(ViewSet):
 
     @error_response("system")
     def ready(self, request, pk=None):
+        """上报性能测试节点就绪状态"""
         with transaction.atomic():
             node = self._node(request, pk)
             node.actual_executor_connection = node.target_executor_connection
@@ -81,6 +82,7 @@ class PerfRunNodeViews(ViewSet):
 
     @error_response("system")
     def control(self, request, pk=None):
+        """获取性能测试节点控制指令"""
         node = self._node(request, pk)
         return ResponseData.success(RESPONSE_MSG_0001, {
             "control_revision": node.control_revision,
@@ -91,6 +93,7 @@ class PerfRunNodeViews(ViewSet):
 
     @error_response("system")
     def heartbeat(self, request, pk=None):
+        """上报性能测试执行节点心跳"""
         node = self._node(request, pk)
         node.last_heartbeat_at = timezone.now()
         node.engine_pid = request.data.get("engine_pid")
@@ -103,23 +106,27 @@ class PerfRunNodeViews(ViewSet):
 
     @error_response("system")
     def metrics(self, request, pk=None):
+        """接收性能测试节点指标"""
         data = PerfMetricService.ingest(node_id=int(pk), batch_data=request.data,
                                         connection_id=self._connection_id(request))
         return ResponseData.success(RESPONSE_MSG_0002, data)
 
     @error_response("system")
     def errors(self, request, pk=None):
+        """接收性能测试节点错误"""
         data = PerfErrorService.ingest(node_id=int(pk), batch_data=request.data,
                                        connection_id=self._connection_id(request))
         return ResponseData.success(RESPONSE_MSG_0002, data)
 
     @error_response("system")
     def secrets(self, request, pk=None):
+        """获取性能测试节点执行所需凭据"""
         node = self._node(request, pk)
         return ResponseData.success(RESPONSE_MSG_0001, {"values": PerfSecretService.reveal_for_node(node)})
 
     @error_response("system")
     def result(self, request, pk=None):
+        """上报性能测试执行节点执行结果"""
         with transaction.atomic():
             node = self._node(request, pk)
             if node.status in PerfRunNodeStatusEnum.terminal_values():
@@ -147,7 +154,7 @@ class PerfRunNodeViews(ViewSet):
                 node.run.summary = {"node_count": node.run.nodes.count(), "has_node_failure": failed}
                 node.run.revision += 1
                 node.run.save(update_fields=["status", "finished_at", "summary", "revision", "update_time"])
-                from src.apps.perf.services.recovery import PerfRecoveryService
+                from src.apps.perf.services.execution.recovery import PerfRecoveryService
                 transaction.on_commit(lambda: PerfRecoveryService.safe_finalize(node.run_id))
         return ResponseData.success(RESPONSE_MSG_0082,
                                     {"node_id": node.id, "status": node.status, "run_status": node.run.status})

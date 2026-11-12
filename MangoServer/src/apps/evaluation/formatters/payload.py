@@ -74,7 +74,7 @@ def apply_mapping(source, mapping):
     from mangotools.data_processor import JsonTool
     from mangotools.exceptions import MangoToolsError
     from src.apps.evaluation.schemas.mapping import EvaluationMapping
-    from src.apps.evaluation.services.validation import invalid_config
+    from src.apps.evaluation.services.assets.validation import invalid_config
     try:
         paths = EvaluationMapping.model_validate(mapping or {}).paths
     except ValidationError as error:

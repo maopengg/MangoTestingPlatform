@@ -13,9 +13,7 @@
     
     
     
-    <a-alert v-if="saveError" type="error" class="mango-defect-editor__error"
-      >保存失败，输入及已上传附件已保留，请重试。</a-alert
-    >
+    <MangoRequestFeedback v-if="saveError" :message="&quot;保存失败，输入及已上传附件已保留，请重试。&quot;" />
     <MangoPanelSpin :loading="detailLoading">
       <a-form :model="form" layout="horizontal" :disabled="saving || detailLoading || detailError">
         <a-grid :cols="2" :col-gap="16">
@@ -253,8 +251,7 @@
 </template>
 
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, onActivated, onBeforeUnmount, onDeactivated, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import type { FileItem } from '@arco-design/web-vue/es/upload/interfaces'
@@ -694,8 +691,8 @@ import { reportLoadError } from '@/utils/load-error'
       reset()
       Message.success('保存成功')
       emit('saved', { record: { ...defectFields(data), id }, created })
-    } catch {
-      if (current(version)) saveError.value = true
+    } catch (requestFailure) {
+      if (current(version)) saveError.value = requestFailureMessage(requestFailure, true, "保存失败，输入及已上传附件已保留，请重试。")
     } finally {
       saving.value = false
       savingId.value = null

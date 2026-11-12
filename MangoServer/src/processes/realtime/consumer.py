@@ -162,7 +162,7 @@ class RealtimeConsumer(AsyncJsonWebsocketConsumer):
         try:
             await database_sync_to_async(SocketConnectionService.disconnect)(connection_id)
             if self.client_type == ClientTypeEnum.ACTUATOR.value:
-                from src.apps.auto_ui.services.executor_slot import ExecutorSlotLeaseService
+                from src.apps.auto_ui.services.execution.executor_slot import ExecutorSlotLeaseService
 
                 await database_sync_to_async(ExecutorSlotLeaseService.clear_connection)(connection_id)
         except Exception as error:
@@ -298,7 +298,7 @@ class RealtimeConsumer(AsyncJsonWebsocketConsumer):
         if not username or not password_digest:
             return None
         try:
-            from src.apps.user.services.password import verify_password_digest
+            from src.apps.user.services.authentication.password import verify_password_digest
 
             user = UserQuerySelector.user().get(username=username)
             valid_password, upgraded_password = verify_password_digest(password_digest, user.password)

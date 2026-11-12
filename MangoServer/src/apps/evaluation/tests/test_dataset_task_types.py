@@ -7,13 +7,13 @@ from src.apps.evaluation.api.serializers.dataset import DatasetSerializer
 from src.apps.evaluation.exceptions import EvaluationError
 from src.apps.evaluation.models import EvaluationDataset
 from src.apps.evaluation.schemas.assets import EvaluationDatasetAssetCreate, EvaluationDatasetTaskTypes
-from src.apps.evaluation.services.assets import ensure_dataset
-from src.apps.evaluation.services.validation import validate_dataset
+from src.apps.evaluation.services.assets.assets import ensure_dataset
+from src.apps.evaluation.services.assets.validation import validate_dataset
 from src.apps.evaluation.api.views.dataset import DatasetCRUD
 from src.apps.evaluation.selectors.assets import filter_dataset_task_types
 from src.apps.evaluation.selectors.scope import ensure_dataset_access, scope_dataset_queryset
 from src.apps.evaluation.selectors.dataset_version import get_dataset_version
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.user.services.authorization.permission import PermissionMenuService
 
 
 class DatasetTaskTypesTests(SimpleTestCase):
@@ -50,8 +50,8 @@ class DatasetTaskTypesTests(SimpleTestCase):
             access.assert_called_once_with('user')
 
     def test_global_dataset_creation_never_creates_project_relations(self):
-        with patch('src.apps.evaluation.services.assets.ensure_dataset_access'), \
-                patch('src.apps.evaluation.services.assets.EvaluationDataset.objects') as manager:
+        with patch('src.apps.evaluation.services.assets.assets.ensure_dataset_access'), \
+                patch('src.apps.evaluation.services.assets.assets.EvaluationDataset.objects') as manager:
             manager.filter.return_value.first.return_value = None
             user = Mock()
             ensure_dataset.__wrapped__({'name': '题库', 'task_type': ['记忆，问答']}, user)

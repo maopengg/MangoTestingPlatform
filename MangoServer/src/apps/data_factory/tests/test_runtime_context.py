@@ -7,9 +7,9 @@ from django.test import SimpleTestCase
 from mangotools.exceptions import MangoToolsError
 
 from src.apps.data_factory.models import DataFactoryField
-from src.apps.data_factory.services.generator import DataFactoryValueGenerator
-from src.apps.data_factory.services.runner import DataFactoryRunner
-from src.apps.data_factory.services.runtime_cache import DataFactoryRuntimeCache
+from src.apps.data_factory.services.execution.generator import DataFactoryValueGenerator
+from src.apps.data_factory.services.execution.runner import DataFactoryRunner
+from src.apps.data_factory.services.execution.runtime_cache import DataFactoryRuntimeCache
 from src.common.testing import ObtainTestData
 
 
@@ -83,11 +83,11 @@ class RuntimeContextTests(SimpleTestCase):
         database = SimpleNamespace(id=1, database_name='test', db_type=1, host='example.com', port=3306)
         stack.enter_context(patch.object(DataFactoryRunner, 'get_template', return_value=template))
         stack.enter_context(patch.object(DataFactoryRuntimeCache, 'build_test_data', return_value=self.cache))
-        stack.enter_context(patch('src.apps.data_factory.services.runner_parts.preview.'
+        stack.enter_context(patch('src.apps.data_factory.services.execution.parts.preview.'
                                   'DataFactoryDatasourceResolver.resolve_entity_binding'))
-        stack.enter_context(patch('src.apps.data_factory.services.runner_parts.preview.'
+        stack.enter_context(patch('src.apps.data_factory.services.execution.parts.preview.'
                                   'DataFactoryDatasourceResolver.require_binding_permission'))
-        stack.enter_context(patch('src.apps.data_factory.services.runner_parts.preview.'
+        stack.enter_context(patch('src.apps.data_factory.services.execution.parts.preview.'
                                   'DatasourceTargetService.resolve', return_value=database))
         stack.enter_context(patch.object(DataFactoryRunner, 'get_template_items', return_value=[]))
         stack.enter_context(patch.object(DataFactoryRunner, 'preview_post_insert_updates', return_value=[]))
@@ -161,9 +161,7 @@ class RuntimeContextTests(SimpleTestCase):
         stack, _ = self.runner_patches()
         execution = SimpleNamespace(id=1, execution_no='DF_TEST', save=Mock(), context={})
         stack.enter_context(patch.object(DataFactoryRunner, 'require_template_entities_available'))
-        stack.enter_context(patch('src.apps.data_factory.services.execution_capacity.'
-                                  'DatasourceExecutionCapacityService.wait_for_fixture'))
-        stack.enter_context(patch('src.apps.data_factory.services.runner_parts.execution.'
+        stack.enter_context(patch('src.apps.data_factory.services.execution.parts.execution.'
                                   'DataFactoryExecution.objects.create', return_value=execution))
         def create(*args, test_data=None, **kwargs):
             return DataFactoryValueGenerator.build_payload(self.fields, test_data=test_data)
@@ -181,9 +179,7 @@ class RuntimeContextTests(SimpleTestCase):
         stack, _ = self.runner_patches()
         execution = SimpleNamespace(id=1, execution_no='DF_TEST', save=Mock(), context={})
         stack.enter_context(patch.object(DataFactoryRunner, 'require_template_entities_available'))
-        stack.enter_context(patch('src.apps.data_factory.services.execution_capacity.'
-                                  'DatasourceExecutionCapacityService.wait_for_fixture'))
-        stack.enter_context(patch('src.apps.data_factory.services.runner_parts.execution.'
+        stack.enter_context(patch('src.apps.data_factory.services.execution.parts.execution.'
                                   'DataFactoryExecution.objects.create', return_value=execution))
         def create(*args, test_data=None, **kwargs):
             return DataFactoryValueGenerator.build_payload(self.fields, test_data=test_data)

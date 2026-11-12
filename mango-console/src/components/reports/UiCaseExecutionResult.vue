@@ -5,7 +5,7 @@
     class="mango-empty-state mango-ui-case-execution-result__empty"
   />
   <div v-else class="mango-ui-case-execution-result">
-    <a-alert v-if="executionError" type="error" class="mango-ui-case-execution-result__alert">
+    <a-alert data-feedback-kind="execution-result" v-if="executionError" type="error" class="mango-ui-case-execution-result__alert">
       {{ executionError }}
     </a-alert>
     <ElementTestReport v-if="resultData" :result-data="resultData" />

@@ -6,7 +6,7 @@ from django.test import SimpleTestCase
 from src.interfaces.mcp.tools.data_factory.datasource import register_datasource_tools
 from src.interfaces.mcp.tools.data_factory.schema import register_schema_tools
 from src.apps.data_factory.exceptions import DataFactoryError
-from src.apps.data_factory.services.data_source_execution_request import DataSourceExecutionRequestService
+from src.apps.data_factory.services.datasource.data_source_execution_request import DataSourceExecutionRequestService
 from src.apps.test_center.enums.data_source import DataSourceTypeEnum
 
 
@@ -63,9 +63,9 @@ class McpDatasourceExecutionTests(SimpleTestCase):
             binding = SimpleNamespace(database=SimpleNamespace(db_type=db_type))
             with (
                 self.subTest(db_type=db_type),
-                patch('src.apps.data_factory.services.data_source_execution_request.'
+                patch('src.apps.data_factory.services.datasource.data_source_execution_request.'
                       'DataFactoryDatasourceResolver.resolve_binding_by_env', return_value=binding),
-                patch('src.apps.data_factory.services.data_source_execution_request.'
+                patch('src.apps.data_factory.services.datasource.data_source_execution_request.'
                       'DataSourceExecutionService.execute') as execute,
             ):
                 with self.assertRaises(DataFactoryError):
@@ -77,11 +77,11 @@ class McpDatasourceExecutionTests(SimpleTestCase):
     def test_typed_query_still_checks_write_confirmation(self):
         binding = SimpleNamespace(database=SimpleNamespace(db_type=DataSourceTypeEnum.REDIS.value))
         with (
-            patch('src.apps.data_factory.services.data_source_execution_request.'
+            patch('src.apps.data_factory.services.datasource.data_source_execution_request.'
                   'DataFactoryDatasourceResolver.resolve_binding_by_env', return_value=binding),
-            patch('src.apps.data_factory.services.data_source_execution_request.'
+            patch('src.apps.data_factory.services.datasource.data_source_execution_request.'
                   'DataSourceExecutionService.is_write_operation', return_value=True),
-            patch('src.apps.data_factory.services.data_source_execution_request.'
+            patch('src.apps.data_factory.services.datasource.data_source_execution_request.'
                   'DataSourceExecutionService.execute') as execute,
         ):
             with self.assertRaises(DataFactoryError):
@@ -94,11 +94,11 @@ class McpDatasourceExecutionTests(SimpleTestCase):
     def test_platform_sql_execution_remains_available(self):
         binding = SimpleNamespace(database=SimpleNamespace(db_type=DataSourceTypeEnum.MYSQL.value))
         with (
-            patch('src.apps.data_factory.services.data_source_execution_request.'
+            patch('src.apps.data_factory.services.datasource.data_source_execution_request.'
                   'DataFactoryDatasourceResolver.resolve_binding_by_env', return_value=binding),
-            patch('src.apps.data_factory.services.data_source_execution_request.'
+            patch('src.apps.data_factory.services.datasource.data_source_execution_request.'
                   'DataSourceExecutionService.is_write_operation', return_value=False),
-            patch('src.apps.data_factory.services.data_source_execution_request.'
+            patch('src.apps.data_factory.services.datasource.data_source_execution_request.'
                   'DataSourceExecutionService.execute', return_value={'rows': []}) as execute,
         ):
             result = DataSourceExecutionRequestService.execute_operation(

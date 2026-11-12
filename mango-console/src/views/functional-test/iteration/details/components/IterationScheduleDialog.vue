@@ -12,9 +12,7 @@
     <a-alert class="mango-iteration-schedule__notice">{{ subjectLabel }}</a-alert>
     
     
-    <a-alert v-if="saveError" type="error" class="mango-iteration-schedule__notice"
-      >排期保存失败，输入已保留，请重试。</a-alert
-    >
+    <MangoRequestFeedback v-if="saveError" :message="&quot;排期保存失败，输入已保留，请重试。&quot;" />
     <a-form class="mango-simple-form" :model="form" layout="horizontal" :disabled="saving" auto-label-width>
       <a-grid class="mango-simple-form-fields" :cols="2" :col-gap="16">
         <a-grid-item class="mango-simple-form-fields"
@@ -61,6 +59,8 @@
 </template>
 
 <script setup lang="ts">
+import { requestFailureMessage } from '@/utils/load-error'
+
   import { computed, onActivated, onBeforeUnmount, onDeactivated, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { putManualSuite } from '@/api/functional-test'
@@ -169,8 +169,8 @@
       reset()
       Message.success('排期已保存')
       emit('saved', id)
-    } catch {
-      if (current(version)) saveError.value = true
+    } catch (requestFailure) {
+      if (current(version)) saveError.value = requestFailureMessage(requestFailure, true, "排期保存失败，输入已保留，请重试。")
     } finally {
       saving.value = false
       savingId.value = null

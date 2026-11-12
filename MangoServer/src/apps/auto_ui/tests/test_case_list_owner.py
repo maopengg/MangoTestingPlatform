@@ -10,11 +10,11 @@ from src.apps.user.models import User
 class UiCaseListOwnerTests(SimpleTestCase):
     def test_owner_representation_does_not_read_personal_environment_or_save(self):
         owner = User(id=7, name='测试负责人', username='owner@example.com',
-                     selected_environment=99, config={})
+                     config={})
         case = UiCase(id=1, name='测试用例', case_people=owner,
                       project_product=None, module=None, update_user=None)
         with (
-            patch('src.apps.user.services.user_cache.UserCacheService.selected_environment',
+            patch('src.apps.user.services.preferences.user_config.UserConfigService.selected_environment',
                   side_effect=AssertionError('列表不应读取个人环境')) as environment,
             patch.object(User, 'save') as save,
         ):

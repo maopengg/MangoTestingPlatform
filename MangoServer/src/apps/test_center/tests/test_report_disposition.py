@@ -1,4 +1,4 @@
-from src.apps.user.services.http_permission_registry import permission_for_view
+from src.apps.user.services.authorization.http_permission_registry import permission_for_view
 from contextlib import nullcontext
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -9,10 +9,10 @@ from mangotools.enums import TaskEnum
 
 from src.apps.test_center.enums import ReportFailureReasonEnum, TestCaseTypeEnum
 from src.apps.test_center.exceptions import TestCenterError
-from src.apps.test_center.services.test_suite.disposition import TestSuiteDispositionService
-from src.apps.test_center.services.test_suite.summary import TestSuiteSummaryService
+from src.apps.test_center.services.reporting.test_suite.disposition import TestSuiteDispositionService
+from src.apps.test_center.services.reporting.test_suite.summary import TestSuiteSummaryService
 from src.apps.test_center.api.views.test_suite_details import TestSuiteDetailsViews
-from src.apps.system.services.enum_catalog import EnumCatalogService
+from src.apps.system.services.catalog.enum_catalog import EnumCatalogService
 
 
 class ReportDispositionTests(SimpleTestCase):
@@ -25,10 +25,10 @@ class ReportDispositionTests(SimpleTestCase):
         self.detail.save = lambda **kwargs: self.saved.append(kwargs)
         self.suite = SimpleNamespace(id=1, status=0)
         for name, target in [('details', 'TestSuiteDetails.objects'), ('suites', 'TestSuite.objects')]:
-            mocked = patch(f'src.apps.test_center.services.test_suite.disposition.{target}')
+            mocked = patch(f'src.apps.test_center.services.reporting.test_suite.disposition.{target}')
             setattr(self, name, mocked.start())
             self.addCleanup(mocked.stop)
-        atomic = patch('src.apps.test_center.services.test_suite.disposition.transaction.atomic', side_effect=nullcontext)
+        atomic = patch('src.apps.test_center.services.reporting.test_suite.disposition.transaction.atomic', side_effect=nullcontext)
         atomic.start()
         self.addCleanup(atomic.stop)
         # ORM 已由内存替身隔离；跳过导入时绑定的事务装饰器，避免连接真实数据库。
@@ -36,7 +36,7 @@ class ReportDispositionTests(SimpleTestCase):
         update = patch.object(TestSuiteDispositionService, 'update', side_effect=lambda *args, **kwargs: unwrapped_update(TestSuiteDispositionService, *args, **kwargs))
         update.start()
         self.addCleanup(update.stop)
-        environments = patch('src.apps.system.services.system_config.SystemConfigService.get_environment_display_names', return_value={})
+        environments = patch('src.apps.system.services.configuration.system_config.SystemConfigService.get_environment_display_names', return_value={})
         environments.start()
         self.addCleanup(environments.stop)
         self.details.filter.return_value.values_list.return_value.first.return_value = 1
@@ -60,13 +60,13 @@ class ReportDispositionTests(SimpleTestCase):
         from src.common.exceptions import MangoServerError
         self.detail.is_excluded = True
         user = SimpleNamespace(id=7)
-        with patch('src.apps.test_center.services.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=False), \
-                patch('src.apps.test_center.services.test_suite.disposition.ProjectProductScopeService.has_project_product', return_value=False):
+        with patch('src.apps.test_center.services.reporting.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=False), \
+                patch('src.apps.test_center.services.reporting.test_suite.disposition.ProjectProductScopeService.has_project_product', return_value=False):
             with self.assertRaises(MangoServerError):
                 TestSuiteDispositionService.update_diagnosis(2, 'product_pending', '等待修复', user=user)
         self.assertEqual(self.saved, [])
-        with patch('src.apps.test_center.services.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=False), \
-                patch('src.apps.test_center.services.test_suite.disposition.ProjectProductScopeService.has_project_product', return_value=True):
+        with patch('src.apps.test_center.services.reporting.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=False), \
+                patch('src.apps.test_center.services.reporting.test_suite.disposition.ProjectProductScopeService.has_project_product', return_value=True):
             result = TestSuiteDispositionService.update_diagnosis(2, 'product_pending', '等待修复', user=user)
         self.assertTrue(result['is_excluded'])
         self.assertEqual(self.saved[-1]['update_fields'], ['failure_reason', 'failure_description'])
@@ -81,8 +81,8 @@ class ReportDispositionTests(SimpleTestCase):
 
     def test_mcp_explicit_exclude_and_restore_preserve_original_failure(self):
         user = SimpleNamespace(id=7)
-        with patch('src.apps.test_center.services.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=False), \
-                patch('src.apps.test_center.services.test_suite.disposition.ProjectProductScopeService.has_project_product', return_value=True):
+        with patch('src.apps.test_center.services.reporting.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=False), \
+                patch('src.apps.test_center.services.reporting.test_suite.disposition.ProjectProductScopeService.has_project_product', return_value=True):
             for flag in (True, False):
                 result = TestSuiteDispositionService.update_diagnosis(
                     2, 'test_case', '用例已取消发布，保留原始失败记录', user=user, is_excluded=flag,
@@ -95,8 +95,8 @@ class ReportDispositionTests(SimpleTestCase):
     def test_mcp_exclusion_cannot_bypass_product_scope(self):
         user = SimpleNamespace(id=7)
         from src.common.exceptions import MangoServerError
-        with patch('src.apps.test_center.services.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=False), \
-                patch('src.apps.test_center.services.test_suite.disposition.ProjectProductScopeService.has_project_product', return_value=False):
+        with patch('src.apps.test_center.services.reporting.test_suite.disposition.PermissionMenuService.is_effective_super_admin', return_value=False), \
+                patch('src.apps.test_center.services.reporting.test_suite.disposition.ProjectProductScopeService.has_project_product', return_value=False):
             with self.assertRaises(MangoServerError):
                 TestSuiteDispositionService.update_diagnosis(2, 'test_case', '说明', user=user, is_excluded=True)
         self.assertFalse(self.detail.is_excluded)
@@ -112,14 +112,14 @@ class ReportDispositionTests(SimpleTestCase):
             TestSuiteDispositionService.update(2, {'is_excluded': True})
 
     def test_retry_resets_only_target_disposition(self):
-        from src.apps.test_center.services.test_suite.retry import TestSuiteRetryService
+        from src.apps.test_center.services.reporting.test_suite.retry import TestSuiteRetryService
         self.detail.is_excluded = True
         self.detail.failure_reason = 'product_pending'
         self.detail.failure_description = '等待修复'
-        with patch('src.apps.test_center.services.test_suite.retry.TestSuiteDetails.objects') as manager, \
-                patch('src.apps.test_center.services.test_suite.retry.transaction.atomic', side_effect=nullcontext), \
+        with patch('src.apps.test_center.services.reporting.test_suite.retry.TestSuiteDetails.objects') as manager, \
+                patch('src.apps.test_center.services.reporting.test_suite.retry.transaction.atomic', side_effect=nullcontext), \
                 patch.object(TestSuiteRetryService, 'refresh_current_api_release'), \
-                patch('src.apps.test_center.services.test_suite.retry.TestSuiteExecutionResultService.clear_result') as clear:
+                patch('src.apps.test_center.services.reporting.test_suite.retry.TestSuiteExecutionResultService.clear_result') as clear:
             manager.select_for_update.return_value.get.return_value = self.detail
             TestSuiteRetryService.retry_detail.__wrapped__(TestSuiteRetryService, 2)
         self.assertFalse(self.detail.is_excluded)
@@ -146,9 +146,9 @@ class ReportDispositionTests(SimpleTestCase):
         self.assertEqual(TestSuiteSummaryService.conclusion_status(0, summary, 0), 1)
 
     def test_exclude_permission_is_registered_and_not_given_to_guests(self):
-        from src.apps.user.services.permission import PermissionMenuService
+        from src.apps.user.services.authorization.permission import PermissionMenuService
         self.assertIn('change', PermissionMenuService.MENU_ACTIONS['report'])
-        self.assertNotIn('change', __import__('src.apps.user.services.permission', fromlist=['GUEST_ALLOWED_ACTIONS']).GUEST_ALLOWED_ACTIONS)
+        self.assertNotIn('change', __import__('src.apps.user.services.authorization.permission', fromlist=['GUEST_ALLOWED_ACTIONS']).GUEST_ALLOWED_ACTIONS)
         self.assertIn({'key': 'product_pending', 'title': '产品缺陷待修复'}, EnumCatalogService.catalog()['report_failure_reason'])
 
     def test_endpoint_rejects_product_scope_before_mutating(self):

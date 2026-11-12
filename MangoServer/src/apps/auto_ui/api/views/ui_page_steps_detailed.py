@@ -11,9 +11,9 @@ from rest_framework.viewsets import ViewSet
 from src.apps.auto_ui.api.serializers.ui_page_steps_detailed import PageStepsDetailedSerializers, \
     PageStepsDetailedSerializersC, UiDuplicatePageStepNodeSerializer
 from src.apps.auto_ui.models import PageStepsDetailed
-from src.apps.auto_ui.services.asset_deletion import UiAssetDeletionService
-from src.apps.auto_ui.services.page_step_detail import PageStepDetailMutationService
-from src.apps.auto_ui.services.step_ordering import UiStepOrderingService
+from src.apps.auto_ui.services.assets.asset_deletion import UiAssetDeletionService
+from src.apps.auto_ui.services.page_steps.page_step_detail import PageStepDetailMutationService
+from src.apps.auto_ui.services.page_steps.step_ordering import UiStepOrderingService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -41,6 +41,7 @@ class PageStepsDetailedCRUD(ModelCRUD):
 
     @error_response('ui')
     def get(self, request: Request):
+        """获取UI 页面步骤节点列表或指定记录"""
         page_step_id = request.GET.get('page_step_id')
         _id = request.GET.get('id')
         if page_step_id:
@@ -58,6 +59,7 @@ class PageStepsDetailedCRUD(ModelCRUD):
 
     @error_response('ui')
     def post(self, request: Request):
+        """新增UI 页面步骤节点"""
         data = PageStepDetailMutationService.save(
             detail_id=request.data.get('id'),
             page_step_id=request.data.get('page_step'),
@@ -71,6 +73,7 @@ class PageStepsDetailedCRUD(ModelCRUD):
 
     @error_response('ui')
     def delete(self, request: Request):
+        """删除UI 页面步骤节点"""
         detail_ids = request.query_params.getlist('id[]')
         if request.query_params.get('id'):
             detail_ids.append(request.query_params.get('id'))
@@ -82,6 +85,7 @@ class PageStepsDetailedCRUD(ModelCRUD):
 
     @error_response('ui')
     def callback(self, _id):
+        """刷新步骤变更后的所属流程摘要"""
         if _id is not None:
             PageStepDetailMutationService.refresh_run_flow(_id)
 
@@ -93,6 +97,7 @@ class PageStepsDetailedView(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('ui')
     def duplicate_node(self, request: Request):
+        """复制 UI 页面步骤节点"""
         serializer = UiDuplicatePageStepNodeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
@@ -108,6 +113,7 @@ class PageStepsDetailedView(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('ui')
     def get_ope_type(self, request: Request):
+        """获取 UI 操作类型选项"""
         page_type = request.query_params.get('page_type')
         data = PageStepDetailMutationService.method_tree(
             'operation',
@@ -118,6 +124,7 @@ class PageStepsDetailedView(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('ui')
     def get_ass_type(self, request: Request):
+        """获取 UI 断言类型选项"""
         page_type = request.query_params.get('page_type')
         data = PageStepDetailMutationService.method_tree(
             'assertion',

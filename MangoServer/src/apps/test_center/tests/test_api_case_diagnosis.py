@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from django.test import SimpleTestCase
 
-from src.apps.test_center.services.api_case_diagnosis import ApiCaseDiagnosisService
+from src.apps.test_center.services.diagnostics.api_case_diagnosis import ApiCaseDiagnosisService
 
 
 class ApiCaseDiagnosisTests(SimpleTestCase):
@@ -19,15 +19,15 @@ class ApiCaseDiagnosisTests(SimpleTestCase):
     @patch.object(ApiCaseDiagnosisService, '_load')
     def test_no_failure_does_not_call_ai(self, load):
         load.return_value = {'steps': [{'id': 1, 'name': '通过步骤', 'status': 1}]}
-        with patch('src.apps.test_center.services.api_case_diagnosis.AiService.json_chat') as chat:
+        with patch('src.apps.test_center.services.diagnostics.api_case_diagnosis.AiService.json_chat') as chat:
             result = ApiCaseDiagnosisService.analyze(self.make_result(status=1))
         self.assertFalse(result['available'])
         chat.assert_not_called()
 
     @patch.object(ApiCaseDiagnosisService, '_load')
-    @patch('src.apps.test_center.services.api_case_diagnosis.AiService._validate_base_config')
-    @patch('src.apps.test_center.services.api_case_diagnosis.AiService.load_config')
-    @patch('src.apps.test_center.services.api_case_diagnosis.AiService.json_chat')
+    @patch('src.apps.test_center.services.diagnostics.api_case_diagnosis.AiService._validate_base_config')
+    @patch('src.apps.test_center.services.diagnostics.api_case_diagnosis.AiService.load_config')
+    @patch('src.apps.test_center.services.diagnostics.api_case_diagnosis.AiService.json_chat')
     def test_long_flow_includes_focus_and_predecessor(self, chat, load_config, validate, load):
         load.return_value = {'steps': [
             {'id': index + 1, 'name': f'步骤{index + 1}', 'status': 0 if index == 8 else 1,

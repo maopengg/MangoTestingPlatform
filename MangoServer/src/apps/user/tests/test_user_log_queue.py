@@ -14,8 +14,8 @@ from django.test import RequestFactory, SimpleTestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 
 from src.apps.user.middleware.user_logs import UserLogsMiddleWare
-from src.apps.user.services import user_logs
-from src.apps.user.services.user_logs import UserLogService, _UserLogDispatcher
+from src.apps.user.services.audit import user_logs
+from src.apps.user.services.audit.user_logs import UserLogService, _UserLogDispatcher
 
 
 class UserLogQueueTests(SimpleTestCase):
@@ -152,6 +152,58 @@ class UserLogQueueTests(SimpleTestCase):
             self.assertEqual(self.real_record_batch([{'user': None}]), 0)
         write.assert_not_called()
         self.assertIn('校验未通过', ' '.join(messages.output))
+
+    def test_anonymous_log_passes_real_validation_without_user_lookup(self):
+        payload = {'user': None, 'method': 'GET', 'url': '/api/example', 'status_code': 200}
+        with patch.object(user_logs.UserLogs.objects, 'bulk_create') as write, \
+                self.assertNoLogs(user_logs.logger, level='ERROR'):
+            self.assertEqual(self.real_record_batch([payload]), 1)
+        self.assertIsNone(write.call_args.args[0][0].user_id)
+        self.assertTrue(user_logs.UserLogs._meta.get_field('user').blank)
+
+    def test_validation_logs_field_reason_and_count_without_payload(self):
+        secret = 'example-sensitive-marker'
+        bad = {'user': None, 'url': secret * 30, 'request_data': secret, 'response_data': secret}
+        good = {'user': None, 'url': '/api/example'}
+        with patch.object(user_logs.UserLogs.objects, 'bulk_create') as write, \
+                self.assertLogs(user_logs.logger, level='ERROR') as messages:
+            self.assertEqual(self.real_record_batch([bad, bad, good]), 1)
+        output = ' '.join(messages.output)
+        self.assertEqual(len(messages.output), 1)
+        self.assertIn("'field': 'url'", output)
+        self.assertIn('长度超过上限（256 字符）', output)
+        self.assertIn("'count': 2", output)
+        self.assertNotIn(secret, output)
+        self.assertEqual(len(write.call_args.args[0]), 1)
+
+    def test_unknown_fields_and_raw_validator_messages_are_not_logged(self):
+        from django.core.exceptions import ValidationError
+        from src.common.database import ModelMutationValidationError
+        secret = 'example-sensitive-marker'
+        error = ModelMutationValidationError({'user': [secret], secret: [secret]})
+        try:
+            raise error from ValidationError({'user': ValidationError(secret, code=secret, params={'value': secret})})
+        except ModelMutationValidationError:
+            pass
+        with patch.object(user_logs, 'validate_model', side_effect=error), \
+                patch.object(user_logs.UserLogs.objects, 'bulk_create') as write, \
+                self.assertLogs(user_logs.logger, level='ERROR') as messages:
+            self.assertEqual(self.real_record_batch([{'user': None}]), 0)
+        output = ' '.join(messages.output)
+        self.assertIn("'field': 'user'", output)
+        self.assertIn('<未知字段>', output)
+        self.assertIn('未输出原始文案', output)
+        self.assertNotIn(secret, output)
+        write.assert_not_called()
+
+    def test_single_record_validation_failure_uses_safe_details(self):
+        # setUp 只替换批量入口，单条入口仍执行真实字段校验。
+        with self.assertLogs(user_logs.logger, level='ERROR') as messages:
+            self.assertIsNone(UserLogService.record({'user': None, 'url': 'example-secret' * 30}))
+        output = ' '.join(messages.output)
+        self.assertIn("'field': 'url'", output)
+        self.assertIn('长度超过上限', output)
+        self.assertNotIn('example-secret', output)
 
     def test_connection_cleanup_failure_does_not_stop_consumption(self):
         dispatcher = self.dispatcher()
@@ -334,6 +386,12 @@ class UserLogBatchStorageTests(SimpleTestCase):
                 with self.assertLogs(user_logs.logger, level='ERROR'):
                     self.assertEqual(UserLogService.record_batch([{**payload, 'url': 'x' * 300}, payload]), 1)
                 self.assertEqual(user_logs.UserLogs.objects.count(), 102)
+                anonymous = {**payload, 'user': None}
+                saved = UserLogService.record(anonymous)
+                self.assertIsNotNone(saved)
+                self.assertIsNone(saved.user_id)
+                self.assertEqual(UserLogService.record_batch([anonymous]), 1)
+                self.assertEqual(user_logs.UserLogs.objects.filter(user__isnull=True).count(), 2)
         finally:
             del connections[alias]
             database.connection.close()

@@ -9,11 +9,11 @@ from mangotools.enums import StatusEnum
 from src.apps.data_factory.enums import DataFactoryCleanupStrategyEnum
 from src.apps.data_factory.schemas.cleanup_resource import EsCleanupRule
 from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
-from src.apps.data_factory.services.configuration_preview import DataFactoryConfigurationPreviewService
-from src.apps.data_factory.services.runner import DataFactoryRunner
-from src.apps.data_factory.services.template import DataFactoryTemplateMutationService
-from src.apps.data_factory.services.template import DataFactoryTemplateService
-from src.apps.data_factory.services.template_deletion import DataFactoryTemplateDeletionService
+from src.apps.data_factory.services.preview.configuration_preview import DataFactoryConfigurationPreviewService
+from src.apps.data_factory.services.execution.runner import DataFactoryRunner
+from src.apps.data_factory.services.assets.template import DataFactoryTemplateMutationService
+from src.apps.data_factory.services.assets.template import DataFactoryTemplateService
+from src.apps.data_factory.services.assets.template_deletion import DataFactoryTemplateDeletionService
 from src.interfaces.mcp.audit import mcp_current_user_id
 from src.interfaces.mcp.common import (
     create_dangerous_action_preview,

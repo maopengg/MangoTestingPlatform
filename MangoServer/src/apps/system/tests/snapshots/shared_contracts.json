@@ -1464,20 +1464,6 @@
         "title": "Front Sql",
         "type": "array"
       },
-      "gray_config_ids": {
-        "items": {
-          "type": "integer"
-        },
-        "title": "Gray Config Ids",
-        "type": "array"
-      },
-      "gray_execution_log_ids": {
-        "items": {
-          "type": "integer"
-        },
-        "title": "Gray Execution Log Ids",
-        "type": "array"
-      },
       "id": {
         "title": "Id",
         "type": "integer"
@@ -1636,20 +1622,6 @@
         ],
         "default": null,
         "title": "Executor Connection Id"
-      },
-      "gray_config_ids": {
-        "items": {
-          "type": "integer"
-        },
-        "title": "Gray Config Ids",
-        "type": "array"
-      },
-      "gray_execution_log_ids": {
-        "items": {
-          "type": "integer"
-        },
-        "title": "Gray Execution Log Ids",
-        "type": "array"
       },
       "id": {
         "title": "Id",

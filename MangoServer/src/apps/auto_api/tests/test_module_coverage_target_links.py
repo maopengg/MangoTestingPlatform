@@ -12,7 +12,7 @@ from src.apps.auto_api.models import (
     ModuleCoverageCase, ModuleCoverageCaseSnapshot, ModuleCoverageInterfaceSnapshot,
     ModuleCoverageModuleInterface, ModuleCoverageScan,
 )
-from src.apps.auto_api.services.module_coverage import ModuleCoverageService as Service
+from src.apps.auto_api.services.coverage.module_coverage import ModuleCoverageService as Service
 from src.apps.auto_api.tests.test_module_coverage import valid_interface_payload, valid_payload
 
 
@@ -162,7 +162,7 @@ class ModuleCoverageTargetLinkTests(SimpleTestCase):
         scan, _, _, _ = self.fixtures()
         order = []
         with patch.object(Service, 'get_locked_uploading_scan', return_value=scan), \
-                patch('src.apps.auto_api.services.module_coverage_parts.completion.ProjectProduct.objects') as products, \
+                patch('src.apps.auto_api.services.coverage.parts.completion.ProjectProduct.objects') as products, \
                 patch.object(Service, 'link_pending_case_snapshots', side_effect=lambda _: order.append('link')), \
                 patch.object(Service, 'validation', side_effect=lambda _: order.append('validate') or
                              {'valid': False, 'errors': ['invalid paths']}):

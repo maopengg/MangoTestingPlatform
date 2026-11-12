@@ -9,7 +9,7 @@ from fastmcp import Client, FastMCP
 from fastmcp.server.auth import AccessToken
 
 from src.apps.test_center.enums import ReportFailureReasonEnum
-from src.apps.test_center.services.test_suite.disposition import TestSuiteDispositionService
+from src.apps.test_center.services.reporting.test_suite.disposition import TestSuiteDispositionService
 from src.interfaces.mcp.authentication import MangoAuthorizationMiddleware, component_policy, permission_error
 from src.interfaces.mcp.server import mcp_asgi_app, _tool_operation
 from src.interfaces.mcp.tools.report.test_report import register_test_report_tools

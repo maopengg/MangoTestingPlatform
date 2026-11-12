@@ -12,7 +12,7 @@ from src.apps.task_center.enums import ScheduleFireSourceTypeEnum
 from src.apps.task_center.exceptions import TaskCenterError
 from src.apps.task_center.services.scheduling.fire import ScheduleFireService
 from src.apps.task_center.services.scheduling.task_group_execution import ScheduledTaskGroupExecutionService
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 
 
 class ScheduleFireDeduplicationTests(SimpleTestCase):

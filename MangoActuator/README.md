@@ -70,7 +70,7 @@ powershell -ExecutionPolicy Bypass -File scripts/build_windows_tk.ps1
 产物输出到 `dist/`，临时构建文件输出到 `runtime/pyinstaller/`。Windows 生成单文件 `.exe`，macOS 生成 `.app` 应用包。
 
 桌面默认入口使用 `src/flet_pages/`，包含页面外壳、配置表单、主题、异步事件桥和托盘。
-`desktop_main.py` 仅调用桌面入口；命令行分发和启动辅助在 `src/flet_pages/launcher.py`，
+`desktop_main.py` 保留应用名称、基础路径和命令行参数分发；启动辅助在 `src/flet_pages/launcher.py`，
 打包、资源处理和产物自检在 `src/flet_pages/packaging.py`。
 Flet 版本固定为 `0.28.3`，与 Python 3.10 及当前 PyInstaller 构建配套；桌面客户端随包发布。
 macOS 将桌面客户端放在应用包的 `Contents/Helpers/`，使用独立的应用标识与芒果图标，
@@ -83,6 +83,10 @@ Flet 的 Python 模块按实际导入收集，避免全量收集未使用的扩�
 透明背景 `assets/platform_logo.png`，再重新打包。
 后台服务继续运行于独立 asyncio 线程，页面通过有界事件批次接收日志和运行状态。
 窗口关闭时优先隐藏到托盘；明确退出时停止后台服务并关闭连接。
+桌面采用普通单窗口启动；不使用 Flet 的隐藏启动模式，避免 macOS 下仅出现 Dock 图标而无法显示登录窗口。
+macOS 使用独立准备的原生客户端：原生内容区初始为 360×442，加标题栏后对齐 360×470 登录窗口，
+避免先显示 800×600 再缩小。源码运行的客户端缓存位于 `runtime/desktop/`，不修改全局 Flet 缓存；
+打包时复用同一套客户端准备逻辑。Flet 原生资源结构变化时会明确报错，需重新适配。
 `src/tk_pages/` 暂留作过渡参考，默认启动和打包均不再加载 Tkinter。
 
 桌面样式沿用测试平台 Web 的紧凑 SaaS 后台规范：浅色侧栏、蓝色操作与选中态、

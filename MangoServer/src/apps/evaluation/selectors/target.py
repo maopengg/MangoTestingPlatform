@@ -5,7 +5,7 @@ from src.apps.auto_api.enums.protocol import ApiProtocolTypeEnum
 from src.apps.auto_api.selectors.querysets import ApiQuerySelector
 from src.apps.evaluation.exceptions import EVALUATION_TARGET_ACCESS_DENIED, EvaluationError
 from src.apps.evaluation.selectors.case import get_case
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.user.services.authorization.permission import PermissionMenuService
 
 
 def published_interfaces(product_id):

@@ -21,17 +21,17 @@ class SystemConfig(AppConfig):
 
     @staticmethod
     def save_cache():
-        from src.apps.system.services.system_initialization import SystemInitializationService
+        from src.apps.system.services.initialization.system_initialization import SystemInitializationService
         return SystemInitializationService.save_cache()
 
     @staticmethod
     def populate_time_tasks():
-        from src.apps.system.services.system_initialization import SystemInitializationService
+        from src.apps.system.services.initialization.system_initialization import SystemInitializationService
         return SystemInitializationService.populate_time_tasks()
 
     def shutdown(self):
         pass
 
     def init_ass(self):
-        from src.apps.system.services.system_initialization import SystemInitializationService
+        from src.apps.system.services.initialization.system_initialization import SystemInitializationService
         return SystemInitializationService.init_ass()

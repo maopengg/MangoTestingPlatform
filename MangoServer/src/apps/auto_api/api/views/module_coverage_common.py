@@ -1,22 +1,25 @@
 from src.apps.auto_api.exceptions import QUALITY_COVERAGE_PROJECT_PRODUCT_PERMISSION_INVALID
 from src.apps.functional_test.exceptions import FunctionalTestError
 
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 
 
 def request_user_id(request):
+    """获取当前请求用户 ID"""
     if isinstance(request.user, dict):
         return request.user.get("id")
     return getattr(getattr(request.user, "user_obj", None), "id", None)
 
 
 def require_project_scope(request, project_product_id: int):
+    """校验当前用户的项目产品访问范围"""
     user = getattr(getattr(request, "user", None), "user_obj", None)
     if user is not None and not ProjectProductScopeService.has_project_product(user, int(project_product_id)):
         raise FunctionalTestError(QUALITY_COVERAGE_PROJECT_PRODUCT_PERMISSION_INVALID)
 
 
 def scope_queryset(request, queryset, field="project_product_id"):
+    """按当前用户产品范围收敛查询集"""
     user = getattr(getattr(request, "user", None), "user_obj", None)
     if user is None or PermissionMenuService.is_effective_super_admin(
             user) or ProjectProductScopeService.can_view_all_project_data(user):
@@ -26,6 +29,7 @@ def scope_queryset(request, queryset, field="project_product_id"):
 
 
 def filter_module_scope(request, queryset):
+    """按模块归属筛选覆盖记录"""
     raw_module_ids = request.query_params.get("module__in")
     if raw_module_ids not in (None, ""):
         module_ids = [int(value) for value in str(raw_module_ids).split(",") if value.strip()]
@@ -35,6 +39,7 @@ def filter_module_scope(request, queryset):
 
 
 def page_response(queryset, request, serializer_class):
+    """分页查询并构建覆盖记录响应"""
     try:
         page = max(1, int(request.query_params.get("page", 1)))
         page_size = min(100, max(1, int(request.query_params.get("pageSize", 20))))

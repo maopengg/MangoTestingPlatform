@@ -81,7 +81,7 @@ function panel(name, api = {}) {
     const bindings = name === 'StatusChart' ? 'pieChart,chartItems,total,resizeChart'
       : name === 'ProjectQualityChart' ? 'chartRef,chartData,renderChart,resizeChart'
       : name === 'AutomationStats'
-      ? 'statistics,loading,loadFailed,fetchStatistics,capabilityGridRef,capabilityColumns,capabilityGroups,scheduleCapabilityLayout'
+      ? 'statistics,loading,loadFailed,fetchStatistics,capabilityGridRef,capabilityColumns,capabilityGroups,scheduleCapabilityLayout,formatValue'
       : 'activity,loading,loadingMore,loadFailed,loadMoreFailed,currentPage,rankItems,hasMore,activityLevel,loadNextPage'
     // DOM globals are scoped to script evaluation; no application runtime or real network is used.
     const globals = { window: globalThis.window, document: globalThis.document, getComputedStyle: globalThis.getComputedStyle, ResizeObserver: globalThis.ResizeObserver }
@@ -107,6 +107,47 @@ test('能力统计完整替换白名单快照，缺失字段不沿用旧值；�
   delete input.data.uiStats.caseCount; assert.equal(records.readStatistics(input).uiStats.caseCount, null)
   const first = records.emptyStatistics(), second = records.emptyStatistics(); first.uiStats.pageCount = 2; assert.equal(second.uiStats.pageCount, null)
   assert.throws(() => records.readStatistics({ code: 500, data: statistics().data })); p.close()
+})
+
+function renderCapabilities(panel) {
+  const filename = path.join(base, 'components/AutomationStats.vue')
+  const { descriptor } = parse(readFileSync(filename, 'utf8'))
+  const compiled = compileTemplate({ source: descriptor.template.content, filename, id: 'capability-content' })
+  const code = ts.transpileModule(compiled.code, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText
+  const exports = {}
+  new Function('require', 'exports', code)(() => ({ ...vue, resolveComponent: name => name }), exports)
+  const root = exports.render(vue.proxyRefs(panel), [])
+  const nodes = []
+  function visit(node) {
+    if (!node) return
+    if (Array.isArray(node)) { node.forEach(visit); return }
+    nodes.push(node)
+    visit(node.children)
+    if (typeof node.children?.default === 'function') visit(node.children.default())
+  }
+  visit(root)
+  return nodes
+}
+
+test('成功加载与零统计都渲染六组能力卡片，失败保留重试且不吞掉恢复后的内容', async t => {
+  const p = panel('AutomationStats', { read: async () => statistics(2) }); t.after(p.close)
+  p.mount(); await flush()
+  let nodes = renderCapabilities(p)
+  assert.equal(nodes.filter(node => node.type === 'article').length, 6)
+  for (const name of ['UI自动化', 'API自动化', 'Pytest自动化', '数据工厂', '测试配置', '定时任务']) {
+    assert.ok(nodes.some(node => node.children === name), name)
+  }
+  assert.ok(nodes.some(node => node.type === 'dd' && node.children === '2'))
+  p.statistics.value = p.records().readStatistics(statistics(0))
+  nodes = renderCapabilities(p)
+  assert.equal(nodes.filter(node => node.type === 'article').length, 6)
+  assert.ok(nodes.some(node => node.type === 'dd' && node.children === '0'))
+  p.loadFailed.value = true
+  nodes = renderCapabilities(p)
+  assert.equal(nodes.filter(node => node.type === 'article').length, 0)
+  assert.ok(nodes.some(node => node.children?.default?.().some?.(child => child.children === '重新加载')) || nodes.some(node => node.children === '重新加载'))
+  await p.fetchStatistics(); await flush()
+  assert.equal(renderCapabilities(p).filter(node => node.type === 'article').length, 6)
 })
 
 for (const name of ['AutomationStats', 'FullYearSalesChart']) {

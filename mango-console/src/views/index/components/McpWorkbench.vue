@@ -88,13 +88,13 @@
         class="mango-mcp-capability-grid mango-custom-scrollbar"
         :class="{ 'mango-mcp-capability-grid--single': capabilityColumns === 1 }"
       >
-        <div v-for="item in capabilities" :key="item.key" class="mango-mcp-capability-item">
-          <component :is="item.icon" class="mango-mcp-capability-icon" />
-          <div>
-            <strong>{{ item.title }}</strong>
-            <span>{{ item.desc }}</span>
+        <a-popover v-for="item in capabilities" :key="item.key" :title="item.title" position="left" :trigger="['hover', 'focus']">
+          <div class="mango-mcp-capability-item" tabindex="0" :aria-label="`${item.title}：${item.detail}`">
+            <component :is="item.icon" class="mango-mcp-capability-icon" />
+            <div><strong>{{ item.title }}</strong><span>{{ item.desc }}</span></div>
           </div>
-        </div>
+          <template #content><p class="mango-mcp-capability-detail">{{ item.detail }}</p></template>
+        </a-popover>
       </div>
     </div>
 
@@ -233,54 +233,83 @@ import { reportLoadError } from '@/utils/load-error'
   const capabilities = computed(() => [
     {
       key: 'api',
+      detail: '查询和维护接口、请求头、全局变量与授权；编排、调试和执行 API 用例，查看场景、断言与失败原因。',
       title: 'API自动化',
       desc: '接口、用例、场景、执行和失败分析',
       icon: resolveMenuIcon('/apitest', markRaw(IconRobot)),
     },
     {
       key: 'ui',
+      detail: '维护页面、元素、页面步骤与 UI 用例，导入 Playwright 步骤，执行用例并查询结果和截图。',
       title: 'UI自动化',
       desc: '页面、元素、步骤、用例和执行',
       icon: resolveMenuIcon('/uitest', markRaw(IconCode)),
     },
     {
       key: 'pytest',
+      detail: '绑定 Pytest 工程、同步仓库与文件，维护用例配置，触发执行并查询执行结果。',
       title: 'Pytest自动化',
       desc: '项目绑定、仓库同步、文件读写和执行',
       icon: resolveMenuIcon('/pytest', markRaw(IconBook)),
     },
     {
       key: 'factory',
+      detail: '发现数据源表结构，维护实体、字段规则与场景模板，预览并按已保存配置生成、校验及清理数据。',
       title: '数据工厂',
       desc: '表结构、实体、模板与已保存配置的执行和清理',
       icon: resolveMenuIcon('/data-factory', markRaw(IconStorage)),
     },
     {
       key: 'report',
+      detail: '分页查询执行报告和条目结果，分析失败、查看调用链与执行效能，按平台规则重试失败项。',
       title: '测试报告',
       desc: '报告查询、失败分析和安全重试',
       icon: resolveMenuIcon('/report', markRaw(IconBug)),
     },
     {
       key: 'task',
+      detail: '维护定时任务和执行策略，绑定或解绑 UI、API、Pytest 用例，查询触发与执行记录。',
       title: '定时任务',
-      desc: '批量绑定或解绑 UI/API 用例',
+      desc: '任务策略、用例绑定、触发和执行记录',
       icon: resolveMenuIcon('/timing', markRaw(IconRefresh)),
     },
     {
+      key: 'monitoring', title: '监控中心', desc: '监控任务、脚本、运行控制和日志',
+      detail: '查询和维护监控任务及脚本，启动或停止监控，查看任务状态和运行日志。',
+      icon: resolveMenuIcon('/monitoring', markRaw(IconCode)),
+    },
+    {
+      key: 'evaluation', title: '评测中心', desc: '数据集、版本、评分器、用例和结果',
+      detail: '维护评测数据集、版本和条目，查询评分器定义，配置并执行评测用例，查看评分与执行结果。',
+      icon: resolveMenuIcon('/evaluation', markRaw(IconSafe)),
+    },
+    {
+      key: 'project', title: '项目与环境', desc: '项目产品、模块、被测对象与环境',
+      detail: '查询项目产品与模块，维护产品模块层级，发现被测对象和环境，切换当前用户被测环境。',
+      icon: resolveMenuIcon('/config', markRaw(IconStorage)),
+    },
+    {
+      key: 'todo', title: '风险待办', desc: '授权到期、刷新与数据模型风险',
+      detail: '查询当前用户可见的风险待办与来源详情，定位授权、刷新和数据模型异常。',
+      icon: resolveMenuIcon('/personal', markRaw(IconBug)),
+    },
+    {
       key: 'functional',
+      detail: '维护迭代、需求、设计、用例、计划、缺陷及上下文资料，管理功能用例与自动化资产的绑定。',
       title: '功能测试',
       desc: '需求、用例、资料和自动化绑定',
       icon: resolveMenuIcon('/functional-test', markRaw(IconSafe)),
     },
     {
       key: 'ai',
+      detail: '发现 MCP Skill 目录、工具元数据、资源及提示模板，按能力文档选择对应工具。',
       title: '服务能力',
       desc: 'Skill 文档与 MCP 工具元数据发现',
       icon: resolveMenuIcon('/ai', markRaw(IconRobot)),
     },
     {
       key: 'file',
+      detail: '查询系统文件，上传附件并获取下载地址，供用例和平台资料引用。',
       title: '系统文件',
       desc: '文件查询、上传和下载地址获取',
       icon: resolveMenuIcon('/system', markRaw(IconFile)),
@@ -295,6 +324,8 @@ import { reportLoadError } from '@/utils/load-error'
     `使用 ${mcpServerName.value} MCP 创建一个 UI 页面步骤并绑定到 UI 用例中。`,
     `使用 ${mcpServerName.value} MCP 为指定表创建数据实体和模板，并预览生成数据。`,
     `使用 ${mcpServerName.value} MCP 查询测试报告，筛选失败用例并生成排查结论。`,
+    `使用 ${mcpServerName.value} MCP 查询监控任务，查看运行状态和最近日志。`,
+    `使用 ${mcpServerName.value} MCP 查询评测数据集和评分器，配置并执行评测用例。`,
     `使用 ${mcpServerName.value} MCP 查询 Skill 清单和工具元数据。`,
   ])
   const promptIndex = ref(Math.floor(Math.random() * prompts.value.length))
@@ -853,7 +884,7 @@ Authorization: ${authHeader.value}
     .mango-mcp-scroll-area {
       flex: 1 1 auto;
       gap: 5px;
-      overflow-y: auto;
+      overflow: hidden;
       padding-right: 4px;
     }
 
@@ -880,8 +911,10 @@ Authorization: ${authHeader.value}
     }
 
     .mango-mcp-capability-grid {
-      flex: 0 0 auto;
-      overflow: visible;
+      flex: 1 1 0;
+      min-height: 80px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
 
     :deep(.arco-btn-size-small) {
@@ -890,4 +923,7 @@ Authorization: ${authHeader.value}
       font-size: 11px;
     }
   }
+  .mango-mcp-prompt-panel, .mango-mcp-endpoint-box, .mango-mcp-status-grid, .mango-mcp-api-key-box, .mango-mcp-action-row { flex-shrink: 0; }
+  .mango-mcp-capability-item:focus-visible { outline: 2px solid var(--m-primary); outline-offset: -2px; }
+  .mango-mcp-capability-detail { max-width: 320px; margin: 0; color: var(--m-text-2); line-height: 22px; overflow-wrap: anywhere; }
 </style>

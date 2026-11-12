@@ -5,8 +5,8 @@ from django.test import SimpleTestCase
 
 from src.apps.auto_api.enums import ApiAuthRefreshModeEnum, ApiAuthTypeEnum
 from src.apps.auto_api.exceptions import AutoApiError
-from src.apps.auto_api.services.api_auth_config import ApiAuthConfigService
-from src.apps.auto_api.services.base.api_base_test_setup.auth_manager import ApiAuthManager
+from src.apps.auto_api.services.authentication.api_auth_config import ApiAuthConfigService
+from src.apps.auto_api.services.execution.base.api_base_test_setup.auth_manager import ApiAuthManager
 from src.apps.auto_api.api.serializers.api_auth_config_mutation import ApiAuthConfigSerializers
 from src.apps.auto_api.api.views.api_auth_config import ApiAuthConfigViews, ApiAuthConfigCRUD
 from src.apps.test_center.exceptions import TestCenterError
@@ -46,7 +46,7 @@ class AuthContextTests(SimpleTestCase):
 
     def execute(self, manager, config, setup):
         rows = [SimpleNamespace(id=7, key='tenant_id', type=0, value='new', test_envs=[])] if config.public_variable_ids else []
-        with patch('src.apps.auto_api.services.base.api_base_test_setup.APIBaseTestSetup', return_value=setup), \
+        with patch('src.apps.auto_api.services.execution.base.api_base_test_setup.APIBaseTestSetup', return_value=setup), \
                 patch.object(ApiAuthConfigService, 'validate_public_variables', return_value=rows):
             return manager._refresh_in_isolated_context(config)
 
@@ -118,7 +118,7 @@ class AuthContextTests(SimpleTestCase):
             with self.subTest(value=value), self.assertRaises(AutoApiError):
                 ApiAuthConfigService.validate_public_variables(value, 1, 0)
         for rows in ([], [SimpleNamespace(key='tenant_id'), SimpleNamespace(key='tenant_id')]):
-            with patch('src.apps.auto_api.services.api_auth_config.ApiPublic.objects.filter') as query:
+            with patch('src.apps.auto_api.services.authentication.api_auth_config.ApiPublic.objects.filter') as query:
                 query.return_value.filter.return_value = rows
                 with self.assertRaises(AutoApiError):
                     ApiAuthConfigService.validate_public_variables([7, 8], 1, 0)
@@ -173,7 +173,7 @@ class AuthContextTests(SimpleTestCase):
 
     def test_options_endpoint_accepts_only_create_or_edit_permissions(self):
         from src.apps.user.middleware.permission import MenuActionPermission
-        from src.apps.user.services.permission import PermissionMenuService
+        from src.apps.user.services.authorization.permission import PermissionMenuService
 
         view = ApiAuthConfigViews()
         view.action = 'public_variables'

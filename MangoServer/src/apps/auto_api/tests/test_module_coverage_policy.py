@@ -13,14 +13,14 @@ from src.apps.auto_api.enums.module_coverage import ModuleCoverageInterfaceCover
 from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.models import ModuleCoverageInterfaceSnapshot, ModuleCoverageModuleInterface
 from src.apps.auto_api.schemas.module_coverage import ModuleCoveragePolicyUpdate
-from src.apps.auto_api.services.module_coverage import ModuleCoverageService as Service
+from src.apps.auto_api.services.coverage.module_coverage import ModuleCoverageService as Service
 from src.apps.auto_api.tests.test_module_coverage import valid_interface_payload, valid_payload
 from src.apps.auto_api.tests import test_module_coverage_overview as overview_helpers
 from src.apps.test_center.models import ProjectProduct
 from src.apps.user.middleware.permission import MenuActionPermission
 from src.apps.user.selectors.querysets import UserQuerySelector
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
-from src.apps.user.services.mcp_permission_registry import MCP_PERMISSION_RULES
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.mcp_permission_registry import MCP_PERMISSION_RULES
 from src.interfaces.mcp.authentication import MangoAuthorizationMiddleware
 from src.interfaces.mcp.server import _tool_operation, mcp_asgi_app
 
@@ -189,7 +189,7 @@ class ModuleCoveragePolicyTests(SimpleTestCase):
         self.assertNotIn(ModuleCoveragePolicy.EXCLUDED, history_params)
 
     def test_scan_cannot_apply_previously_uploaded_analysis_after_policy_changes(self):
-        path = 'src.apps.auto_api.services.module_coverage_parts.completion'
+        path = 'src.apps.auto_api.services.coverage.parts.completion'
         for policy, inventory in (('excluded', False), ('deferred', False), ('excluded', True)):
             with self.subTest(policy=policy, inventory=inventory), ExitStack() as stack:
                 target = excluded_snapshot(module_id=1, sync_action='unchanged')

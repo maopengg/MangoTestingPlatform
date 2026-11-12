@@ -12,7 +12,7 @@ from src.apps.test_center.exceptions import (
     TestCenterError,
 )
 from src.apps.test_center.models import ProductModule, ProjectProduct
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.test_center.services.project.product_module import ProductModuleService
 from src.apps.user.formatters import format_user_simple
 from src.common.validators.serializer_fields import RelatedObjectField
 

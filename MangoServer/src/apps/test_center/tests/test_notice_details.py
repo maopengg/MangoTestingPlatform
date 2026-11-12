@@ -4,8 +4,8 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 from mangotools.enums import TestCaseTypeEnum, TaskEnum
 
-from src.apps.test_center.services.test_suite.notice_details import ReportNoticeDetailsService
-from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService
+from src.apps.test_center.services.reporting.test_suite.notice_details import ReportNoticeDetailsService
+from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService
 
 
 class NoticeDetailTests(SimpleTestCase):
@@ -31,7 +31,7 @@ class NoticeDetailTests(SimpleTestCase):
         second.summary_data.extend({'parameter_id': i, 'status': TaskEnum.WARNING.value, 'main_status': 0,
                                     'api_info_name': '发送对话消息', 'error_message': TestSuiteExecutionResultService.SKIP_MESSAGE}
                                    for i in range(3, 33))
-        with patch('src.apps.test_center.services.test_suite.notice_details.ReportNoticeSelector.failed_details', return_value=[first, second]), \
+        with patch('src.apps.test_center.services.reporting.test_suite.notice_details.ReportNoticeSelector.failed_details', return_value=[first, second]), \
                 patch.object(TestSuiteExecutionResultService, 'result_map', return_value={}):
             rows, note = ReportNoticeDetailsService.collect({10: '测试回归'})
         self.assertEqual(len(rows), 2)
@@ -132,15 +132,15 @@ class NoticeDetailTests(SimpleTestCase):
     def test_summary_read_is_batched_and_does_not_load_payload_per_case(self):
         detail = self.detail(TestCaseTypeEnum.API)
         detail.summary_data = [{'status': 0, 'api_info_name': '保存接口', 'error_message': '断言失败'}]
-        with patch('src.apps.test_center.services.test_suite.notice_details.ReportNoticeSelector.failed_details', return_value=[detail]), \
-             patch('src.apps.test_center.services.test_suite.notice_details.TestSuiteExecutionResultService.result_map', return_value={}) as bulk:
+        with patch('src.apps.test_center.services.reporting.test_suite.notice_details.ReportNoticeSelector.failed_details', return_value=[detail]), \
+             patch('src.apps.test_center.services.reporting.test_suite.notice_details.TestSuiteExecutionResultService.result_map', return_value={}) as bulk:
             rows, note = ReportNoticeDetailsService.collect({10: '任务一'})
         bulk.assert_called_once_with([])
         self.assertEqual(len(rows), 1)
         self.assertFalse(note)
 
     def test_detail_read_failure_does_not_block_summary_notifications(self):
-        with patch('src.apps.test_center.services.test_suite.notice_details.ReportNoticeSelector.failed_details', side_effect=RuntimeError('private')):
+        with patch('src.apps.test_center.services.reporting.test_suite.notice_details.ReportNoticeSelector.failed_details', side_effect=RuntimeError('private')):
             rows, note = ReportNoticeDetailsService.collect({10: '任务一'})
         self.assertEqual(rows, [])
         self.assertIn('暂时不可用', note)

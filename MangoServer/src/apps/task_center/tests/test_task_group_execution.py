@@ -21,7 +21,7 @@ from src.apps.task_center.services.scheduling.task_group_notice import (
 
 class ScheduledTaskGroupExecutionServiceTests(SimpleTestCase):
     def setUp(self):
-        patcher = patch('src.apps.system.services.system_config.SystemConfigService.get_environment_display_names',
+        patcher = patch('src.apps.system.services.configuration.system_config.SystemConfigService.get_environment_display_names',
                         return_value={})
         patcher.start()
         self.addCleanup(patcher.stop)

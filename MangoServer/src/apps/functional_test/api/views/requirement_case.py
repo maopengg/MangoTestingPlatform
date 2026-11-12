@@ -8,7 +8,7 @@ from src.apps.functional_test.api.serializers.case import ManualTestCaseListSeri
 from src.apps.functional_test.api.views.suite import ManualTestSuiteCRUD
 from src.apps.functional_test.models import ManualTestCase, ManualTestSuite
 from src.apps.functional_test.selectors.access_scope import filter_manual_case_by_data_scope
-from src.apps.functional_test.services.requirement import FunctionalRequirementService
+from src.apps.functional_test.services.requirements.requirement import FunctionalRequirementService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -26,6 +26,7 @@ class FunctionalRequirementCaseViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def list(self, request: Request):
+        """获取需求用例关联列表"""
         suite = self._suite(request, request.query_params)
         queryset = filter_manual_case_by_data_scope(
             request,
@@ -45,6 +46,7 @@ class FunctionalRequirementCaseViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def bind(self, request: Request):
+        """绑定需求用例关联"""
         suite = self._suite(request, request.data)
         count = FunctionalRequirementService.bind_cases(
             suite, request.data.get("case_ids") or [], ModelCRUD.get_operator_id(request),
@@ -54,6 +56,7 @@ class FunctionalRequirementCaseViews(ViewSet):
     @action(methods=["delete"], detail=False)
     @error_response("system")
     def unbind(self, request: Request):
+        """解除需求用例关联"""
         suite = self._suite(request, request.data)
         count = FunctionalRequirementService.unbind_cases(suite, request.data.get("case_ids") or [])
         return ResponseData.success(RESPONSE_MSG_0082, {"unbound_count": count})

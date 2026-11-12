@@ -3,7 +3,7 @@ from types import SimpleNamespace
 from django.test import SimpleTestCase
 
 from src.apps.auto_api.exceptions import AutoApiError
-from src.apps.auto_api.services.test_case.test_case import TestCase as ApiCaseRunner
+from src.apps.auto_api.services.execution.cases.test_case import TestCase as ApiCaseRunner
 from src.common.exceptions import ErrorDefinition
 
 

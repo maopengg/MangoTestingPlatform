@@ -16,8 +16,8 @@ from src.apps.auto_api.exceptions import (
     QUALITY_COVERAGE_TASK_STATUS_NOT_ALLOWED,
 )
 from src.apps.auto_api.models import ModuleCoverageScan
-from src.apps.auto_api.services.module_coverage import ModuleCoverageService
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.auto_api.services.coverage.module_coverage import ModuleCoverageService
+from src.apps.test_center.services.project.product_module import ProductModuleService
 from src.common.decorators.error_response import error_response
 from src.common.responses.response_data import ResponseData
 from src.common.responses.response_msg import RESPONSE_MSG_0001
@@ -29,6 +29,7 @@ class ModuleCoverageScanViews(ViewSet):
 
     @staticmethod
     def queryset(request):
+        """构建当前用户可访问的模块覆盖扫描查询集"""
         queryset = scope_queryset(request, ModuleCoverageScan.objects.all()).select_related(
             "project_product", "project_product__project", "module", "target_interface",
         )
@@ -37,6 +38,7 @@ class ModuleCoverageScanViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def list(self, request: Request):
+        """获取模块覆盖扫描列表"""
         queryset = self.queryset(request)
         queryset = filter_module_scope(request, queryset)
         for field in (
@@ -52,6 +54,7 @@ class ModuleCoverageScanViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def retrieve(self, request: Request):
+        """获取模块覆盖扫描详情"""
         item = self.queryset(request).get(id=request.query_params.get("id"))
         data = self.serializer_class(item).data
         data["upload_status"] = ModuleCoverageService.upload_status(item)
@@ -60,6 +63,7 @@ class ModuleCoverageScanViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def create(self, request: Request):
+        """创建模块覆盖扫描"""
         ModuleCoverageService.require_fields(request.data, ModuleCoverageService.REQUIRED_SCAN_FIELDS)
         require_project_scope(request, int(request.data["project_product_id"]))
         scan = ModuleCoverageService.create_scan(request.data, request_user_id(request))
@@ -68,12 +72,14 @@ class ModuleCoverageScanViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def validation(self, request: Request):
+        """获取模块覆盖扫描校验结果"""
         scan = self.queryset(request).get(id=request.query_params.get("id"))
         return ResponseData.success(RESPONSE_MSG_0001, ModuleCoverageService.validation(scan))
 
     @action(methods=["get"], detail=False)
     @error_response("system")
     def upload_status(self, request: Request):
+        """获取模块覆盖扫描上传状态"""
         scan = self.queryset(request).get(id=request.query_params.get("id"))
         return ResponseData.success(RESPONSE_MSG_0001, ModuleCoverageService.upload_status(
             scan, request.query_params.get("page") or 1, request.query_params.get("pageSize") or 100,
@@ -82,6 +88,7 @@ class ModuleCoverageScanViews(ViewSet):
     @action(methods=["put"], detail=False)
     @error_response("system")
     def update_status(self, request: Request):
+        """更新模块覆盖扫描状态"""
         scan = self.queryset(request).get(id=request.data.get("id"))
         requested = request.data.get("status")
         if requested == ModuleCoverageScanStatus.COMPLETED:

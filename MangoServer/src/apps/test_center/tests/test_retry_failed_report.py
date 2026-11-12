@@ -6,7 +6,7 @@ from django.test import SimpleTestCase
 from mangotools.enums import TaskEnum
 
 from src.apps.test_center.exceptions import TestCenterError
-from src.apps.test_center.services.test_suite.retry import TestSuiteRetryService
+from src.apps.test_center.services.reporting.test_suite.retry import TestSuiteRetryService
 
 
 class RetryFailedReportTests(SimpleTestCase):
@@ -23,10 +23,10 @@ class RetryFailedReportTests(SimpleTestCase):
         for name, target in (
                 ('suites', 'TestSuite.objects'), ('rows', 'TestSuiteDetails.objects'),
         ):
-            item = patch(f'src.apps.test_center.services.test_suite.retry.{target}')
+            item = patch(f'src.apps.test_center.services.reporting.test_suite.retry.{target}')
             setattr(self, name, item.start())
             self.addCleanup(item.stop)
-        atomic = patch('src.apps.test_center.services.test_suite.retry.transaction.atomic', side_effect=nullcontext)
+        atomic = patch('src.apps.test_center.services.reporting.test_suite.retry.transaction.atomic', side_effect=nullcontext)
         atomic.start()
         self.addCleanup(atomic.stop)
         self.suites.select_for_update.return_value.filter.return_value.first.side_effect = lambda: self.suite

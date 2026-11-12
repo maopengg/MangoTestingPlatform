@@ -8,9 +8,7 @@
     :on-before-cancel="canCancel"
     @update:visible="onVisibleChange"
   >
-    <a-alert v-if="saveError" type="error" class="mango-suite-resource__error">
-      保存失败，输入及已上传文件已保留，请重试。
-    </a-alert>
+    <MangoRequestFeedback v-if="saveError" :message="&quot;保存失败，输入及已上传文件已保留，请重试。&quot;" />
     <div v-if="raw" class="mango-suite-resource__raw">
       <CodeEditor
         v-model="rawText"
@@ -112,6 +110,8 @@
   </a-drawer>
 </template>
 <script setup lang="ts">
+import { requestFailureMessage } from '@/utils/load-error'
+
   import {
     computed,
     onActivated,
@@ -306,8 +306,8 @@
       reset()
       emit('changed', target.suiteId)
       return true
-    } catch {
-      if (current(version)) saveError.value = true
+    } catch (requestFailure) {
+      if (current(version)) saveError.value = requestFailureMessage(requestFailure, true, "保存失败，输入及已上传文件已保留，请重试。")
       return false
     } finally {
       // Context invalidation hides the editor but the physical write must settle before reopening.

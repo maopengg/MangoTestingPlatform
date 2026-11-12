@@ -7,11 +7,8 @@ from src.apps.auto_api.exceptions import (
     MOCK_API_CREATE_NOT_ALLOWED,
 )
 from src.apps.auto_api.models import ApiMockConfig, ApiMockRequestLog
-from src.apps.auto_api.services.mock_request_decryption import MockRequestDecryptionService
-from src.apps.auto_api.services.mock_runtime import (
-    MOCK_SUPPORTED_METHODS,
-    MockConfigValidator,
-)
+from src.apps.auto_api.services.mock.mock_request_decryption import MockRequestDecryptionService
+from src.apps.auto_api.services.mock.mock_runtime import MOCK_SUPPORTED_METHODS, MockConfigValidator
 from src.apps.test_center.formatters.related import format_project_product
 from src.apps.user.formatters import format_user_simple
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
@@ -34,7 +31,7 @@ class ApiMockConfigSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        from src.apps.auto_api.services.callback import ApiCallbackService
+        from src.apps.auto_api.services.callbacks.callback import ApiCallbackService
         from src.apps.auto_api.models import ApiCaseCallbackRun
         from src.apps.auto_api.enums.callback import CallbackRunStatus
         from src.apps.auto_api.exceptions import API_CALLBACK_CONFIG_INVALID

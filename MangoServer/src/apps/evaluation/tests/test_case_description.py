@@ -7,7 +7,7 @@ from src.apps.evaluation.api.serializers.case import CaseSerializer
 from src.apps.evaluation.formatters.case_description import case_description, scenario_description
 from src.apps.evaluation.models import EvaluationCase, EvaluationDataset, EvaluationDatasetVersion
 from src.apps.evaluation.presenters import case_record, case_summary
-from src.apps.evaluation.services.case import EvaluationCaseService
+from src.apps.evaluation.services.assets.case import EvaluationCaseService
 from src.apps.evaluation.tests.test_case_flow import case_config
 from src.apps.test_center.models import ProjectProduct
 

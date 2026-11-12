@@ -3,7 +3,7 @@ from unittest.mock import Mock
 from django.db.models import Q, QuerySet
 from django.test import SimpleTestCase
 
-from src.apps.test_center.services.test_suite.detail_query import TestSuiteDetailQueryService
+from src.apps.test_center.services.reporting.test_suite.detail_query import TestSuiteDetailQueryService
 
 
 class TestSuiteDetailQueryServiceTests(SimpleTestCase):

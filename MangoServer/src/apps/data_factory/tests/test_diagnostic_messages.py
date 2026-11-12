@@ -8,11 +8,11 @@ from src.apps.data_factory.exceptions import (
     DataFactoryError, DATASOURCE_GOVERNOR_UNAVAILABLE, DATASOURCE_SETTLEMENT_FAILED,
     DATA_FACTORY_ES_CLEANUP_OWNERSHIP_INVALID,
 )
-from src.apps.data_factory.services.datasource_cost import DatasourceCostService as Cost
-from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService as Governor
-from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
-from src.apps.data_factory.services.redis_protocol import BoundedRedisBuffer
-from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService as Audit
+from src.apps.data_factory.services.governance.datasource_cost import DatasourceCostService as Cost
+from src.apps.data_factory.services.governance.datasource_governor import DatasourceGovernorService as Governor
+from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService as Infrastructure
+from src.apps.data_factory.services.protocols.redis_protocol import BoundedRedisBuffer
+from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditService as Audit
 
 
 class DatasourceDiagnosticTests(SimpleTestCase):
@@ -60,35 +60,26 @@ class DatasourceDiagnosticTests(SimpleTestCase):
 
     def test_policy_error_names_field_actual_value_and_range(self):
         with patch.object(Governor, 'policy', wraps=Governor.policy), patch(
-                'src.apps.data_factory.services.datasource_governor.SystemConfigService.get',
-                return_value={'mysql': {'concurrency': 1}}), Infrastructure.scope():
+                'src.apps.data_factory.services.governance.datasource_governor.SystemConfigService.get',
+                return_value={'mysql': {'connections': 1}}), Infrastructure.scope():
             with self.assertRaises(DataFactoryError) as caught:
                 Governor.policy()
-            self.assertIn('mysql.concurrency', caught.exception.msg)
+            self.assertIn('mysql.connections', caught.exception.msg)
             self.assertIn('当前值为 1', caught.exception.msg)
             self.assertIn('最小值为2', caught.exception.msg)
             self.assertIn('配置管理', caught.exception.msg)
 
     def test_policy_cross_field_error_is_explained_without_exposing_input(self):
-        with patch('src.apps.data_factory.services.datasource_governor.SystemConfigService.get',
-                   return_value={'mysql': {'cleanup_reserved': 6}}):
+        with patch('src.apps.data_factory.services.governance.datasource_governor.SystemConfigService.get',
+                   return_value={'mysql': {'connections': 4}}):
             with self.assertRaises(DataFactoryError) as caught:
                 Governor.policy()
-            self.assertIn('清理保留并发必须小于总并发', caught.exception.msg)
-        with patch('src.apps.data_factory.services.datasource_governor.SystemConfigService.get',
+            self.assertIn('实例连接总数必须大于每池连接数', caught.exception.msg)
+        with patch('src.apps.data_factory.services.governance.datasource_governor.SystemConfigService.get',
                    return_value={'mysql': {'connections': 'AUTO_PRIVATE'}}):
             with self.assertRaises(DataFactoryError) as caught:
                 Governor.policy()
             self.assertNotIn('AUTO_PRIVATE', caught.exception.msg)
-
-    def test_invalid_transaction_count_does_not_suggest_raising_limits(self):
-        with patch.object(Governor, 'target_policy', return_value=(SimpleNamespace(transaction_statement_budget=8), None, 'group')), \
-                patch.object(Governor, 'transaction_capacity', return_value=8):
-            with self.assertRaises(DataFactoryError) as caught:
-                with Governor.transaction_budget(Mock(), 0):
-                    self.fail('invalid budget executed')
-        self.assertIn('当前为 0', caught.exception.msg)
-        self.assertIn('不要调大配额', caught.exception.msg)
 
     def test_release_failure_distinguishes_unknown_result_from_release_only(self):
         with patch.object(Governor, 'change', side_effect=RuntimeError('AUTO_PRIVATE')):
@@ -119,7 +110,7 @@ class DatasourceDiagnosticTests(SimpleTestCase):
         cases = [(b'*3', '3 个元素', '2 个'), (b'$1048577', '1048577 字节', '1048576')]
         for header, actual, limit in cases:
             with self.subTest(header=header), patch(
-                    'src.apps.data_factory.services.redis_protocol.SystemConfigService.get_ranged_int', return_value=2):
+                    'src.apps.data_factory.services.protocols.redis_protocol.SystemConfigService.get_ranged_int', return_value=2):
                 buffer = BoundedRedisBuffer(Mock(readline=Mock(return_value=header)))
                 with self.assertRaises(DataFactoryError) as caught:
                     buffer.readline()
@@ -143,7 +134,7 @@ class DatasourceDiagnosticTests(SimpleTestCase):
             self.assertNotIn('AUTO_PRIVATE', caught.exception.msg)
 
     def test_es_snapshot_failure_still_does_not_delete_any_document(self):
-        from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService as Resources
+        from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as Resources
         snapshot = SimpleNamespace(index='example', document_id='1001', tenant='7', connection_id=10,
                                    rule=SimpleNamespace(tenant_path='tenant_id'))
         with patch.object(Resources, 'document') as delete, self.assertRaises(DataFactoryError) as caught:
@@ -154,16 +145,16 @@ class DatasourceDiagnosticTests(SimpleTestCase):
         delete.assert_not_called()
 
     def test_cleanup_validation_identifies_bad_field(self):
-        from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService as Resources
+        from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as Resources
         with self.assertRaises(DataFactoryError) as caught:
             Resources.normalize([{'datasource_alias_id': 1, 'index_template': 'example', 'timeout_seconds': 1}])
         self.assertIn('timeout_seconds', caught.exception.msg)
         self.assertIn('最小值为', caught.exception.msg)
 
     def test_es_size_error_shows_requested_and_configured_limits_before_network_call(self):
-        from src.apps.data_factory.services.data_source_query import DataFactoryDatasourceQuery as Query
+        from src.apps.data_factory.services.datasource.data_source_query import DataFactoryDatasourceQuery as Query
         with patch.object(Query, 'max_rows', return_value=100), patch(
-                'src.apps.data_factory.services.data_source_query.open_elasticsearch_request') as network:
+                'src.apps.data_factory.services.datasource.data_source_query.open_elasticsearch_request') as network:
             with self.assertRaises(DataFactoryError) as caught:
                 Query._query_elasticsearch.__wrapped__(Query, Mock(), 'example', {'size': 101})
         self.assertIn('100 条', caught.exception.msg)
@@ -172,11 +163,11 @@ class DatasourceDiagnosticTests(SimpleTestCase):
         network.assert_not_called()
 
     def test_factory_case_cleanup_does_not_replace_actual_reason_with_fail_count(self):
-        from src.apps.data_factory.services.case_config_runner import DataFactoryCaseConfigRunner
+        from src.apps.data_factory.services.execution.case_config_runner import DataFactoryCaseConfigRunner
         runner = DataFactoryCaseConfigRunner(1, 12, 1, 0, Mock(), Mock())
         runner.auto_cleanup_execution_ids = [7]
         reason = 'ES文档仍存在，索引：example，文档ID：1001。请检查删除同步后重试'
-        with patch('src.apps.data_factory.services.case_config_runner.DataFactoryCleanup.cleanup_execution',
+        with patch('src.apps.data_factory.services.execution.case_config_runner.DataFactoryCleanup.cleanup_execution',
                    return_value={'fail': 1, 'errors': [{'error': reason}]}):
             with self.assertRaises(DataFactoryError) as caught:
                 runner.cleanup()
@@ -184,7 +175,7 @@ class DatasourceDiagnosticTests(SimpleTestCase):
         self.assertIn('工厂执行 7', caught.exception.msg)
 
     def test_es_cleanup_timeout_reports_its_own_timeout_not_the_global_one(self):
-        from src.apps.data_factory.services.data_source_error import DataSourceErrorService
+        from src.apps.data_factory.services.datasource.data_source_error import DataSourceErrorService
         with self.assertRaises(DataFactoryError) as caught:
             DataSourceErrorService.raise_elasticsearch_transport_error(SimpleNamespace(id=10), TimeoutError(), timeout=5)
         self.assertIn('5 秒', caught.exception.msg)
@@ -192,7 +183,7 @@ class DatasourceDiagnosticTests(SimpleTestCase):
         self.assertIn('最终结果尚未确认', caught.exception.msg)
 
     def test_audit_distinguishes_rejected_before_send_and_incomplete_response(self):
-        from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditHandle
+        from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditHandle
         for not_sent in (True, False):
             target = SimpleNamespace(request_id='AUTO_REQUEST', database_id=7, source_detail={},
                                      slow_threshold_ms=20000)
@@ -207,14 +198,17 @@ class DatasourceDiagnosticTests(SimpleTestCase):
     def test_report_persistence_keeps_the_specific_reason_and_does_not_count_business_failure(self):
         from mangotools.enums import TaskEnum
         from src.apps.data_factory.schemas.performance import DatasourceInfrastructureIssue
-        from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+        from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService
+        from src.apps.test_center.enums import TestCaseTypeEnum
+        from src.apps.auto_api.services.execution_trace.recorder import ApiCaseExecutionTraceRecorder
         detail = SimpleNamespace(id=7, retry=1, status=TaskEnum.PROCEED.value, test_suite_id=8,
-                                 summary_data=None, save=Mock())
-        suite = SimpleNamespace(id=8, status=TaskEnum.PROCEED.value)
+                                 summary_data=None, save=Mock(), type=TestCaseTypeEnum.API.value, push_time=None)
+        suite = SimpleNamespace(id=8, status=TaskEnum.PROCEED.value, retained_summary=None, save=Mock())
         message = 'Redis返回数组声明包含 3000 个元素，超过上限 2000 个。请缩小用例查询范围（数据源ID：7，请求编号：AUTO_REQUEST）'
         issues = [DatasourceInfrastructureIssue(code=34187, message=message)]
-        with patch('src.apps.test_center.services.test_suite.infrastructure.TestSuiteDetails.objects') as details, \
-                patch('src.apps.test_center.services.test_suite.infrastructure.TestSuite.objects') as suites:
+        with patch('src.apps.test_center.services.reporting.test_suite.infrastructure.TestSuiteDetails.objects') as details, \
+                patch('src.apps.test_center.services.reporting.test_suite.infrastructure.TestSuite.objects') as suites, \
+                patch.object(ApiCaseExecutionTraceRecorder, 'interrupt_report_attempt') as close_trace:
             details.filter.return_value.values_list.return_value.get.return_value = 8
             details.select_for_update.return_value.get.return_value = detail
             suites.select_for_update.return_value.get.return_value = suite
@@ -223,4 +217,5 @@ class DatasourceDiagnosticTests(SimpleTestCase):
         self.assertIn(message, detail.error_message)
         self.assertEqual(detail.failure_description, message)
         self.assertEqual(detail.fail, 0)
+        close_trace.assert_called_once()
         self.assertEqual(detail.summary_data['meta']['execution_control']['issues'][0]['message'], message)

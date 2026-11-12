@@ -6,15 +6,15 @@ from django.test import SimpleTestCase
 from src.apps.auto_api.enums import ApiPublicTypeEnum
 from src.apps.auto_api.exceptions import AutoApiError, API_CASE_STEP_PROJECT_MISMATCH
 from src.apps.auto_api.services.api_case.step import ApiCaseStepService
-from src.apps.auto_api.services.base.api_base_test_setup.public_base import PublicBase
-from src.apps.auto_api.services.base.api_base_test_setup.auth_manager import ApiAuthManager
-from src.apps.auto_api.services.base.case_base import CaseBase
-from src.apps.auto_api.services.test_case.step_debug import ApiCaseStepDebugContextService
+from src.apps.auto_api.services.execution.base.api_base_test_setup.public_base import PublicBase
+from src.apps.auto_api.services.execution.base.api_base_test_setup.auth_manager import ApiAuthManager
+from src.apps.auto_api.services.execution.base.case_base import CaseBase
+from src.apps.auto_api.services.execution.cases.step_debug import ApiCaseStepDebugContextService
 
 
 class CrossProductCaseContextTests(SimpleTestCase):
     def make_setup(self):
-        with patch('src.apps.auto_api.services.base.api_base_test_setup.base_request.CacheDataValue.get_cache_value',
+        with patch('src.apps.auto_api.services.execution.base.api_base_test_setup.base_request.CacheDataValue.get_cache_value',
                    return_value=30):
             return PublicBase()
 
@@ -33,8 +33,8 @@ class CrossProductCaseContextTests(SimpleTestCase):
         ApiAuthManager(setup).inject_cache(SimpleNamespace(cache_data={f'auth_{product}': 'token',
                                                                      'token': str(product)}))
 
-    @patch('src.apps.auto_api.services.base.api_base_test_setup.public_base.func_test_object_value', side_effect=target)
-    @patch('src.apps.auto_api.services.base.api_base_test_setup.public_base.ApiCaseGlobalVariableService.list_public', side_effect=public)
+    @patch('src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.func_test_object_value', side_effect=target)
+    @patch('src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.ApiCaseGlobalVariableService.list_public', side_effect=public)
     @patch.object(ApiAuthManager, 'load', side_effect=authorize)
     def test_a_b_a_selects_own_domain_variables_and_auth_and_keeps_step_outputs(self, auth, public, target):
         setup = self.make_setup()
@@ -54,7 +54,7 @@ class CrossProductCaseContextTests(SimpleTestCase):
             setup.test_data.set_cache('step_output', 'shared-result')
         self.assertEqual(setup.test_data.get_cache('step_output'), 'shared-result')
 
-    @patch('src.apps.auto_api.services.base.api_base_test_setup.public_base.func_test_object_value', side_effect=target)
+    @patch('src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.func_test_object_value', side_effect=target)
     def test_failed_target_lookup_cannot_reuse_previous_target_or_url(self, target):
         setup = self.make_setup()
         setup.init_test_object(1, 5)
@@ -65,8 +65,8 @@ class CrossProductCaseContextTests(SimpleTestCase):
         self.assertIsNone(setup.is_test_object)
         self.assertNotIn('url', setup.test_data.get_all())
 
-    @patch('src.apps.auto_api.services.base.api_base_test_setup.public_base.func_test_object_value', side_effect=target)
-    @patch('src.apps.auto_api.services.base.api_base_test_setup.public_base.ApiCaseGlobalVariableService.list_public')
+    @patch('src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.func_test_object_value', side_effect=target)
+    @patch('src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.ApiCaseGlobalVariableService.list_public')
     def test_code_variables_and_partial_initialization_are_scoped(self, public, target):
         setup = self.make_setup()
         setup.init_test_object(1, 5)
@@ -85,7 +85,7 @@ class CrossProductCaseContextTests(SimpleTestCase):
         self.assertNotIn('url', setup.test_data.get_all())
         self.assertIsNone(setup.target_auth_scope)
 
-    @patch('src.apps.auto_api.services.base.api_base_test_setup.public_base.func_test_object_value', side_effect=target)
+    @patch('src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.func_test_object_value', side_effect=target)
     def test_switch_revokes_owned_auth_even_after_a_step_overrides_its_value(self, target):
         setup = self.make_setup()
         setup.init_test_object(1, 5)
@@ -95,8 +95,8 @@ class CrossProductCaseContextTests(SimpleTestCase):
         self.assertNotIn('token', setup.test_data.get_all())
         self.assertNotIn('auth_1', setup.test_data.get_all())
 
-    @patch('src.apps.auto_api.services.base.api_base_test_setup.public_base.func_test_object_value', side_effect=target)
-    @patch('src.apps.auto_api.services.base.api_base_test_setup.public_base.ApiCaseGlobalVariableService.list_public', side_effect=public)
+    @patch('src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.func_test_object_value', side_effect=target)
+    @patch('src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.ApiCaseGlobalVariableService.list_public', side_effect=public)
     def test_case_cleanup_returns_to_the_case_product(self, public, target):
         setup = self.make_setup()
         setup.init_test_object(2, 5)
@@ -110,9 +110,83 @@ class CrossProductCaseContextTests(SimpleTestCase):
         self.assertNotIn('only_2', setup.test_data.get_all())
         base.case_data_factory.cleanup.assert_called_once()
 
+    @patch('src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.func_test_object_value', side_effect=target)
+    @patch('src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.ApiCaseGlobalVariableService.list_public')
+    def test_failed_public_is_not_replayed_during_cleanup_but_original_cleanup_runs(self, public, target):
+        setup = self.make_setup()
+        setup.init_test_object(1, 5)
+        public.return_value = [SimpleNamespace(type=ApiPublicTypeEnum.CODE.value, name='fixture',
+            value='def variable(context):\n    raise RuntimeError("failed-front")')]
+        with self.assertRaises(AutoApiError):
+            setup.init_public(1, 5, [743])
+        setup.test_data.set_cache('owned_id', '123')
+        base = CaseBase.__new__(CaseBase)
+        base.test_setup, base.test_env = setup, 5
+        base.api_case = SimpleNamespace(project_product_id=1, front_public=[743], front_auth_config=[],
+                                       posterior_sql=[{'value': 'DELETE FROM demo WHERE id=${{owned_id}}'}])
+        base.case_data_factory = Mock()
+        base._CaseBase__posterior_sql = Mock()
+        base.case_posterior_main()
+        public.assert_called_once()
+        base._CaseBase__posterior_sql.assert_called_once_with(base.api_case.posterior_sql)
+        self.assertEqual(setup.test_data.get_cache('owned_id'), '123')
+        base.case_data_factory.cleanup.assert_called_once()
+
+    @patch('src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.func_test_object_value', side_effect=target)
+    @patch('src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.ApiCaseGlobalVariableService.list_public')
+    def test_failed_public_does_not_suppress_missing_cleanup_identity_or_factory_cleanup(self, public, target):
+        setup = self.make_setup()
+        setup.init_test_object(1, 5)
+        public.return_value = [SimpleNamespace(type=ApiPublicTypeEnum.CODE.value, name='fixture',
+            value='def variable(context):\n    raise RuntimeError("failed-front")')]
+        with self.assertRaises(AutoApiError):
+            setup.init_public(1, 5, [743])
+        base = CaseBase.__new__(CaseBase)
+        base.test_setup, base.test_env = setup, 5
+        base.api_case = SimpleNamespace(id=1, project_product_id=1, front_public=[743], front_auth_config=[],
+            posterior_sql=[{'key': '', 'value': 'DELETE FROM demo WHERE id=${{never_created_id}}'}])
+        base.case_data_factory = Mock()
+        with patch('src.apps.auto_api.services.execution.base.case_base.execute_data_source_operation') as execute:
+            with self.assertRaises(AutoApiError) as caught:
+                base.case_posterior_main()
+        self.assertIn('never_created_id', caught.exception.msg)
+        execute.assert_not_called()
+        public.assert_called_once()
+        base.case_data_factory.cleanup.assert_called_once()
+
+    @patch('src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.func_test_object_value', side_effect=target)
+    @patch('src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.ApiCaseGlobalVariableService.list_public')
+    def test_failed_public_scope_is_execution_local_and_explicit_success_clears_failure(self, public, target):
+        setup = self.make_setup()
+        setup.init_test_object(1, 5)
+        public.side_effect = None
+        public.return_value = [SimpleNamespace(type=ApiPublicTypeEnum.CODE.value, name='fixture',
+            value='def variable(context):\n    raise RuntimeError("failed-front")')]
+        with self.assertRaises(AutoApiError):
+            setup.init_public(1, 5, [743])
+        public.return_value = []
+        setup.init_public_for_cleanup(1, 5, [744])
+        self.assertEqual(public.call_count, 2)
+        setup.init_public(1, 5, [743])
+        self.assertFalse(setup._failed_public_scopes)
+        other = self.make_setup()
+        self.assertFalse(other._failed_public_scopes)
+
+    @patch('src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.func_test_object_value', side_effect=target)
+    @patch('src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.ApiCaseGlobalVariableService.list_public',
+           side_effect=RuntimeError('AUTO_CONFIG_LOAD_FAILED'))
+    def test_public_config_load_failure_also_prevents_cleanup_replay(self, public, target):
+        setup = self.make_setup()
+        setup.init_test_object(1, 5)
+        with self.assertRaises(RuntimeError):
+            setup.init_public(1, 5, [743])
+        setup.init_public_for_cleanup(1, 5, [743])
+        public.assert_called_once()
+        self.assertIsNone(setup.target_auth_scope)
+
 
 class CrossProductStepDebugTests(SimpleTestCase):
-    @patch('src.apps.auto_api.services.test_case.step_debug.ApiCaseDetailed.objects')
+    @patch('src.apps.auto_api.services.execution.cases.step_debug.ApiCaseDetailed.objects')
     @patch.object(ApiCaseStepDebugContextService, 'validate_snapshot_chain')
     def test_debug_restores_business_outputs_but_not_product_credentials(self, chain, objects):
         case = SimpleNamespace(parametrize=[], project_product_id=1)

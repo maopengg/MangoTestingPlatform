@@ -10,7 +10,7 @@ from rest_framework.viewsets import ViewSet
 from src.apps.test_center.api.serializers.test_object import TestObjectSerializers, TestObjectSerializersC
 from src.apps.test_center.models import TestObject
 from src.apps.test_center.api.serializers.test_object import TestObjectProbeSerializer
-from src.apps.test_center.services.test_object_probe import TestObjectProbeService
+from src.apps.test_center.services.environment.test_object_probe import TestObjectProbeService
 from src.common.decorators.error_response import error_response
 from src.common.exceptions import MangoServerError
 from src.common.responses.model_crud import ModelCRUD
@@ -36,6 +36,7 @@ class TestObjectViews(ViewSet):
 
     @error_response('system')
     def test_connection(self, request):
+        """测试测试环境连接"""
         serializer = TestObjectProbeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         values = serializer.validated_data

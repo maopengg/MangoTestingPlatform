@@ -21,9 +21,9 @@ from src.apps.task_center.models import Tasks
 from src.apps.test_center.schemas.execution_efficiency import ExecutionEfficiencyQuery
 from src.apps.test_center.selectors.execution_efficiency import ExecutionEfficiencySelector, bounded
 from src.apps.test_center.selectors.execution_efficiency_metrics import phase_durations, percentile, timing_snapshot
-from src.apps.test_center.services.execution_efficiency import ExecutionEfficiencyService
+from src.apps.test_center.services.reporting.execution_efficiency import ExecutionEfficiencyService
 from src.apps.user.middleware.permission import MenuActionPermission
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.interfaces.mcp.authentication import permission_error
 
 
@@ -107,9 +107,9 @@ class ExecutionEfficiencyTests(SimpleTestCase):
         snapshot = {'items': [{'id': index} for index in range(3)], 'anomalies': [{'id': 2}], 'summary': {}}
         with patch.object(ExecutionEfficiencySelector, 'scoped_reports', return_value=TestSuite.objects.none()) as scope, \
                 patch.object(ExecutionEfficiencySelector, 'current', return_value=snapshot) as compute, \
-                patch('src.apps.test_center.services.execution_efficiency.ExecutionCapacitySelector.api_workers', return_value={'online': 1, 'capacity': 1, 'running': 1}), \
-                patch('src.apps.test_center.services.execution_efficiency.SystemConfigService.get_api_worker_thread_pool_size', return_value=1), \
-                patch('src.apps.test_center.services.execution_efficiency.SystemConfigService.get_executor_execution_timeout_seconds', return_value=3600):
+                patch('src.apps.test_center.services.reporting.execution_efficiency.ExecutionCapacitySelector.api_workers', return_value={'online': 1, 'capacity': 1, 'running': 1}), \
+                patch('src.apps.test_center.services.reporting.execution_efficiency.SystemConfigService.get_api_worker_thread_pool_size', return_value=1), \
+                patch('src.apps.test_center.services.reporting.execution_efficiency.SystemConfigService.get_executor_execution_timeout_seconds', return_value=3600):
             first = ExecutionEfficiencyService.query(user, query.model_copy(update={'page_size': 1}))
             second = ExecutionEfficiencyService.query(user, query.model_copy(update={'page': 2, 'page_size': 1}))
             anomaly = ExecutionEfficiencyService.query(user, query.model_copy(update={'section': 'anomalies'}))

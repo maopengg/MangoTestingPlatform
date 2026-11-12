@@ -14,14 +14,14 @@ from src.apps.auto_pytest.enums.case import PytestCasePublicationStatusEnum as P
 from src.apps.auto_pytest.exceptions import AutoPytestError
 from src.apps.auto_pytest.models import PytestCase
 from src.apps.auto_pytest.selectors.case_publication import PytestCasePublicationSelector as Selector
-from src.apps.auto_pytest.services.case_publication import PytestCasePublicationService as Service
+from src.apps.auto_pytest.services.assets.case_publication import PytestCasePublicationService as Service
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.apps.task_center.enums.execution import AutomationExecutionScopeEnum
 from src.apps.task_center.models import Tasks, TasksDetails
 from src.apps.task_center.services.selection.case_binding import TaskCaseBindingService
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.user.middleware.permission import MenuActionPermission
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.interfaces.mcp.authentication import MangoAuthorizationMiddleware, permission_error
 from src.interfaces.mcp.server import mcp_asgi_app
 from src.interfaces.mcp.tools.pytest.case import register_case_tools

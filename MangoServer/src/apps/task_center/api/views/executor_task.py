@@ -23,6 +23,7 @@ class ExecutorTaskViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def get_detail(self, request: Request):
+        """获取执行器任务详情"""
         task_id = request.query_params.get("task_id") or request.query_params.get("id")
         if not task_id:
             raise TaskCenterError(EXECUTOR_TASK_EXECUTOR_TASK_PARAMETER_EXECUTION_INVALID)
@@ -32,6 +33,7 @@ class ExecutorTaskViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def active(self, request: Request):
+        """获取执行器当前活动任务"""
         business_id = request.query_params.get("business_id")
         try:
             normalized_business_id = int(business_id) if business_id not in (None, "") else None
@@ -48,6 +50,7 @@ class ExecutorTaskViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def cancel(self, request: Request):
+        """取消执行器任务"""
         task_id = request.data.get("task_id") or request.data.get("id")
         if not task_id:
             raise TaskCenterError(EXECUTOR_TASK_EXECUTOR_TASK_PARAMETER_EXECUTION_INVALID)

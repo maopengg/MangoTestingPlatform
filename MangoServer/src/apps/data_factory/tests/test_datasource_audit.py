@@ -8,9 +8,9 @@ from django.test import SimpleTestCase, override_settings
 from sqlalchemy import create_engine, text
 
 from src.apps.data_factory.exceptions import DataFactoryError
-from src.apps.data_factory.services.data_source_execution import DataSourceExecutionService
-from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditHandle, SqlExecutionAuditService as Audit
-from src.apps.data_factory.services.sql_driver_audit import SqlDriverAuditService
+from src.apps.data_factory.services.datasource.data_source_execution import DataSourceExecutionService
+from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditHandle, SqlExecutionAuditService as Audit
+from src.apps.data_factory.services.sql.sql_driver_audit import SqlDriverAuditService
 from src.apps.data_factory.selectors.execution_audit import ExecutionAuditSelector
 from src.apps.system.api.serializers.sql_execution import SqlExecutionRecordSerializer
 from src.apps.test_center.enums.data_source import DataSourceTypeEnum
@@ -24,13 +24,10 @@ def record(**values):
 
 class DatasourceAuditTests(SimpleTestCase):
     def setUp(self):
-        governor = patch('src.apps.data_factory.services.datasource_governor.DatasourceGovernorService.operation',
-                         side_effect=lambda target, **kwargs: nullcontext())
-        governor.start()
-        self.addCleanup(governor.stop)
+        pass
 
     def test_queue_time_is_recorded_separately_and_does_not_create_slow_sql(self):
-        from src.apps.data_factory.services.datasource_wait import _wait_elapsed
+        from src.apps.data_factory.services.governance.datasource_wait import _wait_elapsed
         token = _wait_elapsed.set(0)
         try:
             target = record()
@@ -53,7 +50,7 @@ class DatasourceAuditTests(SimpleTestCase):
         connection.execute.return_value = result
         engine = Mock()
         engine.connect.return_value = nullcontext(connection)
-        with patch('src.apps.data_factory.services.data_source_execution.DataFactoryDatasource.create_engine',
+        with patch('src.apps.data_factory.services.datasource.data_source_execution.DataFactoryDatasource.create_engine',
                    return_value=engine), patch.object(DataSourceExecutionService, 'max_rows', return_value=10):
             value = DataSourceExecutionService.execute_sql(Mock(), 'SELECT id FROM example', is_write=False)
         target = record()
@@ -72,7 +69,7 @@ class DatasourceAuditTests(SimpleTestCase):
         connection.execute.return_value = result
         engine = Mock()
         engine.begin.return_value = nullcontext(connection)
-        with patch('src.apps.data_factory.services.data_source_execution.DataFactoryDatasource.create_engine',
+        with patch('src.apps.data_factory.services.datasource.data_source_execution.DataFactoryDatasource.create_engine',
                    return_value=engine):
             value = DataSourceExecutionService.execute_sql(
                 Mock(), 'DELETE FROM example WHERE id = 7', is_write=True)
@@ -136,8 +133,8 @@ class DatasourceAuditTests(SimpleTestCase):
 
     @patch.object(Audit, 'notify_slow')
     def test_row_limit_audit_keeps_exact_reason_without_false_unknown_read(self, notify):
-        from src.apps.data_factory.services.datasource_cost import DatasourceCostService
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
+        from src.apps.data_factory.services.governance.datasource_cost import DatasourceCostService
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService as Infrastructure
         for is_write in (False, True):
             with self.assertRaises(DataFactoryError) as caught:
                 DatasourceCostService.abort_result(Mock(), Mock(), limit=100, observed_rows=101, is_write=is_write)
@@ -201,7 +198,7 @@ class DatasourceAuditTests(SimpleTestCase):
 
     @patch.object(Audit, 'save_completion')
     def test_rollback_audit_does_not_claim_success_when_commit_response_unknown(self, save):
-        from src.apps.data_factory.services.factory_sql_execution import DataFactorySqlExecutionService as FactoryAudit
+        from src.apps.data_factory.services.sql.factory_sql_execution import DataFactorySqlExecutionService as FactoryAudit
         from src.apps.data_factory.exceptions import DATASOURCE_SETTLEMENT_FAILED
         for error, unknown in ((RuntimeError('snapshot-failed'), False), (TimeoutError('commit-response'), True),
                                (DataFactoryError(DATASOURCE_SETTLEMENT_FAILED), True)):
@@ -219,7 +216,7 @@ class DatasourceAuditTests(SimpleTestCase):
                 Audit.replay_result(SqlExecutionAuditHandle(target, 0, existing=True))
             self.assertEqual(error.exception.code, 34176)
 
-    @patch('src.apps.data_factory.services.sql_execution_audit.report_system_error')
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.report_system_error')
     def test_completion_failure_is_explicit(self, report):
         target = record()
         target.save.side_effect = OSError()
@@ -230,11 +227,11 @@ class DatasourceAuditTests(SimpleTestCase):
         self.assertEqual(report.call_args.kwargs['request_path'], 'datasource_audit:completion')
 
     @override_settings(MANGO_SERVICE_NAME='mcp-service')
-    @patch('src.apps.data_factory.services.sql_execution_audit.report_system_error')
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.report_system_error')
     @patch.object(Audit, 'database_alias', return_value='default')
-    @patch('src.apps.data_factory.services.sql_execution_audit.transaction.atomic', side_effect=lambda **_: nullcontext())
-    @patch('src.apps.data_factory.services.sql_execution_audit.SystemConfigService.get_sql_slow_query_threshold_seconds', return_value=20)
-    @patch('src.apps.data_factory.services.sql_execution_audit.SqlExecutionRecord.objects')
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.transaction.atomic', side_effect=lambda **_: nullcontext())
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.SystemConfigService.get_sql_slow_query_threshold_seconds', return_value=20)
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionRecord.objects')
     def test_audit_creation_failure_records_original_error_and_blocks_execution(self, objects, threshold, atomic, alias, report):
         original = OperationalError(1054, "Unknown column 'datasource_type'")
         objects.using.return_value.create.side_effect = original
@@ -249,7 +246,7 @@ class DatasourceAuditTests(SimpleTestCase):
         report.assert_called_once_with(original, source=SystemErrorEventSource.MCP,
                                        service_name='mcp-service', request_path='datasource_audit:create')
 
-    @patch('src.apps.data_factory.services.sql_execution_audit.report_system_error', side_effect=RuntimeError('reporter offline'))
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.report_system_error', side_effect=RuntimeError('reporter offline'))
     def test_reporting_failure_keeps_original_completion_error_and_never_retries(self, report):
         target = record()
         original = OperationalError('audit offline')
@@ -261,7 +258,7 @@ class DatasourceAuditTests(SimpleTestCase):
         target.save.assert_called_once()
         report.assert_called_once()
 
-    @patch('src.apps.data_factory.services.sql_execution_audit.report_system_error')
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.report_system_error')
     def test_audit_failure_source_follows_running_service(self, report):
         for service, source in (('core-api', SystemErrorEventSource.HTTP),
                                 ('api-worker', SystemErrorEventSource.API_WORKER),
@@ -300,9 +297,9 @@ class DatasourceAuditTests(SimpleTestCase):
         self.assertNotIn('hidden-token', target.result_preview)
 
     @patch.object(Audit, 'database_alias', return_value='default')
-    @patch('src.apps.data_factory.services.sql_execution_audit.transaction.atomic', return_value=nullcontext())
-    @patch('src.apps.data_factory.services.sql_execution_audit.SystemConfigService.get_sql_slow_query_threshold_seconds', return_value=20)
-    @patch('src.apps.data_factory.services.sql_execution_audit.SqlExecutionRecord.objects')
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.transaction.atomic', return_value=nullcontext())
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.SystemConfigService.get_sql_slow_query_threshold_seconds', return_value=20)
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionRecord.objects')
     def test_new_record_has_type_snapshot_and_environment_zero(self, objects, *_):
         target = SimpleNamespace(id=7, db_type=0, database_name='sample', redis_db=None)
         binding = SimpleNamespace(database=target, database_id=7, datasource_alias_id=8)
@@ -318,9 +315,9 @@ class DatasourceAuditTests(SimpleTestCase):
         self.assertEqual(values['source_detail']['target_kind'], 'logical_database')
 
     @patch.object(Audit, 'database_alias', return_value='default')
-    @patch('src.apps.data_factory.services.sql_execution_audit.transaction.atomic', side_effect=lambda **_: nullcontext())
-    @patch('src.apps.data_factory.services.sql_execution_audit.SystemConfigService.get_sql_slow_query_threshold_seconds', return_value=20)
-    @patch('src.apps.data_factory.services.sql_execution_audit.SqlExecutionRecord.objects')
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.transaction.atomic', side_effect=lambda **_: nullcontext())
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.SystemConfigService.get_sql_slow_query_threshold_seconds', return_value=20)
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionRecord.objects')
     def test_duplicate_id_is_claimed_atomically_and_conflicting_operation_rejected(self, objects, *_):
         target = SimpleNamespace(id=7, db_type=10, database_name='', redis_db=0)
         kwargs = dict(database=target, sql='GET key', parameters={}, source_context={
@@ -368,7 +365,7 @@ class DatasourceAuditTests(SimpleTestCase):
         finally:
             engine.dispose()
 
-    @patch('src.apps.data_factory.services.sql_execution_audit.SqlExecutionRecord.objects')
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionRecord.objects')
     @patch.object(Audit, 'reconcile_slow', return_value=0)
     def test_stale_recovery_only_marks_unknown_and_never_executes(self, reconcile, objects):
         from django.utils import timezone
@@ -384,7 +381,7 @@ class DatasourceAuditTests(SimpleTestCase):
         self.assertEqual(values['status'], 'fail')
         self.assertTrue(values['source_detail']['outcome_unknown'])
 
-    @patch('src.apps.data_factory.services.sql_execution_audit.SqlExecutionRecord.objects')
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionRecord.objects')
     @patch.object(Audit, 'reconcile_slow', return_value=0)
     def test_recent_running_audit_requires_exact_completed_owner_evidence(self, reconcile, objects):
         from datetime import timedelta
@@ -405,8 +402,8 @@ class DatasourceAuditTests(SimpleTestCase):
         self.assertTrue(changes['source_detail']['execution_owner_completed'])
         self.assertEqual(changes['status'], 'fail')
 
-    @patch('src.apps.data_factory.services.data_source_execution.DatasourceTargetService.resolve')
-    @patch('src.apps.data_factory.services.data_source_execution.DataFactoryDatasourceResolver')
+    @patch('src.apps.data_factory.services.datasource.data_source_execution.DatasourceTargetService.resolve')
+    @patch('src.apps.data_factory.services.datasource.data_source_execution.DataFactoryDatasourceResolver')
     @patch.object(DataSourceExecutionService, 'execute_backend')
     @patch.object(Audit, 'start')
     @patch.object(Audit, 'finish_success')

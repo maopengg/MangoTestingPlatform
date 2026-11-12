@@ -16,9 +16,9 @@ from src.apps.evaluation.models import EvaluationItemResult
 from src.apps.evaluation.schemas.attempt import EvaluationAttemptRecord
 from src.apps.evaluation.schemas.execution import EvaluationCaseExecutionCreate
 from src.apps.evaluation.selectors.version import current_version, item_count
-from src.apps.evaluation.services.attempt import EvaluationAttemptService
-from src.apps.evaluation.services.execution import EvaluationCaseExecutionService
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.evaluation.services.execution.attempt import EvaluationAttemptService
+from src.apps.evaluation.services.execution.execution import EvaluationCaseExecutionService
+from src.apps.user.services.authorization.permission import PermissionMenuService
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -43,7 +43,7 @@ class SimplifiedEvaluationStorageTests(SimpleTestCase):
                     patch.object(EvaluationCaseExecutionService, "_save_grade_results"),
                     patch.object(EvaluationAttemptService, "start", side_effect=start),
                     patch.object(EvaluationAttemptService, "finish", side_effect=finish),
-                          patch("src.apps.evaluation.services.execution.time.monotonic", side_effect=[0, 0, 0, 2, 2] if timeout else None, return_value=0),
+                          patch("src.apps.evaluation.services.execution.execution.time.monotonic", side_effect=[0, 0, 0, 2, 2] if timeout else None, return_value=0),
                 ):
                     locked.return_value.get.return_value = row
                     EvaluationCaseExecutionService._execute_item_core(
@@ -66,10 +66,11 @@ class SimplifiedEvaluationStorageTests(SimpleTestCase):
         self.assertFalse(any(key.startswith("evaluation.schedule") for key in valid))
         routes = PermissionMenuService.permission_tree()
         self.assertTrue(any(item["menuUrl"] == "/timing" for item in routes))
-        with patch("src.apps.user.services.permission.RoleMenuPermission.objects") as permissions:
-            permissions.filter.return_value.values_list.return_value = [
-                "evaluation.schedule", "evaluation.schedule:execute", "evaluation.case",
-            ]
+        with patch("src.apps.user.services.authorization.role_authorization.RoleAuthorizationService.get",
+                   return_value={'version': 1, 'menu_keys': ['evaluation.schedule', 'evaluation.case'],
+                                 'endpoint_permissions': {}}), patch(
+                   'src.apps.user.services.authorization.permission.Role.objects.filter') as roles:
+            roles.return_value.exists.return_value = False
             keys = PermissionMenuService.role_permission_keys(4)
         self.assertIn("evaluation.case", keys)
         self.assertFalse(any(key.startswith("evaluation.schedule") for key in keys))

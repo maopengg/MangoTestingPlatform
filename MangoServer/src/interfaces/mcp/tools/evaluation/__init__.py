@@ -8,19 +8,19 @@ from src.apps.evaluation.selectors.dataset_version import get_dataset_version
 from src.apps.evaluation.selectors.dataset_item import get_dataset_item
 from src.apps.evaluation.selectors.execution import case_executions, get_execution
 from src.apps.evaluation.selectors.querysets import EvaluationQuerySelector
-from src.apps.evaluation.services import assets as mutations
-from src.apps.evaluation.services.graders import EvaluationGraderRegistry
-from src.apps.evaluation.services.dataset_version import EvaluationDatasetVersionService
-from src.apps.evaluation.services.dataset_item import EvaluationDatasetItemService
-from src.apps.evaluation.services.versioning import EvaluationVersionService
-from src.apps.evaluation.services.execution import EvaluationCaseExecutionService
+from src.apps.evaluation.services.assets import assets as mutations
+from src.apps.evaluation.services.grading.graders import EvaluationGraderRegistry
+from src.apps.evaluation.services.dataset.dataset_version import EvaluationDatasetVersionService
+from src.apps.evaluation.services.dataset.dataset_item import EvaluationDatasetItemService
+from src.apps.evaluation.services.dataset.versioning import EvaluationVersionService
+from src.apps.evaluation.services.execution.execution import EvaluationCaseExecutionService
 
 
 def register_evaluation_tools(mcp):
     @mcp.tool()
     def list_evaluation_ai_profiles(case_id: int, page: int = 1, page_size: int = 10) -> dict:
         """分页列出 Case 可选效果测评 AI，仅返回标识、名称、模型和启用状态，不返回密钥或地址。"""
-        from src.apps.evaluation.services.ai import ai_options
+        from src.apps.evaluation.services.model.ai import ai_options
         options = ai_options(case_id, current_user())
         page, page_size = max(1, page), max(1, min(50, page_size))
         return ok({"items": options[(page-1)*page_size:page*page_size], "count": len(options), "page": page, "page_size": page_size})
@@ -110,7 +110,7 @@ def register_evaluation_tools(mcp):
         """按资源执行权限与项目范围查询 HTTP/SSE 接口、逻辑数据源或数据工厂。"""
         from src.apps.evaluation.selectors.workflow import resource_choices
         from src.apps.evaluation.enums.workflow import EvaluationWorkflowActionEnum
-        from src.apps.evaluation.services.validation import invalid_config
+        from src.apps.evaluation.services.assets.validation import invalid_config
         get_dataset_version(version_id, current_user())
         try:
             action_type = EvaluationWorkflowActionEnum(action)

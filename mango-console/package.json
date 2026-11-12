@@ -1,6 +1,6 @@
 {
   "name": "mango-console",
-  "version": "7.2.4",
+  "version": "7.2.5",
   "scripts": {
     "dev": "vite --mode dev --host",
     "test": "vite --mode test --host",
@@ -20,7 +20,7 @@
     "modal:audit": "node scripts/simple-modal-layout-audit.mjs",
     "loading-feedback:audit": "node scripts/load-error-feedback-audit.mjs",
     "navigation:audit": "node scripts/navigation-columns-audit.mjs",
-    "search:audit": "node scripts/search-multiselect-audit.mjs",
+    "search:audit": "node scripts/search-multiselect-audit.mjs && node scripts/search-auto-trigger-audit.mjs",
     "responsive:audit": "node scripts/responsive-layout-audit.mjs",
     "loading:audit": "node scripts/ui-loading-audit.mjs",
     "drawer:audit": "node scripts/drawer-spacing-audit.mjs",

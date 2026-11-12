@@ -6,7 +6,7 @@ from rest_framework import serializers
 from src.apps.auto_ui.api.serializers.ui_auth_config_mutation import UiAuthConfigSerializers
 from src.apps.auto_ui.enums import UiAuthRefreshModeEnum, UiAuthTypeEnum
 from src.apps.auto_ui.exceptions import AutoUiError
-from src.apps.auto_ui.services.auth_config import UiAuthConfigService
+from src.apps.auto_ui.services.authentication.auth_config import UiAuthConfigService
 
 
 class UiAuthConfigMinimumTests(SimpleTestCase):

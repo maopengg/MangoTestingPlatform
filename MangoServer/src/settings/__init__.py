@@ -25,7 +25,7 @@ def set_env():
 set_env()
 
 # ── 1. 公共参数与目录 ─────────────────────────────────────────
-VERSION = '7.2.4'  # 平台版本号
+VERSION = '7.2.5'  # 平台版本号
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent  # 后端根目录 MangoServer
 
@@ -175,7 +175,7 @@ if OBJECT_STORAGE_ENABLED:
             + '、'.join(missing_storage_settings)
             + '；请填写对应环境配置文件或同名环境变量。'
         )
-FILE_STORAGE_ROOT = os.getenv(
+FILE_STORAGE_ROOT = os.getenv(  # 存储空间内的平台文件根目录
     'FILE_STORAGE_ROOT',
     globals().get('FILE_STORAGE_ROOT', 'mango-testing-platform/master'),
 ).strip('/\\')
@@ -224,13 +224,13 @@ STORAGES = {  # 文件存储与静态资源存储实现
 
 
 # ── 5. Django 基础与实时服务 ─────────────────────────────────────────
-USE_TZ = False
+USE_TZ = False  # 可选：True / False；是否启用时区感知时间
 
-TIME_ZONE = 'Asia/Shanghai'
+TIME_ZONE = 'Asia/Shanghai'  # 平台使用的时区
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["*"]  # 允许访问后端的主机；* 表示不限主机
 
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY') or f'django-insecure-)7248+$v^i-e@u$=+jzwl1u(vvw0d$n5mepritgniru(&8gmu1{VERSION}'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY') or f'django-insecure-)7248+$v^i-e@u$=+jzwl1u(vvw0d$n5mepritgniru(&8gmu1{VERSION}'  # 平台签名密钥
 LIVE_STREAM_SIGNING_KEY = os.getenv('LIVE_STREAM_SIGNING_KEY') or f'{SECRET_KEY}:ui-live-stream'  # 可选：直播凭证签名密钥；留空使用平台派生密钥
 LIVE_STREAM_PREVIOUS_SIGNING_KEY = os.getenv('LIVE_STREAM_PREVIOUS_SIGNING_KEY') or ''  # 可选：轮换前的直播签名密钥；留空不启用旧密钥
 REALTIME_MESSAGE_BATCH_SIZE = int(os.getenv('REALTIME_MESSAGE_BATCH_SIZE', '100'))  # 每批实时消息条数
@@ -253,7 +253,6 @@ INSTALLED_APPS = [  # Django 应用列表
     'src.apps.perf.apps.PerfConfig',
     'src.apps.user.apps.UserConfig',
     'src.apps.auto_pytest',
-    'src.apps.gray_config',
     'src.apps.monitoring',
     'src.apps.task_center',
     'src.apps.functional_test',
@@ -300,7 +299,7 @@ ASGI_APPLICATION = 'src.asgi.application'  # ASGI 服务入口
 # ── 9. MySQL 业务数据库 ─────────────────────────────────────────
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': 'src.common.database.mysql',
         'NAME': MYSQL_DB_NAME,
         'USER': MYSQL_USER,
         'PASSWORD': MYSQL_PASSWORD,
@@ -328,14 +327,14 @@ DATABASES['id_allocator'] = {
     'CONN_MAX_AGE': 0,
     'TEST': {'MIRROR': 'default'},
 }
-SNOWFLAKE_BLOCK_ALLOCATOR = 'src.apps.system.services.id_sequence.reserve_snowflake_block'  # 雪花 ID 号段分配服务
+SNOWFLAKE_BLOCK_ALLOCATOR = 'src.apps.system.services.coordination.id_sequence.reserve_snowflake_block'  # 雪花 ID 号段分配服务
 
 # ── 10. 国际化与静态资源 ──────────────────────────────────────
-LANGUAGE_CODE = 'en-us'
-USE_I18N = True
+LANGUAGE_CODE = 'en-us'  # Django 默认语言
+USE_I18N = True  # 可选：True / False；是否启用多语言翻译
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-STATIC_URL = '/static/'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'  # 默认自增主键类型
+STATIC_URL = '/static/'  # 静态资源访问路径前缀
 
 # ── 11. 数据库缓存 ─────────────────────────────────────────
 CACHES = {
@@ -390,13 +389,13 @@ SYSTEM_ERROR_REPORTER = (  # 系统异常记录服务
     "src.apps.system.services.runtime_center.system_error_event."
     "record_system_error"
 )
-MODEL_CRUD_DATA_SCOPE_POLICY = "src.apps.user.services.model_crud_scope.ModelCrudDataScopePolicy"  # 数据范围校验策略
+MODEL_CRUD_DATA_SCOPE_POLICY = "src.apps.user.services.authorization.model_crud_scope.ModelCrudDataScopePolicy"  # 数据范围校验策略
 LIVE_STREAM_PERMISSION_SELECTOR = "src.apps.auto_ui.selectors.live_stream_permission.LiveStreamPermissionSelector"
 MODEL_CRUD_MODULE_VALIDATOR = (  # 产品模块归属校验服务
-    "src.apps.test_center.services.product_module.validate_crud_module_binding"
+    "src.apps.test_center.services.project.product_module.validate_crud_module_binding"
 )
 MODEL_CRUD_CONFIG_AUDIT_ADAPTER = (  # 用例配置变更审计适配器
-    "src.apps.auto_api.services.config.audit_adapter.ModelCrudConfigAuditAdapter"
+    "src.apps.auto_api.services.configuration.audit_adapter.ModelCrudConfigAuditAdapter"
 )
 
 REST_FRAMEWORK = {
@@ -419,15 +418,15 @@ REST_FRAMEWORK = {
 }
 
 # ── 14. API 路由与跨域 ─────────────────────────────────────────
-APPEND_SLASH = False
+APPEND_SLASH = False  # 可选：True / False；是否自动补全 URL 末尾斜杠
 
-CORS_ALLOW_CREDENTIALS = True
-CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOW_HEADERS = ('*',)
-CORS_ORIGIN_WHITELIST = (
+CORS_ALLOW_CREDENTIALS = True  # 可选：True / False；跨域请求是否允许携带凭证
+CORS_ORIGIN_ALLOW_ALL = True  # 可选：True / False；是否允许所有来源跨域访问
+CORS_ALLOW_HEADERS = ('*',)  # 允许的跨域请求头；* 表示全部
+CORS_ORIGIN_WHITELIST = (  # 允许的跨域来源，仅允许所有来源关闭时生效
     'http://localhost:5173',
 )
-CORS_ALLOW_METHODS = (
+CORS_ALLOW_METHODS = (  # 允许的跨域请求方法
     'DELETE',
     'GET',
     'OPTIONS',

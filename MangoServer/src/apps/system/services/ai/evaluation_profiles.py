@@ -42,7 +42,7 @@ class EvaluationAiProfileService:
 
     @classmethod
     def profiles(cls):
-        from src.apps.system.services.system_config import SystemConfigService
+        from src.apps.system.services.configuration.system_config import SystemConfigService
         return cls.parse(SystemConfigService.get(EVALUATION_AI_PROFILES_KEY, default=[]) or [])
 
     @classmethod

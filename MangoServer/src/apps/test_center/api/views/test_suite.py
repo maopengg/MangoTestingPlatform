@@ -11,22 +11,22 @@ from src.apps.task_center.models import ScheduleFire
 from src.apps.test_center.api.serializers.test_suite import TestSuiteSerializers, TestSuiteSerializersC, TestSuiteOfflineExportSerializer, TestSuiteOfflineOptionsSerializer
 from src.apps.test_center.api.serializers.execution_efficiency import ExecutionEfficiencyOptionsSerializer, ExecutionEfficiencyQuerySerializer
 from src.apps.test_center.schemas.execution_efficiency import ExecutionEfficiencyQuery
-from src.apps.test_center.services.execution_efficiency import ExecutionEfficiencyService
+from src.apps.test_center.services.reporting.execution_efficiency import ExecutionEfficiencyService
 from src.apps.test_center.enums.report_delivery import ReportSourceEnum
 from src.apps.test_center.selectors.offline_report import OfflineReportSelector
-from src.apps.test_center.services.offline_report import OfflineReportService
-from src.apps.test_center.services.offline_report.snapshot import ReportSnapshotService
+from src.apps.test_center.services.reporting.offline_report import OfflineReportService
+from src.apps.test_center.services.reporting.offline_report.snapshot import ReportSnapshotService
 from src.apps.test_center.exceptions import (
     SYSTEM_REPORT_REPORT_NOT_FOUND,
     TestCenterError,
 )
 from src.apps.test_center.models import NoticeGroup, TestSuite, TestSuiteDetails
-from src.apps.test_center.services.diagnostic_markdown import DiagnosticMarkdownService
-from src.apps.test_center.services.test_suite.base_notice import NoticeMain
-from src.apps.test_center.services.test_suite.effectiveness import AutomationEffectivenessService
-from src.apps.test_center.services.test_suite.send_notice import SendNotice
-from src.apps.test_center.services.test_suite.stop import TestSuiteStopService
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.test_center.services.diagnostics.diagnostic_markdown import DiagnosticMarkdownService
+from src.apps.test_center.services.reporting.test_suite.base_notice import NoticeMain
+from src.apps.test_center.services.reporting.test_suite.effectiveness import AutomationEffectivenessService
+from src.apps.test_center.services.reporting.test_suite.send_notice import SendNotice
+from src.apps.test_center.services.reporting.test_suite.stop import TestSuiteStopService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -66,6 +66,7 @@ class TestSuiteCRUD(ModelCRUD):
 
     @error_response('system')
     def get(self, request: Request):
+        """获取测试报告列表或指定记录"""
         original_query = request._request.GET
         query = original_query.copy()
         raw_scenes = query.getlist('execution_scene') + query.getlist('execution_scene__in')
@@ -105,6 +106,7 @@ class TestSuiteCRUD(ModelCRUD):
             request._request.GET = original_query
 
     def filter_queryset_by_data_scope(self, request, queryset):
+        """按当前用户的数据范围筛选测试报告"""
         queryset = super().filter_queryset_by_data_scope(request, queryset).filter(report_retained=True)
         case_types = getattr(self, '_case_type_filter', [])
         if case_types:
@@ -122,6 +124,7 @@ class TestSuiteViews(ViewSet):
 
     @error_response('system')
     def execution_efficiency_options(self, request: Request):
+        """获取执行效率分析筛选选项"""
         serializer = ExecutionEfficiencyOptionsSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
         response = ResponseData.success(RESPONSE_MSG_0001, ExecutionEfficiencyService.options(
@@ -132,6 +135,7 @@ class TestSuiteViews(ViewSet):
 
     @error_response('system')
     def execution_efficiency(self, request: Request):
+        """分析测试平台执行效率"""
         serializer = ExecutionEfficiencyQuerySerializer.from_params(request.query_params)
         serializer.is_valid(raise_exception=True)
         user = request.user.user_obj
@@ -143,6 +147,7 @@ class TestSuiteViews(ViewSet):
 
     @error_response('system')
     def offline_options(self, request: Request):
+        """获取离线报告发布选项"""
         user = getattr(getattr(request, 'user', None), 'user_obj', None)
         OfflineReportSelector.require_permission(user, ('report:read', 'timing.tasks:read'))
         serializer = TestSuiteOfflineOptionsSerializer(data=request.query_params)
@@ -155,6 +160,7 @@ class TestSuiteViews(ViewSet):
 
     @error_response('system')
     def offline_publish(self, request: Request):
+        """发布离线测试报告"""
         user = getattr(getattr(request, 'user', None), 'user_obj', None)
         OfflineReportSelector.require_permission(user)
         serializer = TestSuiteOfflineExportSerializer(data=request.data)
@@ -168,6 +174,7 @@ class TestSuiteViews(ViewSet):
 
     @error_response('system')
     def offline_export(self, request: Request):
+        """导出离线测试报告"""
         user = getattr(getattr(request, 'user', None), 'user_obj', None)
         OfflineReportSelector.require_permission(user)
         serializer = TestSuiteOfflineExportSerializer(data=request.data)
@@ -184,6 +191,7 @@ class TestSuiteViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def stop(self, request: Request):
+        """停止测试报告"""
         test_suite_id = request.data.get('id')
         test_suite = self.model.objects.filter(id=test_suite_id).first()
         if test_suite and not self._has_project_product_scope(request, test_suite.project_product_id):
@@ -193,6 +201,7 @@ class TestSuiteViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def effectiveness_overview(self, request: Request):
+        """获取自动化测试质量效能概览"""
         return ResponseData.success(
             RESPONSE_MSG_0001,
             AutomationEffectivenessService.overview(request),
@@ -201,6 +210,7 @@ class TestSuiteViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def effectiveness_ai_summary(self, request: Request):
+        """生成自动化测试质量效能分析摘要"""
         return ResponseData.success(
             RESPONSE_MSG_0001,
             AutomationEffectivenessService.ai_summary(request),
@@ -209,12 +219,14 @@ class TestSuiteViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def effectiveness_clear_cache(self, request: Request):
+        """清理质量效能查询缓存"""
         AutomationEffectivenessService.clear_cache(request)
         return ResponseData.success(RESPONSE_MSG_0273)
 
     @action(methods=['get'], detail=False)
     @error_response('system')
     def diagnostic_markdown(self, request: Request):
+        """导出测试报告诊断说明"""
         test_suite = self.model.objects.filter(id=request.query_params.get('id')).first()
         if not test_suite:
             raise TestCenterError(SYSTEM_REPORT_REPORT_NOT_FOUND)
@@ -238,6 +250,7 @@ class TestSuiteViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def send_notice(self, request: Request):
+        """发送测试报告通知"""
         test_suite = self.model.objects.select_related(
             'tasks',
             'tasks__notice_group',

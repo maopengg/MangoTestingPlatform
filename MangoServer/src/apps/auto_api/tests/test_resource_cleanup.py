@@ -11,13 +11,10 @@ from src.apps.auto_api.enums.resource_cleanup import ApiResourceCleanupStatus as
 from src.apps.auto_api.schemas.resource_cleanup import (
     ApiResourceCleanupRule, ApiResourceProof, ApiResourceTargetSnapshot, ApiResourceCleanupRules,
 )
-from src.apps.auto_api.services.resource_cleanup import (
-    ApiResourceCleanupService as Service, ApiResourceExecutionManager as Manager,
-    ApiResourceCleanupRetryService as Retry,
-)
-from src.apps.auto_api.services.resource_cleanup_io import ApiResourceCleanupIO as IO
-from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService as ES
-from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService as Governor
+from src.apps.auto_api.services.resource_cleanup.resource_cleanup import ApiResourceCleanupService as Service, ApiResourceExecutionManager as Manager, ApiResourceCleanupRetryService as Retry
+from src.apps.auto_api.services.resource_cleanup.resource_cleanup_io import ApiResourceCleanupIO as IO
+from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as ES
+from src.apps.data_factory.services.governance.datasource_governor import DatasourceGovernorService as Governor
 
 
 def rule_data(**changes):
@@ -148,7 +145,7 @@ class ApiResourceRuleTests(SimpleTestCase):
                          'tenantId,projects.projectId,groupId,projects.projectVersion')
 
     def test_read_only_user_cannot_amend_cleanup_mapping(self):
-        with patch('src.apps.user.services.permission.PermissionMenuService.permission_keys_for_user',
+        with patch('src.apps.user.services.authorization.permission.PermissionMenuService.permission_keys_for_user',
                    return_value={'api.case:read'}), self.assertRaises(AutoApiError):
             Retry.retry(user=SimpleNamespace(id=99), case_id=1, resource_id=5,
                 identity_mapping={'es_business_id_path': 'projects[].projectId',
@@ -310,7 +307,7 @@ class ApiResourceLifecycleTests(SimpleTestCase):
         self.stack.enter_context(patch.object(ES, 'resolve_index', return_value=('project_123', 'uuid')))
         self.stack.enter_context(patch.object(IO, 'document', return_value=None))
         self.observe = self.stack.enter_context(patch.object(Service, 'observe'))
-        self.stack.enter_context(patch('src.apps.data_factory.services.infrastructure.DatasourceInfrastructureService.resolve_verified_requests'))
+        self.stack.enter_context(patch('src.apps.data_factory.services.governance.infrastructure.DatasourceInfrastructureService.resolve_verified_requests'))
 
     def test_cleanup_success_records_both_proofs(self):
         Service.cleanup(self.record)
@@ -407,7 +404,7 @@ class ApiResourceLifecycleTests(SimpleTestCase):
         self.binding.assert_not_called()
 
     def test_api_assertion_failure_still_runs_cleanup_and_stays_failure(self):
-        from src.apps.auto_api.services.test_case.test_case_parts.execution import ApiTestCaseExecutionMixin
+        from src.apps.auto_api.services.execution.cases.test_case_parts.execution import ApiTestCaseExecutionMixin
         runtime = SimpleNamespace(resource_cleanup_manager=Mock(), api_case_result=SimpleNamespace(
             status=0, error_message='业务断言失败', resource_cleanup_results=[]))
         runtime.resource_cleanup_manager.trace.id = 8
@@ -426,13 +423,13 @@ class ApiResourceLifecycleTests(SimpleTestCase):
             Retry.require_execution_ended(record)
 
     def test_finalizer_storage_failure_does_not_skip_other_finally_cleanup(self):
-        from src.apps.auto_api.services.test_case.test_case_parts.execution import ApiTestCaseExecutionMixin
+        from src.apps.auto_api.services.execution.cases.test_case_parts.execution import ApiTestCaseExecutionMixin
         runtime = SimpleNamespace(resource_cleanup_manager=Mock(), api_case_result=SimpleNamespace(
             status=1, error_message='', resource_cleanup_results=[]))
         runtime.resource_cleanup_manager.cleanup.side_effect = OSError('must not be exposed')
         with patch('src.apps.auto_api.selectors.resource_cleanup.ApiResourceCleanupSelector.trace_summary',
                    side_effect=OSError('must not be exposed')), \
-             patch('src.apps.data_factory.services.infrastructure.DatasourceInfrastructureService.log_reference',
+             patch('src.apps.data_factory.services.governance.infrastructure.DatasourceInfrastructureService.log_reference',
                    return_value='safe-reference'):
             ApiTestCaseExecutionMixin.run_resource_cleanup(runtime)
         self.assertTrue(runtime._resource_cleanup_finished)
@@ -481,7 +478,7 @@ class ApiResourceRequestTests(SimpleTestCase):
              patch.object(IO, 'find', return_value=None), \
              patch.object(ES, 'resolve_index', return_value=('project_123', 'uuid')), \
              patch.object(ES, 'document') as es_document, \
-             patch('src.apps.auto_api.services.resource_cleanup.ApiCaseExecutionResource.objects') as objects, \
+             patch('src.apps.auto_api.services.resource_cleanup.resource_cleanup.ApiCaseExecutionResource.objects') as objects, \
              patch.object(Service, 'persist') as persist:
             objects.filter.return_value.exists.return_value = False
             objects.create.return_value = record
@@ -500,7 +497,7 @@ class ApiResourceRequestTests(SimpleTestCase):
                                                    request_body={'name': 'AUTO_old'}), 20, 0)
 
     def test_registration_hook_runs_before_physical_request(self):
-        from src.apps.auto_api.services.base.api_base_test_setup.base_request import BaseRequest
+        from src.apps.auto_api.services.execution.base.api_base_test_setup.base_request import BaseRequest
         from src.apps.auto_api.schemas.execution import ApiExecutionRequest
         setup = BaseRequest.__new__(BaseRequest)
         setup.timeout = 5
@@ -511,7 +508,7 @@ class ApiResourceRequestTests(SimpleTestCase):
         setup.resource_cleanup_manager.before_request.side_effect = lambda *a: order.append('registered') or Mock()
         setup.resource_cleanup_manager.after_response.side_effect = lambda *a: order.append('captured')
         response = Mock()
-        with patch('src.apps.auto_api.services.base.api_base_test_setup.base_request.HttpSseProtocolClient') as client:
+        with patch('src.apps.auto_api.services.execution.base.api_base_test_setup.base_request.HttpSseProtocolClient') as client:
             client.return_value.request.side_effect = lambda *a: order.append('sent') or response
             setup.http(ApiExecutionRequest(method='POST', url='https://example.com/create',
                        body_type='json', body_config={'body': {'name': 'AUTO_unique'}}), 3)
@@ -521,13 +518,13 @@ class ApiResourceRequestTests(SimpleTestCase):
 class ApiResourcePermissionTests(SimpleTestCase):
     def test_selector_rejects_missing_permissions_including_admin(self):
         from src.apps.auto_api.selectors.resource_cleanup import ApiResourceCleanupSelector as Selector
-        with patch('src.apps.user.services.permission.PermissionMenuService.permission_keys_for_user', return_value=set()):
+        with patch('src.apps.user.services.authorization.permission.PermissionMenuService.permission_keys_for_user', return_value=set()):
             with self.assertRaises(AutoApiError):
                 Selector.records(SimpleNamespace(is_super_admin=True), 1)
 
     def test_selector_requires_case_scope(self):
         from src.apps.auto_api.selectors.resource_cleanup import ApiResourceCleanupSelector as Selector
-        with patch('src.apps.user.services.permission.PermissionMenuService.permission_keys_for_user',
+        with patch('src.apps.user.services.authorization.permission.PermissionMenuService.permission_keys_for_user',
                    return_value={'api.case:read'}), \
              patch('src.apps.auto_api.selectors.case_configuration.ApiCaseConfigurationSelector.scoped_cases') as cases:
             cases.return_value.exists.return_value = False
@@ -535,7 +532,7 @@ class ApiResourcePermissionTests(SimpleTestCase):
                 Selector.records(SimpleNamespace(), 1)
 
     def test_http_and_mcp_share_read_permission_for_execution_control(self):
-        from src.apps.user.services.http_permission_registry import HTTP_PERMISSION_RULES
+        from src.apps.user.services.authorization.http_permission_registry import HTTP_PERMISSION_RULES
         from src.interfaces.mcp.authentication import component_policy
         for tool in ('get_api_case_resource_cleanup_schema', 'get_api_case_resource_cleanup_results',
                      'cleanup_api_case_resources'):

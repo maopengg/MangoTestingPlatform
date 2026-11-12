@@ -1,12 +1,12 @@
 from types import SimpleNamespace
 from unittest.mock import patch
 from django.test import SimpleTestCase
-from src.apps.user.services.mcp_permission_registry import MCP_PERMISSION_RULES
+from src.apps.user.services.authorization.mcp_permission_registry import MCP_PERMISSION_RULES
 from src.apps.evaluation.exceptions import EVALUATION_DATASET_ACCESS_DENIED, EvaluationError
-from src.apps.evaluation.services.graders import RankingGrader, EvaluationGraderRegistry
-from src.apps.evaluation.services.assets import set_case_status
+from src.apps.evaluation.services.grading.graders import RankingGrader, EvaluationGraderRegistry
+from src.apps.evaluation.services.assets.assets import set_case_status
 from src.apps.evaluation.presenters import case_summary
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.user.services.authorization.permission import PermissionMenuService
 from src.interfaces.mcp.authentication import component_policy, permission_error
 from src.interfaces.mcp.server import _tool_operation, McpDomainPathApp
 from src.interfaces.mcp.tools.evaluation import register_evaluation_tools
@@ -14,11 +14,11 @@ from src.interfaces.mcp.tools.evaluation import register_evaluation_tools
 
 class EvaluationMcpTests(SimpleTestCase):
     def test_dataset_item_creation_validates_payload_after_scoped_version_lookup(self):
-        from src.apps.evaluation.services.assets import create_dataset_item
+        from src.apps.evaluation.services.assets.assets import create_dataset_item
         user, version = SimpleNamespace(id=4), SimpleNamespace(id=8)
-        path = 'src.apps.evaluation.services.assets'
+        path = 'src.apps.evaluation.services.assets.assets'
         with patch(path + '.get_dataset_version', return_value=version) as lookup, \
-             patch('src.apps.evaluation.services.dataset_item.EvaluationDatasetItemService.save', return_value=SimpleNamespace(id=9)) as save:
+             patch('src.apps.evaluation.services.dataset.dataset_item.EvaluationDatasetItemService.save', return_value=SimpleNamespace(id=9)) as save:
             result = create_dataset_item(8, {'input_data': {'query': '订单查询'}, 'expected_output': {'answer': '订单A'}}, user)
             self.assertEqual(result.id, 9)
             lookup.assert_called_once_with(8, user)
@@ -108,8 +108,8 @@ class EvaluationMcpTests(SimpleTestCase):
             self.assertIsNotNone(permission_error(SimpleNamespace(), 'update_evaluation_case', {}))
 
     def test_status_service_rejects_read_only_permission(self):
-        with patch('src.apps.evaluation.services.assets.PermissionMenuService.is_effective_super_admin', return_value=False), \
-             patch('src.apps.evaluation.services.assets.PermissionMenuService.permission_keys_for_user', return_value={'evaluation.case:read'}):
+        with patch('src.apps.evaluation.services.assets.assets.PermissionMenuService.is_effective_super_admin', return_value=False), \
+             patch('src.apps.evaluation.services.assets.assets.PermissionMenuService.permission_keys_for_user', return_value={'evaluation.case:read'}):
             with self.assertRaises(EvaluationError):
                 set_case_status(1, 'enabled', SimpleNamespace())
 

@@ -11,7 +11,7 @@
   >
     <div class="mango-requirement-picker">
       
-      <a-alert v-if="saveError" type="error">关联失败，勾选项已保留，请重试。</a-alert>
+      <MangoRequestFeedback v-if="saveError" :message="&quot;关联失败，勾选项已保留，请重试。&quot;" />
       <a-table
         class="mango-native-scroll-table mango-requirement-picker__table"
         :data="rows"
@@ -34,8 +34,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { onActivated, onBeforeUnmount, onDeactivated, ref, shallowRef, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { bindFunctionalRequirementCases, getManualCase } from '@/api/functional-test'
@@ -188,8 +187,8 @@ import { reportLoadError } from '@/utils/load-error'
       reset()
       Message.success('用例已关联')
       emit('changed', target)
-    } catch {
-      if (current(version)) saveError.value = true
+    } catch (requestFailure) {
+      if (current(version)) saveError.value = requestFailureMessage(requestFailure, true, "关联失败，勾选项已保留，请重试。")
     } finally {
       saving.value = false
     }

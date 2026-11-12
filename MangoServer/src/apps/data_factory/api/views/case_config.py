@@ -11,9 +11,9 @@ from src.apps.data_factory.exceptions import (
     DataFactoryError,
 )
 from src.apps.data_factory.models import DataFactoryCaseConfig
-from src.apps.data_factory.services.case_config import DataFactoryCaseConfigService
-from src.apps.data_factory.services.configuration_preview import DataFactoryConfigurationPreviewService
-from src.apps.data_factory.services.preview import DataFactoryPreviewService
+from src.apps.data_factory.services.assets.case_config import DataFactoryCaseConfigService
+from src.apps.data_factory.services.preview.configuration_preview import DataFactoryConfigurationPreviewService
+from src.apps.data_factory.services.preview.preview import DataFactoryPreviewService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -35,6 +35,7 @@ class DataFactoryCaseConfigCRUD(ModelCRUD):
 
     @error_response('system')
     def get(self, request: Request):
+        """获取用例数据工厂绑定列表或指定记录"""
         source_type = request.query_params.get('source_type')
         source_id = request.query_params.get('source_id') or request.query_params.get('case')
         if not source_type:
@@ -55,6 +56,7 @@ class DataFactoryCaseConfigViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('system')
     def put_case_sort(self, request: Request):
+        """调整用例数据工厂绑定的执行顺序"""
         source_type = request.data.get('source_type')
         if not source_type:
             raise DataFactoryError(DATA_FACTORY_CASE_CONFIG_CASE_TYPE_REQUIRED_CODE_CASE_TYPE_REQUIRED)
@@ -69,6 +71,7 @@ class DataFactoryCaseConfigViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def preview(self, request: Request):
+        """预览用例数据工厂绑定"""
         template_id = request.data.get('template_id')
         if not template_id:
             raise DataFactoryError(DATA_FACTORY_CASE_CONFIG_STATUS_TEMPLATE_REQUIRED)

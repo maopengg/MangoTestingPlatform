@@ -27,6 +27,7 @@ class DataFactoryDatasourceBindingCRUD(ModelCRUD):
 
     @error_response('system')
     def post(self, request: Request):
+        """新增数据源环境绑定"""
         data = self.with_update_user(request, request.data)
         instance = self.get_existing_binding(data)
         if instance:
@@ -39,6 +40,7 @@ class DataFactoryDatasourceBindingCRUD(ModelCRUD):
 
     @classmethod
     def inside_post(cls, data: dict) -> dict:
+        """处理数据源环境绑定新增时的业务逻辑"""
         instance = cls.get_existing_binding(data)
         if instance:
             raise DataFactoryError(DATA_SOURCE_BINDING_CONFLICT, value=(cls.environment_name(data.get('environment')),))
@@ -50,6 +52,7 @@ class DataFactoryDatasourceBindingCRUD(ModelCRUD):
 
     @staticmethod
     def environment_name(environment) -> str:
+        """获取数据源绑定环境名称"""
         try:
             environment = int(environment)
         except (TypeError, ValueError):
@@ -58,6 +61,7 @@ class DataFactoryDatasourceBindingCRUD(ModelCRUD):
 
     @classmethod
     def get_existing_binding(cls, data):
+        """查找逻辑数据源已有的环境绑定"""
         datasource_alias = data.get('datasource_alias')
         environment = data.get('environment')
         if not datasource_alias or environment is None:

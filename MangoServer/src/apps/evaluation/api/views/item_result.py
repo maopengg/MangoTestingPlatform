@@ -14,6 +14,7 @@ class ItemResultViews(ViewSet):
 
     @error_response("system")
     def list(self, request, case_id=None, execution_id=None):
+        """获取评测数据项结果列表"""
         execution = get_execution(case_id, execution_id, request_user(request))
         queryset = execution.item_results.all()
         for field in ("verdict", "grade_status", "execution_status", "error_category"):
@@ -23,6 +24,7 @@ class ItemResultViews(ViewSet):
 
     @error_response("system")
     def retrieve(self, request, case_id=None, execution_id=None, item_result_id=None):
+        """获取评测数据项结果详情"""
         execution = get_execution(case_id, execution_id, request_user(request))
         record = execution.item_results.prefetch_related("grade_results").filter(pk=item_result_id).first()
         if record is None:

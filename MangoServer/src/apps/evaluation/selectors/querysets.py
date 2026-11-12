@@ -4,7 +4,7 @@ from django.db.models import Count, OuterRef, Subquery, JSONField
 from src.apps.evaluation.models import EvaluationDataset, EvaluationDatasetVersion, EvaluationDatasetItem, EvaluationCase, EvaluationCaseExecution, EvaluationItemResult
 from src.apps.evaluation.selectors.scope import scope_queryset
 from src.apps.evaluation.selectors.version import with_current_version, with_item_count
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.test_center.services.project.product_module import ProductModuleService
 
 
 class EvaluationQuerySelector:

@@ -12,9 +12,7 @@
   >
     
     
-    <a-alert v-if="saveError" type="error" class="mango-defect-retest__error"
-      >创建失败，输入已保留，请重试。</a-alert
-    >
+    <MangoRequestFeedback v-if="saveError" :message="&quot;创建失败，输入已保留，请重试。&quot;" />
     <a-alert v-if="navigationError" type="warning" class="mango-defect-retest__error"
       >计划 {{ createdPlanId }} 已创建，进入失败，请重试进入。</a-alert
     >
@@ -49,6 +47,8 @@
 </template>
 
 <script setup lang="ts">
+import { requestFailureMessage } from '@/utils/load-error'
+
   import { onActivated, onBeforeUnmount, onDeactivated, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { Message } from '@arco-design/web-vue'
@@ -146,8 +146,8 @@
       } catch {
         if (current(version)) navigationError.value = true
       }
-    } catch {
-      if (current(version)) saveError.value = true
+    } catch (requestFailure) {
+      if (current(version)) saveError.value = requestFailureMessage(requestFailure, true, "创建失败，输入已保留，请重试。")
     } finally {
       saving.value = false
       savingId.value = null

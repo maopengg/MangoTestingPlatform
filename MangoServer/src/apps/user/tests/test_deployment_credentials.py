@@ -4,7 +4,7 @@ from django.apps import apps
 from django.test import SimpleTestCase
 
 from src.apps.user.models import User
-from src.apps.user.services.password import double_md5, verify_password_digest
+from src.apps.user.services.authentication.password import double_md5, verify_password_digest
 
 
 class DeploymentCredentialsTests(SimpleTestCase):

@@ -28,7 +28,7 @@
           :loading="customCodeRunningIds.has(customCodePanel.id)"
           class="mango-auth-custom-code-result-body"
         >
-          <a-alert v-if="customCodePanel.error" type="error">{{ customCodePanel.error }}</a-alert>
+          <MangoRequestFeedback v-if="customCodePanel.error" :message="(customCodePanel.error)" />
           <JsonDisplay
             v-else-if="customCodePanel.result !== null"
             :data="customCodePanel.result"
@@ -41,6 +41,8 @@
   </BaseSidePanel>
 </template>
 <script setup lang="ts">
+import { requestFailureMessage } from '@/utils/load-error'
+
   import { reactive, onBeforeUnmount, onDeactivated } from 'vue'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import CodeEditor from '@/components/editors/CodeEditor.vue'
@@ -84,7 +86,7 @@
       if (isCurrent()) customCodePanel.result = response.data
     } catch (error) {
       if (isCurrent())
-        customCodePanel.error = error instanceof Error ? error.message : '授权刷新失败，请稍后重试'
+        customCodePanel.error = requestFailureMessage(error, error instanceof Error ? error.message : '授权刷新失败，请稍后重试')
     } finally {
       customCodeRunningIds.delete(id)
       emit('refreshed')

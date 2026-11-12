@@ -4,14 +4,6 @@ from src.apps.task_center.models import ExecutorTask, Tasks, TasksDetails, TimeT
 
 class TaskCenterQuerySelector:
     @staticmethod
-    def cleanup_for_execution(execution_id):
-        from src.apps.system.enums.executor import ExecutorTaskTypeEnum
-        return ExecutorTask.objects.filter(
-            task_type=ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value,
-            business_id=execution_id,
-        ).order_by()
-
-    @staticmethod
     def ui_cleanup_failed(case_id, execution_id, cleanup_ids):
         from src.apps.system.enums.executor import ExecutorTaskTypeEnum, ExecutorTaskStatusEnum
         from src.apps.task_center.enums.execution import ExecutorTaskErrorCodeEnum

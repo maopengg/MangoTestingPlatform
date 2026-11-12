@@ -67,7 +67,7 @@
       class="mango-quality-gate-hint"
       >比例阈值填写 0～1，例如 0.8 表示 80%。</p
     >
-    <p v-if="error" role="alert" class="mango-quality-gate-error">{{ error }}</p>
+    <p data-feedback-kind="validation" v-if="error" role="alert" class="mango-quality-gate-error">{{ error }}</p>
   </section>
 </template>
 <script setup lang="ts">

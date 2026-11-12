@@ -19,9 +19,9 @@ from src.apps.auto_api.models import (
     ModuleCoverageInterfaceSnapshot,
     ModuleCoverageScan,
 )
-from src.apps.auto_api.services.module_coverage import ModuleCoverageService
-from src.apps.auto_api.services.module_coverage_diff import build_structured_diff
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.auto_api.services.coverage.module_coverage import ModuleCoverageService
+from src.apps.auto_api.services.coverage.module_coverage_diff import build_structured_diff
+from src.apps.test_center.services.project.product_module import ProductModuleService
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.common.decorators.error_response import error_response
 from src.common.responses.response_data import ResponseData
@@ -34,6 +34,7 @@ class ModuleCoverageCaseViews(ViewSet):
 
     @staticmethod
     def queryset(request, include_removed=False):
+        """构建当前用户可访问的模块用例覆盖记录查询集"""
         queryset = ModuleCoverageCase.objects.filter(current_snapshot__isnull=False)
         if not include_removed:
             queryset = queryset.filter(removed_at__isnull=True)
@@ -47,6 +48,7 @@ class ModuleCoverageCaseViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def list(self, request: Request):
+        """获取模块用例覆盖记录列表"""
         change_status = request.query_params.get("change_status")
         include_removed = (
                 request.query_params.get("include_removed") == "true"
@@ -83,6 +85,7 @@ class ModuleCoverageCaseViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def retrieve(self, request: Request):
+        """获取模块用例覆盖记录详情"""
         item = self.queryset(request, include_removed=True).get(id=request.query_params.get("id"))
         data = self.serializer_class(item).data
         data["current_snapshot_detail"] = ModuleCoverageCaseSnapshotSerializer(item.current_snapshot).data
@@ -91,6 +94,7 @@ class ModuleCoverageCaseViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def snapshots(self, request: Request):
+        """获取模块用例覆盖记录历史快照"""
         item = self.queryset(request, include_removed=True).get(id=request.query_params.get("id"))
         queryset = item.snapshots.select_related("scan", "api_case", "api_case_revision").order_by("-id")
         return ResponseData.success(
@@ -101,6 +105,7 @@ class ModuleCoverageCaseViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def flow(self, request: Request):
+        """获取模块用例覆盖调用流程"""
         item = self.queryset(request, include_removed=True).get(id=request.query_params.get("id"))
         return ResponseData.success(
             RESPONSE_MSG_0001,
@@ -110,6 +115,7 @@ class ModuleCoverageCaseViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def diff(self, request: Request):
+        """比较模块用例覆盖记录版本差异"""
         item = self.queryset(request, include_removed=True).get(id=request.query_params.get("id"))
         rows = list(item.snapshots.select_related("scan").order_by("-id")[:2])
         current = ModuleCoverageCaseSnapshotSerializer(rows[0]).data if rows else None
@@ -123,6 +129,7 @@ class ModuleCoverageCaseViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def metrics(self, request: Request):
+        """获取模块用例覆盖记录指标"""
         project_product = request.query_params.get("project_product")
         project_product_id = int(project_product) if project_product not in (None, "") else None
         if project_product_id is not None:
@@ -153,6 +160,7 @@ class ModuleCoverageCaseViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def overview(self, request: Request):
+        """获取模块用例覆盖记录概览"""
         product = request.query_params.get("project_product")
         if product:
             require_project_scope(request, int(product))
@@ -176,6 +184,7 @@ class ModuleCoverageCaseViews(ViewSet):
     @action(methods=["put"], detail=False)
     @error_response("system")
     def binding(self, request: Request):
+        """更新模块用例覆盖记录的资产绑定"""
         item = self.queryset(request).get(id=request.data.get("id"))
         item = ModuleCoverageService.bind_api_case(item.id, int(request.data.get("api_case_id")))
         return ResponseData.success(RESPONSE_MSG_0001, self.serializer_class(item).data)
@@ -183,6 +192,7 @@ class ModuleCoverageCaseViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def archive_batch(self, request: Request):
+        """批量归档模块用例覆盖记录"""
         queryset = self.queryset(request).filter(id__in=request.data.get("ids") or [])
         count = ModuleCoverageService.archive_cases(list(queryset.values_list("id", flat=True)))
         return ResponseData.success(RESPONSE_MSG_0001, {"archived": count})
@@ -190,6 +200,7 @@ class ModuleCoverageCaseViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def batch_upload(self, request: Request):
+        """批量上传模块用例覆盖记录"""
         scan_id = int(request.data.get("scan_id"))
         scan = ModuleCoverageService.get_uploading_scan(scan_id)
         require_project_scope(request, scan.project_product_id)

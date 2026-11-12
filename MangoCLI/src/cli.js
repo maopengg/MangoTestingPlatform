@@ -201,7 +201,14 @@ function addApiCommands(program, io) {
         });
         runtime.token = login.token;
       }
-      const payload = await buildPayload(options, io.stdin);
+      let payload = await buildPayload(options, io.stdin);
+      if (spec.command === "switch-user-test-environment" && spec.domain === "project") {
+        const value = payload.selected_environment;
+        if (!Number.isSafeInteger(value) || value < 0 || Object.keys(payload).some(key => key !== "selected_environment")) {
+          throw new CliError("请仅提供 selected_environment 整数环境ID，当前账号由登录身份确定", 2);
+        }
+        payload = [{ key: "selected_environment", value }];
+      }
       const pathParams = { id: options.id };
       const performRequest = async () => {
         const call = (target, body = payload) => request(

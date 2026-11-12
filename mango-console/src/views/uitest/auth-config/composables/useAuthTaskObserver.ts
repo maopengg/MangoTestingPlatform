@@ -22,6 +22,10 @@ interface Context {
 }
 export function useAuthTaskObserver(context: Context) {
   const error = ref(''), loading = reactive(new Set<string>()), submitting = reactive(new Set<string>())
+  function notifyError(message: string, cause?: unknown) {
+    if (error.value !== message) reportLoadError(cause, message)
+    error.value = message
+  }
   const jobs = new Map<string, Observation>()
   const keyFor = (id: UiAuthId, action: UiAuthTaskAction, owner = context.owner()) => `${authTaskScope(action, owner)}:${id}`
   const isLoading = (id: UiAuthId, action: UiAuthTaskAction) => loading.has(keyFor(id, action)) || submitting.has(keyFor(id, action))
@@ -37,13 +41,13 @@ export function useAuthTaskObserver(context: Context) {
     try {
       if (!saveExecutorTaskObservation(authTaskScope(job.action, job.owner), job.id, { taskId: job.taskId, businessType: authTaskBusiness(job.action), owner: job.owner })) throw Error('Observation not persisted')
       return true
-    } catch { if (context.available() && job.owner === context.owner()) error.value = '任务已提交，观察记录暂未保存；请保留当前页面查看结果'; return false }
+    } catch { if (context.available() && job.owner === context.owner()) notifyError('任务已提交，观察记录暂未保存；请保留当前页面查看结果'); return false }
   }
   function clear(job: Observation) {
     try {
       clearExecutorTaskObservation(authTaskScope(job.action, job.owner), job.id, job.taskId)
       if (job.legacy) clearExecutorTaskObservation(`ui-auth-${job.action}`, job.id, job.taskId)
-    } catch { if (visible(job)) error.value = '任务已结束，观察记录清理失败，请重新加载核对' }
+    } catch { if (visible(job)) notifyError('任务已结束，观察记录清理失败，请重新加载核对') }
   }
   function schedule(job: Observation, delay = 1000) {
     if (!visible(job) || job.timer !== null || job.reading) return
@@ -51,7 +55,7 @@ export function useAuthTaskObserver(context: Context) {
   }
   async function poll(job: Observation) {
     if (!visible(job) || job.reading) return
-    if (Date.now() >= job.deadline) { error.value = '等待执行器任务结果超时，可重新点击原操作继续查看任务状态'; stop(job); return }
+    if (Date.now() >= job.deadline) { notifyError('等待执行器任务结果超时，可重新点击原操作继续查看任务状态'); stop(job); return }
     const version = job.version, valid = context.capture()
     const current = () => visible(job) && version === job.version && valid()
     job.reading = true
@@ -63,7 +67,7 @@ export function useAuthTaskObserver(context: Context) {
       if (job.legacy && persist(job)) {
         // 旧记录没有身份归属；后端按创建人鉴权且任务/业务信息核对通过后才转入当前身份。
         try { clearExecutorTaskObservation(`ui-auth-${job.action}`, job.id, job.taskId); job.legacy = false }
-        catch { error.value = '任务状态已恢复，旧观察记录清理失败，请重新加载核对' }
+        catch { notifyError('任务状态已恢复，旧观察记录清理失败，请重新加载核对') }
       }
       if (task.terminal) {
         clear(job); stop(job); jobs.delete(job.key)
@@ -71,11 +75,11 @@ export function useAuthTaskObserver(context: Context) {
           Message.success(job.action === 'start' ? '自动授权浏览器已打开，请完成登录后点击“完成登录”' : '授权缓存已提取并保存')
           if (job.action === 'capture') {
             try { await context.onCaptured() }
-            catch (loadFailure0) { if (valid() && job.owner === context.owner()) (reportLoadError(loadFailure0, "授权缓存已保存，列表加载失败，请重新加载列表", false), error.value = '授权缓存已保存，列表加载失败，请重新加载列表') }
+            catch (loadFailure0) { if (valid() && job.owner === context.owner()) notifyError('授权缓存已保存，列表加载失败，请重新加载列表', loadFailure0) }
           }
-        } else error.value = `自动授权任务未完成（${task.status}），可重新发起操作`
+        } else notifyError('自动授权任务未完成，请查看任务通知，可重新发起操作')
       }
-    } catch (loadFailure1) { if (current()) (reportLoadError(loadFailure1, "任务状态加载失败，正在重试；请勿重复提交授权操作", false), error.value = '任务状态加载失败，正在重试；请勿重复提交授权操作') }
+    } catch (loadFailure1) { if (current()) notifyError('任务状态加载失败，正在重试；请勿重复提交授权操作', loadFailure1) }
     finally {
       job.reading = false
       if (visible(job)) schedule(job, version === job.version ? 1000 : 0)
@@ -88,7 +92,7 @@ export function useAuthTaskObserver(context: Context) {
   }
   function storedObservation(scope: string, id: UiAuthId): unknown {
     try { return loadExecutorTaskObservation(scope, id) }
-    catch { error.value = '任务恢复记录暂不可用，请保留当前页面查看结果'; return null }
+    catch { notifyError('任务恢复记录暂不可用，请保留当前页面查看结果'); return null }
   }
   function restore(id: UiAuthId, action: UiAuthTaskAction): Observation | null | false {
     const owner = context.owner(), key = keyFor(id, action, owner), existing = jobs.get(key)
@@ -99,7 +103,7 @@ export function useAuthTaskObserver(context: Context) {
       if (!observation) return null
       const job: Observation = { id, action, taskId: observation.taskId, owner, key, legacy: observation.legacy, active: false, reading: false, version: 0, deadline: 0, timer: null }
       jobs.set(key, job); return job
-    } catch { error.value = '授权任务观察记录异常，请重新加载核对'; return false }
+    } catch { notifyError('授权任务观察记录异常，请重新加载核对'); return false }
   }
   function resume(rows: AuthTarget[]) {
     if (!context.available()) return
@@ -131,7 +135,7 @@ export function useAuthTaskObserver(context: Context) {
       const job: Observation = { id, action, taskId, owner, key, legacy: false, active: false, reading: false, version: 0, deadline: 0, timer: null }
       jobs.set(key, job); persist(job); activate(job)
       return true
-    } catch { if (valid()) error.value = accepted ? '操作已提交，但返回的任务信息异常，请重新加载核对' : '自动授权操作提交失败，请重试'; return false }
+    } catch (cause) { if (valid()) notifyError(accepted ? '操作已提交，但返回的任务信息异常，请重新加载核对' : '自动授权操作提交失败，请重试', cause); return false }
     finally { submitting.delete(key) }
   }
   return { error, start, pause, resume, isLoading, isSubmitting }

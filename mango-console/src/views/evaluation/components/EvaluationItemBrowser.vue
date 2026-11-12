@@ -49,13 +49,13 @@
       :loading="detailLoading || executionLoading"
       class="mango-evaluation-item-viewer"
     >
-      <a-alert v-if="executionError" type="error"
+      <MangoRequestFeedback v-if="executionError" message="执行结果加载失败，请重试"
         ><a-button
           size="small"
           :loading="executionLoading"
           @click="loadExecution"
           >重试</a-button
-        ></a-alert
+        ></MangoRequestFeedback
       >
       <template v-if="itemDetail">
         <section class="mango-evaluation-item-overview">
@@ -94,7 +94,7 @@
             >
           </a-descriptions>
         </section>
-        <a-alert v-if="itemDetail.details?.error_message" type="error">{{
+        <a-alert data-feedback-kind="execution-result" v-if="itemDetail.details?.error_message" type="error">{{
           itemDetail.details.error_message
         }}</a-alert>
         <a-alert v-if="itemDetail.details?.cleanup_error" type="warning"

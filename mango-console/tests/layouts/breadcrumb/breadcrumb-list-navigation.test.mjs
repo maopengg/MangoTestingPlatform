@@ -105,7 +105,7 @@ for (const [detailPath, listPath, label] of affectedRoutes) {
 
 test('list destinations match the backend menu and existing frontend page entries', () => {
   const menuSource = fs.readFileSync(
-    new URL('../../../../MangoServer/src/apps/system/services/menu.py', import.meta.url), 'utf8'
+    new URL('../../../../MangoServer/src/apps/system/services/catalog/menu.py', import.meta.url), 'utf8'
   )
   for (const listPath of new Set(affectedRoutes.map((item) => item[1]))) {
     assert.ok(menuSource.includes(`leaf("${listPath}",`), `Missing menu route: ${listPath}`)

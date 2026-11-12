@@ -14,7 +14,7 @@ from src.apps.auto_api.models import (
     ModuleCoverageInterfaceSnapshot,
     ModuleCoverageModuleInterface,
 )
-from src.apps.auto_api.services.module_coverage import ModuleCoverageService
+from src.apps.auto_api.services.coverage.module_coverage import ModuleCoverageService
 
 
 class Command(BaseCommand):

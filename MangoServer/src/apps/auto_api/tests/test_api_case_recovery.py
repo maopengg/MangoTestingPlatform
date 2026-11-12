@@ -6,14 +6,14 @@ from mangotools.enums import StatusEnum, TaskEnum
 
 from src.apps.auto_api.exceptions import AutoApiError, TestSuiteStopped
 from src.apps.auto_api.schemas.recovery import ApiStepExecutionConfig, is_recovery_step
-from src.apps.auto_api.services.test_case.test_case import TestCase
+from src.apps.auto_api.services.execution.cases.test_case import TestCase
 from src.apps.auto_api.models import ApiCaseDetailed
 from src.apps.auto_api.services.api_case.snapshot import ApiExecutableSnapshotService
 from src.apps.auto_api.services.api_case.step import ApiCaseStepService
 from src.apps.auto_api.api.serializers.api_case_detailed import ApiCaseDetailedSerializers
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.user.services.authorization.permission import PermissionMenuService
 from src.interfaces.mcp.authentication import component_policy, permission_error
-from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService
+from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService
 
 
 class ApiCaseRecoveryTests(SimpleTestCase):
@@ -241,12 +241,12 @@ class ApiCaseRecoveryTests(SimpleTestCase):
         suite = SimpleNamespace(status=TaskEnum.STOPPED.value, retained_summary=None)
         detail = SimpleNamespace(status=TaskEnum.STOPPED.value, id=1, test_suite_id=1, case_id=1, type=1)
         result = SimpleNamespace(steps=[SimpleNamespace(model_dump=lambda: {'is_recovery': True})])
-        with patch('src.apps.test_center.services.test_suite.detail_result.TestSuite.objects') as suites, \
-                patch('src.apps.test_center.services.test_suite.detail_result.TestSuiteDetails.objects') as details, \
+        with patch('src.apps.test_center.services.reporting.test_suite.detail_result.TestSuite.objects') as suites, \
+                patch('src.apps.test_center.services.reporting.test_suite.detail_result.TestSuiteDetails.objects') as details, \
                 patch.object(TestSuiteExecutionResultService, 'save_result') as save, \
-                patch('src.apps.test_center.services.test_suite.detail_result.ExecutionResultService.'
+                patch('src.apps.test_center.services.reporting.test_suite.detail_result.ExecutionResultService.'
                       'prepare_result_payload', return_value={}) as prepare, \
-                patch('src.apps.test_center.services.test_suite.detail_result.ExecutionResultService.'
+                patch('src.apps.test_center.services.reporting.test_suite.detail_result.ExecutionResultService.'
                       'run_write_transaction', side_effect=lambda operation: operation()):
             suites.select_for_update.return_value.get.return_value = suite
             details.get.return_value = detail

@@ -22,7 +22,7 @@ class ToolRegistry:
 
 
 class ApiAuthConfigMcpErrorTests(SimpleTestCase):
-    @patch('src.apps.auto_api.services.api_auth_config.ApiAuthConfigService.get_instance')
+    @patch('src.apps.auto_api.services.authentication.api_auth_config.ApiAuthConfigService.get_instance')
     def test_missing_auth_config_is_converted_to_domain_error(self, get_instance):
         get_instance.side_effect = AutoApiError(API_AUTH_CONFIG_AUTH_CONFIG_DELETE_NOT_FOUND)
 

@@ -4,7 +4,7 @@ from django.db import transaction
 from django.forms import model_to_dict
 
 from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
-from src.apps.data_factory.services.field import DataFactoryFieldService
+from src.apps.data_factory.services.assets.field import DataFactoryFieldService
 from src.interfaces.mcp.common import paginate_queryset
 from .helpers import (
     ok,

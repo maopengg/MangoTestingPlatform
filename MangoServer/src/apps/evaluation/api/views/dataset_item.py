@@ -7,7 +7,7 @@ from src.apps.evaluation.models import EvaluationDatasetItem
 from src.apps.evaluation.selectors.dataset_version import get_dataset_version
 from src.apps.evaluation.selectors.querysets import EvaluationQuerySelector
 from src.apps.evaluation.selectors.dataset_item import get_dataset_item
-from src.apps.evaluation.services.dataset_item import EvaluationDatasetItemService
+from src.apps.evaluation.services.dataset.dataset_item import EvaluationDatasetItemService
 from src.common.decorators.error_response import error_response
 from src.common.responses.response_data import ResponseData
 from src.common.responses.response_msg import (
@@ -24,6 +24,7 @@ class DatasetItemViews(ViewSet):
 
     @error_response("system")
     def list(self, request, version_id=None):
+        """获取评测数据项列表"""
         version = EvaluationQuerySelector.dataset_versions().select_related("dataset").filter(id=version_id).first()
         if not version:
             raise EvaluationError(EVALUATION_DATASET_VERSION_NOT_FOUND)
@@ -36,6 +37,7 @@ class DatasetItemViews(ViewSet):
 
     @error_response("system")
     def create(self, request, version_id=None):
+        """创建评测数据项"""
         version = get_dataset_version(version_id, request_user(request))
         serializer = DatasetItemSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -44,6 +46,7 @@ class DatasetItemViews(ViewSet):
 
     @error_response("system")
     def update(self, request, pk=None):
+        """更新评测数据项"""
         dataset_item = get_dataset_item(pk, request_user(request))
         serializer = DatasetItemSerializer(dataset_item, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -52,5 +55,6 @@ class DatasetItemViews(ViewSet):
 
     @error_response("system")
     def delete(self, request, pk=None):
+        """删除评测数据项"""
         EvaluationDatasetItemService.delete(get_dataset_item(pk, request_user(request)))
         return ResponseData.success(RESPONSE_MSG_0002)

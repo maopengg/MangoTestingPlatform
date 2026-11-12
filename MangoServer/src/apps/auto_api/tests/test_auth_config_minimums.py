@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from src.apps.auto_api.api.serializers.api_auth_config_mutation import ApiAuthConfigSerializers
 from src.apps.auto_api.enums import ApiAuthRefreshModeEnum
-from src.apps.auto_api.services.api_auth_config import ApiAuthConfigService
+from src.apps.auto_api.services.authentication.api_auth_config import ApiAuthConfigService
 
 
 class ApiAuthConfigMinimumTests(SimpleTestCase):

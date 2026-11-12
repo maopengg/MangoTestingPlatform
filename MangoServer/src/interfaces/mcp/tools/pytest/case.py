@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from src.apps.auto_pytest.selectors.querysets import PytestQuerySelector
 from src.apps.auto_pytest.selectors.case_publication import PytestCasePublicationSelector
-from src.apps.auto_pytest.services.case_publication import PytestCasePublicationService
-from src.apps.auto_pytest.services.asset_mutation import PytestAssetMutationService
-from src.apps.auto_pytest.services.batch_execution import PytestCaseBatchExecutionService
-from src.apps.auto_pytest.services.file_management import PytestFileManagementService
-from src.apps.auto_pytest.services.test_case.sync import PytestCaseSyncService
-from src.apps.auto_pytest.services.test_case.test_case import TestCase
+from src.apps.auto_pytest.services.assets.case_publication import PytestCasePublicationService
+from src.apps.auto_pytest.services.assets.asset_mutation import PytestAssetMutationService
+from src.apps.auto_pytest.services.execution.batch_execution import PytestCaseBatchExecutionService
+from src.apps.auto_pytest.services.assets.file_management import PytestFileManagementService
+from src.apps.auto_pytest.services.synchronization.sync import PytestCaseSyncService
+from src.apps.auto_pytest.services.execution.cases.test_case import TestCase
 from src.interfaces.mcp.audit import mcp_current_user_id
 from src.interfaces.mcp.common import (
     create_dangerous_action_preview,

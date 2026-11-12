@@ -65,7 +65,7 @@
               >新增</a-button
             >
             
-            <a-alert v-if="actionError" type="error">{{ actionError }}</a-alert>
+            <MangoRequestFeedback v-if="actionError" :message="(actionError)" />
           </a-space>
         </template>
         <VariableTagWorkbench ref="tagWorkbenchRef" v-model="activeTag" :query="categoryQuery" :read="getUiPublic"
@@ -191,7 +191,7 @@
   <ApiInfoBoundCases ref="referenceCasesRef" domain="ui" reference-mode :read-cases="getUiPublicReferenceCases" />
 </template>
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
 import VariableTagWorkbench from '@/components/business/VariableTagWorkbench.vue'
 import VariableTagCell from '@/components/business/VariableTagCell.vue'
 import VariableTagBatchDialog from '@/components/business/VariableTagBatchDialog.vue'
@@ -449,8 +449,8 @@ import { variableTagFilter } from '@/components/business/variable-tags'
             void tagWorkbenchRef.value?.refreshAfterMutation()
           }
           return true
-        } catch {
-          if (current()) actionError.value = '删除失败，请重试'
+        } catch (requestFailure) {
+          if (current()) actionError.value = requestFailureMessage(requestFailure, '删除失败，请重试')
           return false
         } finally {
           deletingIds.value.delete(key)
@@ -479,8 +479,8 @@ import { variableTagFilter } from '@/components/business/variable-tags'
       await doRefresh()
       void tagWorkbenchRef.value?.refreshAfterMutation()
       return true
-    } catch {
-      if (valid()) actionError.value = '状态更新失败，请重试'
+    } catch (requestFailure) {
+      if (valid()) actionError.value = requestFailureMessage(requestFailure, '状态更新失败，请重试')
       return false
     } finally {
       statusIds.value.delete(key)

@@ -9,7 +9,7 @@ from src.apps.auto_api.selectors.execution_efficiency import ApiExecutionEfficie
 from src.apps.test_center.exceptions import TestCenterError, EXECUTION_EFFICIENCY_TOO_LARGE
 from src.apps.test_center.models import ExecutionResult, ProductModule, TestSuite, TestSuiteDetails
 from src.apps.test_center.selectors.execution_efficiency_metrics import COMPLETED, milliseconds, timing_snapshot
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 
 
 MAX_REPORTS = 2000

@@ -1,9 +1,6 @@
 from django.test import SimpleTestCase
 
-from src.apps.auto_ui.services.element_description import (
-    build_element_description,
-    normalize_element_guidance,
-)
+from src.apps.auto_ui.services.elements.element_description import build_element_description, normalize_element_guidance
 
 
 class UiElementDescriptionTest(SimpleTestCase):

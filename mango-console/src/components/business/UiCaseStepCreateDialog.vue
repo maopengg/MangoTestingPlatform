@@ -2,8 +2,8 @@
   <ModalDialog modal-class="mango-simple-form-modal" ref="dialogRef" title="新增执行编排" :width="560" @confirm="submit" @cancel="close">
     <template #content>
       <div v-if="visible">
-        <a-alert v-if="saveError" type="error">{{ saveError }}</a-alert>
-        <a-alert v-for="item in optionErrors" :key="item.key" type="error">{{ item.error }} <a-button size="small" :loading="loading[item.key]" :disabled="locked" @click="item.retry">重试加载</a-button></a-alert>
+        <MangoRequestFeedback v-if="saveError" :message="(saveError)" />
+        <MangoRequestFeedback v-for="item in optionErrors" :key="item.key" :message="(item.error)"><a-button size="small" :loading="loading[item.key]" :disabled="locked" @click="item.retry">重试加载</a-button></MangoRequestFeedback>
         <a-form auto-label-width :model="form" layout="horizontal" class="mango-ui-case-step-create-form mango-simple-form">
           <a-form-item class="mango-simple-form-item" required label="项目/产品">
             <a-cascader v-model="form.projectProduct" :loading="loading.products" :disabled="locked" :options="options.products" placeholder="请选择项目/产品" allow-search expand-trigger="hover" path-mode @change="onProductChange" data-testid="qa-components-business-uicasestepcreatedialog-cascader-请选择项目-产品" />
@@ -27,8 +27,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
 import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useRoute } from 'vue-router'
@@ -124,7 +123,7 @@ async function submit(): Promise<boolean> {
   const current = capture(), key = identity(), parentCurrent = () => available() && key === identity()
   let caseId: UiCaseAssetId | null
   try { caseId = uiCaseAssetId(props.caseId) }
-  catch { saveError.value = '用例ID异常，请重新加载核对'; releaseShell(); return false }
+  catch (requestFailure) { saveError.value = requestFailureMessage(requestFailure, '用例ID异常，请重新加载核对'); releaseShell(); return false }
   const selectedId = form.pageStep[form.pageStep.length - 1]
   const selected = options.steps.find(item => String(item.stepId) === String(selectedId) && String(item.productId) === String(productId.value) && String(item.moduleId) === String(form.module))
   saveError.value = ''
@@ -134,7 +133,7 @@ async function submit(): Promise<boolean> {
   }
   let payload: ReturnType<typeof uiCaseAssetCreatePayload> | null = null
   try { if (createdStepId.value === null && selected) payload = uiCaseAssetCreatePayload(caseId, { ...selected }, props.caseStepCount) }
-  catch { saveError.value = '编排数据异常，请重新加载核对'; releaseShell(); return false }
+  catch (requestFailure) { saveError.value = requestFailureMessage(requestFailure, '编排数据异常，请重新加载核对'); releaseShell(); return false }
   let stepId = createdStepId.value, accepted = creationAccepted.value
   saving.value = true
   try {
@@ -150,8 +149,8 @@ async function submit(): Promise<boolean> {
     uiCaseAssetResponse(await getUiCaseStepsRefreshCacheData(stepId))
     if (current()) { close(); Message.success('页面步骤添加成功') }
     return true
-  } catch {
-    if (current()) saveError.value = accepted ? stepId === null ? '步骤已创建，但返回信息异常，请关闭并重新加载核对' : '步骤已创建，缓存初始化失败；请点击“重试初始化”，不会重复创建' : '页面步骤添加失败，请重试'
+  } catch (requestFailure) {
+    if (current()) saveError.value = requestFailureMessage(requestFailure, accepted ? stepId === null ? '步骤已创建，但返回信息异常，请关闭并重新加载核对' : '步骤已创建，缓存初始化失败；请点击“重试初始化”，不会重复创建' : '页面步骤添加失败，请重试')
     return false
   } finally {
     saving.value = false; releaseShell()

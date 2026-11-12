@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from src.apps.data_factory.enums import DataFactoryCleanupStatusEnum
 from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
-from src.apps.data_factory.services.cleanup import DataFactoryCleanup
+from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
 from src.interfaces.mcp.common import (
     create_dangerous_action_preview,
     validate_dangerous_action_confirmation,

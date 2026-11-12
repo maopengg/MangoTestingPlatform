@@ -15,13 +15,13 @@ def main():
     from src.apps.evaluation.models import EvaluationDataset, EvaluationDatasetVersion, EvaluationDatasetItem, EvaluationCase, EvaluationCaseExecution, EvaluationItemResult, EvaluationGradeResult
     from src.apps.test_center.models import ProjectProduct, ProductModule, TestSuite, TestSuiteDetails
     from src.apps.user.models import User
-    from src.apps.evaluation.services.versioning import EvaluationVersionService
-    from src.apps.evaluation.services.dataset_version import EvaluationDatasetVersionService
-    from src.apps.evaluation.services.dataset_item import EvaluationDatasetItemService
-    from src.apps.evaluation.services.case import EvaluationCaseService
-    from src.apps.evaluation.services.execution import EvaluationCaseExecutionService
+    from src.apps.evaluation.services.dataset.versioning import EvaluationVersionService
+    from src.apps.evaluation.services.dataset.dataset_version import EvaluationDatasetVersionService
+    from src.apps.evaluation.services.dataset.dataset_item import EvaluationDatasetItemService
+    from src.apps.evaluation.services.assets.case import EvaluationCaseService
+    from src.apps.evaluation.services.execution.execution import EvaluationCaseExecutionService
     from src.apps.evaluation.exceptions import EvaluationError
-    from src.apps.system.services.system_config import SystemConfigService
+    from src.apps.system.services.configuration.system_config import SystemConfigService
     from src.apps.auto_api.models import ApiInfo, ApiInfoRevision, ApiInfoRelease
     SystemConfigService._environment_display_names_cache = (float("inf"), {})
     assert connection.vendor == "sqlite" and connection.settings_dict["NAME"] == ":memory:"
@@ -96,7 +96,7 @@ def main():
         assert report.type == 4 and report.status == 1 and report.success == 4
         assert report.summary_data["children"]["dataset"]["version_id"] == version.id
         assert TestSuite.objects.get(pk=report.test_suite_id).status == 1
-        from src.apps.test_center.services.test_suite.summary import TestSuiteSummaryService
+        from src.apps.test_center.services.reporting.test_suite.summary import TestSuiteSummaryService
         assert TestSuiteSummaryService.summary_data(report.test_suite_id)["evaluation_count"] == 4
         assert TestSuite.objects.count() == 1, "Idempotent replay created a duplicate report"
         assert set(EvaluationGradeResult.objects.filter(item_result__execution=original).values_list("grader_key", flat=True)) == {"exact_match", "contains"}
@@ -150,7 +150,7 @@ def main():
         assert not cancelled.attempts
 
         from src.apps.evaluation.presenters import execution_record, result_record, case_record
-        from src.apps.evaluation.services.assets import create_case, update_case, set_case_status, ensure_dataset
+        from src.apps.evaluation.services.assets.assets import create_case, update_case, set_case_status, ensure_dataset
         from src.apps.evaluation.selectors.assets import datasets, get_dataset
         assert execution_record(original)["status"] == "completed"
         projection = result_record(original.item_results.prefetch_related("grade_results").first())
@@ -198,8 +198,8 @@ def main():
         ai_case = EvaluationCaseService.save(values={"name": "独立 AI 验证", "project_product": product,
             "dataset_version": version, "config": ai_config, "status": "enabled"})
         with patch.object(EvaluationAiProfileService, "profiles", return_value=profiles), \
-             patch("src.apps.evaluation.services.ai.AiService.load_config", side_effect=AssertionError("Default AI must not be read")), \
-             patch("src.apps.evaluation.services.ai.AiService.json_chat", side_effect=ai_chat):
+             patch("src.apps.evaluation.services.model.ai.AiService.load_config", side_effect=AssertionError("Default AI must not be read")), \
+             patch("src.apps.evaluation.services.model.ai.AiService.json_chat", side_effect=ai_chat):
             ai_execution = EvaluationCaseExecutionService.create({"case_id": ai_case.id, "test_env": 1}, user)
             EvaluationCaseExecutionService.execute(ai_execution.id)
             ai_execution.refresh_from_db()
@@ -208,7 +208,7 @@ def main():
             assert set(calls) == {"answer", "judge", "summary"}, calls
             summary_report = TestSuiteDetails.objects.get(pk=ai_execution.report_detail_id)
             assert summary_report.summary_data["children"]["summary"]["ai_summary"]["model"]["profile_id"] == "summary"
-            with patch("src.apps.evaluation.services.summary.json_chat", side_effect=ConnectionError("summary endpoint unavailable")):
+            with patch("src.apps.evaluation.services.reporting.summary.json_chat", side_effect=ConnectionError("summary endpoint unavailable")):
                 EvaluationCaseExecutionService.aggregate(ai_execution)
             assert ai_execution.verdict == "passed" and ai_execution.summary["ai_summary"]["status"] == "failed"
         from src.apps.evaluation.tests.workflow_flow import verify_workflow_flow

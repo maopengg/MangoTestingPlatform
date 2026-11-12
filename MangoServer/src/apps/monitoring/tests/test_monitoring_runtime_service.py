@@ -7,7 +7,7 @@ from pathlib import Path
 from django.test import override_settings
 
 from src.apps.monitoring.enums import MonitoringTaskStatusEnum
-from src.apps.monitoring.services.runner import MonitoringTaskRunner
+from src.apps.monitoring.services.execution.runner import MonitoringTaskRunner
 from src.processes.monitoring.runner import MonitoringRuntimeService
 
 
@@ -46,8 +46,8 @@ class MonitoringRuntimeServiceTest(TestCase):
                 worker = MonitoringTaskRunner()
                 with override_settings(BASE_DIR=directory, MONITORING_SCRIPT_DIR=directory + '/scripts',
                                        MONITORING_LOG_DIR=directory + '/logs'), \
-                        mock.patch('src.apps.monitoring.services.runner.subprocess.Popen', side_effect=spawn), \
-                        mock.patch('src.apps.monitoring.services.runner.threading.Thread'):
+                        mock.patch('src.apps.monitoring.services.execution.runner.subprocess.Popen', side_effect=spawn), \
+                        mock.patch('src.apps.monitoring.services.execution.runner.threading.Thread'):
                     worker.start_task(task)
                     self.assertEqual(task.status, MonitoringTaskStatusEnum.RUNNING.value)
                     self.assertEqual(task.pid, 123)
@@ -89,10 +89,10 @@ class MonitoringRuntimeServiceTest(TestCase):
 
         with tempfile.TemporaryDirectory() as directory, \
                 override_settings(BASE_DIR=directory, MONITORING_SCRIPT_DIR=directory + '/scripts', MONITORING_LOG_DIR=directory + '/logs'), \
-                mock.patch('src.apps.monitoring.services.runner.subprocess.Popen', return_value=process), \
-                mock.patch('src.apps.monitoring.services.runner.threading.Thread', side_effect=thread), \
+                mock.patch('src.apps.monitoring.services.execution.runner.subprocess.Popen', return_value=process), \
+                mock.patch('src.apps.monitoring.services.execution.runner.threading.Thread', side_effect=thread), \
                 mock.patch.object(worker, '_append_log', side_effect=[None, PermissionError('example')]), \
-                mock.patch('src.apps.monitoring.services.task_diagnostic.MonitoringTaskDiagnosticService.record') as diagnostic:
+                mock.patch('src.apps.monitoring.services.diagnostics.task_diagnostic.MonitoringTaskDiagnosticService.record') as diagnostic:
             worker.start_task(task)
         self.assertEqual(task.status, MonitoringTaskStatusEnum.FAILED.value)
         self.assertEqual(task.exit_code, 1)

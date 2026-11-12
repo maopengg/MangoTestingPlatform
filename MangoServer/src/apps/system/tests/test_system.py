@@ -16,24 +16,9 @@ from src.apps.auto_api.services.api_case.version import ApiCaseRevisionService
 from src.apps.system.api.views.cache_data import CacheDataCRUD, CacheDataViews, SECRET_VALUE_MASK
 from src.apps.system.exceptions import SystemError
 from src.apps.system.models import CacheData
-from src.apps.system.services.assertion_catalog import AssertionCatalogService
+from src.apps.system.services.catalog.assertion_catalog import AssertionCatalogService
 from src.apps.system.services.socket_link.consumer import UIConsumer
-from src.apps.system.services.system_config import (
-    DATA_FACTORY_VALIDATION_ENVIRONMENTS_KEY,
-    EXECUTOR_API_MAX_RUNTIME_MINUTES_KEY,
-    EXECUTOR_PYTEST_MAX_RUNTIME_MINUTES_KEY,
-    EXECUTOR_TIMEOUT_DEFAULT_MINUTES,
-    EXECUTOR_UI_CASE_MAX_RUNTIME_MINUTES_KEY,
-    EXECUTOR_UI_PAGE_STEP_MAX_RUNTIME_MINUTES_KEY,
-    SQL_SLOW_QUERY_THRESHOLD_SECONDS_DEFAULT,
-    SQL_SLOW_QUERY_THRESHOLD_SECONDS_KEY,
-    TEST_SUITE_STUCK_RESET_MINUTES_DEFAULT,
-    TEST_SUITE_STUCK_RESET_MINUTES_KEY,
-    TEST_SUITE_TIMEOUT_RETRY_COUNT_DEFAULT,
-    TEST_SUITE_TIMEOUT_RETRY_COUNT_KEY,
-    SYSTEM_CONFIG_REGISTRY,
-    SystemConfigService,
-)
+from src.apps.system.services.configuration.system_config import DATA_FACTORY_VALIDATION_ENVIRONMENTS_KEY, EXECUTOR_API_MAX_RUNTIME_MINUTES_KEY, EXECUTOR_PYTEST_MAX_RUNTIME_MINUTES_KEY, EXECUTOR_TIMEOUT_DEFAULT_MINUTES, EXECUTOR_UI_CASE_MAX_RUNTIME_MINUTES_KEY, EXECUTOR_UI_PAGE_STEP_MAX_RUNTIME_MINUTES_KEY, SQL_SLOW_QUERY_THRESHOLD_SECONDS_DEFAULT, SQL_SLOW_QUERY_THRESHOLD_SECONDS_KEY, TEST_SUITE_STUCK_RESET_MINUTES_DEFAULT, TEST_SUITE_STUCK_RESET_MINUTES_KEY, TEST_SUITE_TIMEOUT_RETRY_COUNT_DEFAULT, TEST_SUITE_TIMEOUT_RETRY_COUNT_KEY, SYSTEM_CONFIG_REGISTRY, SystemConfigService
 from src.apps.task_center.api.serializers.tasks import TasksSerializers
 from src.apps.task_center.services.selection.api_case_binding import ApiCaseTaskBindingService
 from src.apps.task_center.services.selection.api_concurrency import ApiConcurrencyService
@@ -47,9 +32,9 @@ from src.apps.test_center.models import (
     ExecutionResult,
     TestSuiteDetails,
 )
-from src.apps.test_center.services.execution_artifact import ExecutionArtifactService
-from src.apps.test_center.services.save_minio import SaveMinio
-from src.apps.test_center.services.test_suite.retry import TestSuiteRetryService
+from src.apps.test_center.services.storage.execution_artifact import ExecutionArtifactService
+from src.apps.test_center.services.storage.save_minio import SaveMinio
+from src.apps.test_center.services.reporting.test_suite.retry import TestSuiteRetryService
 from src.apps.user.models import User
 
 
@@ -103,7 +88,7 @@ class ExecutionArtifactServiceTests(SimpleTestCase):
 
         self.assertEqual(path, 'auto_test_report/test/uitest/videos/failure.mp4')
 
-    @patch('src.apps.test_center.services.execution_artifact.build_public_file_url')
+    @patch('src.apps.test_center.services.storage.execution_artifact.build_public_file_url')
     def test_public_url_uses_storage_backend(self, build_url):
         build_url.return_value = 'https://signed.example/failure.jpg'
 
@@ -114,7 +99,7 @@ class ExecutionArtifactServiceTests(SimpleTestCase):
         self.assertEqual(result, 'https://signed.example/failure.jpg')
         build_url.assert_called_once_with('auto_test_report/test/screenshot/failure.jpg')
 
-    @patch('src.apps.test_center.services.execution_artifact.build_public_file_url')
+    @patch('src.apps.test_center.services.storage.execution_artifact.build_public_file_url')
     def test_public_url_strips_local_media_prefix(self, build_url):
         build_url.return_value = '/mango-file/uitest/screenshot/failure.jpg'
 
@@ -167,7 +152,7 @@ class ObjectStorageFailureReasonTests(SimpleTestCase):
         MINIO_STORAGE_USE_VIRTUAL_HOST_STYLE=False,
         MINIO_STORAGE_MEDIA_BUCKET_NAME='regression-report',
     )
-    @patch('src.apps.test_center.services.save_minio.Minio')
+    @patch('src.apps.test_center.services.storage.save_minio.Minio')
     def test_artifact_upload_does_not_change_bucket_lifecycle(self, minio_class):
         uploaded_file = SimpleUploadedFile('failure.jpg', b'image-content')
 
@@ -362,8 +347,8 @@ class SqlExecutionConfigTests(SimpleTestCase):
 
 
 class AssertionCatalogServiceTests(SimpleTestCase):
-    @patch('src.apps.system.services.assertion_catalog.assertion_func_info', [])
-    @patch('src.apps.system.services.assertion_catalog.CacheDataValue.get_cache_value')
+    @patch('src.apps.system.services.catalog.assertion_catalog.assertion_func_info', [])
+    @patch('src.apps.system.services.catalog.assertion_catalog.CacheDataValue.get_cache_value')
     def test_catalog_separates_ui_scopes(self, get_cache_value):
         get_cache_value.return_value = [
             {'value': 'web', 'label': 'Web操作', 'children': []},
@@ -402,8 +387,8 @@ class AssertionCatalogServiceTests(SimpleTestCase):
         self.assertEqual(result[1]['label'], 'Android UI断言')
         self.assertEqual(result[1]['scope'], 'android')
 
-    @patch('src.apps.system.services.assertion_catalog.assertion_func_info', [])
-    @patch('src.apps.system.services.assertion_catalog.CacheDataValue.get_cache_value')
+    @patch('src.apps.system.services.catalog.assertion_catalog.assertion_func_info', [])
+    @patch('src.apps.system.services.catalog.assertion_catalog.CacheDataValue.get_cache_value')
     def test_catalog_marks_mysql_as_runtime_only(self, get_cache_value):
         get_cache_value.return_value = [
             {
@@ -426,8 +411,8 @@ class AssertionCatalogServiceTests(SimpleTestCase):
         self.assertFalse(method['testable'])
         self.assertIn('用例运行时', method['test_disabled_reason'])
 
-    @patch('src.apps.system.services.assertion_catalog.assertion_func_info', [])
-    @patch('src.apps.system.services.assertion_catalog.CacheDataValue.get_cache_value')
+    @patch('src.apps.system.services.catalog.assertion_catalog.assertion_func_info', [])
+    @patch('src.apps.system.services.catalog.assertion_catalog.CacheDataValue.get_cache_value')
     def test_catalog_marks_file_examples_as_placeholders(self, get_cache_value):
         get_cache_value.return_value = [
             {

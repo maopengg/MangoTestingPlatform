@@ -34,18 +34,18 @@
         :reset-key="sidebarResetKey"
         emit-initial-filter
         @filter-change="onSidebarFilterChange"
-        @search="onSearchRefresh"
-        @reset-search="onResetSearch"
+        @search="autoSearch.run"
+        @reset-search="autoSearch.cancel(); onResetSearch(); autoSearch.sync()"
       >
         <template #search>
-          <a-form :model="{}" layout="inline" @keyup.enter="onSearchRefresh">
+          <a-form :model="{}" layout="inline" @keyup.enter="autoSearch.run">
             <a-form-item v-for="item of headerConditionItems" :key="item.key" :label="item.label">
-              <a-input v-if="item.type === 'input'" v-model="item.value" :placeholder="item.placeholder"
-                allow-clear @clear="onSearchRefresh" />
+              <a-input @blur="autoSearch.schedule" @mouseleave="autoSearch.schedule" v-if="item.type === 'input'" v-model="item.value" :placeholder="item.placeholder"
+                allow-clear @clear="autoSearch.schedule" />
               <a-select v-else-if="item.type === 'select'" v-model="item.value" :multiple="item.multiple"
                 :max-tag-count="item.multiple ? 1 : undefined" :options="searchOptions(item.key)"
                 :field-names="fieldNames" :placeholder="item.placeholder" :loading="item.key === 'case_people' && userLoading" allow-clear allow-search
-                @change="onSearchRefresh" />
+                @change="autoSearch.schedule" />
             </a-form-item>
             <a-button v-if="userFailed" type="text" size="small" :loading="userLoading" @click="loadUsers">重试</a-button>
           </a-form>
@@ -304,6 +304,8 @@
 </template>
 
 <script lang="ts" setup>
+  import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
+
 import { reportLoadError } from '@/utils/load-error'
 
   import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, shallowRef, watch } from 'vue'
@@ -573,6 +575,8 @@ import { reportLoadError } from '@/utils/load-error'
   onActivated(() => { active = true; resume() })
   onDeactivated(() => { active = false; pause() })
   onBeforeUnmount(() => { disposed = true; clearPollingTimer(); invalidate(true); if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', visibilityChanged) })
+
+  const autoSearch = useDebouncedSearch(onSearchRefresh, () => conditionItems.map(item => [item.key, item.value]))
 </script>
 <style lang="less" scoped>
 

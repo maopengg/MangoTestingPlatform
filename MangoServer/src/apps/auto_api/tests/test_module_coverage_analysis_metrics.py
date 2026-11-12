@@ -3,11 +3,11 @@ from unittest.mock import MagicMock, patch
 
 from django.test import SimpleTestCase
 
-from src.apps.auto_api.services.module_coverage import ModuleCoverageService
+from src.apps.auto_api.services.coverage.module_coverage import ModuleCoverageService
 from src.interfaces.mcp.tools.api.module_coverage import register_module_coverage_tools
 
 
-BASE = "src.apps.auto_api.services.module_coverage_parts.overview"
+BASE = "src.apps.auto_api.services.coverage.parts.overview"
 
 
 class CoverageAnalysisMetricsTests(SimpleTestCase):

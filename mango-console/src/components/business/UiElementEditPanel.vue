@@ -8,7 +8,7 @@
   >
     <a-spin :loading="loading" class="mango-ui-element-edit-spin">
       
-      <div v-if="saveError" class="mango-ui-element-identity-warning" role="alert">{{ saveError }}</div>
+      <MangoRequestFeedback v-if="saveError" :message="(saveError)" />
       <a-form
         :model="form"
         layout="horizontal"
@@ -77,7 +77,7 @@
             </template>
             <template v-else-if="identityCheck.status === 'error'">
               <a-tag color="red" size="small">校验失败</a-tag>
-              <span>{{ identityCheck.error }}</span>
+              <span data-feedback-kind="validation">{{ identityCheck.error }}</span>
             </template>
             <span v-else-if="identityCheck.status === 'checking'">正在校验页面元素…</span>
             <span v-else-if="identityCheck.status === 'pending'">等待校验名称和分类…</span>
@@ -287,8 +287,7 @@
 </template>
 
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { scaleDensityPixels } from '@/hooks/useDisplayDensity'
   import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
   import { cloneLosslessJson } from '@/utils/lossless-json'
@@ -728,7 +727,7 @@ import { reportLoadError } from '@/utils/load-error'
         visible.value = false
       }
     } catch (error) {
-      if (current()) saveError.value = liveError(error, '元素保存失败，请重试')
+      if (current()) saveError.value = requestFailureMessage(error, liveError(error, '元素保存失败，请重试'))
     } finally {
       loadingRef.value = false
     }

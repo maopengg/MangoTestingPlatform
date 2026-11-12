@@ -6,15 +6,15 @@ from django.test import SimpleTestCase
 from django.utils import timezone
 
 from src.apps.data_factory.models import Database
-from src.apps.data_factory.services.datasource import DataFactoryDatasource
-from src.apps.data_factory.services.datasource_target import DatasourceTargetService
+from src.apps.data_factory.services.datasource.datasource import DataFactoryDatasource
+from src.apps.data_factory.services.datasource.datasource_target import DatasourceTargetService
 from src.apps.test_center.api.serializers.data_source import DataSourceSerializer
 from src.apps.test_center.enums.data_source import (
     DataSourceCategoryEnum,
     DataSourceTypeEnum,
 )
 from src.apps.test_center.exceptions import TestCenterError
-from src.apps.test_center.services.data_source import DataSourceConnectionService
+from src.apps.test_center.services.datasource.data_source import DataSourceConnectionService
 from src.common.exceptions import ErrorDefinition
 
 
@@ -60,7 +60,7 @@ class DataSourceConnectionServiceTests(SimpleTestCase):
     def setUp(self):
         super().setUp()
         for method in ('start', 'finish_success', 'finish_failure'):
-            patcher = patch('src.apps.data_factory.services.sql_execution_audit.SqlExecutionAuditService.' + method)
+            patcher = patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionAuditService.' + method)
             patcher.start()
             self.addCleanup(patcher.stop)
         # 连接诊断测试不访问配置库；重复校验由配置服务专项测试覆盖。
@@ -302,7 +302,7 @@ class DataSourceConnectionServiceTests(SimpleTestCase):
             extra_config={"database": 0, "ssl": False},
         )
 
-        with patch("src.apps.test_center.services.data_source.socket.create_connection", return_value=raw_socket):
+        with patch("src.apps.test_center.services.datasource.data_source.socket.create_connection", return_value=raw_socket):
             result = DataSourceConnectionService.test_connection(data_source)
 
         self.assertTrue(result["connected"])
@@ -326,7 +326,7 @@ class DataSourceConnectionServiceTests(SimpleTestCase):
             extra_config={"scheme": "http", "path_prefix": "", "verify_certs": True},
         )
 
-        with patch("src.apps.test_center.services.data_source.open_elasticsearch_request", return_value=response):
+        with patch("src.apps.test_center.services.datasource.data_source.open_elasticsearch_request", return_value=response):
             result = DataSourceConnectionService.test_connection(data_source)
 
         self.assertTrue(result["connected"])

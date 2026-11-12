@@ -64,8 +64,8 @@ class ManagementHealthTests(SimpleTestCase):
         from django.http import QueryDict
         from rest_framework.test import APIRequestFactory
         from src.apps.user.middleware.permission import MenuActionPermission
-        from src.apps.user.services.permission import PermissionMenuService
-        from src.apps.user.services.http_permission_registry import permission_for_view
+        from src.apps.user.services.authorization.permission import PermissionMenuService
+        from src.apps.user.services.authorization.http_permission_registry import permission_for_view
 
         guest_keys = PermissionMenuService.guest_permission_keys()
         for action in ('overview', 'services', 'queues', 'diagnostics', 'recent-errors'):

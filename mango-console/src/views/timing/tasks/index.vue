@@ -249,7 +249,7 @@
         <div class="mango-task-feedback">
           
           
-          <a-alert v-if="operationError" type="error">{{ operationError }}</a-alert>
+          <MangoRequestFeedback v-if="operationError" :message="(operationError)" />
           <template v-if="activeTab === 'tasks'">
             
           </template>
@@ -460,13 +460,13 @@
     @confirm="onConfirmTrigger"
     @cancel="onCancelTrigger"
   >
-    <template #summary><a-alert v-if="triggerError" type="error">{{ triggerError }}</a-alert></template>
+    <template #summary><MangoRequestFeedback v-if="triggerError" :message="(triggerError)" /></template>
   </TestExecutionModal>
   <a-modal modal-class="mango-simple-form-modal" v-model:visible="retentionEditor.visible" title="报告保留策略" :width="560"
     :mask-closable="false" :closable="!retentionSaving"
     :cancel-button-props="{ disabled: !!retentionSaving }" :ok-loading="!!retentionSaving"
     @before-ok="saveRetentionPolicy" @cancel="closeRetention">
-    <a-alert v-if="retentionError" type="error">{{ retentionError }}</a-alert>
+    <MangoRequestFeedback v-if="retentionError" :message="(retentionError)" />
     <a-form auto-label-width class="mango-simple-form" :model="retentionEditor" layout="horizontal">
       <a-form-item class="mango-simple-form-item" label="任务名称">{{ retentionEditor.record?.name }}</a-form-item>
       <a-form-item class="mango-simple-form-item" label="保留策略">
@@ -486,8 +486,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
 import { usePagination, useRowKey, useRowSelection } from '@/hooks/table'
 import { Message, Modal } from '@arco-design/web-vue'
 import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
@@ -693,7 +692,7 @@ async function onConfirmTrigger(config: { executionName: string; testEnv: number
     taskEditorResponse(await postSystemTriggerManual(id, concurrency, envs)); committed = true
     if (current()) { onCancelTrigger(); Message.success('任务已触发') }
     return true
-  } catch { if (current()) triggerError.value = '任务触发失败，请重试'; return false }
+  } catch (requestFailure) { if (current()) triggerError.value = requestFailureMessage(requestFailure, '任务触发失败，请重试'); return false }
   finally { triggerSaving.value = false; release(id); if (version === triggerVersion) triggerModalRef.value?.setConfirmLoading(false); if (committed) refreshAfterWrite(key) }
 }
 function closeConfirmation() { confirmationVersion++; confirmation?.close(); confirmation = null }
@@ -711,7 +710,7 @@ function onDelete(record: TaskListRecord) {
         taskEditorResponse(await deleteSystemTasks(id)); committed = true
         if (!current()) return false
         closeConfirmation(); Message.success('任务已删除'); return true
-      } catch { if (current()) operationError.value = '任务删除失败，请重试'; return false }
+      } catch (requestFailure) { if (current()) operationError.value = requestFailureMessage(requestFailure, '任务删除失败，请重试'); return false }
       finally { release(id); deletingIds.value = deletingIds.value.filter(value => value !== String(id)); if (committed) refreshAfterWrite(key) }
     },
   })
@@ -732,7 +731,7 @@ async function saveRetentionPolicy() {
     taskEditorResponse(await putSystemTasks({ id, report_retention_policy: value })); committed = true
     if (!current()) return false
     replaceTaskRow(id, { report_retention_policy: value }); closeRetention(); Message.success('报告保留策略已保存，下次执行生效'); return true
-  } catch { if (current()) retentionError.value = '保留策略保存失败，请重试'; return false }
+  } catch (requestFailure) { if (current()) retentionError.value = requestFailureMessage(requestFailure, '保留策略保存失败，请重试'); return false }
   finally { release(id); retentionSaving.value = false; if (committed) refreshAfterWrite(key) }
 }
 function replaceTaskRow(id: TaskEditorId, changes: Partial<TaskListRecord>) { rows.value = rows.value.map(row => String(row.id) === String(id) ? { ...row, ...changes } : row) }
@@ -756,7 +755,7 @@ async function onModifyStatus(newValue: unknown, record: TaskListRecord, field: 
     const changes: Partial<TaskListRecord> = { [field]: effective }
     if (field === 'is_notice' && nextValue === 0) changes.fail_notice = 0
     replaceTaskRow(id, changes); Message.success('任务状态已更新'); return true
-  } catch { if (valid()) operationError.value = committed ? '任务状态已提交，但返回结果异常，请刷新核对' : '任务状态修改失败，请重试'; return false }
+  } catch (requestFailure) { if (valid()) operationError.value = requestFailureMessage(requestFailure, committed ? '任务状态已提交，但返回结果异常，请刷新核对' : '任务状态修改失败，请重试'); return false }
   finally { release(id); statusSavingIds.value = statusSavingIds.value.filter(value => value !== String(id)); if (committed) refreshAfterWrite(key) }
 }
 function refreshAfterWrite(key: string) { if (key === identity() && available() && activeTab.value === 'tasks') void doRefresh() }

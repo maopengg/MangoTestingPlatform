@@ -7,9 +7,6 @@
   >
     <template #header>
       <TableHeader title="执行报告">
-        <template #header-extra>
-          <a-button v-if="groupExportId !== null" size="small" @click="openOfflineExport('group', groupExportId)">导出任务组 HTML</a-button>
-        </template>
       </TableHeader>
     </template>
 
@@ -106,6 +103,7 @@
             <section class="report-chart-card status-card mango-section-card">
               <Title title="执行报告结果分布" />
               <StatusChart
+                unit="份"
                 :success="charts.counts.success"
                 :fail="charts.counts.fail"
                 :warning="charts.counts.warning"
@@ -324,7 +322,8 @@
           data-testid="qa-views-report-select-请选择通知组"
         />
         <template v-if="noticeState.error" #extra>
-          {{ noticeState.error }} <a-button size="small" :loading="noticeState.loading" @click="loadNoticeOptions(noticeState.record?.project_product?.id ?? null)">重试</a-button>
+          <MangoRequestFeedback :message="noticeState.error" />
+          <a-button size="small" :loading="noticeState.loading" @click="loadNoticeOptions(noticeState.record?.project_product?.id ?? null)">重试</a-button>
         </template>
       </a-form-item>
     </a-form>

@@ -94,12 +94,6 @@ export const tableColumns = useTableColumn([
     align: 'left',
     width: 170,
   },
-  {
-    title: '最近登录时间',
-    key: 'last_login_time',
-    dataIndex: 'last_login_time',
-    width: 180,
-  },
   { ...updateUserColumn(), key: 'update_user' },
   { ...updateTimeColumn(), key: 'update_time' },
   {

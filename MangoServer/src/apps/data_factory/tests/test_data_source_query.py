@@ -8,7 +8,7 @@ from django.test import SimpleTestCase
 from django.utils import timezone
 
 from src.apps.data_factory.models import Database
-from src.apps.data_factory.services.datasource_target import DatasourceTargetService
+from src.apps.data_factory.services.datasource.datasource_target import DatasourceTargetService
 
 
 def query_target(**values):
@@ -17,7 +17,7 @@ def query_target(**values):
     return DatasourceTargetService.build(Database(id=1, update_time=timezone.now(), **values), redis_db=redis_db)
 
 
-from src.apps.data_factory.services.data_source_query import DataFactoryDatasourceQuery
+from src.apps.data_factory.services.datasource.data_source_query import DataFactoryDatasourceQuery
 from src.apps.test_center.enums.data_source import (
     DataSourceCategoryEnum,
     DataSourceTypeEnum,
@@ -47,13 +47,9 @@ class _RedisConnection:
 
 class DataFactoryDatasourceQueryTests(SimpleTestCase):
     def setUp(self):
-        governor = patch('src.apps.data_factory.services.datasource_governor.DatasourceGovernorService.operation',
-                         side_effect=lambda target, **kwargs: nullcontext())
-        governor.start()
-        self.addCleanup(governor.stop)
         # 协议测试隔离审计持久化；审计接入、脱敏与失败闭环由独立测试覆盖。
         for method in ('start', 'finish_success', 'finish_failure'):
-            patcher = patch('src.apps.data_factory.services.sql_execution_audit.SqlExecutionAuditService.' + method)
+            patcher = patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionAuditService.' + method)
             patcher.start()
             self.addCleanup(patcher.stop)
 
@@ -68,7 +64,7 @@ class DataFactoryDatasourceQueryTests(SimpleTestCase):
 
         self.assertIn('未开启读取权限', str(error.exception))
 
-    @patch('src.apps.data_factory.services.data_source_query.DataFactorySqlQuery.query')
+    @patch('src.apps.data_factory.services.datasource.data_source_query.DataFactorySqlQuery.query')
     def test_relational_query_keeps_existing_sql_query_implementation(self, sql_query):
         sql_query.return_value = {'columns': ['id'], 'rows': [{'id': 1}]}
         data_source = query_target(
@@ -117,7 +113,7 @@ class DataFactoryDatasourceQueryTests(SimpleTestCase):
         target = query_target(source_category=DataSourceCategoryEnum.CACHE.value,
                               db_type=DataSourceTypeEnum.REDIS.value,
                               host='redis.example.com', port=6379)
-        with patch('src.apps.data_factory.services.protocol_pool.ProtocolPoolRegistry.borrow', side_effect=borrow):
+        with patch('src.apps.data_factory.services.pool.protocol_pool.ProtocolPoolRegistry.borrow', side_effect=borrow):
             result = DataFactoryDatasourceQuery.execute_redis(
                 target, 'SET AUTO_example value NX EX 60', allow_query=True, allow_write=True)
         self.assertEqual(result['result'], 'OK')
@@ -139,7 +135,7 @@ class DataFactoryDatasourceQueryTests(SimpleTestCase):
         )
 
         with patch(
-                'src.apps.data_factory.services.protocol_pool.ProtocolPoolRegistry.borrow',
+                'src.apps.data_factory.services.pool.protocol_pool.ProtocolPoolRegistry.borrow',
                 return_value=nullcontext(client),
         ):
             result = DataFactoryDatasourceQuery.query_redis(data_source, 'HMGET user:1 name age')
@@ -155,7 +151,7 @@ class DataFactoryDatasourceQueryTests(SimpleTestCase):
         target = query_target(source_category=DataSourceCategoryEnum.CACHE.value,
                               db_type=DataSourceTypeEnum.REDIS.value, host='redis.example.com', port=6379,
                               extra_config={'database': 0})
-        with patch('src.apps.data_factory.services.protocol_pool.ProtocolPoolRegistry.borrow', return_value=nullcontext(client)):
+        with patch('src.apps.data_factory.services.pool.protocol_pool.ProtocolPoolRegistry.borrow', return_value=nullcontext(client)):
             result = DataFactoryDatasourceQuery.query_redis(target, 'HGETALL AUTO_hash')
         self.assertEqual(result['result'], ['name', 'AUTO_example', 'state', 'ready'])
         connection.send_command.assert_called_once_with('HGETALL', 'AUTO_hash')
@@ -175,7 +171,7 @@ class DataFactoryDatasourceQueryTests(SimpleTestCase):
         )
 
         with patch(
-                'src.apps.data_factory.services.protocol_pool.ProtocolPoolRegistry.borrow',
+                'src.apps.data_factory.services.pool.protocol_pool.ProtocolPoolRegistry.borrow',
                 return_value=nullcontext(client),
         ), self.assertRaises(Exception) as error:
             DataFactoryDatasourceQuery.query_redis(data_source, 'HGET user:1 name')
@@ -198,7 +194,7 @@ class DataFactoryDatasourceQueryTests(SimpleTestCase):
         )
 
         with patch(
-                'src.apps.data_factory.services.data_source_query.open_elasticsearch_request',
+                'src.apps.data_factory.services.datasource.data_source_query.open_elasticsearch_request',
                 return_value=response,
         ) as urlopen:
             result = DataFactoryDatasourceQuery.query_elasticsearch(
@@ -250,7 +246,7 @@ class DataFactoryDatasourceQueryTests(SimpleTestCase):
         )
 
         with patch(
-                'src.apps.data_factory.services.data_source_query.open_elasticsearch_request',
+                'src.apps.data_factory.services.datasource.data_source_query.open_elasticsearch_request',
                 side_effect=http_error,
         ), self.assertRaises(Exception) as error:
             DataFactoryDatasourceQuery.query_elasticsearch(

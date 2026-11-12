@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from src.apps.auto_ui.models import Page, PageElement, PageSteps, PageStepsDetailed, UiCase, UiCaseStepsDetailed
 from src.apps.auto_ui.selectors.querysets import UiModelQuerySelector
-from src.apps.auto_ui.services.asset_deletion import UiAssetDeletionService
+from src.apps.auto_ui.services.assets.asset_deletion import UiAssetDeletionService
 from src.interfaces.mcp.common import validate_dangerous_action_confirmation
 from .helpers import _delete_preview
 from .helpers import (

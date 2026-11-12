@@ -4,7 +4,7 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 
 from src.apps.auto_ui.exceptions import AutoUiError
-from src.apps.auto_ui.services.executor_slot import ExecutorSlotLeaseService
+from src.apps.auto_ui.services.execution.executor_slot import ExecutorSlotLeaseService
 
 
 class ExecutorSlotLeaseServiceTest(SimpleTestCase):
@@ -42,12 +42,12 @@ class ExecutorSlotLeaseServiceTest(SimpleTestCase):
 
     def test_idle_slot_expires_after_five_minutes(self):
         with patch(
-                "src.apps.auto_ui.services.executor_slot.time.time",
+                "src.apps.auto_ui.services.execution.executor_slot.time.time",
                 return_value=1000,
         ):
             first = self.acquire(1)
         with patch(
-                "src.apps.auto_ui.services.executor_slot.time.time",
+                "src.apps.auto_ui.services.execution.executor_slot.time.time",
                 return_value=1301,
         ):
             second = self.acquire(2)
@@ -57,7 +57,7 @@ class ExecutorSlotLeaseServiceTest(SimpleTestCase):
 
     def test_running_or_live_slot_is_not_removed_as_idle(self):
         with patch(
-                "src.apps.auto_ui.services.executor_slot.time.time",
+                "src.apps.auto_ui.services.execution.executor_slot.time.time",
                 return_value=1000,
         ):
             running = self.acquire(1)
@@ -73,7 +73,7 @@ class ExecutorSlotLeaseServiceTest(SimpleTestCase):
                 True,
             )
         with patch(
-                "src.apps.auto_ui.services.executor_slot.time.time",
+                "src.apps.auto_ui.services.execution.executor_slot.time.time",
                 return_value=1600,
         ):
             occupancy = ExecutorSlotLeaseService.occupancy(self.connection)
@@ -82,12 +82,12 @@ class ExecutorSlotLeaseServiceTest(SimpleTestCase):
 
     def test_activity_refreshes_idle_deadline(self):
         with patch(
-                "src.apps.auto_ui.services.executor_slot.time.time",
+                "src.apps.auto_ui.services.execution.executor_slot.time.time",
                 return_value=1000,
         ):
             lease = self.acquire(1)
         with patch(
-                "src.apps.auto_ui.services.executor_slot.time.time",
+                "src.apps.auto_ui.services.execution.executor_slot.time.time",
                 return_value=1200,
         ):
             touched = ExecutorSlotLeaseService.touch(

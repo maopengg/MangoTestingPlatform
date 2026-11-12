@@ -16,7 +16,7 @@ from src.apps.auto_ui.services.live_stream.workspace_service import (
     LiveWorkspaceRecord,
     LiveWorkspaceService,
 )
-from src.apps.auto_ui.services.test_case.test_case import TestCase as UiTestCase
+from src.apps.auto_ui.services.execution.cases.test_case import TestCase as UiTestCase
 from src.apps.system.enums import ClientTypeEnum, SocketEnum
 from src.processes.realtime.asgi import application as realtime_application
 from src.processes.realtime.consumer import RealtimeConsumer

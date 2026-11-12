@@ -11,7 +11,7 @@ from src.apps.data_factory.api.views.template import DataFactoryTemplateCRUD
 from src.apps.data_factory.exceptions import DATA_FACTORY_TEMPLATE_DELETE_REFERENCED, DataFactoryError
 from src.apps.data_factory.models import DataFactoryTemplate
 from src.apps.data_factory.models.template import DataFactoryTemplateQuerySet
-from src.apps.data_factory.services.template_deletion import DataFactoryTemplateDeletionService as Deletion
+from src.apps.data_factory.services.assets.template_deletion import DataFactoryTemplateDeletionService as Deletion
 from src.interfaces.mcp.tools.data_factory.template import register_template_tools
 
 
@@ -28,9 +28,9 @@ class TemplateDeletionTests(SimpleTestCase):
         item_query = Mock()
         item_query.count.return_value = items
         with (
-            patch('src.apps.data_factory.services.template_deletion.DataFactoryCaseConfig.objects') as manager,
-            patch('src.apps.data_factory.services.template_deletion.DataFactoryTemplateItem.objects') as parent_manager,
-            patch('src.apps.data_factory.services.template_deletion.DataFactoryExecutionItem.objects') as item_manager,
+            patch('src.apps.data_factory.services.assets.template_deletion.DataFactoryCaseConfig.objects') as manager,
+            patch('src.apps.data_factory.services.assets.template_deletion.DataFactoryTemplateItem.objects') as parent_manager,
+            patch('src.apps.data_factory.services.assets.template_deletion.DataFactoryExecutionItem.objects') as item_manager,
             patch.object(ApiQuerySelector, 'data_factory_template_release_references', return_value=releases or []),
         ):
             manager.using.return_value.filter.return_value = query

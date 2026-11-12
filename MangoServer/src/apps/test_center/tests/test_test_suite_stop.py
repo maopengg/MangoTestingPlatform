@@ -6,9 +6,9 @@ from mangotools.enums import TaskEnum
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.test_center.exceptions import TestCenterError
 from src.apps.test_center.models import Project, ProjectProduct, TestSuite, TestSuiteDetails
-from src.apps.test_center.services.test_suite.stop import TestSuiteStopService
-from src.apps.test_center.services.test_suite.summary import TestSuiteSummaryService
-from src.apps.test_center.services.test_suite.update_test_suite import UpdateTestSuite
+from src.apps.test_center.services.reporting.test_suite.stop import TestSuiteStopService
+from src.apps.test_center.services.reporting.test_suite.summary import TestSuiteSummaryService
+from src.apps.test_center.services.reporting.test_suite.update_test_suite import UpdateTestSuite
 from src.apps.user.models import User
 
 

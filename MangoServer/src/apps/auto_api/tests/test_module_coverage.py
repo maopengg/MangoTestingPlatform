@@ -32,10 +32,10 @@ from src.apps.auto_api.schemas.module_coverage import (
     ModuleCoverageCaseUploadItem,
     ModuleCoverageInterfacePayload,
 )
-from src.apps.auto_api.services.module_coverage import ModuleCoverageService
-from src.apps.auto_api.services.module_coverage_diff import build_structured_diff
+from src.apps.auto_api.services.coverage.module_coverage import ModuleCoverageService
+from src.apps.auto_api.services.coverage.module_coverage_diff import build_structured_diff
 from src.apps.test_center.models import ProductModule, Project, ProjectProduct
-from src.apps.test_center.services.execution_result import ExecutionResultService
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
 from src.apps.user.models import User
 from src.interfaces.mcp.authentication import (
     MangoAuthorizationMiddleware,

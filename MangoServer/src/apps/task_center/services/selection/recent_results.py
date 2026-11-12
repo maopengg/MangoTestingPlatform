@@ -6,7 +6,7 @@ from mangotools.enums import TaskEnum
 from src.apps.task_center.constants import RECENT_EXECUTION_LIMIT
 from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.apps.test_center.models import TestSuite, TestSuiteDetails
-from src.apps.test_center.services.test_suite.summary import TestSuiteSummaryService
+from src.apps.test_center.services.reporting.test_suite.summary import TestSuiteSummaryService
 
 
 class TaskRecentResultService:

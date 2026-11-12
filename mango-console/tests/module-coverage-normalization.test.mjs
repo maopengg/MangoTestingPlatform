@@ -4,9 +4,79 @@ import path from 'node:path'
 import { readFileSync, readdirSync } from 'node:fs'
 import { reactive, ref } from 'vue'
 import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
+import { baseParse } from '@vue/compiler-dom'
+import { elements } from '../scripts/simple-modal-layout-audit.mjs'
 import { harness, deferred, flush } from './helpers/case-details-harness.mjs'
 import { coveragePage } from './helpers/coverage-harness.mjs'
 const base = path.resolve('src/views/apitest/module-coverage')
+
+test('all shared search inputs and selectors use the same automatic search events as other list pages', () => {
+  const { descriptor } = parse(readFileSync(path.join(base, 'index.vue'), 'utf8'))
+  const nodes = elements(baseParse(descriptor.template.content))
+  const controls = nodes.filter(node => ['a-input', 'a-select', 'a-input-number'].includes(node.tag))
+  const event = (node, name) => node.props.find(prop => prop.type === 7 && prop.name === 'on' && prop.arg?.content === name)?.exp?.content
+  assert.equal(controls.filter(node => node.tag === 'a-select').length, 10)
+  assert.equal(controls.filter(node => node.tag === 'a-input').length, 6)
+  for (const control of controls) {
+    const expected = control.tag === 'a-input' ? ['blur', 'clear', 'mouseleave'] : control.tag === 'a-input-number' ? ['blur', 'mouseleave'] : ['change']
+    for (const name of expected) assert.equal(event(control, name), 'autoSearch.schedule', `${control.loc.source}: ${name}`)
+  }
+})
+
+for (const [tab, endpoint] of [['overview', 'getCoverageOverview'], ['interfaces', 'getCoverageInterfaces'], ['cases', 'getCoverageCases'], ['scans', 'getCoverageScans']]) {
+  test(`${tab} searches the latest text filters and resets pagination; clearing and reset refetch correctly`, async t => {
+    const requests = []
+    const state = coveragePage({ [endpoint]: async params => { requests.push(params); return tab === 'overview' ? { data: { modules: [] } } : pageResult([]) } })
+    t.after(state.close)
+    state.activeTab.value = tab
+    Object.assign(state.filters, { repository_key: ' example-repository ', branch: ' dev ' })
+    state.pagination.page = 5
+    state.search(); await flush()
+    assert.equal(requests.length, 1)
+    assert.equal(requests[0].repository_key, 'example-repository')
+    assert.equal(requests[0].branch, 'dev')
+    assert.equal(state.pagination.page, 1)
+    assert.equal(requests[0].page, tab === 'overview' ? undefined : 1)
+    state.filters.branch = ''
+    state.search(); await flush()
+    assert.equal(requests.length, 2); assert.equal('branch' in requests[1], false)
+    state.resetFilters(); await flush()
+    assert.equal(requests.length, 3); assert.equal('repository_key' in requests[2], false)
+  })
+}
+
+test('interface multi-select changes and clearing send current collection filters', async t => {
+  const requests = [], state = coveragePage({ getCoverageInterfaces: async params => { requests.push(params); return pageResult([]) } })
+  t.after(state.close)
+  state.activeTab.value = 'interfaces'
+  state.filters.analysis_statuses = ['excluded']
+  state.search(); await flush()
+  assert.equal(requests[0].analysis_status__in, 'excluded')
+  state.filters.analysis_statuses = []
+  state.search(); await flush()
+  assert.equal('analysis_status__in' in requests[1], false)
+})
+
+test('overview module search and progress selections filter immediately and reset local pagination', async t => {
+  const previousWindow = globalThis.window
+  globalThis.window = { removeEventListener() {} }
+  const pagination = reactive({ page: 3, pageSize: 20, total: 0, setTotalSize(total) { this.total = total } })
+  const state = harness('CoverageOverview', 'keyword,gapFilter,filtered,visibleModules,pagination', {
+    base,
+    props: { loading: false, error: false, data: { modules: [
+      { id: 1, project_name: '示例', product_name: 'WEB', full_path: '订单/详情', is_leaf: true, inventory_completed: false },
+      { id: 2, project_name: '示例', product_name: 'WEB', full_path: '用户/详情', is_leaf: true, inventory_completed: true },
+    ], summary: {} } },
+    modules: { 'echarts/core': { use() {}, dispose() {} }, 'echarts/components': { TitleComponent: {} }, '@/hooks/useEcharts': { default() {} }, '@/hooks/table': { usePagination: () => pagination } },
+  })
+  t.after(() => { state.close(); globalThis.window = previousWindow })
+  state.keyword.value = '订单'; await flush()
+  assert.deepEqual(state.filtered.value.map(row => row.id), [1]); assert.equal(pagination.page, 1)
+  pagination.page = 2; state.keyword.value = ''; state.gapFilter.value = 'scan'; await flush()
+  assert.deepEqual(state.visibleModules.value.map(row => row.id), [1]); assert.equal(pagination.page, 1)
+  state.gapFilter.value = 'all'; await flush()
+  assert.equal(state.filtered.value.length, 2)
+})
 function panel(name, bindings, api = {}, options = {}) {
   return harness(name, bindings, {
     base,

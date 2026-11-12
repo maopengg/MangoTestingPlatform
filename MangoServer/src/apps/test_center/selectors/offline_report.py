@@ -5,7 +5,7 @@ from src.apps.task_center.selectors.querysets import ScheduleFireQuerySelector
 from src.apps.test_center.enums.report_delivery import ReportSourceEnum
 from src.apps.test_center.exceptions import REPORT_ARTIFACT_INVALID, TestCenterError
 from src.apps.test_center.models import TestSuite
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 
 
 class OfflineReportSelector:

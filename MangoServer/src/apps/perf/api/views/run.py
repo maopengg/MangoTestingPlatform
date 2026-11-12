@@ -21,7 +21,8 @@ from src.apps.perf.models import (
     PerfBaseline, PerfRequestSummary, PerfRun, PerfRunError, PerfRunEvent, PerfRunNode,
 )
 from src.apps.perf.services import PerfExecutionService, PerfFinalizeService, PerfMetricService, PerfRealtimeService
-from src.apps.test_center.services.execution_artifact import ExecutionArtifactService
+from src.apps.perf.services.reporting.baseline import PerfBaselineService
+from src.apps.test_center.services.storage.execution_artifact import ExecutionArtifactService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -50,6 +51,7 @@ class PerfRunViews(ViewSet):
 
     @error_response("system")
     def retrieve(self, request: Request, pk=None):
+        """获取性能测试运行记录详情"""
         run = self._get(request, pk)
         data = PerfRunListSerializer(run).data
         data["summary"] = run.summary
@@ -57,6 +59,7 @@ class PerfRunViews(ViewSet):
 
     @error_response("system")
     def overview(self, request: Request, pk=None):
+        """获取性能测试运行记录概览"""
         run = self._get(request, pk)
         return ResponseData.success(RESPONSE_MSG_0001, {
             "id": run.id, "name": run.name, "status": run.status, "verdict": run.verdict,
@@ -78,6 +81,7 @@ class PerfRunViews(ViewSet):
 
     @error_response("system")
     def metrics(self, request: Request, pk=None):
+        """获取性能测试运行记录指标"""
         self._get(request, pk)
         data = PerfMetricService.query(
             run_id=int(pk), cursor=request.query_params.get("cursor"),
@@ -91,17 +95,20 @@ class PerfRunViews(ViewSet):
 
     @error_response("system")
     def requests(self, request, pk=None):
+        """获取性能测试请求统计"""
         self._get(request, pk)
         return ResponseData.success(RESPONSE_MSG_0001, self._rows(PerfRequestSummary, pk, [field.name for field in
                                                                                            PerfRequestSummary._meta.fields]))
 
     @error_response("system")
     def stages(self, request, pk=None):
+        """获取性能测试阶段统计"""
         run = self._get(request, pk)
         return ResponseData.success(RESPONSE_MSG_0001, (run.load_summary or {}).get("items", []))
 
     @error_response("system")
     def nodes(self, request, pk=None):
+        """获取性能测试节点信息"""
         self._get(request, pk)
         fields = [field.name for field in PerfRunNode._meta.fields if
                   field.name not in {"allocated_load", "result_summary", "resource_summary"}]
@@ -117,6 +124,7 @@ class PerfRunViews(ViewSet):
 
     @error_response("system")
     def capture_download(self, request, pk=None, node_id=None):
+        """下载性能测试采集文件"""
         self._get(request, pk)
         node = PerfRunNode.objects.filter(id=node_id, run_id=pk).only("result_summary").first()
         capture = (node.result_summary or {}).get("capture", {}) if node else {}
@@ -135,6 +143,7 @@ class PerfRunViews(ViewSet):
 
     @error_response("system")
     def errors(self, request, pk=None):
+        """获取性能测试运行记录错误信息"""
         self._get(request, pk)
         rows = list(PerfRunError.objects.filter(run_id=pk).order_by("-count"))
         data = [{
@@ -150,16 +159,19 @@ class PerfRunViews(ViewSet):
 
     @error_response("system")
     def thresholds(self, request, pk=None):
+        """获取性能测试阈值判定"""
         run = self._get(request, pk)
         return ResponseData.success(RESPONSE_MSG_0001, (run.performance_goal_result or {}).get("items", []))
 
     @error_response("system")
     def validity(self, request, pk=None):
+        """获取性能测试结果有效性信息"""
         run = self._get(request, pk)
         return ResponseData.success(RESPONSE_MSG_0001, run.validity_results or [])
 
     @error_response("system")
     def events(self, request, pk=None):
+        """获取性能测试运行事件"""
         self._get(request, pk)
         after_id = int(request.query_params.get("after_id", 0))
         run_ids = [int(pk)]
@@ -169,6 +181,7 @@ class PerfRunViews(ViewSet):
 
     @error_response("system")
     def snapshot(self, request, pk=None):
+        """获取性能测试运行配置快照"""
         run = self._get(request, pk)
         return ResponseData.success(RESPONSE_MSG_0001, {
             "snapshot_hash": run.snapshot_hash,
@@ -177,6 +190,7 @@ class PerfRunViews(ViewSet):
 
     @error_response("system")
     def export(self, request, pk=None):
+        """导出性能测试运行报告"""
         run = self._get(request, pk)
         report = {
             "schema_version": 1,
@@ -208,6 +222,7 @@ class PerfRunViews(ViewSet):
 
     @error_response("system")
     def rerun(self, request, pk=None):
+        """重新执行性能测试运行配置"""
         source = self._get(request, pk)
         if source.test_env == 2 and request.data.get("production_load_confirmed") is not True:
             raise PerfError(PERF_PERF_INVALID)
@@ -228,38 +243,37 @@ class PerfRunViews(ViewSet):
 
     @error_response("system")
     def stop(self, request, pk=None):
+        """停止性能测试运行记录"""
         self._get(request, pk)
         run = PerfExecutionService.request_stop(int(pk), cancel=False)
         return ResponseData.success(RESPONSE_MSG_0082, {"id": run.id, "status": run.status})
 
     @error_response("system")
     def cancel(self, request, pk=None):
+        """取消性能测试运行记录"""
         self._get(request, pk)
         run = PerfExecutionService.request_stop(int(pk), cancel=True)
         return ResponseData.success(RESPONSE_MSG_0082, {"id": run.id, "status": run.status})
 
     @error_response("system")
     def finalize(self, request, pk=None):
+        """结算性能测试运行结果"""
         self._get(request, pk)
         run = PerfFinalizeService.finalize(int(pk))
         return ResponseData.success(RESPONSE_MSG_0082, {"id": run.id, "status": run.status, "verdict": run.verdict})
 
     @error_response("system")
     def set_baseline(self, request, pk=None):
+        """设置性能测试对比基线"""
         run = self._get(request, pk)
-        if not run.scenario_id:
-            raise PerfError(PERF_PERF_NOT_FOUND)
-        PerfBaseline.objects.filter(scenario=run.scenario, environment_key=str(run.test_env), engine=run.engine,
-                                    active=True).update(active=False)
-        baseline = PerfBaseline.objects.create(
-            scenario=run.scenario, run=run, name=request.data.get("name") or run.name,
-            environment_key=str(run.test_env), engine=run.engine, snapshot_hash=run.snapshot_hash,
-            created_by=request_user(request),
+        baseline = PerfBaselineService.set_baseline(
+            run, name=request.data.get("name"), created_by=request_user(request),
         )
         return ResponseData.success(RESPONSE_MSG_0002, {"id": baseline.id})
 
     @error_response("system")
     def comparison(self, request, pk=None):
+        """获取性能测试基线对比结果"""
         run = self._get(request, pk)
         baseline_run_id = request.query_params.get("baseline_run_id")
         if baseline_run_id:
@@ -289,6 +303,7 @@ class PerfRunViews(ViewSet):
 
     @error_response("system")
     def subscription(self, request, pk=None):
+        """订阅或取消订阅性能测试实时更新"""
         self._get(request, pk)
         user = request_user(request)
         if request.method == "DELETE":

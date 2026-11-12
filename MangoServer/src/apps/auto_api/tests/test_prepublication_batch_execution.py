@@ -7,7 +7,7 @@ from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.services.api_case.version import ApiCaseRevisionService
 from src.apps.auto_api.services.api_case.version_parts import selection
 from src.apps.test_center.enums import TestCaseTypeEnum
-from src.apps.test_center.services.test_suite.retry import TestSuiteRetryService
+from src.apps.test_center.services.reporting.test_suite.retry import TestSuiteRetryService
 
 
 class PrepublicationBatchExecutionTests(SimpleTestCase):
@@ -76,7 +76,7 @@ class PrepublicationBatchExecutionTests(SimpleTestCase):
             api_case_release_id=None, config_checksum='frozen', test_suite=SimpleNamespace(tasks_id=None))
         with patch.object(selection.ApiCaseRevision, 'objects') as manager, \
                 patch.object(ApiCaseRevisionService, 'verify_execution_revision'), \
-                patch('src.apps.test_center.services.test_suite.retry.ApiCaseTaskBindingService.resolve_execution_selection') as published:
+                patch('src.apps.test_center.services.reporting.test_suite.retry.ApiCaseTaskBindingService.resolve_execution_selection') as published:
             manager.filter.return_value.first.return_value = revision
             TestSuiteRetryService.refresh_current_api_release(detail)
         self.assertEqual(detail.api_case_revision_id, 101)

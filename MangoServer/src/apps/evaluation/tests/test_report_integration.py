@@ -4,11 +4,11 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 from mangotools.enums import TaskEnum, TestCaseTypeEnum
 
-from src.apps.evaluation.services.report import report_payload, sync_report
+from src.apps.evaluation.services.reporting.report import report_payload, sync_report
 from src.apps.test_center.enums.environment import AutoTypeEnum
 from src.apps.test_center.exceptions import TestCenterError
-from src.apps.test_center.services.test_suite.retry import TestSuiteRetryService
-from src.apps.test_center.services.test_suite.summary import TestSuiteSummaryService
+from src.apps.test_center.services.reporting.test_suite.retry import TestSuiteRetryService
+from src.apps.test_center.services.reporting.test_suite.summary import TestSuiteSummaryService
 
 
 class EvaluationReportTests(SimpleTestCase):
@@ -31,7 +31,7 @@ class EvaluationReportTests(SimpleTestCase):
         self.assertEqual(payload["dataset"]["version_id"], 3)
         self.assertNotIn("parameters", payload["target"])
 
-    @patch("src.apps.evaluation.services.report.EvaluationReportService.update")
+    @patch("src.apps.evaluation.services.reporting.report.EvaluationReportService.update")
     def test_invalid_results_are_separate_from_capability_failures(self, update):
         sync_report(self.execution())
         values = update.call_args.kwargs
@@ -51,9 +51,9 @@ class EvaluationReportTests(SimpleTestCase):
         with self.assertRaises(TestCenterError):
             TestSuiteRetryService.ensure_retry_supported([SimpleNamespace(type=4)])
 
-    @patch("src.apps.test_center.services.factory.TestObject.objects")
+    @patch("src.apps.test_center.services.datasource.factory.TestObject.objects")
     def test_evaluation_test_object_prefers_dedicated_then_api_fallback(self, objects):
-        from src.apps.test_center.services.factory import func_test_object_value
+        from src.apps.test_center.services.datasource.factory import func_test_object_value
         dedicated = objects.filter.return_value.first.return_value
         self.assertIs(func_test_object_value(3, 22, AutoTypeEnum.EVALUATION.value), dedicated)
         objects.get.assert_not_called()

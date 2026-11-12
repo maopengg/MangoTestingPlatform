@@ -5,7 +5,7 @@ from rest_framework.viewsets import ViewSet
 from src.apps.test_center.api.serializers.notice_group import NoticeGroupSerializers, NoticeGroupSerializersC
 from src.apps.test_center.models import NoticeGroup
 from src.apps.test_center.selectors.notice_group import NoticeGroupOptionSelector
-from src.apps.test_center.services.test_suite.base_notice import NoticeMain
+from src.apps.test_center.services.reporting.test_suite.base_notice import NoticeMain
 from src.common.decorators.error_response import error_response
 from src.common.exceptions import MangoServerError
 from src.common.responses.model_crud import ModelCRUD
@@ -39,6 +39,7 @@ class NoticeGroupViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def test(self, request: Request):
+        """测试通知群组"""
         _id = request.query_params.get('id')
         try:
             # NoticeMain.notice_main(2, 2, 197899881973)
@@ -51,6 +52,7 @@ class NoticeGroupViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_name(self, request: Request):
+        """获取通知群组名称选项"""
         options = NoticeGroupOptionSelector.options(
             getattr(getattr(request, 'user', None), 'user_obj', None),
             request.query_params.get('project_product_id'),

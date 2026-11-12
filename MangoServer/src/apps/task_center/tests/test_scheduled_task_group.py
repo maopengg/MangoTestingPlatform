@@ -94,7 +94,7 @@ class ScheduledTaskGroupServiceTests(TestCase):
         self.assertEqual(task.api_concurrency_limit, 5)
 
     def test_group_is_the_source_of_child_task_notice_config(self):
-        from src.apps.test_center.services.test_suite.send_notice import SendNotice
+        from src.apps.test_center.services.reporting.test_suite.send_notice import SendNotice
 
         notice_group = NoticeGroup.objects.create(
             project=self.project,

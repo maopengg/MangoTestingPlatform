@@ -9,12 +9,12 @@ from src.apps.auto_api.selectors.querysets import ApiQuerySelector
 from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
 from src.apps.monitoring.selectors.querysets import MonitoringQuerySelector
 from src.apps.system.enums import TestSuiteNoticeEnum
-from src.apps.system.services.system_config import SystemConfigService
+from src.apps.system.services.configuration.system_config import SystemConfigService
 from src.apps.task_center.selectors.querysets import ScheduleFireQuerySelector
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
-from src.apps.test_center.services.execution_result import ExecutionResultService
-from src.apps.test_center.services.test_suite.send_notice import SendNotice
-from src.apps.test_center.services.test_suite.timeout_recovery import TestSuiteTimeoutRecoveryService
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
+from src.apps.test_center.services.reporting.test_suite.send_notice import SendNotice
+from src.apps.test_center.services.reporting.test_suite.timeout_recovery import TestSuiteTimeoutRecoveryService
 from src.apps.user.selectors.querysets import UserQuerySelector
 from src.common.decorators.retry import async_task_db_connection
 from src.common.logging import log
@@ -45,7 +45,7 @@ class SchedulerSystemJobService:
     @classmethod
     @async_task_db_connection()
     def recover_perf_runs(cls):
-        from src.apps.perf.services.recovery import PerfRecoveryService
+        from src.apps.perf.services.execution.recovery import PerfRecoveryService
         PerfRecoveryService.recover()
         return {"recovered": True}
 
@@ -53,7 +53,7 @@ class SchedulerSystemJobService:
     @async_task_db_connection()
     def clean_ui_element_ai_history(cls):
         try:
-            from src.apps.auto_ui.services.element_ai.cleanup_service import ElementAiCleanupService
+            from src.apps.auto_ui.services.elements.ai.cleanup_service import ElementAiCleanupService
 
             result = ElementAiCleanupService.cleanup()
             log.system.info(
@@ -70,9 +70,9 @@ class SchedulerSystemJobService:
     @async_task_db_connection()
     def clean_execution_result_data(cls):
         try:
-            from src.apps.test_center.services.diagnostic_markdown import DiagnosticMarkdownService
-            from src.apps.test_center.services.execution_artifact import ExecutionArtifactService
-            from src.apps.test_center.services.test_suite.api_report_export import ApiReportExportService
+            from src.apps.test_center.services.diagnostics.diagnostic_markdown import DiagnosticMarkdownService
+            from src.apps.test_center.services.storage.execution_artifact import ExecutionArtifactService
+            from src.apps.test_center.services.reporting.test_suite.api_report_export import ApiReportExportService
 
             result = ExecutionResultService.cleanup_expired()
             result.update(DiagnosticMarkdownService.cleanup_expired(result['retention_days']))
@@ -121,7 +121,7 @@ class SchedulerSystemJobService:
     @async_task_db_connection()
     def repair_test_suite_status(cls):
         try:
-            from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+            from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService
             interrupted_count = TestSuiteInfrastructureService.repair_legacy_blocks()
             reset_time = SystemConfigService.get_test_suite_stuck_reset_minutes()
             max_attempts = SystemConfigService.get_test_suite_timeout_max_attempts()
@@ -230,14 +230,25 @@ class SchedulerSystemJobService:
     @async_task_db_connection()
     def reconcile_workbench_todos(cls):
         try:
-            from src.apps.data_factory.services.execution_recovery import DataFactoryExecutionRecovery
-            from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService
+            from src.apps.data_factory.services.recovery.execution_recovery import DataFactoryExecutionRecovery
+            from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditService
+            from src.apps.data_factory.services.recovery.permit_reconciliation import DatasourcePermitReconciliationService
             from src.apps.task_center.services.workbench.todo import WorkbenchTodoService
-            return {
+            result = {
                 **SqlExecutionAuditService.recover_stale(),
                 **DataFactoryExecutionRecovery.recover(),
                 **WorkbenchTodoService.reconcile_non_auth_todos(),
             }
+            try:
+                result.update(DatasourcePermitReconciliationService.scheduled_monitor())
+                from src.apps.data_factory.services.reporting.report_progress import DatasourceReportProgressService
+                result.update(DatasourceReportProgressService.scheduled_monitor())
+            except Exception as error:
+                # 监控控制面故障必须可见，但不能挡住既有清理责任对账。
+                log.system.error('event=datasource_monitor_failed exception_type=%s action=inspect_control_database',
+                                 type(error).__name__)
+                result['datasource_monitor_failed'] = True
+            return result
         except Exception as error:
             log.system.error(f'scheduler-service 同步首页风险待办失败：{error}')
             raise
@@ -313,9 +324,8 @@ class SchedulerSystemJobService:
         try:
             retention_days = cls.retention_days('SQL_EXECUTION_RETENTION_DAYS')
             cutoff_time = timezone.now() - timedelta(days=retention_days)
-            deleted = DataFactoryQuerySelector.sql_execution_record().filter(
-                create_time__lt=cutoff_time,
-            ).delete()[0]
+            from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditService
+            deleted = SqlExecutionAuditService.cleanup_expired(cutoff_time)
             log.system.info(
                 f'scheduler-service 清理超过 {retention_days} 天的 SQL 执行记录：{deleted} 条'
             )
@@ -393,30 +403,12 @@ class SchedulerSystemJobService:
             log.system.error(f'scheduler-service 清理 API 用例执行链路失败：{error}')
             raise
 
-    @classmethod
-    @async_task_db_connection()
-    def clean_gray_execution_logs(cls):
-        try:
-            from src.apps.gray_config.services.execution_log import GrayExecutionLogService
-
-            retention_days = cls.retention_days('GRAY_EXECUTION_LOG_RETENTION_DAYS')
-            deleted = GrayExecutionLogService.cleanup_expired(retention_days)
-            log.system.info(
-                f'scheduler-service 清理超过 {retention_days} 天的灰度执行记录：{deleted} 条'
-            )
-            return {
-                'retention_days': retention_days,
-                'deleted_count': deleted,
-            }
-        except Exception as error:
-            log.system.error(f'scheduler-service 清理灰度执行记录失败：{error}')
-            raise
 
     @classmethod
     @async_task_db_connection()
     def clean_mock_request_logs(cls):
         try:
-            from src.apps.auto_api.services.mock_log_cleanup import MockRequestLogCleanupService
+            from src.apps.auto_api.services.mock.mock_log_cleanup import MockRequestLogCleanupService
 
             retention_days = cls.retention_days('MOCK_REQUEST_LOG_RETENTION_DAYS')
             cutoff_time = timezone.now() - timedelta(days=retention_days)
@@ -475,7 +467,7 @@ class SchedulerSystemJobService:
     @classmethod
     @async_task_db_connection()
     def scan_data_factory_entity_field_updates(cls, schedule_fire_id: int | None = None):
-        from src.apps.data_factory.services.schema_monitor import DataFactorySchemaMonitorService
+        from src.apps.data_factory.services.schema.schema_monitor import DataFactorySchemaMonitorService
 
         result = DataFactorySchemaMonitorService.scan(source_record_id=schedule_fire_id)
         log.system.info(

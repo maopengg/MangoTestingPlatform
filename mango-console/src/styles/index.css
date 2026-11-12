@@ -5,7 +5,7 @@
 :root {
   --m-ui-scale: 1;
   --m-design-viewport-width: 1900px;
-  --menu-width: 199px;
+  --menu-width: 200px;
   --m-workspace-min-width: 960px;
   --m-app-min-width: 1200px;
   --m-page-gap: 7px;
@@ -315,6 +315,22 @@ body {
 }
 
 .mango-native-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--m-scrollbar-thumb-hover);
+}
+
+.arco-dropdown .arco-scrollbar-track-direction-vertical {
+  width: 6px;
+}
+
+.arco-dropdown .arco-scrollbar-thumb-direction-vertical .arco-scrollbar-thumb-bar {
+  width: 6px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--m-scrollbar-thumb);
+}
+
+.arco-dropdown .arco-scrollbar-thumb:hover .arco-scrollbar-thumb-bar,
+.arco-dropdown .arco-scrollbar-thumb-dragging .arco-scrollbar-thumb-bar {
   background: var(--m-scrollbar-thumb-hover);
 }
 

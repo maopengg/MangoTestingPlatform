@@ -1,6 +1,6 @@
 <template>
   <div class="mango-environment-overrides">
-    <a-alert v-if="modelError" type="error">{{ modelError }}</a-alert>
+    <a-alert data-feedback-kind="validation" v-if="modelError" type="error">{{ modelError }}</a-alert>
     <div v-for="row in rows" :key="row.id" class="mango-environment-overrides__row">
       <a-select
         v-model="row.environment"

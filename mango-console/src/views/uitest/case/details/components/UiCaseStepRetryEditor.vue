@@ -7,7 +7,7 @@
       <div class="mango-ui-step-retry-editor">
         <label :for="inputId">失败重试次数</label>
         <a-input-number :id="inputId" v-model="draft" size="small" :min="0" :precision="0" :disabled="saving" placeholder="请输入重试次数" @press-enter="save" data-testid="qa-views-uitest-case-details-input-number-请输入重试次数" />
-        <span v-if="error" class="mango-ui-step-retry-error" role="alert">{{ error }}</span>
+        <MangoRequestFeedback v-if="error" :message="(error)" />
         <a-space :size="6">
           <a-button size="mini" :disabled="saving" @click="close" data-testid="qa-views-uitest-case-details-button-取消">取消</a-button>
           <a-button size="mini" type="primary" :loading="saving" @click="save" data-testid="qa-views-uitest-case-details-button-保存">保存</a-button>
@@ -18,6 +18,8 @@
 </template>
 
 <script setup lang="ts">
+import { requestFailureMessage } from '@/utils/load-error'
+
 import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Message } from '@arco-design/web-vue'
@@ -50,7 +52,7 @@ async function save(): Promise<boolean> {
   }
   let caseId: number | string, recordId: number | string
   try { caseId = requiredUiCaseAssetId(props.caseId); recordId = requiredUiCaseAssetId(props.recordId) }
-  catch { error.value = '步骤或用例ID异常，请重新加载核对'; return false }
+  catch (requestFailure) { error.value = requestFailureMessage(requestFailure, '步骤或用例ID异常，请重新加载核对'); return false }
   const snapshot = { caseId, recordId, retryCount: draft.value }
   const key = identity(), sequence = version, context = contextVersion
   const current = () => available() && visible.value && key === identity() && sequence === version
@@ -62,8 +64,8 @@ async function save(): Promise<boolean> {
     emit('saved', snapshot)
     if (current()) { close(); Message.success('重试次数保存成功') }
     return true
-  } catch {
-    if (current()) error.value = '重试次数保存失败，请重试'
+  } catch (requestFailure) {
+    if (current()) error.value = requestFailureMessage(requestFailure, '重试次数保存失败，请重试')
     return false
   } finally { saving.value = false }
 }

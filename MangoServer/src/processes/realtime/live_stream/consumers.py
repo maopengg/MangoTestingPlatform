@@ -3,7 +3,7 @@ from urllib.parse import parse_qsl
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.core import signing
-from src.apps.auto_ui.services.realtime_permission import RealtimePermissionService
+from src.apps.auto_ui.services.live_stream.realtime_permission import RealtimePermissionService
 from src.common.responses.response_msg import RESPONSE_MSG_0210
 
 from src.apps.auto_ui.enums.live_stream import LiveStreamEvent, LiveStreamRole

@@ -10,7 +10,7 @@ from src.apps.auto_api.api.serializers.api_info import ApiInfoBoundCaseSerialize
 from src.apps.auto_api.api.views.api_pulic import ApiPublicViews
 from src.apps.auto_api.selectors.configuration_references import ApiConfigurationReferenceSelector
 from src.apps.auto_ui.api.views.ui_public import UiPublicViews
-from src.apps.user.services.http_permission_registry import permission_for_view
+from src.apps.user.services.authorization.http_permission_registry import permission_for_view
 from src.common.responses.response_msg import RESPONSE_MSG_0210
 from src.common.utils.json_references import collect_json_references, reference_case_page
 

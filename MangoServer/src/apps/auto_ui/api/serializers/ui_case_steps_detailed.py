@@ -9,7 +9,7 @@ from rest_framework import serializers
 from src.apps.auto_ui.api.serializers.ui_case import UiCaseSerializers
 from src.apps.auto_ui.api.serializers.ui_page_steps import PageStepsSerializersC
 from src.apps.auto_ui.models import PageSteps, UiCaseStepsDetailed
-from src.apps.auto_ui.services.page_step_detail import PageStepDetailMutationService
+from src.apps.auto_ui.services.page_steps.page_step_detail import PageStepDetailMutationService
 from src.apps.user.formatters import format_user_simple
 from src.common.validators.serializer_fields import RelatedObjectField
 

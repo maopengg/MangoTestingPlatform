@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from src.apps.monitoring.services.runner import MonitoringTaskRunner
+from src.apps.monitoring.services.execution.runner import MonitoringTaskRunner
 
 
 class Command(BaseCommand):

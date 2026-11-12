@@ -15,9 +15,6 @@
             直达质量效能
             <template #icon><IconArrowRight /></template>
           </a-button>
-          <p class="mango-home-panel-description"
-            >按项目汇总定时任务执行报告，比较执行量与最终结果</p
-          >
           
           <ProjectQualityChart :data="projectQualityRows" :loading="projectQualityLoading" />
         </div>
@@ -34,7 +31,6 @@
             直达执行报告
             <template #icon><IconArrowRight /></template>
           </a-button>
-          <p class="mango-home-panel-description">按真实用例与场景数汇总最终执行质量</p>
           
           <StatusChart
             :success="reportCounts.success"
@@ -48,27 +44,27 @@
         </div>
         <div class="item mango-section-card">
           <Title title="自动化能力建设" />
-          <p class="mango-home-panel-description">前端、服务、脚本、数据工厂、测试配置与定时任务</p>
           <AutomationStats />
         </div>
       </div>
       <div class="center-workspace">
         <div class="trend-panel panel mango-section-card">
           <Title title="近 12 周自动化执行趋势" />
-          <p class="mango-home-panel-description">UI、API、Pytest 的真实用例与场景执行规模</p>
           <FullYearSalesChart />
         </div>
         <div class="center-bottom">
           <div class="pending-panel panel mango-section-card">
             <Title title="即将执行的定时任务" />
-            <p class="mango-home-panel-description">按下一次触发时间排序，仅展示已启用任务</p>
+            <a-button class="mango-home-card-shortcut" type="text" size="small"
+              :loading="navigatingTo === homeLinks.tasks" :disabled="!!navigatingTo" @click="navigateTo(homeLinks.tasks)">
+              直达定时任务<template #icon><IconArrowRight /></template>
+            </a-button>
             <div class="pending-card-body">
               <PendingTasks />
             </div>
           </div>
           <div class="activity-panel panel mango-section-card">
             <Title title="近 7 天用户活跃度" />
-            <p class="mango-home-panel-description">衡量用户对测试平台的实际使用情况</p>
             <HotProductChart />
           </div>
         </div>
@@ -76,7 +72,6 @@
       <div class="right-rail">
         <div class="todo-panel panel mango-section-card">
           <Title title="风险待办" :class="{ 'mango-risk-title--danger': hasPendingRisk }" />
-          <p class="mango-home-panel-description">授权到期、刷新失败与数据模型异常</p>
           <div class="todo-card-body">
             <RiskTodos @pending-change="hasPendingRisk = $event" />
           </div>

@@ -12,9 +12,9 @@ from src.apps.auto_ui.exceptions.definitions import (
 )
 from src.apps.auto_ui.models import UiCase
 from src.apps.auto_ui.selectors.case_publication import UiCasePublicationSelector
-from src.apps.auto_ui.services.asset_mutation import UiAssetMutationService
-from src.apps.auto_ui.services.case_publication import UiCasePublicationService
-from src.apps.auto_ui.services.asset_copy import UiAssetCopyService
+from src.apps.auto_ui.services.assets.asset_mutation import UiAssetMutationService
+from src.apps.auto_ui.services.cases.case_publication import UiCasePublicationService
+from src.apps.auto_ui.services.assets.asset_copy import UiAssetCopyService
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.apps.task_center.enums.execution import AutomationExecutionScopeEnum
 from src.apps.task_center.models import Tasks, TasksDetails
@@ -22,7 +22,7 @@ from src.apps.task_center.services.selection.case_binding import TaskCaseBinding
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.auto_ui.api.views.ui_case import UiCaseViews
 from src.apps.user.middleware.permission import MenuActionPermission
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.interfaces.mcp.authentication import permission_error
 from src.interfaces.mcp.tools.ui.case import register_case_tools
 
@@ -122,7 +122,7 @@ class UiCasePublicationTests(SimpleTestCase):
         source.name = 'Source case'
         with patch.object(UiCase.objects, 'select_for_update') as query, patch.object(
             UiAssetCopyService, '_clone', return_value=SimpleNamespace(id=2),
-        ) as clone, patch('src.apps.auto_ui.services.asset_copy.UiCaseStepsDetailed.objects.filter') as steps:
+        ) as clone, patch('src.apps.auto_ui.services.assets.asset_copy.UiCaseStepsDetailed.objects.filter') as steps:
             query.return_value.get.return_value = source
             steps.return_value.order_by.return_value = []
             UiAssetCopyService.copy_case.__func__.__wrapped__(UiAssetCopyService, 1, operator_id=9)

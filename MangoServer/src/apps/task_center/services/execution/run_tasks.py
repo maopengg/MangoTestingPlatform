@@ -154,12 +154,12 @@ class RunTasks:
                 log.system.info(f'定时策略 {timing_strategy_id} 已被其他实例触发，本实例跳过')
                 return
             try:
-                from src.apps.auto_api.services.base.api_base_test_setup.auth_manager import ApiAuthManager
+                from src.apps.auto_api.services.execution.base.api_base_test_setup.auth_manager import ApiAuthManager
                 ApiAuthManager.refresh_by_time_task(timing_strategy_id)
             except Exception as error:
                 log.system.error(f'执行API授权Token定时刷新异常: {error}')
             try:
-                from src.apps.auto_ui.services.ui_auth import UiAuthManager
+                from src.apps.auto_ui.services.authentication.ui_auth import UiAuthManager
                 UiAuthManager.refresh_by_time_task(timing_strategy_id)
             except Exception as error:
                 log.system.error(f'执行UI授权定时刷新异常: {error}')

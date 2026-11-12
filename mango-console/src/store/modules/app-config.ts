@@ -11,7 +11,8 @@ import {
 } from '../types'
 
 import { useChangeMenuWidth } from '@/hooks/useMenuWidth'
-import { applyDisplayDensity } from '@/hooks/useDisplayDensity'
+import { applyDisplayDensity, setAutoDisplayScales } from '@/hooks/useDisplayDensity'
+import { normalizeInterfacePreferences } from '@/utils/interface-preferences'
 import usePrimaryColor from '@/hooks/usePrimaryColor'
 import useTheme from '@/hooks/useTheme'
 import { applyThemePreset, getThemePreset, ThemePresetId } from '@/theme/presets'
@@ -26,6 +27,23 @@ const useAppConfigStore = defineStore('app-config', {
     },
   },
   actions: {
+    applyInterfacePreferences(value: unknown) {
+      const preferences = normalizeInterfacePreferences(value)
+      this.$patch(preferences)
+      const preset = applyThemePreset(preferences.themePreset)
+      this.theme = preset.mode
+      this.themeColor = preset.primary
+      useChangeMenuWidth(preferences.sideWidth)
+      setAutoDisplayScales(preferences.autoScale2k, preferences.autoScale4k)
+      applyDisplayDensity(preferences.displayDensity)
+    },
+    changeAutoDisplayScales(twoK: number, fourK: number) {
+      const preferences = normalizeInterfacePreferences({ ...this.$state, autoScale2k: twoK, autoScale4k: fourK })
+      this.autoScale2k = preferences.autoScale2k
+      this.autoScale4k = preferences.autoScale4k
+      setAutoDisplayScales(this.autoScale2k, this.autoScale4k)
+      applyDisplayDensity(this.displayDensity)
+    },
     changeTheme(theme: ThemeMode) {
       this.theme = theme
       useTheme(theme)
@@ -38,6 +56,7 @@ const useAppConfigStore = defineStore('app-config', {
     },
     changeDisplayDensity(displayDensity: DisplayDensity) {
       this.displayDensity = displayDensity
+      setAutoDisplayScales(this.autoScale2k, this.autoScale4k)
       applyDisplayDensity(displayDensity)
     },
     changeSideBarTheme(sideTheme: SideTheme) {

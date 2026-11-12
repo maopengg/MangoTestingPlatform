@@ -2,6 +2,10 @@ from src.apps.task_center.enums.execution import AUTOMATION_EXECUTION_SCENE_OPTI
 from src.common.enums.base import BaseEnum
 
 
+class ApiRevisionUnsupportedDependencyEnum(BaseEnum):
+    RETIRED_GRAY = 'retired_gray', '已移除的灰度管理依赖'
+
+
 class ApiCaseReleaseStatusEnum(BaseEnum):
     PREPUBLISHED = 'prepublished', '预发布'
     PUBLISHED = 'published', '已发布'

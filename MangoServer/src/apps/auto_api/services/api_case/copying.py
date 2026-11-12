@@ -10,7 +10,7 @@ from src.apps.auto_api.models import ApiCase, ApiCaseDetailed, ApiCaseDetailedPa
 from src.apps.auto_api.services.api_case.mutation import ApiCaseAggregateMutationService
 from src.apps.data_factory.enums import DataFactoryCaseSourceTypeEnum
 from src.apps.data_factory.models import DataFactoryCaseConfig
-from src.apps.data_factory.services.case_config import DataFactoryCaseConfigService
+from src.apps.data_factory.services.assets.case_config import DataFactoryCaseConfigService
 from src.common.database import ModelMutationValidationError, save_model
 from src.common.exceptions import SAVE_VALIDATION_FAILED
 

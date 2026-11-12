@@ -9,8 +9,8 @@ from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.api.serializers.api_case_detailed_parameter_mutation import ApiCaseDetailedParameterSerializers
 from src.apps.auto_api.services.api_case.parameter_validation import ApiCaseParameterValidationService
 from src.apps.auto_api.services.api_info.mutation import ApiInfoMutationService
-from src.apps.auto_api.services.base.api_base_test_setup import APIBaseTestSetup
-from src.apps.auto_api.services.base.case_parameter import CaseParameter
+from src.apps.auto_api.services.execution.base.api_base_test_setup import APIBaseTestSetup
+from src.apps.auto_api.services.execution.base.case_parameter import CaseParameter
 from src.common.decorators.error_response import error_response
 from src.common.exceptions import CommonError
 from src.common.responses.json_response import extract_jsonpath_value
@@ -19,7 +19,7 @@ from src.common.responses.json_response import extract_jsonpath_value
 class ExtractionErrorTests(SimpleTestCase):
     def setUp(self):
         environment_names = patch(
-            'src.apps.system.services.system_config.SystemConfigService.get_environment_display_names',
+            'src.apps.system.services.configuration.system_config.SystemConfigService.get_environment_display_names',
             return_value={},
         )
         environment_names.start()

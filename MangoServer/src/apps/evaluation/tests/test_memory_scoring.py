@@ -3,8 +3,8 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 from src.apps.evaluation.exceptions import EvaluationError
 from src.apps.evaluation.schemas.case import EvaluationGraderBinding
-from src.apps.evaluation.services.grading import validate_bindings
-from src.apps.evaluation.services.graders import EvaluationGraderRegistry, MemoryExtractionGrader, MemoryUpdateGrader, MemoryQAGrader
+from src.apps.evaluation.services.grading.grading import validate_bindings
+from src.apps.evaluation.services.grading.graders import EvaluationGraderRegistry, MemoryExtractionGrader, MemoryUpdateGrader, MemoryQAGrader
 
 
 class MemoryScoringTests(SimpleTestCase):
@@ -22,7 +22,7 @@ class MemoryScoringTests(SimpleTestCase):
     def evaluate(self, grader, gold, judgment, actual=None, **kwargs):
         sample = {"input_data": {"query": "Where does Alice live now?"}, "expected_output": gold,
                   "context": {"source_evidence": [{"excerpt": self.source}]}}
-        with patch("src.apps.evaluation.services.memory_grading.json_chat", return_value={"choices": [{"message": {"content": judgment}}]}) as chat:
+        with patch("src.apps.evaluation.services.grading.memory_grading.json_chat", return_value={"choices": [{"message": {"content": judgment}}]}) as chat:
             result = grader.evaluate(dataset_item=sample, actual=actual if actual is not None else ["Alice now lives in Beijing"],
                 config={}, metric_key="memory", threshold=kwargs.pop("threshold", 100), **kwargs)
         self.assertEqual(chat.call_args.kwargs["prompt_id"], "evaluation.memory_scoring")
@@ -134,7 +134,7 @@ class MemoryScoringTests(SimpleTestCase):
                 self.assertTrue(result.requires_review)
 
     def test_missing_source_and_invalid_contract_rejected_before_model_call(self):
-        with patch("src.apps.evaluation.services.memory_grading.json_chat") as chat:
+        with patch("src.apps.evaluation.services.grading.memory_grading.json_chat") as chat:
             for grader, gold, actual in [(MemoryExtractionGrader, {"memories": "bad"}, []),
                 (MemoryUpdateGrader, {"updates": [{"after": "Beijing"}]}, []),
                 (MemoryQAGrader, {"answer": "Beijing", "facts": []}, "Beijing")]:

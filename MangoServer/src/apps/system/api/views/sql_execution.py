@@ -139,6 +139,7 @@ class SqlExecutionRecordViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def list_items(self, request: Request):
+        """获取SQL 执行记录列表"""
         queryset = self._apply_filters(request, self._visible_queryset(request))
         if queryset is None:
             return ResponseData.fail(RESPONSE_MSG_0003)
@@ -158,6 +159,7 @@ class SqlExecutionRecordViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def options(self, request: Request):
+        """获取SQL 执行记录筛选选项"""
         queryset = self._visible_queryset(request)
         source_types = list(
             queryset.exclude(source_type='').values_list('source_type', flat=True).distinct().order_by('source_type')

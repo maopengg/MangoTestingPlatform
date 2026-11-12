@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from src.apps.test_center.services.execution_result import ExecutionResultService
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
 from src.interfaces.mcp.common import current_user, fail, ok
 
 

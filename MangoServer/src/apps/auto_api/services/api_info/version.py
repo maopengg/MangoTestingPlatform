@@ -63,7 +63,7 @@ class ApiInfoRevisionService:
     def ensure_current_editing_run_succeeded(cls, api_info_id: int):
         from mangotools.enums import StatusEnum
         from src.apps.test_center.models import ExecutionResult
-        from src.apps.test_center.services.execution_result import ExecutionResultService
+        from src.apps.test_center.services.results.execution_result import ExecutionResultService
 
         api_info = ApiInfo.objects.filter(id=api_info_id).only('id', 'update_time').first()
         if api_info is None:

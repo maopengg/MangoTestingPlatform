@@ -164,7 +164,7 @@
                   <div class="mango-coverage-flow__case-detail">
                     <a-spin :loading="!loading && Boolean(caseDetailLoading[item.id])">
                       <template v-if="caseDetailErrors[item.id]">
-                        <a-alert type="error">{{ caseDetailErrors[item.id] }}</a-alert>
+                        <MangoRequestFeedback  :message="(caseDetailErrors[item.id])" />
                       </template>
                       <template v-else>
                         <strong>{{ caseDetail(item).name || item.name }}</strong>
@@ -233,16 +233,13 @@
         暂无接口流程数据
       </div>
 
-      <a-alert v-if="renderError" type="error" class="mango-coverage-flow__error">
-        Mermaid 流程渲染失败：{{ renderError }}
-      </a-alert>
+      <MangoRequestFeedback v-if="renderError" :message="&quot;Mermaid 流程渲染失败：&quot; + (renderError)" />
     </MangoPanelSpin>
   </a-drawer>
 </template>
 
 <script lang="ts" setup>
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, nextTick, onBeforeUnmount, onDeactivated, reactive, ref, watch } from 'vue'
   import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
   import { Message } from '@arco-design/web-vue'
@@ -846,7 +843,7 @@ import { reportLoadError } from '@/utils/load-error'
       if (visible.value && sequence === renderSequence) fitFlow()
     } catch (error) {
       if (sequence !== renderSequence) return
-      renderError.value = error instanceof Error ? error.message : String(error)
+      renderError.value = requestFailureMessage(error, error instanceof Error ? error.message : String(error))
       if (canvasRef.value) canvasRef.value.innerHTML = ''
     }
   }

@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from src.apps.system.services.system_initialization import SystemInitializationService
+from src.apps.system.services.initialization.system_initialization import SystemInitializationService
 
 
 class Command(BaseCommand):

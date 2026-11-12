@@ -6,8 +6,8 @@ from django.test import SimpleTestCase
 
 from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.models import ApiCase, ApiCaseRevision, ModuleCoverageModuleInterface
-from src.apps.auto_api.services.module_coverage import ModuleCoverageService as Service
-from src.apps.auto_api.services.module_coverage_parts.binding import ModuleCoverageCaseBindingService as Binding
+from src.apps.auto_api.services.coverage.module_coverage import ModuleCoverageService as Service
+from src.apps.auto_api.services.coverage.parts.binding import ModuleCoverageCaseBindingService as Binding
 
 
 class ModuleCoverageBindingTests(SimpleTestCase):

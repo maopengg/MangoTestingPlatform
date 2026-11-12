@@ -16,7 +16,7 @@
       </TableHeader>
     </template>
     <template #default>
-      <a-alert v-if="!id" type="error" class="mango-perf-read-error">场景 ID 无效，请返回列表重新进入。</a-alert>
+      <a-alert data-feedback-kind="validation" v-if="!id" type="error" class="mango-perf-read-error">场景 ID 无效，请返回列表重新进入。</a-alert>
       
       <a-alert v-if="refreshBeforeWrite" type="warning" class="mango-perf-read-error">
         保存期间离开了当前页面，请重新加载以确认保存结果。
@@ -50,7 +50,7 @@
                   </a-form-item>
                 </a-form>
                 <template v-if="sourceCase">
-                  <a-alert v-if="!sourceCase.compatible" type="error"
+                  <a-alert data-feedback-kind="validation" v-if="!sourceCase.compatible" type="error"
                     >当前 Case 暂不兼容性能模式：{{
                       sourceCase.incompatible_reasons?.join('；')
                     }}</a-alert

@@ -22,7 +22,7 @@ from src.apps.data_factory.schemas.configuration import (
 )
 from src.apps.test_center.formatters.related import format_product_module_compact
 from src.apps.test_center.formatters.related import format_project_product
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.test_center.services.project.product_module import ProductModuleService
 from src.apps.user.formatters import format_user_simple
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.common.validators.serializer_fields import RelatedObjectField
@@ -135,7 +135,7 @@ class DataFactoryTemplateSerializer(ProductModuleBindingSerializerMixin, seriali
             raise DataFactoryError(DATA_FACTORY_FIELD_INVALID, value=(error,)) from error
         output_config = attrs.get('output_config', self.instance.output_config if self.instance else [])
         if 'cleanup_resources' in attrs:
-            from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService
+            from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService
             attrs['cleanup_resources'] = DataFactoryCleanupResourceService.normalize(
                 attrs['cleanup_resources'], entity=entity, project_product_id=project_product.id,
             )

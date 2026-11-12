@@ -67,12 +67,12 @@ assert.ok(
 
 for (const contract of [
   'api-case-version-sidebar',
-  'api-case-version-snapshot-box',
+  'ApiCaseOrchestrationPanel',
   'selectedCaseVersionDetail',
   '@detail="showVersionDetail"',
   '@current="showCurrentConfiguration"',
-  ':payload="selectedCaseVersionDetail.payload"',
-  'v-if="!selectedCaseVersionDetail"',
+  'selectExecutionVersion',
+  'showCurrentConfiguration',
 ]) {
   assert.ok(detailsPageSource.includes(contract), `details page must include ${contract}`)
 }
@@ -84,16 +84,15 @@ assert.ok(
 
 for (const contract of [
   '用例编排',
-  '用例前置',
-  '用例步骤',
-  '用例后置',
+  '前置准备',
+  '执行编排',
+  '后置清理',
   '场景扩展',
   '版本快照',
   '只读',
   'position="left"',
   '全局变量',
   '授权管理',
-  '灰度配置',
   '自定义变量',
   'SQL变量',
   '数据工厂',
@@ -102,12 +101,12 @@ for (const contract of [
   'front_sql',
   'resolved_front_headers',
   'posterior_sql',
-  'payload.steps',
-  'step.parameters',
-  '前置处理',
+  'revisionPayload.value.api_case_detailed',
+  'parametersFor',
+  '前置准备',
   '请求配置',
-  '后置处理',
-  '接口断言',
+  '响应处理',
+  '断言配置',
   '请求头',
   '参数',
   '请求体',
@@ -116,7 +115,6 @@ for (const contract of [
   '测试结果',
   '前置sql',
   '前置函数',
-  '灰度配置',
   '响应JSON提取',
   '响应文本提取',
   '后置SQL',
@@ -149,4 +147,6 @@ assert.ok(
   'snapshot view must split case orchestration and scenarios into two readable columns'
 )
 
-console.log('api case version snapshot three-column layout contract passed')
+assert.match(snapshotSource, /arco-tabs-content-item/ , 'snapshot tab items must preserve the finite height chain')
+assert.match(snapshotSource, /padding-top: 1px/, 'snapshot tab content keeps the requested top padding')
+console.log('api case version snapshot layout contract passed')

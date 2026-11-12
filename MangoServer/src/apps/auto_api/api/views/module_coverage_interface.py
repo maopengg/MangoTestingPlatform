@@ -14,9 +14,9 @@ from src.apps.auto_api.api.views.module_coverage_common import (
     scope_queryset,
 )
 from src.apps.auto_api.models import ModuleCoverageInterfaceSnapshot
-from src.apps.auto_api.services.module_coverage import ModuleCoverageService
-from src.apps.auto_api.services.module_coverage_diff import build_structured_diff
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.auto_api.services.coverage.module_coverage import ModuleCoverageService
+from src.apps.auto_api.services.coverage.module_coverage_diff import build_structured_diff
+from src.apps.test_center.services.project.product_module import ProductModuleService
 from src.common.decorators.error_response import error_response
 from src.common.responses.response_data import ResponseData
 from src.common.responses.response_msg import RESPONSE_MSG_0001
@@ -29,6 +29,7 @@ class ModuleCoverageInterfaceViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def list(self, request: Request):
+        """获取模块接口覆盖记录列表"""
         queryset = scope_queryset(
             request,
             ModuleCoverageInterfaceSnapshot.objects.all(),
@@ -76,6 +77,7 @@ class ModuleCoverageInterfaceViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def retrieve(self, request: Request):
+        """获取模块接口覆盖记录详情"""
         queryset = scope_queryset(request, ModuleCoverageInterfaceSnapshot.objects.all()).select_related(
             "project_product", "module", "scan", "api_info", "api_info__module",
             "api_info_revision", "module_interface",
@@ -99,6 +101,7 @@ class ModuleCoverageInterfaceViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def snapshots(self, request: Request):
+        """获取模块接口覆盖记录历史快照"""
         interface_snapshot = scope_queryset(
             request, ModuleCoverageInterfaceSnapshot.objects.all(),
         ).get(id=request.query_params.get("id"))
@@ -117,6 +120,7 @@ class ModuleCoverageInterfaceViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def diff(self, request: Request):
+        """比较模块接口覆盖记录版本差异"""
         interface_snapshot = scope_queryset(
             request, ModuleCoverageInterfaceSnapshot.objects.all(),
         ).get(id=request.query_params.get("id"))
@@ -151,6 +155,7 @@ class ModuleCoverageInterfaceViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def binding_preview(self, request: Request):
+        """预览接口覆盖记录的用例关联"""
         interface_snapshot = scope_queryset(
             request, ModuleCoverageInterfaceSnapshot.objects.all(),
         ).get(id=request.query_params.get("id"))
@@ -164,6 +169,7 @@ class ModuleCoverageInterfaceViews(ViewSet):
     @action(methods=["put"], detail=False)
     @error_response("system")
     def binding(self, request: Request):
+        """更新模块接口覆盖记录的资产绑定"""
         interface_snapshot = scope_queryset(
             request, ModuleCoverageInterfaceSnapshot.objects.all(),
         ).get(id=request.data.get("id"))
@@ -178,6 +184,7 @@ class ModuleCoverageInterfaceViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def policy(self, request: Request):
+        """更新模块接口覆盖策略"""
         data = ModuleCoverageService.update_interface_policy(
             request.data.get("interface_ids"), request.data.get("policy"),
             request.data.get("reason", ""), request_user_id(request),
@@ -187,6 +194,7 @@ class ModuleCoverageInterfaceViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def batch_upload(self, request: Request):
+        """批量上传模块接口覆盖记录"""
         scan_id = int(request.data.get("scan_id"))
         scan = ModuleCoverageService.get_uploading_scan(scan_id)
         require_project_scope(request, scan.project_product_id)

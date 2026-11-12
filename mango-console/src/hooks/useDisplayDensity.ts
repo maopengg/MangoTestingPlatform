@@ -6,6 +6,13 @@ const TWO_K_VIEWPORT_WIDTH = 2560
 const FOUR_K_VIEWPORT_WIDTH = 3840
 const TWO_K_UI_SCALE = 1.15
 const FOUR_K_UI_SCALE = 1.35
+let autoScale2k = TWO_K_UI_SCALE
+let autoScale4k = FOUR_K_UI_SCALE
+
+export function setAutoDisplayScales(twoK: number, fourK: number) {
+  autoScale2k = Number.isFinite(twoK) ? clamp(twoK, 1, 3) : TWO_K_UI_SCALE
+  autoScale4k = Math.max(autoScale2k, Number.isFinite(fourK) ? clamp(fourK, 1, 3) : FOUR_K_UI_SCALE)
+}
 // 小屏保留可用下限；4K 及更宽屏幕不再继续放大，避免超宽屏控件和文字失衡。
 const MIN_UI_SCALE = 0.5
 const MAX_MANUAL_UI_SCALE = 3
@@ -56,19 +63,19 @@ export function getAutoDisplayScale(viewportWidth: number) {
       AUTO_DESIGN_VIEWPORT_WIDTH,
       1,
       TWO_K_VIEWPORT_WIDTH,
-      TWO_K_UI_SCALE
+      autoScale2k
     )
   }
   if (viewportWidth <= FOUR_K_VIEWPORT_WIDTH) {
     return interpolateScale(
       viewportWidth,
       TWO_K_VIEWPORT_WIDTH,
-      TWO_K_UI_SCALE,
+      autoScale2k,
       FOUR_K_VIEWPORT_WIDTH,
-      FOUR_K_UI_SCALE
+      autoScale4k
     )
   }
-  return FOUR_K_UI_SCALE
+  return autoScale4k
 }
 
 function getLayoutViewportWidth() {

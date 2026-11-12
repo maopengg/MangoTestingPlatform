@@ -1,4 +1,4 @@
-from src.apps.user.services.http_permission_registry import permission_for_view
+from src.apps.user.services.authorization.http_permission_registry import permission_for_view
 from types import SimpleNamespace
 from unittest.mock import patch, AsyncMock
 from django.test import SimpleTestCase
@@ -6,12 +6,12 @@ from django.urls import resolve
 from src.apps.evaluation.exceptions import EvaluationError
 from src.apps.evaluation.selectors.workflow import require_resource_access
 from src.apps.evaluation.enums.workflow import EvaluationWorkflowActionEnum
-from src.apps.evaluation.services.workflow_resources import freeze_dataset_configuration
+from src.apps.evaluation.services.workflow.workflow_resources import freeze_dataset_configuration
 
 
 class WorkflowPermissionTests(SimpleTestCase):
     def test_draft_delete_uses_delete_permission_on_both_protocols(self):
-        from src.apps.user.services.mcp_permission_registry import MCP_PERMISSION_RULES
+        from src.apps.user.services.authorization.mcp_permission_registry import MCP_PERMISSION_RULES
         match = resolve("/api/evaluation/dataset/version/1")
         self.assertEqual(match.func.actions["delete"], "delete")
         self.assertEqual(permission_for_view(match.func.cls, "delete"), "evaluation.dataset:remove")
@@ -42,7 +42,7 @@ class WorkflowPermissionTests(SimpleTestCase):
             "bindings": [{"resource": "source", "project_product_id": 1, "ref_id": 1},
                          {"resource": "source", "project_product_id": 1, "target_ref_id": 9, "ref_id": 2},
                          {"resource": "source", "project_product_id": 2, "ref_id": 3}]}}
-        with patch("src.apps.evaluation.services.workflow_resources.resource_configuration", return_value=(10, {"checksum": "fixed"})):
+        with patch("src.apps.evaluation.services.workflow.workflow_resources.resource_configuration", return_value=(10, {"checksum": "fixed"})):
             result = freeze_dataset_configuration(value, SimpleNamespace(), product_id=1, target_ref_id=9)
         self.assertEqual([binding.ref_id for binding in result.workflow.bindings], [2])
         self.assertNotIn("revision_id", value["workflow"]["bindings"][0])

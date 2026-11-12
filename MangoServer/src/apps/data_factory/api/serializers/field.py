@@ -7,7 +7,7 @@ from rest_framework import serializers
 from src.apps.data_factory.api.serializers.entity import DataFactoryEntitySerializerC
 from src.apps.data_factory.enums import DataFactoryGeneratorTypeEnum
 from src.apps.data_factory.models import DataFactoryField
-from src.apps.data_factory.services.field import DataFactoryFieldService
+from src.apps.data_factory.services.assets.field import DataFactoryFieldService
 from src.apps.user.formatters import format_user_simple
 from src.common.validators.serializer_fields import RelatedObjectField
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from src.apps.auto_ui.services.agent_execution import AgentUiExecutionService
-from src.apps.auto_ui.services.agent_runtime import AgentUiRuntimeOperationService
+from src.apps.auto_ui.services.execution.agent.agent_execution import AgentUiExecutionService
+from src.apps.auto_ui.services.execution.agent.agent_runtime import AgentUiRuntimeOperationService
 from src.interfaces.mcp.tools.ui.helpers import _selected_env, current_user, ok
 
 

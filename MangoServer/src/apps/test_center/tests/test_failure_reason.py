@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 from django.test import SimpleTestCase
 
 from src.apps.test_center.api.views.test_suite_details import TestSuiteDetailsShareViews
-from src.apps.test_center.services.test_suite.failure_reason import TestSuiteFailureReasonService
+from src.apps.test_center.services.reporting.test_suite.failure_reason import TestSuiteFailureReasonService
 
 
 class TestSuiteFailureReasonServiceTests(SimpleTestCase):
@@ -34,7 +34,7 @@ class TestSuiteFailureReasonServiceTests(SimpleTestCase):
         queryset.only.return_value.iterator.return_value = iter(details)
 
         with patch(
-                'src.apps.test_center.services.test_suite.failure_reason.TestSuiteDetails.objects.filter',
+                'src.apps.test_center.services.reporting.test_suite.failure_reason.TestSuiteDetails.objects.filter',
                 return_value=queryset,
         ) as filter_mock:
             result = TestSuiteFailureReasonService.top_failure_reasons(1)
@@ -64,7 +64,7 @@ class TestSuiteFailureReasonServiceTests(SimpleTestCase):
         queryset.only.return_value.iterator.return_value = iter([detail])
 
         with patch(
-                'src.apps.test_center.services.test_suite.failure_reason.TestSuiteDetails.objects.filter',
+                'src.apps.test_center.services.reporting.test_suite.failure_reason.TestSuiteDetails.objects.filter',
                 return_value=queryset,
         ):
             result = TestSuiteFailureReasonService.top_failure_reasons(1, limit=2)

@@ -6,10 +6,7 @@
     </div>
     <mango-panel-spin :loading="loading" class="mango-execution-history-list__spin">
       <div class="mango-execution-history-list__body mango-native-scrollbar">
-        <div v-if="errorText" class="mango-execution-history-list__empty mango-empty-state">
-          {{ errorText }}
-          <a-button size="small" :loading="loading" @click="emit('retry')">重试</a-button>
-        </div>
+        <MangoRequestFeedback v-if="errorText" :message="(errorText)"><a-button size="small" :loading="loading" @click="emit('retry')">重试</a-button></MangoRequestFeedback>
         <div v-else-if="!items.length" class="mango-execution-history-list__empty mango-empty-state">{{ emptyText }}</div>
         <template v-else>
           <button

@@ -14,13 +14,13 @@ from rest_framework.viewsets import ViewSet
 
 from src.apps.system.enums import ClientTypeEnum
 from src.apps.system.enums import ServerUiCommandEnum, ServerToolsCommandEnum
-from src.apps.system.services.actuator_config_runtime import ActuatorConfigRuntimeService
+from src.apps.system.services.actuator.actuator_config_runtime import ActuatorConfigRuntimeService
 from src.apps.system.services.socket_link.connection_service import SocketConnectionService
 from src.apps.system.services.socket_link.message_service import SocketMessageService
 from src.apps.test_center.enums.environment import AutoTypeEnum
 from src.apps.test_center.models import TestObject, ProjectProduct
 from src.apps.user.models import User
-from src.apps.user.services.user_cache import UserCacheService
+from src.apps.user.services.preferences.user_config import UserConfigService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import get_request_project_id, get_request_project_product_id
 from src.common.responses.response_data import ResponseData
@@ -38,7 +38,7 @@ class SocketApiViews(ViewSet):
 
     @staticmethod
     def _actuator_payload(connection, is_owner: bool = False):
-        from src.apps.auto_ui.services.executor_slot import ExecutorSlotLeaseService
+        from src.apps.auto_ui.services.execution.executor_slot import ExecutorSlotLeaseService
 
         return {
             'id': connection.user.id,
@@ -57,6 +57,7 @@ class SocketApiViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_user_list(self, request: Request):
+        """获取在线执行器用户列表"""
         data = [
             self._actuator_payload(connection, connection.user_id == request.user['id'])
             for connection in SocketConnectionService.list_online_actuators()
@@ -66,6 +67,7 @@ class SocketApiViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_current_actuator_status(self, request: Request):
+        """获取当前用户执行器状态"""
         user_id = request.user.get('id') if isinstance(request.user, dict) else None
         connection = SocketConnectionService.get_current_actuator(user_id) if user_id else None
         is_online = connection is not None and SocketConnectionService.is_actuator_online(user_id)
@@ -86,12 +88,14 @@ class SocketApiViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_all_user_sum(self, request: Request):
+        """统计执行器用户连接情况"""
         data = len(SocketConnectionService.list_online_actuators())
         return ResponseData.success(RESPONSE_MSG_0102, {'sum': data})
 
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_all_user_list(self, request: Request):
+        """获取全部执行器用户连接信息"""
         data = [
             {
                 'user_id': connection.user_id,
@@ -108,6 +112,7 @@ class SocketApiViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('system')
     def set_user_open_status(self, request: Request):
+        """设置执行器任务接收状态"""
         status = request.data.get('status')
         username = request.data.get('username')
         connection = SocketConnectionService.require_actuator(username)
@@ -130,6 +135,7 @@ class SocketApiViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('system')
     def set_user_debug(self, request: Request):
+        """设置执行器调试状态"""
         status = request.data.get('status')
         username = request.data.get('username')
         connection = SocketConnectionService.require_actuator(username)
@@ -152,6 +158,7 @@ class SocketApiViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def request_actuator_config(self, request: Request):
+        """请求执行器上报配置"""
         username = (request.data.get('username') or '').strip()
         SocketConnectionService.require_actuator(username)
         request_id = str(uuid.uuid4())
@@ -173,6 +180,7 @@ class SocketApiViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_actuator_config_result(self, request: Request):
+        """获取执行器配置读取结果"""
         request_id = request.query_params.get('request_id')
         data = ActuatorConfigRuntimeService.get_snapshot(request_id)
         if not data:
@@ -182,6 +190,7 @@ class SocketApiViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('system')
     def update_actuator_config(self, request: Request):
+        """下发执行器配置更新"""
         username = (request.data.get('username') or '').strip()
         config = request.data.get('config') or {}
         SocketConnectionService.require_actuator(username)
@@ -204,6 +213,7 @@ class SocketApiViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_actuator_config_save_result(self, request: Request):
+        """获取执行器配置保存结果"""
         request_id = request.query_params.get('request_id')
         data = ActuatorConfigRuntimeService.get_save_result(request_id)
         if not data:
@@ -214,13 +224,14 @@ class SocketApiViews(ViewSet):
     @error_response('ui')
     def get_new_browser_obj(self, request: Request):
         """
+        请求执行器打开调试或录制浏览器。
         @param request:
         @return:
         """
         is_recording = request.query_params.get('is_recording')
         if is_recording == '1':
             user_obj = User.objects.get(id=request.user['id'])
-            selected_environment = UserCacheService.selected_environment(user_obj)
+            selected_environment = UserConfigService.selected_environment(user_obj)
             project_id = get_request_project_id(request)
             project_product_id = get_request_project_product_id(request)
             project_product_queryset = ProjectProduct.objects.all()

@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 from pydantic import Field
 
 from src.apps.test_center.schemas.execution_efficiency import ExecutionEfficiencyQuery
-from src.apps.test_center.services.execution_efficiency import ExecutionEfficiencyService
+from src.apps.test_center.services.reporting.execution_efficiency import ExecutionEfficiencyService
 from src.interfaces.mcp.common import current_user, ok
 
 

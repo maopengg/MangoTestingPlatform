@@ -99,7 +99,7 @@
             <mango-panel-spin :loading="workspaceLoading" class="mango-monitoring-workspace__loading">
               <div v-if="workspaceTask" class="mango-monitoring-workspace">
                 
-                <a-alert v-if="saveFailed" type="error">代码保存失败，当前草稿已保留。<template #action><a-button size="small" :loading="fileSaving" @click="saveWorkspaceCode(false)">重试</a-button></template></a-alert>
+                <MangoRequestFeedback v-if="saveFailed" :message="&quot;代码保存失败，当前草稿已保留。&quot;"><template #action><a-button size="small" :loading="fileSaving" @click="saveWorkspaceCode(false)">重试</a-button></template></MangoRequestFeedback>
                 
                 <div class="mango-monitoring-workspace__summary">
                   <div class="mango-monitoring-workspace__identity">

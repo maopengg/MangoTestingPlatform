@@ -70,18 +70,14 @@
             show-word-limit
         /></a-form-item>
       </a-form>
-      <a-alert v-if="preflightError" type="error" class="mango-perf-executor-alert">
-        预检失败，请重试。
-        <template #action><a-button size="small" :loading="executorLoading" :disabled="submitting" @click="refreshPreflight">重试</a-button></template>
-      </a-alert>
+      <MangoRequestFeedback v-if="preflightError" :message="&quot;预检失败，请重试。&quot;"><template #action><a-button size="small" :loading="executorLoading" :disabled="submitting" @click="refreshPreflight">重试</a-button></template></MangoRequestFeedback>
     </template>
   </a-modal>
 
 </template>
 
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, nextTick, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import type { FormInstance } from '@arco-design/web-vue'
@@ -175,7 +171,7 @@ import { reportLoadError } from '@/utils/load-error'
       executorCandidates.value = result.candidates
       return true
     } catch (loadFailure0) {
-      if (context.isCurrent() && request === readVersion) (reportLoadError(loadFailure0, "加载失败，请重试", false), preflightError.value = true)
+      if (context.isCurrent() && request === readVersion) (reportLoadError(loadFailure0, "加载失败，请重试", false), preflightError.value = requestFailureMessage(loadFailure0, true, "预检失败，请重试。"))
       return false
     } finally {
       if (context.isCurrent() && request === readVersion) executorLoading.value = false
@@ -224,7 +220,7 @@ import { reportLoadError } from '@/utils/load-error'
       } catch (error) {
         if (isCurrent()) {
           preflight.value = null
-          preflightError.value = true
+          preflightError.value = requestFailureMessage(error, true, "预检失败，请重试。")
         }
         throw error
       }

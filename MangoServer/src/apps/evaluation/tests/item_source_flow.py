@@ -5,11 +5,11 @@ def verify_item_source_flow(user, product):
     import sqlite3
     from unittest.mock import patch
     from src.apps.evaluation.models import EvaluationDataset
-    from src.apps.evaluation.services.dataset_version import EvaluationDatasetVersionService
-    from src.apps.evaluation.services.dataset_item import EvaluationDatasetItemService
-    from src.apps.evaluation.services.versioning import EvaluationVersionService
-    from src.apps.evaluation.services.case import EvaluationCaseService
-    from src.apps.evaluation.services.execution import EvaluationCaseExecutionService
+    from src.apps.evaluation.services.dataset.dataset_version import EvaluationDatasetVersionService
+    from src.apps.evaluation.services.dataset.dataset_item import EvaluationDatasetItemService
+    from src.apps.evaluation.services.dataset.versioning import EvaluationVersionService
+    from src.apps.evaluation.services.assets.case import EvaluationCaseService
+    from src.apps.evaluation.services.execution.execution import EvaluationCaseExecutionService
     db = sqlite3.connect(":memory:")
     db.row_factory = sqlite3.Row
     db.execute("CREATE TABLE contracts(id INTEGER, name TEXT, owner TEXT)")
@@ -20,8 +20,8 @@ def verify_item_source_flow(user, product):
         rows = [dict(row) for row in db.execute(kwargs["operation_config"], kwargs["parameters"])]
         return {"rows": rows, "truncated": False}
     try:
-        with patch("src.apps.evaluation.services.item_source.resource_configuration", return_value=(None, {"db_type": 2, "id": 42})), \
-             patch("src.apps.data_factory.services.data_source_execution.DataSourceExecutionService.execute", side_effect=query):
+        with patch("src.apps.evaluation.services.dataset.item_source.resource_configuration", return_value=(None, {"db_type": 2, "id": 42})), \
+             patch("src.apps.data_factory.services.datasource.data_source_execution.DataSourceExecutionService.execute", side_effect=query):
             dataset = EvaluationDataset.objects.create(name="per-item contracts", task_type=["问答"])
             version = EvaluationDatasetVersionService.create(dataset_id=dataset.id, user=user, values={})
             items = {}
@@ -41,7 +41,7 @@ def verify_item_source_flow(user, product):
                 "target": {"type": "script", "parameters": {"code": 'def main(input, context):\n    assert "data" not in input and "rows" not in input\n    assert "item_source" not in input["steps"]\n    assert "隐藏标准答案" not in str(input)\n    return {"answer": input["case_input"]["question"]}'}},
                 "grading": {"default_graders": [{"grader_key": "exact_match", "metric_key": "answer"}]}}})
             run = EvaluationCaseExecutionService.create({"case_id": case.id, "test_env": 1}, user)
-            from src.apps.evaluation.services.graders import ExactMatchGrader
+            from src.apps.evaluation.services.grading.graders import ExactMatchGrader
             with patch.object(ExactMatchGrader, "evaluate", wraps=ExactMatchGrader.evaluate) as grading:
                 EvaluationCaseExecutionService.execute(run.id)
             assert grading.call_count == 2
@@ -72,14 +72,14 @@ def verify_item_source_flow(user, product):
 def verify_reference_api_flow(user, product):
     from unittest.mock import patch
     from src.apps.evaluation.models import EvaluationDataset
-    from src.apps.evaluation.services.dataset_version import EvaluationDatasetVersionService
-    from src.apps.evaluation.services.dataset_item import EvaluationDatasetItemService
-    from src.apps.evaluation.services.versioning import EvaluationVersionService
-    from src.apps.evaluation.services.case import EvaluationCaseService
-    from src.apps.evaluation.services.execution import EvaluationCaseExecutionService
-    from src.apps.evaluation.services.graders import ExactMatchGrader
-    with patch('src.apps.evaluation.services.item_source.resource_configuration', return_value=(12, {'checksum': 'api-fixed'})), \
-         patch('src.apps.auto_api.services.test_case.test_api_info.TestApiInfo') as runtime:
+    from src.apps.evaluation.services.dataset.dataset_version import EvaluationDatasetVersionService
+    from src.apps.evaluation.services.dataset.dataset_item import EvaluationDatasetItemService
+    from src.apps.evaluation.services.dataset.versioning import EvaluationVersionService
+    from src.apps.evaluation.services.assets.case import EvaluationCaseService
+    from src.apps.evaluation.services.execution.execution import EvaluationCaseExecutionService
+    from src.apps.evaluation.services.grading.graders import ExactMatchGrader
+    with patch('src.apps.evaluation.services.dataset.item_source.resource_configuration', return_value=(12, {'checksum': 'api-fixed'})), \
+         patch('src.apps.auto_api.services.execution.cases.test_api_info.TestApiInfo') as runtime:
         runtime.return_value.api_info_run.side_effect = [
             {'json': {'data': {'id': 101, 'owner': '隐藏标准答案'}}}, {'json': {'data': {}}},
         ]

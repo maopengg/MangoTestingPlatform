@@ -6,9 +6,9 @@
 from mangotools.contracts import PytestExecutionResult
 from mangotools.contracts import TestSuiteDetailResultContract
 
-from src.apps.auto_pytest.services.test_report_writing import PtestTestReportWriting
+from src.apps.auto_pytest.services.reporting.test_report_writing import PtestTestReportWriting
 from src.apps.test_center.schemas.execution import TestSuiteDetailResultSchema
-from src.apps.test_center.services.test_suite.update_test_suite import UpdateTestSuite
+from src.apps.test_center.services.reporting.test_suite.update_test_suite import UpdateTestSuite
 from src.common.decorators.retry import async_task_db_connection
 
 

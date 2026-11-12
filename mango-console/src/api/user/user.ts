@@ -1,6 +1,7 @@
 import { deleted, get, post, put } from '@/api/http'
 import { readUserNames, invalidateUserNames } from './user-name-cache'
 import type { Response } from '@/api/http'
+import type { UserConfigUpdate } from '@/types/user-config'
 
 function userNamesChanged(response: Response) {
   if (response.code === 200) invalidateUserNames()
@@ -106,6 +107,10 @@ export function resetUserPassword(data: object) {
   })
 }
 
+export function resetOwnPassword() {
+  return put<unknown>({ url: '/user/info/reset-own-password', data: () => ({}) })
+}
+
 export function resetUserApiKey(data: object) {
   return put({
     url: '/user/info/reset-api-key',
@@ -113,25 +118,20 @@ export function resetUserApiKey(data: object) {
   })
 }
 
-export function putUserEnvironment(userId: number, key: any) {
-  return put({
-    url: '/user/info/environment',
-    data: () => {
-      return { id: userId, selected_environment: key }
-    },
-  })
-}
-
-export function getUserCacheData() {
+export function getUserConfig(key?: string) {
   return get<unknown>({
-    url: '/user/info/cache',
-    data: () => ({}),
+    url: '/user/info/config',
+    data: () => key === undefined ? {} : { key },
   })
 }
 
-export function clearUserCacheData(data: object) {
+export function updateUserConfig(data: UserConfigUpdate) {
+  return put<unknown>({ url: '/user/info/config', data: () => data })
+}
+
+export function clearUserConfig(data: { key: string }) {
   return deleted<unknown>({
-    url: '/user/info/cache',
+    url: '/user/info/config',
     data: () => data,
   })
 }

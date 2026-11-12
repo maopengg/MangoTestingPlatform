@@ -6,16 +6,11 @@ from sqlalchemy.exc import IntegrityError, ProgrammingError
 
 from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.schemas.case_schema import validate_data_source_operation_list
-from src.apps.auto_api.services.base.api_base_test_setup.public_base import PublicBase
-from src.apps.auto_api.services.base.case_base import CaseBase
-from src.apps.auto_api.services.base.data_source_operation import (
-    execute_data_source_assertion,
-    execute_data_source_operation,
-)
-from src.apps.data_factory.services.data_source_execution import DataSourceExecutionService
-from src.apps.data_factory.services.data_source_execution_request import (
-    DataSourceExecutionRequestService,
-)
+from src.apps.auto_api.services.execution.base.api_base_test_setup.public_base import PublicBase
+from src.apps.auto_api.services.execution.base.case_base import CaseBase
+from src.apps.auto_api.services.execution.base.data_source_operation import execute_data_source_assertion, execute_data_source_operation
+from src.apps.data_factory.services.datasource.data_source_execution import DataSourceExecutionService
+from src.apps.data_factory.services.datasource.data_source_execution_request import DataSourceExecutionRequestService
 from src.apps.test_center.enums.data_source import DataSourceTypeEnum
 from src.common.exceptions import ErrorDefinition
 
@@ -68,7 +63,7 @@ class FakeEngine:
 
 class DataSourceExecutionServiceTests(SimpleTestCase):
     @patch(
-        'src.apps.auto_api.services.base.api_base_test_setup.public_base.'
+        'src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.'
         'DataSourceExecutionService.execute'
     )
     def test_custom_code_datasource_callable_uses_unified_service(self, execute):
@@ -92,11 +87,11 @@ class DataSourceExecutionServiceTests(SimpleTestCase):
         )
 
     @patch(
-        'src.apps.auto_api.services.base.api_base_test_setup.public_base.cache_data_source_result',
+        'src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.cache_data_source_result',
         return_value=True,
     )
     @patch(
-        'src.apps.auto_api.services.base.api_base_test_setup.public_base.execute_data_source_query',
+        'src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.execute_data_source_query',
         return_value={'rows': [{'token': 'abc'}]},
     )
     def test_api_sql_public_variable_uses_unified_query_service(self, execute, cache_result):
@@ -147,7 +142,7 @@ class DataSourceExecutionServiceTests(SimpleTestCase):
                 'value': 'DELETE FROM users WHERE id=1',
             })
 
-    @patch('src.apps.auto_api.services.base.data_source_operation.DataSourceExecutionService.execute')
+    @patch('src.apps.auto_api.services.execution.base.data_source_operation.DataSourceExecutionService.execute')
     def test_api_runtime_uses_generic_data_source_execution_service(self, execute: Mock):
         execute.return_value = {'result': []}
         test_setup = SimpleNamespace(
@@ -176,7 +171,7 @@ class DataSourceExecutionServiceTests(SimpleTestCase):
             },
         )
 
-    @patch('src.apps.auto_api.services.base.data_source_operation.DataSourceExecutionService.execute')
+    @patch('src.apps.auto_api.services.execution.base.data_source_operation.DataSourceExecutionService.execute')
     def test_api_runtime_can_use_explicit_case_project_product_scope(self, execute: Mock):
         execute.return_value = {'affected_rows': 1}
         test_setup = SimpleNamespace(
@@ -202,7 +197,7 @@ class DataSourceExecutionServiceTests(SimpleTestCase):
             },
         )
 
-    @patch('src.apps.auto_api.services.base.case_base.execute_data_source_operation')
+    @patch('src.apps.auto_api.services.execution.base.case_base.execute_data_source_operation')
     def test_case_posterior_uses_case_scope_and_reports_failed_item(self, execute: Mock):
         execute.side_effect = AutoApiError(
             ErrorDefinition(code=300, message='逻辑数据源未绑定当前测试环境')
@@ -241,7 +236,7 @@ class DataSourceExecutionServiceTests(SimpleTestCase):
             },
         )
 
-    @patch('src.apps.auto_api.services.base.data_source_operation.DataSourceExecutionService.execute')
+    @patch('src.apps.auto_api.services.execution.base.data_source_operation.DataSourceExecutionService.execute')
     def test_api_runtime_preserves_data_source_business_error(self, execute: Mock):
         execute.side_effect = AutoApiError(
             ErrorDefinition(code=300, message='MySQL SQL语法或数据库对象错误：syntax error')
@@ -298,7 +293,7 @@ class DataSourceExecutionServiceTests(SimpleTestCase):
             )
         )
 
-    @patch('src.apps.data_factory.services.data_source_execution.DataFactoryDatasource.create_engine')
+    @patch('src.apps.data_factory.services.datasource.data_source_execution.DataFactoryDatasource.create_engine')
     def test_sql_syntax_error_keeps_driver_reason(self, create_engine: Mock):
         create_engine.side_effect = ProgrammingError(
             'SELECT FORM users',
@@ -320,7 +315,7 @@ class DataSourceExecutionServiceTests(SimpleTestCase):
         self.assertIn('PostgreSQL SQL语法或数据库对象错误', str(error.exception))
         self.assertIn('syntax error near FORM', str(error.exception))
 
-    @patch('src.apps.data_factory.services.data_source_execution.DataFactoryDatasource.create_engine')
+    @patch('src.apps.data_factory.services.datasource.data_source_execution.DataFactoryDatasource.create_engine')
     def test_sql_integrity_error_is_classified(self, create_engine: Mock):
         create_engine.side_effect = IntegrityError(
             'INSERT INTO users(id) VALUES (1)',
@@ -342,9 +337,9 @@ class DataSourceExecutionServiceTests(SimpleTestCase):
         self.assertIn('SQL违反数据库约束', str(error.exception))
         self.assertIn('duplicate key value', str(error.exception))
 
-    @patch('src.apps.data_factory.services.data_source_execution_request.DataSourceExecutionService.execute')
+    @patch('src.apps.data_factory.services.datasource.data_source_execution_request.DataSourceExecutionService.execute')
     @patch(
-        'src.apps.data_factory.services.data_source_execution_request.DataFactoryDatasourceResolver.resolve_binding_by_env')
+        'src.apps.data_factory.services.datasource.data_source_execution_request.DataFactoryDatasourceResolver.resolve_binding_by_env')
     def test_write_requires_explicit_confirmation(
             self,
             resolve_binding: Mock,
@@ -362,12 +357,12 @@ class DataSourceExecutionServiceTests(SimpleTestCase):
             )
         execute.assert_not_called()
 
-    @patch('src.apps.data_factory.services.sql_execution_audit.SqlExecutionAuditService.finish_success')
-    @patch('src.apps.data_factory.services.sql_execution_audit.SqlExecutionAuditService.start')
-    @patch('src.apps.data_factory.services.data_source_execution.DataFactoryDatasource.create_engine')
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionAuditService.finish_success')
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionAuditService.start')
+    @patch('src.apps.data_factory.services.datasource.data_source_execution.DataFactoryDatasource.create_engine')
     @patch(
-        'src.apps.data_factory.services.data_source_execution.DataFactoryDatasourceResolver.require_binding_permission')
-    @patch('src.apps.data_factory.services.data_source_execution.DataFactoryDatasourceResolver.resolve_binding_by_env')
+        'src.apps.data_factory.services.datasource.data_source_execution.DataFactoryDatasourceResolver.require_binding_permission')
+    @patch('src.apps.data_factory.services.datasource.data_source_execution.DataFactoryDatasourceResolver.resolve_binding_by_env')
     def test_query_returns_structured_limited_result(
             self,
             resolve_binding: Mock,
@@ -428,18 +423,18 @@ class DataSourceExecutionServiceTests(SimpleTestCase):
             record=SimpleNamespace(id=12, is_slow=False),
         )
         with patch(
-                'src.apps.data_factory.services.data_source_execution.'
+                'src.apps.data_factory.services.datasource.data_source_execution.'
                 'DataFactoryDatasourceResolver.resolve_binding_by_env',
                 return_value=binding,
         ), patch(
-            'src.apps.data_factory.services.data_source_execution.'
+            'src.apps.data_factory.services.datasource.data_source_execution.'
             'DataFactoryDatasourceResolver.require_binding_permission',
         ), patch(
-            'src.apps.data_factory.services.sql_execution_audit.'
+            'src.apps.data_factory.services.sql.sql_execution_audit.'
             'SqlExecutionAuditService.start',
             return_value=handle,
         ), patch(
-            'src.apps.data_factory.services.sql_execution_audit.'
+            'src.apps.data_factory.services.sql.sql_execution_audit.'
             'SqlExecutionAuditService.finish_failure',
         ) as finish_failure, patch.object(
             DataSourceExecutionService,

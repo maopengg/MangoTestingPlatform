@@ -1,6 +1,6 @@
 from django.test import SimpleTestCase
 
-from src.apps.auto_api.services.test_case.test_case_parts import debugging, execution, parameter
+from src.apps.auto_api.services.execution.cases.test_case_parts import debugging, execution, parameter
 from src.common.logging import log
 
 

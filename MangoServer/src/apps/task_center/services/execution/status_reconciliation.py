@@ -63,19 +63,19 @@ class ExecutionStatusProjectionService:
             return 0
         status = TaskEnum.FAIL.value if force_failure else cls._terminal_business_status(task)
         if task.business_type == ServerApiCommandEnum.API_CASE.value:
-            from src.apps.auto_api.services.test_case.run_status import ApiCaseRunStatusService
+            from src.apps.auto_api.services.execution.cases.run_status import ApiCaseRunStatusService
 
             return ApiCaseRunStatusService.project_status(task.business_id, status)
         if task.business_type == ServerUiCommandEnum.CASE_BATCH.value:
-            from src.apps.auto_ui.services.execution_status import UiExecutionStatusService
+            from src.apps.auto_ui.services.execution.execution_status import UiExecutionStatusService
 
             return UiExecutionStatusService.project_case_status(task.business_id, status)
         if task.business_type == ServerUiCommandEnum.PAGE_STEPS.value:
-            from src.apps.auto_ui.services.execution_status import UiExecutionStatusService
+            from src.apps.auto_ui.services.execution.execution_status import UiExecutionStatusService
 
             return UiExecutionStatusService.project_page_step_status(task.business_id, status)
         if task.business_type == ServerPytestCommandEnum.TEST_CASE.value:
-            from src.apps.auto_pytest.services.execution_status import PytestExecutionStatusService
+            from src.apps.auto_pytest.services.execution.execution_status import PytestExecutionStatusService
 
             return PytestExecutionStatusService.project_status(task.business_id, status)
         return 0
@@ -103,9 +103,9 @@ class ExecutionStatusProjectionService:
     def _candidate_sources(
             cls,
     ) -> list[tuple[str, Callable[[int], list[tuple[int, datetime]]]]]:
-        from src.apps.auto_api.services.test_case.run_status import ApiCaseRunStatusService
-        from src.apps.auto_pytest.services.execution_status import PytestExecutionStatusService
-        from src.apps.auto_ui.services.execution_status import UiExecutionStatusService
+        from src.apps.auto_api.services.execution.cases.run_status import ApiCaseRunStatusService
+        from src.apps.auto_pytest.services.execution.execution_status import PytestExecutionStatusService
+        from src.apps.auto_ui.services.execution.execution_status import UiExecutionStatusService
 
         return [
             (

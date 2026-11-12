@@ -2,11 +2,7 @@ from django.contrib.auth.hashers import check_password
 from django.test import SimpleTestCase
 from mangotools.data_processor import EncryptionTool
 
-from src.apps.user.services.password import (
-    double_md5,
-    encode_plain_password,
-    verify_password_digest,
-)
+from src.apps.user.services.authentication.password import double_md5, encode_plain_password, verify_password_digest
 
 
 class PasswordCompatibilityTests(SimpleTestCase):

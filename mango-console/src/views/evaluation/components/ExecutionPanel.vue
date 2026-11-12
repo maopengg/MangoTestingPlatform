@@ -103,7 +103,7 @@
                 {{ percent(record.summary.memory_qa.rates[key]) }}</a-descriptions-item
               ></a-descriptions
             >
-            <a-alert v-if="record.details?.error_message" type="error">{{
+            <a-alert data-feedback-kind="execution-result" v-if="record.details?.error_message" type="error">{{
               record.details.error_message
             }}</a-alert>
             <a-alert v-if="record.snapshot?.selection?.scope === 'retry_subset'" type="warning"

@@ -1,14 +1,52 @@
 import asyncio
 from types import SimpleNamespace
+from pathlib import Path
+import tempfile
 from unittest import TestCase
 from unittest.mock import Mock, patch
+
+import desktop_main
 
 from src.flet_pages.application import FletActuatorApplication
 from src.flet_pages.config import config_view
 from src.flet_pages.select import CompactSelect
+from src.flet_pages.native_client import _set_initial_window_size
 
 
 class FletPagesTests(TestCase):
+    def test_native_login_frame_changes_without_relocating_nib_data(self):
+        with tempfile.TemporaryDirectory() as directory:
+            client = Path(directory)
+            nib = client / "Contents/Resources/Base.lproj/MainMenu.nib"
+            nib.parent.mkdir(parents=True)
+            original = b"NIBArchive{{880, 488.5}, {800, 600}}|{800, 600}|other-data"
+            nib.write_bytes(original)
+            _set_initial_window_size(client)
+            updated = nib.read_bytes()
+            self.assertEqual(len(updated), len(original))
+            self.assertEqual(updated.count(b"{360, 442}"), 2)
+            self.assertTrue(updated.endswith(b"other-data"))
+
+    def test_changed_native_resource_is_rejected_without_modification(self):
+        with tempfile.TemporaryDirectory() as directory:
+            client = Path(directory)
+            nib = client / "Contents/Resources/Base.lproj/MainMenu.nib"
+            nib.parent.mkdir(parents=True)
+            nib.write_bytes(b"different-client-format")
+            with self.assertRaisesRegex(RuntimeError, "资源结构已变化"):
+                _set_initial_window_size(client)
+            self.assertEqual(nib.read_bytes(), b"different-client-format")
+
+    def test_entry_passes_basic_configuration_to_builder(self):
+        with patch("src.flet_pages.packaging.build_desktop_executable") as build:
+            desktop_main.main(["--build"])
+        build.assert_called_once_with(app_name=desktop_main.APP_NAME, project_root=desktop_main.PROJECT_ROOT)
+
+    def test_entry_dispatches_default_startup(self):
+        with patch("desktop_main.run_desktop") as run:
+            desktop_main.main([])
+        run.assert_called_once_with(app_name=desktop_main.APP_NAME, project_root=desktop_main.PROJECT_ROOT)
+
     def test_compact_select_preserves_option_key_in_change_event(self):
         changed = Mock()
         select = CompactSelect(options=[("1", "一个"), ("2", "两个")], value="1", on_change=changed)
@@ -39,14 +77,16 @@ class FletPagesTests(TestCase):
         self.assertIsNotNone(app.log_view())
 
     def test_login_is_prepared_and_centered_before_window_is_shown(self):
-        page = Mock(window=SimpleNamespace(center=Mock(), to_front=Mock(), visible=True), controls=[])
+        page = Mock(window=SimpleNamespace(center=Mock(), to_front=Mock(), visible=False), controls=[])
         visible_at_update = []
         page.update.side_effect = lambda: visible_at_update.append(page.window.visible)
+        page.window.center.side_effect = page.update
         with patch("src.flet_pages.application.AsyncRuntimeBridge"), patch(
             "src.flet_pages.application.SetConfig.get_remembered_login", return_value=("", "", False)
         ), patch("src.flet_pages.application.SetConfig.get_proxy_url", return_value=None):
-            FletActuatorApplication(page)
-        self.assertEqual(visible_at_update, [False, True])
+            app = FletActuatorApplication(page)
+        self.assertEqual(visible_at_update, [True])
+        self.assertTrue(page.window.focused)
         self.assertEqual((page.window.width, page.window.height), (360, 470))
         page.window.center.assert_called_once_with()
 

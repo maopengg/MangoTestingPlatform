@@ -15,7 +15,7 @@ from rest_framework.viewsets import ViewSet
 from src.apps.test_center.api.serializers.file_data import FileDataSerializersC
 from src.apps.test_center.api.serializers.file_data_mutation import FileDataSerializers
 from src.apps.test_center.models import FileData
-from src.apps.test_center.services.execution_artifact import ExecutionArtifactService
+from src.apps.test_center.services.storage.execution_artifact import ExecutionArtifactService
 from src.common.decorators.error_response import error_response
 from src.common.logging import log
 from src.common.responses.model_crud import ModelCRUD
@@ -36,6 +36,7 @@ from src.common.storage import build_public_file_url
 
 
 def can_download_file(file_data: FileData, request: Request) -> bool:
+    """检查当前用户是否可下载指定测试文件"""
     if file_data.allow_download:
         return True
     user = getattr(request, 'user', None) or {}
@@ -52,6 +53,7 @@ class FileDataCRUD(ModelCRUD):
 
     @error_response('system')
     def post(self, request: Request):
+        """新增测试文件"""
         if request.data.get('screenshot', False):
             file_field = request.data.get('file_field') or 'failed_screenshot'
             file_dir = ExecutionArtifactService.normalize_directory(request.data.get('file_dir') or '')
@@ -97,6 +99,7 @@ class FileDataViews(ViewSet):
     @error_response('system')
     @action(methods=['GET'], detail=False)
     def download_url(self, request: Request):
+        """获取测试文件下载地址"""
         file_id = request.query_params.get('id')
         if not file_id:
             return ResponseData.fail(RESPONSE_MSG_0029)
@@ -118,6 +121,7 @@ class FileDataViews(ViewSet):
     @error_response('system')
     @action(methods=['GET'], detail=False)
     def artifact_download_url(self, request: Request):
+        """获取报告附件下载地址"""
         try:
             normalized = ExecutionArtifactService.normalize_path(request.query_params.get('path'))
             if f'/{ExecutionArtifactService.PERF_CAPTURE_DIRECTORY}/' in f'/{normalized}':

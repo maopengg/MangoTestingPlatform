@@ -85,6 +85,12 @@ class ApiInfoRelease(models.Model):
     version_label = models.CharField(verbose_name="发布版本", max_length=64)
     status = models.CharField(verbose_name="发布状态", max_length=32, default=STATUS_PUBLISHED, db_index=True)
     is_current = models.BooleanField(verbose_name="是否当前发布版本", default=True, db_index=True)
+    # MySQL 不支持条件唯一索引；历史版本使用 NULL，允许保留多条。
+    current_unique_marker = models.GeneratedField(
+        verbose_name="当前版本唯一标记",
+        expression=models.Case(models.When(is_current=True, then=models.Value(1)), default=models.Value(None)),
+        output_field=models.SmallIntegerField(), db_persist=True, null=True, blank=True,
+    )
     release_note = models.TextField(verbose_name="发布说明", null=True, blank=True)
     published_by = models.ForeignKey(
         to=User,
@@ -112,8 +118,7 @@ class ApiInfoRelease(models.Model):
                 name='uniq_api_info_release_no',
             ),
             models.UniqueConstraint(
-                fields=['api_info'],
-                condition=models.Q(is_current=True),
+                fields=['api_info', 'current_unique_marker'],
                 name='uniq_current_api_info_release',
             ),
         ]
@@ -200,6 +205,12 @@ class ApiCaseRelease(models.Model):
     version_label = models.CharField(verbose_name="发布版本", max_length=64)
     status = models.CharField(verbose_name="发布状态", max_length=32, default=STATUS_PUBLISHED, db_index=True)
     is_current = models.BooleanField(verbose_name="是否当前发布版本", default=True, db_index=True)
+    # 标记由数据库维护，QuerySet.update() 和批量写入也受唯一约束保护。
+    current_unique_marker = models.GeneratedField(
+        verbose_name="当前版本唯一标记",
+        expression=models.Case(models.When(is_current=True, then=models.Value(1)), default=models.Value(None)),
+        output_field=models.SmallIntegerField(), db_persist=True, null=True, blank=True,
+    )
     release_note = models.TextField(verbose_name="发布说明", null=True, blank=True)
     published_by = models.ForeignKey(
         to=User,
@@ -227,8 +238,7 @@ class ApiCaseRelease(models.Model):
                 name='uniq_api_case_release_no',
             ),
             models.UniqueConstraint(
-                fields=['api_case'],
-                condition=models.Q(is_current=True),
+                fields=['api_case', 'current_unique_marker'],
                 name='uniq_current_api_case_release',
             ),
         ]

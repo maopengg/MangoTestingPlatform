@@ -12,8 +12,8 @@ from src.apps.auto_api.services.api_case.mutation_io import (
     ApiCaseMutationService,
     ApiCaseParameterMutationService,
 )
-from src.apps.auto_api.services.test_case.test_case import TestCase
-from src.apps.test_center.services.execution_result import ExecutionResultService
+from src.apps.auto_api.services.execution.cases.test_case import TestCase
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
 from src.interfaces.mcp.audit import (
     mcp_with_update_user,
 )

@@ -5,8 +5,8 @@ from django.db.backends.sqlite3.base import DatabaseWrapper
 from django.test import SimpleTestCase
 
 from src.apps.test_center.models import ExecutionResult
-from src.apps.test_center.services.execution_result import ExecutionResultService
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 
 
 class ExecutionResultPermissionTests(SimpleTestCase):
@@ -55,6 +55,18 @@ class ExecutionResultPermissionTests(SimpleTestCase):
             queryset = ExecutionResultService.visible_results(self.user)
         self.assertEqual(queryset.model, ExecutionResult)
         self.assertFalse(queryset.query.where.children)
+
+    def test_result_management_read_matches_global_admin_list_scope(self):
+        with patch.object(PermissionMenuService, 'permission_keys_for_user',
+                          return_value={'system.execution_result:read'}):
+            queryset = ExecutionResultService.visible_results(self.user)
+        self.assertEqual(queryset.model, ExecutionResult)
+        self.assertFalse(queryset.query.where.children)
+
+    def test_result_management_remove_alone_does_not_grant_content_read(self):
+        with patch.object(PermissionMenuService, 'permission_keys_for_user',
+                          return_value={'system.execution_result:remove'}):
+            self.assertFalse(ExecutionResultService.visible_results(self.user).exists())
 
     def test_detail_and_file_lookup_keep_the_authorized_queryset(self):
         queryset = MagicMock()

@@ -9,7 +9,7 @@ from rest_framework import serializers
 from src.apps.auto_ui.enums import UiPublicTypeEnum
 from src.apps.auto_ui.models import UiPublic
 from src.apps.data_factory.formatters import format_datasource_alias
-from src.apps.data_factory.services.datasource import DataFactoryDatasourceResolver
+from src.apps.data_factory.services.datasource.datasource import DataFactoryDatasourceResolver
 from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.apps.test_center.formatters.related import format_project_product
 from src.apps.user.formatters import format_user_simple

@@ -10,7 +10,7 @@ from src.apps.functional_test.exceptions import (
 from src.apps.functional_test.models import (
     ManualTestCase,
 )
-from src.apps.functional_test.services.suite import ManualTestSuiteService
+from src.apps.functional_test.services.suites.suite import ManualTestSuiteService
 
 
 class ManualTestCaseSerializer(ProductModuleBindingSerializerMixin, serializers.ModelSerializer):

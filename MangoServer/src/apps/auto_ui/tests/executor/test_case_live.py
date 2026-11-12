@@ -8,7 +8,7 @@ from src.apps.auto_ui.enums.live_stream import (
     LiveStreamExecutionType,
 )
 from src.apps.auto_ui.exceptions import AutoUiError
-from src.apps.auto_ui.services.executor_slot import ExecutorSlotLeaseService
+from src.apps.auto_ui.services.execution.executor_slot import ExecutorSlotLeaseService
 from src.apps.auto_ui.services.live_stream.constants import REALTIME_COMMAND_TTL_SECONDS
 from src.apps.auto_ui.services.live_stream.session_service import LiveStreamSessionService
 

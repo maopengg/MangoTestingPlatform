@@ -12,11 +12,11 @@ from src.apps.data_factory.enums import (
 )
 from src.apps.data_factory.models import DataFactoryEntity
 from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
-from src.apps.data_factory.services.datasource import DataFactoryDatasourceResolver, is_missing_value
-from src.apps.data_factory.services.datasource_target import DatasourceTargetService
-from src.apps.data_factory.services.discover import DataFactoryDiscover
-from src.apps.data_factory.services.entity import DataFactoryEntityService
-from src.apps.data_factory.services.field import DataFactoryFieldService
+from src.apps.data_factory.services.datasource.datasource import DataFactoryDatasourceResolver, is_missing_value
+from src.apps.data_factory.services.datasource.datasource_target import DatasourceTargetService
+from src.apps.data_factory.services.schema.discover import DataFactoryDiscover
+from src.apps.data_factory.services.assets.entity import DataFactoryEntityService
+from src.apps.data_factory.services.assets.field import DataFactoryFieldService
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.interfaces.mcp.audit import mcp_current_user_id
 from src.interfaces.mcp.common import paginate_queryset

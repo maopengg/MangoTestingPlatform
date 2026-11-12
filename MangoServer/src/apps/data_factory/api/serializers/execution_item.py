@@ -7,7 +7,7 @@ from rest_framework import serializers
 from src.apps.data_factory.api.serializers.execution import DataFactoryExecutionSerializerC
 from src.apps.data_factory.api.serializers.template import DataFactoryTemplateSerializerC
 from src.apps.data_factory.models import DataFactoryExecutionItem, SqlExecutionRecord
-from src.apps.data_factory.services.execution_snapshot import get_insert_snapshot
+from src.apps.data_factory.services.execution.execution_snapshot import get_insert_snapshot
 from src.apps.test_center.formatters.related import format_data_source
 from src.common.validators.serializer_fields import RelatedObjectField
 

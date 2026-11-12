@@ -12,6 +12,7 @@ class LiveStreamViews(ViewSet):
 
     @error_response('ui')
     def create_session(self, request: Request):
+        """创建 UI 直播会话"""
         data = LiveStreamSessionService.create_session(
             request.user,
             request.data.get('execution_type'),
@@ -24,6 +25,7 @@ class LiveStreamViews(ViewSet):
 
     @error_response('ui')
     def start_session(self, request: Request, stream_id: str):
+        """启动 UI 直播会话"""
         data = LiveStreamSessionService.start_session(
             request.user,
             stream_id,
@@ -33,6 +35,7 @@ class LiveStreamViews(ViewSet):
 
     @error_response('ui')
     def close_session(self, request: Request, stream_id: str):
+        """关闭 UI 直播会话"""
         data = LiveStreamSessionService.close_session(
             request.user,
             stream_id,
@@ -41,6 +44,7 @@ class LiveStreamViews(ViewSet):
 
     @error_response('ui')
     def create_workspace(self, request: Request):
+        """创建 UI 直播工作台"""
         data = LiveWorkspaceService.create_workspace(
             request.user,
             request.data.get('workspace_type'),
@@ -52,11 +56,13 @@ class LiveStreamViews(ViewSet):
 
     @error_response('ui')
     def close_workspace(self, request: Request, workspace_id: str):
+        """关闭 UI 直播工作台"""
         force = str(request.query_params.get('force') or request.data.get('force') or '').lower() in ('1', 'true')
         data = LiveWorkspaceService.close_workspace(request.user, workspace_id, force=force)
         return ResponseData.success(RESPONSE_MSG_0113, data)
 
     @error_response('ui')
     def workspace_status(self, request: Request, workspace_id: str):
+        """获取 UI 直播工作台状态"""
         data = LiveWorkspaceService.workspace_status(request.user, workspace_id)
         return ResponseData.success(RESPONSE_MSG_0101, data)

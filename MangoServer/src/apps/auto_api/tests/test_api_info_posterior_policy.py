@@ -3,7 +3,7 @@ from unittest import TestCase
 from unittest.mock import Mock
 
 from src.apps.auto_api.schemas.execution import ApiExecutionRequest, ApiExecutionResponse
-from src.apps.auto_api.services.base.api_base_test_setup import APIBaseTestSetup
+from src.apps.auto_api.services.execution.base.api_base_test_setup import APIBaseTestSetup
 
 
 def response(code: int) -> ApiExecutionResponse:

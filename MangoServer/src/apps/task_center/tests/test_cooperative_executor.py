@@ -1,10 +1,13 @@
 import threading
+import time
 from contextvars import ContextVar
 from unittest.mock import patch
 
 from django.test import SimpleTestCase
 
-from src.apps.task_center.services.execution.cooperative_executor import CooperativeCaseExecutor, wait_until
+from src.apps.task_center.services.execution.cooperative_executor import (
+    CooperativeCaseExecutor, wait_until,
+)
 
 
 class CooperativeExecutorTests(SimpleTestCase):

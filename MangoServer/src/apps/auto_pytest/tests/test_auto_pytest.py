@@ -16,18 +16,18 @@ from src.apps.auto_pytest.api.views.pytest_product import PytestProductViews
 from src.apps.auto_pytest.api.views.pytest_repository import _default_api_base_url, _validate_repository_provider
 from src.apps.auto_pytest.exceptions import AutoPytestError
 from src.apps.auto_pytest.models import PytestRepository
-from src.apps.auto_pytest.services.base.method_nodes import PytestMethodNodeService
-from src.apps.auto_pytest.services.file_management import PytestFileManagementService
-from src.apps.auto_pytest.services.git_credentials import PytestGitCredentialService
-from src.apps.auto_pytest.services.git_management.repository_service import RepositoryGitService
-from src.apps.auto_pytest.services.product_sync import PytestProductSyncService
-from src.apps.auto_pytest.services.test_case.ai_inference import PytestCaseAiInferenceService
-from src.apps.auto_pytest.services.test_case.batch_update import PytestCaseBatchUpdateService
-from src.apps.auto_pytest.services.test_case.directory_tree import PytestCaseDirectoryTreeService
-from src.apps.auto_pytest.services.test_case.module_binding import PytestCaseModuleBindingService
-from src.apps.auto_pytest.services.test_case.sync import PytestCaseSyncService
-from src.apps.auto_pytest.services.test_case.test_case import TestCase as PytestDispatchService
-from src.apps.auto_pytest.services.test_report_writing import PtestTestReportWriting
+from src.apps.auto_pytest.services.synchronization.base.method_nodes import PytestMethodNodeService
+from src.apps.auto_pytest.services.assets.file_management import PytestFileManagementService
+from src.apps.auto_pytest.services.repository.git_credentials import PytestGitCredentialService
+from src.apps.auto_pytest.services.repository.repository_service import RepositoryGitService
+from src.apps.auto_pytest.services.synchronization.product_sync import PytestProductSyncService
+from src.apps.auto_pytest.services.synchronization.ai_inference import PytestCaseAiInferenceService
+from src.apps.auto_pytest.services.synchronization.batch_update import PytestCaseBatchUpdateService
+from src.apps.auto_pytest.services.synchronization.directory_tree import PytestCaseDirectoryTreeService
+from src.apps.auto_pytest.services.synchronization.module_binding import PytestCaseModuleBindingService
+from src.apps.auto_pytest.services.synchronization.sync import PytestCaseSyncService
+from src.apps.auto_pytest.services.execution.cases.test_case import TestCase as PytestDispatchService
+from src.apps.auto_pytest.services.reporting.test_report_writing import PtestTestReportWriting
 from src.apps.system.enums import ExecutorTaskTypeEnum
 from src.apps.task_center.services.execution.executor_task import ExecutorTaskService
 from src.apps.test_center.api.views.project import ProjectViews
@@ -218,7 +218,7 @@ class PytestCaseRuntimeAuditTests(SimpleTestCase):
         self.assertEqual(result['scenario_tags'], ['smoke_verification'])
         self.assertNotIn('case_people', result)
 
-    @patch('src.apps.auto_pytest.services.test_case.module_binding.ProductModule.objects')
+    @patch('src.apps.auto_pytest.services.synchronization.module_binding.ProductModule.objects')
     def test_module_binding_updates_scoped_cases(self, module_objects):
         update_values = {}
 
@@ -369,8 +369,8 @@ def test_websocket():
             'auto_tests/ui/project/features/login.feature',
         )
 
-    @patch('src.apps.auto_pytest.services.test_report_writing.ExecutionResultService.save_result')
-    @patch('src.apps.auto_pytest.services.test_report_writing.PytestCase.objects.get')
+    @patch('src.apps.auto_pytest.services.reporting.test_report_writing.ExecutionResultService.save_result')
+    @patch('src.apps.auto_pytest.services.reporting.test_report_writing.PytestCase.objects.get')
     def test_case_result_does_not_touch_content_update_time(self, get_mock, save_result_mock):
         case = SimpleNamespace(id=18, status=None, save=Mock())
         get_mock.return_value = case
@@ -403,7 +403,7 @@ class PytestGitCredentialServiceTests(SimpleTestCase):
     def tearDown(self):
         cache.clear()
 
-    @patch('src.apps.auto_pytest.services.git_credentials.RepositoryGitService.provider_config')
+    @patch('src.apps.auto_pytest.services.repository.git_credentials.RepositoryGitService.provider_config')
     def test_credential_reference_is_bound_to_executor(self, provider_config_mock):
         provider_config_mock.return_value = SimpleNamespace(access_token='secret-token')
 
@@ -432,7 +432,7 @@ class PytestGitCredentialServiceTests(SimpleTestCase):
                 dispatch_id='dispatch-a',
             )
 
-    @patch('src.apps.auto_pytest.services.git_credentials.RepositoryGitService.provider_config')
+    @patch('src.apps.auto_pytest.services.repository.git_credentials.RepositoryGitService.provider_config')
     def test_credential_reference_rejects_wrong_repository_or_dispatch(self, provider_config_mock):
         provider_config_mock.return_value = SimpleNamespace(access_token='secret-token')
         repository = SimpleNamespace(id=12, credential=None)
@@ -530,7 +530,7 @@ class PytestDispatchSecurityTests(SimpleTestCase):
         )
 
     @patch.object(RepositoryGitService, 'for_product')
-    @patch('src.apps.auto_pytest.services.test_case.test_case.PytestCase.objects.get')
+    @patch('src.apps.auto_pytest.services.execution.cases.test_case.PytestCase.objects.get')
     def test_dispatch_rejects_case_missing_from_current_branch(
             self,
             get_case_mock,
@@ -546,7 +546,7 @@ class PytestDispatchSecurityTests(SimpleTestCase):
         case.save.assert_not_called()
 
     @patch.object(RepositoryGitService, 'for_product')
-    @patch('src.apps.auto_pytest.services.test_case.test_case.PytestCase.objects.get')
+    @patch('src.apps.auto_pytest.services.execution.cases.test_case.PytestCase.objects.get')
     def test_dispatch_reports_missing_case_owner_as_business_error(
             self,
             get_case_mock,
@@ -564,9 +564,9 @@ class PytestDispatchSecurityTests(SimpleTestCase):
         case.save.assert_not_called()
 
     @patch.object(RepositoryGitService, 'for_product')
-    @patch('src.apps.auto_pytest.services.test_case.test_case.PytestGitCredentialService.issue',
+    @patch('src.apps.auto_pytest.services.execution.cases.test_case.PytestGitCredentialService.issue',
            return_value='credential-reference')
-    @patch('src.apps.auto_pytest.services.test_case.test_case.PytestCase.objects.get')
+    @patch('src.apps.auto_pytest.services.execution.cases.test_case.PytestCase.objects.get')
     def test_dispatch_payload_contains_reference_not_access_token(
             self,
             get_case_mock,
@@ -596,9 +596,9 @@ class PytestDispatchSecurityTests(SimpleTestCase):
         case.save.assert_called_once_with(update_fields=['status'])
 
     @patch.object(RepositoryGitService, 'for_product')
-    @patch('src.apps.auto_pytest.services.test_case.test_case.PytestGitCredentialService.issue',
+    @patch('src.apps.auto_pytest.services.execution.cases.test_case.PytestGitCredentialService.issue',
            return_value='credential-reference')
-    @patch('src.apps.auto_pytest.services.test_case.test_case.PytestCase.objects.get')
+    @patch('src.apps.auto_pytest.services.execution.cases.test_case.PytestCase.objects.get')
     def test_dispatch_allows_case_without_module(
             self,
             get_case_mock,
@@ -624,9 +624,9 @@ class PytestDispatchSecurityTests(SimpleTestCase):
         case.save.assert_called_once_with(update_fields=['status'])
 
     @patch.object(RepositoryGitService, 'for_product')
-    @patch('src.apps.auto_pytest.services.test_case.test_case.PytestGitCredentialService.issue',
+    @patch('src.apps.auto_pytest.services.execution.cases.test_case.PytestGitCredentialService.issue',
            return_value='credential-reference')
-    @patch('src.apps.auto_pytest.services.test_case.test_case.PytestCase.objects.get')
+    @patch('src.apps.auto_pytest.services.execution.cases.test_case.PytestCase.objects.get')
     def test_dispatch_failure_does_not_mark_case_running(
             self,
             get_case_mock,
@@ -886,7 +886,7 @@ class PytestGitManagementSafetyTests(SimpleTestCase):
         self.assertIn('当前分支中的文件无法读取', error.exception.msg)
         self.assertNotIn('/private/runtime', error.exception.msg)
 
-    @patch('src.apps.auto_pytest.services.git_management.repository_service.os.path.isfile', return_value=True)
+    @patch('src.apps.auto_pytest.services.repository.repository_service.os.path.isfile', return_value=True)
     def test_repository_file_check_restores_persisted_branch_first(self, _isfile_mock):
         service = RepositoryGitService(SimpleNamespace(id=7))
 

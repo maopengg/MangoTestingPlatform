@@ -1,6 +1,6 @@
 <template>
   <a-modal modal-class="mango-simple-form-modal" v-model:visible="visible" :title="editingId === null ? '新增用例' : '编辑用例'" :width="560" :on-before-ok="save" :closable="!saving" :mask-closable="!saving" :cancel-button-props="{ disabled: saving }" @cancel="close">
-    <a-alert v-if="error" type="error">{{ error }}</a-alert>
+    <MangoRequestFeedback v-if="error" :message="(error)" />
     
     
     <a-form auto-label-width :model="draft" :disabled="saving" layout="horizontal" class="mango-ui-case-metadata-form mango-simple-form">
@@ -17,6 +17,8 @@
   </a-modal>
 </template>
 <script setup lang="ts">
+import { requestFailureMessage } from '@/utils/load-error'
+
   import { reactive, ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { fieldNames } from '@/setting'
@@ -42,13 +44,13 @@
     if (saving.value || !visible.value || !scope.available()) return false
     const valid = scope.capture(), version = session, id = editingId.value, current = () => valid() && version === session && visible.value
     let payload: ReturnType<typeof caseMetadataPayload>
-    try { payload = caseMetadataPayload(draft, id) } catch { error.value = '请完整填写项目产品、模块、名称、优先级和负责人'; return false }
+    try { payload = caseMetadataPayload(draft, id) } catch (requestFailure) { error.value = requestFailureMessage(requestFailure, '请完整填写项目产品、模块、名称、优先级和负责人'); return false }
     saving.value = true; error.value = ''
     try {
       uiCaseAssetResponse(await (id === null ? postUiCase(payload) : putUiCase(payload)))
       if (!current()) return false
       Message.success('保存成功'); emit('saved'); close(); return true
-    } catch { if (current()) error.value = '保存失败，草稿已保留，请重试'; return false }
+    } catch (requestFailure) { if (current()) error.value = requestFailureMessage(requestFailure, '保存失败，草稿已保留，请重试'); return false }
     finally { saving.value = false }
   }
   defineExpose({ open, close })

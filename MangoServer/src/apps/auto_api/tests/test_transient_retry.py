@@ -11,12 +11,9 @@ from src.apps.auto_api.exceptions import (
     API_REQUEST_TIMEOUT, API_TARGET_NO_RESPONSE, API_TLS_FAILED, AutoApiError, TestSuiteStopped,
 )
 from src.apps.auto_api.schemas.execution import ApiExecutionResponse
-from src.apps.auto_api.services.test_case.transient_retry import ApiTransientRetryService as Retry
-from src.apps.auto_api.services.test_case.test_case_parts.parameter import ApiTestCaseParameterMixin
-from src.apps.system.services.system_config import (
-    API_TRANSIENT_RETRY_ENABLED_KEY, API_TRANSIENT_RETRY_CONDITIONS_KEY,
-    SystemConfigService, get_config_definition_map,
-)
+from src.apps.auto_api.services.execution.cases.transient_retry import ApiTransientRetryService as Retry
+from src.apps.auto_api.services.execution.cases.test_case_parts.parameter import ApiTestCaseParameterMixin
+from src.apps.system.services.configuration.system_config import API_TRANSIENT_RETRY_ENABLED_KEY, API_TRANSIENT_RETRY_CONDITIONS_KEY, SystemConfigService, get_config_definition_map
 
 
 class TransientRetryTests(SimpleTestCase):
@@ -74,7 +71,7 @@ class TransientRetryTests(SimpleTestCase):
 class TransientRetryExecutionTests(SimpleTestCase):
     def execute(self, responses, *, selected=None, assertions=None, retry=1, method=MethodEnum.GET.value,
                 cleanup_error=None, stopped=False, default_checks=frozenset(ApiDefaultAssertionCheck)):
-        path = 'src.apps.auto_api.services.test_case.test_case_parts.parameter'
+        path = 'src.apps.auto_api.services.execution.cases.test_case_parts.parameter'
         api = SimpleNamespace(id=7, project_product_id=9, name='查询', method=method,
                               protocol_type=ApiProtocolTypeEnum.HTTP.value, body_type=ApiBodyTypeEnum.NONE.value,
                               url='https://example.com/search', posterior_func=None)

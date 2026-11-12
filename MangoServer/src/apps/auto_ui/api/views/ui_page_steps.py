@@ -13,12 +13,12 @@ from src.apps.auto_ui.api.serializers.ui_page_steps import PageStepsSerializers,
     PageStepsSerializersC, UiStepDebugControlSerializer, UiOpenStepBrowserSerializer, \
     UiPageStepReferencedCasesSerializer, UiPageStepRecordingCommitSerializer
 from src.apps.auto_ui.models import PageSteps
-from src.apps.auto_ui.services.asset_copy import UiAssetCopyService
-from src.apps.auto_ui.services.page_step_asset_service import PageStepAssetService
-from src.apps.auto_ui.services.page_step_flow_service import PageStepFlowService
-from src.apps.auto_ui.services.page_step_recording import PageStepRecordingService
-from src.apps.auto_ui.services.page_step_reference import PageStepReferenceService
-from src.apps.auto_ui.services.test_case.test_case import TestCase
+from src.apps.auto_ui.services.assets.asset_copy import UiAssetCopyService
+from src.apps.auto_ui.services.page_steps.page_step_asset_service import PageStepAssetService
+from src.apps.auto_ui.services.page_steps.page_step_flow_service import PageStepFlowService
+from src.apps.auto_ui.services.page_steps.page_step_recording import PageStepRecordingService
+from src.apps.auto_ui.services.page_steps.page_step_reference import PageStepReferenceService
+from src.apps.auto_ui.services.execution.cases.test_case import TestCase
 from src.apps.system.enums import ClientNameEnum
 from src.common.decorators.error_response import error_response
 from src.common.exceptions import MangoServerError
@@ -73,6 +73,7 @@ class PageStepsViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('ui')
     def open_browser(self, request: Request):
+        """打开UI 页面步骤调试浏览器"""
         serializer = UiOpenStepBrowserSerializer(data=request.data)
         if not serializer.is_valid():
             return ResponseData.fail(RESPONSE_MSG_0251, serializer.errors)
@@ -143,6 +144,7 @@ class PageStepsViews(ViewSet):
     @action(methods=['GET'], detail=False)
     @error_response('ui')
     def referenced_cases(self, request: Request):
+        """获取引用页面步骤的 UI 用例"""
         serializer = UiPageStepReferencedCasesSerializer(data=request.query_params)
         if not serializer.is_valid():
             return ResponseData.fail(RESPONSE_MSG_0253, serializer.errors)
@@ -155,6 +157,7 @@ class PageStepsViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('ui')
     def recording_commit(self, request: Request):
+        """将录制结果保存为 UI 页面步骤"""
         serializer = UiPageStepRecordingCommitSerializer(data=request.data)
         if not serializer.is_valid():
             return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
@@ -167,7 +170,8 @@ class PageStepsViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('ui')
     def heal_report(self, request: Request):
-        from src.apps.auto_ui.services.page_step_healing import PageStepHealingService
+        """保存 UI 页面步骤自愈分析报告"""
+        from src.apps.auto_ui.services.page_steps.page_step_healing import PageStepHealingService
         return ResponseData.success(
             RESPONSE_MSG_0294, PageStepHealingService.save_report(request.data),
         )
@@ -175,7 +179,8 @@ class PageStepsViews(ViewSet):
     @action(methods=['GET'], detail=False)
     @error_response('ui')
     def heal_records(self, request: Request):
-        from src.apps.auto_ui.services.page_step_healing import PageStepHealingService
+        """获取 UI 页面步骤自愈记录"""
+        from src.apps.auto_ui.services.page_steps.page_step_healing import PageStepHealingService
         serializer = UiPageStepHealRecordQuerySerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
         return ResponseData.success(
@@ -185,7 +190,8 @@ class PageStepsViews(ViewSet):
     @action(methods=['GET'], detail=False)
     @error_response('ui')
     def heal_record_detail(self, request: Request):
-        from src.apps.auto_ui.services.page_step_healing import PageStepHealingService
+        """获取 UI 页面步骤自愈记录详情"""
+        from src.apps.auto_ui.services.page_steps.page_step_healing import PageStepHealingService
         record_id = serializers.IntegerField(min_value=1).run_validation(
             request.query_params.get('record_id'),
         )
@@ -196,7 +202,8 @@ class PageStepsViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('ui')
     def heal_apply(self, request: Request):
-        from src.apps.auto_ui.services.page_step_healing import PageStepHealingService
+        """应用 UI 页面步骤自愈方案"""
+        from src.apps.auto_ui.services.page_steps.page_step_healing import PageStepHealingService
         serializer = UiPageStepHealReviewSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return ResponseData.success(
@@ -209,7 +216,8 @@ class PageStepsViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('ui')
     def heal_reject(self, request: Request):
-        from src.apps.auto_ui.services.page_step_healing import PageStepHealingService
+        """拒绝 UI 页面步骤自愈方案"""
+        from src.apps.auto_ui.services.page_steps.page_step_healing import PageStepHealingService
         record_id = serializers.IntegerField(min_value=1).run_validation(request.data.get('record_id'))
         return ResponseData.success(
             RESPONSE_MSG_0297,
@@ -219,7 +227,8 @@ class PageStepsViews(ViewSet):
     @action(methods=['GET'], detail=False)
     @error_response('ui')
     def heal_versions(self, request: Request):
-        from src.apps.auto_ui.services.page_step_healing import PageStepHealingService
+        """获取 UI 页面步骤自愈版本"""
+        from src.apps.auto_ui.services.page_steps.page_step_healing import PageStepHealingService
         serializer = UiPageStepVersionQuerySerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
         return ResponseData.success(
@@ -230,7 +239,8 @@ class PageStepsViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('ui')
     def heal_rollback(self, request: Request):
-        from src.apps.auto_ui.services.page_step_healing import PageStepHealingService
+        """回退 UI 页面步骤自愈版本"""
+        from src.apps.auto_ui.services.page_steps.page_step_healing import PageStepHealingService
         serializer = UiPageStepRollbackSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return ResponseData.success(
@@ -262,6 +272,7 @@ class PageStepsViews(ViewSet):
     @action(methods=['GET'], detail=False)
     @error_response('ui')
     def asset_step_options(self, request: Request):
+        """获取 UI 页面步骤资产选项"""
         return ResponseData.success(
             RESPONSE_MSG_0087,
             PageStepAssetService.step_options(
@@ -274,6 +285,7 @@ class PageStepsViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('ui')
     def copy_page_steps(self, request: Request):
+        """复制 UI 页面步骤及节点"""
         page_id = request.data.get('page_id')
         copied = UiAssetCopyService.copy_page_steps(
             int(page_id),

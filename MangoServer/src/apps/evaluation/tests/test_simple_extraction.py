@@ -6,8 +6,8 @@ from pydantic import ValidationError
 from src.apps.evaluation.exceptions import EvaluationError
 from src.apps.evaluation.formatters.payload import apply_mapping
 from src.apps.evaluation.schemas.mapping import EvaluationMapping
-from src.apps.evaluation.services.target_input import compile_target_input
-from src.apps.evaluation.services.adapters import ApiInfoTargetAdapter
+from src.apps.evaluation.services.targets.target_input import compile_target_input
+from src.apps.evaluation.services.targets.adapters import ApiInfoTargetAdapter
 from src.common.testing import ObtainTestData
 
 
@@ -34,7 +34,7 @@ class SimpleExtractionTests(SimpleTestCase):
         runtime = MagicMock()
         runtime.test_setup.test_data = ObtainTestData()
         runtime.api_info_run.return_value = {"code": 200, "json": {"data": {"answer": "北京"}}}
-        with patch.object(ApiInfoTargetAdapter, 'validate_target'), patch('src.apps.evaluation.services.adapters.TestApiInfo', return_value=runtime):
+        with patch.object(ApiInfoTargetAdapter, 'validate_target'), patch('src.apps.evaluation.services.targets.adapters.TestApiInfo', return_value=runtime):
             result = ApiInfoTargetAdapter.execute(target=SimpleNamespace(target_ref_id=7, executor_config={"revision_id": 2}),
                 dataset_item=self.item({"messages": [{"content": "问题"}], "top_k": 5}),
                 mapping=SimpleNamespace(input_variable="case_input",

@@ -11,10 +11,7 @@ from src.apps.auto_api.exceptions import (
     AutoApiError,
 )
 from src.apps.auto_api.models import GrpcMethodDefinition, GrpcServiceDefinition
-from src.apps.auto_api.services.grpc_definition import (
-    GrpcDefinitionMutationService,
-    GrpcDefinitionSyncService,
-)
+from src.apps.auto_api.services.api_info.grpc_definition import GrpcDefinitionMutationService, GrpcDefinitionSyncService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -37,6 +34,7 @@ class GrpcServiceDefinitionCRUD(ModelCRUD):
 
     @error_response('api')
     def post(self, request: Request):
+        """新增gRPC 服务定义"""
         if not self.has_data_scope_permission(request, request.data):
             return ResponseData.fail(RESPONSE_MSG_0210)
         result = GrpcDefinitionMutationService.create_service(dict(request.data))
@@ -49,6 +47,7 @@ class GrpcServiceDefinitionCRUD(ModelCRUD):
 
     @error_response('api')
     def put(self, request: Request):
+        """修改gRPC 服务定义"""
         instance = self.model.objects.get(id=request.data.get('id'))
         if not self.has_instance_data_scope_permission(request, instance):
             return ResponseData.fail(RESPONSE_MSG_0210)
@@ -77,6 +76,7 @@ class GrpcMethodDefinitionViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('api')
     def sync_methods(self, request: Request):
+        """从 gRPC 服务定义同步方法"""
         service_id = request.data.get('service_id') or request.data.get('grpc_service_id')
         service = GrpcServiceDefinitionCRUD().filter_queryset_by_data_scope(
             request, GrpcServiceDefinition.objects.filter(id=service_id),
@@ -89,6 +89,7 @@ class GrpcMethodDefinitionViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('api')
     def import_api_info(self, request: Request):
+        """将 gRPC 方法导入为 API 接口"""
         method_id = request.data.get('grpc_method_id') or request.data.get('method_id')
         project_product_id = request.data.get('project_product_id')
         module_id = request.data.get('module_id')

@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 from django.test import SimpleTestCase, override_settings
 from django.utils import timezone
 
-from src.apps.test_center.services.execution_result import ExecutionResultService
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
 from src.common.storage import MangoMinioMediaStorage
 
 
@@ -15,9 +15,9 @@ class ExecutionResultCleanupTests(SimpleTestCase):
         row = SimpleNamespace(id=1, result_object_key='result/old.json', result_data={'status': 0}, save=Mock())
         queryset = Mock()
         queryset.distinct.return_value.iterator.return_value = iter([row])
-        with patch('src.apps.test_center.services.execution_result.ExecutionResult.objects.filter', return_value=queryset), \
-                patch('src.apps.test_center.services.execution_result.default_storage.delete', side_effect=OSError('unavailable')), \
-                patch('src.apps.test_center.services.execution_result.log'):
+        with patch('src.apps.test_center.services.results.execution_result.ExecutionResult.objects.filter', return_value=queryset), \
+                patch('src.apps.test_center.services.results.execution_result.default_storage.delete', side_effect=OSError('unavailable')), \
+                patch('src.apps.test_center.services.results.execution_result.log'):
             self.assertEqual(ExecutionResultService.clear_expired_result_data(60), 0)
         row.save.assert_not_called()
         self.assertEqual(row.result_data, {'status': 0})
@@ -26,8 +26,8 @@ class ExecutionResultCleanupTests(SimpleTestCase):
         row = SimpleNamespace(id=1, result_object_key='result/old.json', result_data={'status': 0}, save=Mock())
         queryset = Mock()
         queryset.distinct.return_value.iterator.return_value = iter([row])
-        with patch('src.apps.test_center.services.execution_result.ExecutionResult.objects.filter', return_value=queryset), \
-                patch('src.apps.test_center.services.execution_result.default_storage.delete') as delete:
+        with patch('src.apps.test_center.services.results.execution_result.ExecutionResult.objects.filter', return_value=queryset), \
+                patch('src.apps.test_center.services.results.execution_result.default_storage.delete') as delete:
             self.assertEqual(ExecutionResultService.clear_expired_result_data(60), 1)
         delete.assert_called_once_with('result/old.json')
         self.assertTrue(row.result_cleaned)
@@ -47,8 +47,8 @@ class ExecutionResultCleanupTests(SimpleTestCase):
             (f'platform/test/result/{date}/uploaded.json', old),
             (f'platform/test/result/{date}/api_case_1/{uuid}.txt', old),
         ]
-        with patch('src.apps.test_center.services.execution_result.iter_current_storage_files', return_value=iter(files)), \
-                patch('src.apps.test_center.services.execution_result.delete_current_storage_file') as delete:
+        with patch('src.apps.test_center.services.results.execution_result.iter_current_storage_files', return_value=iter(files)), \
+                patch('src.apps.test_center.services.results.execution_result.delete_current_storage_file') as delete:
             result = ExecutionResultService.cleanup_expired_storage_files(60)
         delete.assert_called_once_with(eligible)
         self.assertEqual(result['deleted_file_count'], 1)
@@ -56,9 +56,9 @@ class ExecutionResultCleanupTests(SimpleTestCase):
     def test_sweep_failure_is_visible_and_file_is_retried(self):
         old = timezone.now() - timedelta(days=100)
         name = f'result/{old:%Y/%m/%d}/ui_case_1/{"b" * 32}.json'
-        with patch('src.apps.test_center.services.execution_result.iter_current_storage_files', side_effect=lambda _: iter([(name, old)])), \
-                patch('src.apps.test_center.services.execution_result.delete_current_storage_file', side_effect=[OSError('unavailable'), None]) as delete, \
-                patch('src.apps.test_center.services.execution_result.log'):
+        with patch('src.apps.test_center.services.results.execution_result.iter_current_storage_files', side_effect=lambda _: iter([(name, old)])), \
+                patch('src.apps.test_center.services.results.execution_result.delete_current_storage_file', side_effect=[OSError('unavailable'), None]) as delete, \
+                patch('src.apps.test_center.services.results.execution_result.log'):
             first = ExecutionResultService.cleanup_expired_storage_files(60)
             second = ExecutionResultService.cleanup_expired_storage_files(60)
         self.assertEqual(first['failed_file_count'], 1)
@@ -66,8 +66,8 @@ class ExecutionResultCleanupTests(SimpleTestCase):
         self.assertEqual(delete.call_count, 2)
 
     def test_scan_failure_is_reported(self):
-        with patch('src.apps.test_center.services.execution_result.iter_current_storage_files', side_effect=OSError('unavailable')), \
-                patch('src.apps.test_center.services.execution_result.log'):
+        with patch('src.apps.test_center.services.results.execution_result.iter_current_storage_files', side_effect=OSError('unavailable')), \
+                patch('src.apps.test_center.services.results.execution_result.log'):
             result = ExecutionResultService.cleanup_expired_storage_files(60)
         self.assertTrue(result['storage_scan_failed'])
 

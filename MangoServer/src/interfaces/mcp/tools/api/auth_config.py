@@ -7,9 +7,9 @@ from mangotools.enums import StatusEnum
 from src.apps.auto_api.enums import ApiAuthRefreshModeEnum, ApiAuthRefreshStatusEnum, ApiAuthTypeEnum
 from src.apps.auto_api.models import ApiAuthConfig
 from src.apps.auto_api.selectors.querysets import ApiQuerySelector
-from src.apps.auto_api.services.api_auth_config import ApiAuthConfigService
+from src.apps.auto_api.services.authentication.api_auth_config import ApiAuthConfigService
 from src.apps.auto_api.services.api_info.runtime import ApiInfoRuntimeService
-from src.apps.auto_api.services.base.api_base_test_setup.auth_manager import ApiAuthManager
+from src.apps.auto_api.services.execution.base.api_base_test_setup.auth_manager import ApiAuthManager
 from src.apps.task_center.selectors.querysets import TaskCenterQuerySelector
 from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.interfaces.mcp.audit import mcp_current_user_id

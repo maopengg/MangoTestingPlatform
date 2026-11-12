@@ -10,8 +10,8 @@ from src.apps.auto_api.exceptions import (
 )
 from src.apps.data_factory.enums import DataFactoryCaseSourceTypeEnum
 from src.apps.data_factory.models import DataFactoryCaseConfig
-from src.apps.data_factory.services.case_config import DataFactoryCaseConfigService
-from src.apps.data_factory.services.preview import DataFactoryPreviewService
+from src.apps.data_factory.services.assets.case_config import DataFactoryCaseConfigService
+from src.apps.data_factory.services.preview.preview import DataFactoryPreviewService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -33,6 +33,7 @@ class ApiCaseDataFactoryCRUD(ModelCRUD):
 
     @error_response('api')
     def get(self, request: Request):
+        """获取API 用例数据工厂绑定列表或指定记录"""
         case_id = request.query_params.get('case') or request.query_params.get('source_id')
         queryset = DataFactoryCaseConfig.objects.filter(
             source_type=DataFactoryCaseSourceTypeEnum.API_CASE.value,
@@ -52,6 +53,7 @@ class ApiCaseDataFactoryViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('api')
     def put_case_sort(self, request: Request):
+        """调整API 用例数据工厂绑定的执行顺序"""
         DataFactoryCaseConfigService.sort(
             DataFactoryCaseSourceTypeEnum.API_CASE.value,
             request.data.get('case_sort_list', []),
@@ -63,6 +65,7 @@ class ApiCaseDataFactoryViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('api')
     def preview(self, request: Request):
+        """预览API 用例数据工厂绑定"""
         template_id = request.data.get('template_id')
         if not template_id:
             raise AutoApiError(AUTO_API_API_CASE_DATA_FACTORY_STATUS_TEMPLATE_REQUIRED)

@@ -15,7 +15,7 @@ from src.apps.data_factory.models import (
     DataFactoryTemplateItem,
 )
 from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
-from src.apps.data_factory.services.preview import DataFactoryPreviewService
+from src.apps.data_factory.services.preview.preview import DataFactoryPreviewService
 from src.common.exceptions import MangoServerError
 from src.common.exceptions.normalization import normalize_expected_exception
 from src.interfaces.mcp.common import (
@@ -32,9 +32,9 @@ def _selected_test_env(user_id: int | None = None, test_env: int | None = None) 
         user = current_user(user_id)
     except Exception:
         return None
-    from src.apps.user.services.user_cache import UserCacheService
+    from src.apps.user.services.preferences.user_config import UserConfigService
 
-    return UserCacheService.selected_environment(user)
+    return UserConfigService.selected_environment(user)
 
 
 def _template_cache_prefix(template: DataFactoryTemplate, name: str | None = None) -> str:
@@ -233,7 +233,7 @@ def _execution_summary(item: DataFactoryExecution) -> dict:
 
 
 def _execution_detail(execution_id: int) -> dict:
-    from src.apps.data_factory.services.execution_snapshot import get_insert_snapshot
+    from src.apps.data_factory.services.execution.execution_snapshot import get_insert_snapshot
 
     execution = DataFactoryQuerySelector.data_factory_execution().select_related("template", "project_product",
                                                                                  "module").get(id=execution_id)

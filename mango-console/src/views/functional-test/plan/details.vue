@@ -53,16 +53,14 @@
     </template>
     <template #default>
       <div class="mango-plan-detail__workbench">
-        <a-alert v-if="planId === null" type="error"
+        <a-alert data-feedback-kind="validation" v-if="planId === null" type="error"
           >计划 ID 无效，请返回计划列表重新打开。</a-alert
         >
         
         
         
-        <a-alert v-if="execution.error.value" type="error"
-          >操作失败，请重试；现有数据及选择已保留。</a-alert
-        >
-        <a-alert v-if="navigationError" type="error">页面打开失败，请重试。</a-alert>
+        <MangoRequestFeedback v-if="execution.error.value" :message="&quot;操作失败，请重试；现有数据及选择已保留。&quot;" />
+        <MangoRequestFeedback v-if="navigationError" :message="&quot;页面打开失败，请重试。&quot;" />
         <div v-if="plan" class="mango-plan-detail__meta">
           <a-tag :color="enumStore.colors[plan.status]">{{
             enumTitle(enumStore.functional_test_plan_status, plan.status)
@@ -94,7 +92,8 @@
               >已选择 {{ selectedPlanCases.length }} 条　共 {{ plan?.cases.length || 0 }} 条</span
             >
             <a-tag v-if="caseSaving" size="small" color="arcoblue">正在保存…</a-tag>
-            <a-tag v-else-if="saveFailed" size="small" color="red">保存失败</a-tag>
+            <a-tag v-else-if="saveFailed" size="small" color="orange">未保存</a-tag>
+            <MangoRequestFeedback v-if="saveFailed" message="保存失败，草稿已保留，请重试。" />
             <a-tag v-else-if="savedOnce" size="small" color="green">已保存</a-tag>
           </template>
           <template #toolbar>
@@ -184,7 +183,7 @@
     :on-before-cancel="execution.canCancel"
     @cancel="execution.cancelStart"
   >
-    <a-alert v-if="execution.error.value" type="error">执行请求失败，选择已保留，请重试。</a-alert>
+    <MangoRequestFeedback v-if="execution.error.value" :message="&quot;执行请求失败，选择已保留，请重试。&quot;" />
     <a-form class="mango-simple-form"
       :model="execution.startForm"
       layout="horizontal"
@@ -201,8 +200,7 @@
   </a-modal>
 </template>
 <script lang="ts" setup>
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import {
     computed,
     onActivated,
@@ -517,8 +515,8 @@ import { reportLoadError } from '@/utils/load-error'
             })
           : await router.back()
       if (failure && current(version)) navigationError.value = true
-    } catch {
-      if (current(version)) navigationError.value = true
+    } catch (requestFailure) {
+      if (current(version)) navigationError.value = requestFailureMessage(requestFailure, true, "页面打开失败，请重试。")
     } finally {
       navigating.value = null
     }

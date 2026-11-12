@@ -1182,13 +1182,12 @@ class TestPageSteps:
                 raise MangoActuatorError(300, '自动授权浏览器未打开，请先点击自动授权')
             cache_data = await self._collect_auth_cache(data, auth_base_data)
             await self.send_steps_result(200, 'UI自动授权缓存提取完成', TipsTypeEnum.SUCCESS)
+            await self._close_auth_session(session_key)
             return {'config_id': data.config_id, 'cache_data': cache_data}
         except Exception as error:
             log.error(f'自动授权提取失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
             await self.send_steps_result(300, f'自动授权提取失败：{error}', TipsTypeEnum.ERROR)
             raise
-        finally:
-            await self._close_auth_session(session_key)
 
     async def _ensure_web_page(self, base_data: BaseData | None = None, web_runtime: AsyncWebRuntime | None = None):
         base_data = base_data or self.base_data

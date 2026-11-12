@@ -3,7 +3,7 @@ from html.parser import HTMLParser
 from django.test import SimpleTestCase
 
 from src.apps.test_center.enums.report_delivery import ReportSourceEnum
-from src.apps.test_center.services.offline_report.renderer import ReportHtmlService
+from src.apps.test_center.services.reporting.offline_report.renderer import ReportHtmlService
 from src.apps.test_center.tests.test_report_delivery import sample_snapshot
 
 

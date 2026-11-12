@@ -6,7 +6,7 @@ from django.test import SimpleTestCase
 from fastmcp import Client, FastMCP
 from fastmcp.server.auth import AccessToken
 
-from src.apps.test_center.services.execution_efficiency import ExecutionEfficiencyService
+from src.apps.test_center.services.reporting.execution_efficiency import ExecutionEfficiencyService
 from src.interfaces.mcp.authentication import MangoAuthorizationMiddleware
 from src.interfaces.mcp.server import mcp_asgi_app, _tool_operation
 from src.interfaces.mcp.tools.report.execution_efficiency import register_execution_efficiency_tools

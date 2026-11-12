@@ -16,12 +16,12 @@ from src.apps.test_center.models import TestSuite
 from src.apps.test_center.presenters import format_test_suite, format_test_suite_detail, \
     prepare_test_suite_detail_queryset, prepare_test_suite_queryset
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
-from src.apps.test_center.services.diagnostic_markdown import DiagnosticMarkdownService
-from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService
-from src.apps.test_center.services.test_suite.retry import TestSuiteRetryService
-from src.apps.test_center.services.test_suite.summary import TestSuiteSummaryService
-from src.apps.test_center.services.test_suite.disposition import TestSuiteDispositionService
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.test_center.services.diagnostics.diagnostic_markdown import DiagnosticMarkdownService
+from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService
+from src.apps.test_center.services.reporting.test_suite.retry import TestSuiteRetryService
+from src.apps.test_center.services.reporting.test_suite.summary import TestSuiteSummaryService
+from src.apps.test_center.services.reporting.test_suite.disposition import TestSuiteDispositionService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.interfaces.mcp.common import (
     create_dangerous_action_preview,
     current_user,

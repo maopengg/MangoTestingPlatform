@@ -4,7 +4,7 @@ from rest_framework import serializers
 from src.apps.functional_test.models import (
     FunctionalTestIteration,
 )
-from src.apps.functional_test.services.iteration import FunctionalTestIterationService
+from src.apps.functional_test.services.requirements.iteration import FunctionalTestIterationService
 from src.apps.test_center.formatters.related import format_project_product
 from src.apps.user.formatters import format_user, format_user_simple
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector

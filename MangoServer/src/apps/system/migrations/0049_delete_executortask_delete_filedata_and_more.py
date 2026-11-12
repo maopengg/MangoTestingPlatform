@@ -13,7 +13,6 @@ class Migration(migrations.Migration):
         ('auto_ui', '0030_alter_uiauthconfig_time_task_alter_uicase_module_and_more'),
         ('auto_user', '0009_alter_departmentprojectproductpermission_project_product'),
         ('functional_test', '0014_alter_functionaltestcontextresource_file_and_more'),
-        ('gray_config', '0006_alter_grayexecutionlog_database_and_more'),
         ('monitoring', '0006_alter_monitoringtask_notice_group_and_more'),
         ('task_center', '0011_alter_scheduledtaskgroupexecution_notice_group_and_more'),
         ('test_center', '0002_execution_models_state'),

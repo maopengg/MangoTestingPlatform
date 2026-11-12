@@ -29,6 +29,7 @@ async function mount(file, { api = {}, permissions = { hasPermission: () => true
   const resolve = name => {
     if (name === 'vue') return Vue
     if (name === '@/hooks/useDisplayDensity') return { scaleDensityPixels: value => value }
+    if (name === '@/hooks/useDebouncedSearch') return scriptModule('../../hooks/useDebouncedSearch.ts', resolve)
     if (name === '@arco-design/web-vue') return { Message: { success() {}, warning() {}, error() {} }, Modal: modal }
     if (name === 'vue-router') return { useRoute: () => route, useRouter: () => router || { push() {}, replace() {} }, onBeforeRouteLeave: guard => guards.push(guard), onBeforeRouteUpdate() {} }
     if (name === '@/api/evaluation' || name === '@/api/data-factory') return new Proxy(api, { get: (object, key) => object[key] || (async () => ({ data: [], totalSize: 0 })) })

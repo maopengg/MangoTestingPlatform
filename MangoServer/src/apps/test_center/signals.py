@@ -3,8 +3,8 @@ from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 
 from src.apps.test_center.models import ProductModule, Project, ProjectProduct
-from src.apps.test_center.services.product_module_cache import ProductModuleCacheService
-from src.apps.test_center.services.project_product_cache import ProjectProductCacheService
+from src.apps.test_center.services.project.product_module_cache import ProductModuleCacheService
+from src.apps.test_center.services.project.project_product_cache import ProjectProductCacheService
 
 
 @receiver(pre_save, sender=ProductModule)

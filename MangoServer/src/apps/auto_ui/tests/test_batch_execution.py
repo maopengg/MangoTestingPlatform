@@ -5,7 +5,7 @@ from src.apps.auto_ui.exceptions import (
     UI_CASE_CASE_EXECUTION_INVALID,
 )
 from src.apps.auto_ui.models import UiCase
-from src.apps.auto_ui.services.batch_execution import UiCaseBatchExecutionService
+from src.apps.auto_ui.services.execution.batch_execution import UiCaseBatchExecutionService
 from src.apps.test_center.models import ProductModule, Project, ProjectProduct
 from src.apps.user.models import User
 

@@ -4,7 +4,7 @@ from django.conf import settings
 from django.test import SimpleTestCase
 from django.utils.module_loading import import_string
 
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.test_center.services.project.product_module import ProductModuleService
 
 
 class ModelCrudValidatorImportTests(SimpleTestCase):

@@ -6,7 +6,7 @@ from django.db.models import F
 from src.apps.auto_api.models import ApiCaseCallbackRun, ApiMockRequestLog
 from src.apps.auto_api.selectors.case_configuration import ApiCaseConfigurationSelector
 from src.apps.auto_api.exceptions import AutoApiError, API_CALLBACK_EXECUTION_FAILED
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService, GUEST_ROLE_NAME
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService, GUEST_ROLE_NAME
 from src.common.exceptions import RESOURCE_ACCESS_DENIED
 
 

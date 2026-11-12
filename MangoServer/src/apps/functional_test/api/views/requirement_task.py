@@ -11,7 +11,7 @@ from src.apps.functional_test.exceptions import (
     FunctionalTestError,
 )
 from src.apps.functional_test.models import FunctionalRequirementTask, ManualTestSuite
-from src.apps.functional_test.services.requirement import FunctionalRequirementService
+from src.apps.functional_test.services.requirements.requirement import FunctionalRequirementService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -39,6 +39,7 @@ class FunctionalRequirementTaskViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def list(self, request: Request):
+        """获取需求任务列表"""
         suite_id = request.query_params.get("requirement_version")
         self._scoped_suites(request).get(id=suite_id)
         queryset = FunctionalRequirementTaskListSerializer.setup_eager_loading(
@@ -51,6 +52,7 @@ class FunctionalRequirementTaskViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def create(self, request: Request):
+        """创建需求任务"""
         suite = self._scoped_suites(request).get(id=request.data.get("requirement_version"))
         payload = FunctionalRequirementService.prepare_task_data(request.data)
         serializer = FunctionalRequirementTaskSerializer(data=payload)
@@ -61,6 +63,7 @@ class FunctionalRequirementTaskViews(ViewSet):
     @action(methods=["put", "patch"], detail=False)
     @error_response("system")
     def update(self, request: Request):
+        """更新需求任务"""
         task = self._task(request)
         payload = FunctionalRequirementService.prepare_task_data(request.data, task)
         serializer = FunctionalRequirementTaskSerializer(task, data=payload, partial=True)
@@ -71,5 +74,6 @@ class FunctionalRequirementTaskViews(ViewSet):
     @action(methods=["delete"], detail=False)
     @error_response("system")
     def delete(self, request: Request):
+        """删除需求任务"""
         self._task(request).delete()
         return ResponseData.success(RESPONSE_MSG_0082)

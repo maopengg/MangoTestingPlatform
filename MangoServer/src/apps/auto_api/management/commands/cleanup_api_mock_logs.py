@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
-from src.apps.auto_api.services.mock_log_cleanup import MockRequestLogCleanupService
+from src.apps.auto_api.services.mock.mock_log_cleanup import MockRequestLogCleanupService
 
 
 class Command(BaseCommand):

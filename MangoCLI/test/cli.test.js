@@ -14,6 +14,21 @@ function capture() {
   };
 }
 
+test("environment switching rejects another user's identity and invalid values before requesting", async () => {
+  const claims = Buffer.from(JSON.stringify({ id: 7, exp: 4102444800 })).toString("base64url");
+  for (const params of [["selected_environment=true"], ["selected_environment=-1"],
+    ["selected_environment=0", "id=8"], []]) {
+    let requested = false;
+    await assert.rejects(run(["node", "mango", "--server", "https://example.com", "project",
+      "switch-user-test-environment", ...params.flatMap(value => ["-p", value])], {
+      stdin: new PassThrough(), stdout: capture().stream, stderr: capture().stream,
+      env: { MANGO_TOKEN: `header.${claims}.signature` },
+      fetchImpl: async () => { requested = true; },
+    }), error => error.exitCode === 2);
+    assert.equal(requested, false);
+  }
+});
+
 test("REST command sends page API query and authorization", async () => {
   const stdout = capture();
   const stderr = capture();
@@ -56,7 +71,7 @@ test("an invalid server token is cleared, reauthorized, and the command is retri
   const fetchImpl = async (url, init = {}) => {
     const value = String(url);
     if (value.includes("/api/cli/auth/version")) {
-      return new Response('{"code":200,"msg":"ok","data":{"version":"7.2.4"}}', { status: 200 });
+      return new Response('{"code":200,"msg":"ok","data":{"version":"7.2.5"}}', { status: 200 });
     }
     if (value.endsWith("/api/cli/auth/token")) {
       return new Response(JSON.stringify({

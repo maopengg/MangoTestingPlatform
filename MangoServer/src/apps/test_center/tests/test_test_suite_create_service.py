@@ -2,12 +2,12 @@ from unittest.mock import patch
 
 from django.test import SimpleTestCase
 
-from src.apps.test_center.services.test_suite.create import TestSuiteCreateService
+from src.apps.test_center.services.reporting.test_suite.create import TestSuiteCreateService
 
 
 class TestSuiteCreateServiceTests(SimpleTestCase):
-    @patch('src.apps.test_center.services.test_suite.create.Tasks.objects.filter')
-    @patch('src.apps.test_center.services.test_suite.create.TestSuite.objects.create')
+    @patch('src.apps.test_center.services.reporting.test_suite.create.Tasks.objects.filter')
+    @patch('src.apps.test_center.services.reporting.test_suite.create.TestSuite.objects.create')
     def test_create_suite_uses_model_ids_without_http_crud(self, create, tasks):
         tasks.return_value.values_list.return_value.first.return_value = 'abnormal_only'
         TestSuiteCreateService.create_suite(
@@ -41,7 +41,7 @@ class TestSuiteCreateServiceTests(SimpleTestCase):
             api_concurrency_limit=6,
         )
 
-    @patch('src.apps.test_center.services.test_suite.create.TestSuiteDetails.objects.create')
+    @patch('src.apps.test_center.services.reporting.test_suite.create.TestSuiteDetails.objects.create')
     def test_create_detail_uses_model_ids_without_http_crud(self, create):
         TestSuiteCreateService.create_detail(
             suite_id=100,

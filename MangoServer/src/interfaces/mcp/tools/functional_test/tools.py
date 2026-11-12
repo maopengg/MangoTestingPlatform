@@ -16,10 +16,10 @@ from src.apps.functional_test.presenters import format_automation_binding, forma
     format_context_resource, format_plan, format_plan_case, format_plan_list, format_suite, prepare_case_list_queryset, \
     prepare_case_queryset, prepare_context_resource_queryset, prepare_plan_list_queryset, prepare_suite_queryset
 from src.apps.functional_test.selectors.querysets import FunctionalTestQuerySelector
-from src.apps.functional_test.services.automation import ManualAutomationService
-from src.apps.functional_test.services.execution import FunctionalTestExecutionService
-from src.apps.functional_test.services.mutation import FunctionalTestMutationService
-from src.apps.functional_test.services.suite import ManualTestSuiteService
+from src.apps.functional_test.services.integration.automation import ManualAutomationService
+from src.apps.functional_test.services.execution.execution import FunctionalTestExecutionService
+from src.apps.functional_test.services.cases.mutation import FunctionalTestMutationService
+from src.apps.functional_test.services.suites.suite import ManualTestSuiteService
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.interfaces.mcp.common import current_user, fail, ok
 

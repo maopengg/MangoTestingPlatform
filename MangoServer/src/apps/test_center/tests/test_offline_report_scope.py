@@ -9,9 +9,9 @@ from mangotools.enums import TaskEnum
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.test_center.enums.report_delivery import ReportSourceEnum
 from src.apps.test_center.schemas.report_delivery import ReportDeliveryConfig
-from src.apps.test_center.services.offline_report import OfflineReportService
-from src.apps.test_center.services.offline_report.renderer import ReportHtmlService
-from src.apps.test_center.services.offline_report.snapshot import ReportSnapshotService
+from src.apps.test_center.services.reporting.offline_report import OfflineReportService
+from src.apps.test_center.services.reporting.offline_report.renderer import ReportHtmlService
+from src.apps.test_center.services.reporting.offline_report.snapshot import ReportSnapshotService
 from src.apps.test_center.tests.test_report_delivery import sample_snapshot
 
 
@@ -42,13 +42,13 @@ class OfflineReportScopeTests(SimpleTestCase):
         queryset = MagicMock()
         queryset.__getitem__.return_value = rows
         queryset.values_list.return_value = [(row.id, now) for row in rows]
-        with patch('src.apps.test_center.services.offline_report.snapshot.TestSuite.objects') as suites, \
-                patch('src.apps.test_center.services.offline_report.snapshot.TestSuiteDetails.objects') as details, \
-                patch('src.apps.test_center.services.offline_report.snapshot.ExecutionResult.objects') as results, \
-                patch('src.apps.test_center.services.offline_report.snapshot.EnvironmentEnum.get_value', return_value='示例环境'), \
+        with patch('src.apps.test_center.services.reporting.offline_report.snapshot.TestSuite.objects') as suites, \
+                patch('src.apps.test_center.services.reporting.offline_report.snapshot.TestSuiteDetails.objects') as details, \
+                patch('src.apps.test_center.services.reporting.offline_report.snapshot.ExecutionResult.objects') as results, \
+                patch('src.apps.test_center.services.reporting.offline_report.snapshot.EnvironmentEnum.get_value', return_value='示例环境'), \
                 patch.object(ReportSnapshotService, 'suppresses_success_report', return_value=False), \
-                patch('src.apps.test_center.services.offline_report.snapshot.TestSuiteSummaryService.counter_data', return_value=counter), \
-                patch('src.apps.test_center.services.offline_report.snapshot.TestSuiteExecutionResultService.get_result_data', return_value={}):
+                patch('src.apps.test_center.services.reporting.offline_report.snapshot.TestSuiteSummaryService.counter_data', return_value=counter), \
+                patch('src.apps.test_center.services.reporting.offline_report.snapshot.TestSuiteExecutionResultService.get_result_data', return_value={}):
             suites.select_related.return_value.filter.return_value.first.return_value = suite
             suites.filter.return_value.exists.return_value = True
             details.filter.return_value.order_by.return_value = queryset
@@ -69,7 +69,7 @@ class OfflineReportScopeTests(SimpleTestCase):
         config = ReportDeliveryConfig()
         with patch('src.apps.task_center.services.scheduling.task_group_execution.ScheduledTaskGroupExecutionService.offline_report_source', return_value=(1, report)), \
                 patch.object(ReportSnapshotService, 'suite', return_value=child) as build, \
-                patch('src.apps.test_center.services.offline_report.snapshot.SystemConfigService.get', return_value='https://example.com'):
+                patch('src.apps.test_center.services.reporting.offline_report.snapshot.SystemConfigService.get', return_value='https://example.com'):
             snapshot = ReportSnapshotService.build(ReportSourceEnum.GROUP, 9, config)
         self.assertTrue(snapshot['failed_cases_only'])
         self.assertEqual(snapshot['online_url'], 'https://example.com/#/report/index?group_execution_id=9')
@@ -90,13 +90,13 @@ class OfflineReportScopeTests(SimpleTestCase):
     def test_online_link_uses_existing_domain_and_rejects_unsafe_config(self):
         for domain, expected in [('https://example.com/', 'https://example.com/#/report/system/details?id=1'),
                                  ('', ''), ('javascript:alert(1)', ''), ('https://user:password@example.com', '')]:
-            with self.subTest(domain=domain), patch('src.apps.test_center.services.offline_report.snapshot.SystemConfigService.get', return_value=domain):
+            with self.subTest(domain=domain), patch('src.apps.test_center.services.reporting.offline_report.snapshot.SystemConfigService.get', return_value=domain):
                 self.assertEqual(ReportSnapshotService.online_url(ReportSourceEnum.SUITE, 1), expected)
 
     def test_sample_honors_saved_scope(self):
         for flag in (True, False):
             with patch.object(OfflineReportService, 'config', return_value=ReportDeliveryConfig(failed_cases_only=flag)), \
-                    patch('src.apps.test_center.services.offline_report.service.SystemConfigService.get_platform_name', return_value='示例平台'), \
+                    patch('src.apps.test_center.services.reporting.offline_report.service.SystemConfigService.get_platform_name', return_value='示例平台'), \
                     patch.object(ReportSnapshotService, 'online_url', return_value='https://example.com/#/report/index'):
                 content = OfflineReportService.sample().decode()
             self.assertEqual('示例查询用例' in content, not flag)

@@ -19,12 +19,76 @@ from src.apps.task_center.enums import (
 )
 from src.apps.task_center.models import WorkbenchTodo
 from src.apps.task_center.services.workbench.todo import WorkbenchTodoService
-from src.apps.user.services.credential import UserCredentialService
+from src.apps.user.services.authentication.credential import UserCredentialService
 
 
 class WorkbenchTodoServiceTests(SimpleTestCase):
+    def cleanup_notice(self, *, age=6, sent=False, execution_exists=True, current_event=True, email_sent=True):
+        now = timezone.now()
+        execution = SimpleNamespace(id=42, cleanup_time=now - timedelta(minutes=age), update_time=now)
+        todo = SimpleNamespace(
+            id=123, source_id=42, create_time=execution.cleanup_time,
+            event_key=f'data-factory:execution:42:cleanup-failed:{WorkbenchTodoService._timestamp_key(execution.cleanup_time)}',
+            details={'cleanup_notification_sent_at': now.isoformat()} if sent else {}, save=Mock(),
+        )
+        if not current_event:
+            todo.event_key = 'old-event'
+        with (
+            patch.object(WorkbenchTodo.objects, 'select_for_update') as todos,
+            patch('src.apps.task_center.services.workbench.todo.DataFactoryExecution.objects.filter') as executions,
+            patch.object(WorkbenchTodoService, '_notify_owner', return_value=email_sent) as notify,
+        ):
+            todos.return_value.select_related.return_value.filter.return_value.first.return_value = todo
+            executions.return_value.only.return_value.first.return_value = execution if execution_exists else None
+            result = WorkbenchTodoService._notify_cleanup_failure_if_due.__wrapped__(WorkbenchTodoService, todo.id)
+        return result, todo, notify
+
+    def test_cleanup_notice_waits_five_minutes(self):
+        result, todo, notify = self.cleanup_notice(age=4)
+        self.assertFalse(result)
+        notify.assert_not_called()
+        todo.save.assert_not_called()
+
+    def test_cleanup_notice_cancels_when_execution_recovers_or_retries(self):
+        result, todo, notify = self.cleanup_notice(execution_exists=False)
+        self.assertFalse(result)
+        notify.assert_not_called()
+        todo.save.assert_not_called()
+
+    def test_cleanup_notice_sends_persistent_failure_and_marks_sent(self):
+        result, todo, notify = self.cleanup_notice()
+        self.assertTrue(result)
+        notify.assert_called_once_with(todo)
+        self.assertIn('cleanup_notification_sent_at', todo.details)
+        todo.save.assert_called_once()
+
+    def test_cleanup_notice_does_not_repeat_or_send_obsolete_event(self):
+        for kwargs in ({'sent': True}, {'current_event': False}):
+            with self.subTest(kwargs=kwargs):
+                result, todo, notify = self.cleanup_notice(**kwargs)
+                self.assertFalse(result)
+                notify.assert_not_called()
+
+    def test_cleanup_notice_transport_failure_remains_retryable(self):
+        result, todo, notify = self.cleanup_notice(email_sent=False)
+        self.assertFalse(result)
+        self.assertNotIn('cleanup_notification_sent_at', todo.details)
+        todo.save.assert_not_called()
+
+    def test_cleanup_upsert_preserves_sent_marker_without_immediate_email(self):
+        defaults = {'details': {'failed_count': 1}}
+        with (
+            patch.object(WorkbenchTodo.objects, 'select_for_update') as todos,
+            patch.object(WorkbenchTodoService, '_upsert') as upsert,
+        ):
+            todos.return_value.filter.return_value.first.return_value = SimpleNamespace(
+                details={'cleanup_notification_sent_at': '2026-11-11T12:00:00'})
+            WorkbenchTodoService._upsert_cleanup_failure.__wrapped__(WorkbenchTodoService, 'event', defaults)
+        upsert.assert_called_once_with('event', defaults, notify_owner=False)
+        self.assertEqual(defaults['details']['cleanup_notification_sent_at'], '2026-11-11T12:00:00')
+
     def setUp(self):
-        patcher = patch('src.apps.system.services.system_config.SystemConfigService.get_environment_display_names',
+        patcher = patch('src.apps.system.services.configuration.system_config.SystemConfigService.get_environment_display_names',
                         return_value={})
         patcher.start()
         self.addCleanup(patcher.stop)
@@ -198,7 +262,7 @@ class WorkbenchTodoServiceTests(SimpleTestCase):
         )
 
         with patch(
-                'src.apps.auto_ui.services.ui_auth.UiAuthManager.claim_expire_notice',
+                'src.apps.auto_ui.services.authentication.ui_auth.UiAuthManager.claim_expire_notice',
                 return_value=True,
         ) as claim_notice, patch(
             'src.apps.task_center.services.workbench.todo.NoticeMain'
@@ -224,7 +288,7 @@ class WorkbenchTodoServiceTests(SimpleTestCase):
         )
 
         with patch(
-                'src.apps.auto_api.services.base.api_base_test_setup.auth_manager.'
+                'src.apps.auto_api.services.execution.base.api_base_test_setup.auth_manager.'
                 'ApiAuthManager.claim_expire_notice'
         ) as claim_notice, patch(
             'src.apps.task_center.services.workbench.todo.NoticeMain'
@@ -417,7 +481,7 @@ class WorkbenchTodoServiceTests(SimpleTestCase):
             ],
         )
         todo = SimpleNamespace(event_key='cleanup-risk')
-        with patch.object(WorkbenchTodoService, '_upsert', return_value=todo) as upsert:
+        with patch.object(WorkbenchTodoService, '_upsert_cleanup_failure', return_value=todo) as upsert:
             result = WorkbenchTodoService.record_data_factory_cleanup_failure(execution)
 
         self.assertIs(result, todo)
@@ -451,12 +515,13 @@ class WorkbenchTodoServiceTests(SimpleTestCase):
         executions.filter.return_value.prefetch_related.return_value = [execution]
         stale_todos = Mock()
         stale_todos.exclude.return_value = stale_todos
-        todo = SimpleNamespace(event_key='cleanup-failed')
+        todo = SimpleNamespace(id=123, event_key='cleanup-failed')
         with (
             patch.object(DataFactoryExecution.objects, 'select_related', return_value=executions),
             patch.object(WorkbenchTodo.objects, 'filter', return_value=stale_todos) as todo_filter,
             patch.object(WorkbenchTodoService, 'record_data_factory_cleanup_failure', return_value=todo) as record,
             patch.object(WorkbenchTodoService, '_resolve_queryset', return_value=6) as resolve,
+            patch.object(WorkbenchTodoService, '_notify_cleanup_failure_if_due') as notify,
         ):
             result = WorkbenchTodoService.reconcile_data_factory_cleanup_todos()
 
@@ -470,6 +535,7 @@ class WorkbenchTodoServiceTests(SimpleTestCase):
         resolve.assert_called_once_with(stale_todos, ANY)
         self.assertEqual(result['resolved_data_factory_cleanup_todo_count'], 6)
         self.assertEqual(result['data_factory_cleanup_todo_count'], 1)
+        notify.assert_called_once_with(123)
 
     def test_visible_queryset_hides_existing_pending_manual_cleanup_todos(self):
         queryset = Mock()

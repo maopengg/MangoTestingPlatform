@@ -66,7 +66,7 @@
       <a-button size="mini" status="danger" :disabled="disabled" @click="remove(index)">删除</a-button>
     </div>
     <div v-if="!normalizedModelValue.conditions.length" class="mango-empty-state">暂未配置条件</div>
-    <div v-if="errorMessage" class="mango-step-condition__error">{{ errorMessage }}</div>
+    <div data-feedback-kind="validation" v-if="errorMessage" class="mango-step-condition__error">{{ errorMessage }}</div>
   </section>
 </template>
 

@@ -9,8 +9,8 @@ from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 
 from src.apps.test_center.api.serializers.project_product import ProjectProductSerializersC
 from src.apps.test_center.models import TestObject
-from src.apps.test_center.services.test_target import TestTargetService
-from src.apps.test_center.services.test_object_probe import TestObjectProbeService
+from src.apps.test_center.services.environment.test_target import TestTargetService
+from src.apps.test_center.services.environment.test_object_probe import TestObjectProbeService
 from src.apps.user.formatters import format_user_simple
 from src.common.validators.serializer_fields import RelatedObjectField
 

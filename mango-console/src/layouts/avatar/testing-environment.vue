@@ -16,31 +16,39 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, watchEffect } from 'vue'
+  import { ref, watch, watchEffect } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import useUserStore from '@/store/modules/user'
 
-  import { putUserEnvironment } from '@/api/user/user'
+  import { updateUserConfig } from '@/api/user/user'
+  import { readUserSelectedEnvironment } from '@/utils/interface-preferences'
+  import { reportLoadError } from '@/utils/load-error'
   import { useEnum } from '@/store/modules/get-enum'
 
   const enumStore = useEnum()
 
   const userStore = useUserStore()
   const switching = ref(false)
+  let version = 0
+  watch(() => [userStore.userId, userStore.token], () => {
+    version++
+    switching.value = false
+  }, { flush: 'sync' })
 
-  function handleSelect(key: any) {
+  async function handleSelect(key: number | string) {
     if (switching.value) return
+    const current = version
     switching.value = true
-    putUserEnvironment(userStore.userId, key)
-      .then((res) => {
-        userStore.selected_environment = res.data.selected_environment
-        setTitle(res.data.selected_environment)
-        Message.success(res.msg)
-      })
-      .catch(console.log)
-      .finally(() => {
-        switching.value = false
-      })
+    try {
+      const res = await updateUserConfig([{ key: 'selected_environment', value: Number(key) }])
+      if (current !== version) return
+      setTitle(readUserSelectedEnvironment(res))
+      Message.success(res.msg)
+    } catch (error) {
+      if (current === version) reportLoadError(error, '测试环境切换失败，请重试')
+    } finally {
+      if (current === version) switching.value = false
+    }
   }
 
   function setTitle(key: any) {

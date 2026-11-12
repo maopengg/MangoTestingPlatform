@@ -6,7 +6,7 @@ from django.test import SimpleTestCase
 from src.apps.data_factory.models import Database
 from src.apps.test_center.api.serializers.data_source import DataSourceSerializer
 from src.apps.test_center.exceptions import TestCenterError, DATA_SOURCE_CONNECTION_DUPLICATED
-from src.apps.test_center.services.data_source_configuration import DataSourceConfigurationService
+from src.apps.test_center.services.datasource.data_source_configuration import DataSourceConfigurationService
 
 
 class DataSourceConfigurationTests(SimpleTestCase):

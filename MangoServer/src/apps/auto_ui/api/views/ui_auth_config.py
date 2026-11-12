@@ -9,7 +9,7 @@ from src.apps.auto_ui.api.serializers.ui_auth_config import UiAuthConfigSerializ
 from src.apps.auto_ui.exceptions import UI_AUTH_CACHE_STRUCTURE_INVALID
 from src.apps.auto_ui.models import UiAuthConfig
 from src.apps.auto_ui.schemas.auth import UiAuthCache
-from src.apps.auto_ui.services.ui_auth import UiAuthManager
+from src.apps.auto_ui.services.authentication.ui_auth import UiAuthManager
 from src.apps.system.enums import ClientTypeEnum
 from src.apps.system.enums import ExecutorModeEnum
 from src.apps.system.enums import ServerUiCommandEnum
@@ -55,6 +55,7 @@ class UiAuthConfigViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('ui')
     def put_status(self, request: Request):
+        """设置UI 授权配置启用状态"""
         obj = self.model.objects.get(id=request.data.get('id'))
         obj.status = request.data.get('status')
         obj.update_user_id = request.user.get("id") if isinstance(request.user, dict) else None
@@ -64,24 +65,28 @@ class UiAuthConfigViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('ui')
     def refresh(self, request: Request):
+        """刷新UI 授权配置的授权结果"""
         data = UiAuthManager.refresh(request.data.get('id'))
         return ResponseData.success(RESPONSE_MSG_0112, data=data)
 
     @action(methods=['post'], detail=False)
     @error_response('ui')
     def clear(self, request: Request):
+        """清除UI 授权配置的授权缓存"""
         data = UiAuthManager.clear(request.data.get('id'))
         return ResponseData.success(RESPONSE_MSG_0104, data=data)
 
     @action(methods=['get'], detail=False)
     @error_response('ui')
     def cache(self, request: Request):
+        """查看UI 授权配置的授权缓存"""
         data = UiAuthManager.preview(request.query_params.get('id'))
         return ResponseData.success(RESPONSE_MSG_0001, data=data)
 
     @action(methods=['put', 'post'], detail=False)
     @error_response('ui')
     def manual_cache(self, request: Request):
+        """手动保存 UI 授权缓存"""
         cache_data = request.data.get('manual_config')
         if cache_data is None:
             cache_data = request.data.get('cache_data') or {}
@@ -96,6 +101,7 @@ class UiAuthConfigViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('ui')
     def auto_start(self, request: Request):
+        """启动 UI 自动授权流程"""
         config = self.model.objects.get(id=request.data.get('id'))
         auto_config = config.auto_auth_config or {}
         test_object_url = UiAuthManager.resolve_test_object_url(config)
@@ -128,6 +134,7 @@ class UiAuthConfigViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('ui')
     def auto_capture(self, request: Request):
+        """采集 UI 自动授权结果"""
         config = self.model.objects.get(id=request.data.get('id'))
         auto_config = config.auto_auth_config or {}
         origin = UiAuthManager.resolve_origin(config)

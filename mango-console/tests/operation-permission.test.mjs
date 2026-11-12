@@ -139,9 +139,9 @@ test('late responses cannot overwrite the selected role permission set', async t
   await Promise.resolve(); await Promise.resolve()
   const first = state.select({ id: 1 })
   const second = state.select({ id: 2 })
-  state.requests.get(2).resolve(roleOk({ tree: [], checked_keys: ['api.case'] }))
+  state.requests.get(2).resolve(roleOk({ tree: [], endpoint_groups: [], endpoint_permissions: {}, menu_keys: ['api.case'] }))
   await second
-  state.requests.get(1).resolve(roleOk({ tree: [], checked_keys: ['system.role'] }))
+  state.requests.get(1).resolve(roleOk({ tree: [], endpoint_groups: [], endpoint_permissions: {}, menu_keys: ['system.role'] }))
   await first
   assert.equal(state.selectedRole.value.id, 2)
   assert.equal(state.loadedRoleId.value, 2)

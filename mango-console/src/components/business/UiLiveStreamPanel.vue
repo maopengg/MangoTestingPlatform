@@ -107,7 +107,7 @@
         <div v-if="!frameUrl" class="mango-live-stream__empty">
           <icon-desktop />
           <strong>{{ connecting ? '正在连接实时画面' : '等待执行器画面' }}</strong>
-          <span>{{ errorMessage || '请先触发对应的 UI 执行或调试任务' }}</span>
+          <span>请先触发对应的 UI 执行或调试任务</span>
         </div>
       </div>
     </div>
@@ -226,13 +226,16 @@
       <div v-if="!frameUrl" class="mango-live-stream__empty">
         <icon-desktop />
         <strong>{{ connecting ? '正在连接实时画面' : '等待执行器画面' }}</strong>
-        <span>{{ errorMessage || '请先触发对应的 UI 执行或调试任务' }}</span>
+        <span>请先触发对应的 UI 执行或调试任务</span>
       </div>
     </div>
   </div>
+  <MangoRequestFeedback v-if="visible" :message="errorMessage" />
 </template>
 
 <script lang="ts" setup>
+import { requestFailureMessage } from '@/utils/load-error'
+
   import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import { Message } from '@arco-design/web-vue'
@@ -479,7 +482,7 @@
         if (!current()) return
         streamId.value = ''
         connecting.value = false
-        errorMessage.value = normalizeErrorMessage(error, '创建实时画面会话失败')
+        errorMessage.value = requestFailureMessage(error, normalizeErrorMessage(error, '创建实时画面会话失败'))
         if (workspaceExecutionMode.value && isWorkspaceExpiredMessage(errorMessage.value)) {
           await expireWorkspace()
           return
@@ -528,7 +531,7 @@
         startPublisherWaitTimeout()
       } catch (error: any) {
         if (!current()) return
-        errorMessage.value = normalizeErrorMessage(error, '启动实时画面失败')
+        errorMessage.value = requestFailureMessage(error, normalizeErrorMessage(error, '启动实时画面失败'))
         if (workspaceExecutionMode.value && isWorkspaceExpiredMessage(errorMessage.value)) {
           await expireWorkspace()
           return
@@ -1313,7 +1316,7 @@
       startPublisherWaitTimeout()
     } catch (error: any) {
       if (!current()) return
-      errorMessage.value = normalizeErrorMessage(error, '重新启动推流失败')
+      errorMessage.value = requestFailureMessage(error, normalizeErrorMessage(error, '重新启动推流失败'))
       schedulePublisherRestart()
     }
   }

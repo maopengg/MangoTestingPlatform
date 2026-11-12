@@ -21,12 +21,8 @@ from src.apps.system.enums.cache import SystemConfigManagementLevelEnum
 from src.apps.system.models import CacheData
 from src.apps.test_center.schemas.report_delivery import ReportDeliveryConfig
 from src.apps.test_center.selectors.offline_report import OfflineReportSelector
-from src.apps.test_center.services.offline_report import OfflineReportService
-from src.apps.system.services.system_config import (
-    CONFIG_GROUP_TITLES,
-    DEPRECATED_SYSTEM_CONFIG_GROUPS,
-    SystemConfigService,
-)
+from src.apps.test_center.services.reporting.offline_report import OfflineReportService
+from src.apps.system.services.configuration.system_config import CONFIG_GROUP_TITLES, DEPRECATED_SYSTEM_CONFIG_GROUPS, SystemConfigService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -55,6 +51,7 @@ class CacheDataCRUD(ModelCRUD):
 
     @error_response('system')
     def get(self, request: Request):
+        """获取系统配置列表或指定记录"""
         SystemConfigService.sync_registered_configs()
         books = self.model.objects.filter(
             key__in=SystemConfigService.editable_config_keys(),
@@ -77,6 +74,7 @@ class CacheDataCRUD(ModelCRUD):
     @error_response('system')
     @transaction.atomic
     def put(self, request: Request):
+        """修改系统配置"""
         execution_validation_error = SystemConfigService.validate_execution_config_values({
             str(item.get('key')): item.get('value')
             for item in request.data
@@ -151,11 +149,13 @@ class CacheDataViews(ViewSet):
 
     @error_response('system')
     def report_delivery_metadata(self, request: Request):
+        """获取测试报告投递配置元数据"""
         OfflineReportSelector.require_permission(getattr(request.user, 'user_obj', None), 'system.settings:read')
         return ResponseData.success(RESPONSE_MSG_0001, {'defaults': ReportDeliveryConfig().model_dump(mode='json')})
 
     @error_response('system')
     def report_sample(self, request: Request):
+        """预览测试报告通知样例"""
         OfflineReportSelector.require_permission(getattr(request.user, 'user_obj', None), 'system.settings:change')
         response = FileResponse(io.BytesIO(OfflineReportService.sample()), as_attachment=True,
                                 filename='sample-report.html', content_type='text/html; charset=utf-8')
@@ -166,6 +166,7 @@ class CacheDataViews(ViewSet):
     @error_response('system')
     @action(methods=['GET'], detail=False)
     def grouped(self, request: Request):
+        """按业务分组获取系统配置"""
         SystemConfigService.sync_registered_configs()
         queryset = self.model.objects.filter(
             key__in=SystemConfigService.editable_config_keys(),
@@ -237,6 +238,7 @@ class CacheDataViews(ViewSet):
     @error_response('system')
     @action(methods=['POST'], detail=False)
     def clear_runtime_cache(self, request: Request):
+        """清理指定用途的运行态缓存"""
         cache.clear()
         return ResponseData.success(RESPONSE_MSG_0325)
 

@@ -23,7 +23,7 @@ class DrainingMcpServer(uvicorn.Server):
         exiting = await super().on_tick(counter)
         draining = McpExecutionLifecycle.should_exit()
         if draining and McpExecutionLifecycle.snapshot()['active_tools'] == 0:
-            from src.apps.data_factory.services.pool_maintenance import DatasourcePoolMaintenance
+            from src.apps.data_factory.services.pool.pool_maintenance import DatasourcePoolMaintenance
             await asyncio.to_thread(DatasourcePoolMaintenance.close_idle_pools)
             # Uvicorn退出后会重新抛出SIGTERM，不能只依赖run的finally保存证据。
             await asyncio.to_thread(McpExecutionLifecycle.record_drained)
@@ -34,6 +34,8 @@ class DrainingMcpServer(uvicorn.Server):
         from django.apps import apps
         if not apps.ready:
             django.setup()
+        from src.apps.data_factory.services.governance.datasource_governor import DatasourceGovernorService
+        DatasourceGovernorService.policy()
         from src.apps.system.services.runtime_center.mcp_execution import McpExecutionLifecycle
         stop_event = Event()
         thread = Thread(target=_heartbeat_loop,
@@ -72,7 +74,7 @@ def run_mcp_service(host: str, port: int, workers: int = 1):
 
 def _heartbeat_loop(host: str, port: int, workers: int, stop_event: Event):
     from src.apps.system.services.runtime_center.heartbeat import ServiceHeartbeatService
-    from src.apps.data_factory.services.pool_maintenance import DatasourcePoolMaintenance
+    from src.apps.data_factory.services.pool.pool_maintenance import DatasourcePoolMaintenance
     from src.apps.system.services.runtime_center.process_identity import RuntimeProcessIdentity
     from src.apps.system.services.runtime_center.mcp_execution import McpExecutionLifecycle
     while not stop_event.is_set():

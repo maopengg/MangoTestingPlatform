@@ -4,7 +4,7 @@ from src.apps.data_factory.api.serializers.mixins import ProductModuleBindingSer
 from src.apps.data_factory.enums import DataFactoryEntityStatusChangeSourceEnum
 from src.apps.data_factory.enums import DataFactoryOperationTypeEnum
 from src.apps.data_factory.models import DataFactoryEntity
-from src.apps.data_factory.services.entity import DataFactoryEntityService
+from src.apps.data_factory.services.assets.entity import DataFactoryEntityService
 
 
 class DataFactoryEntitySerializer(ProductModuleBindingSerializerMixin, serializers.ModelSerializer):

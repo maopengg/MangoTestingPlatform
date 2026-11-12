@@ -128,6 +128,6 @@ test('retry component and integrating parent SFC compile, with local loading/err
     assert.deepEqual(template.errors, [])
     for (const style of descriptor.styles) assert.deepEqual((await compileStyleAsync({ source: style.content, filename: file, id: 'ui-case-retry', scoped: style.scoped, preprocessLang: style.lang })).errors, [])
   }
-  const text = readFileSync(filename, 'utf8'); assert.match(text, /:loading="saving"/); assert.match(text, /role="alert"/)
+  const text = readFileSync(filename, 'utf8'); assert.match(text, /:loading="saving"/); assert.match(text, /MangoRequestFeedback v-if="error"/); assert.doesNotMatch(text, /role="alert"/)
   const parent = readFileSync(path.join(base, 'index.vue'), 'utf8'); assert.match(parent, /@saved="applyCaseStepRetry"/); assert.doesNotMatch(parent, /retryEditor|saveCaseStepRetry/)
 })

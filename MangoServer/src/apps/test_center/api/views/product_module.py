@@ -11,8 +11,8 @@ from src.apps.test_center.api.serializers.product_module import ProductModulePat
     ProductModuleSerializersC
 from src.apps.test_center.api.serializers.product_module_mutation import ProductModuleSerializers
 from src.apps.test_center.models import ProductModule
-from src.apps.test_center.services.product_module_cache import ProductModuleCacheService
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.test_center.services.project.product_module_cache import ProductModuleCacheService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -107,6 +107,7 @@ class ProductModuleViews(ViewSet):
     @action(methods=['GET'], detail=False)
     @error_response('user')
     def tree(self, request: Request):
+        """获取产品模块层级树"""
         project_product_id = request.query_params.get('project_product_id')
         if project_product_id:
             if not ProductModuleCRUD().has_data_scope_permission(
@@ -164,6 +165,7 @@ class ProductModuleViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('user')
     def create_path(self, request: Request):
+        """按完整路径创建产品模块"""
         serializer = ProductModulePathSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         project_product = serializer.validated_data['project_product']

@@ -9,7 +9,7 @@ from src.apps.functional_test.api.serializers.automation_binding import (
 from src.apps.functional_test.enums import ManualTestRelationTypeEnum
 from src.apps.functional_test.models import ManualTestAutomationBinding, ManualTestCase
 from src.apps.functional_test.selectors.access_scope import filter_manual_case_by_data_scope
-from src.apps.functional_test.services.automation import ManualAutomationService
+from src.apps.functional_test.services.integration.automation import ManualAutomationService
 from src.common.decorators.error_response import error_response
 from src.common.responses.response_data import ResponseData
 from src.common.responses.response_msg import (
@@ -25,6 +25,7 @@ class ManualTestAutomationViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def bind(self, request: Request):
+        """绑定功能用例自动化关联"""
         case = filter_manual_case_by_data_scope(request, ManualTestCase.objects.all()).get(
             id=request.data.get("case_id"))
         binding = ManualAutomationService.bind(
@@ -39,6 +40,7 @@ class ManualTestAutomationViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def binding(self, request: Request):
+        """获取功能用例的自动化绑定信息"""
         queryset = ManualTestAutomationBinding.objects.all()
         case_id = request.query_params.get("case_id")
         if case_id:

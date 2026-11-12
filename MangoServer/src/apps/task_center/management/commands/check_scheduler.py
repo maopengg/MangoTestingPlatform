@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand, CommandError
 
-from src.apps.task_center.services.scheduler_readiness import SchedulerReadinessService
+from src.apps.task_center.services.scheduling.scheduler_readiness import SchedulerReadinessService
 
 
 class Command(BaseCommand):

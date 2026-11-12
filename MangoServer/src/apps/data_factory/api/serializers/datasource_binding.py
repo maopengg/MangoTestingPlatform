@@ -8,7 +8,7 @@ from rest_framework import serializers
 from src.apps.data_factory.api.serializers.datasource_alias import DataFactoryDatasourceAliasSerializerC
 from src.apps.data_factory.exceptions import DATA_FACTORY_CONFIG_INVALID, DataFactoryError
 from src.apps.data_factory.models import DataFactoryDatasourceBinding
-from src.apps.data_factory.services.datasource_target import DatasourceTargetService
+from src.apps.data_factory.services.datasource.datasource_target import DatasourceTargetService
 from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.apps.test_center.formatters.related import format_data_source
 from src.apps.user.formatters import format_user_simple

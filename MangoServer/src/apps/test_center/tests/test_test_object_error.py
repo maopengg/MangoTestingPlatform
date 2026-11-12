@@ -6,7 +6,7 @@ from src.apps.test_center.enums.environment import (
 )
 from src.apps.test_center.exceptions import TestCenterError
 from src.apps.test_center.models import Project, ProjectProduct
-from src.apps.test_center.services.factory import func_test_object_value
+from src.apps.test_center.services.datasource.factory import func_test_object_value
 
 
 class TestObjectErrorMessageTests(TestCase):

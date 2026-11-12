@@ -4,19 +4,34 @@ from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase
 
-from src.apps.task_center.services.scheduler_readiness import SchedulerReadinessService
+from src.apps.task_center.services.scheduling.scheduler_readiness import SchedulerReadinessService
 from src.processes.scheduler.runner import ScheduleRunner
 
 
 class SchedulerReadinessTests(SimpleTestCase):
-    @patch('src.apps.task_center.services.scheduler_readiness.MonitoringQuerySelector.service_heartbeats')
-    @patch('src.apps.data_factory.services.datasource_governor.DatasourceGovernorService.policy')
-    @patch('src.apps.data_factory.services.datasource_governor.DatasourceGovernorService.store')
+    @patch('src.processes.scheduler.runner.threading.Thread')
+    def test_datasource_recovery_has_one_consumer_and_restarts_after_exit(self, thread):
+        runner = ScheduleRunner(cleanup_only=True)
+        runner.start_datasource_recovery()
+        thread.return_value.start.assert_called_once()
+        runner.datasource_recovery_thread.is_alive.return_value = True
+        runner.start_datasource_recovery()
+        self.assertEqual(thread.call_count, 1)
+        runner.datasource_recovery_thread.is_alive.return_value = False
+        runner.start_datasource_recovery()
+        self.assertEqual(thread.call_count, 2)
+        runner.stop_event.set()
+        runner.start_datasource_recovery()
+        self.assertEqual(thread.call_count, 2)
+
+    @patch('src.apps.task_center.services.scheduling.scheduler_readiness.MonitoringQuerySelector.service_heartbeats')
+    @patch('src.apps.data_factory.services.governance.datasource_governor.DatasourceGovernorService.policy')
+    @patch('src.apps.data_factory.services.governance.datasource_governor.DatasourceGovernorService.store')
     def test_only_current_container_fresh_cleanup_heartbeat_is_ready(self, store, policy, rows):
         from src.apps.data_factory.schemas.performance import DatasourcePerformancePolicy
         policy.return_value = DatasourcePerformancePolicy()
         result = rows.return_value.filter.return_value.values.return_value.first
-        with patch('src.apps.task_center.services.scheduler_readiness.socket.gethostname', return_value='example-pod'), \
+        with patch('src.apps.task_center.services.scheduling.scheduler_readiness.socket.gethostname', return_value='example-pod'), \
                 patch.dict('os.environ', {'MANGO_SERVICE_INSTANCE': 'example-scheduler'}):
             for value in (None, {'metadata': {}}, {'metadata': {'cleanup_consumers_alive': False}},
                           {'metadata': {'cleanup_consumers_alive': True}},
@@ -47,7 +62,7 @@ class SchedulerReadinessTests(SimpleTestCase):
         self.assertFalse(runner.is_cleanup_consumers_alive())
 
     @patch('src.processes.scheduler.runner.threading.Thread')
-    @patch('src.apps.data_factory.services.datasource_governor.DatasourceGovernorService.policy')
+    @patch('src.apps.data_factory.services.governance.datasource_governor.DatasourceGovernorService.policy')
     def test_configured_thread_count_scales_without_interrupting_inflight_cleanup(self, policy, thread):
         from src.apps.data_factory.schemas.performance import DatasourcePerformancePolicy
         thread.side_effect = lambda **kwargs: Mock(is_alive=Mock(return_value=True))
@@ -86,7 +101,10 @@ class SchedulerReadinessTests(SimpleTestCase):
     def test_cleanup_only_does_not_dispatch_or_trigger_business_jobs(self, tick, ensure, dispatch, cleanup, beat, recovery):
         runner = ScheduleRunner(cleanup_only=True)
         beat.side_effect = lambda *args, **kwargs: runner.stop_event.set()
-        runner.run_forever()
+        with patch.object(runner, 'start_datasource_recovery') as session_recovery, \
+                patch('src.apps.data_factory.services.governance.datasource_governor.DatasourceGovernorService.policy'):
+            runner.run_forever()
+        session_recovery.assert_called()
         cleanup.assert_called()
         dispatch.assert_not_called()
         ensure.assert_not_called()

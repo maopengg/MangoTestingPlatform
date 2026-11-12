@@ -12,7 +12,7 @@ from src.apps.auto_ui.models import (
 )
 from src.apps.auto_ui.selectors.page import normalize_page_url
 from src.apps.auto_ui.selectors.querysets import UiQuerySelector
-from src.apps.auto_ui.services.page_step_detail import PageStepDetailMutationService
+from src.apps.auto_ui.services.page_steps.page_step_detail import PageStepDetailMutationService
 from src.common.exceptions import MangoServerError
 from src.interfaces.mcp.common import (
     create_dangerous_action_preview,
@@ -50,9 +50,9 @@ def _selected_env(user_id: int, test_env_id: int | None) -> int:
     if test_env_id is not None:
         return test_env_id
     user = current_user(user_id)
-    from src.apps.user.services.user_cache import UserCacheService
+    from src.apps.user.services.preferences.user_config import UserConfigService
 
-    selected_environment = UserCacheService.selected_environment(user)
+    selected_environment = UserConfigService.selected_environment(user)
     if selected_environment is None:
         raise McpError(MCP_TEST_ENVIRONMENT_REQUIRED)
     return selected_environment

@@ -1,4 +1,4 @@
-from src.apps.user.services.http_permission_registry import permission_for_view
+from src.apps.user.services.authorization.http_permission_registry import permission_for_view
 """回调闭环测试只使用独立内存 SQLite，不生成或运行迁移。"""
 import hashlib
 import json
@@ -17,11 +17,11 @@ from src.apps.auto_api.enums.callback import CallbackRunStatus
 from src.apps.auto_api.exceptions import AutoApiError, MockRuntimeLookupError
 from src.apps.auto_api.models import ApiCase, ApiMockConfig, ApiCaseCallbackRun, ApiMockRequestLog
 from src.apps.auto_api.schemas.callback import validate_callback_rules
-from src.apps.auto_api.services.callback import ApiCallbackService
-from src.apps.auto_api.services.callback_validation import compact_json, validate_delivery
-from src.apps.auto_api.services.callback_general import CallbackGeneralAssertionService
+from src.apps.auto_api.services.callbacks.callback import ApiCallbackService
+from src.apps.auto_api.services.callbacks.callback_validation import compact_json, validate_delivery
+from src.apps.auto_api.services.callbacks.callback_general import CallbackGeneralAssertionService
 from src.common.testing import ObtainTestData
-from src.apps.auto_api.services.mock_runtime import MockRuntimeService
+from src.apps.auto_api.services.mock.mock_runtime import MockRuntimeService
 
 
 def callback_rule():
@@ -51,7 +51,7 @@ class CallbackGeneralTests(SimpleTestCase):
         self.assertFalse(CallbackGeneralAssertionService.evaluate(assertions, 201, data)[0])
 
     def test_contains_uses_shared_method_and_does_not_log_cache_values(self):
-        with patch('src.apps.auto_api.services.base.case_parameter.log.api.debug') as debug:
+        with patch('src.apps.auto_api.services.execution.base.case_parameter.log.api.debug') as debug:
             passed, _ = CallbackGeneralAssertionService.evaluate(
                 [general_assertion('approved', method='p_contains')], 'status-approved', ObtainTestData())
         self.assertTrue(passed)
@@ -204,13 +204,13 @@ class CallbackPersistenceTests(unittest.TestCase):
 
     def setUp(self):
         real_atomic = transaction.atomic
-        patches = [patch('src.apps.auto_api.services.callback.acquire_mysql_lock', return_value=True),
-                   patch('src.apps.auto_api.services.callback.release_mysql_lock'),
+        patches = [patch('src.apps.auto_api.services.callbacks.callback.acquire_mysql_lock', return_value=True),
+                   patch('src.apps.auto_api.services.callbacks.callback.release_mysql_lock'),
                    patch('src.apps.auto_api.selectors.callback.ApiCallbackSelector.require_access'),
-                   patch('src.apps.auto_api.services.callback.transaction.atomic',
+                   patch('src.apps.auto_api.services.callbacks.callback.transaction.atomic',
                          side_effect=lambda *args, **kwargs: real_atomic(
                              using='callback_test', savepoint=kwargs.get('savepoint', True))),
-                   patch('src.apps.system.services.system_config.SystemConfigService.get_ranged_int',
+                   patch('src.apps.system.services.configuration.system_config.SystemConfigService.get_ranged_int',
                          side_effect=lambda key: {'MOCK_CALLBACK_ENABLED': 1, 'MOCK_CALLBACK_MAX_ACTIVE': 100,
                             'MOCK_CALLBACK_PRODUCT_MAX_ACTIVE': 50, 'MOCK_CALLBACK_EVIDENCE_KB': 256,
                             'MOCK_CALLBACK_EVIDENCE_DAYS': 7,
@@ -501,7 +501,7 @@ class CallbackPersistenceTests(unittest.TestCase):
 
     def test_summary_archives_full_assertions_through_existing_result_storage(self):
         from django.core.files.storage import InMemoryStorage
-        from src.apps.test_center.services.execution_result import ExecutionResultService
+        from src.apps.test_center.services.results.execution_result import ExecutionResultService
         ids = self.register()
         self.deliver(pretty=True)
         from src.apps.auto_api.schemas.execution import ApiAssertionResult
@@ -511,7 +511,7 @@ class CallbackPersistenceTests(unittest.TestCase):
         ApiCallbackService.attach_results(step, [run])
         self.assertEqual(len(step.ass), 3)
         storage = InMemoryStorage()
-        with patch('src.apps.test_center.services.execution_result.default_storage', storage):
+        with patch('src.apps.test_center.services.results.execution_result.default_storage', storage):
             key, _ = ExecutionResultService.save_result_file(
                 {'callback_results': [summary], 'steps': [{'ass': [item.model_dump(mode='json') for item in step.ass]}]},
                 target_type='api_case', target_id=1,
@@ -570,19 +570,19 @@ class CallbackPersistenceTests(unittest.TestCase):
         self.assertIsNone(assertions[1].expect)
 
     def test_manual_and_scheduled_cleanup_preserve_callback_judgement_records(self):
-        from src.apps.auto_api.services.mock_log_cleanup import MockRequestLogCleanupService
+        from src.apps.auto_api.services.mock.mock_log_cleanup import MockRequestLogCleanupService
         ids = self.register()
         self.deliver()
         run = ApiCaseCallbackRun.objects.get(pk=ids[0])
         ordinary = ApiMockRequestLog.objects.create(mock_config=self.mock, method=1, request_path='/')
-        with patch('src.apps.auto_api.services.mock_log_cleanup.cache'):
+        with patch('src.apps.auto_api.services.mock.mock_log_cleanup.cache'):
             self.assertEqual(MockRequestLogCleanupService.clear_config_logs(self.mock.id), 1)
             self.assertEqual(run.deliveries.count(), 1)
             self.assertFalse(ApiMockRequestLog.objects.filter(pk=ordinary.pk).exists())
             ApiMockRequestLog.objects.create(mock_config=self.mock, method=1, request_path='/')
             self.assertEqual(MockRequestLogCleanupService.clear_all_logs(), 1)
         with patch.object(ApiCallbackService, 'enabled', return_value=False):
-            with patch('src.apps.auto_api.services.mock_log_cleanup.cache'):
+            with patch('src.apps.auto_api.services.mock.mock_log_cleanup.cache'):
                 self.assertEqual(MockRequestLogCleanupService.clear_all_logs(), 0)
         self.assertEqual(run.deliveries.count(), 1)
         ApiCaseCallbackRun.objects.filter(pk=run.id).update(finished_at=timezone.now() - timedelta(days=8))

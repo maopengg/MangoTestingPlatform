@@ -5,13 +5,13 @@ from datetime import timedelta
 from hashlib import sha256
 
 from django.db import connection, transaction
-from django.db.models import F, Min, Q
+from django.db.models import Count, F, Max, Min, Q
 from django.utils import timezone
 from mangotools.enums import TaskEnum
 
 from src.apps.auto_api.services.api_case.version import ApiCaseRevisionService
 from src.apps.system.enums import ExecutorTaskTypeEnum
-from src.apps.system.services.system_config import SystemConfigService
+from src.apps.system.services.configuration.system_config import SystemConfigService
 from src.apps.task_center.schemas.execution import ApiWorkerClaimOwner, ExecutionCaseCommand
 from src.apps.task_center.services.selection.api_case_binding import ApiCaseTaskBindingService
 from src.apps.task_center.services.selection.api_concurrency import ApiConcurrencyService
@@ -19,7 +19,7 @@ from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.test_center.enums.reporting import ReportExecutionPhaseEnum
 from src.apps.test_center.models import TestSuite, TestSuiteDetails
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
-from src.apps.test_center.services.test_suite.timeout_recovery import TestSuiteTimeoutRecoveryService
+from src.apps.test_center.services.reporting.test_suite.timeout_recovery import TestSuiteTimeoutRecoveryService
 from src.common.database.mysql_lock import acquire_mysql_lock, release_mysql_lock
 
 _NON_MYSQL_PLATFORM_CLAIM_LOCK = threading.Lock()
@@ -84,11 +84,27 @@ class ApiTaskClaimService:
 
     @classmethod
     def valid_running_queryset(cls, timeout_at):
+        suspended = cls.suspended_queryset(timeout_at).values('id')
         return TestSuiteDetails.objects.filter(
             type=TestCaseTypeEnum.API.value,
             status=TaskEnum.PROCEED.value,
             push_time__gte=timeout_at,
-        ).filter(cls.not_blocked_condition())
+        ).filter(cls.not_blocked_condition()).exclude(id__in=suspended).exclude(
+            test_suite__status=TaskEnum.STOPPED.value)
+
+    @classmethod
+    def suspended_queryset(cls, timeout_at):
+        return TestSuiteDetails.objects.filter(type=TestCaseTypeEnum.API.value,
+            status=TaskEnum.PROCEED.value, push_time__gte=timeout_at,
+            summary_data__meta__resource_wait__suspended=True,
+            summary_data__meta__resource_wait__attempt=F('retry'),
+            summary_data__meta__resource_wait__process_token=F('summary_data__meta__worker_owner__process_token'),
+        ).filter(cls.not_blocked_condition()).exclude(test_suite__status=TaskEnum.STOPPED.value)
+
+    @staticmethod
+    def not_blocked_detail(detail):
+        from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService
+        return not TestSuiteInfrastructureService.is_blocked(detail.summary_data)
 
     @classmethod
     def candidate_suite_ids(cls, timeout_at, max_attempts: int | None = None):
@@ -97,10 +113,10 @@ class ApiTaskClaimService:
             if max_attempts is not None
             else SystemConfigService.get_test_suite_timeout_max_attempts()
         )
+        suspended_ids = cls.suspended_queryset(timeout_at).values('id')
         candidate_details = TestSuiteDetails.objects.filter(
-            retry__lt=max_attempts,
-            type=TestCaseTypeEnum.API.value,
-        ).filter(cls.not_blocked_condition())
+            Q(retry__lt=max_attempts) | Q(id__in=suspended_ids), type=TestCaseTypeEnum.API.value,
+        ).filter(cls.not_blocked_condition()).exclude(test_suite__status=TaskEnum.STOPPED.value)
         pending_suites = (
             candidate_details.filter(status=TaskEnum.STAY_BEGIN.value)
             .order_by()
@@ -125,7 +141,10 @@ class ApiTaskClaimService:
 
         # 从活跃明细反向收集候选测试套，避免为每一条历史测试套执行相关子查询。
         suite_priorities = {}
-        for candidate_queryset in (pending_suites, timed_out_suites):
+        suspended_suites = candidate_details.filter(id__in=suspended_ids).order_by().values(
+            'test_suite_id', 'test_env').annotate(first_created_at=Min('create_time'),
+                environment_priority=TestCenterQuerySelector.execution_environment_priority())
+        for candidate_queryset in (pending_suites, timed_out_suites, suspended_suites):
             for candidate in candidate_queryset:
                 test_suite_id = candidate['test_suite_id']
                 priority = (candidate['environment_priority'], candidate['first_created_at'])
@@ -133,7 +152,17 @@ class ApiTaskClaimService:
                 if previous is None or priority < previous:
                     suite_priorities[test_suite_id] = priority
 
-        return sorted(suite_priorities, key=suite_priorities.__getitem__)
+        # 已领取的历史大报告不能始终排在从未获得执行位的新报告之前。
+        # 仅改变后续领取顺序，不中断在途 Case、不重放未知请求，也不扩大并发。
+        last_claims = {row['test_suite_id']: row['last_dispatch'] or (
+            row['last_claim'].isoformat() if row['last_claim'] else None)
+            for row in TestSuiteDetails.objects.filter(test_suite_id__in=suite_priorities).order_by()
+            .values('test_suite_id').annotate(last_dispatch=Max('summary_data__meta__dispatch_started_at'),
+                                             last_claim=Max('push_time'))}
+        return sorted(suite_priorities, key=lambda suite_id: (
+            suite_priorities[suite_id][0], last_claims.get(suite_id) is not None,
+            last_claims.get(suite_id) or suite_priorities[suite_id][1].isoformat(),
+            suite_priorities[suite_id][1], suite_id))
 
     @classmethod
     def claim(cls, lease_seconds: int | None = None, *, worker_owner=None) -> ExecutionCaseCommand | None:
@@ -169,7 +198,9 @@ class ApiTaskClaimService:
             max_attempts: int,
             worker_owner=None,
     ) -> ExecutionCaseCommand | None:
-        if cls.valid_running_queryset(timeout_at).count() >= platform_limit:
+        counts = dict(cls.valid_running_queryset(timeout_at).order_by().values('test_suite_id')
+                      .annotate(total=Count('id')).values_list('test_suite_id', 'total'))
+        if sum(counts.values()) >= platform_limit:
             return None
 
         for test_suite_id in cls.candidate_suite_ids(timeout_at, max_attempts):
@@ -179,13 +210,9 @@ class ApiTaskClaimService:
                     test_suite.api_concurrency_limit,
                     platform_limit,
                 )
-                running_count = cls.valid_running_queryset(timeout_at).filter(
-                    test_suite_id=test_suite.id,
-                ).count()
+                running_count = counts.get(test_suite.id, 0)
                 if running_count >= suite_limit:
                     continue
-                if cls.valid_running_queryset(timeout_at).count() >= platform_limit:
-                    return None
 
                 detail = (
                     TestSuiteDetails.objects.filter(
@@ -200,7 +227,7 @@ class ApiTaskClaimService:
                 if not detail:
                     continue
                 if detail.status == TaskEnum.PROCEED.value:
-                    from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+                    from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService
                     TestSuiteInfrastructureService.block(detail.id, int(detail.retry or 0), [])
                     continue
                 detail.test_suite = test_suite
@@ -231,12 +258,13 @@ class ApiTaskClaimService:
                         detail.case_id,
                         version_policy,
                     )
-                summary_updates = {}
+                from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService
+                children, meta = TestSuiteExecutionResultService.unpack_summary_data(detail.summary_data)
+                meta = {**(meta or {}), 'dispatch_started_at': now.isoformat()}
+                meta.pop('resource_wait', None)
                 if worker_owner is not None:
-                    from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService
-                    children, meta = TestSuiteExecutionResultService.unpack_summary_data(detail.summary_data)
-                    summary_updates['summary_data'] = TestSuiteExecutionResultService.pack_summary_data(
-                        children, {**(meta or {}), 'worker_owner': dict(worker_owner)})
+                    meta['worker_owner'] = dict(worker_owner)
+                summary_updates = {'summary_data': TestSuiteExecutionResultService.pack_summary_data(children, meta)}
                 updated = TestSuiteDetails.objects.filter(
                     cls.eligible_condition(timeout_at),
                     id=detail.id,

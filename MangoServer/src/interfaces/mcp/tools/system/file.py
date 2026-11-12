@@ -7,7 +7,7 @@ from django.core.files.base import ContentFile
 
 from src.apps.test_center.models import FileData
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
-from src.apps.test_center.services.file_data import FileDataService
+from src.apps.test_center.services.storage.file_data import FileDataService
 from src.common.storage import build_public_file_url
 from src.interfaces.mcp.common import current_user, fail, ok, paginate_queryset
 from src.interfaces.mcp.exceptions import MCP_FILE_BASE64_INVALID, McpAuthError, McpError

@@ -8,11 +8,8 @@ from django.test import SimpleTestCase
 from src.apps.data_factory.api.serializers.template import DataFactoryTemplateSerializer
 from src.apps.data_factory.exceptions import DataFactoryError
 from src.apps.data_factory.models import DataFactoryTemplate, DataFactoryTemplateItem
-from src.apps.data_factory.services.runner import DataFactoryRunner
-from src.apps.data_factory.services.template import (
-    DataFactoryTemplateMutationService,
-    DataFactoryTemplateService,
-)
+from src.apps.data_factory.services.execution.runner import DataFactoryRunner
+from src.apps.data_factory.services.assets.template import DataFactoryTemplateMutationService, DataFactoryTemplateService
 
 
 class TemplateSaveValidationTests(SimpleTestCase):
@@ -23,14 +20,14 @@ class TemplateSaveValidationTests(SimpleTestCase):
         queryset.exists.return_value = False
         queryset.exclude.return_value = queryset
         with (
-            patch('src.apps.data_factory.services.template.ProductModule.objects.get',
+            patch('src.apps.data_factory.services.assets.template.ProductModule.objects.get',
                   return_value=SimpleNamespace(project_product_id=1)),
-            patch('src.apps.data_factory.services.template.DataFactoryEntity.objects.get',
+            patch('src.apps.data_factory.services.assets.template.DataFactoryEntity.objects.get',
                   return_value=SimpleNamespace(project_product_id=1, module_id=4)),
             patch.object(DataFactoryTemplate.objects, 'filter', return_value=queryset),
             patch.object(DataFactoryTemplate.objects, 'select_for_update') as locked,
             patch.object(DataFactoryTemplateService, 'configuration_snapshot', return_value={}),
-            patch('src.apps.data_factory.services.template.save_model') as save,
+            patch('src.apps.data_factory.services.assets.template.save_model') as save,
         ):
             locked.return_value.get.return_value = template
             yield template, save
@@ -91,7 +88,7 @@ class TemplateSaveValidationTests(SimpleTestCase):
             datafactorydatasourcebinding_set=bindings,
         )))
         with patch(
-                "src.apps.data_factory.services.template.SystemConfigService."
+                "src.apps.data_factory.services.assets.template.SystemConfigService."
                 "get_data_factory_validation_environments", return_value=[0],
         ):
             self.assertEqual(DataFactoryTemplateService.activation_environments(template, 2), [0])
@@ -106,7 +103,7 @@ class TemplateSaveValidationTests(SimpleTestCase):
             datafactorydatasourcebinding_set=bindings,
         )))
         with patch(
-                "src.apps.data_factory.services.template.SystemConfigService."
+                "src.apps.data_factory.services.assets.template.SystemConfigService."
                 "get_data_factory_validation_environments", return_value=None,
         ):
             self.assertEqual(DataFactoryTemplateService.activation_environments(template, 2), [0, 3])
@@ -188,10 +185,10 @@ class TemplateSaveValidationTests(SimpleTestCase):
             patch.object(DataFactoryTemplateService, "configuration_snapshot", return_value={}),
             patch.object(DataFactoryTemplateMutationService, "_validated_payload",
                          return_value=({"cleanup_strategy": 1, "status": 1, "config_status": 1}, None)),
-            patch("src.apps.data_factory.services.template.save_model", return_value=instance) as save,
+            patch("src.apps.data_factory.services.assets.template.save_model", return_value=instance) as save,
             patch.object(DataFactoryTemplateMutationService, "_sync_after_save"),
             patch.object(DataFactoryTemplateService, "finish_configuration_save", return_value=instance) as finish,
-            patch("src.apps.data_factory.services.template.model_payload", return_value={"id": 4}),
+            patch("src.apps.data_factory.services.assets.template.model_payload", return_value={"id": 4}),
         ):
             DataFactoryTemplateMutationService.update.__wrapped__(
                 DataFactoryTemplateMutationService, 4, {"cleanup_strategy": 1},

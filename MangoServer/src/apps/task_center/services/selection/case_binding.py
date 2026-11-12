@@ -18,7 +18,7 @@ from src.apps.task_center.models import Tasks, TasksDetails
 from src.apps.task_center.services.selection.api_case_binding import ApiCaseTaskBindingService
 from src.apps.task_center.services.selection.case_selection import ScheduledTaskCaseSelectionService
 from src.apps.test_center.enums import TestCaseTypeEnum
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.test_center.services.project.product_module import ProductModuleService
 
 
 @dataclass

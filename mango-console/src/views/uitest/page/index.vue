@@ -79,9 +79,7 @@
           
           
           
-          <a-alert v-if="actionError" type="error" closable @close="actionError = ''">{{
-            actionError
-          }}</a-alert>
+          <MangoRequestFeedback v-if="actionError" :message="(actionError)" />
           <a-table
             class="mango-native-scroll-table mango-ui-page-table"
             :bordered="false"
@@ -152,8 +150,7 @@
   <UiPageEditor ref="editorRef" @saved="onSaved" @busy-change="editingBusy = $event" />
 </template>
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, onMounted, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { Message, Modal } from '@arco-design/web-vue'
@@ -389,8 +386,8 @@ import { reportLoadError } from '@/utils/load-error'
     closeConfirmation()
     try {
       editorRef.value?.open(readUiPage(value))
-    } catch {
-      actionError.value = '页面记录格式不正确，请重新加载'
+    } catch (requestFailure) {
+      actionError.value = requestFailureMessage(requestFailure, '页面记录格式不正确，请重新加载')
     }
   }
   function onSaved() {
@@ -401,8 +398,8 @@ import { reportLoadError } from '@/utils/load-error'
     let ids: PageId[]
     try {
       ids = value === null ? [...selectedRowKeys.value] : [readUiPage(value).id]
-    } catch {
-      actionError.value = '页面记录格式不正确'
+    } catch (requestFailure) {
+      actionError.value = requestFailureMessage(requestFailure, '页面记录格式不正确')
       return
     }
     if (!ids.length) {
@@ -436,8 +433,8 @@ import { reportLoadError } from '@/utils/load-error'
           closeConfirmation()
           void doRefresh()
           return true
-        } catch {
-          if (current()) actionError.value = '删除失败，请重试'
+        } catch (requestFailure) {
+          if (current()) actionError.value = requestFailureMessage(requestFailure, '删除失败，请重试')
           return false
         } finally {
           deleting.value = false
@@ -461,8 +458,8 @@ import { reportLoadError } from '@/utils/load-error'
       void router.push({ path: '/uitest/page/elements', query: { id: String(row.id) } }).catch(() => {
         if (valid()) actionError.value = '打开元素配置失败，请重试'
       })
-    } catch {
-      actionError.value = '页面记录格式不正确，请重新加载'
+    } catch (requestFailure) {
+      actionError.value = requestFailureMessage(requestFailure, '页面记录格式不正确，请重新加载')
     }
   }
   onMounted(initialize)

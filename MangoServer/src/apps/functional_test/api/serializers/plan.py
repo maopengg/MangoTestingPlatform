@@ -11,7 +11,7 @@ from src.apps.functional_test.enums import (
 from src.apps.functional_test.models import (
     FunctionalTestPlanCase,
 )
-from src.apps.functional_test.services.suite import ManualTestSuiteService
+from src.apps.functional_test.services.suites.suite import ManualTestSuiteService
 from src.apps.test_center.formatters.related import format_project_product
 from src.apps.user.formatters import format_user, format_user_simple
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector

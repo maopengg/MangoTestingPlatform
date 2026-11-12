@@ -4,7 +4,7 @@ from django.test import SimpleTestCase
 from mangotools.enums import TaskEnum
 
 from src.apps.auto_ui.schemas.execution import UiPageStepResult
-from src.apps.auto_ui.services.test_report_writing import TestReportWriting
+from src.apps.auto_ui.services.reporting.test_report_writing import TestReportWriting
 
 
 def progress_result(*, sequence: int, is_final: bool = False) -> UiPageStepResult:
@@ -40,7 +40,7 @@ class UiResultProgressOrderTest(SimpleTestCase):
     def setUp(self):
         self.cache = MemoryCache()
         self.cache_patch = patch(
-            "src.apps.auto_ui.services.test_report_writing.cache",
+            "src.apps.auto_ui.services.reporting.test_report_writing.cache",
             self.cache,
         )
         self.cache_patch.start()

@@ -7,9 +7,9 @@ from mangotools.exceptions import MangoToolsError
 from src.apps.data_factory.enums import DataFactoryOperationTypeEnum, DataFactoryTemplateUsageScopeEnum
 from src.apps.data_factory.exceptions import DataFactoryError
 from src.apps.data_factory.models import DataFactoryField
-from src.apps.data_factory.services.generator import DataFactoryValueGenerator
-from src.apps.data_factory.services.runner import DataFactoryRunner
-from src.apps.data_factory.services.template import DataFactoryTemplateService
+from src.apps.data_factory.services.execution.generator import DataFactoryValueGenerator
+from src.apps.data_factory.services.execution.runner import DataFactoryRunner
+from src.apps.data_factory.services.assets.template import DataFactoryTemplateService
 from src.common.testing import ObtainTestData
 
 
@@ -27,10 +27,10 @@ class ActivationRuntimeContextTests(SimpleTestCase):
         cache.replace.return_value = None
         with (
             patch(
-                'src.apps.data_factory.services.runner_parts.preview.DataFactoryDatasourceResolver.resolve_entity_binding'),
+                'src.apps.data_factory.services.execution.parts.preview.DataFactoryDatasourceResolver.resolve_entity_binding'),
             patch(
-                'src.apps.data_factory.services.runner_parts.preview.DataFactoryDatasourceResolver.require_binding_permission'),
-            patch('src.apps.data_factory.services.runner_parts.preview.DatasourceTargetService.resolve',
+                'src.apps.data_factory.services.execution.parts.preview.DataFactoryDatasourceResolver.require_binding_permission'),
+            patch('src.apps.data_factory.services.execution.parts.preview.DatasourceTargetService.resolve',
                   return_value=database),
             patch.object(DataFactoryRunner, 'build_effective_fields', return_value=fields),
             patch.object(DataFactoryRunner, 'build_dependency_tree', return_value={}),
@@ -150,7 +150,7 @@ class ActivationRuntimeContextTests(SimpleTestCase):
         with (
             patch.object(DataFactoryRunner, 'require_template_entities_available'),
             patch.object(DataFactoryTemplateService, 'activation_environments', return_value=[0]),
-            patch('src.apps.data_factory.services.template.DataFactoryPreviewService.preview_template',
+            patch('src.apps.data_factory.services.assets.template.DataFactoryPreviewService.preview_template',
                   return_value={'configuration_valid': True, 'can_debug_run': False,
                                 'runtime_context_required': True}) as preview,
         ):
@@ -177,7 +177,7 @@ class ActivationRuntimeContextTests(SimpleTestCase):
         with (
             patch.object(DataFactoryRunner, 'require_template_entities_available'),
             patch.object(DataFactoryTemplateService, 'activation_environments', return_value=[0]),
-            patch('src.apps.data_factory.services.template.DataFactoryPreviewService.preview_template',
+            patch('src.apps.data_factory.services.assets.template.DataFactoryPreviewService.preview_template',
                   return_value={'configuration_valid': False, 'missing_fields': [], 'dependencies': [],
                                 'all_missing_fields': [{'path': '根 / 分类绑定', 'field': 'category_id'}]}),
             self.assertRaises(DataFactoryError) as error,

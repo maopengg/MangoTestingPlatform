@@ -21,9 +21,9 @@ from src.apps.auto_ui.exceptions import (
     AUTO_UI_LIVE_STREAM_WORKSPACE_SERVICE_EXECUTOR_USER_EXECUTION_INVALID,
     AutoUiError,
 )
-from src.apps.auto_ui.services.executor_slot import ExecutorSlotLeaseService
+from src.apps.auto_ui.services.execution.executor_slot import ExecutorSlotLeaseService
 from src.apps.auto_ui.services.live_stream.constants import REALTIME_COMMAND_TTL_SECONDS
-from src.apps.auto_ui.services.test_case.test_case import TestCase
+from src.apps.auto_ui.services.execution.cases.test_case import TestCase
 from src.apps.system.enums import ClientTypeEnum
 from src.apps.system.services.socket_link.connection_service import SocketConnectionService
 from src.apps.system.services.socket_link.message_service import SocketMessageService

@@ -11,107 +11,13 @@ from sqlalchemy.pool import QueuePool
 
 from src.apps.data_factory.exceptions import DataFactoryError
 from src.apps.data_factory.schemas.performance import DatasourcePerformancePolicy, DatasourceTypeBudget
-from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService as Governor
-from src.apps.data_factory.services.execution_metadata import DataFactoryExecutionMetadata as Metadata
-from src.apps.data_factory.services.runner import DataFactoryRunner
-from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditHandle, SqlExecutionAuditService as Audit
-from src.apps.data_factory.services.sql_driver_audit import SqlDriverAuditService
+from src.apps.data_factory.services.governance.datasource_governor import DatasourceGovernorService as Governor
+from src.apps.data_factory.services.execution.execution_metadata import DataFactoryExecutionMetadata as Metadata
+from src.apps.data_factory.services.execution.runner import DataFactoryRunner
+from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditHandle, SqlExecutionAuditService as Audit
+from src.apps.data_factory.services.sql.sql_driver_audit import SqlDriverAuditService
 from src.apps.data_factory.tests.test_datasource_performance import AtomicMemoryStore
 from src.apps.test_center.enums.data_source import DataSourceTypeEnum
-
-
-class RateSettlementTests(SimpleTestCase):
-    def setUp(self):
-        self.store = AtomicMemoryStore()
-        self.policy = DatasourcePerformancePolicy(mysql=DatasourceTypeBudget(
-            concurrency=4, requests_per_second=20, connections=8, cleanup_reserved=1), pool_size=2)
-        self.target = SimpleNamespace(id=1, db_type=0, host='mysql.example.com', port=3306)
-        for method, kwargs in (
-            ('store', {'return_value': self.store}), ('policy', {'return_value': self.policy}),
-            ('configuration_guard', {'side_effect': lambda *args: nullcontext()}),
-        ):
-            guard = patch.object(Governor, method, **kwargs)
-            guard.start()
-            self.addCleanup(guard.stop)
-
-    def state(self):
-        return next(iter(self.store.values.values()))
-
-    def execute(self, count):
-        for _ in range(count):
-            with Governor.operation(self.target, physical=True):
-                pass
-
-    def test_four_sql_charge_four_not_sixteen_tokens(self):
-        with Governor.transaction_budget(self.target, 8):
-            self.execute(1)
-        with Governor.transaction_budget(self.target, 8):
-            self.execute(3)
-        self.assertEqual(self.state()['tokens'], 16)
-        self.assertEqual(self.state()['normal_tokens'], 11)
-        self.assertFalse(self.state()['permits'])
-
-    def test_unsent_sql_returns_entire_reservation(self):
-        with self.assertRaisesRegex(RuntimeError, 'AUTO_BEFORE_SEND'):
-            with Governor.transaction_budget(self.target, 8):
-                raise RuntimeError('AUTO_BEFORE_SEND')
-        self.assertEqual(self.state()['tokens'], 20)
-        self.assertEqual(self.state()['normal_tokens'], 15)
-
-    def test_sent_failure_is_charged_but_unused_tokens_return(self):
-        with self.assertRaisesRegex(RuntimeError, 'AUTO_SQL_FAILURE'):
-            with Governor.transaction_budget(self.target, 8):
-                with Governor.operation(self.target, physical=True):
-                    raise RuntimeError('AUTO_SQL_FAILURE')
-        self.assertEqual(self.state()['tokens'], 19)
-        self.assertEqual(self.state()['normal_tokens'], 14)
-        self.assertFalse(self.state()['permits'])
-
-    def test_admission_failure_does_not_consume_credit_for_unsent_statement(self):
-        with Governor.transaction_budget(self.target, 8):
-            with patch.object(Governor, 'acquire', side_effect=RuntimeError('AUTO_NOT_SENT')):
-                with self.assertRaisesRegex(RuntimeError, 'AUTO_NOT_SENT'):
-                    self.execute(1)
-        self.assertEqual(self.state()['tokens'], 20)
-
-    def test_extra_sql_still_consumes_normal_rate(self):
-        with Governor.transaction_budget(self.target, 2):
-            self.execute(4)
-        self.assertEqual(self.state()['tokens'], 16)
-        self.assertFalse(self.state()['permits'])
-
-    def test_cleanup_refund_cannot_expand_normal_capacity(self):
-        from src.apps.data_factory.enums.performance import DatasourceQueueLaneEnum
-        with patch.object(Governor, 'lane', return_value=DatasourceQueueLaneEnum.CLEANUP):
-            with Governor.transaction_budget(self.target, 8):
-                self.execute(1)
-        self.assertEqual(self.state()['tokens'], 19)
-        self.assertEqual(self.state()['normal_tokens'], 15)
-
-    def test_refund_lost_reply_is_not_retried_or_reported_as_case_failure(self):
-        with Governor.transaction_budget(self.target, 8):
-            self.execute(1)
-            original = self.store.atomic_update
-            def committed_then_disconnected(*args, **kwargs):
-                original(*args, **kwargs)
-                raise ConnectionError('AUTO_LOST_REPLY')
-            guard = patch.object(self.store, 'atomic_update', side_effect=committed_then_disconnected)
-            refund = guard.start()
-        guard.stop()
-        self.assertEqual(refund.call_count, 1)
-        self.assertEqual(self.state()['tokens'], 19)
-
-    def test_concurrent_reservations_settle_only_their_own_unused_credits(self):
-        barrier = threading.Barrier(2)
-        def run(_):
-            with Governor.transaction_budget(self.target, 4):
-                barrier.wait(timeout=5)
-                self.execute(1)
-        with ThreadPoolExecutor(max_workers=2) as workers:
-            list(workers.map(run, range(2)))
-        self.assertEqual(self.state()['tokens'], 18)
-        self.assertEqual(self.state()['normal_tokens'], 13)
-        self.assertFalse(self.state()['permits'])
 
 
 class ExecutionMetadataTests(SimpleTestCase):
@@ -126,8 +32,8 @@ class ExecutionMetadataTests(SimpleTestCase):
         self.table = Table('example', MetaData(), Column('id', Integer, primary_key=True))
 
     def test_reuses_reflection_but_still_reads_fresh_ddl_before_every_insert(self):
-        with patch('src.apps.data_factory.services.execution_metadata.Table', return_value=self.table) as reflect, \
-                patch('src.apps.data_factory.services.execution_metadata.DataFactoryDiscover.get_mysql_table_definition',
+        with patch('src.apps.data_factory.services.execution.execution_metadata.Table', return_value=self.table) as reflect, \
+                patch('src.apps.data_factory.services.execution.execution_metadata.DataFactoryDiscover.get_mysql_table_definition',
                       return_value=self.ddl) as ddl, Metadata.scope():
             for _ in range(28):
                 table, kinds = Metadata.resolve(self.entity, self.target, self.engine)
@@ -137,8 +43,8 @@ class ExecutionMetadataTests(SimpleTestCase):
             self.assertEqual(ddl.call_count, 29)
 
     def test_counter_changes_do_not_hide_real_structural_changes(self):
-        with patch('src.apps.data_factory.services.execution_metadata.Table', return_value=self.table), \
-                patch('src.apps.data_factory.services.execution_metadata.DataFactoryDiscover.get_mysql_table_definition',
+        with patch('src.apps.data_factory.services.execution.execution_metadata.Table', return_value=self.table), \
+                patch('src.apps.data_factory.services.execution.execution_metadata.DataFactoryDiscover.get_mysql_table_definition',
                       side_effect=[self.ddl, self.ddl, self.ddl.replace('=10', '=11'),
                                    self.ddl.replace('bigint', 'varchar(32)')]), Metadata.scope():
             Metadata.resolve(self.entity, self.target, self.engine)
@@ -151,8 +57,8 @@ class ExecutionMetadataTests(SimpleTestCase):
                             Metadata.definition_signature(self.ddl + " COMMENT='AUTO_INCREMENT=11'"))
 
     def test_binding_versions_and_executions_do_not_share_tables(self):
-        with patch('src.apps.data_factory.services.execution_metadata.Table', return_value=self.table) as reflect, \
-                patch('src.apps.data_factory.services.execution_metadata.DataFactoryDiscover.get_mysql_table_definition',
+        with patch('src.apps.data_factory.services.execution.execution_metadata.Table', return_value=self.table) as reflect, \
+                patch('src.apps.data_factory.services.execution.execution_metadata.DataFactoryDiscover.get_mysql_table_definition',
                       return_value=self.ddl):
             with Metadata.scope():
                 Metadata.resolve(self.entity, self.target, self.engine)
@@ -162,16 +68,16 @@ class ExecutionMetadataTests(SimpleTestCase):
             self.assertEqual(reflect.call_count, 3)
 
     def test_schema_changes_during_initial_reflection_reject_insert(self):
-        with patch('src.apps.data_factory.services.execution_metadata.Table', return_value=self.table), \
-                patch('src.apps.data_factory.services.execution_metadata.DataFactoryDiscover.get_mysql_table_definition',
+        with patch('src.apps.data_factory.services.execution.execution_metadata.Table', return_value=self.table), \
+                patch('src.apps.data_factory.services.execution.execution_metadata.DataFactoryDiscover.get_mysql_table_definition',
                       side_effect=[self.ddl, self.ddl.replace('bigint', 'varchar(32)')]), Metadata.scope():
             with self.assertRaises(DataFactoryError):
                 Metadata.resolve(self.entity, self.target, self.engine)
 
     def test_supplied_connection_is_reused_for_both_ddl_reads_and_reflection(self):
         connection = Mock()
-        with patch('src.apps.data_factory.services.execution_metadata.Table', return_value=self.table) as reflect, \
-                patch('src.apps.data_factory.services.execution_metadata.DataFactoryDiscover.get_mysql_table_definition',
+        with patch('src.apps.data_factory.services.execution.execution_metadata.Table', return_value=self.table) as reflect, \
+                patch('src.apps.data_factory.services.execution.execution_metadata.DataFactoryDiscover.get_mysql_table_definition',
                       return_value=self.ddl) as ddl, Metadata.scope():
             Metadata.resolve(self.entity, self.target, self.engine, connection=connection)
             self.engine.connect.assert_not_called()
@@ -189,25 +95,85 @@ class LatePayloadTests(SimpleTestCase):
         self.entity = SimpleNamespace(table_name='example', primary_key='id', unique_key='')
         self.target = SimpleNamespace(schema_name='', db_type=DataSourceTypeEnum.SQLITE.value)
 
-    def test_payload_is_built_once_after_structure_budget_and_pool_wait(self):
+    def test_only_tenant_is_generated_for_preflight_and_is_not_regenerated_for_insert(self):
+        from src.apps.data_factory.enums import DataFactoryGeneratorTypeEnum as GeneratorType, DataFactoryOperationTypeEnum
+        from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as Resources
+        from src.apps.data_factory.services.execution.generator import DataFactoryValueGenerator as Generator
+        fields = [SimpleNamespace(name=name, generator_type=GeneratorType.FIXED.value, generator_config={},
+            platform_type='string', nullable=False, primary_key=False, max_length=None, enum_values=[])
+            for name in ('tenant_id', 'business_key', 'requested')]
+        entity = SimpleNamespace(create_type=DataFactoryOperationTypeEnum.SQL.value,
+            table_name='example', schema_name='', datafactoryfield_set=Mock())
+        entity.datafactoryfield_set.all.return_value.order_by.return_value = fields
+        template = SimpleNamespace(entity=entity, name='AUTO隔离资源', field_overrides={},
+                                   cleanup_resources=[{}], project_product_id=1)
+        generated, snapshots = [], []
+        def generate(field, payload, context):
+            generated.append(field.name)
+            return {'tenant_id': '41', 'business_key': 'AUTO_ONE', 'requested': 'late'}[field.name]
+        def insert(*args, **kwargs):
+            kwargs['prepare_resources']()
+            snapshots.append(list(generated))
+            payload = kwargs['prepare_payload']()
+            return {'created': payload}
+        with patch('src.apps.data_factory.services.execution.parts.execution.DataFactoryDatasourceResolver.resolve_entity_binding'), \
+                patch('src.apps.data_factory.services.execution.parts.execution.DataFactoryDatasourceResolver.require_binding_permission'), \
+                patch('src.apps.data_factory.services.execution.parts.execution.DatasourceTargetService.resolve'), \
+                patch.object(DataFactoryRunner, 'build_effective_fields', return_value=fields), \
+                patch.object(DataFactoryRunner, 'resolve_dependencies') as dependencies, \
+                patch.object(DataFactoryRunner, 'insert', side_effect=insert), \
+                patch.object(Resources, 'normalize', return_value=[{'tenant_field': 'tenant_id'}]), \
+                patch.object(Resources, 'preflight') as preflight, \
+                patch.object(Generator, 'generate', side_effect=generate), \
+                patch.object(Generator, 'replace_value', side_effect=lambda value, *_: value):
+            result = DataFactoryRunner._create_by_template(template, Mock(), {}, {}, 0, None, set(), None, Mock())
+        self.assertEqual(snapshots, [['tenant_id']])
+        self.assertEqual(generated, ['tenant_id', 'business_key', 'requested'])
+        self.assertEqual(result, {'tenant_id': '41', 'business_key': 'AUTO_ONE', 'requested': 'late'})
+        self.assertEqual(preflight.call_args.args[1], {'tenant_id': '41'})
+        dependencies.assert_called_once()
+
+    def test_resource_preflight_holds_no_sql_connection_and_payload_is_generated_after_all_preparation(self):
         now = [datetime(2026, 1, 1, 12)]
-        @contextmanager
-        def budget(*_):
-            now[0] += timedelta(minutes=4)
-            yield
-        prepare = Mock(side_effect=lambda: {'name': 'AUTO_LATE', 'requested': now[0] - timedelta(minutes=10)})
-        with patch('src.apps.data_factory.services.runner_parts.persistence.DataFactoryDatasource.get_worker_engine',
-                   return_value=(self.engine, True)), \
-                patch.object(Governor, 'transaction_budget', side_effect=budget):
-            result = DataFactoryRunner.insert(self.entity, self.target, {}, prepare_payload=prepare)
+        stages = []
+
+        def preflight():
+            self.assertEqual(self.engine.pool.checkedout(), 0)
+            stages.append('preflight')
+            now[0] += timedelta(minutes=2)
+
+        def build():
+            stages.append('payload')
+            self.assertEqual(self.engine.pool.checkedout(), 1)
+            return {'name': 'AUTO_LATE', 'requested': now[0] - timedelta(minutes=10)}
+
+        prepare = Mock(side_effect=build)
+        with patch('src.apps.data_factory.services.execution.parts.persistence.DataFactoryDatasource.get_worker_engine',
+                   return_value=(self.engine, True)), nullcontext():
+            result = DataFactoryRunner.insert(self.entity, self.target, {},
+                prepare_resources=preflight, prepare_payload=prepare)
+        self.assertEqual(stages, ['preflight', 'payload'])
+        self.assertEqual(result['created']['requested'], datetime(2026, 1, 1, 11, 52))
         prepare.assert_called_once()
-        self.assertEqual(result['created']['requested'], datetime(2026, 1, 1, 11, 54))
-        self.assertGreater(result['created']['id'], 0)
+        self.assertEqual(self.engine.pool.checkedout(), 0)
+
+    def test_resource_preflight_failure_does_not_generate_final_values_or_insert(self):
+        prepare = Mock(return_value={'name': 'AUTO_MUST_NOT_CREATE'})
+        preflight = Mock(side_effect=RuntimeError('AUTO_RESOURCE_UNAVAILABLE'))
+        with patch('src.apps.data_factory.services.execution.parts.persistence.DataFactoryDatasource.get_worker_engine',
+                   return_value=(self.engine, True)), self.assertRaises(DataFactoryError):
+            DataFactoryRunner.insert(self.entity, self.target, {},
+                prepare_resources=preflight, prepare_payload=prepare)
+        preflight.assert_called_once()
+        prepare.assert_not_called()
+        with self.engine.connect() as connection:
+            self.assertEqual(connection.execute(select(self.table)).all(), [])
+        self.assertEqual(self.engine.pool.checkedout(), 0)
 
     def test_payload_or_preflight_failure_creates_no_business_row(self):
-        with patch('src.apps.data_factory.services.runner_parts.persistence.DataFactoryDatasource.get_worker_engine',
+        with patch('src.apps.data_factory.services.execution.parts.persistence.DataFactoryDatasource.get_worker_engine',
                    return_value=(self.engine, True)), \
-                patch.object(Governor, 'transaction_budget', side_effect=lambda *_: nullcontext()), \
+                nullcontext(), \
                 self.assertRaises(DataFactoryError):
             DataFactoryRunner.insert(self.entity, self.target, {},
                 prepare_payload=Mock(side_effect=RuntimeError('AUTO_PREFLIGHT_FAILURE')))
@@ -215,9 +181,9 @@ class LatePayloadTests(SimpleTestCase):
             self.assertEqual(connection.execute(select(self.table)).all(), [])
 
     def test_one_connection_pool_inserts_and_returns_connection_without_nested_checkout(self):
-        with patch('src.apps.data_factory.services.runner_parts.persistence.DataFactoryDatasource.get_worker_engine',
+        with patch('src.apps.data_factory.services.execution.parts.persistence.DataFactoryDatasource.get_worker_engine',
                    return_value=(self.engine, True)), \
-                patch.object(Governor, 'transaction_budget', side_effect=lambda *_: nullcontext()):
+                nullcontext():
             for number in range(3):
                 DataFactoryRunner.insert(self.entity, self.target, {'name': f'AUTO_POOL_{number}'})
                 self.assertEqual(self.engine.pool.checkedout(), 0)
@@ -227,9 +193,9 @@ class LatePayloadTests(SimpleTestCase):
     def test_invalid_primary_key_blocks_payload_generation_and_insert(self):
         prepare = Mock(return_value={'name': 'AUTO_UNSAFE'})
         self.entity.primary_key = 'not_the_primary_key'
-        with patch('src.apps.data_factory.services.runner_parts.persistence.DataFactoryDatasource.get_worker_engine',
+        with patch('src.apps.data_factory.services.execution.parts.persistence.DataFactoryDatasource.get_worker_engine',
                    return_value=(self.engine, True)), \
-                patch.object(Governor, 'transaction_budget', side_effect=lambda *_: nullcontext()), \
+                nullcontext(), \
                 self.assertRaises(DataFactoryError):
             DataFactoryRunner.insert(self.entity, self.target, {}, prepare_payload=prepare)
         prepare.assert_not_called()
@@ -238,31 +204,8 @@ class LatePayloadTests(SimpleTestCase):
 
     def test_pre_admission_wait_is_recorded_without_inflating_sql_duration(self):
         handle = SqlExecutionAuditHandle(SimpleNamespace(source_detail={}), 0,
-                                        wait_started=10, admission_wait_ms=700)
-        with patch('src.apps.data_factory.services.sql_execution_audit.DatasourceWaitService.elapsed', return_value=10.2):
+                                        wait_started=10)
+        with patch('src.apps.data_factory.services.sql.sql_execution_audit.DatasourceWaitService.elapsed', return_value=10.2):
             duration = Audit.measured_duration(handle, 300)
         self.assertEqual(duration, 100)
-        self.assertEqual(handle.record.source_detail['resource_wait_ms'], 900)
-
-    def test_physical_driver_captures_wait_before_audit_starts(self):
-        from src.apps.data_factory.services.datasource_wait import DatasourceWaitService, _wait_elapsed
-        handles = []
-        @contextmanager
-        def admission(*_, **__):
-            _wait_elapsed.set(_wait_elapsed.get() + 0.7)
-            yield {'admission_wait_ms': 700}
-        def start(**kwargs):
-            record = SimpleNamespace(id=1, status='running', request_id='AUTO_WAIT', source_detail={},
-                                     source_stage='statement', slow_threshold_ms=20000, save=Mock())
-            handle = SqlExecutionAuditHandle(record, kwargs['started_monotonic'])
-            handles.append(handle)
-            return handle
-        # 连接已预热；本测试只覆盖真实 cursor 事件，不调用网络或控制库。
-        SqlDriverAuditService.attach(self.engine, SimpleNamespace(id=1, db_type=DataSourceTypeEnum.SQLITE.value))
-        with DatasourceWaitService.owner(None), patch.object(Governor, 'operation', side_effect=admission), \
-                patch.object(Audit, 'start', side_effect=start), patch.object(Audit, 'notify_slow'):
-            with self.engine.connect() as connection:
-                self.assertEqual(connection.execute(text('SELECT 1')).scalar_one(), 1)
-        self.assertEqual(len(handles), 1)
-        self.assertEqual(handles[0].record.source_detail['resource_wait_ms'], 700)
-        self.assertFalse(handles[0].record.is_slow)
+        self.assertEqual(handle.record.source_detail['resource_wait_ms'], 200)

@@ -13,9 +13,9 @@ from src.apps.evaluation.models import (
 from src.apps.evaluation.exceptions import EvaluationError
 from src.apps.evaluation.schemas import EvaluationCaseConfig
 from src.apps.evaluation.schemas.detail import EvaluationGradeSnapshot, EvaluationItemDetails
-from src.apps.evaluation.services.case import EvaluationCaseService
-from src.apps.evaluation.services.execution import EvaluationCaseExecutionService
-from src.apps.evaluation.services.item_detail import update_item_details
+from src.apps.evaluation.services.assets.case import EvaluationCaseService
+from src.apps.evaluation.services.execution.execution import EvaluationCaseExecutionService
+from src.apps.evaluation.services.execution.item_detail import update_item_details
 from src.apps.test_center.models import ProjectProduct
 from types import SimpleNamespace
 from unittest.mock import patch

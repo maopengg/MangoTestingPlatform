@@ -18,7 +18,7 @@ from src.apps.task_center.services.selection.case_binding import TaskCaseBinding
 from src.apps.task_center.services.selection.case_selection import ScheduledTaskCaseSelectionService
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.test_center.enums.environment import EnvironmentEnum
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.interfaces.mcp.common import (
     current_user,
     fail,

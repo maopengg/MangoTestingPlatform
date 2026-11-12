@@ -14,8 +14,8 @@ from src.apps.test_center.api.serializers.product_module_mutation import Product
 from src.apps.test_center.api.serializers.project_product import ProjectProductSerializersC
 from src.apps.test_center.models import TestSuite, TestSuiteDetails
 from src.apps.test_center.enums.report_delivery import ReportSourceEnum
-from src.apps.test_center.services.product_module import ProductModuleService
-from src.apps.test_center.services.test_suite.summary import TestSuiteSummaryService
+from src.apps.test_center.services.project.product_module import ProductModuleService
+from src.apps.test_center.services.reporting.test_suite.summary import TestSuiteSummaryService
 from src.apps.user.formatters import format_user
 from src.common.validators.serializer_fields import RelatedObjectField
 

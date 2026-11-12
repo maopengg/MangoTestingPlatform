@@ -6,7 +6,7 @@ from src.apps.auto_api.api.serializers.module_coverage_common import (
 )
 from src.apps.auto_api.formatters import MODULE_COVERAGE_DATETIME_FORMAT
 from src.apps.auto_api.models import ModuleCoverageInterfaceSnapshot
-from src.apps.auto_api.services.module_coverage import ModuleCoverageService
+from src.apps.auto_api.services.coverage.module_coverage import ModuleCoverageService
 
 
 class ModuleCoverageInterfaceSnapshotSerializer(serializers.ModelSerializer):

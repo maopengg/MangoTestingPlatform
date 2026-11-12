@@ -1,7 +1,7 @@
 """Project/product boundaries shared by evaluation queries and services."""
 
 from src.apps.evaluation.exceptions import EVALUATION_PROJECT_PRODUCT_ACCESS_DENIED, EvaluationError
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 
 
 def ensure_dataset_access(user):

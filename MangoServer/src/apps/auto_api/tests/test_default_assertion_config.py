@@ -6,14 +6,11 @@ from mangotools.enums import StatusEnum
 
 from src.apps.auto_api.enums.assertion import ApiDefaultAssertionCheck as Check
 from src.apps.auto_api.schemas.execution import ApiExecutionResponse
-from src.apps.auto_api.services.base.case_parameter import CaseParameter
+from src.apps.auto_api.services.execution.base.case_parameter import CaseParameter
 from src.apps.auto_api.services.protocols.outcome import ProtocolCallOutcomeService as Outcome
-from src.apps.auto_api.services.test_case.test_case_parts.protocol import ApiTestCaseProtocolMixin
-from src.apps.system.services.enum_catalog import EnumCatalogService
-from src.apps.system.services.system_config import (
-    API_DEFAULT_ASSERTION_ENABLED_KEY, API_DEFAULT_ASSERTION_CHECKS_KEY,
-    SystemConfigService, get_config_definition_map,
-)
+from src.apps.auto_api.services.execution.cases.test_case_parts.protocol import ApiTestCaseProtocolMixin
+from src.apps.system.services.catalog.enum_catalog import EnumCatalogService
+from src.apps.system.services.configuration.system_config import API_DEFAULT_ASSERTION_ENABLED_KEY, API_DEFAULT_ASSERTION_CHECKS_KEY, SystemConfigService, get_config_definition_map
 
 
 def response(protocol='http', **values):

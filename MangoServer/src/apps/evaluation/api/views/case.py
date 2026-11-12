@@ -6,9 +6,9 @@ from src.apps.evaluation.models import EvaluationCase
 from src.apps.evaluation.selectors.case import get_case
 from src.apps.evaluation.selectors.querysets import EvaluationQuerySelector
 from src.apps.evaluation.selectors.scope import ensure_product_scope
-from src.apps.evaluation.services.case import EvaluationCaseService
-from src.apps.evaluation.services.graders import EvaluationGraderRegistry
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.evaluation.services.assets.case import EvaluationCaseService
+from src.apps.evaluation.services.grading.graders import EvaluationGraderRegistry
+from src.apps.user.services.authorization.permission import PermissionMenuService
 from src.common.decorators.error_response import error_response
 from src.common.responses import RESPONSE_MSG_0001, RESPONSE_MSG_0002, RESPONSE_MSG_0005, RESPONSE_MSG_0082, ResponseData
 
@@ -21,15 +21,17 @@ class CaseViews(ViewSet):
 
     @error_response("system")
     def ai_profiles(self, request, pk=None):
-        from src.apps.evaluation.services.ai import ai_options
+        """获取评测可用模型配置"""
+        from src.apps.evaluation.services.model.ai import ai_options
         return ResponseData.success(RESPONSE_MSG_0001, ai_options(pk, request_user(request)))
 
     @error_response("system")
     def interfaces(self, request, pk=None):
+        """获取评测可选目标接口"""
         from pydantic import ValidationError
         from src.apps.evaluation.schemas.target_selection import EvaluationInterfaceSelection
         from src.apps.evaluation.selectors.target import interface_choices
-        from src.apps.evaluation.services.validation import invalid_config
+        from src.apps.evaluation.services.assets.validation import invalid_config
         try:
             query = EvaluationInterfaceSelection.model_validate(request.query_params.dict())
         except ValidationError as error:
@@ -41,6 +43,7 @@ class CaseViews(ViewSet):
 
     @error_response("system")
     def list(self, request):
+        """获取评测用例列表"""
         queryset = EvaluationQuerySelector.cases(request_user(request), request.query_params.get("test_env"))
         for key in ("status", "project_product", "module"):
             raw = request.query_params.get(key + "__in")
@@ -56,10 +59,12 @@ class CaseViews(ViewSet):
 
     @error_response("system")
     def retrieve(self, request, pk=None):
+        """获取评测用例详情"""
         return ResponseData.success(RESPONSE_MSG_0001, CaseSerializer(get_case(pk, request_user(request))).data)
 
     @error_response("system")
     def create(self, request):
+        """创建评测用例"""
         serializer = CaseSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         product = serializer.validated_data["project_product"]
@@ -69,6 +74,7 @@ class CaseViews(ViewSet):
 
     @error_response("system")
     def update(self, request):
+        """更新评测用例"""
         case = get_case(request.data.get("id"), request_user(request))
         serializer = CaseSerializer(case, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -77,16 +83,19 @@ class CaseViews(ViewSet):
 
     @error_response("system")
     def delete(self, request):
+        """删除评测用例"""
         get_case(request.data.get("id"), request_user(request)).delete()
         return ResponseData.success(RESPONSE_MSG_0002)
 
     @error_response("system")
     def validate(self, request, pk=None):
+        """校验评测用例配置"""
         get_case(pk, request_user(request))
         return ResponseData.success(RESPONSE_MSG_0001, EvaluationCaseService.validate(pk, request_user(request)))
 
     @error_response("system")
     def grading_preview(self, request, pk=None):
+        """预览评测用例评分配置"""
         user = request_user(request)
         if not PermissionMenuService.is_effective_super_admin(user) and "evaluation.dataset:read" not in PermissionMenuService.permission_keys_for_user(user):
             raise EvaluationError(EVALUATION_TARGET_ACCESS_DENIED)
@@ -94,11 +103,13 @@ class CaseViews(ViewSet):
 
     @error_response("system")
     def graders(self, request):
+        """获取评测用例可用评分器"""
         if request_user(request) is None:
             raise EvaluationError(EVALUATION_TARGET_ACCESS_DENIED)
         return ResponseData.success(RESPONSE_MSG_0001, EvaluationGraderRegistry.catalog())
 
     @error_response("system")
     def copy(self, request, pk=None):
+        """复制评测用例"""
         case = EvaluationCaseService.copy(get_case(pk, request_user(request)), request_user(request))
         return ResponseData.success(RESPONSE_MSG_0005, CaseSerializer(case).data)

@@ -16,9 +16,9 @@ from src.apps.monitoring.api.serializers.monitoring_task import (
 )
 from src.apps.monitoring.enums import MonitoringTaskStatusEnum
 from src.apps.monitoring.models import MonitoringTask
-from src.apps.monitoring.services.runner import MonitoringTaskRunner
-from src.apps.monitoring.services.task_control import MonitoringTaskControlService
-from src.apps.monitoring.services.task_log import MonitoringTaskLogService
+from src.apps.monitoring.services.execution.runner import MonitoringTaskRunner
+from src.apps.monitoring.services.tasks.task_control import MonitoringTaskControlService
+from src.apps.monitoring.services.logging.task_log import MonitoringTaskLogService
 from src.apps.monitoring.selectors.task import MonitoringTaskSelector
 from src.common.decorators.error_response import error_response
 from src.common.decorators.system_error import report_system_error
@@ -56,6 +56,7 @@ class MonitoringTaskViews(ViewSet):
 
     @error_response('system')
     def start(self, request: Request):
+        """启动监控任务"""
         task_id = request.data.get('id') or request.query_params.get('id')
         task = MonitoringTask.objects.filter(id=task_id).first()
         if not task:
@@ -65,6 +66,7 @@ class MonitoringTaskViews(ViewSet):
 
     @error_response('system')
     def stop(self, request: Request):
+        """停止监控任务"""
         task_id = request.data.get('id') or request.query_params.get('id')
         task = MonitoringTask.objects.filter(id=task_id).first()
         if not task:
@@ -76,6 +78,7 @@ class MonitoringTaskViews(ViewSet):
 
     @error_response('system')
     def logs(self, request: Request):
+        """获取监控任务日志"""
         task_id = request.query_params.get('id')
         limit = int(request.query_params.get('limit', 200))
         task = MonitoringTaskSelector.get(request.user.user_obj, task_id)

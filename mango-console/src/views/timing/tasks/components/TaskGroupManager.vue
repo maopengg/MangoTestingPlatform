@@ -2,7 +2,7 @@
   <div class="mango-task-group-manager">
     <template v-if="enumsError"></template>
     <a-spin v-else-if="enumsLoading" :size="scaleDensityPixels(16)"><span class="mango-task-group-manager__metadata">正在加载选项…</span></a-spin>
-    <a-alert v-if="operationError" type="error">{{ operationError }}</a-alert>
+    <MangoRequestFeedback v-if="operationError" :message="(operationError)" />
     <a-table
       :data="rows"
       :loading="loading"
@@ -175,7 +175,7 @@
     @before-ok="confirmResendNotice"
     @cancel="closeNotice"
   >
-    <a-alert v-if="noticeError" type="error">{{ noticeError }}</a-alert>
+    <MangoRequestFeedback v-if="noticeError" :message="(noticeError)" />
     <a-form auto-label-width class="mango-simple-form" :model="{}" layout="horizontal">
       <a-form-item class="mango-simple-form-item" label="任务组">{{ noticeGroup?.name }}</a-form-item>
       <a-form-item class="mango-simple-form-item" label="最近执行" required>
@@ -204,8 +204,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
 import { scaleDensityPixels } from '@/hooks/useDisplayDensity'
 import { onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -285,7 +284,7 @@ async function changeGroupSwitch(record: TaskGroupListRecord, field: 'status' | 
     const updated = readTaskGroupUpdate(response, id)
     if (current()) { list.replace(updated); Message.success('任务组配置已更新') }
     return true
-  } catch { if (current()) operationError.value = committed ? '任务组配置已提交，但返回数据异常，请重新加载核对' : '任务组配置更新失败，请重试'; return false }
+  } catch (requestFailure) { if (current()) operationError.value = requestFailureMessage(requestFailure, committed ? '任务组配置已提交，但返回数据异常，请重新加载核对' : '任务组配置更新失败，请重试'); return false }
   finally { switchIds.delete(id); release(id); if (committed) refreshAfterWrite(key) }
 }
 function closeConfirmation(id: TaskEditorId) {
@@ -320,7 +319,7 @@ async function executeGroupTrigger(groupId: TaskEditorId, current: () => boolean
       closeConfirmation(groupId)
     }
     return true
-  } catch { if (current()) operationError.value = committed ? '触发已提交，但返回结果异常，请查看触发记录核对' : '任务组触发失败，请重试'; return false }
+  } catch (requestFailure) { if (current()) operationError.value = requestFailureMessage(requestFailure, committed ? '触发已提交，但返回结果异常，请查看触发记录核对' : '任务组触发失败，请重试'); return false }
   finally { triggeringIds.delete(groupId); release(groupId); if (committed) refreshAfterWrite(key) }
 }
 async function executeGroupDelete(id: TaskEditorId, current: () => boolean): Promise<boolean> {
@@ -330,7 +329,7 @@ async function executeGroupDelete(id: TaskEditorId, current: () => boolean): Pro
     taskEditorResponse(await deleteScheduledTaskGroup(id)); committed = true
     if (current()) { closeConfirmation(id); Message.success('任务组已删除') }
     return true
-  } catch { if (current()) operationError.value = '任务组删除失败，请重试'; return false }
+  } catch (requestFailure) { if (current()) operationError.value = requestFailureMessage(requestFailure, '任务组删除失败，请重试'); return false }
   finally {
     deletingIds.delete(id); release(id)
     if (committed) { if (key === identity() && available()) emit('changed'); refreshAfterWrite(key) }

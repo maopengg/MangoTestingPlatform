@@ -5,7 +5,7 @@ from src.apps.auto_ui.enums import UiAuthRefreshModeEnum, UiAuthTypeEnum
 from src.apps.auto_ui.exceptions import UI_AUTH_CACHE_STRUCTURE_INVALID
 from src.apps.auto_ui.models import UiAuthConfig
 from src.apps.auto_ui.schemas.auth import UiAuthCache
-from src.apps.auto_ui.services.ui_auth import UiAuthManager
+from src.apps.auto_ui.services.authentication.ui_auth import UiAuthManager
 from src.apps.test_center.enums.environment import EnvironmentEnum
 
 

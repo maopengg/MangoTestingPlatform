@@ -369,7 +369,7 @@
               </a-tooltip>
             </header>
 
-            <div v-if="aiInsightError && !loading && !aiLoading" class="mango-soft-panel" role="alert">{{ aiInsightError }}</div>
+            <MangoRequestFeedback v-if="aiInsightError && !loading && !aiLoading" :message="(aiInsightError)" />
             <div v-if="loading || aiLoading" class="mango-effectiveness-ai-loading">
               <div class="mango-effectiveness-ai-loading__intro">
                 <a-skeleton :animation="true">
@@ -454,10 +454,7 @@
               </div>
             </div>
 
-            <div v-else-if="aiError" class="mango-empty-state" role="alert">
-              <strong>{{ aiError }}</strong>
-              <a-button size="small" :loading="aiLoading" :disabled="!overviewReady" @click="loadAiSummary(true)">重试</a-button>
-            </div>
+            <MangoRequestFeedback v-else-if="aiError" :message="(aiError)"><a-button size="small" :loading="aiLoading" :disabled="!overviewReady" @click="loadAiSummary(true)">重试</a-button></MangoRequestFeedback>
             <div v-else-if="aiState.available === false" class="mango-effectiveness-ai-unavailable" role="alert">
               <div class="mango-effectiveness-ai-unavailable__visual">
                 <span><icon-robot /></span>

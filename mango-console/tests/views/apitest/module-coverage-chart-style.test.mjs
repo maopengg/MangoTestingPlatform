@@ -31,8 +31,9 @@ test('chart style adapts across global density anchors without changing data', (
     const element = { clientWidth: 600 * scale }
     const option = donutStyle(element, rows, '场景总数')
     assert.equal(option.title.text, '3,311')
-    assert.equal(option.legend.orient, 'horizontal')
-    assert.equal(option.legend.selected.已完成, false)
+    assert.equal(option.legend.show, true)
+    assert.equal(option.legend.selectedMode, false)
+    assert.equal(option.legend.selected, undefined)
     const series = donutSeries(element, rows)
     assert.match(series.label.formatter(rows[0]), /1,740 个 · 52\.55%/)
     assert.deepEqual(series.radius, ['50%', '68%'])
@@ -45,13 +46,13 @@ test('chart style adapts across global density anchors without changing data', (
   }
 })
 
-test('narrow chart moves the legend below and keeps ring within its height', () => {
+test('narrow chart retains its bottom legend and keeps ring within its height', () => {
   const { donutStyle, donutSeries } = styles()
   const element = { clientWidth: 360 }
   const rows = [{ name: '未完整扫描', value: 0 }]
   const option = donutStyle(element, rows, '模块总数')
-  assert.equal(option.legend.orient, 'horizontal')
-  assert.equal(option.legend.bottom, 0)
+  assert.equal(option.legend.show, true)
+  assert.equal(option.legend.selectedMode, false)
   assert.match(donutSeries(element, rows).label.formatter(rows[0]), /0\.00%/)
   assert.deepEqual(donutSeries(element, rows).radius, ['40%', '58%'])
   assert.deepEqual(donutSeries(element, rows).center, ['50%', '45%'])
@@ -71,9 +72,10 @@ test('analysis shares ring, labels and legend layout with the adjacent charts', 
   const analysis = source.slice(source.indexOf('if (entryChart.value)'), source.indexOf('if (coverageChart.value)'))
   assert.match(analysis, /\.\.\.donutStyle\(/)
   assert.match(analysis, /\.\.\.donutSeries\(entryChart.value, entryData.value\)/)
-  assert.doesNotMatch(analysis, /legend:|labelLine:|radius:|center:/)
+  assert.doesNotMatch(analysis, /legend:|radius:|center:/)
+  assert.match(analysis, /labelLine: \{ show: item.value > 0 \}/)
   assert.match(analysis, /\.\.\.donutSeries\(entryChart.value, entryData.value\).label/)
-  assert.match(analysis, /data: entryData.value/)
+  assert.match(analysis, /data: entryData.value.map/)
   assert.match(analysis, /rate\(props.data.summary.analysis_rate\)/)
   assert.match(analysis, /gapFilter.value = entryData.value\[event.dataIndex\]\?\.filter/)
 })

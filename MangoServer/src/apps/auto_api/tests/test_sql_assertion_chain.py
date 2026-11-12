@@ -10,7 +10,7 @@ from src.apps.auto_api.api.serializers.api_case_detailed_parameter_mutation impo
 from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.schemas.execution import ApiExecutionResponse
 from src.apps.auto_api.services.api_case.parameter_validation import ApiCaseParameterValidationService
-from src.apps.auto_api.services.base.case_parameter import CaseParameter
+from src.apps.auto_api.services.execution.base.case_parameter import CaseParameter
 
 
 class FakeTestData:
@@ -85,7 +85,7 @@ class SqlAssertionChainTests(SimpleTestCase):
         )
 
         with patch(
-                'src.apps.auto_api.services.base.data_source_operation.DataSourceExecutionService.execute',
+                'src.apps.auto_api.services.execution.base.data_source_operation.DataSourceExecutionService.execute',
                 return_value={'rows': connection.result},
         ) as execute:
             results, status, error_message = case_parameter.ass_main(self.response())
@@ -123,7 +123,7 @@ class SqlAssertionChainTests(SimpleTestCase):
         case_parameter, _connection = self.case_parameter(sql_config, [{'id': 1}, {'id': 2}])
 
         with patch(
-                'src.apps.auto_api.services.base.data_source_operation.DataSourceExecutionService.execute',
+                'src.apps.auto_api.services.execution.base.data_source_operation.DataSourceExecutionService.execute',
         ) as execute:
             results, status, error_message = case_parameter.ass_main(self.response())
 
@@ -145,7 +145,7 @@ class SqlAssertionChainTests(SimpleTestCase):
         )
 
         with patch(
-                'src.apps.auto_api.services.base.data_source_operation.DataSourceExecutionService.execute',
+                'src.apps.auto_api.services.execution.base.data_source_operation.DataSourceExecutionService.execute',
                 return_value={'rows': connection.result},
         ):
             results, status, error_message = case_parameter.ass_main(self.response())
@@ -170,7 +170,7 @@ class SqlAssertionChainTests(SimpleTestCase):
         )
 
         with patch(
-                'src.apps.auto_api.services.base.data_source_operation.DataSourceExecutionService.execute',
+                'src.apps.auto_api.services.execution.base.data_source_operation.DataSourceExecutionService.execute',
                 return_value={'rows': connection.result},
         ):
             results, status, error_message = case_parameter.verify_all_assertions(
@@ -200,7 +200,7 @@ class SqlAssertionChainTests(SimpleTestCase):
         case_parameter, connection = self.case_parameter(sql_configs, [{'id': 1}])
 
         with patch(
-                'src.apps.auto_api.services.base.data_source_operation.DataSourceExecutionService.execute',
+                'src.apps.auto_api.services.execution.base.data_source_operation.DataSourceExecutionService.execute',
                 return_value={'rows': connection.result},
         ) as execute:
             results, status, error_message = case_parameter.ass_main(self.response())

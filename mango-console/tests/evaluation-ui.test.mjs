@@ -252,6 +252,7 @@ test('grader category cells render real Arco tags using the global classificatio
   const source = compileScript(parse(read('grader/index.vue')).descriptor, { id: 'grader-tags', inlineTemplate: true }).content
   const categories = ['deterministic', 'algorithm', 'model']
   function resolveModule(name) {
+    if (name === '@/hooks/useDebouncedSearch') return loadModule(read('../../hooks/useDebouncedSearch.ts'), resolveModule)
     if (name === 'vue') return { ...Vue, onMounted: Vue.onServerPrefetch }
     if (name.endsWith('.vue')) return { __esModule: true, default: { render: () => null } }
     if (name === './config') return config

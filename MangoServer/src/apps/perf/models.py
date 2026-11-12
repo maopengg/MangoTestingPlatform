@@ -323,6 +323,12 @@ class PerfBaseline(AuditModel):
     engine = models.CharField(max_length=24, choices=PerfEngineEnum.choices())
     snapshot_hash = models.CharField(max_length=64)
     active = models.BooleanField(default=True, db_index=True)
+    # NULL 不参与唯一冲突，非活动基线可以保留完整历史。
+    active_unique_marker = models.GeneratedField(
+        verbose_name="活动基线唯一标记",
+        expression=models.Case(models.When(active=True, then=models.Value(1)), default=models.Value(None)),
+        output_field=models.SmallIntegerField(), db_persist=True, null=True, blank=True,
+    )
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
                                    related_name="created_perf_baselines")
 
@@ -330,5 +336,5 @@ class PerfBaseline(AuditModel):
         db_table = "perf_baseline"
         ordering = ["-create_time"]
         constraints = [
-            models.UniqueConstraint(fields=["scenario", "environment_key", "engine"], condition=models.Q(active=True),
+            models.UniqueConstraint(fields=["scenario", "environment_key", "engine", "active_unique_marker"],
                                     name="uniq_active_perf_baseline")]

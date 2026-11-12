@@ -13,6 +13,7 @@ class SystemJobViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def list(self, request: Request):
+        """获取系统定时任务列表"""
         try:
             page = max(1, int(request.query_params.get('page') or 1))
         except (TypeError, ValueError):
@@ -34,6 +35,7 @@ class SystemJobViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def trigger(self, request: Request):
+        """触发系统定时任务"""
         job_key = request.data.get('job_key')
         fire = SystemJobService.trigger(job_key)
         if not fire:

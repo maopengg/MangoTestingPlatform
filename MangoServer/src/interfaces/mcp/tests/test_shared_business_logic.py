@@ -14,12 +14,13 @@ from src.apps.auto_api.services.api_case.schema import ApiCaseScenarioSchemaServ
 from src.apps.auto_api.services.api_case.snapshot import ApiCasePublicationState
 from src.apps.auto_api.services.api_case.version import ApiCaseRevisionService
 from src.apps.auto_ui.enums import DriveTypeEnum
-from src.apps.auto_ui.services.batch_execution import UiCaseBatchExecutionService
-from src.apps.auto_ui.services.case_step_cache import UiCaseStepCacheService
-from src.apps.auto_ui.services.page_step_detail import PageStepDetailMutationService
+from src.apps.auto_ui.services.execution.batch_execution import UiCaseBatchExecutionService
+from src.apps.auto_ui.services.cases.case_step_cache import UiCaseStepCacheService
+from src.apps.auto_ui.services.page_steps.page_step_detail import PageStepDetailMutationService
 from src.apps.task_center.services.selection.case_binding import TaskCaseBindingService
-from src.apps.user.services.environment import UserEnvironmentService
-from src.apps.user.services.user_cache import UserCacheService
+from src.apps.user.services.preferences.user_config import UserConfigService
+from src.apps.user.enums.permission import EndpointPermissionEffectEnum
+from src.apps.user.services.authorization.endpoint_catalog import mcp_endpoint_id
 from src.interfaces.mcp.authentication import MangoAuthorizationMiddleware
 from src.interfaces.mcp.server import mcp_asgi_app
 from src.interfaces.mcp.tools.api.case import register_case_tools
@@ -70,7 +71,7 @@ class SharedMutationServiceUnitTests(SimpleTestCase):
     def setUp(self):
         super().setUp()
         environment_names = patch(
-            "src.apps.system.services.system_config.SystemConfigService.get_environment_display_names",
+            "src.apps.system.services.configuration.system_config.SystemConfigService.get_environment_display_names",
             return_value={},
         )
         environment_names.start()
@@ -401,7 +402,9 @@ class SharedMutationServiceUnitTests(SimpleTestCase):
             client_id="api-case-publisher",
             subject="7",
             scopes=["api.case:change"],
-            claims={"user_id": 7, "is_super_admin": False},
+            claims={"user_id": 7, "is_super_admin": False, "endpoint_permissions": {
+                mcp_endpoint_id("update_api_case_publication_status"): EndpointPermissionEffectEnum.ALLOW.value,
+            }},
         )
 
         with patch.object(
@@ -600,13 +603,13 @@ class SharedMutationServiceUnitTests(SimpleTestCase):
             ),
             (
                 "apps/user/api/views/user.py",
-                "put_environment",
-                "UserEnvironmentService.switch",
+                "update_config",
+                "UserConfigService.update",
             ),
             (
                 "interfaces/mcp/tools/project/context.py",
                 "switch_user_test_environment",
-                "UserEnvironmentService.switch",
+                "UserConfigService.update",
             ),
         )
         for relative_path, function_name, shared_call in checks:
@@ -676,11 +679,11 @@ class SharedMutationServiceUnitTests(SimpleTestCase):
         )
         with (
             patch(
-                "src.apps.auto_ui.services.case_step_cache.get_execution_order_with_config_ids",
+                "src.apps.auto_ui.services.cases.case_step_cache.get_execution_order_with_config_ids",
                 return_value=[20, 10],
             ),
             patch(
-                "src.apps.auto_ui.services.case_step_cache.PageStepsDetailed.objects.filter",
+                "src.apps.auto_ui.services.cases.case_step_cache.PageStepsDetailed.objects.filter",
                 return_value=queryset,
             ) as detail_filter,
         ):
@@ -818,11 +821,11 @@ class SharedMutationServiceUnitTests(SimpleTestCase):
         queryset.select_related.return_value = []
         with (
             patch(
-                "src.apps.auto_ui.services.page_step_detail.get_execution_order_with_config_ids",
+                "src.apps.auto_ui.services.page_steps.page_step_detail.get_execution_order_with_config_ids",
                 return_value=[11],
             ),
             patch(
-                "src.apps.auto_ui.services.page_step_detail.PageStepsDetailed.objects.filter",
+                "src.apps.auto_ui.services.page_steps.page_step_detail.PageStepsDetailed.objects.filter",
                 return_value=queryset,
             ) as detail_filter,
         ):
@@ -842,11 +845,11 @@ class SharedMutationServiceUnitTests(SimpleTestCase):
         queryset.select_related.return_value = []
         with (
             patch(
-                "src.apps.auto_ui.services.page_step_detail.get_execution_order_with_config_ids",
+                "src.apps.auto_ui.services.page_steps.page_step_detail.get_execution_order_with_config_ids",
                 return_value=[None, 11, ""],
             ),
             patch(
-                "src.apps.auto_ui.services.page_step_detail.PageStepsDetailed.objects.filter",
+                "src.apps.auto_ui.services.page_steps.page_step_detail.PageStepsDetailed.objects.filter",
                 return_value=queryset,
             ) as detail_filter,
         ):
@@ -954,11 +957,11 @@ class SharedMutationServiceUnitTests(SimpleTestCase):
         add_tasks = MagicMock(test_suite_id=13)
         with (
             patch(
-                "src.apps.auto_ui.services.batch_execution.UiCase.objects.filter",
+                "src.apps.auto_ui.services.execution.batch_execution.UiCase.objects.filter",
                 return_value=queryset,
             ),
             patch(
-                "src.apps.auto_ui.services.batch_execution.AddTasks",
+                "src.apps.auto_ui.services.execution.batch_execution.AddTasks",
                 return_value=add_tasks,
             ) as add_tasks_class,
         ):
@@ -1023,18 +1026,17 @@ class SharedMutationServiceUnitTests(SimpleTestCase):
     def test_user_environment_shared_service_validates_and_saves(self):
         user = SimpleNamespace(
             id=4,
-            selected_environment=None,
             config={},
             update_user_id=None,
             save=MagicMock(),
         )
-        result = UserEnvironmentService.switch(
-            user,
-            "0",
-            operator_id=4,
-        )
-        self.assertEqual(result["selected_environment"], 0)
-        self.assertEqual(UserCacheService.selected_environment(user), 0)
+        with (
+            patch('src.apps.user.services.preferences.user_config.transaction.atomic'),
+            patch('src.apps.user.services.preferences.user_config.User.objects') as objects,
+        ):
+            objects.select_for_update.return_value.get.return_value = user
+            UserConfigService.update(user, [{'key': 'selected_environment', 'value': 0}])
+        self.assertEqual(UserConfigService.selected_environment(user), 0)
         user.save.assert_called_once_with(
             update_fields=["config", "update_user", "update_time"]
         )

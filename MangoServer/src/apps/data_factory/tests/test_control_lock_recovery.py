@@ -13,7 +13,7 @@ from django.test import SimpleTestCase
 from src.apps.data_factory.enums.performance import DatasourceQueueLaneEnum
 from src.apps.data_factory.exceptions import DataFactoryError, DATASOURCE_POLICY_INVALID
 from src.apps.data_factory.schemas.performance import DatasourcePerformancePolicy
-from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService as Governor
+from src.apps.data_factory.services.governance.datasource_governor import DatasourceGovernorService as Governor
 from src.apps.data_factory.tests.test_datasource_performance import AtomicMemoryStore
 
 
@@ -33,7 +33,7 @@ class ControlLockRecoveryTests(SimpleTestCase):
             patch.object(Governor, 'lane', return_value=DatasourceQueueLaneEnum.NORMAL),
             patch.object(Governor, 'configuration_guard', side_effect=self.configuration_guard),
             patch.object(Governor, '_pending_releases', set()),
-            patch('src.apps.data_factory.services.datasource_wait.DatasourceWaitService.pause', side_effect=self.pause),
+            patch('src.apps.data_factory.services.governance.datasource_wait.DatasourceWaitService.pause', side_effect=self.pause),
         ):
             guard.start()
             self.addCleanup(guard.stop)
@@ -56,9 +56,8 @@ class ControlLockRecoveryTests(SimpleTestCase):
         self.assertFalse(self.in_transaction)
         self.confirmed += 1
 
-    def pause(self, seconds, *, renew_operation=True):
+    def pause(self, seconds):
         self.assertFalse(self.in_transaction)
-        self.assertFalse(renew_operation)
         self.assertGreaterEqual(self.confirmed, self.pauses + 1)
         self.pauses += 1
 
@@ -86,17 +85,15 @@ class ControlLockRecoveryTests(SimpleTestCase):
                 self.assertEqual(self.guards - before_guards, 6)
                 self.assertEqual(self.pauses - before_pauses, 5)
                 self.assertEqual(self.state()['admitted'], 1)
-                self.assertEqual(self.state()['tokens'], self.policy.mysql.requests_per_second - 1)
                 self.assertEqual(list(self.state()['permits']), [permit[1]])
                 Governor.release(permit)
 
     def test_release_retries_only_control_transaction_not_business_sql(self):
         business = Mock()
-        with Governor.operation(self.target, physical=True):
-            business()
-            guard = patch.object(self.store, 'atomic_update', side_effect=self.fail_after_update(1205, 4))
-            guard.start()
-            self.addCleanup(guard.stop)
+        permit = Governor.acquire(self.target)
+        business()
+        with patch.object(self.store, 'atomic_update', side_effect=self.fail_after_update(1205, 4)):
+            Governor.connection_closed(permit)
         business.assert_called_once()
         self.assertEqual(self.state()['completed'], 1)
         self.assertFalse(self.state()['permits'])
@@ -141,7 +138,7 @@ class ControlLockRecoveryTests(SimpleTestCase):
 
     def test_stop_interrupts_lock_wait_with_no_committed_admission(self):
         with patch.object(self.store, 'atomic_update', side_effect=self.fail_after_update(1205, 1)), \
-                patch('src.apps.data_factory.services.datasource_wait.DatasourceWaitService.pause',
+                patch('src.apps.data_factory.services.governance.datasource_wait.DatasourceWaitService.pause',
                       side_effect=KeyboardInterrupt), self.assertRaises(KeyboardInterrupt):
             Governor.change('AUTO_GROUP', lambda state, now: True)
         self.assertFalse(self.store.values)
@@ -157,18 +154,20 @@ class ControlLockRecoveryTests(SimpleTestCase):
                 raise OperationalError(1205, 'AUTO_CONCURRENT_LOCK')
             return update(*args, **kwargs)
         def execute(number):
-            with Governor.operation(self.target, physical=True):
+            permit = Governor.acquire(self.target)
+            try:
                 business_calls.append(number)
                 barrier.wait(timeout=5)
+            finally:
+                Governor.connection_closed(permit)
         with patch.object(Governor, 'configuration_guard', side_effect=lambda *args: nullcontext()), \
                 patch.object(self.store, 'atomic_update', side_effect=conflict_once), \
                 patch.object(self.store, 'confirm_control_rollback') as confirm, \
-                patch('src.apps.data_factory.services.datasource_wait.DatasourceWaitService.pause'), \
+                patch('src.apps.data_factory.services.governance.datasource_wait.DatasourceWaitService.pause'), \
                 ThreadPoolExecutor(max_workers=4) as workers:
             list(workers.map(execute, range(4)))
         self.assertEqual(sorted(business_calls), list(range(4)))
         self.assertEqual(confirm.call_count, 4)
         self.assertEqual(self.state()['admitted'], 4)
         self.assertEqual(self.state()['completed'], 4)
-        self.assertEqual(self.state()['tokens'], self.policy.mysql.requests_per_second - 4)
         self.assertFalse(self.state()['permits'])

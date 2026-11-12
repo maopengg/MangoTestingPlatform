@@ -11,8 +11,8 @@ from src.apps.test_center.enums.report_delivery import ReportSourceEnum
 from src.apps.test_center.exceptions import TestCenterError
 from src.apps.test_center.schemas.report_delivery import ReportDeliveryConfig
 from src.apps.test_center.selectors.offline_report import OfflineReportSelector
-from src.apps.test_center.services.offline_report import OfflineReportService
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.test_center.services.reporting.offline_report import OfflineReportService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.apps.user.tests.test_permissions import RolePermissionTests
 
 
@@ -78,10 +78,10 @@ class OfflineReportOptionsTests(SimpleTestCase):
     def test_each_export_rebuilds_snapshot_for_both_sources(self):
         for kind in ReportSourceEnum:
             with self.subTest(kind=kind), \
-                    patch('src.apps.test_center.services.offline_report.service.TestSuite.objects'), \
-                    patch('src.apps.test_center.services.offline_report.service.ReportSnapshotService') as snapshots, \
-                    patch('src.apps.test_center.services.offline_report.service.ReportHtmlService') as html, \
-                    patch('src.apps.test_center.services.offline_report.service.SystemConfigService.get_platform_name', return_value='示例平台'):
+                    patch('src.apps.test_center.services.reporting.offline_report.service.TestSuite.objects'), \
+                    patch('src.apps.test_center.services.reporting.offline_report.service.ReportSnapshotService') as snapshots, \
+                    patch('src.apps.test_center.services.reporting.offline_report.service.ReportHtmlService') as html, \
+                    patch('src.apps.test_center.services.reporting.offline_report.service.SystemConfigService.get_platform_name', return_value='示例平台'):
                 snapshots.suppresses_success_report.return_value = False
                 snapshots.build.side_effect = [{'version': 1}, {'version': 2}]
                 html.render.side_effect = [b'first', b'latest']

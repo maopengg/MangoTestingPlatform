@@ -13,15 +13,15 @@ from src.apps.monitoring.exceptions import MonitoringError
 from src.apps.monitoring.models import MonitoringTask, MonitoringReport
 from src.apps.monitoring.schemas.task import MonitoringTaskCreate, MonitoringTaskPatch
 from src.apps.monitoring.selectors.task import MonitoringTaskSelector
-from src.apps.monitoring.services.task_log import MonitoringTaskLogService
-from src.apps.monitoring.services.task_mutation import MonitoringTaskMutationService as Mutation
+from src.apps.monitoring.services.logging.task_log import MonitoringTaskLogService
+from src.apps.monitoring.services.tasks.task_mutation import MonitoringTaskMutationService as Mutation
 from src.apps.test_center.models import NoticeGroup, ProjectProduct
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 
 
 class MonitoringMcpServiceTests(SimpleTestCase):
     def test_log_path_repair_is_scoped_idempotent_and_does_not_change_runtime_state(self):
-        from src.apps.monitoring.services.log_path import MonitoringLogPathService
+        from src.apps.monitoring.services.logging.log_path import MonitoringLogPathService
         from django.core.management import call_command
         import io
 
@@ -77,7 +77,7 @@ class MonitoringMcpServiceTests(SimpleTestCase):
             mocked = patch.object(ProjectProductScopeService, method, return_value=value)
             mocked.start()
             self.addCleanup(mocked.stop)
-        config = patch('src.apps.system.services.system_config.SystemConfigService.get_environment_display_names', return_value={})
+        config = patch('src.apps.system.services.configuration.system_config.SystemConfigService.get_environment_display_names', return_value={})
         config.start()
         self.addCleanup(config.stop)
         ProjectProduct.objects.bulk_create([ProjectProduct(id=1, project_id=1, name='示例产品'),
@@ -135,7 +135,7 @@ class MonitoringMcpServiceTests(SimpleTestCase):
 
     def test_start_reuses_control_service_and_stop_only_sets_desired_state(self):
         task = self.create()
-        with patch('src.apps.monitoring.services.task_mutation.MonitoringTaskControlService.request_start', return_value=task) as start:
+        with patch('src.apps.monitoring.services.tasks.task_mutation.MonitoringTaskControlService.request_start', return_value=task) as start:
             Mutation.start(self.user, task.id)
             self.assertEqual(start.call_args.args[0].id, task.id)
         stopped = Mutation.stop.__wrapped__(Mutation, self.user, task.id)
@@ -155,7 +155,7 @@ class MonitoringMcpServiceTests(SimpleTestCase):
 
     def test_current_failure_reason_survives_missing_file_and_is_not_reused_after_restart(self):
         from django.utils import timezone
-        from src.apps.monitoring.services.task_diagnostic import MonitoringTaskDiagnosticService
+        from src.apps.monitoring.services.diagnostics.task_diagnostic import MonitoringTaskDiagnosticService
 
         task = self.create()
         task.status = MonitoringTaskStatusEnum.FAILED.value

@@ -12,11 +12,11 @@ from django.test import SimpleTestCase
 from mangotools.enums import CacheValueTypeEnum
 
 from src.apps.system.models import CacheData
-from src.apps.system.services.system_config import SystemConfigService, get_config_definition_map
+from src.apps.system.services.configuration.system_config import SystemConfigService, get_config_definition_map
 from src.apps.test_center.api.views.index import IndexViews
-from src.apps.test_center.services.execution_result import ExecutionResultService
-from src.apps.test_center.services.test_suite.effectiveness import AutomationEffectivenessService
-from src.apps.test_center.services.test_suite.report_overview import TestSuiteReportOverviewService
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
+from src.apps.test_center.services.reporting.test_suite.effectiveness import AutomationEffectivenessService
+from src.apps.test_center.services.reporting.test_suite.report_overview import TestSuiteReportOverviewService
 
 
 class SettingsConfigSourceTests(SimpleTestCase):
@@ -32,7 +32,7 @@ class SettingsConfigSourceTests(SimpleTestCase):
     def test_missing_database_rows_use_the_same_defaults_as_initialization(self):
         definitions = get_config_definition_map()
         with patch.dict(SystemConfigService._runtime_int_cache, {}, clear=True), \
-                patch('src.apps.system.services.system_config.CacheData.objects.get', side_effect=CacheData.DoesNotExist):
+                patch('src.apps.system.services.configuration.system_config.CacheData.objects.get', side_effect=CacheData.DoesNotExist):
             for key, expected in self.defaults.items():
                 with self.subTest(key=key):
                     self.assertEqual(definitions[key].default_value, expected)
@@ -45,7 +45,7 @@ class SettingsConfigSourceTests(SimpleTestCase):
             return SimpleNamespace(value=value, value_type=CacheValueTypeEnum.INT.value)
 
         with patch.dict(SystemConfigService._runtime_int_cache, {}, clear=True), \
-                patch('src.apps.system.services.system_config.CacheData.objects.get', side_effect=stored):
+                patch('src.apps.system.services.configuration.system_config.CacheData.objects.get', side_effect=stored):
             self.assertEqual(ExecutionResultService.retention_days(), 90)
             for key in self.defaults:
                 if key != 'RESULT_DATA_RETENTION_DAYS':

@@ -14,7 +14,7 @@ from src.apps.auto_pytest.enums import (
 from src.apps.auto_pytest.models import PytestCase
 from src.apps.auto_pytest.selectors.case_publication import PytestCasePublicationSelector
 from src.apps.test_center.formatters.related import format_product_module
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.test_center.services.project.product_module import ProductModuleService
 from src.apps.user.formatters import format_user, format_user_simple
 from src.common.validators.serializer_fields import RelatedObjectField
 

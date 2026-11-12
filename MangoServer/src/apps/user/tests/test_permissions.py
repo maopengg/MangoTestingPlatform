@@ -18,7 +18,6 @@ from src.apps.auto_pytest.api.views.pytest_repository import PytestRepositoryVie
 from src.apps.auto_ui.api.views.ui_live_stream import LiveStreamViews
 from src.apps.auto_ui.api.views.ui_page_steps import PageStepsViews
 from src.apps.functional_test.api.views.case import ManualTestCaseExportViews
-from src.apps.gray_config.api.views.repository import GrayRepositoryCRUD
 from src.apps.system.api.views.cache_data import CacheDataViews
 from src.apps.system.api.views.runtime_center import RuntimeCenterViews
 from src.apps.system.services.runtime_center.overview import RuntimeOverviewService
@@ -27,18 +26,20 @@ from src.apps.task_center.api.views.task_group import ScheduledTaskGroupViews, S
 from src.apps.test_center.api.views.data_source import DataSourceCRUD, DataSourceViews
 from src.apps.test_center.api.views.execution_result import ExecutionResultViews
 from src.apps.user.middleware.permission import MenuActionPermission
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.user.services.authorization.permission import PermissionMenuService
+from src.apps.user.tests.permission_fixtures import install_legacy_endpoint_snapshot
 from src.interfaces.mcp.authentication import component_policy, permission_error
 
 
 class RolePermissionTests(SimpleTestCase):
     def setUp(self):
+        install_legacy_endpoint_snapshot(self)
         self.user = SimpleNamespace(id=1)
         self.policy = MenuActionPermission()
         self.super_admin = patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False)
         self.super_admin.start()
         self.addCleanup(self.super_admin.stop)
-        scope = patch('src.apps.user.services.model_crud_scope.ModelCrudDataScopePolicy.has_request_permission', return_value=True)
+        scope = patch('src.apps.user.services.authorization.model_crud_scope.ModelCrudDataScopePolicy.has_request_permission', return_value=True)
         scope.start()
         self.addCleanup(scope.stop)
 
@@ -162,12 +163,11 @@ class RolePermissionTests(SimpleTestCase):
             })
 
     def test_guest_role_permission_panel_uses_current_defaults_not_stale_stored_keys(self):
-        with patch('src.apps.user.services.permission.Role.objects') as roles, \
-                patch('src.apps.user.services.permission.RoleMenuPermission.objects') as stored:
+        with patch('src.apps.user.services.authorization.permission.Role.objects') as roles, \
+                patch('src.apps.user.services.authorization.role_authorization.RoleAuthorizationService.get') as stored:
             roles.filter.return_value.exists.return_value = True
-            stored.filter.return_value.values_list.return_value = ['gray.repository', 'timing.tasks:change']
             self.assertEqual(PermissionMenuService.role_permission_keys(7), PermissionMenuService.guest_permission_keys())
-            stored.filter.assert_not_called()
+            stored.assert_not_called()
 
     def test_guest_can_execute_but_cannot_bind_or_cleanup(self):
         granted = PermissionMenuService.guest_permission_keys()
@@ -176,7 +176,7 @@ class RolePermissionTests(SimpleTestCase):
             view.action = 'retrieve'
             self.assertTrue(self.policy.has_permission(self.request('get', '/api/api/module-coverage/case/detail'), view))
             view.action = 'binding'
-            self.assertFalse(self.policy.has_permission(self.request('post', '/api/api/module-coverage/case/binding'), view))
+            self.assertFalse(self.policy.has_permission(self.request('put', '/api/api/module-coverage/case/binding'), view))
             with patch('src.interfaces.mcp.authentication.resolve_project_product_ids', return_value={7}), \
                     patch('src.interfaces.mcp.authentication.ProjectProductScopeService.has_project_product', return_value=True):
                 self.assertIsNone(permission_error(self.user, 'trigger_scheduled_task', {'time_task_id': 1}))
@@ -250,8 +250,6 @@ class RolePermissionTests(SimpleTestCase):
                            'pytest.repository:change', {'id': 1})
 
     def test_crud_and_task_group_status_toggles_use_status_permission(self):
-        self.assert_grants(GrayRepositoryCRUD(), None, 'put', '/api/gray/repository',
-                           'gray.repository:change', {'id': 1, 'status': 0})
         self.assert_grants(ScheduledTaskGroupViews(), 'update', 'put', '/api/system/tasks/groups',
                            'timing.tasks:change', {'id': 1, 'status': 0})
 
@@ -266,20 +264,32 @@ class RolePermissionTests(SimpleTestCase):
             self.assert_grants(ExecutionResultViews(), action, 'get', '/api/system/execution/result/detail',
                                'api.case:read')
 
+    def test_result_management_read_grants_detail_and_file_but_not_cleanup(self):
+        for action in ('get_detail', 'get_content'):
+            self.assert_grants(ExecutionResultViews(), action, 'get',
+                               '/api/system/execution/result/detail', 'system.execution_result:read')
+        view = ExecutionResultViews()
+        view.action = 'admin_cleanup'
+        request = self.request('post', '/api/system/execution/result/admin/cleanup')
+        view.request = request
+        with patch.object(PermissionMenuService, 'permission_keys_for_user',
+                          return_value={'system.execution_result:read'}):
+            self.assertFalse(self.policy.has_permission(request, view))
+
     def test_capacity_has_no_unimplemented_edit_permission(self):
         self.assertEqual([item['permissionKey'] for item in PermissionMenuService.default_actions_for_menu('perf.capacity')], ['perf.capacity:read'])
         for unused in ('perf.capacity:add', 'perf.capacity:change', 'perf.capacity:remove'):
             self.assertNotIn(unused, PermissionMenuService.all_permission_keys())
 
-    @patch('src.apps.user.services.permission.Role.objects')
-    @patch('src.apps.user.services.permission.RoleMenuPermission.objects')
+    @patch('src.apps.user.services.authorization.permission.Role.objects')
+    @patch('src.apps.user.services.authorization.role_authorization.RoleAuthorizationService.get')
     def test_retired_ai_permissions_cannot_be_restored_by_old_roles(self, permissions, roles):
         roles.filter.return_value.exists.return_value = False
         retired = {'ai.task:execute', 'ai.skill', 'ai.mcp',
                    'functional.suite:generate', 'functional.suite:generate_api'}
         self.assertFalse(retired & PermissionMenuService.all_permission_keys())
         self.assertFalse(retired & set(PermissionMenuService.guest_permission_keys()))
-        permissions.filter.return_value.values_list.return_value = list(retired)
+        permissions.return_value = {'version': 1, 'menu_keys': list(retired), 'endpoint_permissions': {}}
         self.assertFalse(retired & PermissionMenuService.role_permission_keys(1))
 
     def test_old_permissions_are_filtered_without_automatically_expanding_authority(self):

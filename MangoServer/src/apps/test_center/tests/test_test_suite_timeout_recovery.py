@@ -8,9 +8,9 @@ from mangotools.enums import TaskEnum
 
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.test_center.models import TestSuiteDetails
-from src.apps.test_center.services.execution_result import ExecutionResultService
-from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService
-from src.apps.test_center.services.test_suite.timeout_recovery import TestSuiteTimeoutRecoveryService
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
+from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService
+from src.apps.test_center.services.reporting.test_suite.timeout_recovery import TestSuiteTimeoutRecoveryService
 
 
 class TestSuiteTimeoutRecoveryServiceTests(SimpleTestCase):

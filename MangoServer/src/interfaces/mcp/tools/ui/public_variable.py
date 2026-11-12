@@ -6,7 +6,7 @@ from mangotools.enums import StatusEnum
 
 from src.apps.auto_ui.enums import UiPublicTypeEnum
 from src.apps.auto_ui.selectors.querysets import UiQuerySelector
-from src.apps.auto_ui.services.asset_mutation import UiAssetMutationService
+from src.apps.auto_ui.services.assets.asset_mutation import UiAssetMutationService
 from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.common.utils.environment_scope import normalize_test_envs, test_envs_query, test_envs_titles
 from src.interfaces.mcp.audit import mcp_with_update_user

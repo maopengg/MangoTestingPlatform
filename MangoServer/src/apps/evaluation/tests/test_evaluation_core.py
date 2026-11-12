@@ -12,17 +12,9 @@ from src.apps.evaluation.formatters.payload import (
     select_value,
 )
 from src.apps.evaluation.schemas import EvaluationGradingConfig
-from src.apps.evaluation.services.graders import (
-    ContainsGrader,
-    EvaluationGraderRegistry,
-    ExactMatchGrader,
-    FieldExtractionGrader,
-    NumericToleranceGrader,
-    RankingGrader,
-    SetMatchGrader,
-)
-from src.apps.evaluation.services.importing import EvaluationApiCaseImportService
-from src.apps.evaluation.services.execution import EvaluationCaseExecutionService
+from src.apps.evaluation.services.grading.graders import ContainsGrader, EvaluationGraderRegistry, ExactMatchGrader, FieldExtractionGrader, NumericToleranceGrader, RankingGrader, SetMatchGrader
+from src.apps.evaluation.services.dataset.importing import EvaluationApiCaseImportService
+from src.apps.evaluation.services.execution.execution import EvaluationCaseExecutionService
 from types import SimpleNamespace
 
 

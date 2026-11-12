@@ -73,6 +73,17 @@
       <p class="mango-setting-help"
         >自动模式会按当前浏览器宽度连续缩放，使不同屏幕保持接近的布局比例。</p
       >
+      <div class="mango-setting-item-wrapper">
+        <span class="mango-setting-item-label">2K 缩放比例</span>
+        <a-input-number :model-value="appStore.autoScale2k" :min="1" :max="3" :step="0.05"
+          :precision="2" aria-label="2K 缩放比例" model-event="input" @update:model-value="changeTwoK" />
+      </div>
+      <div class="mango-setting-item-wrapper">
+        <span class="mango-setting-item-label">4K 缩放比例</span>
+        <a-input-number :model-value="appStore.autoScale4k" :min="appStore.autoScale2k" :max="3" :step="0.05"
+          :precision="2" aria-label="4K 缩放比例" model-event="input" @update:model-value="changeFourK" />
+      </div>
+      <p class="mango-setting-help">1.15 表示 115%，仅自动密度模式生效。</p>
       <a-divider dashed>菜单设置</a-divider>
       <div class="mango-setting-item-wrapper">
         <span class="mango-setting-item-label">菜单宽度</span>
@@ -105,16 +116,22 @@
         <a-switch v-model="appStore.actionBar.isShowFullScreen" />
       </div>
       <a-divider />
+      <div class="mango-setting-item-wrapper" aria-live="polite">
+        <span class="mango-setting-help">{{ preferenceStatus }}</span>
+        <a-button v-if="preferences.failed" size="small" :loading="preferences.loading || preferences.saving"
+          @click="preferences.retry()">重试</a-button>
+      </div>
     </Scrollbar>
   </a-drawer>
 </template>
 
 <script lang="ts">
-  import { defineComponent, onMounted, reactive, ref, watch } from 'vue'
+  import { computed, defineComponent, onMounted, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { ModalDialogType } from '@/types/components'
   import LeftBg from '@/assets/bg_img.webp'
   import useAppConfigStore from '@/store/modules/app-config'
+  import useUserPreferencesStore from '@/store/modules/user-preferences'
   import { DisplayDensity, ThemeMode, ThemePresetId } from '@/store/types'
   import { themePresets } from '@/theme/presets'
 
@@ -124,8 +141,18 @@
       const appInfoDialog = ref<ModalDialogType | null>()
       const opened = ref(false)
       const appStore = useAppConfigStore()
+      const preferences = useUserPreferencesStore()
+      const preferenceStatus = computed(() => preferences.loading ? '正在读取个人配置…'
+        : preferences.saving ? '正在保存…' : preferences.failed ? '配置同步失败，可重试'
+        : preferences.dirty ? '等待保存…' : preferences.ready ? '个人配置已同步' : '')
+      const changeTwoK = (value: number | undefined) => {
+        if (value !== undefined) appStore.changeAutoDisplayScales(value, appStore.autoScale4k)
+      }
+      const changeFourK = (value: number | undefined) => {
+        if (value !== undefined) appStore.changeAutoDisplayScales(appStore.autoScale2k, value)
+      }
       const showContact = ref(false)
-      const menuWidth = ref(appStore.sideWidth)
+      const menuWidth = computed({ get: () => appStore.sideWidth, set: value => appStore.changeSideWidth(value) })
       const sideExampleList = reactive([
         {
           leftBg: 'var(--m-layout-sidebar-bg)',
@@ -255,13 +282,15 @@
         appStore.changeDisplayDensity(val)
       }
 
-      watch(
-        () => menuWidth.value,
-        (newVal) => {
-          appStore.changeSideWidth(newVal)
-        }
-      )
+      watch(() => [appStore.sideTheme, appStore.layoutMode], () => {
+        sideExampleList.forEach(it => { it.checked = appStore.sideTheme === it.themeId })
+        layoutExampleList.forEach(it => { it.checked = appStore.layoutMode === it.layoutId })
+      })
       return {
+        preferences,
+        preferenceStatus,
+        changeTwoK,
+        changeFourK,
         appStore,
         appInfoDialog,
         showContact,

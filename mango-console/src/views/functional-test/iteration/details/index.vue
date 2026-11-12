@@ -12,11 +12,11 @@
     </template>
     <template #default>
       <section class="mango-iteration-detail">
-        <a-alert v-if="iterationId === null" type="error"
+        <a-alert data-feedback-kind="validation" v-if="iterationId === null" type="error"
           >迭代 ID 无效，请返回列表重新选择。</a-alert
         >
         
-        <a-alert v-if="mutations.error.value" type="error">{{ mutations.error.value }}</a-alert>
+        <MangoRequestFeedback v-if="mutations.error.value" :message="(mutations.error.value)" />
         <mango-panel-spin :loading="detailRegion.loading.value">
           <div class="mango-iteration-detail__summary">
             <a-space wrap>
@@ -28,7 +28,7 @@
               <span>需求 {{ ganttData.summary.requirement_count }} 条</span>
               <a-tag v-if="saveState === 'saving'" color="arcoblue">正在保存…</a-tag>
               <a-tag v-else-if="saveState === 'saved'" color="green">已保存</a-tag>
-              <a-tag v-else-if="saveState === 'failed'" color="red">保存失败</a-tag>
+              <a-tag v-else-if="saveState === 'failed'" color="orange">未保存</a-tag>
               <a-tag v-if="ganttData.summary?.overdue_count" color="red"
                 >逾期 {{ ganttData.summary.overdue_count }}</a-tag
               >

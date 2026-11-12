@@ -10,8 +10,8 @@ from django.test import SimpleTestCase
 
 from src.apps.auto_api.models import ApiCase, ApiCaseDetailed, ApiInfo
 from src.apps.user.constants import RELATED_PRODUCT_SCOPE_PATHS
-from src.apps.user.services.model_crud_scope import ModelCrudDataScopePolicy as Policy
-from src.apps.user.services.permission import ProjectProductScopeService
+from src.apps.user.services.authorization.model_crud_scope import ModelCrudDataScopePolicy as Policy
+from src.apps.user.services.authorization.permission import ProjectProductScopeService
 
 
 class CrudDataScopeTests(SimpleTestCase):
@@ -29,6 +29,8 @@ class CrudDataScopeTests(SimpleTestCase):
             self.assertFalse(Policy.has_data_permission(ApiInfo, new_request, {'project_product': 2}, set()))
             self.assertEqual(lookup.call_count, 2)
     def setUp(self):
+        from src.apps.user.tests.permission_fixtures import install_legacy_endpoint_snapshot
+        install_legacy_endpoint_snapshot(self)
         self.request = SimpleNamespace(method='PUT', data={}, query_params=QueryDict(),
                                        user=SimpleNamespace(user_obj=SimpleNamespace(id=7)))
         unrestricted = patch.object(Policy, '_unrestricted', return_value=False)
@@ -114,7 +116,7 @@ class CrudDataScopeTests(SimpleTestCase):
     def test_api_info_missing_id_returns_empty_list_but_still_requires_read_permission(self):
         from rest_framework.test import APIRequestFactory, force_authenticate
         from src.apps.auto_api.api.views.api_info import ApiInfoCRUD
-        from src.apps.user.services.permission import AuthUserContext, PermissionMenuService, ProjectProductScopeService
+        from src.apps.user.services.authorization.permission import AuthUserContext, PermissionMenuService, ProjectProductScopeService
 
         user = SimpleNamespace(id=31, role_id=10, name='测试用户', username='audit@example.com', is_super_admin=False)
         for grants, product_allowed, expected in (({'api.info:read'}, True, 200),

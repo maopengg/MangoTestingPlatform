@@ -10,9 +10,7 @@
     @cancel="reset"
   >
     
-    <a-alert v-if="saveError" type="error" class="mango-plan-relation__notice"
-      >操作失败，选择已保留，请重试。</a-alert
-    >
+    <MangoRequestFeedback v-if="saveError" :message="&quot;操作失败，选择已保留，请重试。&quot;" />
     <a-form class="mango-simple-form" :model="form" layout="horizontal" auto-label-width :disabled="saving">
       <a-form-item class="mango-simple-form-item" label="缺陷" required
         ><a-select
@@ -30,8 +28,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import {
     onActivated,
     onBeforeUnmount,
@@ -157,8 +154,8 @@ import { reportLoadError } from '@/utils/load-error'
       reset()
       Message.success(operation === 'bind' ? '已关联缺陷' : '已取消缺陷关联')
       emit('changed', planId)
-    } catch {
-      if (current(version)) saveError.value = true
+    } catch (requestFailure) {
+      if (current(version)) saveError.value = requestFailureMessage(requestFailure, true, "操作失败，选择已保留，请重试。")
     } finally {
       saving.value = false
     }

@@ -16,7 +16,7 @@ from src.apps.task_center.models import Tasks, TimeTasks
 from src.apps.task_center.services.selection.api_concurrency import ApiConcurrencyService
 from src.apps.task_center.services.selection.case_selection import ScheduledTaskCaseSelectionService
 from src.apps.test_center.models import NoticeGroup, ProductModule, ProjectProduct
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.test_center.services.project.product_module import ProductModuleService
 from src.apps.user.models import User
 
 

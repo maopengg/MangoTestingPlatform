@@ -23,12 +23,8 @@ from src.apps.auto_api.exceptions import (
 )
 from src.apps.auto_api.exceptions import MockRequestDecryptionError, MockRuntimeLookupError
 from src.apps.auto_api.models import ApiMockConfig, ApiMockRequestLog
-from src.apps.auto_api.services.mock_log_cleanup import MockRequestLogCleanupService
-from src.apps.auto_api.services.mock_runtime import (
-    MockAssertionCatalog,
-    MockRuntimeCache,
-    MockRuntimeService,
-)
+from src.apps.auto_api.services.mock.mock_log_cleanup import MockRequestLogCleanupService
+from src.apps.auto_api.services.mock.mock_runtime import MockAssertionCatalog, MockRuntimeCache, MockRuntimeService
 from src.common.decorators.error_response import error_response
 from src.common.exceptions import RESOURCE_ACCESS_DENIED
 from src.common.logging import log
@@ -53,12 +49,14 @@ class ApiMockConfigCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
     not_matching_str = ModelCRUD.not_matching_str + ["update_user", "record_call_log", "enabled", "method"]
 
     def post(self, request: Request):
+        """新增Mock 配置"""
         response = super().post(request)
         if getattr(response, "data", {}).get("code") == 200:
             MockRuntimeCache.invalidate(request.data.get("mock_key"))
         return response
 
     def put(self, request: Request):
+        """修改Mock 配置"""
         instance = self.model.objects.filter(id=request.data.get("id")).first()
         if instance is None:
             return ResponseData.fail(RESPONSE_MSG_0158)
@@ -80,6 +78,7 @@ class ApiMockConfigCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
         return response
 
     def delete(self, request: Request):
+        """删除Mock 配置"""
         ids = request.query_params.getlist("id[]")
         if request.query_params.get("id"):
             ids.append(request.query_params.get("id"))
@@ -107,17 +106,20 @@ class ApiMockConfigViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("api")
     def retrieve(self, request: Request):
+        """获取Mock 配置详情"""
         config = self._get_config(request)
         return ResponseData.success(RESPONSE_MSG_0001, ApiMockConfigSerializer(config).data)
 
     @action(methods=["get"], detail=False)
     @error_response("api")
     def assertion_methods(self, request: Request):
+        """获取 Mock 可用断言方法"""
         return ResponseData.success(RESPONSE_MSG_0001, MockAssertionCatalog.catalog())
 
     @action(methods=["put"], detail=False)
     @error_response("api")
     def change_state(self, request: Request):
+        """切换 Mock 配置启用状态"""
         config = self._get_config(request)
         allowed = {key: request.data[key] for key in ("enabled", "record_call_log") if key in request.data}
         if not allowed:
@@ -132,12 +134,14 @@ class ApiMockConfigViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("api")
     def debug(self, request: Request):
+        """调试 Mock 配置并返回匹配结果"""
         config = self._get_config(request)
         return ResponseData.success(RESPONSE_MSG_0001, MockRuntimeService.debug(config, request.data))
 
     @action(methods=["get"], detail=False)
     @error_response("api")
     def logs(self, request: Request):
+        """获取Mock 配置日志"""
         config = self._get_config(request)
         queryset = self._log_queryset(request, config)
         page_size = max(min(int(request.query_params.get("pageSize") or 20), 100), 1)
@@ -162,6 +166,7 @@ class ApiMockConfigViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("api")
     def export_logs(self, request: Request):
+        """导出 Mock 请求日志"""
         config = self._get_config(request)
         queryset = self._log_queryset(request, config)
         filename_time = self._local_datetime(timezone.now())
@@ -267,6 +272,7 @@ class ApiMockConfigViews(ViewSet):
     @action(methods=["delete"], detail=False)
     @error_response("api")
     def clear_logs(self, request: Request):
+        """清理指定 Mock 配置的请求日志"""
         config = self._get_config(request)
         deleted_count = MockRequestLogCleanupService.clear_config_logs(config.id)
         return ResponseData.success(RESPONSE_MSG_0005, {"deleted_count": deleted_count})
@@ -274,12 +280,14 @@ class ApiMockConfigViews(ViewSet):
     @action(methods=["delete"], detail=False)
     @error_response("api")
     def clear_all_logs(self, request: Request):
+        """清理全部 Mock 请求日志"""
         deleted_count = MockRequestLogCleanupService.clear_all_logs()
         return ResponseData.success(RESPONSE_MSG_0005, {"deleted_count": deleted_count})
 
     @action(methods=["get"], detail=False)
     @error_response("api")
     def log_detail(self, request: Request):
+        """获取 Mock 请求日志详情"""
         item = ApiMockRequestLog.objects.select_related("mock_config").defer('callback_evidence').filter(
             id=request.query_params.get("id"),
         ).first()
@@ -297,21 +305,27 @@ class ApiMockRuntimeView(APIView):
     throttle_classes = []
 
     def get(self, request, *args, **kwargs):
+        """处理 GET Mock 请求"""
         return self._execute(request, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        """处理 POST Mock 请求"""
         return self._execute(request, **kwargs)
 
     def put(self, request, *args, **kwargs):
+        """处理 PUT Mock 请求"""
         return self._execute(request, **kwargs)
 
     def patch(self, request, *args, **kwargs):
+        """处理 PATCH Mock 请求"""
         return self._execute(request, **kwargs)
 
     def delete(self, request, *args, **kwargs):
+        """处理 DELETE Mock 请求"""
         return self._execute(request, **kwargs)
 
     def options(self, request, *args, **kwargs):
+        """处理 OPTIONS Mock 请求"""
         return self._execute(request, **kwargs)
 
     @staticmethod

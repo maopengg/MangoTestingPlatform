@@ -54,7 +54,7 @@ class TaskGroupNoticeResendTests(SimpleTestCase):
             'details': patch('src.apps.task_center.services.scheduling.task_group_execution.TestSuiteDetails.objects'),
             'suites': patch('src.apps.task_center.services.scheduling.task_group_execution.TestSuite.objects'),
             'notice': patch('src.apps.task_center.services.scheduling.task_group_execution.NoticeMain'),
-            'environments': patch('src.apps.system.services.system_config.SystemConfigService.get_environment_display_names',
+            'environments': patch('src.apps.system.services.configuration.system_config.SystemConfigService.get_environment_display_names',
                                   return_value={}),
         }
         self.mocks = {}

@@ -15,7 +15,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.apps.system.enums import ClientTypeEnum
-from src.apps.system.services.menu import ad_routes
+from src.apps.system.services.catalog.menu import ad_routes
 from src.apps.user.api.serializers.user import UserSerializers, UserSerializersC
 from src.apps.user.exceptions import (
     USER_REQUEST_FORMAT_INVALID,
@@ -26,13 +26,12 @@ from src.apps.user.exceptions import (
 )
 from src.apps.user.middleware.auth import JwtQueryParamsAuthentication
 from src.apps.user.models import Department, Role, User
-from src.apps.user.services.account_mutation import UserAccountMutationService
-from src.apps.user.services.cli_auth import CliAuthService
-from src.apps.user.services.credential import UserCredentialService
-from src.apps.user.services.environment import UserEnvironmentService
-from src.apps.user.services.password import double_md5, verify_password_digest
-from src.apps.user.services.permission import PermissionMenuService
-from src.apps.user.services.user_cache import UserCacheService
+from src.apps.user.services.account.account_mutation import UserAccountMutationService
+from src.apps.user.services.authentication.cli_auth import CliAuthService
+from src.apps.user.services.authentication.credential import UserCredentialService
+from src.apps.user.services.authentication.password import double_md5, verify_password_digest
+from src.apps.user.services.authorization.permission import PermissionMenuService
+from src.apps.user.services.preferences.user_config import UserConfigService
 from src.common.decorators.error_response import error_response
 from src.common.middleware.jwt_auth import create_token
 from src.common.responses.model_crud import ModelCRUD
@@ -84,10 +83,12 @@ class UserCRUD(ModelCRUD):
 
     @staticmethod
     def save_user_departments(user: User, department_ids: list[int], update_user_id: int | None = None):
+        """保存用户所属部门关系"""
         UserAccountMutationService.replace_departments(user, department_ids, update_user_id)
 
     @error_response('user')
     def post(self, request: Request):
+        """新增用户"""
         data = dict(request.data)
         data.setdefault('role', PermissionMenuService.default_role().id)
         data['update_user'] = self.get_request_user_id(request)
@@ -103,6 +104,7 @@ class UserCRUD(ModelCRUD):
 
     @classmethod
     def inside_post(cls, data: dict) -> dict:
+        """处理用户新增时的业务逻辑"""
         data = dict(data)
         data.setdefault('api_key', cls.model.unique_api_key())
         data.setdefault('role', PermissionMenuService.default_role().id)
@@ -110,6 +112,7 @@ class UserCRUD(ModelCRUD):
 
     @error_response('user')
     def put(self, request: Request):
+        """修改用户"""
         data = dict(request.data)
         instance_id = data.get('id')
         if data.get('is_super_admin') is False:
@@ -130,23 +133,32 @@ class UserViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     @error_response('user')
-    def get_cache_data(self, request: Request):
-        data = UserCacheService.grouped(request.user.user_obj)
-        return ResponseData.success(RESPONSE_MSG_0001, data, len(data))
+    def get_config(self, request: Request):
+        """获取当前用户全部配置或指定配置项"""
+        data = UserConfigService.read(request.user.user_obj, key=request.query_params.get('key'))
+        return ResponseData.success(RESPONSE_MSG_0001, data)
 
     @action(methods=['delete'], detail=False)
     @error_response('user')
-    def clear_cache_data(self, request: Request):
-        count = UserCacheService.clear(
+    def clear_config(self, request: Request):
+        """清除当前用户指定配置项的值"""
+        count = UserConfigService.clear(
             request.user.user_obj,
-            group_key=request.data.get('group_key'),
-            cache_key=request.data.get('cache_key'),
+            key=request.query_params.get('key'),
         )
         return ResponseData.success(RESPONSE_MSG_0005, {'count': count})
+
+    @action(methods=['put'], detail=False)
+    @error_response('user')
+    def update_config(self, request: Request):
+        """按配置标识合并保存当前用户配置"""
+        data = UserConfigService.update(request.user.user_obj, request.data)
+        return ResponseData.success(RESPONSE_MSG_0001, data)
 
     @action(methods=['post'], detail=False)
     @error_response('user')
     def cli_authorize(self, request: Request):
+        """为当前用户创建 CLI 授权码"""
         if request.data.get('version') != settings.VERSION:
             return ResponseData.fail(RESPONSE_MSG_0304, {'latest_version': settings.VERSION})
         user = request.user.user_obj
@@ -176,36 +188,23 @@ class UserViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('user')
     def get_department_name(self, request: Request):
+        """获取可用部门名称选项"""
         res = Department.objects.filter(status=1).values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
         return ResponseData.success(RESPONSE_MSG_0033, data)
 
-    @action(methods=['put'], detail=False)
-    @error_response('user')
-    def put_environment(self, request: Request):
-        user = request.user.user_obj
-        result = UserEnvironmentService.switch(
-            user,
-            request.data.get('selected_environment'),
-            operator_id=user.id,
-        )
-        return ResponseData.success(
-            RESPONSE_MSG_0245,
-            self.serializer(instance=user).data,
-            value=(result['selected_environment_title'],),
-        )
-        # return ResponseData.fail(RESPONSE_MSG_0037, serializer.errors)
-
     @action(methods=['get'], detail=False)
     @error_response('user')
     def get_user_project_environment(self, request: Request):
+        """获取指定用户选择的测试环境"""
         obj = self.model.objects.get(id=request.query_params.get('id'))
-        data = {'id': obj.id, 'selected_environment': UserCacheService.selected_environment(obj)}
+        data = {'id': obj.id, 'selected_environment': UserConfigService.selected_environment(obj)}
         return ResponseData.success(RESPONSE_MSG_0041, data)
 
     @action(methods=['put'], detail=False)
     @error_response('user')
     def put_password(self, request: Request):
+        """修改当前用户密码"""
         password = double_md5(request.data.get('password') or '')
         new_password = request.data.get('new_password') or ''
         confirm_password = request.data.get('confirm_password') or ''
@@ -237,6 +236,7 @@ class UserViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('user')
     def register_user(self, request: Request):
+        """由管理员创建用户并发送账号凭据"""
         name = (request.data.get('name') or '').strip()
         if not name:
             raise UserError(USER_CREDENTIAL_USER_NOT_ALLOWED)
@@ -270,6 +270,7 @@ class UserViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('user')
     def reset_password(self, request: Request):
+        """由管理员重置用户密码"""
         user = UserAccountMutationService.reset_password(
             request.data.get('id'),
             operator=request.user.user_obj,
@@ -280,7 +281,17 @@ class UserViews(ViewSet):
 
     @action(methods=['put'], detail=False)
     @error_response('user')
+    def reset_own_password(self, request: Request):
+        """向当前用户登录邮箱发送随机重置密码"""
+        user = request.user.user_obj
+        if not UserAccountMutationService.reset_password(user.id, operator=user):
+            return ResponseData.fail(RESPONSE_MSG_0258)
+        return ResponseData.success(RESPONSE_MSG_0290)
+
+    @action(methods=['put'], detail=False)
+    @error_response('user')
     def reset_user_api_key(self, request: Request):
+        """由管理员重置用户 API Key"""
         user = self.model.objects.filter(id=request.data.get('id')).first()
         if not user:
             return ResponseData.fail(RESPONSE_MSG_0293)
@@ -290,6 +301,7 @@ class UserViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('user')
     def reset_api_key(self, request: Request):
+        """重置当前用户 API Key"""
         user = request.user.user_obj
         UserAccountMutationService.reset_api_key(user)
         return ResponseData.success(RESPONSE_MSG_0082, {'api_key': user.api_key})
@@ -297,6 +309,7 @@ class UserViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('user')
     def get_current_api_key(self, request: Request):
+        """获取当前用户 API Key，缺失时生成"""
         user = request.user.user_obj
         if not user.api_key:
             UserAccountMutationService.reset_api_key(user)
@@ -312,6 +325,7 @@ class LoginViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     def cli_version(self, request: Request):
+        """检查 CLI 与服务端版本是否匹配"""
         if request.query_params.get('version') != settings.VERSION:
             return ResponseData.fail(RESPONSE_MSG_0304, {'latest_version': settings.VERSION})
         return ResponseData.success(RESPONSE_MSG_0305, {'version': settings.VERSION})
@@ -359,6 +373,7 @@ class LoginViews(ViewSet):
         return None
 
     def get_throttles(self):
+        """按认证操作选择请求限流策略"""
         throttle_scope_map = {
             'login': 'login',
             'get_download': 'download',
@@ -370,6 +385,7 @@ class LoginViews(ViewSet):
 
     @action(methods=['post'], detail=False)
     def cli_token(self, request: Request):
+        """使用 CLI 授权码换取登录凭据"""
         result = CliAuthService.exchange_code(
             code=request.data.get('code'),
             code_verifier=request.data.get('code_verifier'),
@@ -397,6 +413,7 @@ class LoginViews(ViewSet):
     @error_response('user')
     @action(methods=['post'], detail=False)
     def login(self, request: Request):
+        """验证用户凭据并返回登录上下文"""
         try:
             data = request.data
         except (drf_exceptions.UnsupportedMediaType, drf_exceptions.ParseError) as error:
@@ -422,7 +439,6 @@ class LoginViews(ViewSet):
         UserAccountMutationService.record_login(
             user_info,
             ip=ip,
-            update_last_login=source_type == ClientTypeEnum.WEB.value,
             upgraded_password=upgraded_password,
         )
         return ResponseData.success(RESPONSE_MSG_0043, {
@@ -437,7 +453,8 @@ class LoginViews(ViewSet):
                 'name': user_info.name,
                 'client_type': source_type,
             }),
-            "selected_environment": UserCacheService.selected_environment(user_info),
+            "selected_environment": UserConfigService.selected_environment(user_info),
+            "interface_preferences": UserConfigService.interface_preferences(user_info),
             "roles": [
                 {
                     "description": user_info.role.description if user_info.role else None,
@@ -450,7 +467,8 @@ class LoginViews(ViewSet):
     @error_response('user')
     @action(methods=['get'], detail=False)
     def registration_config(self, request: Request):
-        from src.apps.system.services.system_config import SystemConfigService
+        """获取公开的自助注册开关与提示语"""
+        from src.apps.system.services.configuration.system_config import SystemConfigService
 
         response = ResponseData.success(RESPONSE_MSG_0001, SystemConfigService.get_registration_config())
         response['Cache-Control'] = 'no-store'
@@ -459,7 +477,8 @@ class LoginViews(ViewSet):
     @error_response('user')
     @action(methods=['post'], detail=False)
     def register(self, request: Request):
-        from src.apps.system.services.system_config import SystemConfigService
+        """按注册开关创建用户账号"""
+        from src.apps.system.services.configuration.system_config import SystemConfigService
 
         registration_config = SystemConfigService.get_registration_config()
         if (
@@ -485,6 +504,7 @@ class LoginViews(ViewSet):
     @error_response('user')
     @action(methods=['post'], detail=False)
     def reset_password_by_email(self, request: Request):
+        """通过登录邮箱申请重置密码"""
         email = UserCredentialService.normalize_email(request.data.get('email'))
         user = User.objects.filter(username__iexact=email).first()
         if user:
@@ -494,11 +514,13 @@ class LoginViews(ViewSet):
     @error_response('user')
     @action(methods=['POST'], detail=False)
     def menu(self, request: Request):
+        """获取平台完整菜单定义"""
         return ResponseData.success(RESPONSE_MSG_0044, ad_routes())
 
     @error_response('user')
     @action(methods=['get'], detail=False)
     def test(self, request: Request):
+        """执行指定版本的数据维护历史入口"""
         v = request.query_params.get('v')
         if v:
             from version_migration_scripts import data_cleanup
@@ -515,11 +537,13 @@ class LoginViews(ViewSet):
     @error_response('user')
     @action(methods=['get'], detail=False)
     def test2(self, request: Request):
+        """返回历史测试入口的空结果"""
         return ResponseData.success(RESPONSE_MSG_0001, {})
 
     @error_response('user')
     @action(methods=['get'], detail=False)
     def get_download(self, request: Request):
+        """下载指定静态资源文件"""
         file_name = unquote(request.query_params.get('file_name') or '')
         safe_file_name = os.path.basename(file_name)
         if not safe_file_name or safe_file_name != file_name:
@@ -535,4 +559,5 @@ class MenuViews(ViewSet):
     @error_response('user')
     @action(methods=['POST'], detail=False)
     def menu(self, request: Request):
+        """获取当前用户可见菜单"""
         return ResponseData.success(RESPONSE_MSG_0044, PermissionMenuService.permitted_menu(request.user.user_obj))

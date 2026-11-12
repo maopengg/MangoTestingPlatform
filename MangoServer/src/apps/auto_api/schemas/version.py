@@ -4,13 +4,13 @@ from typing import Any
 from pydantic import Field
 
 from src.common.schemas import OpenSchema, StrictSchema
+from src.apps.auto_api.enums.case import ApiRevisionUnsupportedDependencyEnum
 
 
 class ApiCaseDetailedParameterSnapshotModel(OpenSchema):
     allow_failure: bool = False
     resolved_headers: dict[str, Any] | None = None
     missing_header_ids: list[Any] = Field(default_factory=list)
-    gray_configs: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ApiCaseDetailedSnapshotModel(OpenSchema):
@@ -24,7 +24,6 @@ class ApiCaseDetailedSnapshotModel(OpenSchema):
 class ApiCaseRevisionRuntimeSnapshotModel(StrictSchema):
     resolved_front_headers: dict[str, Any] = Field(default_factory=dict)
     missing_front_header_ids: list[Any] = Field(default_factory=list)
-    gray_configs: list[dict[str, Any]] = Field(default_factory=list)
     dependency_freeze_level: str | None = None
     unsupported_dependency_types: list[str] = Field(default_factory=list)
 
@@ -43,7 +42,18 @@ class ApiCaseRevisionPayloadModel(StrictSchema):
 
     @classmethod
     def from_payload(cls, payload: dict[str, Any] | None) -> 'ApiCaseRevisionPayloadModel':
-        return cls.model_validate(deepcopy(payload or {}))
+        value = deepcopy(payload or {})
+        runtime = value.setdefault('runtime', {})
+        retired = bool(runtime.pop('gray_configs', []))
+        for step in value.get('api_case_detailed') or []:
+            for parameter in step.get('api_case_detailed_parameter') or []:
+                retired = bool(parameter.pop('gray_configs', [])) or retired
+        if retired:
+            unsupported = runtime.setdefault('unsupported_dependency_types', [])
+            marker = ApiRevisionUnsupportedDependencyEnum.RETIRED_GRAY.label
+            if marker not in unsupported:
+                unsupported.append(marker)
+        return cls.model_validate(value)
 
 
 class ApiInfoRevisionRuntimeSnapshotModel(OpenSchema):

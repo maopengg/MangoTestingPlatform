@@ -14,13 +14,13 @@ from src.apps.evaluation.models import (
     EvaluationItemResult,
 )
 from src.apps.evaluation.schemas import EvaluationGradingConfig, GraderMetric, GraderResult
-from src.apps.evaluation.services.graders import EvaluationGraderRegistry
-from src.apps.evaluation.services.case import EvaluationCaseService
-from src.apps.evaluation.services.execution import EvaluationCaseExecutionService
+from src.apps.evaluation.services.grading.graders import EvaluationGraderRegistry
+from src.apps.evaluation.services.assets.case import EvaluationCaseService
+from src.apps.evaluation.services.execution.execution import EvaluationCaseExecutionService
 from src.apps.test_center.models import ProjectProduct
 from src.apps.user.middleware.permission import MenuActionPermission
 from src.apps.user.models import User
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.user.services.authorization.permission import PermissionMenuService
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -52,8 +52,8 @@ class CaseFlowTests(SimpleTestCase):
         adapter.execute.return_value = {"output": {"answer": "答案"}}
         with (patch.object(EvaluationItemResult, "save"),
               patch.object(EvaluationItemResult, "grade_results", MagicMock()),
-              patch("src.apps.evaluation.services.execution.EvaluationAttemptService.start", return_value=1),
-              patch("src.apps.evaluation.services.execution.EvaluationAttemptService.finish"),
+              patch("src.apps.evaluation.services.execution.execution.EvaluationAttemptService.start", return_value=1),
+              patch("src.apps.evaluation.services.execution.execution.EvaluationAttemptService.finish"),
               patch.object(EvaluationCaseExecutionService, "_save_grade_results"),
               patch.object(EvaluationGraderRegistry, "resolve", return_value=(grader, {}))):
             EvaluationCaseExecutionService._execute_item_core(
@@ -114,7 +114,7 @@ class CaseFlowTests(SimpleTestCase):
     def test_execution_checks_target_business_permission(self):
         target = SimpleNamespace(target_type="api_case", project_product_id=5)
         for granted, permitted in [({"evaluation.case:change"}, False), ({"api.case:change"}, True)]:
-            with patch("src.apps.evaluation.services.case.ensure_product_scope"), patch.object(PermissionMenuService, "permission_keys_for_user", return_value=granted):
+            with patch("src.apps.evaluation.services.assets.case.ensure_product_scope"), patch.object(PermissionMenuService, "permission_keys_for_user", return_value=granted):
                 if permitted:
                     EvaluationCaseService.ensure_target_access(target, SimpleNamespace(id=2))
                 else:
@@ -155,7 +155,7 @@ class EvaluationDraftCaseTests(SimpleTestCase):
         draft = self.draft()
         with self.assertRaises(EvaluationError):
             EvaluationCaseService.normalize({'status': 'enabled'}, draft)
-        with patch('src.apps.evaluation.services.case.ensure_product_scope'):
+        with patch('src.apps.evaluation.services.assets.case.ensure_product_scope'):
             with self.assertRaises(EvaluationError):
                 EvaluationCaseService.validate_execution(draft, SimpleNamespace())
             draft.status = 'enabled'
@@ -174,9 +174,9 @@ class EvaluationDraftCaseTests(SimpleTestCase):
         self.assertFalse(CaseSerializer().fields['dataset_version'].required)
 
     def test_mcp_can_create_an_unconfigured_draft_with_explicit_product_scope(self):
-        from src.apps.evaluation.services.assets import create_case
-        with (patch('src.apps.evaluation.services.assets.ensure_product_scope') as scope,
-              patch('src.apps.evaluation.services.assets.TestCenterQuerySelector.project_product') as products,
+        from src.apps.evaluation.services.assets.assets import create_case
+        with (patch('src.apps.evaluation.services.assets.assets.ensure_product_scope') as scope,
+              patch('src.apps.evaluation.services.assets.assets.TestCenterQuerySelector.project_product') as products,
               patch.object(EvaluationCaseService, 'save') as save):
             products.return_value.filter.return_value.first.return_value = ProjectProduct(pk=5)
             create_case({'name': 'MCP 草稿', 'project_product_id': 5}, SimpleNamespace(id=2))
@@ -187,6 +187,6 @@ class EvaluationDraftCaseTests(SimpleTestCase):
             self.assertEqual(values['project_product'].pk, 5)
 
     def test_mcp_cannot_create_an_unscoped_blank_case(self):
-        from src.apps.evaluation.services.assets import create_case
+        from src.apps.evaluation.services.assets.assets import create_case
         with self.assertRaises(EvaluationError):
             create_case({'name': '无归属草稿'}, SimpleNamespace(id=2))

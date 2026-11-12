@@ -15,7 +15,7 @@ from src.apps.data_factory.exceptions import (
     DataFactoryError,
 )
 from src.apps.data_factory.models import DataFactoryEntity
-from src.apps.data_factory.services.entity import DataFactoryEntityService
+from src.apps.data_factory.services.assets.entity import DataFactoryEntityService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -31,6 +31,7 @@ class DataFactoryEntityCRUD(ModelCRUD):
     not_matching_str = ModelCRUD.not_matching_str + ['datasource_alias']
 
     def post(self, request: Request):
+        """新增数据工厂实体"""
         duplicated = self.get_duplicated_entity(request.data)
         if duplicated:
             return ResponseData.fail((DATA_FACTORY_ENTITY_TABLE_DUPLICATED[0],
@@ -38,6 +39,7 @@ class DataFactoryEntityCRUD(ModelCRUD):
         return super().post(request)
 
     def put(self, request: Request):
+        """修改数据工厂实体"""
         duplicated = self.get_duplicated_entity(request.data, request.data.get('id'))
         if duplicated:
             return ResponseData.fail((DATA_FACTORY_ENTITY_TABLE_DUPLICATED[0],
@@ -46,6 +48,7 @@ class DataFactoryEntityCRUD(ModelCRUD):
 
     @staticmethod
     def get_duplicated_entity(data: dict, exclude_id=None):
+        """查找同归属下重复的数据工厂实体"""
         project_product = data.get('project_product')
         datasource_alias = data.get('datasource_alias')
         table_name = data.get('table_name')
@@ -67,6 +70,7 @@ class DataFactoryEntityViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def batch_generate(self, request: Request):
+        """根据表结构批量创建数据工厂实体"""
         result = DataFactoryEntityService.batch_generate(
             project_product_id=request.data.get('project_product'),
             module_id=request.data.get('module'),
@@ -81,11 +85,13 @@ class DataFactoryEntityViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def copy(self, request: Request):
+        """拒绝不支持的数据工厂实体复制操作"""
         raise DataFactoryError(DATA_FACTORY_ENTITY_DATABASE_ENTITY_UNSUPPORTED)
 
     @action(methods=['put'], detail=False)
     @error_response('system')
     def status(self, request: Request):
+        """设置数据工厂实体启用状态"""
         if request.data.get('status') is None:
             raise DataFactoryError(DATA_FACTORY_ENTITY_STATUS_REQUIRED)
         status = request.data.get('status')

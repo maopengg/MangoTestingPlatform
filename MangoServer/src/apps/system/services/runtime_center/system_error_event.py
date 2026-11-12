@@ -1,10 +1,11 @@
 import hashlib
+import json
 import os
 import re
 import traceback as traceback_module
 from datetime import timedelta
 
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import F, Q
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
@@ -45,6 +46,26 @@ class SystemErrorEventService:
         SystemErrorEventSource.ACTUATOR: '执行器异常',
         SystemErrorEventSource.FRONTEND: '前端异常',
     }
+
+    @classmethod
+    def record_health_transition(cls, *, revision, service_name, source, request_path, message, trace, generation=0):
+        """同一性能事件只接收更新的修订，防止旧发布者把已恢复状态覆盖回异常。"""
+        exception_type = 'DatasourceExecutionHealth'
+        fingerprint = cls.build_fingerprint(service_name, source, request_path, exception_type,
+                                            cls.truncate(message, cls.MESSAGE_MAX_LENGTH))
+        with transaction.atomic():
+            previous = SystemErrorEvent.objects.select_for_update().filter(fingerprint=fingerprint).only('traceback').first()
+            if previous is not None:
+                try:
+                    saved = json.loads(previous.traceback or '{}')
+                    version, previous_generation = saved.get('revision', -1), saved.get('generation', 0)
+                except (json.JSONDecodeError, AttributeError):
+                    version, previous_generation = -1, 0
+                if (type(version) is int and type(previous_generation) in (int, float)
+                        and (previous_generation, version) >= (generation, revision)):
+                    return
+            cls.record(service_name=service_name, source=source, request_path=request_path,
+                       exception_type=exception_type, message=message, trace=trace)
 
     @classmethod
     def record_exception(

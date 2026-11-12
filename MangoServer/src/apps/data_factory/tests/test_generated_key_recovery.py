@@ -11,11 +11,11 @@ from sqlalchemy.dialects.mysql import dialect as mysql_dialect
 from sqlalchemy.dialects.postgresql import JSON as PostgreSQLJSON, JSONB, dialect as postgresql_dialect
 
 from src.apps.data_factory.exceptions import DataFactoryError, DATA_FACTORY_RUNNER_PARTS_EXECUTION_PRIMARY_KEY_REQUIRED
-from src.apps.data_factory.services.cleanup import DataFactoryCleanup
-from src.apps.data_factory.services.discover import DataFactoryDiscover
-from src.apps.data_factory.services.execution_snapshot import DATA_FACTORY_INSERT_SNAPSHOT_KEY
-from src.apps.data_factory.services.runner import DataFactoryRunner
-from src.apps.data_factory.services.type_cast import DataFactoryTypeCast
+from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
+from src.apps.data_factory.services.schema.discover import DataFactoryDiscover
+from src.apps.data_factory.services.execution.execution_snapshot import DATA_FACTORY_INSERT_SNAPSHOT_KEY
+from src.apps.data_factory.services.execution.runner import DataFactoryRunner
+from src.apps.data_factory.services.execution.type_cast import DataFactoryTypeCast
 
 
 class GeneratedColumnKindsTests(SimpleTestCase):
@@ -271,7 +271,7 @@ class GeneratedKeyRecoveryTests(SimpleTestCase):
             created = self.recover(connection, table, primary=86, unique_key='org_id')
             self.assertEqual(created['mango_id'], self.primary_value)
 
-    @patch('src.apps.data_factory.services.runner_parts.persistence.DataFactoryDatasource.get_worker_engine')
+    @patch('src.apps.data_factory.services.execution.parts.persistence.DataFactoryDatasource.get_worker_engine')
     def test_normalized_insert_passes_before_commit_and_commits_recovered_primary(self, get_engine):
         engine = create_engine('sqlite://')
         table = Table('factory_record', MetaData(),
@@ -380,7 +380,7 @@ class GeneratedKeyRecoveryTests(SimpleTestCase):
             )
             self.assertEqual(connection.execute(select(table.c.mango_id)).scalars().all(), [90])
 
-    @patch('src.apps.data_factory.services.runner_parts.persistence.DataFactoryDatasource.get_worker_engine')
+    @patch('src.apps.data_factory.services.execution.parts.persistence.DataFactoryDatasource.get_worker_engine')
     def test_unrecoverable_key_rolls_back_insert_before_commit(self, get_engine):
         engine = create_engine('sqlite://')
         table = Table('factory_record', MetaData(),

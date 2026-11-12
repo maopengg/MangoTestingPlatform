@@ -1,5 +1,7 @@
 from contextlib import contextmanager
 from copy import deepcopy
+from decimal import Decimal
+import json
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -8,10 +10,10 @@ from django.test import SimpleTestCase
 from mangotools.enums import TaskEnum
 
 from src.apps.test_center.enums import TestCaseTypeEnum
-from src.apps.test_center.services.execution_result import ExecutionResultService
-from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService
-from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
-from src.apps.test_center.services.test_suite.update_test_suite import UpdateTestSuite
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
+from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService
+from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService
+from src.apps.test_center.services.reporting.test_suite.update_test_suite import UpdateTestSuite
 
 
 class ResultWriteTransactionTests(SimpleTestCase):
@@ -21,13 +23,13 @@ class ResultWriteTransactionTests(SimpleTestCase):
         self.rollbacks = 0
         self.atomic_calls = 0
         self.enter_patch(patch(
-            'src.apps.test_center.services.execution_result.transaction.get_connection',
+            'src.apps.test_center.services.results.execution_result.transaction.get_connection',
             return_value=self.connection,
         ))
         self.enter_patch(patch(
-            'src.apps.test_center.services.execution_result.transaction.atomic', side_effect=self.atomic,
+            'src.apps.test_center.services.results.execution_result.transaction.atomic', side_effect=self.atomic,
         ))
-        self.sleep = self.enter_patch(patch('src.apps.test_center.services.execution_result.time.sleep'))
+        self.sleep = self.enter_patch(patch('src.apps.test_center.services.results.execution_result.time.sleep'))
 
     def enter_patch(self, patcher):
         result = patcher.start()
@@ -118,9 +120,9 @@ class ResultWriteTransactionTests(SimpleTestCase):
     def test_single_writer_locks_suite_then_detail_and_updates_latest_only_once(self):
         order = []
         fields = {'test_suite_id': 2, 'test_suite_detail_id': 3, 'target_type': 'ui_case'}
-        with patch('src.apps.test_center.services.execution_result.TestSuite.objects') as suites, \
-                patch('src.apps.test_center.services.execution_result.TestSuiteDetails.objects') as details, \
-                patch('src.apps.test_center.services.execution_result.ExecutionResult.objects') as results:
+        with patch('src.apps.test_center.services.results.execution_result.TestSuite.objects') as suites, \
+                patch('src.apps.test_center.services.results.execution_result.TestSuiteDetails.objects') as details, \
+                patch('src.apps.test_center.services.results.execution_result.ExecutionResult.objects') as results:
             suites.select_for_update.return_value.get.side_effect = lambda **_: order.append('suite')
             details.select_for_update.return_value.get.side_effect = lambda **_: order.append('detail')
             results.filter.return_value.update.side_effect = lambda **_: order.append('latest')
@@ -145,28 +147,28 @@ class ResultWriteTransactionTests(SimpleTestCase):
         detail.save = Mock(side_effect=save)
         suite = SimpleNamespace(status=TaskEnum.PROCEED.value, retained_summary=None)
         self.suite_manager = self.enter_patch(patch(
-            'src.apps.test_center.services.test_suite.update_test_suite.TestSuite.objects',
+            'src.apps.test_center.services.reporting.test_suite.update_test_suite.TestSuite.objects',
         ))
         self.suite_manager.select_for_update.return_value.get.return_value = suite
         details = self.enter_patch(patch(
-            'src.apps.test_center.services.test_suite.update_test_suite.TestSuiteDetails.objects',
+            'src.apps.test_center.services.reporting.test_suite.update_test_suite.TestSuiteDetails.objects',
         ))
         details.get.return_value = detail
         details.select_for_update.return_value.get.return_value = detail
         details.select_for_update.return_value.filter.return_value.first.return_value = detail
         details.filter.return_value.exists.return_value = True
         self.enter_patch(patch(
-            'src.apps.test_center.services.test_suite.update_test_suite.TestSuiteTimeoutRecoveryService.'
+            'src.apps.test_center.services.reporting.test_suite.update_test_suite.TestSuiteTimeoutRecoveryService.'
             'is_timeout_terminated', return_value=False,
         ))
         self.counter = self.enter_patch(patch(
-            'src.apps.test_center.services.test_suite.update_test_suite.TestCounter.res_main',
+            'src.apps.test_center.services.reporting.test_suite.update_test_suite.TestCounter.res_main',
         ))
         self.ui_write = self.enter_patch(patch(
-            'src.apps.test_center.services.test_suite.update_test_suite.TestReportWriting.update_test_case',
+            'src.apps.test_center.services.reporting.test_suite.update_test_suite.TestReportWriting.update_test_case',
         ))
         self.pytest_write = self.enter_patch(patch(
-            'src.apps.test_center.services.test_suite.update_test_suite.PtestTestReportWriting.update_pytest_test_case',
+            'src.apps.test_center.services.reporting.test_suite.update_test_suite.PtestTestReportWriting.update_pytest_test_case',
         ))
         payload = {'result_data': None, 'result_object_key': 'result/example.json',
                    'result_file_name': 'example.json', 'result_size': 10, 'result_checksum': 'checksum'}
@@ -256,12 +258,18 @@ class ResultWriteTransactionTests(SimpleTestCase):
             api_case_revision_id=None, api_case_release_id=None, status=TaskEnum.PROCEED.value, error_message=None,
             save=Mock(), retry=1,
         )
-        snapshot = {'result_mode': 'snapshot', 'status': 'running', 'steps': [{'id': 1, 'status': 1}]}
+        snapshot = {
+            'result_mode': 'snapshot', 'status': 'running', 'elapsed': Decimal('62.67664163187146'),
+            'progress': {'duration': Decimal('1.25')}, 'steps': [{'id': 1, 'status': 1}],
+        }
         with patch.object(ExecutionResultService, '_save_result_record', return_value=SimpleNamespace(id=7)) as write:
             TestSuiteExecutionResultService.save_snapshot(detail, snapshot)
         write.assert_called_once()
         self.upload.assert_called_once()
         self.assertEqual(detail.summary_data['meta']['snapshot_status'], 'running')
+        self.assertEqual(detail.summary_data['meta']['snapshot_elapsed'], '62.67664163187146')
+        self.assertEqual(detail.summary_data['meta']['snapshot_progress']['duration'], '1.25')
+        json.dumps(detail.summary_data)
 
     def test_counter_conflict_rolls_back_result_before_retry(self):
         data = self.callback_context()

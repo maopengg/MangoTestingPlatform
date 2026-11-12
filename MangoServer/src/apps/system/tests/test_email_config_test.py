@@ -1,11 +1,11 @@
-from src.apps.user.services.http_permission_registry import permission_for_view
+from src.apps.user.services.authorization.http_permission_registry import permission_for_view
 from unittest.mock import patch
 
 from django.test import SimpleTestCase
 from rest_framework.test import APIRequestFactory
 
 from src.apps.system.api.views.email_test import EmailTestViews
-from src.apps.system.services.email_test import EmailConfigTestService
+from src.apps.system.services.configuration.email_test import EmailConfigTestService
 from src.apps.user.exceptions import USER_CREDENTIAL_EMAIL_CONFIG_FAILED, UserError
 
 
@@ -14,7 +14,7 @@ class EmailConfigTestTests(SimpleTestCase):
         view = EmailTestViews.as_view({'post': 'test'}, authentication_classes=[], permission_classes=[])
         return view(APIRequestFactory().post('/system/email/test', {'recipient': recipient}, format='json'))
 
-    @patch('src.apps.system.services.email_test.UserCredentialService.send_email')
+    @patch('src.apps.system.services.configuration.email_test.UserCredentialService.send_email')
     def test_service_uses_shared_mail_transport(self, send):
         EmailConfigTestService.send('tester@example.com')
         self.assertEqual(send.call_args.kwargs['email'], 'tester@example.com')

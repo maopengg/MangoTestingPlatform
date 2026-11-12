@@ -6,8 +6,8 @@ from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
 
 from src.apps.auto_ui.models import Page, PageElement, UiElementHealRecord, UiElementSnapshot
-from src.apps.auto_ui.services.element_ai.cleanup_service import ElementAiCleanupService
-from src.apps.auto_ui.services.element_ai.element_ai_service import ElementAiService
+from src.apps.auto_ui.services.elements.ai.cleanup_service import ElementAiCleanupService
+from src.apps.auto_ui.services.elements.ai.element_ai_service import ElementAiService
 from src.apps.task_center.services.scheduling.system_job import SystemJobService
 from src.apps.test_center.models import ProductModule, Project, ProjectProduct
 

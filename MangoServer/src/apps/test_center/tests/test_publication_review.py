@@ -12,9 +12,9 @@ from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.api.views.api_case_version import ApiCasePrepublicationViews
 from src.apps.auto_ui.api.views.ui_case import UiCaseViews
 from src.apps.auto_pytest.api.views.pytest_case import PytestCaseViews
-from src.apps.auto_ui.services.case_publication import UiCasePublicationService
+from src.apps.auto_ui.services.cases.case_publication import UiCasePublicationService
 from src.apps.auto_ui.exceptions import AutoUiError
-from src.apps.user.services.permission import AuthUserContext, PermissionMenuService
+from src.apps.user.services.authorization.permission import AuthUserContext, PermissionMenuService
 from src.apps.user.middleware.permission import MenuActionPermission
 
 

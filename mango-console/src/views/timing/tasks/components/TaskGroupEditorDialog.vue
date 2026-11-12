@@ -194,7 +194,7 @@
     :on-before-ok="saveGroup"
     @cancel="closePreview"
   >
-    <a-alert v-if="saveError" type="error">{{ saveError }}</a-alert>
+    <MangoRequestFeedback v-if="saveError" :message="(saveError)" />
     <a-space class="mango-task-group-preview__summary">
       <a-tag color="green">新增 {{ preview?.create_count ?? 0 }}</a-tag>
       <a-tag color="blue">更新 {{ preview?.update_count ?? 0 }}</a-tag>
@@ -224,8 +224,7 @@
 </template>
 
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
 import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useRoute } from 'vue-router'
@@ -399,7 +398,7 @@ async function saveGroup(): Promise<boolean> {
     if (key === identity() && available()) emit('saved')
     if (validWindow()) { close(); Message.success('任务组已保存') }
     return true
-  } catch { if (validWindow()) saveError.value = '任务组保存失败，请重试'; return false }
+  } catch (requestFailure) { if (validWindow()) saveError.value = requestFailureMessage(requestFailure, '任务组保存失败，请重试'); return false }
   finally { saveLoading.value = false }
 }
 function previewActionText(value: string) { return value === 'create' ? '新增' : value === 'update' ? '更新' : '移除' }

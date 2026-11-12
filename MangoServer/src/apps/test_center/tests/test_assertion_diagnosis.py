@@ -4,19 +4,19 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 
 from src.apps.system.exceptions import ai_service_error
-from src.apps.test_center.services.assertion_diagnosis import AssertionDiagnosisService
+from src.apps.test_center.services.diagnostics.assertion_diagnosis import AssertionDiagnosisService
 
 
 class AssertionDiagnosisTests(SimpleTestCase):
-    @patch('src.apps.test_center.services.assertion_diagnosis.AiService.json_chat')
+    @patch('src.apps.test_center.services.diagnostics.assertion_diagnosis.AiService.json_chat')
     def test_passed_assertions_do_not_call_ai(self, chat):
         result = AssertionDiagnosisService.analyze([{'status': 1, 'actual': 'ok'}])
         self.assertFalse(result['available'])
         chat.assert_not_called()
 
-    @patch('src.apps.test_center.services.assertion_diagnosis.AiService.load_config',
+    @patch('src.apps.test_center.services.diagnostics.assertion_diagnosis.AiService.load_config',
            side_effect=ai_service_error('未配置'))
-    @patch('src.apps.test_center.services.assertion_diagnosis.AiService.json_chat')
+    @patch('src.apps.test_center.services.diagnostics.assertion_diagnosis.AiService.json_chat')
     def test_missing_ai_configuration_returns_hint_without_call(self, chat, load_config):
         result = AssertionDiagnosisService.analyze([{'status': 0, 'actual': False, 'expect': True}])
         self.assertFalse(result['available'])
@@ -24,9 +24,9 @@ class AssertionDiagnosisTests(SimpleTestCase):
         chat.assert_not_called()
         load_config.assert_called_once()
 
-    @patch('src.apps.test_center.services.assertion_diagnosis.AiService._validate_base_config')
-    @patch('src.apps.test_center.services.assertion_diagnosis.AiService.load_config')
-    @patch('src.apps.test_center.services.assertion_diagnosis.AiService.json_chat')
+    @patch('src.apps.test_center.services.diagnostics.assertion_diagnosis.AiService._validate_base_config')
+    @patch('src.apps.test_center.services.diagnostics.assertion_diagnosis.AiService.load_config')
+    @patch('src.apps.test_center.services.diagnostics.assertion_diagnosis.AiService.json_chat')
     def test_failure_calls_ai_once_and_masks_credentials(self, chat, load_config, validate):
         chat.return_value = {'choices': [{'message': {'content': json.dumps({
             'summary': '实际值与预期值不一致',

@@ -23,7 +23,7 @@ from src.apps.user.models import User
 
 class DataFactoryTemplateQuerySet(models.QuerySet):
     def delete(self):
-        from src.apps.data_factory.services.template_deletion import DataFactoryTemplateDeletionService
+        from src.apps.data_factory.services.assets.template_deletion import DataFactoryTemplateDeletionService
 
         with transaction.atomic(using=self.db):
             templates = list(self.select_for_update().order_by('pk'))
@@ -96,7 +96,7 @@ class DataFactoryTemplate(models.Model):
         return self.name
 
     def delete(self, using=None, keep_parents=False):
-        from src.apps.data_factory.services.template_deletion import DataFactoryTemplateDeletionService
+        from src.apps.data_factory.services.assets.template_deletion import DataFactoryTemplateDeletionService
 
         using = using or self._state.db or 'default'
         with transaction.atomic(using=using):

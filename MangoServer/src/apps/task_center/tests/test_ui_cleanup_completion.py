@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 from django.test import SimpleTestCase
 
 from src.apps.auto_ui.schemas.execution import UiCaseExecutionResult
-from src.apps.auto_ui.services.test_report_writing import TestReportWriting
+from src.apps.auto_ui.services.reporting.test_report_writing import TestReportWriting
 from src.apps.task_center.enums.execution import ExecutorTaskErrorCodeEnum
 from src.apps.task_center.exceptions import TaskCenterError
 from src.apps.task_center.services.execution.executor_task import ExecutorTaskService as Tasks
@@ -25,7 +25,7 @@ class UiCleanupCompletionTests(SimpleTestCase):
                                     payload={'func_args': {'id': 9, 'data_factory_auto_cleanup_execution_ids': [7]}})
         for path in ('src.apps.task_center.services.execution.executor_task.ExecutorTask.objects',
                      'src.apps.task_center.services.execution.executor_task.ExecutorTaskService._complete',
-                     'src.apps.auto_ui.services.test_report_writing.TestReportWriting.prepare_factory_result'):
+                     'src.apps.auto_ui.services.reporting.test_report_writing.TestReportWriting.prepare_factory_result'):
             guard = patch(path)
             mock = guard.start()
             self.addCleanup(guard.stop)
@@ -44,7 +44,7 @@ class UiCleanupCompletionTests(SimpleTestCase):
                               result_data=result or ui_result())
 
     def test_cleanup_uses_server_dispatch_ids_before_atomic_projection(self):
-        from src.apps.data_factory.services.cleanup_schedule import _parent_wait_pulse
+        from src.apps.data_factory.services.cleanup.cleanup_schedule import _parent_wait_pulse
 
         def prepare(result, expected):
             self.assertEqual(expected, [7])
@@ -82,7 +82,7 @@ class UiCleanupCompletionTests(SimpleTestCase):
 
     @patch('src.apps.test_center.selectors.querysets.TestCenterQuerySelector.test_suite_details')
     def test_report_cleanup_uses_server_dispatch_report_not_client_claim(self, details):
-        from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService
+        from src.apps.data_factory.services.cleanup.cleanup_schedule import DataFactoryCleanupScheduleService
         self.task.payload['func_args'].update(test_suite_details=17, test_suite_id=99)
         details.return_value.filter.return_value.values.return_value.first.return_value = {'retry': 1}
 
@@ -100,13 +100,13 @@ class UiCleanupCompletionTests(SimpleTestCase):
 class UiCleanupResultTests(SimpleTestCase):
     def test_platform_cleanup_fault_remains_incomplete_in_ui_result_and_report(self):
         from src.apps.data_factory.exceptions import DATA_FACTORY_CLEANUP_TIMEOUT, DataFactoryError
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
-        from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService as Schedule
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService as Infrastructure
+        from src.apps.data_factory.services.cleanup.cleanup_schedule import DataFactoryCleanupScheduleService as Schedule
         def cleanup(data):
             Infrastructure.capture(DataFactoryError(DATA_FACTORY_CLEANUP_TIMEOUT))
             return ['AUTO cleanup blocked']
         with patch.object(TestReportWriting, 'cleanup_data_factory', side_effect=cleanup), \
-                patch('src.apps.test_center.services.test_suite.infrastructure.TestSuiteInfrastructureService.block') as blocked:
+                patch('src.apps.test_center.services.reporting.test_suite.infrastructure.TestSuiteInfrastructureService.block') as blocked:
             token = Schedule.set_owner(17, 2)
             try:
                 result, failures = TestReportWriting.prepare_factory_result(ui_result(), [7])
@@ -124,7 +124,7 @@ class UiCleanupResultTests(SimpleTestCase):
         self.assertEqual(result['data_factory_auto_cleanup_execution_ids'], [7])
         self.assertTrue(failures)
 
-    @patch('src.apps.auto_ui.services.test_report_writing.DataFactoryCleanup.cleanup_execution')
+    @patch('src.apps.auto_ui.services.reporting.test_report_writing.DataFactoryCleanup.cleanup_execution')
     def test_prepared_scope_does_not_repeat_io_inside_projection_transaction(self, cleanup):
         with TestReportWriting.prepared_cleanup_scope([7]):
             self.assertEqual(TestReportWriting.cleanup_data_factory(UiCaseExecutionResult(**ui_result())), [])

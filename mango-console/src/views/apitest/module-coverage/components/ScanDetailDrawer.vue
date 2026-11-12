@@ -53,7 +53,7 @@
           {{ validation.gap_interface_count ?? '—' }}</a-descriptions-item
         >
       </a-descriptions>
-      <a-alert
+      <a-alert data-feedback-kind="validation"
         v-if="validation.blocking_errors?.length"
         type="error"
         class="mango-scan-detail__alert"

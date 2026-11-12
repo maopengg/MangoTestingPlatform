@@ -370,7 +370,7 @@ class ExecutorTaskService:
             task_type: str,
             default_seconds: int,
     ) -> int:
-        from src.apps.system.services.system_config import SystemConfigService
+        from src.apps.system.services.configuration.system_config import SystemConfigService
 
         return SystemConfigService.get_executor_execution_timeout_seconds(
             task_type,
@@ -587,8 +587,8 @@ class ExecutorTaskService:
         values['result_data'] = normalized
         if not expected_ids:
             return cls._complete(**values)
-        from src.apps.auto_ui.services.test_report_writing import TestReportWriting
-        from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService
+        from src.apps.auto_ui.services.reporting.test_report_writing import TestReportWriting
+        from src.apps.data_factory.services.cleanup.cleanup_schedule import DataFactoryCleanupScheduleService
         last_pulse = [0.0]
 
         def pulse():
@@ -701,7 +701,7 @@ class ExecutorTaskService:
         except Exception as error:
             # 任务事实与业务投影必须形成同一个可查询终态。投影异常不能让执行器
             # 永久重试一个实际已执行完成的任务，也不能留下 running 状态。
-            from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+            from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
             reference = DatasourceInfrastructureService.log_reference(error, 'executor_result_projection')
             log.system.error('执行器任务业务结果投影失败 task_id=%s reference=%s', task.id, reference)
             return cls._finish(
@@ -734,7 +734,7 @@ class ExecutorTaskService:
                 and task.business_id is not None
         ):
             from mangotools.enums import TaskEnum
-            from src.apps.auto_api.services.test_case.run_status import ApiCaseRunStatusService
+            from src.apps.auto_api.services.execution.cases.run_status import ApiCaseRunStatusService
 
             try:
                 status = int(result_data.get("status"))
@@ -750,7 +750,7 @@ class ExecutorTaskService:
             return
         if task.task_type == ExecutorTaskTypeEnum.PYTEST_EXECUTION.value:
             from mangotools.contracts import PytestExecutionResult
-            from src.apps.auto_pytest.services.test_report_writing import PtestTestReportWriting
+            from src.apps.auto_pytest.services.reporting.test_report_writing import PtestTestReportWriting
             from mangotools.enums import StatusEnum
 
             payload = task.payload if isinstance(task.payload, dict) else {}
@@ -821,7 +821,7 @@ class ExecutorTaskService:
             ExecutorTaskTypeEnum.ELEMENT_CHECK.value,
             ExecutorTaskTypeEnum.ELEMENT_DEEP_CHECK.value,
         } and result_data.get("element_id"):
-            from src.apps.auto_ui.services.element_ai.element_ai_service import ElementAiService
+            from src.apps.auto_ui.services.elements.ai.element_ai_service import ElementAiService
 
             ElementAiService.save_check_result(result_data)
             return
@@ -829,7 +829,7 @@ class ExecutorTaskService:
             config_id = result_data.get("config_id")
             cache_data = result_data.get("cache_data")
             if config_id and isinstance(cache_data, dict):
-                from src.apps.auto_ui.services.ui_auth import UiAuthManager
+                from src.apps.auto_ui.services.authentication.ui_auth import UiAuthManager
 
                 UiAuthManager.save_auto_auth_cache(config_id, cache_data)
             return
@@ -1330,7 +1330,7 @@ class ExecutorTaskService:
         if task.created_by_id is None:
             return False
         try:
-            from src.apps.auto_ui.services.executor_slot import ExecutorSlotLeaseService
+            from src.apps.auto_ui.services.execution.executor_slot import ExecutorSlotLeaseService
 
             ExecutorSlotLeaseService.acquire(
                 user={
@@ -1351,7 +1351,7 @@ class ExecutorTaskService:
         if task.executor_mode != ExecutorModeEnum.PUBLIC.value or not task.executor_connection_id:
             return
         try:
-            from src.apps.auto_ui.services.executor_slot import ExecutorSlotLeaseService
+            from src.apps.auto_ui.services.execution.executor_slot import ExecutorSlotLeaseService
 
             occupancy = ExecutorSlotLeaseService.occupancy(task.executor_connection)
             slot = next(

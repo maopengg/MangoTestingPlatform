@@ -9,9 +9,7 @@ from src.apps.auto_api.enums import ApiProtocolTypeEnum
 from src.apps.auto_api.enums.assertion import ApiDefaultAssertionCheck as Check
 from src.apps.auto_api.exceptions import AutoApiError, MCP_API_CONFIG_INVALID, MCP_API_SCENARIO_INVALID
 from src.apps.auto_api.schemas.execution import ApiExecutionResponse
-from src.apps.system.services.system_config import (
-    API_DEFAULT_ASSERTION_ENABLED_KEY, API_DEFAULT_ASSERTION_CHECKS_KEY, SystemConfigService,
-)
+from src.apps.system.services.configuration.system_config import API_DEFAULT_ASSERTION_ENABLED_KEY, API_DEFAULT_ASSERTION_CHECKS_KEY, SystemConfigService
 
 
 @dataclass(frozen=True)

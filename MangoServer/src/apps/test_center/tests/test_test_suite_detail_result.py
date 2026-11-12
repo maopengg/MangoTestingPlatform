@@ -1,6 +1,8 @@
 from datetime import timedelta
+from decimal import Decimal
+import json
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
@@ -13,14 +15,42 @@ from src.apps.test_center.models import (
     TestSuite,
     TestSuiteDetails,
 )
-from src.apps.test_center.services.execution_result import ExecutionResultService
-from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
+from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService
 from src.apps.user.models import User
 
 
 class TestSuiteExecutionResultServiceTests(SimpleTestCase):
+    def test_summary_normalizes_nested_decimals_without_precision_loss_or_input_mutation(self):
+        precise = Decimal('12345678901234567890.123456789')
+        children = [{'test_time': precise, 'response_time': Decimal('0.125'), 'status': 1, 'is_recovery': False}]
+        meta = {'nested': {'duration': Decimal('2.5'), 'missing': None}}
+        packed = TestSuiteExecutionResultService.pack_summary_data(children, meta)
+        json.dumps(packed)
+        self.assertEqual(packed['children'][0]['test_time'], str(precise))
+        self.assertEqual(packed['children'][0]['response_time'], '0.125')
+        self.assertEqual(packed['meta']['nested']['duration'], '2.5')
+        self.assertIsNone(packed['meta']['nested']['missing'])
+        self.assertEqual(packed['children'][0]['status'], 1)
+        self.assertIs(packed['children'][0]['is_recovery'], False)
+        self.assertIs(children[0]['test_time'], precise)
+        self.assertIsInstance(meta['nested']['duration'], Decimal)
+
+    def test_locked_summary_normalizes_preserved_control_metadata(self):
+        control = {'blocked': True, 'elapsed': Decimal('62.67664163187146')}
+        detail = SimpleNamespace(summary_data={'children': None, 'meta': {'execution_control': control}}, save=Mock())
+        TestSuiteExecutionResultService._save_locked_summary(
+            detail, [{'test_time': Decimal('1.5')}], {'snapshot_status': 'infrastructure_blocked'},
+        )
+        json.dumps(detail.summary_data)
+        self.assertEqual(detail.summary_data['meta']['execution_control']['elapsed'], '62.67664163187146')
+        self.assertTrue(detail.summary_data['meta']['execution_control']['blocked'])
+        self.assertEqual(detail.summary_data['meta']['snapshot_status'], 'infrastructure_blocked')
+        self.assertIsInstance(control['elapsed'], Decimal)
+        detail.save.assert_called_once_with(update_fields=['summary_data', 'update_time'])
+
     @patch(
-        'src.apps.test_center.services.test_suite.detail_result.ExecutionResultService.load_result_data'
+        'src.apps.test_center.services.reporting.test_suite.detail_result.ExecutionResultService.load_result_data'
     )
     def test_attach_children_keeps_legacy_string_result(self, load_result_data):
         load_result_data.return_value = '历史执行异常文本'
@@ -33,7 +63,7 @@ class TestSuiteExecutionResultServiceTests(SimpleTestCase):
         self.assertTrue(data[0]['has_result_data'])
 
     @patch(
-        'src.apps.test_center.services.test_suite.detail_result.ExecutionResultService.load_result_data'
+        'src.apps.test_center.services.reporting.test_suite.detail_result.ExecutionResultService.load_result_data'
     )
     def test_attach_children_only_marks_structured_items(self, load_result_data):
         load_result_data.return_value = [
@@ -49,7 +79,7 @@ class TestSuiteExecutionResultServiceTests(SimpleTestCase):
         self.assertEqual(data[0]['children'][1], '历史文本步骤')
 
     @patch(
-        'src.apps.test_center.services.test_suite.detail_result.ApiInfoRuntimeService.resolve_runtime'
+        'src.apps.test_center.services.reporting.test_suite.detail_result.ApiInfoRuntimeService.resolve_runtime'
     )
     def test_build_api_warning_result_does_not_require_api_info_posterior_file(
             self,

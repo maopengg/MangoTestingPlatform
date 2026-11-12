@@ -3,15 +3,10 @@
 import importlib.util
 import os
 import plistlib
-import platform
 from pathlib import Path
-import shutil
 import subprocess
 import sys
-import tarfile
 
-APP_NAME = "芒果执行器"
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _data_argument(source: Path, destination: str) -> str:
@@ -22,13 +17,13 @@ def _module_available(name: str) -> bool:
     return importlib.util.find_spec(name) is not None
 
 
-def build_desktop_executable() -> Path:
+def build_desktop_executable(*, app_name: str, project_root: Path) -> Path:
     """Build the current platform's standalone desktop executable with PyInstaller."""
     if not _module_available("PyInstaller"):
         raise RuntimeError("当前虚拟环境未安装 PyInstaller，请先安装 requirements/desktop.txt")
 
-    build_root = PROJECT_ROOT / "runtime" / "pyinstaller"
-    dist_root = PROJECT_ROOT / "dist"
+    build_root = project_root / "runtime" / "pyinstaller"
+    dist_root = project_root / "dist"
     build_root.mkdir(parents=True, exist_ok=True)
     dist_root.mkdir(parents=True, exist_ok=True)
 
@@ -37,7 +32,7 @@ def build_desktop_executable() -> Path:
         "-m",
         "PyInstaller",
         "--name",
-        APP_NAME,
+        app_name,
         "--onedir" if sys.platform == "darwin" else "--onefile",
         "--windowed",
         "--clean",
@@ -53,10 +48,10 @@ def build_desktop_executable() -> Path:
     ]
 
     data_files = (
-        (PROJECT_ROOT / "assets" / "app_icon.ico", "assets"),
-        (PROJECT_ROOT / "assets" / "platform_logo.png", "assets"),
-        (PROJECT_ROOT / "src" / "settings" / "settings.json", "src/settings"),
-        (PROJECT_ROOT / "config" / "capabilities.lock.json", "config"),
+        (project_root / "assets" / "app_icon.ico", "assets"),
+        (project_root / "assets" / "platform_logo.png", "assets"),
+        (project_root / "src" / "settings" / "settings.json", "src/settings"),
+        (project_root / "config" / "capabilities.lock.json", "config"),
     )
     for source, destination in data_files:
         if not source.exists():
@@ -84,13 +79,13 @@ def build_desktop_executable() -> Path:
     ]
     if sys.platform == "win32":
         hidden_imports.append("pystray._win32")
-        windows_icon = PROJECT_ROOT / "assets" / "app_icon.ico"
+        windows_icon = project_root / "assets" / "app_icon.ico"
         if not windows_icon.exists():
             raise FileNotFoundError(f"Windows 应用图标不存在：{windows_icon}")
         command.extend(("--icon", str(windows_icon)))
     elif sys.platform == "darwin":
         hidden_imports.append("pystray._darwin")
-        macos_icon = PROJECT_ROOT / "assets" / "app_icon.icns"
+        macos_icon = project_root / "assets" / "app_icon.icns"
         if not macos_icon.exists():
             raise FileNotFoundError(f"macOS 应用图标不存在：{macos_icon}")
         command.extend(("--icon", str(macos_icon)))
@@ -111,44 +106,27 @@ def build_desktop_executable() -> Path:
     command.extend(("--hidden-import", "flet_desktop", "--copy-metadata", "flet", "--copy-metadata", "flet-desktop"))
     if sys.platform != "darwin":
         command.extend(("--collect-data", "flet_desktop"))
-    command.append(str(PROJECT_ROOT / "desktop_main.py"))
-    print(f"开始打包 {APP_NAME}：{sys.platform}")
-    subprocess.run(command, cwd=PROJECT_ROOT, check=True)
+    command.append(str(project_root / "desktop_main.py"))
+    print(f"开始打包 {app_name}：{sys.platform}")
+    subprocess.run(command, cwd=project_root, check=True)
     if sys.platform == "win32":
-        artifact = dist_root / f"{APP_NAME}.exe"
+        artifact = dist_root / f"{app_name}.exe"
     elif sys.platform == "darwin":
-        artifact = dist_root / f"{APP_NAME}.app"
+        artifact = dist_root / f"{app_name}.app"
     else:
-        artifact = dist_root / APP_NAME
+        artifact = dist_root / app_name
     if not artifact.exists():
         raise RuntimeError(f"PyInstaller 已结束，但未找到产物：{artifact}")
     if sys.platform == "darwin":
-        _prepare_macos_bundle(artifact)
+        _prepare_macos_bundle(artifact, app_name=app_name, project_root=project_root)
     print(f"打包完成：{artifact}")
     return artifact
 
 
-def _prepare_macos_bundle(artifact: Path) -> None:
-    import flet_desktop
+def _prepare_macos_bundle(artifact: Path, *, app_name: str, project_root: Path) -> None:
+    from .native_client import prepare_macos_client
 
-    helpers = artifact / "Contents" / "Helpers"
-    helpers.mkdir(exist_ok=True)
-    archive = Path(flet_desktop.__file__).parent / "app" / "flet-macos.tar.gz"
-    with tarfile.open(archive, "r:gz") as bundle:
-        bundle.extractall(helpers, filter="data")
-    client = helpers / "Flet.app"
-    branded_client = helpers / f"{APP_NAME}.app"
-    client.rename(branded_client)
-    client_plist = branded_client / "Contents" / "Info.plist"
-    metadata = plistlib.loads(client_plist.read_bytes())
-    # IconName 会优先读取 Flet 的 Assets.car，覆盖 IconFile 指定的平台 Logo。
-    metadata.pop("CFBundleIconName", None)
-    metadata.update(CFBundleName=APP_NAME, CFBundleDisplayName=APP_NAME,
-                    CFBundleIdentifier="com.mango.actuator.desktop", CFBundleIconFile="MangoAppIcon.icns")
-    client_plist.write_bytes(plistlib.dumps(metadata))
-    shutil.copy2(PROJECT_ROOT / "assets" / "app_icon.icns",
-                 branded_client / "Contents" / "Resources" / "MangoAppIcon.icns")
-    _thin_macos_client(branded_client, platform.machine())
+    prepare_macos_client(artifact / "Contents/Helpers", app_name=app_name, project_root=project_root)
     launcher_plist = artifact / "Contents" / "Info.plist"
     metadata = plistlib.loads(launcher_plist.read_bytes())
     metadata["LSUIElement"] = True
@@ -156,26 +134,7 @@ def _prepare_macos_bundle(artifact: Path) -> None:
     subprocess.run(["codesign", "--force", "--deep", "--sign", "-", str(artifact)], check=True)
 
 
-def _thin_macos_client(client: Path, architecture: str) -> None:
-    # 官方客户端是 Universal；启动器是单架构，运行时保持同一架构即可。
-    fat_headers = {b"\xca\xfe\xba\xbe", b"\xbe\xba\xfe\xca", b"\xca\xfe\xba\xbf", b"\xbf\xba\xfe\xca"}
-    for binary in client.rglob("*"):
-        if binary.is_symlink() or not binary.is_file():
-            continue
-        with binary.open("rb") as source:
-            if source.read(4) not in fat_headers:
-                continue
-        architectures = subprocess.check_output(["lipo", "-archs", str(binary)], text=True).split()
-        if architecture not in architectures:
-            raise RuntimeError(f"桌面运行时缺少目标架构 {architecture}：{binary.name}")
-        if len(architectures) > 1:
-            temporary = binary.with_name(binary.name + ".thin")
-            subprocess.run(["lipo", str(binary), "-thin", architecture, "-output", str(temporary)], check=True)
-            shutil.copymode(binary, temporary)
-            temporary.replace(binary)
-
-
-def packaged_self_check() -> None:
+def packaged_self_check(*, app_name: str) -> None:
     """Import the frozen runtime and verify required bundled resources."""
     from src.flet_pages.application import FletActuatorApplication  # noqa: F401
     from src.tools import project_dir
@@ -185,9 +144,9 @@ def packaged_self_check() -> None:
             raise RuntimeError(f"打包资源缺失：{relative_path}")
     if sys.platform == "darwin" and getattr(sys, "frozen", False):
         contents = Path(sys.executable).resolve().parents[1]
-        if not (contents / "Helpers" / f"{APP_NAME}.app" / "Contents" / "MacOS" / "Flet").is_file():
+        if not (contents / "Helpers" / f"{app_name}.app" / "Contents" / "MacOS" / "Flet").is_file():
             raise RuntimeError("打包资源缺失：Flet 桌面运行时")
-        client_contents = contents / "Helpers" / f"{APP_NAME}.app" / "Contents"
+        client_contents = contents / "Helpers" / f"{app_name}.app" / "Contents"
         metadata = plistlib.loads((client_contents / "Info.plist").read_bytes())
         if metadata.get("CFBundleIconName") or metadata.get("CFBundleIconFile") != "MangoAppIcon.icns":
             raise RuntimeError("打包图标配置错误：桌面运行时未使用测试平台 Logo")

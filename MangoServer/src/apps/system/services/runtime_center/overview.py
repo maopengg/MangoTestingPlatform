@@ -6,12 +6,8 @@ from src.apps.system.services.runtime_center.diagnostics import DiagnosticsServi
 from src.apps.system.services.runtime_center.heartbeat import ServiceHeartbeatService
 from src.apps.system.services.runtime_center.queue_stats import QueueStatsService
 from src.apps.system.services.runtime_center.recent_errors import RecentErrorsService
-from src.apps.system.services.system_config import (
-    API_WORKER_DESIRED_COUNT_DEFAULT,
-    API_WORKER_DESIRED_COUNT_KEY,
-    SystemConfigService,
-)
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.system.services.configuration.system_config import API_WORKER_DESIRED_COUNT_DEFAULT, API_WORKER_DESIRED_COUNT_KEY, SystemConfigService
+from src.apps.user.services.authorization.permission import PermissionMenuService
 
 
 class RuntimeOverviewService:

@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 from django.test import SimpleTestCase, override_settings
 
-from src.apps.user.services.cli_auth import CliAuthService
+from src.apps.user.services.authentication.cli_auth import CliAuthService
 
 TEST_CACHES = {
     'default': {
@@ -75,10 +75,10 @@ class CliAuthServiceTests(SimpleTestCase):
             self.assertFalse(CliAuthService.validate_redirect_uri(invalid))
 
     def test_cli_version_endpoint_accepts_only_current_platform_version(self):
-        matched = self.client.get('/api/cli/auth/version', {'version': '7.2.4'})
+        matched = self.client.get('/api/cli/auth/version', {'version': '7.2.5'})
         self.assertEqual(matched.status_code, 200)
         self.assertEqual(matched.json()['code'], 200)
         outdated = self.client.get('/api/cli/auth/version', {'version': '7.1.0'})
         self.assertEqual(outdated.status_code, 200)
         self.assertEqual(outdated.json()['code'], 300)
-        self.assertEqual(outdated.json()['data']['latest_version'], '7.2.4')
+        self.assertEqual(outdated.json()['data']['latest_version'], '7.2.5')

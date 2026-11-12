@@ -7,8 +7,8 @@ from rest_framework.viewsets import ViewSet
 
 from src.apps.data_factory.models import Database
 from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
-from src.apps.data_factory.services.connection_query import DataSourceConnectionQueryService
-from src.apps.data_factory.services.datasource_discovery import DataSourceDiscoveryService
+from src.apps.data_factory.services.datasource.connection_query import DataSourceConnectionQueryService
+from src.apps.data_factory.services.datasource.datasource_discovery import DataSourceDiscoveryService
 from src.apps.test_center.api.serializers.data_source import DataSourceDiscoverySerializer, DataSourceAliasSerializer
 from src.apps.test_center.api.serializers.data_source import DataSourceQuerySerializer
 from src.apps.test_center.api.serializers.data_source import DataSourceSerializer, DataSourceSerializerC
@@ -32,6 +32,7 @@ class DataSourceViews(ViewSet):
 
     @error_response('system')
     def query(self, request):
+        """查询数据源数据"""
         serializer = DataSourceQuerySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         values = serializer.validated_data
@@ -42,6 +43,7 @@ class DataSourceViews(ViewSet):
 
     @error_response('system')
     def databases(self, request):
+        """获取数据源数据库列表"""
         serializer = self.serializer_class(data=request.query_params)
         serializer.is_valid(raise_exception=True)
         result = DataSourceDiscoveryService.databases(
@@ -51,6 +53,7 @@ class DataSourceViews(ViewSet):
 
     @error_response('system')
     def bindings(self, request):
+        """获取数据源环境绑定"""
         serializer = self.serializer_class(data=request.query_params)
         serializer.is_valid(raise_exception=True)
         source_id = serializer.validated_data['data_source_id']
@@ -61,6 +64,7 @@ class DataSourceViews(ViewSet):
 
     @error_response('system')
     def suggest_alias(self, request):
+        """推荐数据源逻辑名称"""
         serializer = DataSourceAliasSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         values = serializer.validated_data
@@ -69,6 +73,7 @@ class DataSourceViews(ViewSet):
 
     @error_response('system')
     def schemas(self, request):
+        """获取数据源结构元数据"""
         serializer = DataSourceDiscoverySerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
         values = serializer.validated_data

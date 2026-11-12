@@ -8,15 +8,20 @@ from fastmcp.server.auth import AccessToken
 
 from src.apps.monitoring.models import MonitoringTask
 from src.apps.monitoring.presenters import task_data
-from src.apps.monitoring.services.task_mutation import MonitoringTaskMutationService
+from src.apps.monitoring.services.tasks.task_mutation import MonitoringTaskMutationService
 from src.apps.user.selectors.authorization import AuthorizationScopeSelector
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.endpoint_permission import EndpointPermissionService
 from src.interfaces.mcp.authentication import MangoAuthorizationMiddleware, permission_error, resolve_project_product_ids
 from src.interfaces.mcp.server import mcp_asgi_app, _tool_operation
 from src.interfaces.mcp.tools.monitoring import register_monitoring_tools
 
 
 class MonitoringToolsTests(SimpleTestCase):
+    def setUp(self):
+        from src.apps.user.tests.permission_fixtures import install_legacy_endpoint_snapshot
+        install_legacy_endpoint_snapshot(self)
+
     async def test_context_is_readonly_and_discoverable_for_authenticated_business_users(self):
         from src.apps.monitoring.selectors.script_context import MonitoringScriptContextSelector
 
@@ -38,7 +43,8 @@ class MonitoringToolsTests(SimpleTestCase):
                                  (['monitoring.task:change'], {'update_monitoring_task', 'control_monitoring_task'}),
                                  (['monitoring.task:add'], {'create_monitoring_task'})):
             access = AccessToken(token='example-key', client_id='example-client', subject='7', scopes=grants,
-                                 claims={'user_id': 7, 'is_super_admin': False})
+                                 claims={'user_id': 7, 'is_super_admin': False, 'endpoint_permissions':
+                                         EndpointPermissionService.from_legacy_keys(grants)})
             with patch.object(MangoAuthorizationMiddleware, '_access', new=AsyncMock(return_value=access)):
                 for domain in (None, 'monitoring'):
                     async with Client(mcp_asgi_app(domain).fastmcp_server) as client:

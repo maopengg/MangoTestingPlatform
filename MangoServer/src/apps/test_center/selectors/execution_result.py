@@ -1,6 +1,6 @@
 from django.db.models import Q
 
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 
 
 class ExecutionResultAccessSelector:
@@ -25,6 +25,9 @@ class ExecutionResultAccessSelector:
         if PermissionMenuService.is_effective_super_admin(user):
             return queryset
         permissions = PermissionMenuService.permission_keys_for_user(user)
+        # 执行结果管理列表本就覆盖全部记录，详情保持相同范围，包括已删除资产的历史结果。
+        if 'system.execution_result:read' in permissions:
+            return queryset
         all_products = ProjectProductScopeService.can_view_all_project_data(user)
         product_ids = ProjectProductScopeService.project_product_ids_for_user(user)
         access = Q(pk__in=[])

@@ -7,7 +7,6 @@ class Migration(migrations.Migration):
     dependencies = [
         ('auto_data_factory', '0018_alter_datafactorydatasourcealias_project_product_and_more'),
         ('auto_system', '0047_remove_database_test_object_and_more'),
-        ('gray_config', '0006_alter_grayexecutionlog_database_and_more'),
     ]
 
     _state_only_operations = [

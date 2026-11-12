@@ -92,9 +92,7 @@
           
           
           
-          <a-alert v-if="actionError" type="error" closable @close="actionError = ''">{{
-            actionError
-          }}</a-alert>
+          <MangoRequestFeedback v-if="actionError" :message="(actionError)" />
           <a-table
             class="mango-native-scroll-table mango-ui-step-list-table"
             :bordered="false"
@@ -179,8 +177,7 @@
   <StepReferencesPanel ref="referencesRef" />
 </template>
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, onMounted, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { Message, Modal } from '@arco-design/web-vue'
@@ -460,8 +457,8 @@ import { reportLoadError } from '@/utils/load-error'
     closeConfirmation()
     try {
       editorRef.value?.open(readStepListRow(value))
-    } catch {
-      actionError.value = '步骤记录格式不正确，请重新加载'
+    } catch (requestFailure) {
+      actionError.value = requestFailureMessage(requestFailure, '步骤记录格式不正确，请重新加载')
     }
   }
   function onSaved() {
@@ -472,8 +469,8 @@ import { reportLoadError } from '@/utils/load-error'
     let ids: StepListId[]
     try {
       ids = value === null ? [...selectedRowKeys.value] : [readStepListRow(value).id]
-    } catch {
-      actionError.value = '步骤记录格式不正确'
+    } catch (requestFailure) {
+      actionError.value = requestFailureMessage(requestFailure, '步骤记录格式不正确')
       return
     }
     if (!ids.length) {
@@ -509,8 +506,8 @@ import { reportLoadError } from '@/utils/load-error'
           closeConfirmation()
           void doRefresh()
           return true
-        } catch {
-          if (current()) actionError.value = '删除失败，请重试'
+        } catch (requestFailure) {
+          if (current()) actionError.value = requestFailureMessage(requestFailure, '删除失败，请重试')
           return false
         } finally {
           deleting.value = false
@@ -534,8 +531,8 @@ import { reportLoadError } from '@/utils/load-error'
     let row: StepListRow
     try {
       row = readStepListRow(value)
-    } catch {
-      actionError.value = '步骤记录格式不正确'
+    } catch (requestFailure) {
+      actionError.value = requestFailureMessage(requestFailure, '步骤记录格式不正确')
       return
     }
     const valid = scope.capture(),
@@ -550,8 +547,8 @@ import { reportLoadError } from '@/utils/load-error'
         polling.start()
         void doRefresh(false)
       }
-    } catch {
-      if (valid()) actionError.value = '调试请求失败，请先确认执行状态后再重试'
+    } catch (requestFailure) {
+      if (valid()) actionError.value = requestFailureMessage(requestFailure, '调试请求失败，请先确认执行状态后再重试')
     } finally {
       runningId.value = null
       if (scope.available() && !valid()) void doRefresh(false)
@@ -561,8 +558,8 @@ import { reportLoadError } from '@/utils/load-error'
     if (!scope.available()) return
     try {
       referencesRef.value?.open(readStepListRow(value))
-    } catch {
-      actionError.value = '步骤记录格式不正确'
+    } catch (requestFailure) {
+      actionError.value = requestFailureMessage(requestFailure, '步骤记录格式不正确')
     }
   }
   function onSteps(value: unknown) {
@@ -576,8 +573,8 @@ import { reportLoadError } from '@/utils/load-error'
         .catch(() => {
           if (valid()) actionError.value = '打开步骤配置失败，请重试'
         })
-    } catch {
-      actionError.value = '步骤记录格式不正确，请重新加载'
+    } catch (requestFailure) {
+      actionError.value = requestFailureMessage(requestFailure, '步骤记录格式不正确，请重新加载')
     }
   }
   onMounted(initialize)

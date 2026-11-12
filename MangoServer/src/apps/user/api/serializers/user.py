@@ -1,9 +1,9 @@
 from rest_framework import serializers
 
 from src.apps.user.models import Role, User
-from src.apps.user.services.credential import UserCredentialService
-from src.apps.user.services.password import encode_plain_password
-from src.apps.user.services.user_cache import UserCacheService
+from src.apps.user.services.authentication.credential import UserCredentialService
+from src.apps.user.services.authentication.password import encode_plain_password
+from src.apps.user.services.preferences.user_config import UserConfigService
 
 
 class RoleSerializers(serializers.ModelSerializer):
@@ -13,7 +13,7 @@ class RoleSerializers(serializers.ModelSerializer):
 
     class Meta:
         model = Role
-        fields = '__all__'
+        fields = ('id', 'name', 'description', 'create_time', 'update_time', 'update_user', 'update_user_info')
 
     @staticmethod
     def setup_eager_loading(queryset):
@@ -39,18 +39,17 @@ class UserSimpleSerializers(serializers.ModelSerializer):
 class UserSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    last_login_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     department_ids = serializers.ListField(child=serializers.IntegerField(), write_only=True, required=False)
     password = serializers.CharField(write_only=True, required=False, allow_blank=False)
     selected_environment = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        exclude = ['api_key', 'config', 'mailbox']
+        exclude = ['api_key', 'config']
 
     @staticmethod
     def get_selected_environment(obj):
-        return UserCacheService.selected_environment(obj)
+        return UserConfigService.selected_environment(obj)
 
     def validate_username(self, value):
         email = UserCredentialService.normalize_email(value)
@@ -76,7 +75,6 @@ class UserSerializers(serializers.ModelSerializer):
 class UserSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    last_login_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     role = RoleSerializers(read_only=True)
     departments = serializers.SerializerMethodField()
     department_ids = serializers.SerializerMethodField()
@@ -86,7 +84,7 @@ class UserSerializersC(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        exclude = ['password', 'api_key', 'config', 'mailbox']
+        exclude = ['password', 'api_key', 'config']
 
     @staticmethod
     def setup_eager_loading(queryset):
@@ -119,4 +117,4 @@ class UserSerializersC(serializers.ModelSerializer):
 
     @staticmethod
     def get_selected_environment(obj):
-        return UserCacheService.selected_environment(obj)
+        return UserConfigService.selected_environment(obj)

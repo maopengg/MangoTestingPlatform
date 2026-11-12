@@ -56,10 +56,6 @@ class ApiCaseRevisionLoadingMixin:
         if not isinstance(resolved_front_headers, dict):
             raise AutoApiError(API_VERSION_API_INFO_CASE_REVISION_BINDING_INVALID)
         api_case._revision_front_headers = MappingProxyType(deepcopy(resolved_front_headers))
-        gray_configs = payload.runtime.gray_configs
-        if not isinstance(gray_configs, list):
-            raise AutoApiError(API_VERSION_API_INFO_CASE_REVISION_BINDING_INVALID)
-        api_case._revision_gray_configs = tuple(deepcopy(gray_configs))
         api_case._revision_dependency_freeze_level = payload.runtime.dependency_freeze_level
         steps = []
         api_revision_dependencies = []
@@ -125,10 +121,6 @@ class ApiCaseRevisionLoadingMixin:
                     if resolved_headers is None
                     else MappingProxyType(deepcopy(resolved_headers))
                 )
-                parameter_gray_configs = item.get('gray_configs')
-                if not isinstance(parameter_gray_configs, list):
-                    raise AutoApiError(API_VERSION_API_INFO_CASE_REVISION_BINDING_INVALID)
-                parameter._revision_gray_configs = tuple(deepcopy(parameter_gray_configs))
                 parameters.append(parameter)
             parameters = tuple(parameters)
             if len(parameters) != len(parameter_payloads):

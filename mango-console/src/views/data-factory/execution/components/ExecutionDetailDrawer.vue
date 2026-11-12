@@ -266,7 +266,7 @@
           title="错误"
           data-testid="qa-views-data-factory-execution-tab-pane-错误"
         >
-          <a-alert v-if="detail.execution?.error_message" type="error">{{
+          <a-alert data-feedback-kind="execution-result" v-if="detail.execution?.error_message" type="error">{{
             detail.execution.error_message
           }}</a-alert>
           <div v-else class="mango-empty-state mango-execution-empty">暂无错误</div>

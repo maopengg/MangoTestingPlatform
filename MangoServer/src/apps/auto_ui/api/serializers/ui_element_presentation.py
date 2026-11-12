@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from src.apps.auto_ui.api.serializers.ui_page_mutation import PageSerializers
 from src.apps.auto_ui.models import PageElement
-from src.apps.auto_ui.services.element_ai.data_sanitizer import ElementAiDataSanitizer
+from src.apps.auto_ui.services.elements.ai.data_sanitizer import ElementAiDataSanitizer
 from src.apps.user.formatters import format_user_simple
 from src.common.validators.serializer_fields import RelatedObjectField
 

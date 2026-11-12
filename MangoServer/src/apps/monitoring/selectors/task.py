@@ -2,7 +2,7 @@ from src.apps.monitoring.exceptions import MonitoringError, MONITORING_TASK_NOT_
 from src.apps.monitoring.models import MonitoringTask
 from src.apps.monitoring.models import MonitoringReport
 from src.apps.monitoring.constants import TASK_DIAGNOSTIC_MESSAGE
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from django.db.models import Q
 from django.db.models.functions import Trim
 

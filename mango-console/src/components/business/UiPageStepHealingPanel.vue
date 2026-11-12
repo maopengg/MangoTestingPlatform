@@ -7,7 +7,7 @@
     @update:visible="$emit('update:visible', $event)"
   >
     <div class="mango-step-healing-panel">
-      <a-alert v-if="error" type="error">{{ error }}</a-alert>
+      <MangoRequestFeedback v-if="error" :message="(error)" />
       <template v-for="kind in (['records', 'versions', 'cases', 'nodes'] as const)" :key="kind"></template>
       <a-tabs v-model:active-key="activeTab">
         <a-tab-pane key="config" title="自愈配置">
@@ -286,8 +286,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, reactive, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import MangoTableActions from '@/components/table/MangoTableActions.vue'
@@ -538,7 +537,7 @@ import { reportLoadError } from '@/utils/load-error'
     error.value = ''
     return executeLocked(async () => {
       try { await action(); return current() && version === session }
-      catch { if (current() && version === session) error.value = '操作失败，已接受的步骤会保留，请重试剩余操作'; return false }
+      catch (requestFailure) { if (current() && version === session) error.value = requestFailureMessage(requestFailure, '操作失败，已接受的步骤会保留，请重试剩余操作'); return false }
     })
   }
   async function save() {

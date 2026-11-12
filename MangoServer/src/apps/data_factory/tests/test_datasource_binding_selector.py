@@ -6,7 +6,7 @@ from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
 
 
 class DatasourceBindingSelectorTests(SimpleTestCase):
-    @patch('src.apps.user.services.permission.PermissionMenuService.is_effective_super_admin', return_value=True)
+    @patch('src.apps.user.services.authorization.permission.PermissionMenuService.is_effective_super_admin', return_value=True)
     @patch('src.apps.data_factory.selectors.querysets.DataFactoryDatasourceBinding.objects.filter')
     def test_binding_list_includes_project_and_product_names(self, filter_bindings, is_super_admin):
         DataFactoryQuerySelector.database_bindings(1, user=object())

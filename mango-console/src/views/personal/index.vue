@@ -1,26 +1,34 @@
 <template>
-  <TableBody>
+  <TableBody class="mango-personal-workbench">
+    <template #header>
+      <TableHeader title="个人中心" />
+    </template>
     <main class="mango-personal-page">
       <section class="mango-section-card mango-personal-profile" :aria-busy="loading">
-        
-        <a-spin :loading="loading" class="mango-personal-profile__loading">
+        <div class="mango-section-title"><h2>个人资料</h2></div>
+        <MangoPanelSpin :loading="loading" class="mango-personal-profile__loading">
         <header class="mango-personal-profile__header">
           <div class="mango-personal-profile__identity">
-            <a-avatar :size="72" class="mango-personal-profile__avatar">
+            <a-avatar :size="48" class="mango-personal-profile__avatar">
               <icon-user />
             </a-avatar>
             <div class="mango-personal-profile__name">
               <h2 :title="profile?.name">{{ profile?.name || '-' }}</h2>
               <p :title="profile?.username">{{ profile?.username || '-' }}</p>
-              <a-tag size="small">{{ profile?.roleName || '未分配角色' }}</a-tag>
             </div>
           </div>
         </header>
 
         <dl class="mango-personal-profile__details">
           <div class="mango-personal-profile__detail">
-            <dt>最近登录时间</dt>
-            <dd :title="profile?.lastLoginTime || ''">{{ profile?.lastLoginTime || '-' }}</dd>
+            <dt>角色</dt>
+            <dd :title="profile?.roleName || '未分配角色'">
+              <a-tag size="small">{{ profile?.roleName || '未分配角色' }}</a-tag>
+            </dd>
+          </div>
+          <div class="mango-personal-profile__detail">
+            <dt>部门</dt>
+            <dd :title="profile?.departmentNames.join('、') || '-'">{{ profile?.departmentNames.join('、') || '-' }}</dd>
           </div>
           <div class="mango-personal-profile__detail">
             <dt>登录 IP</dt>
@@ -30,7 +38,6 @@
 
         <div class="mango-personal-profile__actions">
           <a-button
-            long
             size="small"
             :disabled="!profile || loading || loggingOut"
             :loading="loggingOut"
@@ -39,15 +46,20 @@
           >
             修改密码
           </a-button>
+          <a-button size="small" :disabled="!profile || loading || loggingOut" @click="openResetPassword">
+            重置密码
+          </a-button>
         </div>
-        </a-spin>
+        </MangoPanelSpin>
       </section>
 
-      <UserCachePanel />
+      <UserConfigPanel />
     </main>
   </TableBody>
   <PasswordChangeDialog ref="passwordDialog" :user-id="profile?.id || 0" :requires-email-migration="profile?.requiresEmailMigration || false"
     :context-version="contextVersion" :is-context-current="isContextCurrent" @changed="handlePasswordChanged" />
+  <PasswordResetDialog ref="resetPasswordDialog" :username="profile?.username || ''" :requires-email-migration="profile?.requiresEmailMigration || false"
+    :context-version="contextVersion" :is-context-current="isContextCurrent" @reset="handlePasswordReset" />
 </template>
 
 <script lang="ts" setup>
@@ -58,14 +70,17 @@ import { reportLoadError } from '@/utils/load-error'
   import { useRoute } from 'vue-router'
   import { Message } from '@arco-design/web-vue'
   import { getUserInfo } from '@/api/user/user'
-  import UserCachePanel from './components/UserCachePanel.vue'
+  import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
+  import UserConfigPanel from './components/UserConfigPanel.vue'
   import PasswordChangeDialog from './components/PasswordChangeDialog.vue'
+  import PasswordResetDialog from './components/PasswordResetDialog.vue'
   import { readPersonalProfile } from './records'
   import type { PasswordDialogHandle, PersonalProfile } from './types'
 
   const userStore = useUserStore()
   const route = useRoute()
   const profile = ref<PersonalProfile | null>(null), passwordDialog = ref<PasswordDialogHandle | null>(null)
+  const resetPasswordDialog = ref<PasswordDialogHandle | null>(null)
   const loading = ref(false), failed = ref(false), loggingOut = ref(false), contextVersion = ref(0)
   let mounted = false, active = true, disposed = false, needsRead = true, readVersion = 0
   let pending: { version: number; promise: Promise<void> } | null = null
@@ -74,6 +89,7 @@ import { reportLoadError } from '@/utils/load-error'
   function suspend(clear: boolean): void {
     contextVersion.value++; readVersion++; pending = null; needsRead = true; loading.value = false
     passwordDialog.value?.close()
+    resetPasswordDialog.value?.close()
     if (clear) { profile.value = null; failed.value = false }
   }
   function loadProfile(): Promise<void> {
@@ -96,12 +112,14 @@ import { reportLoadError } from '@/utils/load-error'
     return promise
   }
   function resume(): void { if (mounted && needsRead) void loadProfile() }
-  function openPassword(): void { if (available() && profile.value && !loading.value && !loggingOut.value) passwordDialog.value?.open() }
-  async function handlePasswordChanged(version: number): Promise<void> {
+  function openPassword(): void { if (available() && profile.value && !loading.value && !loggingOut.value) { resetPasswordDialog.value?.close(); passwordDialog.value?.open() } }
+  function openResetPassword(): void { if (available() && profile.value && !loading.value && !loggingOut.value) { passwordDialog.value?.close(); resetPasswordDialog.value?.open() } }
+  function handlePasswordReset(version: number): Promise<void> { return handlePasswordChanged(version, '随机密码已发送到登录邮箱，请使用新密码重新登录') }
+  async function handlePasswordChanged(version: number, message = '密码已修改，请重新登录'): Promise<void> {
     if (!isContextCurrent(version) || loggingOut.value) return
     loggingOut.value = true
     const userId = userStore.userId, token = userStore.token
-    Message.success('密码已修改，请重新登录')
+    Message.success(message)
     try {
       await userStore.logout()
       if (!userStore.token && userStore.userId === 0) {
@@ -126,14 +144,15 @@ import { reportLoadError } from '@/utils/load-error'
 <style lang="less" scoped>
   .mango-personal-page {
     display: grid;
-    grid-template-columns: 320px minmax(0, 1fr);
+    grid-template-columns: 280px minmax(0, 1fr);
     align-items: start;
     gap: var(--m-page-gap);
     width: 100%;
+    padding-top: var(--m-page-gap);
   }
 
   .mango-personal-profile {
-    padding: 20px;
+    min-width: 0;
   }
 
   .mango-personal-profile__loading {
@@ -148,17 +167,14 @@ import { reportLoadError } from '@/utils/load-error'
   }
 
   .mango-personal-profile__header {
-    justify-content: center;
-    padding-bottom: 20px;
+    padding-bottom: var(--m-card-padding);
     border-bottom: 1px solid var(--m-border);
   }
 
   .mango-personal-profile__identity {
-    flex-direction: column;
     min-width: 0;
     width: 100%;
-    gap: 10px;
-    text-align: center;
+    gap: var(--m-card-padding);
   }
 
   .mango-personal-profile__avatar {
@@ -166,7 +182,7 @@ import { reportLoadError } from '@/utils/load-error'
     color: var(--m-primary);
     background: var(--m-surface-soft);
     border: 1px solid var(--m-primary-border);
-    font-size: 28px;
+    font-size: 24px;
   }
 
   .mango-personal-profile__name {
@@ -183,28 +199,27 @@ import { reportLoadError } from '@/utils/load-error'
 
     h2 {
       color: var(--m-text);
-      font-size: 20px;
-      line-height: 28px;
+      font-size: 18px;
+      line-height: 26px;
     }
 
     p {
       margin-top: 2px;
-      margin-bottom: 8px;
       color: var(--m-muted);
       font-size: 13px;
     }
   }
 
   .mango-personal-profile__details {
-    margin: 8px 0 0;
+    margin: var(--m-page-gap) 0 0;
   }
 
   .mango-personal-profile__detail {
     display: grid;
-    grid-template-columns: 88px minmax(0, 1fr);
+    grid-template-columns: 64px minmax(0, 1fr);
     align-items: center;
     min-width: 0;
-    padding: 12px 0;
+    padding: var(--m-card-padding) 0;
     border-bottom: 1px solid var(--m-border);
 
     dt {
@@ -217,28 +232,16 @@ import { reportLoadError } from '@/utils/load-error'
       margin: 0;
       color: var(--m-text);
       font-size: 13px;
-      text-align: right;
+      text-align: left;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
   }
 
   .mango-personal-profile__actions {
-    margin-top: 16px;
-  }
-
-  @media (max-width: 960px) {
-    .mango-personal-page {
-      grid-template-columns: 1fr;
-    }
-
-    .mango-personal-profile__identity {
-      flex-direction: row;
-      text-align: left;
-    }
-
-    .mango-personal-profile__name p {
-      margin-bottom: 4px;
-    }
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--m-page-gap);
+    margin-top: var(--m-card-padding);
   }
 </style>

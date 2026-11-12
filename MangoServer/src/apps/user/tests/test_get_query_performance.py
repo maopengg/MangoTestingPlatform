@@ -5,7 +5,9 @@ from unittest.mock import patch
 from django.test import RequestFactory, SimpleTestCase
 
 from src.apps.user.middleware.user_logs import UserLogsMiddleWare
-from src.apps.user.services.permission import PermissionMenuService, RoleMenuPermission
+from src.apps.user.models import Role
+from src.apps.user.services.authorization.permission import PermissionMenuService
+from src.apps.user.services.authorization.endpoint_permission import EndpointPermissionService
 
 
 class GetLogPerformanceTests(SimpleTestCase):
@@ -53,7 +55,7 @@ class PermissionCatalogPerformanceTests(SimpleTestCase):
 
     def test_static_tree_is_built_once_and_public_results_are_isolated(self):
         tree = [{'menuUrl': '/example', 'permissionKey': 'example', 'children': []}]
-        with patch('src.apps.user.services.permission.ad_routes', return_value=deepcopy(tree)) as factory:
+        with patch('src.apps.user.services.authorization.permission.ad_routes', return_value=deepcopy(tree)) as factory:
             first = PermissionMenuService.permission_tree()
             first[0]['menuName'] = 'changed'
             first[0]['actions'].clear()
@@ -66,7 +68,7 @@ class PermissionCatalogPerformanceTests(SimpleTestCase):
             factory.assert_called_once()
 
     def test_environment_has_an_independent_static_snapshot(self):
-        with patch('src.apps.user.services.permission.ad_routes', return_value=[]) as factory:
+        with patch('src.apps.user.services.authorization.permission.ad_routes', return_value=[]) as factory:
             with patch.dict('os.environ', {'DJANGO_ENV': 'dev'}):
                 PermissionMenuService.permission_tree()
             with patch.dict('os.environ', {'DJANGO_ENV': 'test'}):
@@ -77,8 +79,11 @@ class PermissionCatalogPerformanceTests(SimpleTestCase):
     def test_role_grants_are_not_cached_across_checks(self):
         user = SimpleNamespace(is_super_admin=False, username='reader@example.com', role_id=7,
                                role=SimpleNamespace(name='普通角色'))
-        with patch.object(RoleMenuPermission.objects, 'filter') as stored:
-            stored.return_value.values_list.side_effect = [['api.info:read'], ['api.info:change']]
+        with patch.object(Role.objects, 'filter') as stored:
+            stored.return_value.values_list.return_value.first.side_effect = [
+                {'version': 1, 'menu_keys': ['api.info'],
+                 'endpoint_permissions': EndpointPermissionService.from_legacy_keys({key})}
+                for key in ('api.info:read', 'api.info:change')]
             first = PermissionMenuService.permission_keys_for_user(user)
             second = PermissionMenuService.permission_keys_for_user(user)
             self.assertIn('api.info:read', first)

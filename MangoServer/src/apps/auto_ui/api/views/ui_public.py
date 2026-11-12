@@ -22,11 +22,12 @@ from src.common.responses.response_msg import (
     RESPONSE_MSG_0001,
 )
 from src.apps.auto_ui.selectors.public_variable import UiPublicTagSelector
-from src.apps.auto_ui.services.asset_mutation import UiAssetMutationService
+from src.apps.auto_ui.services.assets.asset_mutation import UiAssetMutationService
 
 
 class UiPublicCRUD(ModelCRUD):
     def list_response(self, request, books, paging):
+        """整理UI 公共变量列表返回数据"""
         if request.query_params.get('tag_summary') == 'true':
             return ResponseData.success(RESPONSE_MSG_0001, UiPublicTagSelector.summarize(books))
         books = UiPublicTagSelector.filter(books, request.query_params.get('tag'),
@@ -35,6 +36,7 @@ class UiPublicCRUD(ModelCRUD):
 
     @error_response('ui')
     def put(self, request):
+        """修改UI 公共变量"""
         if 'tag_operation' not in request.data:
             return super().put(request)
         scoped = self.filter_queryset_by_data_scope(request, self.queryset.all())

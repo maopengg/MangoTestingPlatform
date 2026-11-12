@@ -6,19 +6,19 @@ from pydantic import ValidationError
 from src.apps.evaluation.exceptions import EvaluationError
 from src.apps.evaluation.schemas.case import EvaluationGraderBinding, EvaluationGradingConfig
 from src.apps.evaluation.schemas.grader import ModelJudgeOutput
-from src.apps.evaluation.services.grading import resolve_graders, validate_bindings
-from src.apps.evaluation.services.adapters import BaseTargetAdapter
-from src.apps.evaluation.services.execution import EvaluationCaseExecutionService
-from src.apps.evaluation.services.target_input import compile_target_input
+from src.apps.evaluation.services.grading.grading import resolve_graders, validate_bindings
+from src.apps.evaluation.services.targets.adapters import BaseTargetAdapter
+from src.apps.evaluation.services.execution.execution import EvaluationCaseExecutionService
+from src.apps.evaluation.services.targets.target_input import compile_target_input
 from src.apps.evaluation.selectors.execution import get_execution
 from src.apps.evaluation.models import EvaluationGradeResult
 from src.apps.user.middleware.permission import MenuActionPermission
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.user.services.authorization.permission import PermissionMenuService
 from src.apps.evaluation.formatters.payload import content_hash
 from src.apps.evaluation.api.views.execution import CaseExecutionViews
-from src.apps.evaluation.services.case import EvaluationCaseService
+from src.apps.evaluation.services.assets.case import EvaluationCaseService
 from src.apps.evaluation.models import EvaluationCase, EvaluationDatasetItem, EvaluationDatasetVersion
-from src.apps.evaluation.services.importing import EvaluationApiCaseImportService
+from src.apps.evaluation.services.dataset.importing import EvaluationApiCaseImportService
 
 
 class EvaluationCaseContractTests(SimpleTestCase):
@@ -27,7 +27,7 @@ class EvaluationCaseContractTests(SimpleTestCase):
         source = SimpleNamespace(id=1, name="source", level=1, scenario_tags=[], parametrize=[{"question": "q", "expected": {"answer": "a"}}])
         item = EvaluationDatasetItem(pk=3)
         item.save = MagicMock()
-        with patch.object(EvaluationDatasetVersion.objects, "select_for_update") as locked, patch("src.apps.evaluation.services.importing.scope_queryset") as cases, patch("src.apps.evaluation.services.importing.EvaluationApiCaseImportService.ensure_source_access"), patch("src.apps.evaluation.services.importing.ensure_dataset_access"), patch.object(EvaluationDatasetItem.objects, "update_or_create", return_value=(item, True)), patch("src.apps.evaluation.services.importing.EvaluationVersionService.validate_item"), patch("src.apps.evaluation.services.dataset_item.EvaluationDatasetItemService.reset_quality_ack") as reset:
+        with patch.object(EvaluationDatasetVersion.objects, "select_for_update") as locked, patch("src.apps.evaluation.services.dataset.importing.scope_queryset") as cases, patch("src.apps.evaluation.services.dataset.importing.EvaluationApiCaseImportService.ensure_source_access"), patch("src.apps.evaluation.services.dataset.importing.ensure_dataset_access"), patch.object(EvaluationDatasetItem.objects, "update_or_create", return_value=(item, True)), patch("src.apps.evaluation.services.dataset.importing.EvaluationVersionService.validate_item"), patch("src.apps.evaluation.services.dataset.dataset_item.EvaluationDatasetItemService.reset_quality_ack") as reset:
             locked.return_value.select_related.return_value.filter.return_value.first.return_value = version
             cases.return_value.order_by.return_value = [source]
             result = EvaluationApiCaseImportService.import_cases.__wrapped__(EvaluationApiCaseImportService, 1, [1], user=SimpleNamespace(id=1))
@@ -142,7 +142,7 @@ class EvaluationCaseContractTests(SimpleTestCase):
     def test_draft_case_can_validate_without_executing_target(self):
         config = {"target": {"type": "script"}, "grading": {"default_graders": [{"grader_key": "exact_match", "metric_key": "accuracy"}]}}
         case = SimpleNamespace(status="draft", project_product_id=1, dataset_version_id=1, dataset_version=SimpleNamespace(), config=config)
-        with patch.object(EvaluationCase.objects, "select_related") as query, patch("src.apps.evaluation.services.case.ensure_product_scope"), patch.object(EvaluationCaseService, "normalize", return_value={"config": config}), patch.object(EvaluationCaseService, "ensure_target_access"), patch.object(EvaluationCaseService, "selected_items", return_value=[SimpleNamespace()]), patch("src.apps.evaluation.services.case.EvaluationTargetAdapterRegistry.get") as adapter:
+        with patch.object(EvaluationCase.objects, "select_related") as query, patch("src.apps.evaluation.services.assets.case.ensure_product_scope"), patch.object(EvaluationCaseService, "normalize", return_value={"config": config}), patch.object(EvaluationCaseService, "ensure_target_access"), patch.object(EvaluationCaseService, "selected_items", return_value=[SimpleNamespace()]), patch("src.apps.evaluation.services.assets.case.EvaluationTargetAdapterRegistry.get") as adapter:
             query.return_value.filter.return_value.first.return_value = case
             self.assertEqual(EvaluationCaseService.validate(1, SimpleNamespace(id=1)), {"valid": True, "item_count": 1})
             adapter.return_value.execute.assert_not_called()

@@ -6,8 +6,8 @@ from mangotools.enums import StatusEnum
 
 from src.apps.data_factory.enums import DataFactoryCleanupStrategyEnum
 from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
-from src.apps.data_factory.services.case_config import DataFactoryCaseConfigService
-from src.apps.data_factory.services.configuration_preview import DataFactoryConfigurationPreviewService
+from src.apps.data_factory.services.assets.case_config import DataFactoryCaseConfigService
+from src.apps.data_factory.services.preview.configuration_preview import DataFactoryConfigurationPreviewService
 from src.interfaces.mcp.audit import mcp_current_user_id
 from src.interfaces.mcp.common import paginate_queryset
 from .helpers import _case_config_summary, _preview_data_factory_template_result, _validate_case_source

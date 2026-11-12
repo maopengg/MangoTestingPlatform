@@ -5,12 +5,12 @@ from src.apps.system.schemas.notice import EmailNoticeModel, FeiShuNoticeModel, 
 from src.apps.system.services.notice import EmailSend, FeiShuSend, WeChatSend
 
 from src.apps.system.models import CacheData
-from src.apps.system.services.system_config import SystemConfigService
-from src.apps.user.services.credential import UserCredentialService
+from src.apps.system.services.configuration.system_config import SystemConfigService
+from src.apps.user.services.authentication.credential import UserCredentialService
 
 
 class PlatformBrandingTests(SimpleTestCase):
-    @patch('src.apps.system.services.system_config.CacheData.objects.get', side_effect=CacheData.DoesNotExist)
+    @patch('src.apps.system.services.configuration.system_config.CacheData.objects.get', side_effect=CacheData.DoesNotExist)
     def test_unconfigured_names_use_registered_defaults(self, _get):
         self.assertEqual(SystemConfigService.get_platform_branding(), {
             'platform_name': '芒果测试平台', 'platform_name_en': 'mango-test-platform',

@@ -45,7 +45,7 @@
       color: [primary, scheduled, other, success],
       tooltip: { trigger: 'axis', confine: true, backgroundColor: 'var(--m-surface)', borderColor: 'var(--m-border)', textStyle: { color: 'var(--m-text)' }, formatter: tooltip },
       legend: { top: 2, itemWidth: 12, itemHeight: 8, textStyle: { color: 'var(--m-text-2)' } },
-      grid: { top: 36, right: 46, bottom: 38, left: 8, containLabel: true },
+      grid: { top: 36, right: 46, bottom: 12, left: 8, containLabel: true },
       xAxis: { type: 'category', data: items.value.map(item => item.label), axisTick: { show: false },
         axisLine: { lineStyle: { color: 'var(--m-border-strong)' } },
         axisLabel: { show: true, color: muted, fontSize: 11, margin: 10, hideOverlap: false, interval: shouldShowTrendLabel },
@@ -122,10 +122,15 @@
 
   .mango-report-source-trend__summary--loading { visibility: hidden; }
 
+  .mango-report-source-trend__chart :deep(.mango-effectiveness-chart-spin),
+  .mango-report-source-trend__chart :deep(.mango-effectiveness-chart-spin > .mango-panel-spin__content) {
+    height: 100%;
+  }
+
   .mango-report-source-trend__chart {
     display: flex;
     width: 100%;
-    height: 210px;
+    height: 0;
     min-height: 180px;
     flex: 1;
   }

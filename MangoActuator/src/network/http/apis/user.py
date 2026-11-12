@@ -3,7 +3,6 @@
 # @Description: 用户相关接口
 # @Time   : 2024-09-21 11:19
 # @Author : 毛鹏
-import json
 
 from src.models.socket_model import HttpApiResponse
 from src.models.user_model import ActuatorUserProfile
@@ -27,8 +26,6 @@ class UserApi(BaseApi):
         return HttpApiResponse(**resp) if isinstance(resp, dict) else resp
 
     async def put_user_info(self, json_data: dict) -> HttpApiResponse:
-        if json_data.get('mailbox') and isinstance(json_data.get('mailbox'), str):
-            json_data['mailbox'] = json.loads(json_data['mailbox'])
         for k, v in json_data.items():
             if isinstance(v, dict) and v.get('id'):
                 json_data[k] = v['id']

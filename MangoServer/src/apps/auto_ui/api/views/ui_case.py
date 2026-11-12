@@ -15,14 +15,14 @@ from src.apps.auto_ui.exceptions import (
     UI_EXECUTOR_EXECUTOR_EXECUTION_INVALID_CODE_EXECUTOR_EXECUTION_INVALID,
 )
 from src.apps.auto_ui.models import UiCase
-from src.apps.auto_ui.services.asset_copy import UiAssetCopyService
-from src.apps.auto_ui.services.case_publication import UiCasePublicationService
+from src.apps.auto_ui.services.assets.asset_copy import UiAssetCopyService
+from src.apps.auto_ui.services.cases.case_publication import UiCasePublicationService
 from src.apps.auto_ui.selectors.case_publication import UiCasePublicationSelector
-from src.apps.auto_ui.services.batch_execution import UiCaseBatchExecutionService
-from src.apps.auto_ui.services.test_case.test_case import TestCase
+from src.apps.auto_ui.services.execution.batch_execution import UiCaseBatchExecutionService
+from src.apps.auto_ui.services.execution.cases.test_case import TestCase
 from src.apps.system.enums import ClientNameEnum
 from src.apps.system.services.socket_link.connection_service import SocketConnectionService
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
 from src.common.exceptions import MangoServerError
 from src.common.responses.model_crud import (
@@ -51,6 +51,7 @@ class UiCaseCRUD(ModelCRUD):
 
     @error_response('ui')
     def get(self, request: Request):
+        """获取UI 用例列表或指定记录"""
         query_dict = {}
         scenario_tags = request.query_params.getlist('scenario_tags[]')
         scenario_tags.extend(request.query_params.getlist('scenario_tags'))
@@ -209,6 +210,7 @@ class UiCaseViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('ui')
     def set_publication(self, request: Request):
+        """设置UI 用例发布状态"""
         try:
             case_id = int(request.data.get('case_id'))
         except (TypeError, ValueError):
@@ -227,6 +229,7 @@ class UiCaseViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('ui')
     def publication_review(self, request: Request):
+        """获取UI 用例发布审核信息"""
         case_id = request.query_params.get('case_id')
         if not str(case_id or '').isdigit():
             return ResponseData.fail(RESPONSE_MSG_0280)
@@ -242,6 +245,7 @@ class UiCaseViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('ui')
     def cody_case(self, request: Request):
+        """复制 UI 用例及步骤"""
         case_id = request.data.get('case_id')
         if not self._has_case_scope(request, case_id):
             return ResponseData.fail(RESPONSE_MSG_0210)

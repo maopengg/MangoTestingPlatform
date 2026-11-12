@@ -260,6 +260,8 @@ DATASOURCE_GOVERNOR_UNAVAILABLE = ErrorDefinition(code=34185, message='平台无
 DATASOURCE_ADMISSION_TIMEOUT = ErrorDefinition(code=34186, message='当前未取得数据源执行名额，本次操作尚未发送。请管理员检查当前执行占用和等待队列')
 DATASOURCE_RECONCILIATION_REQUIRED = ErrorDefinition(code=34191, message='数据源存在结果未确认的历史占用，当前无法取得执行名额，本次操作尚未发送。请管理员核查历史执行结果和配额记录，勿直接清空占用或调大配额')
 DATASOURCE_SETTLEMENT_FAILED = ErrorDefinition(code=34192, message='平台未完成数据源配额结算。请管理员核查执行记录及配额占用；不要通过重复执行来释放名额')
+DATA_FACTORY_UNIQUE_VALUE_CONFLICT = ErrorDefinition(code=34198, message='数据工厂实体“{}”插入失败：数据库返回1062唯一键冲突。请检查模板中的固定唯一值和并发造数规则；本轮独占数据应使用隔离值，需要复用的数据应配置复用关系。平台不会删除存量数据或自动重试该INSERT')
+DATA_SOURCE_SERVER_QUERY_LIMIT_EXCEEDED = ErrorDefinition(code=34199, message='数据库已中止本次查询：MySQL返回3024，超过SQL或数据库设置的执行时间限制。请检查该用例或全局变量SQL中的MAX_EXECUTION_TIME及数据库超时配置，并优化查询范围和执行计划；这不是平台等待执行名额超时')
 DATASOURCE_OPERATION_COST_EXCEEDED = ErrorDefinition(code=34187, message='{}')
 DATA_FACTORY_CLEANUP_IN_PROGRESS = ErrorDefinition(code=34188, message='已有清理任务占用本次执行。请查看执行记录中的任务状态，勿重复提交清理')
 DATA_FACTORY_CLEANUP_INTERRUPTED = ErrorDefinition(code=34189, message='数据工厂清理过程已中断，最终结果未确认。请在执行记录中核对实际数据和未完成项，再补清；不能视为已清理')
@@ -285,6 +287,7 @@ DATA_FACTORY_TEMPLATE_DELETE_REFERENCED = ErrorDefinition(
     code=34169, message='场景模板“{}”不能删除：{}。请先解除引用，或改为停用',
 )
 DATA_FACTORY_TEMPLATE_NOT_FOUND = ErrorDefinition(code=34170, message='场景模板不存在或已删除，请刷新后重试')
+DATASOURCE_LIMIT_RETIREMENT_BLOCKED = ErrorDefinition(code=34200, message='旧数据源限流配置尚不能退役：{}')
 DATA_SOURCE_ELASTICSEARCH_AUTHENTICATION_FAILED = ErrorDefinition(
     code=34171, message='Elasticsearch账号认证失败，请检查账号和密码：{}',
 )

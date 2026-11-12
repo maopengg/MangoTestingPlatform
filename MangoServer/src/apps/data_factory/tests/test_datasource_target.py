@@ -8,10 +8,10 @@ from sqlalchemy.exc import OperationalError
 
 from src.apps.data_factory.exceptions import DataFactoryError
 from src.apps.data_factory.models import Database, DataFactoryDatasourceBinding, DataFactoryEntity
-from src.apps.data_factory.services.data_source_error import DataSourceErrorService
-from src.apps.data_factory.services.datasource import DataFactoryDatasource
-from src.apps.data_factory.services.datasource_target import DatasourceTargetService
-from src.apps.data_factory.services.execution_snapshot import build_insert_snapshot
+from src.apps.data_factory.services.datasource.data_source_error import DataSourceErrorService
+from src.apps.data_factory.services.datasource.datasource import DataFactoryDatasource
+from src.apps.data_factory.services.datasource.datasource_target import DatasourceTargetService
+from src.apps.data_factory.services.execution.execution_snapshot import build_insert_snapshot
 
 
 class DatasourceTargetTests(SimpleTestCase):
@@ -79,7 +79,7 @@ class DatasourceTargetTests(SimpleTestCase):
     def test_sqlite_never_creates_missing_file(self):
         self.connection.db_type = 2
         self.connection.file_path = '/missing/database.sqlite'
-        with patch('src.apps.data_factory.services.datasource_target.Path.is_file', return_value=False):
+        with patch('src.apps.data_factory.services.datasource.datasource_target.Path.is_file', return_value=False):
             with self.assertRaises(DataFactoryError):
                 DatasourceTargetService.maintenance(self.connection)
 
@@ -109,7 +109,7 @@ class DatasourceTargetTests(SimpleTestCase):
         first = DatasourceTargetService.resolve(self.binding('first'))
         second = DatasourceTargetService.resolve(self.binding('second'))
         from src.apps.data_factory.schemas.performance import DatasourcePerformancePolicy
-        with patch('src.apps.data_factory.services.datasource_governor.DatasourceGovernorService.policy',
+        with patch('src.apps.data_factory.services.governance.datasource_governor.DatasourceGovernorService.policy',
                    return_value=DatasourcePerformancePolicy()), patch.object(DataFactoryDatasource, 'create_engine',
                           side_effect=[first_engine, second_engine, new_engine]) as factory:
             self.assertIs(first_engine, context.get_data_factory_engine(first))

@@ -17,6 +17,7 @@ class ApiCallbackViews(ViewSet):
 
     @error_response('api')
     def results(self, request):
+        """获取 API 回调验证结果"""
         query = CallbackQuerySerializer(data=request.query_params)
         query.is_valid(raise_exception=True)
         return ResponseData.success(RESPONSE_MSG_0001, ApiCallbackSelector.results(
@@ -25,6 +26,7 @@ class ApiCallbackViews(ViewSet):
 
     @error_response('api')
     def deliveries(self, request):
+        """获取 API 回调投递记录"""
         query = CallbackDeliveryQuerySerializer(data=request.query_params)
         query.is_valid(raise_exception=True)
         return ResponseData.success(RESPONSE_MSG_0001, ApiCallbackSelector.deliveries(
@@ -33,6 +35,7 @@ class ApiCallbackViews(ViewSet):
 
     @error_response('api')
     def download(self, request):
+        """下载 API 回调验证原始证据"""
         from src.common.logging import log
         query = CallbackDownloadQuerySerializer(data=request.query_params)
         query.is_valid(raise_exception=True)

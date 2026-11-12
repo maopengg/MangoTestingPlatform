@@ -56,7 +56,7 @@ class PrepublicationRevisionMessageTests(SimpleTestCase):
 
     def test_http_revert_keeps_product_scope_boundary(self):
         from src.apps.auto_api.api.views.api_case_version import ApiCasePrepublicationViews
-        from src.apps.user.services.http_permission_registry import HTTP_PERMISSION_RULES
+        from src.apps.user.services.authorization.http_permission_registry import HTTP_PERMISSION_RULES
         self.assertEqual(HTTP_PERMISSION_RULES[(
             'src.apps.auto_api.api.views.api_case_version.ApiCasePrepublicationViews', 'revert', 'delete',
         )], 'api.case:change')
@@ -74,7 +74,7 @@ class PrepublicationRevisionMessageTests(SimpleTestCase):
 
     def test_mcp_revert_uses_current_operator_and_keeps_change_permission(self):
         from src.interfaces.mcp.tools.api.case_tools.revision import register_case_revision_tools
-        from src.apps.user.services.mcp_permission_registry import MCP_PERMISSION_RULES
+        from src.apps.user.services.authorization.mcp_permission_registry import MCP_PERMISSION_RULES
         self.assertEqual(MCP_PERMISSION_RULES['update_api_case_publication_status']['permission_key'], 'api.case:change')
         self.assertTrue(MCP_PERMISSION_RULES['update_api_case_publication_status']['project_scoped'])
         functions = {}

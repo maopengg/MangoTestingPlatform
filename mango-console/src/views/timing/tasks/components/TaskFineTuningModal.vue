@@ -5,7 +5,7 @@
         <strong>{{ task?.name }}</strong>
         <span>任务组：{{ task?.task_group_name || '—' }}。以下配置独立保存，任务组同步不会覆盖。</span>
       </div>
-      <a-alert v-if="saveError" type="error">{{ saveError }}</a-alert>
+      <MangoRequestFeedback v-if="saveError" :message="(saveError)" />
       <a-form auto-label-width :model="form" layout="horizontal" class="mango-task-fine-form mango-simple-form">
         <a-form-item class="mango-simple-form-item" label="API 并发">
           <a-input-number v-model="form.api_concurrency_limit" :min="1" :max="platformLimit" :precision="0" allow-clear
@@ -24,6 +24,8 @@
 </template>
 
 <script setup lang="ts">
+import { requestFailureMessage } from '@/utils/load-error'
+
 import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useRoute } from 'vue-router'
@@ -82,8 +84,8 @@ async function save() {
     assertFineTuningSaved(response)
     if (key === identity() && available()) emit('saved')
     if (current()) { close(); Message.success('精细化配置已保存，下次执行生效') }
-  } catch {
-    if (current()) saveError.value = '精细化配置保存失败，请重试'
+  } catch (requestFailure) {
+    if (current()) saveError.value = requestFailureMessage(requestFailure, '精细化配置保存失败，请重试')
   } finally { saving.value = false; if (version === editorVersion) dialog.value?.setConfirmLoading(false) }
 }
 function visibilityChanged() { if (document.visibilityState !== 'visible') close() }

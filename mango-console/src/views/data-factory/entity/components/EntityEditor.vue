@@ -12,7 +12,7 @@
     unmount-on-close
     @cancel="close"
   >
-    <a-alert v-if="syncError" type="error">{{ syncError }}</a-alert>
+    <MangoRequestFeedback v-if="syncError" :message="(syncError)" />
     
     
     <a-form
@@ -155,8 +155,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { reactive, ref, shallowRef } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import {
@@ -433,9 +432,9 @@ import { reportLoadError } from '@/utils/load-error'
       } else Message.success(response.msg)
       close()
       return true
-    } catch {
+    } catch (requestFailure) {
       if (savedId !== null && current === session && scope.current(version))
-        syncError.value = '实体已保存，字段同步未完成；可重试保存与同步，或关闭后进入字段规则同步。'
+        syncError.value = requestFailureMessage(requestFailure, '实体已保存，字段同步未完成；可重试保存与同步，或关闭后进入字段规则同步。')
       return false
     } finally {
       entitySaving.value = false

@@ -395,19 +395,13 @@
   const token = (name: string) =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim()
   function donutStyle(
-    element: HTMLElement,
+    _element: HTMLElement,
     rows: Array<{ name: string; value: number }>,
     unit: string,
     centerText?: string
   ) {
     const total = rows.reduce((sum, item) => sum + item.value, 0)
     const text = token('--m-text-2')
-    const current = useEcharts(element).getOption() as
-      | {
-          legend?: Array<{ selected?: Record<string, boolean> }>
-        }
-      | undefined
-    const selected = current?.legend?.[0]?.selected
     return {
       textStyle: {
         fontFamily: getComputedStyle(document.documentElement).fontFamily,
@@ -418,22 +412,17 @@
         text: centerText ?? total.toLocaleString('zh-CN'),
         subtext: unit,
         left: '50%',
-        top: '34%',
+        top: '32%',
         textAlign: 'center',
         itemGap: 4,
         textStyle: { color: token('--m-text'), fontSize: 24, fontWeight: 600 },
         subtextStyle: { color: token('--m-muted'), fontSize: 11 },
       },
       legend: {
-        selected,
-        orient: 'horizontal',
-        left: 'center',
-        bottom: 0,
-        itemWidth: 10,
-        itemHeight: 8,
-        itemGap: 16,
-        icon: 'roundRect',
-        textStyle: { color: text, fontSize: 12, lineHeight: 18 },
+        show: true, bottom: 0, left: 'center', itemWidth: 9, itemHeight: 7,
+        textStyle: { color: text, fontSize: 11 },
+        data: rows.map(item => item.name),
+        selectedMode: false,
       },
     }
   }
@@ -493,8 +482,7 @@
             {
               ...donutSeries(scanChart.value, rows),
               data: [
-                { name: '已盘点', value: projectScanSummary.value?.inventoried_count || 0 },
-                { name: '未盘点', value: projectScanSummary.value?.uninventoried_count || 0 },
+                ...rows.map(item => ({ ...item, label: { show: item.value > 0 }, labelLine: { show: item.value > 0 } })),
               ],
             },
           ],
@@ -538,7 +526,7 @@
               formatter: (item: { name: string; value: number }) =>
                 `${item.name}\n${item.value.toLocaleString('zh-CN')} 个`,
             },
-            data: entryData.value,
+            data: entryData.value.map(item => ({ ...item, label: { show: item.value > 0 }, labelLine: { show: item.value > 0 } })),
           }],
         },
         true
@@ -593,7 +581,7 @@
           series: [
             {
               ...donutSeries(statusChart.value, statusData.value),
-              data: statusData.value,
+              data: statusData.value.map(item => ({ ...item, label: { show: item.value > 0 }, labelLine: { show: item.value > 0 } })),
             },
           ],
         },

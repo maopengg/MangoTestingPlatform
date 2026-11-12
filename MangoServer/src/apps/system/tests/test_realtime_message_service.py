@@ -20,7 +20,7 @@ from src.apps.system.enums import (
 from src.apps.system.enums import ServerToolsCommandEnum, ServerUiCommandEnum
 from src.apps.system.exceptions import SystemError
 from src.apps.system.services.socket_link.message_service import SocketMessageService
-from src.apps.system.services.system_config import SYSTEM_CONFIG_REGISTRY, SystemConfigService
+from src.apps.system.services.configuration.system_config import SYSTEM_CONFIG_REGISTRY, SystemConfigService
 from src.apps.task_center.api.views.executor_task import ExecutorTaskViews
 from src.apps.task_center.models import SocketConnection
 from src.apps.task_center.services.execution.executor_task import ExecutorTaskService
@@ -194,7 +194,7 @@ class ExecutorTaskNotificationTest(SimpleTestCase):
         self.assertEqual(event["type"], "socket.notification")
         self.assertEqual(event["payload"]["data"]["func_name"], ServerToolsCommandEnum.TASK_AVAILABLE.value)
 
-    @patch("src.apps.auto_ui.services.element_ai.element_ai_service.ElementAiService.save_check_result")
+    @patch("src.apps.auto_ui.services.elements.ai.element_ai_service.ElementAiService.save_check_result")
     def test_element_task_result_projects_runtime_snapshot_in_terminal_transaction(self, save_result):
         task = type("Task", (), {
             "task_type": ExecutorTaskTypeEnum.ELEMENT_DEEP_CHECK.value,
@@ -205,7 +205,7 @@ class ExecutorTaskNotificationTest(SimpleTestCase):
 
         save_result.assert_called_once_with(result)
 
-    @patch("src.apps.auto_ui.services.ui_auth.UiAuthManager.save_auto_auth_cache")
+    @patch("src.apps.auto_ui.services.authentication.ui_auth.UiAuthManager.save_auto_auth_cache")
     def test_auth_capture_task_result_projects_auth_cache(self, save_cache):
         task = type("Task", (), {
             "task_type": ExecutorTaskTypeEnum.AUTH_CAPTURE.value,

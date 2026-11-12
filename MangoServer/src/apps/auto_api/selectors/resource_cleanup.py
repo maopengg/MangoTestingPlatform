@@ -2,7 +2,7 @@ from src.apps.auto_api.models import ApiCaseExecutionResource
 from src.apps.auto_api.selectors.case_configuration import ApiCaseConfigurationSelector
 from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.schemas.resource_cleanup import ApiResourceProof
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.user.services.authorization.permission import PermissionMenuService
 from src.common.exceptions import RESOURCE_ACCESS_DENIED
 
 

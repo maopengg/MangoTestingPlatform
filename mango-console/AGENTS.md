@@ -123,6 +123,7 @@ npm run responsive:audit
 - 后端支持 `__in`、数组或逗号分隔集合查询的搜索下拉框必须支持多选。`FormItem` 搜索配置统一调用 `enableMultiSelectSearch`，选择器绑定 `:multiple="item.multiple"` 和折叠标签，多值通过 `searchOperator: 'in'` 提交为 `key__in=value1,value2`，重置时恢复为空数组。
 - 项目/产品、模块等上下级依赖选择器，以及后端仅支持精确单值的专用接口可以保持单选；例外必须登记在 `scripts/search-multiselect-audit.mjs` 并写明接口限制，不得仅因前端实现方便保留单选。
 - 不在页面内散写控件宽度。
+- 补齐搜索自动触发时复用 `useDebouncedSearch` 的 500 毫秒防抖：文本框失焦、移出或清空后查询，下拉和日期等选值变化后查询；未改值不重复查询，按钮/回车立即查询并取消待执行任务，重置、离页或关闭弹窗清理待执行查询。
 - 列表页表格外的新增、创建、导入等主按钮优先使用 `size="small"`，与既有管理页保持紧凑一致。
 - 必填标识使用 `mango-form-item__require`。
 - 说明文案用 `--m-muted`，错误提示用 `--m-danger`。
@@ -165,6 +166,7 @@ npm run responsive:audit
 ## Loading 规则
 
 - 加载失败统一调用 `reportLoadError`，不在页面、弹窗或抽屉渲染错误横幅；保留失败状态、重新加载和编辑门禁。业务校验、发布检查及执行结果错误继续展示。后台请求通过 `runLoadRequest` 捕获静默标记，错误不重复提示；成功空列表省略 `totalSize` 时复用 `normalizeEmptyListTotal`，不放宽非空列表或失败响应校验。修改后运行 `npm run loading-feedback:audit`。
+- 请求、保存、删除、导出、跳转和任务观察失败只使用公共提示；需要保留重试入口时使用 `MangoRequestFeedback`，不得在其插槽放错误文案。失败状态赋值可复用 `requestFailureMessage(cause, message)` 关联请求去重；保留的字段校验、发布检查和实际执行结果标记 `data-feedback-kind="validation|execution-result"`。
 
 - 首次加载和用户主动发起的接口请求必须有对应 loading 状态；页面级自动轮询复用 `usePagePolling`，统一 5 秒静默更新，不反复触发页面或表格 loading，局部任务轮询按所属协议维护。
 - 异步保存、删除、执行、调试、导入、导出必须绑定按钮 loading。

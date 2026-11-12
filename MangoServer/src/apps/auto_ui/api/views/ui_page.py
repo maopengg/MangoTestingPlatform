@@ -58,6 +58,7 @@ class PageCRUD(ModelCRUD):
 
     @classmethod
     def inside_post(cls, data: dict) -> dict:
+        """处理UI 页面新增时的业务逻辑"""
         duplicate_page = cls._duplicate_url_page(data)
         if duplicate_page:
             raise AutoUiError(UI_PAGE_DUPLICATED, value=(duplicate_page.id,))
@@ -65,6 +66,7 @@ class PageCRUD(ModelCRUD):
 
     @classmethod
     def inside_put(cls, _id: int, data: dict) -> dict:
+        """处理UI 页面修改时的业务逻辑"""
         instance = cls.model.objects.get(pk=_id)
         duplicate_page = cls._duplicate_url_page(data, instance)
         if duplicate_page:
@@ -73,6 +75,7 @@ class PageCRUD(ModelCRUD):
 
     @error_response('ui')
     def post(self, request: Request):
+        """新增UI 页面"""
         duplicate_page = self._duplicate_url_page(request.data)
         if duplicate_page:
             return ResponseData.fail(RESPONSE_MSG_0203, value=(duplicate_page.id,))
@@ -80,6 +83,7 @@ class PageCRUD(ModelCRUD):
 
     @error_response('ui')
     def put(self, request: Request):
+        """修改UI 页面"""
         instance_id = request.data.get('id') if not isinstance(request, dict) else request.get('id')
         try:
             instance = self.model.objects.get(pk=instance_id)

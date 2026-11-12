@@ -23,9 +23,9 @@ from src.apps.functional_test.models import (
     ManualTestSuite,
 )
 from src.apps.functional_test.selectors.access_scope import filter_plan_by_data_scope
-from src.apps.functional_test.services.execution import FunctionalTestExecutionService
-from src.apps.test_center.services.product_module import ProductModuleService
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.functional_test.services.execution.execution import FunctionalTestExecutionService
+from src.apps.test_center.services.project.product_module import ProductModuleService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -42,6 +42,7 @@ class FunctionalTestPlanCRUD(ModelCRUD):
 
     @error_response("system")
     def delete(self, request: Request):
+        """删除功能测试计划"""
         plan = filter_plan_by_data_scope(request, self.model.objects.all()).filter(
             id=request.query_params.get("id")
         ).first()
@@ -73,6 +74,7 @@ class FunctionalTestPlanViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def requirement_options(self, request: Request):
+        """获取测试计划可选需求"""
         queryset = ManualTestSuite.objects.select_related("requirement")
         user = getattr(getattr(request, "user", None), "user_obj", None)
         if user and not PermissionMenuService.is_effective_super_admin(
@@ -96,6 +98,7 @@ class FunctionalTestPlanViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def retrieve(self, request: Request):
+        """获取功能测试计划详情"""
         queryset = FunctionalTestPlanListSerializer.setup_eager_loading(
             filter_plan_by_data_scope(request, FunctionalTestPlan.objects.all())
         )
@@ -107,6 +110,7 @@ class FunctionalTestPlanViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def related(self, request: Request):
+        """获取功能测试计划关联资料"""
         queryset = filter_plan_by_data_scope(request, FunctionalTestPlan.objects.all())
         iteration_id = request.query_params.get("iteration_id")
         requirement_version_id = request.query_params.get("requirement_version_id")
@@ -125,6 +129,7 @@ class FunctionalTestPlanViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def cases(self, request: Request):
+        """获取功能测试计划关联用例"""
         plan = filter_plan_by_data_scope(request, FunctionalTestPlan.objects.all()).get(
             id=request.query_params.get("plan_id"))
         queryset = self._case_queryset(plan)
@@ -134,6 +139,7 @@ class FunctionalTestPlanViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def add_cases(self, request: Request):
+        """向测试计划添加用例"""
         filter_plan_by_data_scope(request, FunctionalTestPlan.objects.all()).get(id=request.data.get("plan_id"))
         data = FunctionalTestExecutionService.add_plan_cases(int(request.data["plan_id"]),
                                                              request.data.get("case_ids") or [])
@@ -142,6 +148,7 @@ class FunctionalTestPlanViews(ViewSet):
     @action(methods=["delete"], detail=False)
     @error_response("system")
     def remove_cases(self, request: Request):
+        """从测试计划移除用例"""
         filter_plan_by_data_scope(request, FunctionalTestPlan.objects.all()).get(id=request.data.get("plan_id"))
         count = FunctionalTestExecutionService.remove_plan_cases(int(request.data["plan_id"]),
                                                                  request.data.get("plan_case_ids") or [])
@@ -150,6 +157,7 @@ class FunctionalTestPlanViews(ViewSet):
     @action(methods=["put"], detail=False)
     @error_response("system")
     def update_case(self, request: Request):
+        """更新测试计划中的用例配置"""
         scoped = FunctionalTestPlanCase.objects.filter(
             plan__in=filter_plan_by_data_scope(request, FunctionalTestPlan.objects.all()))
         scoped.get(id=request.data.get("id"))
@@ -160,6 +168,7 @@ class FunctionalTestPlanViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def copy_cases(self, request: Request):
+        """复制测试计划用例"""
         plans = filter_plan_by_data_scope(request, FunctionalTestPlan.objects.all())
         plans.get(id=request.data.get("plan_id"))
         plans.get(id=request.data.get("source_plan_id"))
@@ -170,6 +179,7 @@ class FunctionalTestPlanViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def start(self, request: Request):
+        """启动功能测试计划"""
         filter_plan_by_data_scope(request, FunctionalTestPlan.objects.all()).get(id=request.data.get("plan_id"))
         plan = FunctionalTestExecutionService.start_plan(
             int(request.data["plan_id"]),
@@ -181,6 +191,7 @@ class FunctionalTestPlanViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def finish(self, request: Request):
+        """结束功能测试计划"""
         filter_plan_by_data_scope(request, FunctionalTestPlan.objects.all()).get(id=request.data.get("plan_id"))
         plan = FunctionalTestExecutionService.finish_plan(int(request.data["plan_id"]), self._user_id(request))
         return ResponseData.success(RESPONSE_MSG_0082, FunctionalTestPlanSerializer(plan).data)
@@ -188,6 +199,7 @@ class FunctionalTestPlanViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def batch_result(self, request: Request):
+        """批量更新测试计划用例执行结果"""
         filter_plan_by_data_scope(request, FunctionalTestPlan.objects.all()).get(id=request.data.get("plan_id"))
         items = FunctionalTestExecutionService.batch_result(
             int(request.data["plan_id"]), request.data.get("plan_case_ids") or [], request.data.get("result"),

@@ -4,7 +4,7 @@
     :class="{ 'has-context': errorMessage || sourceSnapshot || detailState.malformed }"
   >
     <div v-if="errorMessage || sourceSnapshot || detailState.malformed" class="mango-pytest-result-detail__context">
-      <a-alert v-if="errorMessage" type="error" class="mango-pytest-result-detail__alert">
+      <a-alert data-feedback-kind="execution-result" v-if="errorMessage" type="error" class="mango-pytest-result-detail__alert">
         {{ errorMessage }}
       </a-alert>
       <a-alert v-if="detailState.malformed" type="warning">部分结果格式异常，无法展示对应 Case，请重新加载执行记录。</a-alert>

@@ -3,11 +3,11 @@
 
 def verify_workflow_flow(user, product):
     from src.apps.evaluation.models import EvaluationDataset
-    from src.apps.evaluation.services.dataset_version import EvaluationDatasetVersionService
-    from src.apps.evaluation.services.dataset_item import EvaluationDatasetItemService
-    from src.apps.evaluation.services.versioning import EvaluationVersionService
-    from src.apps.evaluation.services.case import EvaluationCaseService
-    from src.apps.evaluation.services.execution import EvaluationCaseExecutionService
+    from src.apps.evaluation.services.dataset.dataset_version import EvaluationDatasetVersionService
+    from src.apps.evaluation.services.dataset.dataset_item import EvaluationDatasetItemService
+    from src.apps.evaluation.services.dataset.versioning import EvaluationVersionService
+    from src.apps.evaluation.services.assets.case import EvaluationCaseService
+    from src.apps.evaluation.services.execution.execution import EvaluationCaseExecutionService
     dataset = EvaluationDataset.objects.create(name="workflow regression", task_type=["问答"])
     steps = [
         {"id": "prepare", "name": "隔离用户", "stage": "prepare", "scope": "group", "action": "script", "code": 'def main(input, context): return {"id": context["session"]["id"]}'},

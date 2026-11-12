@@ -1,16 +1,16 @@
 <template>
   <TableBody plain class="mango-grader-page">
     <template #header
-      ><TableHeader title="评测中心 / 评分器" @search="onSearch" @reset-search="reset"
+      ><TableHeader title="评测中心 / 评分器" @search="autoSearch.run" @reset-search="autoSearch.cancel(); reset(); autoSearch.sync()"
         ><template #search-content
-          ><a-form :model="filters" layout="inline" @keyup.enter="onSearch"
+          ><a-form :model="filters" layout="inline" @keyup.enter="autoSearch.run"
             ><a-form-item label="评分器名称"
-              ><a-input
+              ><a-input @blur="autoSearch.schedule" @clear="autoSearch.schedule" @mouseleave="autoSearch.schedule"
                 v-model="filters.search"
                 placeholder="搜索评分器名称"
                 allow-clear /></a-form-item
             ><a-form-item label="类别"
-              ><a-select
+              ><a-select @change="autoSearch.schedule"
                 v-model="filters.categories"
                 :options="categoryOptions"
                 placeholder="选择评分类别"
@@ -87,6 +87,8 @@
   </EvaluationDrawer>
 </template>
 <script setup lang="ts">
+  import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
+
 import { reportLoadError } from '@/utils/load-error'
 
   import EvaluationDrawer from '../components/EvaluationDrawer.vue'
@@ -196,6 +198,8 @@ import { reportLoadError } from '@/utils/load-error'
     return readDetail(row)
   }
   scope.start()
+
+  const autoSearch = useDebouncedSearch(onSearch, () => filters)
 </script>
 
 <style scoped>

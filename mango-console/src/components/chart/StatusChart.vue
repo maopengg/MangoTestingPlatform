@@ -15,6 +15,7 @@
     totalLabel?: string
     centerLabel?: string
     centerValue?: string | number
+    unit?: string
   }>()
 
   const pieChart = ref<HTMLElement | null>(null)
@@ -79,9 +80,9 @@
     return chartItems.value.map((item) => ({
       value: item.value,
       name: item.name,
-      itemStyle: {
-        color: item.color,
-      },
+      itemStyle: { color: item.color },
+      label: { show: item.value > 0 },
+      labelLine: { show: item.value > 0 },
     }))
   }
 
@@ -99,27 +100,32 @@
           lineHeight: 18,
         },
       },
+      legend: { bottom: 0, left: 'center', selectedMode: false, itemWidth: 9, itemHeight: 7,
+        textStyle: { color: token('--m-text-2', '#64748b'), fontSize: 11 }, data: chartItems.value.map(item => item.name) },
       series: [
         {
           name: '测试状态',
           type: 'pie',
-          radius: ['58%', '78%'],
-          center: ['50%', '50%'],
-          avoidLabelOverlap: false,
+          radius: ['40%', '58%'],
+          center: ['50%', '44%'],
+          avoidLabelOverlap: true,
           itemStyle: {
             borderRadius: 5,
             borderColor: token('--m-surface', '#fff'),
             borderWidth: 3,
           },
           label: {
-            show: false,
+            show: true, position: 'outside', alignTo: 'edge', edgeDistance: 8,
+            color: token('--m-text-2', '#64748b'), fontSize: 11, lineHeight: 17,
+            formatter(item: { name: string; value: number }) {
+              return `${item.name}\n${item.value.toLocaleString('zh-CN')} ${props.unit || '个'} · ${total.value ? (item.value * 100 / total.value).toFixed(2) : '0.00'}%`
+            },
           },
+          labelLayout: { hideOverlap: true },
           emphasis: {
             scaleSize: 3,
           },
-          labelLine: {
-            show: false,
-          },
+          labelLine: { show: true, length: 10, length2: 8, lineStyle: { color: token('--m-muted', '#64748b') } },
           data: getChartData(), // 动态生成数据
         },
       ],
@@ -202,173 +208,21 @@
         <div class="mango-status-donut">
           <div ref="pieChart" class="mango-chart"></div>
           <div class="mango-status-total">
+            <strong>{{ centerValue ?? total.toLocaleString('zh-CN') }}</strong>
             <span>{{ centerLabel || totalLabel || '总数' }}</span>
-            <strong>{{ centerValue ?? total }}</strong>
           </div>
         </div>
-        <div class="mango-status-list">
-          <div v-for="item in chartItems" :key="item.name" class="mango-status-item">
-            <span class="mango-status-dot" :style="{ backgroundColor: item.color }"></span>
-            <div class="mango-status-main">
-              <span>{{ item.name }}</span>
-              <div class="mango-status-bar">
-                <i :style="{ width: `${item.percent}%`, backgroundColor: item.color }"></i>
-              </div>
-            </div>
-            <div class="mango-status-value">
-              <strong>{{ item.percentText }}</strong>
-              <span>{{ item.value }}</span>
-            </div>
-          </div>
-        </div>
+
       </div>
     </mango-panel-spin>
   </div>
 </template>
 
 <style lang="less" scoped>
-  .mango-status-chart {
-    height: 100%;
-    min-height: 0;
-  }
-
-  .mango-chart-spin,
-  :deep(.mango-chart-spin > .mango-panel-spin__content) {
-    display: grid;
-    height: 100%;
-    min-height: 0;
-  }
-
-  .mango-status-chart__content {
-    display: grid;
-    height: 100%;
-    min-height: 0;
-    grid-template-columns: 40% minmax(0, 1fr);
-    align-items: center;
-    gap: 10px;
-  }
-
-  .mango-status-donut {
-    position: relative;
-    height: 100%;
-    min-height: 162px;
-  }
-
-  .mango-chart {
-    width: 100%;
-    height: 100%;
-  }
-
-  .mango-status-total {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    display: flex;
-    width: 90px;
-    height: 70px;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-
-    span {
-      color: var(--m-muted);
-      font-size: 11px;
-    }
-
-    strong {
-      max-width: 86px;
-      overflow: hidden;
-      color: var(--m-text);
-      font-size: 18px;
-      font-variant-numeric: tabular-nums;
-      line-height: 19px;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-  }
-
-  .mango-status-list {
-    display: flex;
-    height: 100%;
-    min-width: 0;
-    min-height: 0;
-    justify-content: center;
-    flex-direction: column;
-    gap: 5px;
-  }
-
-  .mango-status-item {
-    display: grid;
-    min-width: 0;
-    grid-template-columns: 9px minmax(0, 1fr) 97px;
-    align-items: center;
-    gap: 7px;
-  }
-
-  .mango-status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-  }
-
-  .mango-status-main {
-    min-width: 0;
-
-    span {
-      display: block;
-      overflow: hidden;
-      color: var(--m-text-2);
-      font-size: 12px;
-      line-height: 16px;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-  }
-
-  .mango-status-bar {
-    height: 3px;
-    margin-top: 3px;
-    overflow: hidden;
-    border-radius: 999px;
-    background: var(--m-border);
-
-    i {
-      display: block;
-      height: 100%;
-      min-width: 2px;
-      border-radius: inherit;
-    }
-  }
-
-  .mango-status-value {
-    display: grid;
-    align-items: baseline;
-    grid-template-columns: 52px minmax(30px, 1fr);
-    text-align: right;
-    gap: 3px;
-
-    strong,
-    span {
-      display: inline-block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    strong {
-      color: var(--m-primary);
-      font-size: 11px;
-      font-variant-numeric: tabular-nums;
-      line-height: 14px;
-    }
-
-    span {
-      color: var(--m-muted);
-      font-size: 11px;
-      font-variant-numeric: tabular-nums;
-      line-height: 13px;
-    }
-  }
+  .mango-status-chart, .mango-chart-spin, :deep(.mango-chart-spin > .mango-panel-spin__content),
+  .mango-status-chart__content, .mango-status-donut, .mango-chart { width: 100%; height: 100%; min-width: 0; min-height: 0; }
+  .mango-status-donut { position: relative; }
+  .mango-status-total { position: absolute; top: 44%; left: 50%; display: flex; width: 34%; align-items: center; justify-content: center; flex-direction: column; gap: 4px; transform: translate(-50%, -50%); pointer-events: none; }
+  .mango-status-total span { color: var(--m-muted); font-size: 11px; line-height: 16px; }
+  .mango-status-total strong { color: var(--m-text); font-size: 24px; font-variant-numeric: tabular-nums; line-height: 30px; white-space: nowrap; }
 </style>

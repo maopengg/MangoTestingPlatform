@@ -7,8 +7,8 @@ from src.apps.task_center.enums.execution import (
 )
 from src.apps.task_center.selectors.querysets import ScheduleFireQuerySelector
 from src.apps.task_center.services.selection.case_selection import ScheduledTaskCaseSelectionService
-from src.apps.test_center.services.diagnostic_markdown import DiagnosticMarkdownService
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.test_center.services.diagnostics.diagnostic_markdown import DiagnosticMarkdownService
+from src.apps.test_center.services.project.product_module import ProductModuleService
 from src.interfaces.mcp.common import (
     fail,
     ok,

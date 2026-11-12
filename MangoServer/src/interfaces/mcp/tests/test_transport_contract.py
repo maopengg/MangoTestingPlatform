@@ -14,7 +14,8 @@ from fastmcp.server.auth import AccessToken
 from mcp.server.fastmcp import FastMCP as OldFastMCP
 
 from src.apps.user.models import User
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.endpoint_permission import EndpointPermissionService
 from src.interfaces.mcp.authentication import (
     TOKEN_VERIFIER,
     MangoAuthorizationMiddleware,
@@ -54,6 +55,10 @@ TOOL_REGISTRARS = [
     MCP_ALLOWED_ORIGINS=["https://mango-platform.example.com"],
 )
 class FastMcpMigrationTests(SimpleTestCase):
+    def setUp(self):
+        from src.apps.user.tests.permission_fixtures import install_legacy_endpoint_snapshot
+        install_legacy_endpoint_snapshot(self)
+
     def test_list_product_modules_applies_pagination(self):
         class ToolCapture:
             def __init__(self):
@@ -391,7 +396,8 @@ class FastMcpMigrationTests(SimpleTestCase):
             client_id="tester",
             subject="7",
             scopes=["api.headers:read"],
-            claims={"user_id": 7, "is_super_admin": False},
+            claims={"user_id": 7, "is_super_admin": False, "endpoint_permissions":
+                    EndpointPermissionService.from_legacy_keys({'api.headers:read'})},
         )
         with patch.object(MangoAuthorizationMiddleware, "_access", new=AsyncMock(return_value=access)):
             async with Client(server) as client:
@@ -440,7 +446,7 @@ class FastMcpMigrationTests(SimpleTestCase):
             claims={"user_id": 7, "is_super_admin": False},
         )
         with (
-            patch("src.apps.system.services.system_config.SystemConfigService.get_environment_display_names", return_value={}),
+            patch("src.apps.system.services.configuration.system_config.SystemConfigService.get_environment_display_names", return_value={}),
             patch.object(MangoAuthorizationMiddleware, "_access", new=AsyncMock(return_value=access)),
             patch("src.interfaces.mcp.authentication.UserQuerySelector.user") as user_selector,
             patch("src.interfaces.mcp.common.require_mcp_user", return_value=None),
@@ -798,7 +804,7 @@ class FastMcpMigrationTests(SimpleTestCase):
 
         self.assertIsNone(error)
 
-    @patch("src.apps.system.services.system_config.SystemConfigService.guest_can_view_all_project_data",
+    @patch("src.apps.system.services.configuration.system_config.SystemConfigService.guest_can_view_all_project_data",
            return_value=True)
     def test_guest_global_project_switch_only_applies_to_guest_role(self, _guest_scope):
         guest = SimpleNamespace(role_id=1, role=SimpleNamespace(name="游客"))

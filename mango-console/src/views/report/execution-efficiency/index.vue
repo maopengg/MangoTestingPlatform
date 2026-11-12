@@ -22,12 +22,12 @@
     <ProjectProductNavigationWorkbench
       contained-body show-modules :show-toolbar="false" :reset-key="resetKey"
       :model-value="navigation.projectProduct" :module-value="navigation.module"
-      @filter-change="onNavigation" @search="search" @reset-search="reset"
+      @filter-change="onNavigation" @search="autoSearch.run" @reset-search="autoSearch.cancel(); reset(); autoSearch.sync()"
     >
       <template #search>
-        <a-form layout="inline" :model="{}" @submit.prevent="search">
+        <a-form layout="inline" :model="{}" @submit.prevent="autoSearch.run">
           <a-form-item v-for="item in conditions" :key="item.key" :label="item.label">
-            <a-select v-if="item.type === 'select'" v-model="item.value" :multiple="item.multiple"
+            <a-select @change="autoSearch.schedule" v-if="item.type === 'select'" v-model="item.value" :multiple="item.multiple"
               :max-tag-count="1" :options="options(item.key)" allow-search allow-clear
               :loading="isTaskOption(item.key) && optionState[item.key].loading"
               :filter-option="isTaskOption(item.key) ? false : undefined"
@@ -36,16 +36,13 @@
               @search="(keyword: string) => searchOptions(item.key, keyword)"
               @dropdown-reach-bottom="moreOptions(item.key)">
               <template v-if="isTaskOption(item.key) && optionState[item.key].error" #footer>
-                <div class="mango-efficiency-option-error" role="alert">
-                  <span>{{ optionState[item.key].error }}</span>
-                  <a-button size="small" type="text" :loading="optionState[item.key].loading" @click.stop="retryOptions(item.key)">重试</a-button>
-                </div>
+                <MangoRequestFeedback  :message="optionState[item.key].error"><a-button size="small" type="text" :loading="optionState[item.key].loading" @click.stop="retryOptions(item.key)">重试</a-button></MangoRequestFeedback>
               </template>
             </a-select>
-            <a-input v-else v-model="item.value" :placeholder="item.placeholder" @press-enter="search" />
+            <a-input @blur="autoSearch.schedule" @clear="autoSearch.schedule" @mouseleave="autoSearch.schedule" v-else v-model="item.value" :placeholder="item.placeholder" @press-enter="autoSearch.run" />
           </a-form-item>
           <a-form-item v-if="section === 'timing'" label="统计时间">
-            <a-range-picker v-model="dateRange" show-time format="MM-DD HH:mm" value-format="YYYY-MM-DD HH:mm:ss"
+            <a-range-picker @change="autoSearch.schedule" v-model="dateRange" show-time format="MM-DD HH:mm" value-format="YYYY-MM-DD HH:mm:ss"
               :allow-clear="false" />
           </a-form-item>
         </a-form>
@@ -165,6 +162,8 @@
 </template>
 
 <script setup lang="ts">
+  import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
+
 import { reportLoadError } from '@/utils/load-error'
 
 import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
@@ -350,6 +349,8 @@ onMounted(() => { mounted = true; document.addEventListener('visibilitychange', 
 onActivated(() => { const inactive = !active; active = true; if (inactive && needsLoad) void refresh() })
 onDeactivated(() => { active = false; invalidate() })
 onBeforeUnmount(() => { disposed = true; invalidate(true); clearOptions(); document.removeEventListener('visibilitychange', visibilityChanged) })
+
+  const autoSearch = useDebouncedSearch(search, () => [conditions.map(item => [item.key, item.value]), dateRange.value])
 </script>
 
 <style scoped>

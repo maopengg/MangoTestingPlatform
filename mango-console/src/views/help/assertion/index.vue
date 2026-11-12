@@ -56,7 +56,7 @@
                   </span>
                 </a-tooltip>
               </div>
-              <a-alert v-if="testError" type="error">{{ testError }}</a-alert>
+              <MangoRequestFeedback v-if="testError" :message="(testError)" />
               <a-alert
                 v-if="testResult"
                 :type="testResult.status ? 'success' : 'error'"
@@ -150,8 +150,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import {
     computed,
     nextTick,
@@ -347,8 +346,8 @@ import { reportLoadError } from '@/utils/load-error'
     try {
       const result = parseTestResult(await postSystemAssertionTest(request), request)
       if (current()) testResult.value = result
-    } catch {
-      if (current()) testError.value = '断言测试请求失败或结果不匹配，输入已保留，请重试'
+    } catch (requestFailure) {
+      if (current()) testError.value = requestFailureMessage(requestFailure, '断言测试请求失败或结果不匹配，输入已保留，请重试')
     } finally {
       testing.value = false
     }

@@ -3,8 +3,8 @@ from unittest import TestCase, mock
 
 from mangotools.enums import StatusEnum
 
-from src.apps.monitoring.services.base_monitor import MonitorBase
-from src.apps.monitoring.services.environment_context import MonitoringEnvironmentContextService
+from src.apps.monitoring.services.execution.base_monitor import MonitorBase
+from src.apps.monitoring.services.execution.environment_context import MonitoringEnvironmentContextService
 from src.apps.test_center.enums.environment import EnvironmentEnum
 
 
@@ -32,7 +32,7 @@ class MonitoringEnvironmentContextServiceTest(TestCase):
         self.assertEqual(result['databases']['主库']['host'], 'db.example.com')
 
     @mock.patch(
-        'src.apps.monitoring.services.environment_context.DataFactoryDatasourceBinding.objects.select_related'
+        'src.apps.monitoring.services.execution.environment_context.DataFactoryDatasourceBinding.objects.select_related'
     )
     def test_database_configs_are_keyed_by_logical_alias(self, select_related_mock):
         alias = SimpleNamespace(id=3, name='主库')
@@ -68,9 +68,9 @@ class MonitoringEnvironmentContextServiceTest(TestCase):
 
 
 class MonitorBaseEnvironmentContextTest(TestCase):
-    @mock.patch('src.apps.test_center.services.database_connection.DatabaseConnectionFactory.create')
+    @mock.patch('src.apps.test_center.services.datasource.database_connection.DatabaseConnectionFactory.create')
     @mock.patch(
-        'src.apps.data_factory.services.datasource.DataFactoryDatasourceResolver.resolve_binding_by_env'
+        'src.apps.data_factory.services.datasource.datasource.DataFactoryDatasourceResolver.resolve_binding_by_env'
     )
     def test_database_connection_keeps_platform_permissions(self, resolve_mock, create_mock):
         database = SimpleNamespace(id=5)
@@ -93,7 +93,7 @@ class MonitorBaseEnvironmentContextTest(TestCase):
         create_mock.assert_called_once_with(database, allow_query=True, allow_write=False)
 
     @mock.patch(
-        'src.apps.monitoring.services.base_monitor.MonitoringEnvironmentContextService.build'
+        'src.apps.monitoring.services.execution.base_monitor.MonitoringEnvironmentContextService.build'
     )
     @mock.patch('src.apps.monitoring.models.MonitoringTask.objects.only')
     def test_selected_environment_is_available_from_self(self, only_mock, build_mock):
@@ -114,7 +114,7 @@ class MonitorBaseEnvironmentContextTest(TestCase):
         self.assertIs(monitor.databases, monitor.database_configs)
 
     @mock.patch(
-        'src.apps.monitoring.services.base_monitor.MonitoringEnvironmentContextService.build',
+        'src.apps.monitoring.services.execution.base_monitor.MonitoringEnvironmentContextService.build',
         return_value=None,
     )
     @mock.patch('src.apps.monitoring.models.MonitoringTask.objects.only')

@@ -3,9 +3,12 @@ from django.utils.module_loading import import_string
 from rest_framework.permissions import BasePermission
 
 from src.apps.user.enums.permission import HttpPermissionBoundaryEnum
-from src.apps.user.services.http_permission_boundaries import HTTP_PERMISSION_BOUNDARIES
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
-from src.apps.user.services.http_permission_registry import permission_for_view
+from src.apps.user.exceptions import USER_HTTP_PERMISSION_POLICY_MISSING, UserError
+from src.apps.user.services.authorization.http_permission_boundaries import HTTP_PERMISSION_BOUNDARIES, HTTP_FIXED_BUSINESS_ENDPOINTS
+from src.apps.user.services.authorization.endpoint_catalog import http_request_endpoint_id, fixed_business_rule
+from src.apps.user.services.authorization.endpoint_permission import EndpointPermissionService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.http_permission_registry import permission_for_view
 
 
 class MenuActionPermission(BasePermission):
@@ -34,18 +37,17 @@ class MenuActionPermission(BasePermission):
             return True
         permission_key = self._resolve_permission_key(request, view)
         if not permission_key:
-            return False
-        if PermissionMenuService.is_effective_super_admin(user):
-            return True
+            raise UserError(USER_HTTP_PERMISSION_POLICY_MISSING)
+        super_admin = PermissionMenuService.is_effective_super_admin(user)
         if self._is_own_user_info_request(request, user):
             return 'index.home:read' in PermissionMenuService.permission_keys_for_user(user)
         if self._is_public_cache_data_key_value_request(request):
             return True
-        allowed_keys = PermissionMenuService.permission_keys_for_user(user)
-        if isinstance(permission_key, (tuple, list, set)):
-            allowed = any(self._operation_key(key) in allowed_keys for key in permission_key)
-        else:
-            allowed = self._operation_key(permission_key) in allowed_keys
+        allowed = EndpointPermissionService.allows(
+            user, http_request_endpoint_id(owner, action, request.method, permission_key),
+            (owner, action, request.method.lower()) in HTTP_FIXED_BUSINESS_ENDPOINTS or fixed_business_rule(permission_key),
+            super_admin=super_admin,
+        )
         if not allowed:
             return False
         if owner == 'src.apps.auto_ui.api.views.ui_live_stream.LiveStreamViews':
@@ -54,7 +56,7 @@ class MenuActionPermission(BasePermission):
             if scope is None or scope.user_id is not None and scope.user_id != user.id:
                 return False
             operation = 'read'
-            return (f'{scope.page_key}:{operation}' in allowed_keys
+            return (f'{scope.page_key}:{operation}' in PermissionMenuService.permission_keys_for_user(user)
                     and ProjectProductScopeService.has_project_product(user, scope.project_product_id))
         check_scope = getattr(view, 'has_request_data_scope_permission', None)
         return check_scope(request) if check_scope else True

@@ -17,7 +17,7 @@
           <a-button type="primary" size="small" :disabled="writeBusy" @click="onRegisterUser" data-testid="qa-views-system-user-button-注册用户">注册用户</a-button>
         </template>
       </TableTabs>
-      <a-alert v-if="routeRefreshError" type="warning">{{ routeRefreshError }} <a-link :loading="routeRefreshing" @click="refreshOwnRoutes">刷新菜单</a-link></a-alert>
+      <MangoRequestFeedback v-if="routeRefreshError" :message="(routeRefreshError)"><a-link :loading="routeRefreshing" @click="refreshOwnRoutes">刷新菜单</a-link></MangoRequestFeedback>
       <a-table :scroll="{ x: tableScrollX }" :bordered="false" :loading="listLoading" :data="rows" :pagination="false" :row-key="rowKey"
         :row-selection="{ selectedRowKeys, showCheckedAll }" @selection-change="onSelectionChange">
         <template #columns>
@@ -52,15 +52,14 @@
           <span>系统生成随机密码并发送到该用户的登录邮箱。</span>
           <template #extra>历史账号需先由用户在个人中心修改密码并切换为邮箱登录；发送前请确认已完成 <a-link @click="goToEmailConfig">邮箱配置</a-link>。</template>
         </a-form-item>
-        <a-alert v-if="passwordError" type="error">{{ passwordError }}</a-alert>
+        <MangoRequestFeedback v-if="passwordError" :message="(passwordError)" />
       </a-form>
     </template>
   </ModalDialog>
 </template>
 
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { Message, Modal } from '@arco-design/web-vue'
@@ -152,7 +151,7 @@ import { reportLoadError } from '@/utils/load-error'
       const response = await resetUserPassword({ id })
       if (!valid()) return
       const message = userSuccess(response, '密码已重置'); closePassword(); Message.success(message); await doRefresh()
-    } catch { if (valid()) passwordError.value = '重置密码失败，请重试' }
+    } catch (requestFailure) { if (valid()) passwordError.value = requestFailureMessage(requestFailure, '重置密码失败，请重试') }
     finally { rowOperation.value = null; if (valid()) resetPasswordDialogRef.value?.setConfirmLoading(false); resume() }
   }
   function closeConfirmation() { confirmationVersion++; confirmation?.close(); confirmation = null }

@@ -8,16 +8,16 @@
         :sticky-horizontal-scroll="false"
         :model-value="navigationProjectProduct"
         @filter-change="onNavigationFilterChange"
-        @search="search"
-        @reset-search="reset"
+        @search="autoSearch.run"
+        @reset-search="autoSearch.cancel(); reset(); autoSearch.sync()"
       >
         <template #search>
-          <a-form :model="filters" layout="inline" @keyup.enter="search">
+          <a-form :model="filters" layout="inline" @keyup.enter="autoSearch.run">
             <a-form-item label="Sprint"
-              ><a-input v-model="filters.name" allow-clear placeholder="编号或名称"
+              ><a-input @blur="autoSearch.schedule" @clear="autoSearch.schedule" @mouseleave="autoSearch.schedule" v-model="filters.name" allow-clear placeholder="编号或名称"
             /></a-form-item>
             <a-form-item label="状态"
-              ><a-select
+              ><a-select @change="autoSearch.schedule"
                 v-model="filters.status"
                 multiple
                 :max-tag-count="1"
@@ -27,7 +27,7 @@
                 allow-clear
             /></a-form-item>
             <a-form-item label="负责人"
-              ><a-select
+              ><a-select @change="autoSearch.schedule"
                 v-model="filters.owner"
                 multiple
                 :max-tag-count="1"
@@ -49,7 +49,7 @@
           
           
           
-          <a-alert v-if="navigationError" type="error">详情页面打开失败，请重新点击排期。</a-alert>
+          <MangoRequestFeedback v-if="navigationError" :message="&quot;详情页面打开失败，请重新点击排期。&quot;" />
           <a-table
             class="mango-native-scroll-table"
             :data="rows"
@@ -130,6 +130,10 @@
   />
 </template>
 <script lang="ts" setup>
+  import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
+
+import { requestFailureMessage } from '@/utils/load-error'
+
   import {
     computed,
     onActivated,
@@ -333,8 +337,8 @@
         query: { id: row.id },
       })
       if (failure && available() && generation === version) navigationError.value = true
-    } catch {
-      if (available() && generation === version) navigationError.value = true
+    } catch (requestFailure) {
+      if (available() && generation === version) navigationError.value = requestFailureMessage(requestFailure, true, "详情页面打开失败，请重新点击排期。")
     } finally {
       navigatingId.value = null
     }
@@ -383,6 +387,8 @@
     mounted = false
     invalidate()
   })
+
+  const autoSearch = useDebouncedSearch(search, () => filters)
 </script>
 <style lang="less" scoped>
   .mango-iteration-page__table {

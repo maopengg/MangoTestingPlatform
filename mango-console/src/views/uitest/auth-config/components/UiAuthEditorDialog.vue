@@ -1,8 +1,8 @@
 <template>
   <a-modal modal-class="mango-simple-form-modal" v-model:visible="editorVisible" :title="editingId === null ? '新增授权' : '编辑授权'" :width="560" :mask-closable="false" :ok-loading="saving" :on-before-ok="onSubmit" @cancel="close">
-      <a-alert v-if="saveError" type="error">{{ saveError }}</a-alert>
+      <MangoRequestFeedback v-if="saveError" :message="(saveError)" />
       
-      <a-alert v-for="item in optionErrors" :key="item.key" type="error">{{ item.error }} <a-button size="small" :loading="item.loading" @click="item.retry">重试加载</a-button></a-alert>
+      <MangoRequestFeedback v-for="item in optionErrors" :key="item.key" :message="(item.error)"><a-button size="small" :loading="item.loading" @click="item.retry">重试加载</a-button></MangoRequestFeedback>
       <a-form auto-label-width ref="formRef" :model="form" layout="horizontal" class="mango-ui-auth-editor mango-simple-form" :disabled="locked">
         <a-form-item label="项目/产品" class="mango-form-item__require mango-simple-form-item">
           <ProjectProductSelect v-model="productSelection" :disabled="locked" @change="onFormProjectProductChange" />
@@ -105,8 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
 import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import type { FormInstance } from '@arco-design/web-vue'
@@ -239,7 +238,7 @@ async function onSubmit(): Promise<boolean> {
   if (validation) { saveError.value = validation; return false }
   let payload
   try { payload = uiAuthPayload({ ...form }, { ...json }, id) }
-  catch { saveError.value = 'JSON格式不正确，配置必须为JSON对象'; return false }
+  catch (requestFailure) { saveError.value = requestFailureMessage(requestFailure, 'JSON格式不正确，配置必须为JSON对象'); return false }
   saving.value = true
   try {
     const errors = await formRef.value?.validate()
@@ -248,7 +247,7 @@ async function onSubmit(): Promise<boolean> {
     if (key === identity() && available()) emit('saved')
     if (current()) { close(); Message.success('保存成功') }
     return true
-  } catch { if (current()) saveError.value = '授权保存失败，请重试'; return false }
+  } catch (requestFailure) { if (current()) saveError.value = requestFailureMessage(requestFailure, '授权保存失败，请重试'); return false }
   finally { saving.value = false }
 }
 function visibilityChanged() { if (document.visibilityState !== 'visible') close() }

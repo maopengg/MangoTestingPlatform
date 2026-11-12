@@ -6,7 +6,7 @@ from django.test import SimpleTestCase
 from django.utils import timezone
 
 from src.apps.auto_api.enums import ApiAuthRefreshModeEnum
-from src.apps.auto_api.services.base.api_base_test_setup.auth_manager import ApiAuthManager
+from src.apps.auto_api.services.execution.base.api_base_test_setup.auth_manager import ApiAuthManager
 
 
 class ApiAuthManagerCacheAvailabilityTests(SimpleTestCase):

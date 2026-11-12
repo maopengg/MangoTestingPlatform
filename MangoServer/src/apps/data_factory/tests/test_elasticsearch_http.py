@@ -6,24 +6,20 @@ from urllib.request import Request
 
 from django.test import SimpleTestCase, override_settings
 from django.utils import timezone
-from src.apps.data_factory.services.datasource_timing import DatasourceTimingService as Timing
+from src.apps.data_factory.services.governance.datasource_timing import DatasourceTimingService as Timing
 
 from src.apps.data_factory.exceptions import DataFactoryError
 from src.apps.data_factory.models import Database
-from src.apps.data_factory.services.datasource_discovery import DataSourceDiscoveryService
-from src.apps.data_factory.services.datasource_target import DatasourceTargetService
-from src.apps.data_factory.services.elasticsearch_http import open_elasticsearch_request
+from src.apps.data_factory.services.datasource.datasource_discovery import DataSourceDiscoveryService
+from src.apps.data_factory.services.datasource.datasource_target import DatasourceTargetService
+from src.apps.data_factory.services.protocols.elasticsearch_http import open_elasticsearch_request
 
 
 @override_settings(CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}})
 class ElasticsearchHttpTests(SimpleTestCase):
     def setUp(self):
-        governor = patch('src.apps.data_factory.services.datasource_governor.DatasourceGovernorService.operation',
-                         side_effect=lambda target, **kwargs: nullcontext())
-        governor.start()
-        self.addCleanup(governor.stop)
         for method in ('start', 'finish_success', 'finish_failure'):
-            patcher = patch('src.apps.data_factory.services.sql_execution_audit.SqlExecutionAuditService.' + method)
+            patcher = patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionAuditService.' + method)
             patcher.start()
             self.addCleanup(patcher.stop)
 
@@ -31,8 +27,8 @@ class ElasticsearchHttpTests(SimpleTestCase):
         request = Request('https://es.example.com:9200/_cluster/health')
         context = MagicMock()
         target = MagicMock()
-        with patch('src.apps.data_factory.services.elasticsearch_http.httpx.Client') as client, \
-                patch('src.apps.data_factory.services.elasticsearch_http.ProtocolPoolRegistry.borrow') as borrow:
+        with patch('src.apps.data_factory.services.protocols.elasticsearch_http.httpx.Client') as client, \
+                patch('src.apps.data_factory.services.protocols.elasticsearch_http.ProtocolPoolRegistry.borrow') as borrow:
             def pool(_target, protocol, factory):
                 return nullcontext(factory(2))
             borrow.side_effect = pool
@@ -57,10 +53,10 @@ class ElasticsearchHttpTests(SimpleTestCase):
         for error, code in failures:
             with self.subTest(code=code), \
                     patch.object(DataSourceDiscoveryService, 'get_database', return_value=database), \
-                    patch('src.apps.data_factory.services.datasource_discovery.open_elasticsearch_request',
+                    patch('src.apps.data_factory.services.datasource.datasource_discovery.open_elasticsearch_request',
                           side_effect=error), \
                     patch(
-                        'src.apps.data_factory.services.datasource_discovery.DataSourceConnectionService.timeout_seconds',
+                        'src.apps.data_factory.services.datasource.datasource_discovery.DataSourceConnectionService.timeout_seconds',
                         return_value=5):
                 with self.assertRaises(DataFactoryError) as raised:
                     DataSourceDiscoveryService.tables(DatasourceTargetService.maintenance(database), refresh=True)
@@ -84,10 +80,10 @@ class ElasticsearchHttpTests(SimpleTestCase):
             yield response
         client = MagicMock()
         client.stream.side_effect = stream
-        with patch('src.apps.data_factory.services.elasticsearch_http.ProtocolPoolRegistry.borrow',
+        with patch('src.apps.data_factory.services.protocols.elasticsearch_http.ProtocolPoolRegistry.borrow',
                    return_value=nullcontext(client)), \
-                patch('src.apps.data_factory.services.elasticsearch_http.monotonic', side_effect=lambda: clock[0]), \
-                patch('src.apps.data_factory.services.datasource_timing.monotonic', side_effect=lambda: clock[0]), \
+                patch('src.apps.data_factory.services.protocols.elasticsearch_http.monotonic', side_effect=lambda: clock[0]), \
+                patch('src.apps.data_factory.services.governance.datasource_timing.monotonic', side_effect=lambda: clock[0]), \
                 Timing.scope():
             with open_elasticsearch_request(Request('https://es.example.com/item'),
                                             target=MagicMock(), timeout=5) as response:

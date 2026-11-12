@@ -11,7 +11,7 @@ from mangotools.enums import TaskEnum
 from src.apps.auto_api.services.api_case.version import ApiCaseRevisionService
 from src.apps.auto_api.services.api_case.snapshot import ApiCaseExecutionSelection
 from src.apps.auto_pytest.models import PytestCase, PytestProduct
-from src.apps.auto_ui.services.test_case.case_flow import UiCaseFlow
+from src.apps.auto_ui.services.execution.cases.case_flow import UiCaseFlow
 from src.apps.task_center.api.serializers.tasks import TasksSerializers
 from src.apps.task_center.enums import ScheduleFireSourceTypeEnum, ScheduleFireStatusEnum
 from src.apps.task_center.enums.execution import (
@@ -130,7 +130,7 @@ class ApiTaskClaimServiceTests(TestCase):
 
         self.assertEqual(candidate_ids, [self.suite_one.id, self.suite_two.id])
 
-    def test_candidate_environment_order_is_reverse_display_order_with_two_queries(self):
+    def test_candidate_environment_order_is_reverse_display_order_with_bounded_queries(self):
         TestSuiteDetails.objects.all().update(status=TaskEnum.SUCCESS.value)
         suite_ids = []
         now = timezone.now()
@@ -142,7 +142,7 @@ class ApiTaskClaimServiceTests(TestCase):
             )
             suite_ids.append(suite.id)
 
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(4):
             candidates = ApiTaskClaimService.candidate_suite_ids(
                 now - timedelta(hours=1), max_attempts=3,
             )
@@ -171,7 +171,7 @@ class ApiTaskClaimServiceTests(TestCase):
 
         self.assertEqual(claimed.test_suite_details, self.details[1].id)
 
-    @patch('src.apps.auto_ui.services.test_case.case_flow.SystemConfigService.get_test_suite_timeout_max_attempts',
+    @patch('src.apps.auto_ui.services.execution.cases.case_flow.SystemConfigService.get_test_suite_timeout_max_attempts',
            return_value=3)
     def test_ui_claim_uses_environment_then_creation_time(self, _max_attempts):
         TestSuiteDetails.objects.all().update(type=TestCaseTypeEnum.UI.value)
@@ -188,7 +188,7 @@ class ApiTaskClaimServiceTests(TestCase):
 
         self.assertEqual(claims, [self.details[index].id for index in (3, 2, 0, 1)])
 
-    @patch('src.apps.auto_ui.services.test_case.case_flow.SystemConfigService.get_test_suite_timeout_max_attempts',
+    @patch('src.apps.auto_ui.services.execution.cases.case_flow.SystemConfigService.get_test_suite_timeout_max_attempts',
            return_value=3)
     def test_ui_priority_does_not_bypass_status_retry_or_type_filters(self, _max_attempts):
         TestSuiteDetails.objects.all().update(test_env=EnvironmentEnum.PRO.value)

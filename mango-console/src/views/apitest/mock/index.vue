@@ -10,22 +10,22 @@
         :model-value="selectedProduct"
         :reset-key="sidebarResetKey"
         @filter-change="onProjectChange"
-        @search="search"
-        @reset-search="resetFilters"
+        @search="autoSearch.run"
+        @reset-search="autoSearch.cancel(); resetFilters(); autoSearch.sync()"
       >
         <template #search>
-          <a-form :model="filters" layout="inline" @keyup.enter="search">
+          <a-form :model="filters" layout="inline" @keyup.enter="autoSearch.run">
             <a-form-item label="ID"
-              ><a-input v-model="filters.id" allow-clear placeholder="请输入ID"
+              ><a-input @blur="autoSearch.schedule" @clear="autoSearch.schedule" @mouseleave="autoSearch.schedule" v-model="filters.id" allow-clear placeholder="请输入ID"
             /></a-form-item>
             <a-form-item label="接口名称"
-              ><a-input v-model="filters.name" allow-clear placeholder="请输入接口名称"
+              ><a-input @blur="autoSearch.schedule" @clear="autoSearch.schedule" @mouseleave="autoSearch.schedule" v-model="filters.name" allow-clear placeholder="请输入接口名称"
             /></a-form-item>
             <a-form-item label="请求路径"
-              ><a-input v-model="filters.mock_key" allow-clear placeholder="请输入路径关键字"
+              ><a-input @blur="autoSearch.schedule" @clear="autoSearch.schedule" @mouseleave="autoSearch.schedule" v-model="filters.mock_key" allow-clear placeholder="请输入路径关键字"
             /></a-form-item>
             <a-form-item label="方法"
-              ><a-select
+              ><a-select @change="autoSearch.schedule"
                 v-model="filters.method"
                 multiple
                 :max-tag-count="1"
@@ -34,7 +34,7 @@
                 placeholder="请选择方法"
             /></a-form-item>
             <a-form-item label="启用状态"
-              ><a-select
+              ><a-select @change="autoSearch.schedule"
                 v-model="filters.enabled"
                 multiple
                 :max-tag-count="1"
@@ -43,7 +43,7 @@
                 placeholder="请选择状态"
             /></a-form-item>
             <a-form-item label="调用记录"
-              ><a-select
+              ><a-select @change="autoSearch.schedule"
                 v-model="filters.record_call_log"
                 multiple
                 :max-tag-count="1"
@@ -158,6 +158,8 @@
 </template>
 
 <script lang="ts" setup>
+  import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
+
 import { reportLoadError } from '@/utils/load-error'
 
   import {
@@ -414,4 +416,6 @@ import { reportLoadError } from '@/utils/load-error'
   })
   onDeactivated(deactivate)
   onBeforeUnmount(deactivate)
+
+  const autoSearch = useDebouncedSearch(search, () => filters)
 </script>

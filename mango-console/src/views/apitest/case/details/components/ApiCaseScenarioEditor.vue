@@ -2,6 +2,7 @@
   <a-modal
     v-model:visible="visible"
     :title="title"
+    modal-class="mango-simple-form-modal"
     :width="560"
     :on-before-ok="save"
     :closable="!saving"

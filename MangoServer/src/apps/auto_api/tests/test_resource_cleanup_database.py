@@ -13,10 +13,10 @@ from src.apps.auto_api.enums.resource_cleanup import ApiResourceCleanupStatus as
 from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.models import ApiCase, ApiCaseExecutionTrace, ApiCaseExecutionResource
 from src.apps.auto_api.schemas.resource_cleanup import ApiResourceProof, ApiResourceVersionUpdate
-from src.apps.auto_api.services.resource_cleanup import ApiResourceExecutionManager as Manager, ApiResourceCleanupService as Service
-from src.apps.auto_api.services.resource_cleanup_io import ApiResourceCleanupIO as IO
+from src.apps.auto_api.services.resource_cleanup.resource_cleanup import ApiResourceExecutionManager as Manager, ApiResourceCleanupService as Service
+from src.apps.auto_api.services.resource_cleanup.resource_cleanup_io import ApiResourceCleanupIO as IO
 from src.apps.auto_api.tests.test_resource_cleanup import rule_data, proof_data, document
-from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService as ES
+from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as ES
 
 
 class ResourceLedgerDatabaseTests(unittest.TestCase):
@@ -73,16 +73,16 @@ class ResourceLedgerDatabaseTests(unittest.TestCase):
         targets = proof_data()
         self.stack.enter_context(patch.object(IO, 'binding', side_effect=lambda alias, *a, **k:
             (SimpleNamespace(), targets.sql_target if k.get('sql') else targets.es_target)))
-        self.stack.enter_context(patch('src.apps.data_factory.services.datasource.DataFactoryDatasource.create_engine',
+        self.stack.enter_context(patch('src.apps.data_factory.services.datasource.datasource.DataFactoryDatasource.create_engine',
                                        return_value=self.engine))
         self.stack.enter_context(patch.object(ES, 'resolve_index', return_value=('project_123', 'uuid')))
         self.stack.enter_context(patch.object(ES, 'document', side_effect=self.es_document))
-        self.stack.enter_context(patch('src.apps.auto_api.services.resource_cleanup.acquire_mysql_lock', return_value=True))
-        self.stack.enter_context(patch('src.apps.auto_api.services.resource_cleanup.release_mysql_lock', return_value=True))
-        self.stack.enter_context(patch('src.apps.auto_api.services.resource_cleanup.monotonic', side_effect=lambda: self.clock))
+        self.stack.enter_context(patch('src.apps.auto_api.services.resource_cleanup.resource_cleanup.acquire_mysql_lock', return_value=True))
+        self.stack.enter_context(patch('src.apps.auto_api.services.resource_cleanup.resource_cleanup.release_mysql_lock', return_value=True))
+        self.stack.enter_context(patch('src.apps.auto_api.services.resource_cleanup.resource_cleanup.monotonic', side_effect=lambda: self.clock))
         self.stack.enter_context(patch('src.apps.task_center.services.execution.cooperative_executor.cooperative_sleep',
                                       side_effect=self.pause))
-        self.stack.enter_context(patch('src.apps.data_factory.services.infrastructure.DatasourceInfrastructureService.resolve_verified_requests'))
+        self.stack.enter_context(patch('src.apps.data_factory.services.governance.infrastructure.DatasourceInfrastructureService.resolve_verified_requests'))
         self.cache = {'tenant': '123', 'employee': '456'}
         setup = SimpleNamespace(test_data=SimpleNamespace(set_cache=self.cache.__setitem__, get_cache=self.cache.__getitem__))
         self.manager = Manager(self.case, self.trace, setup, [self.rule])

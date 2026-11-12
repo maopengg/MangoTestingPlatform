@@ -18,23 +18,17 @@ from src.apps.perf.exceptions import PerfError
 from src.apps.perf.formatters import PERF_DATETIME_FORMAT, format_perf_datetime, format_perf_row_datetimes
 from src.apps.perf.models import PerfMetricInterval, PerfRun, PerfScenario
 from src.apps.perf.schemas.execution import PerfExecutorPolicy, PerfMetricBatch, PerfScenarioIR
-from src.apps.perf.services.compiler import (
-    PerfScenarioCompiler,
-    ensure_required_scenario_components,
-    extract_secrets,
-    redact_secrets,
-    snapshot_hash,
-)
-from src.apps.perf.services.datetime_utils import normalize_perf_datetime
-from src.apps.perf.services.execution import PerfExecutionService
-from src.apps.perf.services.finalize import PerfFinalizeService, _json_number
-from src.apps.perf.services.functions import PERF_FUNCTION_ARGUMENTS, collect_perf_functions
-from src.apps.perf.services.load_stage import PerfLoadStageService
-from src.apps.perf.services.metrics import PerfMetricService
-from src.apps.perf.services.performance_goal import PerfPerformanceGoalService
-from src.apps.perf.services.scenario_configuration import PerfScenarioConfigurationService
-from src.apps.perf.services.secrets import PerfSecretService
-from src.apps.perf.services.source_api import PerfSourceCaseService
+from src.apps.perf.services.compilation.compiler import PerfScenarioCompiler, ensure_required_scenario_components, extract_secrets, redact_secrets, snapshot_hash
+from src.apps.perf.services.execution.datetime_utils import normalize_perf_datetime
+from src.apps.perf.services.execution.execution import PerfExecutionService
+from src.apps.perf.services.execution.finalize import PerfFinalizeService, _json_number
+from src.apps.perf.services.compilation.functions import PERF_FUNCTION_ARGUMENTS, collect_perf_functions
+from src.apps.perf.services.scenario.load_stage import PerfLoadStageService
+from src.apps.perf.services.reporting.metrics import PerfMetricService
+from src.apps.perf.services.scenario.performance_goal import PerfPerformanceGoalService
+from src.apps.perf.services.scenario.scenario_configuration import PerfScenarioConfigurationService
+from src.apps.perf.services.security.secrets import PerfSecretService
+from src.apps.perf.services.scenario.source_api import PerfSourceCaseService
 from src.common.testing import ObtainTestData, get_data_method_info
 
 

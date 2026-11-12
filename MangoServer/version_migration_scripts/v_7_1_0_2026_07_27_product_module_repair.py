@@ -1197,9 +1197,7 @@ class ProductModuleRepair:
                 return
 
             from django.db import transaction
-            from src.apps.test_center.services.product_module_cache import (
-                ProductModuleCacheService,
-            )
+            from src.apps.test_center.services.project.product_module_cache import ProductModuleCacheService
 
             with transaction.atomic():
                 stats = self._execute_short_path_plan(plan)

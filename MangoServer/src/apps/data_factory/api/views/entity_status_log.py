@@ -21,6 +21,7 @@ class DataFactoryEntityStatusLogViews(ViewSet):
 
     @error_response('system')
     def list(self, request: Request):
+        """获取数据工厂实体状态日志列表"""
         entity_id = request.query_params.get('entity_id')
         if not entity_id:
             raise DataFactoryError(DATA_FACTORY_ENTITY_NAME_TEMPLATE_DUPLICATED)

@@ -9,10 +9,10 @@ from src.apps.data_factory.constants import CLEANUP_REPORT_CONTEXT_KEY
 from src.apps.data_factory.enums.cleanup import DataFactoryCleanupModeEnum, DataFactoryCleanupStatusEnum
 from src.apps.data_factory.exceptions import DataFactoryError, DATA_FACTORY_CONFIG_INVALID
 from src.apps.data_factory.schemas.cleanup_resource import CleanupTaskPayload, CleanupResourceState
-from src.apps.data_factory.services.cleanup import DataFactoryCleanup
-from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService as Schedule
-from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService as Resources
-from src.apps.data_factory.services.execution_recovery import DataFactoryExecutionRecovery
+from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
+from src.apps.data_factory.services.cleanup.cleanup_schedule import DataFactoryCleanupScheduleService as Schedule
+from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as Resources
+from src.apps.data_factory.services.recovery.execution_recovery import DataFactoryExecutionRecovery
 from src.apps.data_factory.schemas.performance import DatasourcePerformancePolicy
 from src.apps.task_center.schemas.server_task import ServerTaskLease
 from src.apps.task_center.services.execution.executor_task import ExecutorTaskService as Tasks
@@ -21,7 +21,7 @@ from src.apps.system.enums.executor import ExecutorTaskStatusEnum
 
 class CleanupRoutingTests(SimpleTestCase):
     def setUp(self):
-        from src.apps.data_factory.services.cleanup_schedule import _case_cleanup_owner
+        from src.apps.data_factory.services.cleanup.cleanup_schedule import _case_cleanup_owner
         token = _case_cleanup_owner.set(None)
         self.addCleanup(_case_cleanup_owner.reset, token)
         self.execution = SimpleNamespace(id=7, project_product_id=4)
@@ -35,7 +35,7 @@ class CleanupRoutingTests(SimpleTestCase):
             'wait': patch.object(Schedule, 'wait'),
             'validate': patch.object(Schedule, 'validate_report_owner'),
             'verify': patch.object(Schedule, 'verify_complete'),
-            'query': patch('src.apps.data_factory.services.cleanup_schedule.TaskCenterQuerySelector.executor_tasks'),
+            'query': patch('src.apps.data_factory.services.cleanup.cleanup_schedule.TaskCenterQuerySelector.executor_tasks'),
         }
         self.mocks = {}
         for key, guard in patches.items():
@@ -132,10 +132,10 @@ class CleanupRoutingTests(SimpleTestCase):
                          DataFactoryCleanupModeEnum.SYNCHRONOUS)
 
 class CleanupCompletionProofTests(SimpleTestCase):
-    @patch('src.apps.data_factory.services.cleanup_schedule.DataFactoryExecution.objects')
-    @patch('src.apps.data_factory.services.cleanup_schedule.DataFactoryExecutionItem.objects')
+    @patch('src.apps.data_factory.services.cleanup.cleanup_schedule.DataFactoryExecution.objects')
+    @patch('src.apps.data_factory.services.cleanup.cleanup_schedule.DataFactoryExecutionItem.objects')
     def test_root_success_cannot_hide_uncleaned_child(self, items, executions):
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService as Infrastructure
         executions.get.return_value = SimpleNamespace(cleanup_status=DataFactoryCleanupStatusEnum.SUCCESS.value)
         items.filter.return_value.exclude.return_value.exists.return_value = True
         with Infrastructure.scope():
@@ -144,8 +144,8 @@ class CleanupCompletionProofTests(SimpleTestCase):
             self.assertEqual(caught.exception.code, 34193)
             self.assertTrue(Infrastructure.current())
 
-    @patch('src.apps.data_factory.services.cleanup_schedule.DataFactoryExecution.objects')
-    @patch('src.apps.data_factory.services.cleanup_schedule.DataFactoryExecutionItem.objects')
+    @patch('src.apps.data_factory.services.cleanup.cleanup_schedule.DataFactoryExecution.objects')
+    @patch('src.apps.data_factory.services.cleanup.cleanup_schedule.DataFactoryExecutionItem.objects')
     def test_task_success_cannot_replace_actual_cleanup_proof(self, items, executions):
         for state in (DataFactoryCleanupStatusEnum.FAIL.value, DataFactoryCleanupStatusEnum.NOT_CLEANED.value):
             executions.get.return_value = SimpleNamespace(cleanup_status=state)
@@ -206,7 +206,7 @@ class InlineCleanupOwnershipTests(SimpleTestCase):
 class InlineResourceWindowTests(SimpleTestCase):
     def test_quota_wait_inside_first_sample_cannot_replace_full_observation_window(self):
         from src.apps.data_factory.schemas.cleanup_resource import EsCleanupRule, EsCleanupSnapshot
-        from src.apps.data_factory.services.datasource_wait import _wait_elapsed
+        from src.apps.data_factory.services.governance.datasource_wait import _wait_elapsed
         rule = EsCleanupRule(datasource_alias_id=8, index_template='example_{tenant}', timeout_seconds=3)
         snapshot = EsCleanupSnapshot(rule=rule, binding_id=5, connection_id=6, connection_version='example',
             environment=0, index='example_1', document_id='11', tenant='1', baseline_absent=True)
@@ -225,8 +225,8 @@ class InlineResourceWindowTests(SimpleTestCase):
         try:
             with patch.object(Resources, 'validate_snapshot', side_effect=lambda value: Resources.state(value)), \
                     patch.object(Resources, 'resolve_binding'), \
-                    patch('src.apps.data_factory.services.cleanup_resource.DatasourceTargetService.resolve'), \
-                    patch('src.apps.data_factory.services.factory_sql_execution.DataFactorySqlExecutionService.build_source_context',
+                    patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve'), \
+                    patch('src.apps.data_factory.services.sql.factory_sql_execution.DataFactorySqlExecutionService.build_source_context',
                           return_value={}), patch.object(Resources, 'sample', side_effect=sample):
                 due = Resources.advance(item, generation=0, task_id=3, clock=clock)
                 state = Resources.state(item)
@@ -242,7 +242,7 @@ class InlineResourceWindowTests(SimpleTestCase):
 
     @patch.object(Resources, 'validate_snapshot')
     @patch.object(Resources, 'resolve_binding')
-    @patch('src.apps.data_factory.services.cleanup_resource.DatasourceTargetService.resolve')
+    @patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve')
     @patch.object(Resources, 'sample', return_value=True)
     def test_inline_uses_same_full_window_and_two_terminal_samples(self, sample, target, binding, validate):
         from src.apps.data_factory.schemas.cleanup_resource import EsCleanupRule, EsCleanupSnapshot
@@ -259,10 +259,10 @@ class InlineResourceWindowTests(SimpleTestCase):
         sample.side_effect = lambda *args, **kwargs: samples.append(now[0]) or True
         lease = ServerTaskLease(task_id=3, token='example', generation=0, recovered=False,
                                payload={'execution_id': 7, 'mode': 'synchronous'})
-        from src.apps.data_factory.services.cleanup_persistence import CleanupPersistenceService
+        from src.apps.data_factory.services.cleanup.cleanup_persistence import CleanupPersistenceService
         with patch.object(Schedule, 'server_now', side_effect=lambda: datetime.fromtimestamp(now[0], dt_timezone.utc)), \
-                patch('src.apps.data_factory.services.cleanup_schedule.sleep', side_effect=lambda seconds: now.__setitem__(0, now[0] + seconds)), \
-                patch('src.apps.data_factory.services.cleanup_schedule.DatasourceGovernorService.policy', return_value=DatasourcePerformancePolicy()), \
+                patch('src.apps.data_factory.services.cleanup.cleanup_schedule.sleep', side_effect=lambda seconds: now.__setitem__(0, now[0] + seconds)), \
+                patch('src.apps.data_factory.services.cleanup.cleanup_schedule.DatasourceGovernorService.policy', return_value=DatasourcePerformancePolicy()), \
                 patch.object(CleanupPersistenceService, 'lease', side_effect=lambda value: nullcontext()), \
                 patch.object(CleanupPersistenceService, 'check'), \
                 patch.object(DataFactoryCleanup, 'cleanup_execution', return_value={'fail': 0}) as sql, \
@@ -270,8 +270,8 @@ class InlineResourceWindowTests(SimpleTestCase):
                 patch.object(DataFactoryCleanup, 'mark_execution_failed') as failure, \
                 patch.object(DataFactoryCleanup, 'sync_workbench_todo'), \
                 patch.object(Tasks, 'finish_cleanup_step', return_value=True) as finish, \
-                patch('src.apps.data_factory.services.cleanup_schedule.DataFactoryExecution.objects') as executions, \
-                patch('src.apps.data_factory.services.cleanup_schedule.DataFactoryExecutionItem.objects') as items:
+                patch('src.apps.data_factory.services.cleanup.cleanup_schedule.DataFactoryExecution.objects') as executions, \
+                patch('src.apps.data_factory.services.cleanup.cleanup_schedule.DataFactoryExecutionItem.objects') as items:
             executions.get.return_value = execution
             items.select_related.return_value.filter.return_value.order_by.return_value = [item]
             Schedule.run_inline(lease)
@@ -286,7 +286,7 @@ class InlineResourceWindowTests(SimpleTestCase):
 class InterruptedExecutionRoutingTests(SimpleTestCase):
     @patch.object(DataFactoryExecutionRecovery, 'recover_inline_cleanup', return_value=0)
     @patch.object(DataFactoryExecutionRecovery, 'reconcile_manual_cleanup_states', return_value={'pending': 0, 'resolved': 0})
-    @patch('src.apps.data_factory.services.execution_recovery.DataFactoryExecution.objects')
+    @patch('src.apps.data_factory.services.recovery.execution_recovery.DataFactoryExecution.objects')
     @patch.object(DataFactoryCleanup, 'mark_execution_failed')
     @patch.object(Schedule, 'enqueue')
     def test_no_report_orphan_creates_failure_responsibility_not_scheduler_work(self, enqueue, failure, executions, manual, expired):

@@ -25,13 +25,10 @@ from src.apps.auto_api.services.api_case.parameter_validation import (
     ApiCaseParameterValidationService,
 )
 from src.apps.auto_api.services.api_case.snapshot import ApiExecutableSnapshotService
-from src.apps.auto_api.services.callback import ApiCallbackService
-from src.apps.auto_api.services.config.version import (
-    ApiConfigDiffService,
-    ApiConfigSnapshotService,
-)
+from src.apps.auto_api.services.callbacks.callback import ApiCallbackService
+from src.apps.auto_api.services.configuration.version import ApiConfigDiffService, ApiConfigSnapshotService
 from src.apps.test_center.formatters.related import format_product_module, format_project_product
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.test_center.services.project.product_module import ProductModuleService
 from src.apps.user.formatters import format_user, format_user_simple
 from src.common.database import ModelMutationValidationError, model_payload, save_model
 from src.common.exceptions import SAVE_VALIDATION_FAILED, UPDATE_VALIDATION_FAILED
@@ -63,7 +60,7 @@ class ApiCaseMutationService:
 
     @staticmethod
     def validate_config(config: dict, project_product_id=None) -> dict:
-        from src.apps.auto_api.services.resource_cleanup import ApiResourceCleanupService
+        from src.apps.auto_api.services.resource_cleanup.resource_cleanup import ApiResourceCleanupService
         validators = {
             'resource_cleanup': lambda value: ApiResourceCleanupService.validate_config(value, project_product_id),
             "callback_checks": lambda value: ApiCallbackService.validate_config(value, project_product_id),
@@ -162,7 +159,7 @@ class ApiCaseMutationService:
             raise AutoApiError(API_CASE_PREPUBLICATION_PRODUCT_CHANGE_NOT_ALLOWED)
         config = cls.validate_config(config, identity.get("project_product") or instance.project_product_id)
         if config.get('resource_cleanup') or instance.resource_cleanup:
-            from src.apps.auto_api.services.resource_cleanup import ApiResourceCleanupService
+            from src.apps.auto_api.services.resource_cleanup.resource_cleanup import ApiResourceCleanupService
             ApiResourceCleanupService.validate_config(config.get('resource_cleanup', instance.resource_cleanup),
                 normalized_project_product_id or instance.project_product_id, instance.id)
         if config.get('callback_checks') or instance.callback_checks:

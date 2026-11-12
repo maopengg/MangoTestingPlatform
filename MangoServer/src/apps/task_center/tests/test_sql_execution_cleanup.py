@@ -24,10 +24,8 @@ class SqlExecutionCleanupTests(SimpleTestCase):
         self.assertEqual(job.handler, SchedulerSystemJobService.clean_sql_execution_records)
 
     @patch.object(SchedulerSystemJobService, 'retention_days', return_value=45)
-    @patch('src.processes.scheduler.system_jobs.DataFactoryQuerySelector.sql_execution_record')
-    def test_cleanup_uses_configured_retention_days(self, sql_execution_record, retention_days):
-        filter_records = sql_execution_record.return_value.filter
-        filter_records.return_value.delete.return_value = (7, {})
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionAuditService.cleanup_expired', return_value=7)
+    def test_cleanup_uses_configured_retention_days(self, cleanup_expired, retention_days):
         before = timezone.now()
 
         result = SchedulerSystemJobService.clean_sql_execution_records.__wrapped__(
@@ -35,7 +33,7 @@ class SqlExecutionCleanupTests(SimpleTestCase):
         )
 
         after = timezone.now()
-        cutoff = filter_records.call_args.kwargs['create_time__lt']
+        cutoff = cleanup_expired.call_args.args[0]
         self.assertGreaterEqual(cutoff, before - timedelta(days=45))
         self.assertLessEqual(cutoff, after - timedelta(days=45))
         retention_days.assert_called_once_with('SQL_EXECUTION_RETENTION_DAYS')

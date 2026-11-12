@@ -12,7 +12,7 @@ from src.apps.functional_test.exceptions import (
     FunctionalTestError,
 )
 from src.apps.functional_test.models import FunctionalTestDefect
-from src.apps.functional_test.services.defect import FunctionalTestDefectService
+from src.apps.functional_test.services.integration.defect import FunctionalTestDefectService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -40,6 +40,7 @@ class FunctionalTestDefectCRUD(ModelCRUD):
 
     @error_response("system")
     def get(self, request: Request):
+        """获取功能测试缺陷列表或指定记录"""
         queryset = self.model.objects.all()
         keyword = (request.query_params.get("keyword") or request.query_params.get("title") or "").strip()
         if keyword:
@@ -58,7 +59,7 @@ class FunctionalTestDefectCRUD(ModelCRUD):
                 })
         module = request.query_params.get("module")
         if module:
-            from src.apps.functional_test.services.suite import ManualTestSuiteService
+            from src.apps.functional_test.services.suites.suite import ManualTestSuiteService
 
             try:
                 queryset = queryset.filter(module_id__in=ManualTestSuiteService.module_scope_ids(int(module)))
@@ -89,6 +90,7 @@ class FunctionalTestDefectCRUD(ModelCRUD):
 
     @error_response("system")
     def post(self, request: Request):
+        """新增功能测试缺陷"""
         payload = dict(request.data)
         if not self.has_data_scope_permission(request, payload):
             return ResponseData.fail(RESPONSE_MSG_0210)
@@ -100,6 +102,7 @@ class FunctionalTestDefectCRUD(ModelCRUD):
 
     @error_response("system")
     def put(self, request: Request):
+        """修改功能测试缺陷"""
         defect = self.model.objects.filter(id=request.data.get("id")).first()
         if not defect:
             return ResponseData.fail(RESPONSE_MSG_0158)
@@ -124,6 +127,7 @@ class FunctionalTestDefectViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def retrieve(self, request: Request):
+        """获取功能测试缺陷详情"""
         queryset = FunctionalTestDefectListSerializer.setup_eager_loading(self._scoped(request))
         item = queryset.get(id=request.query_params.get("id"))
         return ResponseData.success(RESPONSE_MSG_0001, FunctionalTestDefectListSerializer(item).data)
@@ -131,6 +135,7 @@ class FunctionalTestDefectViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def transition(self, request: Request):
+        """流转功能测试缺陷状态"""
         defect = self._scoped(request).get(id=request.data.get("id"))
         try:
             target_status = int(request.data.get("status"))
@@ -145,13 +150,14 @@ class FunctionalTestDefectViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def stats(self, request: Request):
+        """统计功能测试缺陷分布"""
         queryset = self._scoped(request)
         project_product = request.query_params.get("project_product")
         module = request.query_params.get("module")
         if project_product:
             queryset = queryset.filter(project_product_id=project_product)
         if module:
-            from src.apps.functional_test.services.suite import ManualTestSuiteService
+            from src.apps.functional_test.services.suites.suite import ManualTestSuiteService
 
             try:
                 queryset = queryset.filter(
@@ -174,6 +180,7 @@ class FunctionalTestDefectViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def related(self, request: Request):
+        """获取功能测试缺陷关联资料"""
         queryset = self._scoped(request)
         plan_id = request.query_params.get("plan_id")
         iteration_id = request.query_params.get("iteration_id")
@@ -202,6 +209,7 @@ class FunctionalTestDefectViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def options(self, request: Request):
+        """获取功能测试缺陷筛选选项"""
         queryset = self._scoped(request).exclude(status=FunctionalTestDefectStatusEnum.CLOSED.value)
         if request.query_params.get("project_product"):
             queryset = queryset.filter(project_product_id=request.query_params["project_product"])
@@ -214,6 +222,7 @@ class FunctionalTestDefectViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def bind_cases(self, request: Request):
+        """绑定缺陷关联用例"""
         defect = self._scoped(request).get(id=request.data.get("id"))
         count = FunctionalTestDefectService.bind_relations(
             defect, request.data.get("case_ids"), request.data.get("plan_case_ids"),
@@ -223,6 +232,7 @@ class FunctionalTestDefectViews(ViewSet):
     @action(methods=["delete"], detail=False)
     @error_response("system")
     def unbind_cases(self, request: Request):
+        """解除缺陷与用例关联"""
         defect = self._scoped(request).get(id=request.data.get("id"))
         count = FunctionalTestDefectService.unbind_relations(
             defect,
@@ -235,6 +245,7 @@ class FunctionalTestDefectViews(ViewSet):
     @action(methods=["post"], detail=False)
     @error_response("system")
     def create_retest_plan(self, request: Request):
+        """根据缺陷创建复测计划"""
         defect = self._scoped(request).get(id=request.data.get("id"))
         plan = FunctionalTestDefectService.create_retest_plan(
             defect, request.data, ModelCRUD.get_operator_id(request),

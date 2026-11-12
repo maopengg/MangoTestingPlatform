@@ -142,14 +142,7 @@ class SystemJobService:
             source_type=ScheduleFireSourceTypeEnum.DATA_CLEANUP.value,
             handler=SchedulerSystemJobService.clean_api_case_execution_traces,
         ),
-        SystemJobDefinition(
-            key='clean_gray_execution_logs',
-            name='灰度执行记录清理',
-            description='每天 02:30 删除超过 1 个月的灰度执行记录。',
-            cron='30 2 * * *',
-            source_type=ScheduleFireSourceTypeEnum.DATA_CLEANUP.value,
-            handler=SchedulerSystemJobService.clean_gray_execution_logs,
-        ),
+
         SystemJobDefinition(
             key='clean_mock_request_logs',
             name='Mock 调用记录清理',

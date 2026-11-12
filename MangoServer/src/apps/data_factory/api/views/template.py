@@ -13,12 +13,12 @@ from src.apps.data_factory.exceptions import (
     DataFactoryError,
 )
 from src.apps.data_factory.models import DataFactoryTemplate, DataFactoryTemplateItem
-from src.apps.data_factory.services.cleanup import DataFactoryCleanup
-from src.apps.data_factory.services.configuration_preview import DataFactoryConfigurationPreviewService
-from src.apps.data_factory.services.preview import DataFactoryPreviewService
-from src.apps.data_factory.services.runner import DataFactoryRunner
-from src.apps.data_factory.services.template import DataFactoryTemplateService
-from src.apps.data_factory.services.template_deletion import DataFactoryTemplateDeletionService
+from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
+from src.apps.data_factory.services.preview.configuration_preview import DataFactoryConfigurationPreviewService
+from src.apps.data_factory.services.preview.preview import DataFactoryPreviewService
+from src.apps.data_factory.services.execution.runner import DataFactoryRunner
+from src.apps.data_factory.services.assets.template import DataFactoryTemplateService
+from src.apps.data_factory.services.assets.template_deletion import DataFactoryTemplateDeletionService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -43,6 +43,7 @@ class DataFactoryTemplateCRUD(ModelCRUD):
     @error_response('system')
     @transaction.atomic
     def delete(self, request: Request):
+        """删除数据工厂场景模板"""
         template_id = request.query_params.get('id')
         ids = [int(template_id)] if template_id else [
             int(value) for value in request.query_params.getlist('id[]')
@@ -61,6 +62,7 @@ class DataFactoryTemplateCRUD(ModelCRUD):
     @error_response('system')
     @transaction.atomic
     def post(self, request: Request):
+        """新增数据工厂场景模板"""
         duplicated = self.get_duplicated_template(request.data)
         if duplicated:
             raise DataFactoryError(DATA_FACTORY_ENTITY_NAME_TEMPLATE_DUPLICATED, value=(duplicated.name,))
@@ -81,6 +83,7 @@ class DataFactoryTemplateCRUD(ModelCRUD):
     @error_response('system')
     @transaction.atomic
     def put(self, request: Request):
+        """修改数据工厂场景模板"""
         duplicated = self.get_duplicated_template(request.data, request.data.get('id'))
         if duplicated:
             raise DataFactoryError(DATA_FACTORY_ENTITY_NAME_TEMPLATE_DUPLICATED, value=(duplicated.name,))
@@ -106,6 +109,7 @@ class DataFactoryTemplateCRUD(ModelCRUD):
 
     @staticmethod
     def get_duplicated_template(data: dict, exclude_id=None):
+        """查找同归属下重名的场景模板"""
         entity = data.get('entity')
         name = data.get('name')
         if not entity or not name:
@@ -117,6 +121,7 @@ class DataFactoryTemplateCRUD(ModelCRUD):
 
     @staticmethod
     def refresh_config_status(template: DataFactoryTemplate, test_env=None):
+        """刷新场景模板配置状态"""
         return DataFactoryTemplateService.refresh_config_status(template, test_env)
 
 
@@ -126,6 +131,7 @@ class DataFactoryTemplateViews(ViewSet):
     @error_response('system')
     @transaction.atomic
     def copy(self, request: Request):
+        """复制数据工厂场景模板"""
         source = DataFactoryTemplate.objects.get(id=request.data.get('id'))
         target = DataFactoryTemplate.objects.create(
             project_product=source.project_product,
@@ -162,6 +168,7 @@ class DataFactoryTemplateViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('system')
     def status(self, request: Request):
+        """设置数据工厂场景模板启用状态"""
         if request.data.get('status') is None:
             raise DataFactoryError(DATA_FACTORY_TEMPLATE_STATUS_REQUIRED)
         template = DataFactoryTemplateService.set_status(
@@ -176,6 +183,7 @@ class DataFactoryTemplateViews(ViewSet):
     @error_response('system')
     @transaction.atomic
     def sync_fields(self, request: Request):
+        """同步场景模板字段配置"""
         template = DataFactoryTemplate.objects.select_related('entity').get(id=request.data.get('id'))
         template.field_overrides = {}
         template.update_user_id = request.user.get("id") if isinstance(request.user, dict) else None
@@ -190,6 +198,7 @@ class DataFactoryTemplateViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def preview(self, request: Request):
+        """预览数据工厂场景模板"""
         if request.data.get('preview_mode') == 'configuration':
             result = DataFactoryConfigurationPreviewService.preview(
                 request.data.get('template_id'), request.data.get('overrides'), request.data.get('context'),
@@ -211,6 +220,7 @@ class DataFactoryTemplateViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def debug_run(self, request: Request):
+        """调试执行数据工厂场景模板"""
         result = DataFactoryRunner.debug_run_template(
             template_id=request.data.get('template_id'),
             overrides=request.data.get('overrides') or {},
@@ -223,6 +233,7 @@ class DataFactoryTemplateViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def debug_cleanup(self, request: Request):
+        """清理场景模板调试产生的数据"""
         result = DataFactoryCleanup.cleanup_execution(
             request.data.get('execution_id'),
             force_cleanup=True,

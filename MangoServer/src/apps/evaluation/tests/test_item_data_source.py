@@ -2,7 +2,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 from django.test import SimpleTestCase
 from src.apps.evaluation.exceptions import EvaluationError
-from src.apps.evaluation.services.item_source import validate_item_source, freeze_item_source, resolve_item_source
+from src.apps.evaluation.services.dataset.item_source import validate_item_source, freeze_item_source, resolve_item_source
 
 
 class ItemDataSourceTests(SimpleTestCase):
@@ -24,24 +24,24 @@ class ItemDataSourceTests(SimpleTestCase):
             validate_item_source(self.source(variables=[{"name": "x", "path": "$"}]))
 
     def test_reference_api_freezes_published_revision_and_rejects_scope_or_content_changes(self):
-        with patch('src.apps.evaluation.services.item_source.resource_configuration', return_value=(12, {'checksum': 'fixed'})) as configuration:
+        with patch('src.apps.evaluation.services.dataset.item_source.resource_configuration', return_value=(12, {'checksum': 'fixed'})) as configuration:
             result = freeze_item_source(self.api_source(), SimpleNamespace(), product_id=1)
             self.assertEqual(configuration.call_args.args[0].value, 'api_info')
             self.assertEqual(result['binding']['revision_id'], 12)
             self.assertTrue(result['binding']['content_hash'])
             with self.assertRaises(EvaluationError):
                 freeze_item_source(self.api_source(), SimpleNamespace(), product_id=2)
-        with patch('src.apps.evaluation.services.item_source.resource_configuration', return_value=(12, {'checksum': 'changed'})):
+        with patch('src.apps.evaluation.services.dataset.item_source.resource_configuration', return_value=(12, {'checksum': 'changed'})):
             with self.assertRaises(EvaluationError):
                 freeze_item_source(result, SimpleNamespace(), product_id=1)
 
     def test_reference_api_extracts_private_typed_variables_and_does_not_mutate_templates(self):
-        from src.apps.evaluation.services.workflow import replace_workflow_values
+        from src.apps.evaluation.services.workflow.workflow import replace_workflow_values
         response = {'json': {'data': {'id': 101, 'owner': '张三', 'evidence': [{'excerpt': '负责人是张三'}]}}}
         runner = SimpleNamespace(execution=SimpleNamespace(created_by=None, case=SimpleNamespace(project_product_id=1)),
             bindings={}, records=[], persist=Mock(), call_until=Mock(return_value=response))
         row = SimpleNamespace(dataset_item_id=9, item_snapshot={'data_source': self.api_source()})
-        with patch('src.apps.evaluation.services.item_source.freeze_item_source'):
+        with patch('src.apps.evaluation.services.dataset.item_source.freeze_item_source'):
             variables = resolve_item_source(runner, row, SimpleNamespace(input_data={}), {'session': {}, 'execution': {}, 'factories': []})
         self.assertEqual(variables, {'contract_id': 101, 'contract_owner': '张三', 'contract_evidence': [{'excerpt': '负责人是张三'}]})
         self.assertEqual(runner.call_until.call_args.args[0].action.value, 'api_info')
@@ -59,7 +59,7 @@ class ItemDataSourceTests(SimpleTestCase):
         runner = SimpleNamespace(execution=SimpleNamespace(created_by=None, case=SimpleNamespace(project_product_id=1)),
             bindings={}, records=[], persist=Mock(), call_until=Mock(return_value={'json': {'data': {}}}))
         row = SimpleNamespace(dataset_item_id=9, item_snapshot={'data_source': self.api_source()})
-        with patch('src.apps.evaluation.services.item_source.freeze_item_source'), self.assertRaises(EvaluationError):
+        with patch('src.apps.evaluation.services.dataset.item_source.freeze_item_source'), self.assertRaises(EvaluationError):
             resolve_item_source(runner, row, SimpleNamespace(input_data={}), {'session': {}, 'execution': {}, 'factories': []})
         self.assertEqual(runner.records[0]['status'], 'failed')
         self.assertEqual(runner.bindings, {})
@@ -75,13 +75,13 @@ class ItemDataSourceTests(SimpleTestCase):
 
     def test_each_source_freezes_independently_and_checks_drift_and_product(self):
         user = SimpleNamespace()
-        with patch("src.apps.evaluation.services.item_source.resource_configuration", return_value=(None, {"db_type": 2, "id": 10})):
+        with patch("src.apps.evaluation.services.dataset.item_source.resource_configuration", return_value=(None, {"db_type": 2, "id": 10})):
             value = freeze_item_source(self.source(), user, product_id=1)
             self.assertTrue(value["binding"]["content_hash"])
             self.assertNotIn("content_hash", self.source()["binding"])
             with self.assertRaises(EvaluationError):
                 freeze_item_source(value, user, product_id=2)
-        with patch("src.apps.evaluation.services.item_source.resource_configuration", return_value=(None, {"db_type": 2, "id": 11})):
+        with patch("src.apps.evaluation.services.dataset.item_source.resource_configuration", return_value=(None, {"db_type": 2, "id": 11})):
             with self.assertRaises(EvaluationError):
                 freeze_item_source(value, user, product_id=1)
 
@@ -101,7 +101,7 @@ class ItemDataSourceTests(SimpleTestCase):
         for key, expected in (("contract_id,contract_name", {"contract_id": 101, "contract_name": "订单A"}),
                               ("name,id", {"name": "订单A", "id": 101}),
                               ("contract_id", {"contract_id": 101}), ("", {})):
-            with self.subTest(key=key), patch("src.apps.evaluation.services.item_source.freeze_item_source"):
+            with self.subTest(key=key), patch("src.apps.evaluation.services.dataset.item_source.freeze_item_source"):
                 runner = SimpleNamespace(execution=SimpleNamespace(created_by=None, case=SimpleNamespace(project_product_id=1)),
                     bindings={}, records=[], persist=Mock(), call_until=Mock(return_value={"rows": [first], "truncated": False}))
                 row = SimpleNamespace(dataset_item_id=9, item_snapshot={"data_source": self.source(key=key)})
@@ -110,13 +110,13 @@ class ItemDataSourceTests(SimpleTestCase):
                 self.assertEqual(runner.bindings, {})
 
     def test_factory_values_resolve_input_expected_and_evidence_with_original_types(self):
-        from src.apps.evaluation.services.workflow import replace_workflow_values
+        from src.apps.evaluation.services.workflow.workflow import replace_workflow_values
         output = {"id": 101, "owner": "张三", "evidence": [{"excerpt": "负责人是张三"}]}
         runner = SimpleNamespace(execution=SimpleNamespace(created_by=None, case=SimpleNamespace(project_product_id=1)),
             bindings={}, records=[], persist=Mock(), call_until=Mock(return_value={"output": output}))
         source = {"kind": "factory", "binding": {"resource": "item_source", "project_product_id": 1, "ref_id": 10}}
         row = SimpleNamespace(dataset_item_id=9, item_snapshot={"data_source": source})
-        with patch("src.apps.evaluation.services.item_source.freeze_item_source"):
+        with patch("src.apps.evaluation.services.dataset.item_source.freeze_item_source"):
             variables = resolve_item_source(runner, row, SimpleNamespace(input_data={}), {"session": {}, "execution": {}, "factories": []})
         templates = {
             "input_data": {"query": "查询订单${{data.id}}", "id": "${{data.id}}"},

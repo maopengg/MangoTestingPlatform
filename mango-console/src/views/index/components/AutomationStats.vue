@@ -1,9 +1,43 @@
 <template>
   <div class="mango-capability-overview">
     <mango-panel-spin :loading="loading" class="mango-capability-overview__spin">
-      <template v-if="!loadFailed"></template>
+      <div
+        v-if="!loadFailed"
+        ref="capabilityGridRef"
+        class="mango-capability-grid mango-native-scrollbar"
+        :class="{ 'mango-capability-grid--single': capabilityColumns === 1 }"
+      >
+        <article
+          v-for="group in capabilityGroups"
+          :key="group.key"
+          class="mango-capability-card"
+          :style="{ '--mango-capability-accent': group.accent }"
+        >
+          <header class="mango-capability-card__header">
+            <span class="mango-capability-card__icon"><component :is="group.icon" /></span>
+            <div class="mango-capability-card__title" :title="group.title">
+              <strong>{{ group.title }}</strong>
+              <span :title="group.description">{{ group.description }}</span>
+            </div>
+            <div class="mango-capability-card__total">
+              <strong>{{ formatValue(group.total) }}</strong>
+              <span>建设总量</span>
+            </div>
+          </header>
+          <dl class="mango-capability-card__metrics">
+            <div
+              v-for="metric in group.metrics"
+              :key="metric.label"
+              class="mango-capability-metric"
+              :title="`${metric.label}：${formatValue(metric.value)}`"
+            >
+              <dt>{{ metric.label }}</dt>
+              <dd>{{ formatValue(metric.value) }}</dd>
+            </div>
+          </dl>
+        </article>
+      </div>
       <div v-else-if="!loading" class="mango-empty-state mango-capability-overview__empty">
-        <span></span>
         <a-button size="mini" type="text" @click="fetchStatistics">重新加载</a-button>
       </div>
     </mango-panel-spin>

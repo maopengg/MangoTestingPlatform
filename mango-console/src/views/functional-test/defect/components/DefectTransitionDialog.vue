@@ -11,9 +11,7 @@
   >
     
     
-    <a-alert v-if="saveError" type="error" class="mango-defect-transition__error"
-      >流转失败，输入已保留，请重试。</a-alert
-    >
+    <MangoRequestFeedback v-if="saveError" :message="&quot;流转失败，输入已保留，请重试。&quot;" />
     <a-form auto-label-width class="mango-simple-form" :model="form" layout="horizontal" :disabled="saving">
       <a-form-item class="mango-simple-form-item" label="目标状态" required
         ><a-select v-model="form.status" :loading="enumsLoading" :options="transitionOptions"
@@ -41,6 +39,8 @@
 </template>
 
 <script setup lang="ts">
+import { requestFailureMessage } from '@/utils/load-error'
+
   import { computed, onActivated, onBeforeUnmount, onDeactivated, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { useEnum } from '@/store/modules/get-enum'
@@ -161,8 +161,8 @@
       reset()
       Message.success('状态已更新')
       emit('saved', { ...data, id })
-    } catch {
-      if (current(version)) saveError.value = true
+    } catch (requestFailure) {
+      if (current(version)) saveError.value = requestFailureMessage(requestFailure, true, "流转失败，输入已保留，请重试。")
     } finally {
       saving.value = false
       savingId.value = null

@@ -1,6 +1,6 @@
 from django.test import SimpleTestCase
 
-from src.apps.auto_ui.services.element_ai.element_ai_service import ElementAiService
+from src.apps.auto_ui.services.elements.ai.element_ai_service import ElementAiService
 from src.apps.auto_ui.tests.executor.fixtures.mango_mock_lab import (
     BUTTON_ELEMENTS,
     CASE_SCENARIO,

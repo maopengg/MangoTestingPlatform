@@ -2,7 +2,7 @@
   <div class="mango-route-refresh" role="status" :aria-busy="loading">
     <a-spin v-if="loading" dot tip="正在刷新页面" />
     <div v-else-if="failed" class="mango-empty-state">
-      <span>页面刷新失败，请重试。</span>
+      <MangoRequestFeedback message="页面刷新失败，请重试。" />
       <a-button size="small" :loading="loading" @click="redirect">重试</a-button>
     </div>
   </div>

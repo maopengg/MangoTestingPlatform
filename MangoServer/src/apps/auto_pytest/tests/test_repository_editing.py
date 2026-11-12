@@ -11,7 +11,7 @@ from src.apps.auto_pytest.exceptions import (
     AutoPytestError, PYTEST_REPOSITORY_CONFIG_INVALID, PYTEST_REPOSITORY_BRANCH_CODE_INVALID,
 )
 from src.apps.auto_pytest.models import PytestCase, PytestProduct, PytestRepository
-from src.apps.auto_pytest.services.git_management.repository_service import RepositoryGitService
+from src.apps.auto_pytest.services.repository.repository_service import RepositoryGitService
 from src.apps.user.models import User
 
 

@@ -10,7 +10,7 @@ from src.apps.data_factory.exceptions import (
     DataFactoryError,
 )
 from src.apps.data_factory.models import DataFactoryEntity, DataFactoryField
-from src.apps.data_factory.services.field import DataFactoryFieldService
+from src.apps.data_factory.services.assets.field import DataFactoryFieldService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -32,6 +32,7 @@ class DataFactoryFieldCRUD(ModelCRUD):
 
     @error_response('system')
     def get(self, request: Request):
+        """获取数据工厂字段列表或指定记录"""
         queryset = self.filter_queryset_by_data_scope(request, DataFactoryField.objects.all())
         queryset = DataFactoryFieldSerializerC.setup_eager_loading(queryset)
         entity_id = request.query_params.get('entity')
@@ -63,11 +64,13 @@ class DataFactoryFieldViews(ViewSet):
 
     @staticmethod
     def save_schema_fields(entity: DataFactoryEntity, columns: list, replace: bool = True, update_user_id=None) -> list:
+        """根据表结构保存数据工厂字段"""
         return DataFactoryFieldService.save_schema_fields(entity, columns, replace, update_user_id)
 
     @action(methods=['post'], detail=False)
     @error_response('system')
     def batch_save(self, request: Request):
+        """批量保存数据工厂字段配置"""
         entity_id = request.data.get('entity_id')
         fields = request.data.get('fields') or []
         replace = request.data.get('replace', False)
@@ -87,6 +90,7 @@ class DataFactoryFieldViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def preview_values(self, request: Request):
+        """预览数据工厂字段生成值"""
         result = DataFactoryFieldService.preview_values(
             fields=request.data.get('fields') or [],
             context=request.data.get('context') or {},
@@ -97,12 +101,15 @@ class DataFactoryFieldViews(ViewSet):
 
     @staticmethod
     def normalize_field_data(field_data: dict):
+        """规范化数据工厂字段配置"""
         return DataFactoryFieldService.normalize_field_data(field_data)
 
     @staticmethod
     def normalize_dependency_config(generator_config: dict) -> dict:
+        """规范化数据工厂字段依赖配置"""
         return DataFactoryFieldService.normalize_dependency_config(generator_config)
 
     @staticmethod
     def preview_dependency_field(field: DataFactoryField, context: dict):
+        """预览数据工厂依赖字段值"""
         return DataFactoryFieldService.preview_dependency_field(field, context)

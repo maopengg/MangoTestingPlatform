@@ -8,7 +8,7 @@ from src.apps.auto_api.api.serializers.api_info_execution import ApiInfoExecutio
 from src.apps.auto_api.api.views.api_info import ApiInfoViews, ApiInfoCRUD
 from src.apps.auto_api.services.api_info.execution_parameters import ApiInfoExecutionParametersService
 from src.apps.user.middleware.permission import MenuActionPermission
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.user.services.authorization.permission import PermissionMenuService
 
 
 class ExecutionParametersTests(SimpleTestCase):
@@ -52,7 +52,7 @@ class ExecutionParametersTests(SimpleTestCase):
         self.assertEqual(result, ['argument', 'path', 'business_value'])
 
     def test_entered_values_override_global_initialization_only_for_this_run(self):
-        from src.apps.auto_api.services.base.api_base_test_setup import APIBaseTestSetup
+        from src.apps.auto_api.services.execution.base.api_base_test_setup import APIBaseTestSetup
         from src.common.testing import ObtainTestData
         setup = APIBaseTestSetup.__new__(APIBaseTestSetup)
         setup.current_api_info_id = None

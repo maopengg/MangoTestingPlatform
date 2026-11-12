@@ -30,10 +30,9 @@
             @reset="onReset"
           />
         </template>
-        <div v-if="listError || usersError || enumsError || enumsLoading || operationError || taskError" class="mango-ui-auth-feedback">
+        <div v-if="operationError" class="mango-ui-auth-feedback">
           
-          <a-alert v-if="operationError" type="error">{{ operationError }}</a-alert>
-          <a-alert v-if="taskError" type="error">{{ taskError }}</a-alert>
+          <MangoRequestFeedback v-if="operationError" :message="(operationError)" />
         </div>
         <template #toolbar>
         <a-button  size="small" type="primary" @click="onAdd" data-testid="qa-views-uitest-auth-config-button-新增">新增</a-button>
@@ -147,8 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import useUserStore from '@/store/modules/user'
@@ -267,7 +265,7 @@ import { reportLoadError } from '@/utils/load-error'
         Message.success(message)
       }
       return true
-    } catch { if (current()) operationError.value = { status: '状态更新失败，请重试', refresh: '缓存刷新失败，请重试', clear: '缓存清空失败，请重试', delete: '删除失败，请重试' }[action]; return false }
+    } catch (requestFailure) { if (current()) operationError.value = requestFailureMessage(requestFailure, { status: '状态更新失败，请重试', refresh: '缓存刷新失败，请重试', clear: '缓存清空失败，请重试', delete: '删除失败，请重试' }[action]); return false }
     finally {
       pendingRows.delete(key); pendingOperations.delete(actionKey)
       if (committed && available() && identityKey === identity()) { list.invalidate(); void doRefresh(false) }

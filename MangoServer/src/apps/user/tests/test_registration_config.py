@@ -7,11 +7,11 @@ from mangotools.enums import CacheValueTypeEnum
 from rest_framework.test import APIRequestFactory
 
 from src.apps.system.models import CacheData
-from src.apps.system.services.system_config import SystemConfigService, get_config_definition_map
+from src.apps.system.services.configuration.system_config import SystemConfigService, get_config_definition_map
 from src.apps.user.api.views.user import LoginViews
 from src.apps.user.middleware.permission import MenuActionPermission
 from src.apps.user.enums.permission import HttpPermissionBoundaryEnum
-from src.apps.user.services.http_permission_boundaries import HTTP_PERMISSION_BOUNDARIES
+from src.apps.user.services.authorization.http_permission_boundaries import HTTP_PERMISSION_BOUNDARIES
 
 
 class RegistrationConfigTests(SimpleTestCase):
@@ -27,7 +27,7 @@ class RegistrationConfigTests(SimpleTestCase):
                 self.assertEqual(definition.group, 'access')
                 self.assertIn(key, SystemConfigService.editable_config_keys())
 
-    @patch('src.apps.system.services.system_config.CacheData.objects.get')
+    @patch('src.apps.system.services.configuration.system_config.CacheData.objects.get')
     def test_database_switch_message_and_author_visibility_are_public(self, get_config):
         def stored_value(*, key):
             return {
@@ -55,7 +55,7 @@ class RegistrationConfigTests(SimpleTestCase):
         ])
 
     @override_settings(ALLOW_HOME_REGISTRATION=False, REGISTRATION_DISABLED_MESSAGE='旧环境配置不可生效')
-    @patch('src.apps.system.services.system_config.CacheData.objects.get', side_effect=CacheData.DoesNotExist)
+    @patch('src.apps.system.services.configuration.system_config.CacheData.objects.get', side_effect=CacheData.DoesNotExist)
     def test_missing_rows_use_registered_defaults_not_environment_settings(self, _get_config):
         result = SystemConfigService.get_registration_config()
 
@@ -66,7 +66,7 @@ class RegistrationConfigTests(SimpleTestCase):
         self.assertEqual(result['platform_name_en'], 'mango-test-platform')
         self.assertEqual(result['disabled_message'], '当前平台未开放自助注册，请联系管理员开通账号。')
 
-    @patch('src.apps.system.services.system_config.SystemConfigService.get_registration_config')
+    @patch('src.apps.system.services.configuration.system_config.SystemConfigService.get_registration_config')
     def test_public_route_returns_only_registration_config_without_login_or_caching(self, config):
         config.return_value = {
             'allow_registration': False, 'disabled_message': '注册已关闭',
@@ -83,14 +83,14 @@ class RegistrationConfigTests(SimpleTestCase):
                          HttpPermissionBoundaryEnum.PUBLIC)
         config.assert_called_once_with()
 
-    @patch('src.apps.system.services.system_config.SystemConfigService.get_registration_config')
+    @patch('src.apps.system.services.configuration.system_config.SystemConfigService.get_registration_config')
     def test_public_route_does_not_expose_write_methods(self, config):
         response = resolve(self.path).func(APIRequestFactory().post(self.path, {}, format='json'))
 
         self.assertNotEqual(response.data['code'], 200)
         config.assert_not_called()
 
-    @patch('src.apps.system.services.system_config.SystemConfigService.get_registration_config')
+    @patch('src.apps.system.services.configuration.system_config.SystemConfigService.get_registration_config')
     @patch.object(LoginViews, '_is_super_admin_registration', return_value=False)
     def test_registration_rechecks_the_switch_after_form_opened(self, _admin, config):
         config.side_effect = [

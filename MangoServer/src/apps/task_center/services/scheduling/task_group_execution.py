@@ -23,8 +23,8 @@ from src.apps.task_center.services.scheduling.task_group_notice import (
 from src.apps.task_center.services.selection.case_selection import ScheduledTaskCaseSelectionService
 from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.apps.test_center.models import TestSuite, TestSuiteDetails
-from src.apps.test_center.services.test_suite.base_notice import NoticeMain
-from src.apps.test_center.services.test_suite.summary import TestSuiteSummaryService
+from src.apps.test_center.services.reporting.test_suite.base_notice import NoticeMain
+from src.apps.test_center.services.reporting.test_suite.summary import TestSuiteSummaryService
 from src.apps.task_center.enums.execution import ReportRetentionPolicyEnum
 from src.common.logging import log
 
@@ -221,7 +221,7 @@ class ScheduledTaskGroupExecutionService:
 
     @classmethod
     def _cleanup_finished_reports(cls, execution_id):
-        from src.apps.test_center.services.test_suite.retention import TestSuiteRetentionService
+        from src.apps.test_center.services.reporting.test_suite.retention import TestSuiteRetentionService
         try:
             suite_ids = list(ScheduleFire.objects.filter(
                 group_execution_id=execution_id,

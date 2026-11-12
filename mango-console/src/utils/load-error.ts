@@ -23,7 +23,10 @@ export function isErrorReported(error: unknown) {
 
 /** 请求层和加载边界复用同一个标记，解析异常也通过公共消息显示。 */
 export function reportLoadError(error?: unknown, message = '加载失败，请重试', silent = false) {
-  if (isErrorReported(error)) return
+  if (isErrorReported(error)) {
+    messages.set(message, Date.now())
+    return
+  }
   markErrorReported(error)
   if (silent) return
   const now = Date.now()
@@ -33,4 +36,11 @@ export function reportLoadError(error?: unknown, message = '加载失败，请�
   if (messages.size > 100) {
     for (const [key, time] of messages) if (now - time > 3000) messages.delete(key)
   }
+}
+
+/** 保留调用方失败状态，同时复用请求层对同一次异常的提示去重。 */
+export function requestFailureMessage<T>(error: unknown, message: T, fallback?: string): T {
+  const feedback = typeof message === 'string' ? message : fallback
+  if (feedback?.trim()) reportLoadError(error, feedback)
+  return message
 }

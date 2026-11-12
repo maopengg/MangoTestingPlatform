@@ -268,11 +268,7 @@
           </div>
         </div>
 
-        <a-alert v-if="apiExportError" type="error">
-          {{ apiExportError }}
-          <a-button size="small" :loading="apiExportLoading" @click="startApiExport">重试导出</a-button>
-          <a-button v-if="apiExportCanRestart" size="small" :loading="apiExportLoading" @click="restartApiExport">重新导出</a-button>
-        </a-alert>
+        <MangoRequestFeedback v-if="apiExportError" :message="(apiExportError)"><a-button size="small" :loading="apiExportLoading" @click="startApiExport">重试导出</a-button> <a-button v-if="apiExportCanRestart" size="small" :loading="apiExportLoading" @click="restartApiExport">重新导出</a-button></MangoRequestFeedback>
 
         <mango-panel-spin :loading="caseLoading" class="case-spin">
           <template v-if="caseError"></template>
@@ -485,14 +481,15 @@ import { runLoadRequest } from '@/utils/load-error'
     const id = reportId.value
     const currentVersion = pageVersion
     const currentContext = { isCurrent: () => context.isCurrent() && currentVersion === pageVersion && reportId.value === id }
-    await Promise.all([loadSummary(true, currentContext), loadReportInfo(true, currentContext)])
+    await Promise.all([
+      loadSummary(true, currentContext),
+      loadReportInfo(true, currentContext),
+      loadFailureReasons(true, currentContext),
+    ])
     if (!currentContext.isCurrent()) return
     await refreshLoadedCases(true, currentContext)
     if (!currentContext.isCurrent()) return
-    if (!hasPendingReport()) {
-      await loadFailureReasons(true, currentContext)
-      if (currentContext.isCurrent()) stopPolling()
-    }
+    if (!hasPendingReport()) stopPolling()
   }, () => {
     invalidateReportReads()
   })
@@ -524,7 +521,7 @@ import { runLoadRequest } from '@/utils/load-error'
   })
   const { busyIds: retryingIds, confirm: onRetry } = useReportCaseRetry({
     reportId: () => reportId.value, available: reportAvailable,
-    onSuccess: async () => { await Promise.allSettled([loadSummary(), loadReportInfo(), loadCases(true)]) },
+    onSuccess: async () => { await Promise.allSettled([loadSummary(), loadReportInfo(), loadFailureReasons(), loadCases(true)]) },
   })
   const failRatio = computed(() => ratio(summary.value.fail_count, totalCount.value))
   const passRate = computed(() => !totalCount.value && summary.value.excluded_count ? 100 : ratio(summary.value.success_count, totalCount.value))
@@ -756,7 +753,7 @@ import { runLoadRequest } from '@/utils/load-error'
   }
 
   async function refreshDisposition() {
-    await Promise.allSettled([loadSummary(), loadReportInfo(), refreshLoadedCases()])
+    await Promise.allSettled([loadSummary(), loadReportInfo(), loadFailureReasons(), refreshLoadedCases()])
   }
 
   function loadFailureReasons(silent = false, context?: PollingContext) {

@@ -40,8 +40,8 @@ export const catalog = Object.freeze([
     "domain": "project",
     "command": "switch-user-test-environment",
     "method": "PUT",
-    "path": "user/info/environment",
-    "summary": "PUT /api/user/info/environment",
+    "path": "user/info/config",
+    "summary": "切换当前用户测试环境：--param selected_environment=环境ID",
     "status": "complete"
   },
   {

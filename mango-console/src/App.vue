@@ -3,10 +3,13 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, watchEffect } from 'vue'
+  import { onBeforeUnmount, onMounted, watchEffect } from 'vue'
   import { useRoute } from 'vue-router'
   import usePlatformBrandingStore from '@/store/modules/platform-branding'
+  import useUserPreferencesStore from '@/store/modules/user-preferences'
 
+  const stopPreferences = useUserPreferencesStore().start()
+  onBeforeUnmount(stopPreferences)
   const branding = usePlatformBrandingStore()
   const route = useRoute()
   watchEffect(() => {

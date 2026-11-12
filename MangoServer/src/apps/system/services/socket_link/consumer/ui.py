@@ -6,11 +6,10 @@
 from mangotools.contracts import TestSuiteDetailResultContract
 
 from src.apps.auto_ui.schemas.execution import UiPageStepResult, UiCaseExecutionResult
-from src.apps.auto_ui.services.executor_slot import ExecutorSlotLeaseService
-from src.apps.auto_ui.services.test_report_writing import TestReportWriting
-from src.apps.gray_config.services.execution_runner import GrayCaseExecutionRunner
+from src.apps.auto_ui.services.execution.executor_slot import ExecutorSlotLeaseService
+from src.apps.auto_ui.services.reporting.test_report_writing import TestReportWriting
 from src.apps.test_center.schemas.execution import TestSuiteDetailResultSchema
-from src.apps.test_center.services.test_suite.update_test_suite import UpdateTestSuite
+from src.apps.test_center.services.reporting.test_suite.update_test_suite import UpdateTestSuite
 from src.common.decorators.retry import async_task_db_connection
 
 
@@ -49,7 +48,7 @@ class UIConsumer:
         if isinstance(result.result_data, UiCaseExecutionResult):
             from mangotools.enums import TaskEnum
             from src.apps.task_center.selectors.querysets import TaskCenterQuerySelector
-            from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService
+            from src.apps.data_factory.services.cleanup.cleanup_schedule import DataFactoryCleanupScheduleService
             from src.apps.test_center.enums import TestCaseTypeEnum
             failures = []
             if result.result_data.data_factory_auto_cleanup_execution_ids:
@@ -67,18 +66,6 @@ class UIConsumer:
                     filter(None, [result.error_message, *failures]))[:2048]
         UpdateTestSuite.update_test_suite_details(result)
         cls._finish_executor_slot(getattr(result, "result_data", None))
-        GrayCaseExecutionRunner.restore_by_config_ids(
-            getattr(result.result_data, "gray_config_ids", None),
-            {
-                "test_suite_id": result.test_suite,
-                "test_suite_detail_id": result.id,
-                "case_type": result.type,
-                "case_id": getattr(result.result_data, "id", None),
-                "case_name": getattr(result.result_data, "name", None),
-                "_test_env": getattr(result.result_data, "test_env", None),
-            },
-            getattr(result.result_data, "gray_execution_log_ids", None),
-        )
 
     @classmethod
     @async_task_db_connection()
@@ -91,16 +78,6 @@ class UIConsumer:
         result = UiCaseExecutionResult(**data)
         TestReportWriting.update_test_case(result)
         cls._finish_executor_slot(result)
-        GrayCaseExecutionRunner.restore_by_config_ids(
-            result.gray_config_ids,
-            {
-                "case_type": 2,
-                "case_id": result.id,
-                "case_name": result.name,
-                "_test_env": result.test_env,
-            },
-            result.gray_execution_log_ids,
-        )
 
     @staticmethod
     def _finish_executor_slot(data) -> None:

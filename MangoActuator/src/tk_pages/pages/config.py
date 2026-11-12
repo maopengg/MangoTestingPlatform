@@ -299,8 +299,8 @@ class UserPage(Page):
         self.header(self.title, "查看当前登录账号和平台角色信息")
         self.form = FormGrid(self)
         self.form.grid(row=1, column=0, sticky="ew")
-        self.values = {key: tk.StringVar(value="-") for key in ("avatar", "name", "username", "role", "mailbox")}
-        for label, key in (("头像", "avatar"), ("昵称", "name"), ("账号", "username"), ("角色", "role"), ("邮箱", "mailbox")):
+        self.values = {key: tk.StringVar(value="-") for key in ("avatar", "name", "username", "role")}
+        for label, key in (("头像", "avatar"), ("昵称", "name"), ("账号", "username"), ("角色", "role")):
             self.form.add(label, Label(self.form, textvariable=self.values[key], variant="surface"))
 
     def on_show(self):
@@ -314,12 +314,10 @@ class UserPage(Page):
             return
         data = response.data[0] if isinstance(response.data, list) else response.data
         role = data.get("role") or {}
-        mailbox = data.get("mailbox") or []
         self.values["avatar"].set("-")
         self.values["name"].set(str(data.get("name") or "-"))
         self.values["username"].set(str(data.get("username") or "-"))
         self.values["role"].set(str(role.get("name") if isinstance(role, dict) else role or "-"))
-        self.values["mailbox"].set("、".join(mailbox) if isinstance(mailbox, list) else str(mailbox or "-"))
 
     def _failed(self, error):
         messagebox.showerror("用户信息", str(error))

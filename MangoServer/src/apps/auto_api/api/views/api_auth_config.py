@@ -9,8 +9,8 @@ from rest_framework.viewsets import ViewSet
 from src.apps.auto_api.api.serializers.api_auth_config import ApiAuthConfigSerializers, ApiAuthConfigSerializersC
 from src.apps.auto_api.models import ApiAuthConfig
 from src.apps.auto_api.selectors.querysets import ApiQuerySelector
-from src.apps.auto_api.services.base.api_base_test_setup.auth_manager import ApiAuthManager
-from src.apps.auto_api.services.api_auth_config import ApiAuthConfigService
+from src.apps.auto_api.services.execution.base.api_base_test_setup.auth_manager import ApiAuthManager
+from src.apps.auto_api.services.authentication.api_auth_config import ApiAuthConfigService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -49,6 +49,7 @@ class ApiAuthConfigViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('api')
     def targets(self, request: Request):
+        """获取 API 授权可用的接口目标"""
         product = request.query_params.get('project_product')
         env = request.query_params.get('test_env')
         if not all(str(value).isdigit() for value in (product, env)):
@@ -60,6 +61,7 @@ class ApiAuthConfigViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('api')
     def public_variables(self, request: Request):
+        """获取 API 授权可用公共变量"""
         product = request.query_params.get('project_product')
         env = request.query_params.get('test_env')
         page = request.query_params.get('page', '1')
@@ -81,6 +83,7 @@ class ApiAuthConfigViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('api')
     def put_status(self, request: Request):
+        """设置API 授权配置启用状态"""
         obj = self.model.objects.get(id=request.data.get('id'))
         obj.status = request.data.get('status')
         save_update_user(obj, request, ['status'])
@@ -89,17 +92,20 @@ class ApiAuthConfigViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('api')
     def refresh(self, request: Request):
+        """刷新API 授权配置的授权结果"""
         data = ApiAuthManager.refresh(request.data.get('id'), force=True, raise_error=True)
         return ResponseData.success(RESPONSE_MSG_0112, data=data)
 
     @action(methods=['post'], detail=False)
     @error_response('api')
     def clear(self, request: Request):
+        """清除API 授权配置的授权缓存"""
         data = ApiAuthManager.clear(request.data.get('id'))
         return ResponseData.success(RESPONSE_MSG_0104, data=data)
 
     @action(methods=['get'], detail=False)
     @error_response('api')
     def cache(self, request: Request):
+        """查看API 授权配置的授权缓存"""
         data = ApiAuthManager.preview(request.query_params.get('id'))
         return ResponseData.success(RESPONSE_MSG_0001, data=data)

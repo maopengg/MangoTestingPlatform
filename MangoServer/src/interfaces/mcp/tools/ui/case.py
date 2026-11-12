@@ -4,14 +4,14 @@ from django.db.models import Q
 
 from src.apps.auto_ui.selectors.querysets import UiQuerySelector
 from src.apps.auto_ui.selectors.case_publication import UiCasePublicationSelector
-from src.apps.auto_ui.services.asset_mutation import UiAssetMutationService
-from src.apps.auto_ui.services.case_publication import UiCasePublicationService
+from src.apps.auto_ui.services.assets.asset_mutation import UiAssetMutationService
+from src.apps.auto_ui.services.cases.case_publication import UiCasePublicationService
 from src.apps.auto_ui.exceptions import AutoUiError
 from src.apps.auto_ui.exceptions.definitions import UI_CASE_PUBLICATION_INVALID_TRANSITION
-from src.apps.auto_ui.services.batch_execution import UiCaseBatchExecutionService
-from src.apps.auto_ui.services.case_step_cache import UiCaseStepCacheService
-from src.apps.auto_ui.services.step_ordering import UiStepOrderingService
-from src.apps.auto_ui.services.test_case.test_case import TestCase
+from src.apps.auto_ui.services.execution.batch_execution import UiCaseBatchExecutionService
+from src.apps.auto_ui.services.cases.case_step_cache import UiCaseStepCacheService
+from src.apps.auto_ui.services.page_steps.step_ordering import UiStepOrderingService
+from src.apps.auto_ui.services.execution.cases.test_case import TestCase
 from src.apps.system.enums import ClientNameEnum
 from src.interfaces.mcp.audit import mcp_current_user_id, mcp_with_update_user
 from .helpers import _case_tree, _paged, _selected_env

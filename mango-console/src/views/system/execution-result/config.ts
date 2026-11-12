@@ -5,7 +5,7 @@ import { createIdSearchValue } from '@/utils/id-search'
 import { reactive } from 'vue'
 
 const table = useTable()
-export const tableScrollX = 2780
+export const tableScrollX = 2900
 
 export type ExecutionAdminSearchKey = 'id' | 'source_type' | 'target_type' | 'target_id' | 'status' | 'test_env' | 'trigger_user_id' | 'result_state' | 'is_latest' | 'trace_id' | 'create_time'
 export interface ExecutionAdminCondition extends Pick<FormItem, 'label' | 'type' | 'placeholder' | 'multiple' | 'searchOperator' | 'reset'> {
@@ -226,4 +226,5 @@ export const tableColumns = useTableColumn([
     ellipsis: true,
     tooltip: true,
   },
+  { title: '操作', key: 'actions', width: 120, fixed: 'right', align: 'center' },
 ])

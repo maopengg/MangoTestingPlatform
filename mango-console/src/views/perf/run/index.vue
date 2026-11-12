@@ -1,12 +1,12 @@
 <template>
   <TableBody plain class="mango-detail-workbench-page mango-perf-page">
     <template #header>
-      <TableHeader title="性能测试 / 运行历史" @search="search" @reset-search="resetSearch">
+      <TableHeader title="性能测试 / 运行历史" @search="autoSearch.run" @reset-search="autoSearch.cancel(); resetSearch(); autoSearch.sync()">
         <template #search-content>
-          <a-form :model="filters" layout="inline" @submit.prevent="search">
-            <a-form-item label="名称"><a-input v-model="filters.name" placeholder="请输入运行名称" allow-clear @press-enter="search" /></a-form-item>
-            <a-form-item label="状态"><a-select v-model="filters.status" placeholder="请选择状态" multiple :max-tag-count="1" :options="statusOptions" allow-clear /></a-form-item>
-            <a-form-item label="结论"><a-select v-model="filters.verdict" placeholder="请选择结论" multiple :max-tag-count="1" :options="verdictOptions" allow-clear /></a-form-item>
+          <a-form :model="filters" layout="inline" @submit.prevent="autoSearch.run">
+            <a-form-item label="名称"><a-input @blur="autoSearch.schedule" @clear="autoSearch.schedule" @mouseleave="autoSearch.schedule" v-model="filters.name" placeholder="请输入运行名称" allow-clear @press-enter="autoSearch.run" /></a-form-item>
+            <a-form-item label="状态"><a-select @change="autoSearch.schedule" v-model="filters.status" placeholder="请选择状态" multiple :max-tag-count="1" :options="statusOptions" allow-clear /></a-form-item>
+            <a-form-item label="结论"><a-select @change="autoSearch.schedule" v-model="filters.verdict" placeholder="请选择结论" multiple :max-tag-count="1" :options="verdictOptions" allow-clear /></a-form-item>
           </a-form>
         </template>
       </TableHeader>
@@ -31,6 +31,8 @@
 </template>
 
 <script setup lang="ts">
+  import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
+
 import { reportLoadError, runLoadRequest } from '@/utils/load-error'
 
   import { Message } from '@arco-design/web-vue'
@@ -142,4 +144,6 @@ import { reportLoadError, runLoadRequest } from '@/utils/load-error'
   onDeactivated(() => { active = false; suspend(false) })
   onActivated(() => { if (!active) { active = true; resume(true) } })
   onBeforeUnmount(() => { disposed = true; active = false; suspend(true); document.removeEventListener('visibilitychange', visibilityChanged) })
+
+  const autoSearch = useDebouncedSearch(search, () => filters)
 </script>

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from src.apps.evaluation.api.serializers.base import EvaluationModelSerializer
-from src.apps.evaluation.services.validation import validate_relation
+from src.apps.evaluation.services.assets.validation import validate_relation
 
 
 class ProjectRelationSerializer(EvaluationModelSerializer):

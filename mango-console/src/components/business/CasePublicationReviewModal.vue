@@ -41,7 +41,7 @@
             </li>
           </ul>
           <div v-if="record.published" class="mango-publication-review__success">已发布</div>
-          <div v-else-if="record.error && !record.loadFailed" class="mango-publication-review__danger">{{ record.error }}</div>
+          <div data-feedback-kind="validation" v-else-if="record.error && !record.loadFailed" class="mango-publication-review__danger">{{ record.error }}</div>
           <template v-else>
             <div v-for="reason in record.eligibility_reasons" :key="reason" class="mango-publication-review__danger">{{ reason }}</div>
           </template>

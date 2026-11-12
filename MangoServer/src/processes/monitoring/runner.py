@@ -6,9 +6,9 @@ from django.utils import timezone
 
 from src.apps.monitoring.enums import MonitoringTaskStatusEnum
 from src.apps.monitoring.selectors.querysets import MonitoringQuerySelector
-from src.apps.monitoring.services.runner import MonitoringTaskRunner
-from src.apps.monitoring.services.task_diagnostic import MonitoringTaskDiagnosticService
-from src.apps.monitoring.services.script_capabilities import MonitoringScriptCapabilitiesService
+from src.apps.monitoring.services.execution.runner import MonitoringTaskRunner
+from src.apps.monitoring.services.diagnostics.task_diagnostic import MonitoringTaskDiagnosticService
+from src.apps.monitoring.services.execution.script_capabilities import MonitoringScriptCapabilitiesService
 from src.apps.system.enums import RuntimeServiceName
 from src.apps.system.services.runtime_center.heartbeat import ServiceHeartbeatService
 from src.apps.system.services.runtime_center.system_error_event import SystemErrorEventSource

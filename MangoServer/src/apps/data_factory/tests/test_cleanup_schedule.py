@@ -5,10 +5,10 @@ from unittest.mock import Mock, patch
 from django.test import SimpleTestCase
 from django.utils import timezone
 
-from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService as Schedule
-from src.apps.data_factory.services.cleanup_persistence import CleanupPersistenceService
-from src.apps.data_factory.services.cleanup import DataFactoryCleanup
-from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService as Resources
+from src.apps.data_factory.services.cleanup.cleanup_schedule import DataFactoryCleanupScheduleService as Schedule
+from src.apps.data_factory.services.cleanup.cleanup_persistence import CleanupPersistenceService
+from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
+from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as Resources
 from src.apps.data_factory.schemas.performance import DatasourcePerformancePolicy
 from src.apps.data_factory.exceptions import DataFactoryError
 from src.apps.task_center.services.execution.executor_task import ExecutorTaskService as Tasks
@@ -30,12 +30,12 @@ class CleanupScheduleTests(SimpleTestCase):
             patch.object(DataFactoryCleanup, 'mark_execution_failed'),
             patch.object(DataFactoryCleanup, 'sync_workbench_todo'),
             patch.object(Resources, 'advance', return_value=None),
-            patch('src.apps.data_factory.services.cleanup_schedule.DatasourceGovernorService.policy',
+            patch('src.apps.data_factory.services.cleanup.cleanup_schedule.DatasourceGovernorService.policy',
                   return_value=DatasourcePerformancePolicy()),
             patch.object(Schedule, 'server_now', side_effect=timezone.now),
             patch.object(Resources, 'initialize_observation', return_value=0),
-            patch('src.apps.data_factory.services.cleanup_schedule.DataFactoryExecution.objects'),
-            patch('src.apps.data_factory.services.cleanup_schedule.DataFactoryExecutionItem.objects'),
+            patch('src.apps.data_factory.services.cleanup.cleanup_schedule.DataFactoryExecution.objects'),
+            patch('src.apps.data_factory.services.cleanup.cleanup_schedule.DataFactoryExecutionItem.objects'),
         ]
         self.mocks = []
         for guard in patches:
@@ -44,6 +44,9 @@ class CleanupScheduleTests(SimpleTestCase):
         self.mocks[-2].get.return_value = self.execution
         self.mocks[-2].filter.return_value.first.return_value = self.execution
         self.mocks[-1].select_related.return_value.filter.return_value.order_by.return_value = [self.item]
+        audit_guard = patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionAuditService.confirm_resource_requests')
+        audit_guard.start()
+        self.addCleanup(audit_guard.stop)
         owner_guard = patch.object(Schedule, 'validate_report_owner')
         owner_guard.start()
         self.addCleanup(owner_guard.stop)
@@ -75,7 +78,7 @@ class CleanupScheduleTests(SimpleTestCase):
         self.assertIn('error_message', save.call_args.args[1])
 
     def test_parent_reconciles_exact_request_after_persisted_cleanup_success(self):
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService as Infrastructure
         from src.apps.data_factory.schemas.cleanup_resource import (
             CleanupResourceState, EsUncertainRequest, EsCleanupCheckResult, EsCleanupSnapshot, EsCleanupRule,
         )
@@ -106,7 +109,7 @@ class CleanupScheduleTests(SimpleTestCase):
         self.assertLess(self.mocks[1].call_args.args[1]['active_seconds'], 3)
 
     def test_active_cleanup_budget_accumulates_across_reschedules_but_not_queue_gaps(self):
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService as Infrastructure
         clock = [0.0]
         self.mocks[9].return_value.cleanup_completion_seconds = 1
         self.lease.progress = {'sql_done': True, 'active_seconds': 0.6}
@@ -114,7 +117,7 @@ class CleanupScheduleTests(SimpleTestCase):
             clock[0] += 0.3
             return 1800000000
         self.mocks[8].side_effect = sample
-        with patch('src.apps.data_factory.services.cleanup_schedule.monotonic', side_effect=lambda: clock[0]):
+        with patch('src.apps.data_factory.services.cleanup.cleanup_schedule.monotonic', side_effect=lambda: clock[0]):
             Schedule.run_next()
             self.assertAlmostEqual(self.lease.progress['active_seconds'], 0.9)
             self.assertIn('next_at', self.mocks[1].call_args.kwargs)
@@ -130,7 +133,7 @@ class CleanupScheduleTests(SimpleTestCase):
 
     def test_true_es_residual_still_fails_verification_without_infrastructure_override(self):
         from src.apps.data_factory.exceptions import DATA_FACTORY_ES_CLEANUP_TIMEOUT
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService as Infrastructure
         self.mocks[8].side_effect = DataFactoryError(DATA_FACTORY_ES_CLEANUP_TIMEOUT)
         with Infrastructure.scope():
             Schedule.run_next()
@@ -149,7 +152,7 @@ class CleanupScheduleTests(SimpleTestCase):
         self.assertIn('error', self.mocks[1].call_args.kwargs)
 
     def test_sql_admission_wait_is_not_counted_as_cleanup_processing_time(self):
-        from src.apps.data_factory.services.datasource_wait import _wait_elapsed
+        from src.apps.data_factory.services.governance.datasource_wait import _wait_elapsed
         self.mocks[8].return_value = 1800000000
         initial = timezone.now()
         self.mocks[10].return_value = initial
@@ -170,11 +173,12 @@ class CleanupScheduleTests(SimpleTestCase):
         self.assertNotIn('success', self.mocks[1].call_args.kwargs)
 
     def test_report_wait_does_not_fail_due_to_queue_delay_or_lose_owner_context(self):
-        from src.apps.data_factory.services.cleanup_schedule import _case_cleanup_owner, _parent_wait_pulse
+        from src.apps.data_factory.services.cleanup.cleanup_schedule import _case_cleanup_owner, _parent_wait_pulse
         from src.apps.task_center.selectors.querysets import TaskCenterQuerySelector
         from src.apps.system.enums.executor import ExecutorTaskStatusEnum
         tasks = Mock()
         tasks.filter.return_value.values.return_value.first.side_effect = [
+            {'status': ExecutorTaskStatusEnum.PENDING.value, 'business_id': 7},
             {'status': ExecutorTaskStatusEnum.PENDING.value, 'business_id': 7},
             {'status': ExecutorTaskStatusEnum.SUCCESS.value, 'business_id': 7},
         ]
@@ -206,7 +210,7 @@ class CleanupScheduleTests(SimpleTestCase):
             finally:
                 _case_cleanup_owner.reset(token)
         verified.assert_called_once_with(7, require_full_cleanup=True)
-        self.assertEqual(pulse.call_count, 2)
+        self.assertEqual(pulse.call_count, 3)
         self.assertEqual(details.filter.call_args.kwargs['retry'], 2)
 
     def test_unknown_sql_stage_is_not_replayed_after_worker_loss(self):
@@ -228,7 +232,7 @@ class CleanupScheduleTests(SimpleTestCase):
     def test_lost_lease_prevents_local_result_write(self):
         lease = object()
         instance = Mock()
-        from src.apps.data_factory.services.cleanup_persistence import _cleanup_lease
+        from src.apps.data_factory.services.cleanup.cleanup_persistence import _cleanup_lease
         token = _cleanup_lease.set(lease)
         try:
             with patch.object(Tasks, 'with_cleanup_lease', return_value=(False, None)):
@@ -263,7 +267,7 @@ class CleanupScheduleTests(SimpleTestCase):
 
     def test_scheduler_infrastructure_failure_survives_persisted_progress(self):
         from src.apps.data_factory.exceptions import DATASOURCE_GOVERNOR_UNAVAILABLE
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService as Infrastructure
         def cleanup(*args, **kwargs):
             Infrastructure.capture(DataFactoryError(DATASOURCE_GOVERNOR_UNAVAILABLE))
             return {'fail': 1}
@@ -278,7 +282,7 @@ class CleanupScheduleTests(SimpleTestCase):
         self.mocks[5].assert_not_called()
 
     def test_business_cleanup_failure_has_no_infrastructure_override(self):
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService as Infrastructure
         self.mocks[4].return_value = {'fail': 1}
         Schedule.run_next()
         with Infrastructure.scope():
@@ -288,7 +292,7 @@ class CleanupScheduleTests(SimpleTestCase):
 
     def test_parent_wait_restores_scheduler_failure_origin(self):
         from src.apps.data_factory.exceptions import DATASOURCE_GOVERNOR_UNAVAILABLE
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService as Infrastructure
         from src.apps.task_center.selectors.querysets import TaskCenterQuerySelector
         from src.apps.system.enums.executor import ExecutorTaskStatusEnum
         tasks = Mock()
@@ -308,7 +312,7 @@ class CleanupScheduleTests(SimpleTestCase):
 
     def test_missing_task_and_control_database_disconnect_are_platform_not_business_errors(self):
         from django.db import OperationalError
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService as Infrastructure
         from src.apps.task_center.selectors.querysets import TaskCenterQuerySelector
         for failure in (None, OperationalError('AUTO control connection lost')):
             tasks = Mock()
@@ -324,7 +328,7 @@ class CleanupScheduleTests(SimpleTestCase):
                 self.assertEqual(Infrastructure.current()[0].code, 34193)
 
     def test_legacy_ambiguous_failure_requires_review_but_known_verification_failure_is_preserved(self):
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService as Infrastructure
         from src.apps.system.enums.executor import ExecutorTaskStatusEnum
         with Infrastructure.scope():
             with self.assertRaises(DataFactoryError) as caught:
@@ -337,7 +341,7 @@ class CleanupScheduleTests(SimpleTestCase):
             self.assertEqual(Infrastructure.current(), [])
 
     def test_nested_inline_cleanup_keeps_unknown_result_in_parent_scope(self):
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService as Infrastructure
         self.lease.payload['mode'] = 'synchronous'
         self.mocks[8].side_effect = TimeoutError('example read timeout')
         with Infrastructure.scope():

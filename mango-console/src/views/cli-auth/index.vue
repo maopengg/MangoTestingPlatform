@@ -5,7 +5,7 @@
       <h1>芒果 CLI 授权</h1>
       <p role="status" aria-live="polite">{{ statusText }}</p>
       <a-spin v-if="status === 'loading'" :size="scaleDensityPixels(28)" />
-      <a-alert v-else-if="status === 'error'" type="error">{{ errorMessage }}</a-alert>
+      <MangoRequestFeedback v-else-if="status === 'error'" :message="(errorMessage)" />
       <a-button v-if="status === 'error'" type="primary" size="small" @click="authorize">
         重新授权
       </a-button>
@@ -14,6 +14,8 @@
 </template>
 
 <script setup lang="ts">
+import { requestFailureMessage } from '@/utils/load-error'
+
   import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { authorizeCli } from '@/api/cli-auth'
@@ -84,7 +86,7 @@
     } catch (error: unknown) {
       if (!current()) return
       status.value = 'error'
-      errorMessage.value = authorizationErrorMessage(error)
+      errorMessage.value = requestFailureMessage(error, authorizationErrorMessage(error))
     } finally {
       if (pendingRequest === request) pendingRequest = null
     }

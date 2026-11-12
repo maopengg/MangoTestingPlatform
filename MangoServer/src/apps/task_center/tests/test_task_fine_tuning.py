@@ -28,7 +28,7 @@ class TaskFineTuningTests(SimpleTestCase):
         self.db.ensure_connection()
         connections[self.alias] = self.db
         self.addCleanup(self.close)
-        config = patch('src.apps.system.services.system_config.SystemConfigService.get_environment_display_names', return_value={})
+        config = patch('src.apps.system.services.configuration.system_config.SystemConfigService.get_environment_display_names', return_value={})
         config.start()
         self.addCleanup(config.stop)
         models = (User, Project, ProjectProduct, ProductModule, TimeTasks, Tasks, ScheduledTaskGroup,

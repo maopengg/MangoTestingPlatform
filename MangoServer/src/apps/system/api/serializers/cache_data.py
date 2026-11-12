@@ -22,7 +22,7 @@ class CacheDataSerializersC(serializers.ModelSerializer):
             from src.apps.system.services.ai.evaluation_profiles import EvaluationAiProfileService
             data["value"] = EvaluationAiProfileService.masked(instance.value)
         if instance.key == 'DATASOURCE_PERFORMANCE_POLICY':
-            from src.apps.data_factory.services.datasource_performance import DatasourcePerformanceService
+            from src.apps.data_factory.services.governance.datasource_performance import DatasourcePerformanceService
             data.update(DatasourcePerformanceService.settings_snapshot())
         return data
 

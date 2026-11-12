@@ -17,9 +17,9 @@ test("browser login completes PKCE loopback flow without exposing JWT in callbac
   let expectedChallenge;
   let tokenRequest;
   const platform = http.createServer(async (request, response) => {
-    if (request.method === "GET" && request.url === "/api/cli/auth/version?version=7.2.4") {
+    if (request.method === "GET" && request.url === "/api/cli/auth/version?version=7.2.5") {
       response.writeHead(200, { "Content-Type": "application/json" });
-      response.end(JSON.stringify({ code: 200, msg: "ok", data: { version: "7.2.4" } }));
+      response.end(JSON.stringify({ code: 200, msg: "ok", data: { version: "7.2.5" } }));
       return;
     }
     let raw = "";
@@ -53,7 +53,7 @@ test("browser login completes PKCE loopback flow without exposing JWT in callbac
       },
     });
     assert.equal(result.token, token);
-    assert.equal(authorizationUrl.searchParams.get("version"), "7.2.4");
+    assert.equal(authorizationUrl.searchParams.get("version"), "7.2.5");
     assert.equal(authorizationUrl.searchParams.has("token"), false);
     assert.equal(new URL(tokenRequest.redirect_uri).searchParams.has("token"), false);
     const config = JSON.parse(await readFile(runtime.configPath, "utf8"));
@@ -69,14 +69,14 @@ test("browser login stops before opening a page when the CLI version is outdated
   const fetchImpl = async () => new Response(JSON.stringify({
     code: 300,
     msg: "CLI 版本与服务器不一致，请升级到最新版本后重新登录",
-    data: { latest_version: "7.2.4" },
+    data: { latest_version: "7.2.5" },
   }), { status: 200, headers: { "Content-Type": "application/json" } });
   await assert.rejects(
     browserLogin({ server: "https://example.com" }, {
       fetchImpl,
       openBrowser: () => { opened = true; },
     }),
-    (error) => error.exitCode === 8 && /7\.2\.4/.test(error.message),
+    (error) => error.exitCode === 8 && /7\.2\.5/.test(error.message),
   );
   assert.equal(opened, false);
 });

@@ -9,16 +9,16 @@ from mangotools.contracts import SocketEnvelopeContract
 from mangotools.contracts import TaskPullRequest
 from mangotools.enums import CacheValueTypeEnum
 
-from src.apps.auto_pytest.services.test_case.case_flow import PyCaseFlow
-from src.apps.auto_ui.services.test_case.case_flow import UiCaseFlow
+from src.apps.auto_pytest.services.execution.cases.case_flow import PyCaseFlow
+from src.apps.auto_ui.services.execution.cases.case_flow import UiCaseFlow
 from src.apps.system.enums import (
     CacheDataKey2Enum,
     ClientTypeEnum,
     SystemConfigManagementLevelEnum,
 )
-from src.apps.system.services.cache_data import CacheDataService
-from src.apps.system.services.actuator_config_runtime import ActuatorConfigRuntimeService
-from src.apps.system.services.system_config import SystemConfigService
+from src.apps.system.services.configuration.cache_data import CacheDataService
+from src.apps.system.services.actuator.actuator_config_runtime import ActuatorConfigRuntimeService
+from src.apps.system.services.configuration.system_config import SystemConfigService
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.common.decorators.retry import async_task_db_connection
 

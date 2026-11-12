@@ -8,7 +8,7 @@ from django.test import SimpleTestCase
 from src.apps.system.api.views.socket_api import SocketApiViews
 from src.apps.system.constants import RUNTIME_KV_POLICIES
 from src.apps.system.enums.runtime_kv import RuntimeKVNamespaceEnum
-from src.apps.system.services.actuator_config_runtime import ActuatorConfigRuntimeService
+from src.apps.system.services.actuator.actuator_config_runtime import ActuatorConfigRuntimeService
 from src.apps.system.services.runtime_kv import RuntimeKV
 from src.apps.system.services.socket_link.connection_service import SocketConnectionService
 from src.apps.system.services.socket_link.consumer.system import SystemConsumer

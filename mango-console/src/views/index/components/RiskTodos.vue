@@ -89,15 +89,15 @@
                   :key="error.item_id ?? index"
                   class="mango-risk-todo-detail__error"
                 >
-                  <strong>{{ error.alias || error.table_name || `失败项 ${index + 1}` }}</strong>
-                  <small>
+                  <strong data-feedback-kind="execution-result">{{ error.alias || error.table_name || `失败项 ${index + 1}` }}</strong>
+                  <small data-feedback-kind="execution-result">
                     {{
                       [error.environment_name, error.database_name, error.table_name]
                         .filter(Boolean)
                         .join(' · ')
                     }}
                   </small>
-                  <p>{{ error.error || '清理失败' }}</p>
+                  <p data-feedback-kind="execution-result">{{ error.error || '清理失败' }}</p>
                 </div>
               </div>
               <div v-if="cleanupPendingItems(item).length" class="mango-risk-todo-detail__section">

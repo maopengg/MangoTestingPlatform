@@ -8,9 +8,9 @@ from django.test import SimpleTestCase
 from mangotools.enums import TaskEnum
 
 from src.apps.test_center.enums import TestCaseTypeEnum
-from src.apps.test_center.services.offline_report.api_details import ApiDetailsRenderer
-from src.apps.test_center.services.offline_report.renderer import ReportHtmlService
-from src.apps.test_center.services.offline_report.snapshot import ReportSnapshotService
+from src.apps.test_center.services.reporting.offline_report.api_details import ApiDetailsRenderer
+from src.apps.test_center.services.reporting.offline_report.renderer import ReportHtmlService
+from src.apps.test_center.services.reporting.offline_report.snapshot import ReportSnapshotService
 from src.apps.test_center.tests.test_report_delivery import sample_snapshot
 
 
@@ -142,9 +142,9 @@ class OfflineApiDetailsTests(SimpleTestCase):
         row = SimpleNamespace(type=TestCaseTypeEnum.API.value)
         payload = SimpleNamespace(id=1)
         original = [api_example()]
-        with patch('src.apps.test_center.services.offline_report.snapshot.ExecutionResultService.load_result_data', return_value=original) as load, \
-                patch('src.apps.test_center.services.offline_report.snapshot.TestSuiteExecutionResultService.normalize_detail_result_data', return_value=original) as normalize, \
-                patch('src.apps.test_center.services.offline_report.snapshot.TestSuiteExecutionResultService.get_result_data') as summary:
+        with patch('src.apps.test_center.services.reporting.offline_report.snapshot.ExecutionResultService.load_result_data', return_value=original) as load, \
+                patch('src.apps.test_center.services.reporting.offline_report.snapshot.TestSuiteExecutionResultService.normalize_detail_result_data', return_value=original) as normalize, \
+                patch('src.apps.test_center.services.reporting.offline_report.snapshot.TestSuiteExecutionResultService.get_result_data') as summary:
             self.assertEqual(ReportSnapshotService.case_result_data(row, payload), original)
         load.assert_called_once_with(payload)
         normalize.assert_called_once_with(row, original)
@@ -152,7 +152,7 @@ class OfflineApiDetailsTests(SimpleTestCase):
 
     def test_cleaned_original_result_falls_back_to_saved_summary(self):
         row = SimpleNamespace(type=TestCaseTypeEnum.API.value)
-        with patch('src.apps.test_center.services.offline_report.snapshot.ExecutionResultService.load_result_data', return_value=None), \
-                patch('src.apps.test_center.services.offline_report.snapshot.TestSuiteExecutionResultService.get_result_data', return_value=[{'name': '历史摘要'}]) as summary:
+        with patch('src.apps.test_center.services.reporting.offline_report.snapshot.ExecutionResultService.load_result_data', return_value=None), \
+                patch('src.apps.test_center.services.reporting.offline_report.snapshot.TestSuiteExecutionResultService.get_result_data', return_value=[{'name': '历史摘要'}]) as summary:
             self.assertEqual(ReportSnapshotService.case_result_data(row, SimpleNamespace()), [{'name': '历史摘要'}])
         summary.assert_called_once_with(row)

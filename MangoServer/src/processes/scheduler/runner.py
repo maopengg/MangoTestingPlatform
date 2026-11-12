@@ -49,6 +49,7 @@ class ScheduleRunner:
         self.cleanup_activity = []
         self.cleanup_retire_events = []
         self.cleanup_thread_limit = 0
+        self.datasource_recovery_thread = None
 
     @system_error_guard(
         source=SystemErrorEventSource.SCHEDULER,
@@ -56,16 +57,20 @@ class ScheduleRunner:
         service_name=RuntimeServiceName.SCHEDULER,
     )
     def run_forever(self):
+        from src.apps.data_factory.services.governance.datasource_governor import DatasourceGovernorService
+        DatasourceGovernorService.policy()
         mode = '仅消费数据工厂清理任务' if self.cleanup_only else '定时触发、任务分发及数据工厂清理'
         log.system.info(f'scheduler-service 启动：node={self.node_name}，模式={mode}')
         if not self.cleanup_only:
             self.start_dispatch_consumer()
         self.start_cleanup_consumers()
+        self.start_datasource_recovery()
         try:
             while self.running and not self.stop_event.is_set():
                 if not self.cleanup_only:
                     self.ensure_dispatch_consumer()
                 self.start_cleanup_consumers()
+                self.start_datasource_recovery()
                 self.recover_inline_cleanup()
                 ServiceHeartbeatService.beat_if_due(
                     self,
@@ -81,6 +86,8 @@ class ScheduleRunner:
                         'cleanup_live_threads': sum(thread.is_alive() for thread in self.cleanup_threads),
                         'cleanup_only': self.cleanup_only,
                         'datasource_maintenance_healthy': self.datasource_maintenance_healthy(),
+                        'datasource_recovery_alive': bool(self.datasource_recovery_thread
+                                                         and self.datasource_recovery_thread.is_alive()),
                     },
                 )
                 if not self.cleanup_only:
@@ -99,9 +106,17 @@ class ScheduleRunner:
         )
         self.dispatch_consumer_thread.start()
 
+    def start_datasource_recovery(self):
+        from src.apps.data_factory.services.recovery.mysql_session_recovery import MysqlSessionRecoveryService
+        if self.stop_event.is_set() or (self.datasource_recovery_thread and self.datasource_recovery_thread.is_alive()):
+            return
+        self.datasource_recovery_thread = threading.Thread(target=MysqlSessionRecoveryService.consume,
+            args=(self.stop_event,), name=f'datasource-recovery-{self.node_name}', daemon=True)
+        self.datasource_recovery_thread.start()
+
     @staticmethod
     def recover_inline_cleanup():
-        from src.apps.data_factory.services.execution_recovery import DataFactoryExecutionRecovery
+        from src.apps.data_factory.services.recovery.execution_recovery import DataFactoryExecutionRecovery
         try:
             # 仅核查失联同步执行并记录失败责任，不执行删除，也不触发定时业务任务。
             DataFactoryExecutionRecovery.recover_inline_cleanup()
@@ -110,8 +125,8 @@ class ScheduleRunner:
 
     def start_cleanup_consumers(self):
         from django.db import close_old_connections
-        from src.apps.data_factory.services.cleanup_schedule import DataFactoryCleanupScheduleService
-        from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService
+        from src.apps.data_factory.services.cleanup.cleanup_schedule import DataFactoryCleanupScheduleService
+        from src.apps.data_factory.services.governance.datasource_governor import DatasourceGovernorService
 
         def consume(index, retire):
             from time import monotonic
@@ -151,7 +166,7 @@ class ScheduleRunner:
 
     @staticmethod
     def datasource_maintenance_healthy():
-        from src.apps.data_factory.services.pool_maintenance import DatasourcePoolMaintenance
+        from src.apps.data_factory.services.pool.pool_maintenance import DatasourcePoolMaintenance
         return DatasourcePoolMaintenance.healthy()
 
     def is_cleanup_consumers_alive(self):
@@ -181,6 +196,9 @@ class ScheduleRunner:
 
     def stop(self):
         self.request_stop()
+        recovery = getattr(self, 'datasource_recovery_thread', None)
+        if recovery is not None and recovery.is_alive() and recovery is not threading.current_thread():
+            recovery.join()
         for thread in self.cleanup_threads:
             if thread.is_alive() and thread is not threading.current_thread():
                 # 当前物理删除、观察或快照写入完成后才退出，不能两秒后静默丢弃 daemon。
@@ -191,8 +209,8 @@ class ScheduleRunner:
                 and self.dispatch_consumer_thread is not threading.current_thread()
         ):
             self.dispatch_consumer_thread.join()
-        from src.apps.data_factory.services.datasource_pool import DatasourcePoolRegistry
-        from src.apps.data_factory.services.protocol_pool import ProtocolPoolRegistry
+        from src.apps.data_factory.services.pool.datasource_pool import DatasourcePoolRegistry
+        from src.apps.data_factory.services.pool.protocol_pool import ProtocolPoolRegistry
         DatasourcePoolRegistry.close_all()
         ProtocolPoolRegistry.close_all()
 
@@ -314,7 +332,7 @@ class ScheduleRunner:
     @staticmethod
     def refresh_api_auth(timing_strategy_id: int):
         try:
-            from src.apps.auto_api.services.base.api_base_test_setup.auth_manager import ApiAuthManager
+            from src.apps.auto_api.services.execution.base.api_base_test_setup.auth_manager import ApiAuthManager
             return ApiAuthManager.refresh_by_time_task(timing_strategy_id)
         except Exception as error:
             log.system.error(
@@ -323,13 +341,13 @@ class ScheduleRunner:
 
     @staticmethod
     def has_api_auth_to_refresh(timing_strategy_id: int) -> bool:
-        from src.apps.auto_api.services.base.api_base_test_setup.auth_manager import ApiAuthManager
+        from src.apps.auto_api.services.execution.base.api_base_test_setup.auth_manager import ApiAuthManager
         return ApiAuthManager.has_timing_refresh_config(timing_strategy_id)
 
     @staticmethod
     def refresh_ui_auth(timing_strategy_id: int):
         try:
-            from src.apps.auto_ui.services.ui_auth import UiAuthManager
+            from src.apps.auto_ui.services.authentication.ui_auth import UiAuthManager
             return UiAuthManager.refresh_by_time_task(timing_strategy_id)
         except Exception as error:
             log.system.error(
@@ -338,7 +356,7 @@ class ScheduleRunner:
 
     @staticmethod
     def has_ui_auth_to_refresh(timing_strategy_id: int) -> bool:
-        from src.apps.auto_ui.services.ui_auth import UiAuthManager
+        from src.apps.auto_ui.services.authentication.ui_auth import UiAuthManager
         return UiAuthManager.has_timing_refresh_config(timing_strategy_id)
 
     @staticmethod

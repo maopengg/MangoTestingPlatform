@@ -10,9 +10,7 @@
       }
     "
   >
-    <a-alert v-if="generateError" type="error"
-      >生成请求未确认，请重新加载表核对已存在实体后再重试</a-alert
-    >
+    <MangoRequestFeedback v-if="generateError" :message="&quot;生成请求未确认，请重新加载表核对已存在实体后再重试&quot;" />
     <a-form :disabled="batchGenerating" :model="batchForm" layout="horizontal">
       <a-grid :cols="2" :col-gap="16">
         <a-grid-item>
@@ -140,8 +138,7 @@
   </BaseSidePanel>
 </template>
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import {
@@ -352,8 +349,8 @@ import { reportLoadError } from '@/utils/load-error'
       )
       emit('saved')
       if (!result.failed) close()
-    } catch {
-      if (current === session && scope.current(version)) generateError.value = true
+    } catch (requestFailure) {
+      if (current === session && scope.current(version)) generateError.value = requestFailureMessage(requestFailure, true, "生成请求未确认，请重新加载表核对已存在实体后再重试")
     } finally {
       batchGenerating.value = false
     }

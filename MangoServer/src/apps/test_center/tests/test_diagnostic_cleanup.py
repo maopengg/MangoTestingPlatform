@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 from django.test import SimpleTestCase, override_settings
 from django.utils import timezone
 
-from src.apps.test_center.services.diagnostic_markdown import DiagnosticMarkdownService
+from src.apps.test_center.services.diagnostics.diagnostic_markdown import DiagnosticMarkdownService
 
 
 @override_settings(FILE_STORAGE_ROOT='platform/test')
@@ -19,9 +19,9 @@ class DiagnosticCleanupTests(SimpleTestCase):
         with patch.object(DiagnosticMarkdownService, '_MODEL_MAP', {
             'scheduled_task': (task_model, 'scheduled-tasks'),
             'test_report': (report_model, 'test-reports'),
-        }), patch('src.apps.test_center.services.diagnostic_markdown.transaction.atomic', side_effect=nullcontext), \
-                patch('src.apps.test_center.services.diagnostic_markdown.iter_current_storage_files', return_value=iter([(scheduled, old), (report, old)])), \
-                patch('src.apps.test_center.services.diagnostic_markdown.delete_current_storage_file') as delete:
+        }), patch('src.apps.test_center.services.diagnostics.diagnostic_markdown.transaction.atomic', side_effect=nullcontext), \
+                patch('src.apps.test_center.services.diagnostics.diagnostic_markdown.iter_current_storage_files', return_value=iter([(scheduled, old), (report, old)])), \
+                patch('src.apps.test_center.services.diagnostics.diagnostic_markdown.delete_current_storage_file') as delete:
             result = DiagnosticMarkdownService.cleanup_expired(60)
         self.assertEqual(result['diagnostic_deleted_file_count'], 2)
         self.assertEqual(delete.call_count, 2)
@@ -40,8 +40,8 @@ class DiagnosticCleanupTests(SimpleTestCase):
             ('platform/test/diagnostics/other.md', old),
             (f'platform/test/diagnostics/test-reports/1/{old:%Y%m%d%H%M%S%f}-result.md', now),
         ]
-        with patch('src.apps.test_center.services.diagnostic_markdown.iter_current_storage_files', return_value=iter(files)), \
-                patch('src.apps.test_center.services.diagnostic_markdown.delete_current_storage_file') as delete:
+        with patch('src.apps.test_center.services.diagnostics.diagnostic_markdown.iter_current_storage_files', return_value=iter(files)), \
+                patch('src.apps.test_center.services.diagnostics.diagnostic_markdown.delete_current_storage_file') as delete:
             result = DiagnosticMarkdownService.cleanup_expired(60)
         delete.assert_not_called()
         self.assertEqual(result['diagnostic_deleted_file_count'], 0)
@@ -52,10 +52,10 @@ class DiagnosticCleanupTests(SimpleTestCase):
         model = Mock()
         model.objects.filter.return_value.update.side_effect = OSError('database unavailable')
         with patch.object(DiagnosticMarkdownService, '_MODEL_MAP', {'test_report': (model, 'test-reports')}), \
-                patch('src.apps.test_center.services.diagnostic_markdown.transaction.atomic', side_effect=nullcontext), \
-                patch('src.apps.test_center.services.diagnostic_markdown.iter_current_storage_files', return_value=iter([(name, old)])), \
-                patch('src.apps.test_center.services.diagnostic_markdown.delete_current_storage_file') as delete, \
-                patch('src.apps.test_center.services.diagnostic_markdown.log'):
+                patch('src.apps.test_center.services.diagnostics.diagnostic_markdown.transaction.atomic', side_effect=nullcontext), \
+                patch('src.apps.test_center.services.diagnostics.diagnostic_markdown.iter_current_storage_files', return_value=iter([(name, old)])), \
+                patch('src.apps.test_center.services.diagnostics.diagnostic_markdown.delete_current_storage_file') as delete, \
+                patch('src.apps.test_center.services.diagnostics.diagnostic_markdown.log'):
             result = DiagnosticMarkdownService.cleanup_expired(60)
         delete.assert_not_called()
         self.assertEqual(result['diagnostic_failed_file_count'], 1)

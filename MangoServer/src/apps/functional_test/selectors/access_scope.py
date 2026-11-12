@@ -6,10 +6,7 @@ REST、AI、MCP 和其他后端调用方都应复用这里的数据范围规则�
 
 from rest_framework.request import Request
 
-from src.apps.user.services.permission import (
-    PermissionMenuService,
-    ProjectProductScopeService,
-)
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 
 
 def _request_user(request: Request):

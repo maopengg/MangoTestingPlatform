@@ -10,7 +10,7 @@ from src.apps.system.enums import RuntimeServiceName
 from src.apps.system.services.runtime_center.heartbeat import ServiceHeartbeatService
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
-from src.apps.test_center.services.test_suite.infrastructure import TestSuiteInfrastructureService
+from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService
 
 
 class ApiWorkerRecoveryService:
@@ -56,6 +56,18 @@ class ApiWorkerRecoveryService:
                     pushed < started <= now - timedelta(seconds=cls.REPLACEMENT_GRACE_SECONDS))
 
     @classmethod
+    def execution_owner_replaced(cls, worker_name, owner, started_at):
+        if not isinstance(owner, dict) or not owner.get('process_token'):
+            return False
+        now = timezone.now()
+        for service in (RuntimeServiceName.API_WORKER, RuntimeServiceName.MCP):
+            for heartbeat in ServiceHeartbeatService.get_online_instances(service):
+                if heartbeat.instance_name == worker_name and cls.replacement_confirmed(
+                        owner, heartbeat, started_at, now):
+                    return True
+        return False
+
+    @classmethod
     def recover(cls):
         from src.apps.task_center.services.execution.claim import ApiTaskClaimService
         heartbeats = {row.instance_name: row for row in
@@ -64,6 +76,7 @@ class ApiWorkerRecoveryService:
             return 0
         now = timezone.now()
         recovered = 0
+        replaced_owners = {}
         candidates = TestCenterQuerySelector.test_suite_details().filter(
             type=TestCaseTypeEnum.API.value, status=TaskEnum.PROCEED.value,
             push_time__lt=now - timedelta(seconds=cls.REPLACEMENT_GRACE_SECONDS),
@@ -81,6 +94,20 @@ class ApiWorkerRecoveryService:
                 owner = {'worker_name': trace.worker_name} if trace else {}
             heartbeat = heartbeats.get(owner.get('worker_name'))
             if heartbeat and cls.replacement_confirmed(owner, heartbeat, detail['push_time'], now):
-                recovered += bool(TestSuiteInfrastructureService.block(
-                    detail['id'], int(detail['retry'] or 0), [], expected_push_time=detail['push_time']))
+                blocked = TestSuiteInfrastructureService.block(
+                    detail['id'], int(detail['retry'] or 0), [], expected_push_time=detail['push_time'])
+                recovered += bool(blocked)
+                if blocked:
+                    replaced_owners[owner['process_token']] = owner['worker_name']
+        for process, worker in replaced_owners.items():
+            remaining = TestCenterQuerySelector.test_suite_details().filter(
+                type=TestCaseTypeEnum.API.value, status=TaskEnum.PROCEED.value,
+                summary_data__meta__worker_owner__process_token=process,
+                summary_data__meta__worker_owner__worker_name=worker,
+            ).filter(ApiTaskClaimService.not_blocked_condition()).exists()
+            if not remaining:
+                from src.apps.data_factory.services.recovery.health_incident import DatasourceHealthIncidentService
+                # 仅关闭旧执行位无进展告警；阻塞报告与数据源未知占用仍保留各自恢复责任。
+                DatasourceHealthIncidentService.safe_observe(f'api-worker:{worker}:{process}',
+                    worker=True, active=False, metrics={})
         return recovered

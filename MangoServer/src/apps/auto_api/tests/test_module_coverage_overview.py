@@ -7,9 +7,9 @@ from django.test import SimpleTestCase
 from django.urls import resolve
 
 from src.apps.auto_api.api.views.module_coverage_case import ModuleCoverageCaseViews
-from src.apps.auto_api.services.module_coverage import ModuleCoverageService
+from src.apps.auto_api.services.coverage.module_coverage import ModuleCoverageService
 from src.apps.user.middleware.permission import MenuActionPermission
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.user.services.authorization.permission import PermissionMenuService
 
 
 def queryset(rows=()):
@@ -168,7 +168,7 @@ class ModuleCoverageOverviewTests(SimpleTestCase):
         cases.values.return_value.annotate.return_value = []
         with patch.object(ModuleCoverageService, "active_cases", return_value=cases), \
                 patch.object(ModuleCoverageService, "case_coverage_assessment", return_value={"status": "valid"}), \
-                patch("src.apps.auto_api.services.module_coverage_parts.query.ModuleCoverageInterfaceSnapshot.objects") as snapshots:
+                patch("src.apps.auto_api.services.coverage.parts.query.ModuleCoverageInterfaceSnapshot.objects") as snapshots:
             snapshots.filter.return_value.values.return_value.annotate.return_value = []
             result = ModuleCoverageService.interface_page(queryset(targets), page=2, page_size=1,
                                                           analysis_statuses=["completed"])
@@ -339,7 +339,7 @@ class ModuleCoverageOverviewTests(SimpleTestCase):
                 cases.filter.return_value.select_related.return_value = [case(1, 1, 1)]
                 with patch.object(ModuleCoverageService, "active_cases", return_value=cases), \
                         patch.object(ModuleCoverageService, "case_coverage_assessment", return_value={"status": "valid"}), \
-                        patch("src.apps.auto_api.services.module_coverage_parts.query."
+                        patch("src.apps.auto_api.services.coverage.parts.query."
                               "ModuleCoverageInterfaceSnapshot.objects") as snapshots:
                     snapshots.filter.return_value.values.return_value.annotate.return_value = []
                     result = ModuleCoverageService.interface_page(source)
@@ -365,7 +365,7 @@ class ModuleCoverageOverviewTests(SimpleTestCase):
         cases.filter.return_value.select_related.return_value = [case(2, 2, 1), case(4, 4, 1)]
         with patch.object(ModuleCoverageService, "active_cases", return_value=cases), \
                 patch.object(ModuleCoverageService, "case_coverage_assessment", return_value={"status": "valid"}), \
-                patch("src.apps.auto_api.services.module_coverage_parts.query."
+                patch("src.apps.auto_api.services.coverage.parts.query."
                       "ModuleCoverageInterfaceSnapshot.objects") as snapshots:
             snapshots.filter.return_value.values.return_value.annotate.return_value = []
             result = ModuleCoverageService.interface_page(source, page=2, page_size=1,
@@ -398,7 +398,7 @@ class ModuleCoverageOverviewTests(SimpleTestCase):
         cases = MagicMock()
         cases.filter.return_value.values.return_value.annotate.return_value = []
         with patch.object(ModuleCoverageService, "active_cases", return_value=cases), \
-                patch("src.apps.auto_api.services.module_coverage_parts.query."
+                patch("src.apps.auto_api.services.coverage.parts.query."
                       "ModuleCoverageInterfaceSnapshot.objects") as snapshots:
             snapshots.filter.return_value.values.return_value.annotate.return_value = []
             ModuleCoverageService.interface_page(source, methods=["GET", "POST"],

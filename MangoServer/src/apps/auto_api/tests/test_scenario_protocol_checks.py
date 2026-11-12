@@ -9,7 +9,7 @@ from src.apps.auto_api.schemas.case_schema import merge_scenario_protocol_config
 from src.apps.auto_api.schemas.execution import ApiExecutionResponse
 from src.apps.auto_api.services.api_case.mutation_io import ApiCaseParameterMutationService
 from src.apps.auto_api.services.protocols.outcome import ProtocolCallOutcomeService as Outcome
-from src.apps.auto_api.services.test_case.test_case_parts.protocol import ApiTestCaseProtocolMixin
+from src.apps.auto_api.services.execution.cases.test_case_parts.protocol import ApiTestCaseProtocolMixin
 
 
 class ScenarioProtocolChecksTests(SimpleTestCase):

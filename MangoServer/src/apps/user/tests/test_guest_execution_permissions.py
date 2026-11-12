@@ -9,12 +9,14 @@ from src.apps.auto_pytest.api.views.pytest_case import PytestCaseViews
 from src.apps.auto_ui.api.views.ui_case import UiCaseViews
 from src.apps.user.api.views.user import LoginViews
 from src.apps.user.middleware.permission import MenuActionPermission
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.user.services.authorization.permission import PermissionMenuService
+from src.apps.user.tests.permission_fixtures import install_legacy_endpoint_snapshot
 from src.interfaces.mcp.authentication import permission_error
 
 
 class GuestExecutionPermissionTests(SimpleTestCase):
     def setUp(self):
+        install_legacy_endpoint_snapshot(self)
         self.user = SimpleNamespace(id=7)
         self.grants = PermissionMenuService.guest_permission_keys()
         for name, result in (('is_effective_super_admin', False), ('permission_keys_for_user', self.grants)):

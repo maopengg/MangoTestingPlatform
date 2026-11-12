@@ -3,7 +3,7 @@ from unittest.mock import patch
 from django.core.cache import cache
 from django.test import SimpleTestCase, override_settings
 
-from src.apps.perf.services.realtime import PerfRealtimeService
+from src.apps.perf.services.reporting.realtime import PerfRealtimeService
 
 
 @override_settings(CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}})
@@ -11,7 +11,7 @@ class PerfRealtimeSubscriptionTests(SimpleTestCase):
     def setUp(self):
         cache.clear()
 
-    @patch('src.apps.perf.services.realtime.time', return_value=100)
+    @patch('src.apps.perf.services.reporting.realtime.time', return_value=100)
     def test_subscribe_refresh_and_expiration(self, now):
         PerfRealtimeService.subscribe('run', 1, 7)
         PerfRealtimeService.subscribe('run', 1, 8)
@@ -23,7 +23,7 @@ class PerfRealtimeSubscriptionTests(SimpleTestCase):
         now.return_value = 190
         self.assertEqual(PerfRealtimeService.viewers('run', 1), [])
 
-    @patch('src.apps.perf.services.realtime.time', return_value=100)
+    @patch('src.apps.perf.services.reporting.realtime.time', return_value=100)
     def test_unsubscribe_is_idempotent_and_scopes_stay_isolated(self, now):
         PerfRealtimeService.subscribe('run', 1, 7)
         PerfRealtimeService.subscribe('run', 1, 8)

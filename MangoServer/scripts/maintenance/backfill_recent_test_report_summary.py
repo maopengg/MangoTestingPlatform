@@ -106,9 +106,9 @@ class MigrationRunner:
         from src.apps.auto_api.services.api_case.version import ApiCaseRevisionService
         from src.apps.auto_api.services.api_info.version import ApiInfoRevisionService
         from src.apps.system.enums import TaskCaseVersionPolicyEnum
-from src.apps.test_center.enums.case import TestCaseTypeEnum
+        from src.apps.test_center.enums.case import TestCaseTypeEnum
         from src.apps.system.models import TasksDetails, TestSuiteDetailResult, TestSuiteDetails
-        from src.apps.test_center.services.test_suite.detail_result import TestSuiteDetailResultService
+        from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteDetailResultService
 
         self.ApiCase = ApiCase
         self.ApiCaseDetailed = ApiCaseDetailed

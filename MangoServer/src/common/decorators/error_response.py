@@ -4,6 +4,7 @@
 # @Time   : 2024-07-25 上午9:55
 # @Author : 毛鹏
 import traceback
+from functools import wraps
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import close_old_connections, utils
@@ -40,6 +41,7 @@ def error_response(app: str):
     """
 
     def decorator(func):
+        @wraps(func)
         def wrapper(self, request: Request, *args, **kwargs):
             try:
                 return func(self, request, *args, **kwargs)

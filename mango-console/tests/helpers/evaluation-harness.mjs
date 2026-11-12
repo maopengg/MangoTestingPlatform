@@ -8,6 +8,10 @@ export function evaluationComponent(name, bindings, options = {}) {
     navigations = [],
     route = vue.reactive({ path: '/evaluation/case/details', query: { id: '1' } }),
     polling = { starts: 0, stops: 0 }
+  const register = (name, callback) => {
+    const previous = lifecycle[name]
+    lifecycle[name] = (...args) => { previous?.(...args); return callback(...args) }
+  }
   let pollingRefresh,
     pollingPause,
     pollingVersion = 0
@@ -20,9 +24,9 @@ export function evaluationComponent(name, bindings, options = {}) {
         ...vue,
         useId: () => 'fixture-field',
         useSlots: () => ({}),
-        onBeforeUnmount: (fn) => (lifecycle.unmount = fn),
-        onDeactivated: (fn) => (lifecycle.deactivate = fn),
-        onActivated: (fn) => (lifecycle.activate = fn),
+        onBeforeUnmount: (fn) => register('unmount', fn),
+        onDeactivated: (fn) => register('deactivate', fn),
+        onActivated: (fn) => register('activate', fn),
       },
       'vue-router': {
         useRoute: () => route,

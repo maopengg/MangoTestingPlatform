@@ -5,7 +5,7 @@ from rest_framework import serializers
 from src.apps.auto_api.schemas.case_schema import validate_scenario_tag_list
 from src.apps.auto_api.schemas.validation import ApiCaseValidationService
 from src.apps.functional_test.api.serializers.case import ManualTestCaseSerializer
-from src.apps.functional_test.services.common import ManualTestValidationService
+from src.apps.functional_test.services.cases.common import ManualTestValidationService
 
 
 class ScenarioTagValidationTests(SimpleTestCase):

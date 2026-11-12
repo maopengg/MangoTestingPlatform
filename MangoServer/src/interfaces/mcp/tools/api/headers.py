@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from src.apps.auto_api.selectors.querysets import ApiQuerySelector
-from src.apps.auto_api.services.api_header import ApiHeaderMutationService
+from src.apps.auto_api.services.configuration.api_header import ApiHeaderMutationService
 from src.interfaces.mcp.audit import mcp_current_user_id
 from src.interfaces.mcp.common import (
     create_dangerous_action_preview,

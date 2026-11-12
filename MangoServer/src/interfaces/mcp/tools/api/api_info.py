@@ -10,12 +10,9 @@ from src.apps.auto_api.selectors.querysets import ApiQuerySelector
 from src.apps.auto_api.services.api_info.config import ApiInfoConfigService
 from src.apps.auto_api.services.api_info.curl_import import parse_import_curl
 from src.apps.auto_api.services.api_info.mutation import ApiInfoMutationService
-from src.apps.auto_api.services.grpc_definition import (
-    GrpcDefinitionMutationService,
-    GrpcDefinitionSyncService,
-)
-from src.apps.auto_api.services.test_case.test_api_info import TestApiInfo
-from src.apps.test_center.services.execution_result import ExecutionResultService
+from src.apps.auto_api.services.api_info.grpc_definition import GrpcDefinitionMutationService, GrpcDefinitionSyncService
+from src.apps.auto_api.services.execution.cases.test_api_info import TestApiInfo
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
 from src.interfaces.mcp.audit import mcp_current_user_id
 from src.interfaces.mcp.common import (
     create_dangerous_action_preview,

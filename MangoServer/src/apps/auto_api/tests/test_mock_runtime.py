@@ -21,15 +21,9 @@ from src.apps.auto_api.api.views.api_mock import ApiMockConfigViews, ApiMockRunt
 from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.exceptions import MockRuntimeLookupError
 from src.apps.auto_api.models import ApiMockRequestLog
-from src.apps.auto_api.services.mock_log_cleanup import MockRequestLogCleanupService
-from src.apps.auto_api.services.mock_request_decryption import MockRequestDecryptionService
-from src.apps.auto_api.services.mock_runtime import (
-    MOCK_LOG_GLOBAL_CLEAR_MARKER_KEY,
-    MOCK_LOG_GLOBAL_CLEAR_TIMEOUT_SECONDS,
-    MOCK_LOG_GLOBAL_WRITE_PAUSE_KEY,
-    MockAssertionCatalog, MockConfigValidator, MockLogBatchWriter,
-    MockRuntimeCache, MockRuntimeService,
-)
+from src.apps.auto_api.services.mock.mock_log_cleanup import MockRequestLogCleanupService
+from src.apps.auto_api.services.mock.mock_request_decryption import MockRequestDecryptionService
+from src.apps.auto_api.services.mock.mock_runtime import MOCK_LOG_GLOBAL_CLEAR_MARKER_KEY, MOCK_LOG_GLOBAL_CLEAR_TIMEOUT_SECONDS, MOCK_LOG_GLOBAL_WRITE_PAUSE_KEY, MockAssertionCatalog, MockConfigValidator, MockLogBatchWriter, MockRuntimeCache, MockRuntimeService
 
 
 class MockRuntimeServiceTests(SimpleTestCase):
@@ -47,8 +41,8 @@ class MockRuntimeServiceTests(SimpleTestCase):
     def test_runtime_local_cache_avoids_repeated_shared_cache_reads(self):
         payload = {"id": 1, "enabled": True}
         MockRuntimeCache._local_entries.clear()
-        with patch("src.apps.auto_api.services.mock_runtime.cache.get", return_value=payload) as get:
-            with patch("src.apps.auto_api.services.mock_runtime.time.monotonic", side_effect=[10, 10, 10.2]):
+        with patch("src.apps.auto_api.services.mock.mock_runtime.cache.get", return_value=payload) as get:
+            with patch("src.apps.auto_api.services.mock.mock_runtime.time.monotonic", side_effect=[10, 10, 10.2]):
                 self.assertIs(MockRuntimeCache.load("items"), payload)
                 self.assertIs(MockRuntimeCache.load("items"), payload)
         get.assert_called_once()
@@ -58,9 +52,9 @@ class MockRuntimeServiceTests(SimpleTestCase):
         first = {"id": 1}
         second = {"id": 2}
         MockRuntimeCache._local_entries.clear()
-        with patch("src.apps.auto_api.services.mock_runtime.cache.get", side_effect=[first, second, second]) as get:
-            with patch("src.apps.auto_api.services.mock_runtime.cache.delete") as delete:
-                with patch("src.apps.auto_api.services.mock_runtime.time.monotonic",
+        with patch("src.apps.auto_api.services.mock.mock_runtime.cache.get", side_effect=[first, second, second]) as get:
+            with patch("src.apps.auto_api.services.mock.mock_runtime.cache.delete") as delete:
+                with patch("src.apps.auto_api.services.mock.mock_runtime.time.monotonic",
                            side_effect=[10, 10, 11.1, 11.1, 11.2, 11.2]):
                     self.assertIs(MockRuntimeCache.load("items"), first)
                     self.assertIs(MockRuntimeCache.load("items"), second)
@@ -78,7 +72,7 @@ class MockRuntimeServiceTests(SimpleTestCase):
         })
         payload = {"id": 1, "config": {"request_decryption": stored}}
         MockRuntimeCache._local_entries.clear()
-        with patch("src.apps.auto_api.services.mock_runtime.cache.get", return_value=payload):
+        with patch("src.apps.auto_api.services.mock.mock_runtime.cache.get", return_value=payload):
             runtime = MockRuntimeCache.load("lark-event")
 
         self.assertEqual(payload["config"]["request_decryption"], stored)
@@ -155,12 +149,12 @@ class MockRuntimeServiceTests(SimpleTestCase):
             {"trace_id": "mock-1", "create_time": called_at, "mock_config_id": 1},
             {"trace_id": "mock-2", "create_time": called_at, "mock_config_id": 1},
         ]
-        with patch("src.apps.auto_api.services.mock_runtime.close_old_connections"):
-            with patch("src.apps.auto_api.services.mock_runtime.transaction.atomic", return_value=nullcontext()):
-                with patch("src.apps.auto_api.services.mock_runtime.ApiMockConfig.objects.select_for_update"):
-                    with patch("src.apps.auto_api.services.mock_runtime.cache.get_many", return_value={}):
+        with patch("src.apps.auto_api.services.mock.mock_runtime.close_old_connections"):
+            with patch("src.apps.auto_api.services.mock.mock_runtime.transaction.atomic", return_value=nullcontext()):
+                with patch("src.apps.auto_api.services.mock.mock_runtime.ApiMockConfig.objects.select_for_update"):
+                    with patch("src.apps.auto_api.services.mock.mock_runtime.cache.get_many", return_value={}):
                         with patch(
-                                "src.apps.auto_api.services.mock_runtime.ApiMockRequestLog.objects.bulk_create") as bulk_create:
+                                "src.apps.auto_api.services.mock.mock_runtime.ApiMockRequestLog.objects.bulk_create") as bulk_create:
                             writer._write_batch(payloads)
         self.assertEqual([item.trace_id for item in bulk_create.call_args.args[0]], ["mock-1", "mock-2"])
         self.assertTrue(all(item.create_time == called_at for item in bulk_create.call_args.args[0]))
@@ -173,13 +167,13 @@ class MockRuntimeServiceTests(SimpleTestCase):
             {"trace_id": "mock-old", "create_time": cleared_at - timedelta(seconds=1), "mock_config_id": 1},
             {"trace_id": "mock-new", "create_time": cleared_at + timedelta(seconds=1), "mock_config_id": 1},
         ]
-        with patch("src.apps.auto_api.services.mock_runtime.close_old_connections"):
-            with patch("src.apps.auto_api.services.mock_runtime.transaction.atomic", return_value=nullcontext()):
-                with patch("src.apps.auto_api.services.mock_runtime.ApiMockConfig.objects.select_for_update"):
-                    with patch("src.apps.auto_api.services.mock_runtime.cache.get_many",
+        with patch("src.apps.auto_api.services.mock.mock_runtime.close_old_connections"):
+            with patch("src.apps.auto_api.services.mock.mock_runtime.transaction.atomic", return_value=nullcontext()):
+                with patch("src.apps.auto_api.services.mock.mock_runtime.ApiMockConfig.objects.select_for_update"):
+                    with patch("src.apps.auto_api.services.mock.mock_runtime.cache.get_many",
                                return_value={"mock:log:cleared:1": cleared_at}):
                         with patch(
-                                "src.apps.auto_api.services.mock_runtime.ApiMockRequestLog.objects.bulk_create") as bulk_create:
+                                "src.apps.auto_api.services.mock.mock_runtime.ApiMockRequestLog.objects.bulk_create") as bulk_create:
                             writer._write_batch(payloads)
         self.assertEqual([item.trace_id for item in bulk_create.call_args.args[0]], ["mock-new"])
 
@@ -190,15 +184,15 @@ class MockRuntimeServiceTests(SimpleTestCase):
             {"trace_id": "mock-old", "create_time": cleared_at - timedelta(seconds=1), "mock_config_id": 1},
             {"trace_id": "mock-new", "create_time": cleared_at + timedelta(seconds=1), "mock_config_id": 1},
         ]
-        with patch("src.apps.auto_api.services.mock_runtime.close_old_connections"):
-            with patch("src.apps.auto_api.services.mock_runtime.transaction.atomic", return_value=nullcontext()):
-                with patch("src.apps.auto_api.services.mock_runtime.ApiMockConfig.objects.select_for_update"):
+        with patch("src.apps.auto_api.services.mock.mock_runtime.close_old_connections"):
+            with patch("src.apps.auto_api.services.mock.mock_runtime.transaction.atomic", return_value=nullcontext()):
+                with patch("src.apps.auto_api.services.mock.mock_runtime.ApiMockConfig.objects.select_for_update"):
                     with patch(
-                            "src.apps.auto_api.services.mock_runtime.cache.get_many",
+                            "src.apps.auto_api.services.mock.mock_runtime.cache.get_many",
                             return_value={MOCK_LOG_GLOBAL_CLEAR_MARKER_KEY: cleared_at},
                     ):
                         with patch(
-                                "src.apps.auto_api.services.mock_runtime.ApiMockRequestLog.objects.bulk_create"
+                                "src.apps.auto_api.services.mock.mock_runtime.ApiMockRequestLog.objects.bulk_create"
                         ) as bulk_create:
                             writer._write_batch(payloads)
         self.assertEqual([item.trace_id for item in bulk_create.call_args.args[0]], ["mock-new"])
@@ -206,15 +200,15 @@ class MockRuntimeServiceTests(SimpleTestCase):
     def test_log_batch_does_not_write_while_global_clear_is_paused(self):
         writer = MockLogBatchWriter()
         payload = {"trace_id": "mock-paused", "create_time": timezone.now(), "mock_config_id": 1}
-        with patch("src.apps.auto_api.services.mock_runtime.close_old_connections"):
-            with patch("src.apps.auto_api.services.mock_runtime.transaction.atomic", return_value=nullcontext()):
-                with patch("src.apps.auto_api.services.mock_runtime.ApiMockConfig.objects.select_for_update"):
+        with patch("src.apps.auto_api.services.mock.mock_runtime.close_old_connections"):
+            with patch("src.apps.auto_api.services.mock.mock_runtime.transaction.atomic", return_value=nullcontext()):
+                with patch("src.apps.auto_api.services.mock.mock_runtime.ApiMockConfig.objects.select_for_update"):
                     with patch(
-                            "src.apps.auto_api.services.mock_runtime.cache.get_many",
+                            "src.apps.auto_api.services.mock.mock_runtime.cache.get_many",
                             return_value={MOCK_LOG_GLOBAL_WRITE_PAUSE_KEY: True},
                     ):
                         with patch(
-                                "src.apps.auto_api.services.mock_runtime.ApiMockRequestLog.objects.bulk_create"
+                                "src.apps.auto_api.services.mock.mock_runtime.ApiMockRequestLog.objects.bulk_create"
                         ) as bulk_create:
                             writer._write_batch([payload])
         bulk_create.assert_not_called()
@@ -251,13 +245,13 @@ class MockRuntimeServiceTests(SimpleTestCase):
         queryset = MagicMock()
 
         with patch(
-                "src.apps.auto_api.services.mock_log_cleanup.timezone.now",
+                "src.apps.auto_api.services.mock.mock_log_cleanup.timezone.now",
                 return_value=cleared_at,
         ):
-            with patch("src.apps.auto_api.services.mock_log_cleanup.cache.set_many") as set_many:
-                with patch("src.apps.auto_api.services.mock_log_cleanup.cache.delete") as cache_delete:
+            with patch("src.apps.auto_api.services.mock.mock_log_cleanup.cache.set_many") as set_many:
+                with patch("src.apps.auto_api.services.mock.mock_log_cleanup.cache.delete") as cache_delete:
                     with patch(
-                            "src.apps.auto_api.services.mock_log_cleanup.ApiMockRequestLog.objects.filter",
+                            "src.apps.auto_api.services.mock.mock_log_cleanup.ApiMockRequestLog.objects.filter",
                             return_value=queryset,
                     ) as filter_logs:
                         with patch.object(MockRequestLogCleanupService, '_delete_in_batches',
@@ -277,10 +271,10 @@ class MockRuntimeServiceTests(SimpleTestCase):
         cache_delete.assert_called_once_with(MOCK_LOG_GLOBAL_WRITE_PAUSE_KEY)
 
     def test_clear_all_mock_logs_removes_marker_when_batch_delete_fails(self):
-        with patch("src.apps.auto_api.services.mock_log_cleanup.cache.set_many"):
-            with patch("src.apps.auto_api.services.mock_log_cleanup.cache.delete") as cache_delete:
+        with patch("src.apps.auto_api.services.mock.mock_log_cleanup.cache.set_many"):
+            with patch("src.apps.auto_api.services.mock.mock_log_cleanup.cache.delete") as cache_delete:
                 with patch(
-                        "src.apps.auto_api.services.mock_log_cleanup.ApiMockRequestLog.objects.filter",
+                        "src.apps.auto_api.services.mock.mock_log_cleanup.ApiMockRequestLog.objects.filter",
                 ):
                     with patch.object(MockRequestLogCleanupService, '_delete_in_batches',
                                       side_effect=RuntimeError('boom')):
@@ -302,20 +296,20 @@ class MockRuntimeServiceTests(SimpleTestCase):
         cleared_at = timezone.now()
 
         with patch(
-                "src.apps.auto_api.services.mock_log_cleanup.transaction.atomic",
+                "src.apps.auto_api.services.mock.mock_log_cleanup.transaction.atomic",
                 return_value=nullcontext(),
         ):
             with patch(
-                    "src.apps.auto_api.services.mock_log_cleanup.ApiMockConfig.objects.select_for_update",
+                    "src.apps.auto_api.services.mock.mock_log_cleanup.ApiMockConfig.objects.select_for_update",
                     return_value=locked_queryset,
             ):
                 with patch(
-                        "src.apps.auto_api.services.mock_log_cleanup.timezone.now",
+                        "src.apps.auto_api.services.mock.mock_log_cleanup.timezone.now",
                         return_value=cleared_at,
                 ):
-                    with patch("src.apps.auto_api.services.mock_log_cleanup.cache.set") as cache_set:
+                    with patch("src.apps.auto_api.services.mock.mock_log_cleanup.cache.set") as cache_set:
                         with patch(
-                                "src.apps.auto_api.services.mock_log_cleanup.ApiMockRequestLog.objects.filter",
+                                "src.apps.auto_api.services.mock.mock_log_cleanup.ApiMockRequestLog.objects.filter",
                                 return_value=log_queryset,
                         ) as filter_logs:
                             with patch.object(
@@ -342,11 +336,11 @@ class MockRuntimeServiceTests(SimpleTestCase):
         second_delete.delete.return_value = (1, {"auto_api.ApiMockRequestLog": 1})
 
         with patch(
-                "src.apps.auto_api.services.mock_log_cleanup.transaction.atomic",
+                "src.apps.auto_api.services.mock.mock_log_cleanup.transaction.atomic",
                 side_effect=[nullcontext(), nullcontext()],
         ) as atomic:
             with patch(
-                    "src.apps.auto_api.services.mock_log_cleanup.ApiMockRequestLog.objects.filter",
+                    "src.apps.auto_api.services.mock.mock_log_cleanup.ApiMockRequestLog.objects.filter",
                     side_effect=[first_delete, second_delete],
             ) as filter_logs:
                 deleted = MockRequestLogCleanupService._delete_in_batches(queryset, batch_size=2)
@@ -704,7 +698,7 @@ class MockRuntimeServiceTests(SimpleTestCase):
         with (
             patch("src.apps.auto_api.api.views.api_mock.time.monotonic", side_effect=lambda: clock["now"]),
             patch.object(MockRuntimeCache, "load", side_effect=load_config),
-            patch("src.apps.auto_api.services.mock_runtime.time.sleep", side_effect=wait) as sleep,
+            patch("src.apps.auto_api.services.mock.mock_runtime.time.sleep", side_effect=wait) as sleep,
             patch("src.apps.auto_api.api.views.api_mock.HttpResponse", side_effect=build_response),
             patch.object(MockRuntimeService, "submit_log") as submit_log,
         ):
@@ -877,7 +871,7 @@ class MockRuntimeServiceTests(SimpleTestCase):
 
     def test_duration_less_than_one_millisecond_is_recorded_as_one(self):
         with patch(
-                "src.apps.auto_api.services.mock_runtime.time.monotonic",
+                "src.apps.auto_api.services.mock.mock_runtime.time.monotonic",
                 return_value=10.0004,
         ):
             self.assertEqual(MockRuntimeService.elapsed_ms_since(10.0), 1)

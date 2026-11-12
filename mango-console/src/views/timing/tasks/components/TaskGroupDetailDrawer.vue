@@ -1,7 +1,7 @@
 <template>
   <a-drawer v-model:visible="visible" title="任务组详情" width="min(1100px, calc(100vw - 24px))" :footer="false" @cancel="close">
     <mango-panel-spin :loading="loading" class="mango-task-group-detail__spin">
-      <a-alert v-if="operationError" type="error">{{ operationError }}</a-alert>
+      <MangoRequestFeedback v-if="operationError" :message="(operationError)" />
       <div v-if="detail" class="mango-task-group-detail">
         <div class="mango-soft-panel mango-task-group-detail__summary">
           <strong>{{ detail.name }}</strong>
@@ -32,8 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
 import { onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Message } from '@arco-design/web-vue'
@@ -102,9 +101,9 @@ async function changeMemberStatus(member: TaskGroupMember, enabled: boolean): Pr
     if (reopenedSameGroup()) await loadDetail()
     if (context === identity() && available()) emit('changed')
     return true
-  } catch {
+  } catch (requestFailure) {
     if (current()) {
-      operationError.value = committed ? '状态已提交，但返回数据异常，请重新加载详情核对' : '子任务状态更新失败，请重试'
+      operationError.value = requestFailureMessage(requestFailure, committed ? '状态已提交，但返回数据异常，请重新加载详情核对' : '子任务状态更新失败，请重试')
       if (committed) await loadDetail()
     }
     if (committed && reopenedSameGroup()) await loadDetail()

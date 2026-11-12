@@ -5,13 +5,13 @@ from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase
 
-from src.apps.data_factory.services.datasource_connection import GovernedDbapiConnection
+from src.apps.data_factory.services.datasource.datasource_connection import GovernedDbapiConnection
 
 
 class ConnectionFinalizationTests(SimpleTestCase):
     def setUp(self):
-        self.closed = patch('src.apps.data_factory.services.datasource_connection.DatasourceGovernorService.connection_closed').start()
-        self.unknown = patch('src.apps.data_factory.services.datasource_connection.DatasourceGovernorService.finish_operation').start()
+        self.closed = patch('src.apps.data_factory.services.datasource.datasource_connection.DatasourceGovernorService.connection_closed').start()
+        self.unknown = patch('src.apps.data_factory.services.datasource.datasource_connection.DatasourceGovernorService.finish_connection').start()
         self.addCleanup(patch.stopall)
 
     def test_garbage_collection_closes_socket_before_releasing_exact_permit(self):

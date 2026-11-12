@@ -4,9 +4,9 @@ from unittest.mock import Mock, patch
 from django.test import SimpleTestCase
 
 from src.apps.data_factory.exceptions import DataFactoryError
-from src.apps.data_factory.services.datasource_cost import DatasourceCostService as Cost
-from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
-from src.apps.data_factory.services.redis_protocol import BoundedRedisBuffer
+from src.apps.data_factory.services.governance.datasource_cost import DatasourceCostService as Cost
+from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService as Infrastructure
+from src.apps.data_factory.services.protocols.redis_protocol import BoundedRedisBuffer
 
 
 class CostCompatibilityTests(SimpleTestCase):
@@ -45,7 +45,7 @@ class CostCompatibilityTests(SimpleTestCase):
         source = Mock()
         source.readline.side_effect = [b'*2', b'$1', b'$1', b'$1']
         source.read.return_value = b'x'
-        with patch('src.apps.data_factory.services.redis_protocol.SystemConfigService.get_ranged_int', return_value=2):
+        with patch('src.apps.data_factory.services.protocols.redis_protocol.SystemConfigService.get_ranged_int', return_value=2):
             buffer = BoundedRedisBuffer(source)
         self.assertEqual(buffer.readline(), b'*2')
         for _ in range(2):
@@ -59,13 +59,13 @@ class CostCompatibilityTests(SimpleTestCase):
 
     def test_sql_respects_explicit_result_budget_over_one_hundred_and_never_truncates(self):
         from sqlalchemy import create_engine, text
-        from src.apps.data_factory.services.sql_query import DataFactorySqlQuery
+        from src.apps.data_factory.services.sql.sql_query import DataFactorySqlQuery
         engine = create_engine('sqlite://')
         self.addCleanup(engine.dispose)
         with engine.begin() as connection:
             connection.execute(text('CREATE TABLE example (id INTEGER PRIMARY KEY)'))
             connection.execute(text('INSERT INTO example (id) VALUES (:id)'), [{'id': index} for index in range(201)])
-        with patch('src.apps.data_factory.services.sql_query.DataFactoryDatasource.create_engine', return_value=engine), \
+        with patch('src.apps.data_factory.services.sql.sql_query.DataFactoryDatasource.create_engine', return_value=engine), \
                 patch.object(engine, 'dispose'):
             result = DataFactorySqlQuery.query(Mock(), 'SELECT id FROM example ORDER BY id', limit=250, allow_query=True)
             self.assertEqual(len(result['rows']), 201)

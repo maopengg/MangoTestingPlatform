@@ -11,9 +11,9 @@ from dulwich.config import ConfigFile
 from dulwich.repo import Repo
 
 from src.apps.auto_pytest.exceptions import AutoPytestError
-from src.apps.auto_pytest.services.repository_credentials import PytestRepositoryCredentialService as Credentials
-from src.apps.auto_pytest.services.git_management.public_repository import download_public_git_archive
-from src.apps.auto_pytest.services.git_management.repository_service import RepositoryGitService
+from src.apps.auto_pytest.services.repository.repository_credentials import PytestRepositoryCredentialService as Credentials
+from src.apps.auto_pytest.services.repository.public_repository import download_public_git_archive
+from src.apps.auto_pytest.services.repository.repository_service import RepositoryGitService
 
 
 class PublicRepositoryAccessTests(SimpleTestCase):
@@ -77,7 +77,7 @@ class PublicRepositoryAccessTests(SimpleTestCase):
             content.write_bytes(b'def test_example():\n    assert True\n')
             porcelain.add(directory, paths=[str(content)])
             commit = porcelain.commit(directory, message=b'example', author=b'Example <test@example.com>')
-            with patch('src.apps.auto_pytest.services.git_management.public_repository.porcelain.clone',
+            with patch('src.apps.auto_pytest.services.repository.public_repository.porcelain.clone',
                        return_value=Repo(directory)) as clone:
                 data = download_public_git_archive('https://gitee.com/example/repository.git', commit.decode())
             self.assertIsInstance(clone.call_args.kwargs['config'], ConfigFile)

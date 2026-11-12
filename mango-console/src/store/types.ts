@@ -71,6 +71,8 @@ export interface AppConfigState {
   layoutMode: LayoutMode
   deviceType: DeviceType
   displayDensity: DisplayDensity
+  autoScale2k: number
+  autoScale4k: number
   sideWidth: number
   pageAnim: PageAnim
   isFixedNavBar: boolean

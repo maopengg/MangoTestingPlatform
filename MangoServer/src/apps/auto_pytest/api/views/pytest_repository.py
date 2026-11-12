@@ -24,11 +24,11 @@ from src.apps.auto_pytest.models import (
     PytestProduct,
     PytestRepository,
 )
-from src.apps.auto_pytest.services.git_management.repository_lock import GitRepositoryLockService
-from src.apps.auto_pytest.services.git_management.repository_service import RepositoryGitService
-from src.apps.auto_pytest.services.product_sync import PytestProductSyncService
-from src.apps.auto_pytest.services.repository_credentials import PytestRepositoryCredentialService
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.auto_pytest.services.repository.repository_lock import GitRepositoryLockService
+from src.apps.auto_pytest.services.repository.repository_service import RepositoryGitService
+from src.apps.auto_pytest.services.synchronization.product_sync import PytestProductSyncService
+from src.apps.auto_pytest.services.repository.repository_credentials import PytestRepositoryCredentialService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
 from src.common.logging import log
 from src.common.responses.model_crud import ModelCRUD
@@ -151,6 +151,7 @@ class PytestRepositoryViews(ViewSet):
     @action(methods=["GET"], detail=False)
     @error_response("pytest")
     def list_repositories(self, request: Request):
+        """获取 Pytest 仓库列表"""
         items = _visible_repositories(request).select_related("credential").annotate(
             project_count=Count("pytest_projects", distinct=True),
             case_count=Count("pytest_projects__pytestcase", distinct=True),
@@ -163,6 +164,7 @@ class PytestRepositoryViews(ViewSet):
     @action(methods=["POST", "PUT"], detail=False)
     @error_response("pytest")
     def save_repository(self, request: Request):
+        """新增或修改 Pytest 仓库"""
         repository_id = (request.data or {}).get("id")
         if repository_id:
             # 与拉取、推送共用锁，避免同步中途切换远程代码源。
@@ -249,6 +251,7 @@ class PytestRepositoryViews(ViewSet):
     @action(methods=["DELETE"], detail=False)
     @error_response("pytest")
     def delete_repository(self, request: Request):
+        """删除 Pytest 仓库"""
         repository = _repository(request.query_params.get("id"), request)
         if PytestProduct.objects.filter(repository=repository).exists():
             raise AutoPytestError(PYTEST_REPOSITORY_DELETE_BINDING_INVALID)
@@ -265,6 +268,7 @@ class PytestRepositoryViews(ViewSet):
     @action(methods=["POST"], detail=False)
     @error_response("pytest")
     def test_connection(self, request: Request):
+        """测试Pytest 仓库连接"""
         repository = _repository(request.data.get("id"), request)
         result = RepositoryGitService(repository).test_connection()
         log.pytest.info(f'Pytest仓库连接测试完成：repository_id={repository.id}')
@@ -273,6 +277,7 @@ class PytestRepositoryViews(ViewSet):
     @action(methods=["GET"], detail=False)
     @error_response("pytest")
     def branches(self, request: Request):
+        """获取 Pytest 仓库分支"""
         repository = _repository(request.query_params.get("id"), request)
         return ResponseData.success(
             RESPONSE_MSG_0316,
@@ -282,12 +287,14 @@ class PytestRepositoryViews(ViewSet):
     @action(methods=["GET"], detail=False)
     @error_response("pytest")
     def local_info(self, request: Request):
+        """获取 Pytest 仓库本地工作区信息"""
         repository = _repository(request.query_params.get("id"), request)
         return ResponseData.success(RESPONSE_MSG_0316, data=RepositoryGitService(repository).local_info())
 
     @action(methods=["GET"], detail=False)
     @error_response("pytest")
     def directories(self, request: Request):
+        """获取 Pytest 仓库目录"""
         if not _can_browse_all_repositories(request):
             return ResponseData.fail(RESPONSE_MSG_0210)
         repository = _repository(request.query_params.get("id"), request)
@@ -302,6 +309,7 @@ class PytestRepositoryViews(ViewSet):
     @action(methods=["GET"], detail=False)
     @error_response("pytest")
     def tree(self, request: Request):
+        """获取 Pytest 仓库文件树"""
         repository = _repository(request.query_params.get("id"), request)
         service = RepositoryGitService(repository)
         with GitRepositoryLockService.locked("browse_pytest_repository", repository.id):
@@ -320,6 +328,7 @@ class PytestRepositoryViews(ViewSet):
     @action(methods=["GET"], detail=False)
     @error_response("pytest")
     def file_content(self, request: Request):
+        """读取或保存 Pytest 仓库文件内容"""
         repository = _repository(request.query_params.get("id"), request)
         file_path = str(request.query_params.get("path") or "").strip()
         service = RepositoryGitService(repository)
@@ -338,6 +347,7 @@ class PytestRepositoryViews(ViewSet):
     @action(methods=["POST"], detail=False)
     @error_response("pytest")
     def pull(self, request: Request):
+        """拉取 Pytest 仓库更新"""
         repository = _repository(request.data.get("id"), request)
         service = RepositoryGitService(repository)
         with GitRepositoryLockService.locked("pull_pytest_repository", repository.id):
@@ -356,6 +366,7 @@ class PytestRepositoryViews(ViewSet):
     @action(methods=["POST"], detail=False)
     @error_response("pytest")
     def push(self, request: Request):
+        """推送 Pytest 仓库本地变更"""
         repository = _repository(request.data.get("id"), request)
         with GitRepositoryLockService.locked("push_pytest_repository", repository.id):
             result = RepositoryGitService(repository).commit_and_push_current_branch(
@@ -369,6 +380,7 @@ class PytestRepositoryViews(ViewSet):
     @action(methods=["POST"], detail=False)
     @error_response("pytest")
     def switch_branch(self, request: Request):
+        """切换 Pytest 仓库分支"""
         repository = _repository(request.data.get("id"), request)
         result = PytestProductSyncService.switch_branch(
             request.data.get("branch"),

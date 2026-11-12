@@ -8,11 +8,10 @@ from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
 from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.apps.test_center.models import ProductModule
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.test_center.services.project.product_module import ProductModuleService
 from src.apps.user.selectors.querysets import UserQuerySelector
-from src.apps.user.services.environment import UserEnvironmentService
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
-from src.apps.user.services.user_cache import UserCacheService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.preferences.user_config import UserConfigService
 from src.interfaces.mcp.common import (
     create_dangerous_action_preview,
     current_user,
@@ -117,7 +116,7 @@ def register_project_context_tools(mcp):
             user = current_user(user_id)
         except Exception as exc:
             return fail(str(exc), "USER_CONTEXT_REQUIRED")
-        selected_environment = UserCacheService.selected_environment(user)
+        selected_environment = UserConfigService.selected_environment(user)
         return ok(
             {
                 "user": {
@@ -138,11 +137,9 @@ def register_project_context_tools(mcp):
         except Exception as exc:
             return fail(str(exc), "USER_CONTEXT_REQUIRED")
         try:
-            result = UserEnvironmentService.switch(
-                user,
-                environment_id,
-                operator_id=user.id,
-            )
+            UserConfigService.update(user, [{'key': 'selected_environment', 'value': environment_id}])
+            result = {'selected_environment': UserConfigService.selected_environment(user),
+                      'selected_environment_title': environment_title(environment_id)}
         except Exception as exc:
             return fail(str(exc), "ENVIRONMENT_NOT_FOUND", {"environment_id": environment_id})
         return ok(
@@ -168,14 +165,10 @@ def register_project_context_tools(mcp):
             return fail(str(exc), "USER_CONTEXT_REQUIRED")
         if preferred_environment_id is not None and auto_switch:
             try:
-                UserEnvironmentService.switch(
-                    user,
-                    preferred_environment_id,
-                    operator_id=user.id,
-                )
+                UserConfigService.update(user, [{'key': 'selected_environment', 'value': preferred_environment_id}])
             except Exception as exc:
                 return fail(str(exc), "ENVIRONMENT_NOT_FOUND")
-        selected_environment = UserCacheService.selected_environment(user)
+        selected_environment = UserConfigService.selected_environment(user)
         if selected_environment is None:
             return ok(
                 {

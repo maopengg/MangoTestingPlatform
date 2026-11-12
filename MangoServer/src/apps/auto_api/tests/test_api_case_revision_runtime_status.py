@@ -5,7 +5,7 @@ from mangotools.enums import StatusEnum
 from mangotools.enums import TaskEnum
 
 from src.apps.auto_api.models import ApiCase, ApiCaseDetailed, ApiCaseDetailedParameter, ApiInfo
-from src.apps.auto_api.services.test_case.test_case import TestCase as ApiRuntimeTestCase
+from src.apps.auto_api.services.execution.cases.test_case import TestCase as ApiRuntimeTestCase
 from src.apps.test_center.models import ProductModule, Project, ProjectProduct
 from src.apps.user.models import User
 

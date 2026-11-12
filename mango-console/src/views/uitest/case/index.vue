@@ -165,7 +165,7 @@
       
       
       
-      <a-alert v-if="actions.error.value" type="error">{{ actions.error.value }}</a-alert>
+      <MangoRequestFeedback v-if="actions.error.value" :message="(actions.error.value)" />
       <a-table
         class="mango-native-scroll-table"
         :bordered="false"

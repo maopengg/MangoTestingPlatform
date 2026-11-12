@@ -22,9 +22,9 @@ from src.apps.task_center.services.selection.api_concurrency import ApiConcurren
 from src.apps.task_center.services.selection.case_selection import ScheduledTaskCaseSelectionService
 from src.apps.task_center.services.selection.module_full_config import ModuleFullTaskConfigService
 from src.apps.task_center.services.selection.recent_results import TaskRecentResultService
-from src.apps.test_center.services.diagnostic_markdown import DiagnosticMarkdownService
-from src.apps.test_center.services.product_module import ProductModuleService
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.test_center.services.diagnostics.diagnostic_markdown import DiagnosticMarkdownService
+from src.apps.test_center.services.project.product_module import ProductModuleService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -48,6 +48,7 @@ class TasksCRUD(ModelCRUD):
 
     def validate_business_module(self, data: dict, instance=None):
         # 定时任务允许选择一级、二级或三级模块，归属关系由 TasksSerializers 统一校验。
+        """校验定时任务业务模块归属"""
         return None
 
     @error_response('system')
@@ -132,6 +133,7 @@ class TasksViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def module_config(self, request: Request):
+        """获取定时任务模块配置"""
         try:
             project_product_id = int(request.query_params.get('project_product_id'))
         except (TypeError, ValueError) as error:
@@ -147,6 +149,7 @@ class TasksViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('system')
     def save_module_config(self, request: Request):
+        """保存定时任务模块配置"""
         try:
             project_product_id = int(request.data.get('project_product_id'))
         except (TypeError, ValueError) as error:
@@ -165,6 +168,7 @@ class TasksViews(ViewSet):
     @action(methods=['post', 'put', 'delete'], detail=False)
     @error_response('system')
     def task_group(self, request: Request):
+        """获取定时任务所属任务组"""
         user = getattr(getattr(request, 'user', None), 'user_obj', None)
         update_user_id = getattr(user, 'id', None)
         if request.method == 'POST':
@@ -252,11 +256,13 @@ class TasksViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def execution_options(self, request: Request):
+        """获取定时任务可选执行记录"""
         return ResponseData.success(RESPONSE_MSG_0001, ApiConcurrencyService.capacity())
 
     @action(methods=['get'], detail=False)
     @error_response('system')
     def recent_results(self, request: Request):
+        """获取定时任务最近执行结果"""
         task_ids = []
         for value in str(request.query_params.get('task_ids', '')).split(','):
             try:
@@ -292,6 +298,7 @@ class TasksViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def diagnostic_markdown(self, request: Request):
+        """导出定时任务诊断说明"""
         task = self.model.objects.filter(id=request.query_params.get('id')).first()
         if not task:
             raise TaskCenterError(TASK_SCHEDULE_NOT_FOUND)
@@ -308,6 +315,7 @@ class TasksViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def trigger_manual(self, request: Request):
+        """手动触发定时任务"""
         task = Tasks.objects.select_related('project_product', 'case_people').filter(
             id=request.data.get('task_id'),
         ).first()
@@ -349,6 +357,7 @@ class TasksViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def selection_cases(self, request: Request):
+        """获取定时任务规则选中的用例"""
         task = Tasks.objects.select_related('project_product', 'module').filter(
             id=request.query_params.get('task_id'),
         ).first()
@@ -413,6 +422,7 @@ class TasksNoPermissionViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def trigger_timing(self, request: Request):
+        """触发到期定时任务"""
         task = TasksCRUD().filter_queryset_by_data_scope(
             request, Tasks.objects.filter(id=request.query_params.get('id')),
         ).first()

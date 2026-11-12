@@ -22,10 +22,7 @@
                 :disabled="testing"
                 @search="obtain(input)" data-testid="qa-views-help-variable-input-search-请输入变量表达式"
               />
-              <a-alert v-if="testError" type="error">
-                {{ testError }}
-                <template #action><a-button size="small" :loading="testing" @click="retryTest">重试</a-button></template>
-              </a-alert>
+              <MangoRequestFeedback v-if="testError" :message="(testError)"><template #action><a-button size="small" :loading="testing" @click="retryTest">重试</a-button></template></MangoRequestFeedback>
               <div class="mango-variable-usage-panel">
                 <div class="mango-variable-usage-title">用法说明</div>
                 <div class="mango-variable-usage-list">
@@ -112,8 +109,7 @@
 </template>
 
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import { Message, Notification } from '@arco-design/web-vue'
@@ -185,8 +181,8 @@ import { reportLoadError } from '@/utils/load-error'
     try {
       const result = readGeneratedValue(await getSystemRandomData(wrapExpression(expression)))
       if (current()) Notification.success({ title: wrapExpression(expression), content: result, closable: true })
-    } catch {
-      if (current()) testError.value = '数据生成失败，请重试；部分方法依赖上传文件或运行环境'
+    } catch (requestFailure) {
+      if (current()) testError.value = requestFailureMessage(requestFailure, '数据生成失败，请重试；部分方法依赖上传文件或运行环境')
     } finally {
       testing.value = false
     }

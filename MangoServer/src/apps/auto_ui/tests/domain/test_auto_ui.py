@@ -23,15 +23,15 @@ from src.apps.auto_ui.schemas.case_schema import (
     validate_data_source_items,
 )
 from src.apps.auto_ui.schemas.element import UiElementLocator
-from src.apps.auto_ui.services.element_ai.data_sanitizer import ElementAiDataSanitizer
-from src.apps.auto_ui.services.element_ai.element_ai_service import ElementAiService
-from src.apps.auto_ui.services.page_step_asset_service import PageStepAssetService
-from src.apps.auto_ui.services.page_step_detail import PageStepDetailMutationService
-from src.apps.auto_ui.services.page_step_flow_service import PageStepFlowService
-from src.apps.auto_ui.services.page_step_recording import PageStepRecordingService
-from src.apps.auto_ui.services.test_case import test_case as ui_test_case_module
-from src.apps.auto_ui.services.test_case.test_case import TestCase
-from src.apps.auto_ui.services.test_report_writing import TestReportWriting
+from src.apps.auto_ui.services.elements.ai.data_sanitizer import ElementAiDataSanitizer
+from src.apps.auto_ui.services.elements.ai.element_ai_service import ElementAiService
+from src.apps.auto_ui.services.page_steps.page_step_asset_service import PageStepAssetService
+from src.apps.auto_ui.services.page_steps.page_step_detail import PageStepDetailMutationService
+from src.apps.auto_ui.services.page_steps.page_step_flow_service import PageStepFlowService
+from src.apps.auto_ui.services.page_steps.page_step_recording import PageStepRecordingService
+from src.apps.auto_ui.services.execution.cases import test_case as ui_test_case_module
+from src.apps.auto_ui.services.execution.cases.test_case import TestCase
+from src.apps.auto_ui.services.reporting.test_report_writing import TestReportWriting
 
 
 class UiPageStepReferencedCasesTests(SimpleTestCase):
@@ -257,8 +257,8 @@ class UiPageStepRecordingTests(SimpleTestCase):
         self.assertFalse(serializer.is_valid())
         self.assertIn('nodes', serializer.errors)
 
-    @patch('src.apps.auto_ui.services.page_step_recording.PageElement.objects.create')
-    @patch('src.apps.auto_ui.services.page_step_recording.PageElement.objects.filter')
+    @patch('src.apps.auto_ui.services.page_steps.page_step_recording.PageElement.objects.create')
+    @patch('src.apps.auto_ui.services.page_steps.page_step_recording.PageElement.objects.filter')
     def test_recording_uses_inline_element_name_when_creating_element(
             self,
             filter_element,
@@ -286,8 +286,8 @@ class UiPageStepRecordingTests(SimpleTestCase):
         self.assertEqual(create_data['category'], '填写订单信息')
         self.assertEqual(create_data['prompt'], '提交审批按钮')
 
-    @patch('src.apps.auto_ui.services.page_step_recording.PageElement.objects.create')
-    @patch('src.apps.auto_ui.services.page_step_recording.PageElement.objects.filter')
+    @patch('src.apps.auto_ui.services.page_steps.page_step_recording.PageElement.objects.create')
+    @patch('src.apps.auto_ui.services.page_steps.page_step_recording.PageElement.objects.filter')
     def test_recording_defaults_new_element_category_to_uncategorized(
             self,
             filter_element,
@@ -869,8 +869,8 @@ class UiAuthConfigSerializerTests(SimpleTestCase):
 
 class UiCaseRuntimeAuditTests(SimpleTestCase):
 
-    @patch('src.apps.auto_ui.services.test_report_writing.ExecutionResultService.save_result')
-    @patch('src.apps.auto_ui.services.test_report_writing.UiCase.objects.get')
+    @patch('src.apps.auto_ui.services.reporting.test_report_writing.ExecutionResultService.save_result')
+    @patch('src.apps.auto_ui.services.reporting.test_report_writing.UiCase.objects.get')
     def test_case_result_does_not_touch_content_update_time(self, get_mock, save_result_mock):
         case = SimpleNamespace(id=15, status=None, save=Mock())
         get_mock.return_value = case
@@ -890,11 +890,11 @@ class UiCaseRuntimeAuditTests(SimpleTestCase):
         case.save.assert_called_once_with(update_fields=['status'])
         save_result_mock.assert_called_once()
 
-    @patch('src.apps.auto_ui.services.test_report_writing.cache.set')
-    @patch('src.apps.auto_ui.services.test_report_writing.transaction.atomic')
-    @patch('src.apps.auto_ui.services.test_report_writing.ExecutionResultService.save_result')
-    @patch('src.apps.auto_ui.services.test_report_writing.UiCaseStepsDetailed.objects.select_for_update')
-    @patch('src.apps.auto_ui.services.test_report_writing.PageSteps.objects.select_for_update')
+    @patch('src.apps.auto_ui.services.reporting.test_report_writing.cache.set')
+    @patch('src.apps.auto_ui.services.reporting.test_report_writing.transaction.atomic')
+    @patch('src.apps.auto_ui.services.reporting.test_report_writing.ExecutionResultService.save_result')
+    @patch('src.apps.auto_ui.services.reporting.test_report_writing.UiCaseStepsDetailed.objects.select_for_update')
+    @patch('src.apps.auto_ui.services.reporting.test_report_writing.PageSteps.objects.select_for_update')
     def test_case_step_result_updates_page_step_status_and_latest_result(
             self,
             page_step_select_for_update,

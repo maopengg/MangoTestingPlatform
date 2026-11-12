@@ -32,8 +32,8 @@
           size="small"
           :max-length="256"
           @blur="saveTask(record)"
-        /><span v-if="record.error" class="mango-requirement-tasks__error"
-          >保存失败，草稿已保留</span
+        /><MangoRequestFeedback v-if="record.error" message="保存失败，草稿已保留，请重试。"
+          ></MangoRequestFeedback
         ></template
       >
       <template #task_type="{ record }"

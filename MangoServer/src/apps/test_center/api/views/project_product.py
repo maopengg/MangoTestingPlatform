@@ -10,8 +10,8 @@ from rest_framework.viewsets import ViewSet
 
 from src.apps.test_center.api.serializers.project_product import ProjectProductSerializers, ProjectProductSerializersC
 from src.apps.test_center.models import ProductModule, ProjectProduct
-from src.apps.test_center.services.project_product_cache import ProjectProductCacheService
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.test_center.services.project.project_product_cache import ProjectProductCacheService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
 from src.common.responses import (
     RESPONSE_MSG_0118,
@@ -29,6 +29,7 @@ class ProjectProductCRUD(ModelCRUD):
     not_matching_str = ModelCRUD.not_matching_str + ['ui_client_type', 'api_client_type', 'owners']
 
     def filter_queryset_by_data_scope(self, request: Request, queryset):
+        """按当前用户的数据范围筛选项目产品"""
         return super().filter_queryset_by_data_scope(request, queryset).distinct()
 
 
@@ -38,6 +39,7 @@ class ProjectProductViews(ViewSet):
 
     @staticmethod
     def filter_by_user_scope(request: Request, queryset):
+        """按当前用户范围筛选项目产品"""
         user = getattr(getattr(request, 'user', None), 'user_obj', None)
         if (
                 user is None or

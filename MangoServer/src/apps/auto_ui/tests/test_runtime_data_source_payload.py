@@ -4,12 +4,12 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 
 from src.apps.auto_ui.enums import UiPublicTypeEnum
-from src.apps.auto_ui.services.test_case.test_case import TestCase as UiTestCaseService
+from src.apps.auto_ui.services.execution.cases.test_case import TestCase as UiTestCaseService
 
 
 class UiRuntimeDataSourcePayloadTests(SimpleTestCase):
     @patch(
-        'src.apps.auto_ui.services.test_case.test_case.func_test_object_value',
+        'src.apps.auto_ui.services.execution.cases.test_case.func_test_object_value',
         return_value=SimpleNamespace(id=9, value='https://example.test'),
     )
     def test_environment_payload_does_not_include_database_connection(self, _test_object):
@@ -29,7 +29,7 @@ class UiRuntimeDataSourcePayloadTests(SimpleTestCase):
         self.assertNotIn('database_connections', payload)
 
     @patch(
-        'src.apps.auto_ui.services.test_case.test_case.UiCaseGlobalVariableService.list_public',
+        'src.apps.auto_ui.services.execution.cases.test_case.UiCaseGlobalVariableService.list_public',
     )
     def test_global_variable_payload_keeps_source_id(self, list_public):
         list_public.return_value = [SimpleNamespace(

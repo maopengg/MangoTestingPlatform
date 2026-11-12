@@ -5,33 +5,11 @@
         <div class="mango-donut-wrap">
           <div ref="chartRef" class="mango-chart-item"></div>
           <div class="mango-donut-total">
+            <strong>{{ total.toLocaleString('zh-CN') }}</strong>
             <span>{{ totalLabel }}</span>
-            <strong>{{ total }}</strong>
           </div>
         </div>
-        <div class="mango-legend-list">
-          <div v-for="(item, index) in normalizedData" :key="item.name" class="mango-legend-item">
-            <span
-              class="mango-legend-dot"
-              :style="{ backgroundColor: getTypeColor(item.name, index) }"
-            ></span>
-            <div class="mango-legend-main">
-              <span class="mango-legend-name">{{ item.name }}</span>
-              <div class="mango-legend-bar">
-                <span
-                  :style="{
-                    width: `${item.percent}%`,
-                    backgroundColor: getTypeColor(item.name, index),
-                  }"
-                ></span>
-              </div>
-            </div>
-            <div class="mango-legend-value">
-              <strong>{{ item.percentText }}</strong>
-              <span>{{ item.value }}</span>
-            </div>
-          </div>
-        </div>
+
       </div>
     </mango-panel-spin>
   </div>
@@ -63,32 +41,33 @@
   let resizeFrame = 0
   const token = (name: string, fallback: string) =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
-  const palette = computed(() => [
+  const palette = () => [
     token('--m-chart-1', '#5b7cfa'),
     token('--m-chart-2', '#7bcf65'),
     token('--m-chart-3', '#f6c143'),
     token('--m-chart-4', '#38bdf8'),
     token('--m-chart-5', '#a78bfa'),
     token('--m-primary-border', '#fb7185'),
-  ])
-  const testTypeColorMap = computed(() => ({
+  ]
+  const testTypeColorMap = () => ({
     api: token('--m-chart-1', '#5b7cfa'),
     ui: token('--m-chart-2', '#7bcf65'),
     pytest: token('--m-chart-3', '#f6c143'),
-  }))
+  })
 
   function getTypeColor(name: string, index: number) {
     const text = String(name || '').toLowerCase()
     if (text.includes('接口') || text.includes('api')) {
-      return testTypeColorMap.value.api
+      return testTypeColorMap().api
     }
     if (text.includes('界面') || text.includes('ui')) {
-      return testTypeColorMap.value.ui
+      return testTypeColorMap().ui
     }
     if (text.includes('单元') || text.includes('pytest') || text.includes('python')) {
-      return testTypeColorMap.value.pytest
+      return testTypeColorMap().pytest
     }
-    return palette.value[index % palette.value.length]
+    const colors = palette()
+    return colors[index % colors.length]
   }
 
   const total = computed(() =>
@@ -117,33 +96,30 @@
         trigger: 'item',
         formatter: '{b}<br />{d}% | {c}',
       },
+      legend: { bottom: 0, left: 'center', selectedMode: false, itemWidth: 9, itemHeight: 7,
+        textStyle: { color: token('--m-text-2', '#64748b'), fontSize: 11 }, data: normalizedData.value.map((item: any) => item.name) },
       series: [
         {
           name: '访问来源',
           type: 'pie',
-          center: ['50%', '50%'],
-          radius: ['56%', '76%'],
-          avoidLabelOverlap: false,
+          center: ['50%', '44%'],
+          radius: ['40%', '58%'],
+          avoidLabelOverlap: true,
           itemStyle: {
             borderColor: token('--m-surface', '#fff'),
             borderWidth: 4,
             borderRadius: 6,
           },
-          emphasis: {
-            label: {
-              show: true,
-              fontSize: '16',
-              fontWeight: 'bold',
+          emphasis: { scale: false },
+          label: { show: true, position: 'outside', alignTo: 'edge', edgeDistance: 8,
+            color: token('--m-text-2', '#64748b'), fontSize: 11, lineHeight: 17,
+            formatter(item: { name: string; value: number }) {
+              return `${item.name}\n${item.value.toLocaleString('zh-CN')} 个 · ${total.value ? (item.value * 100 / total.value).toFixed(2) : '0.00'}%`
             },
           },
-          label: {
-            show: false,
-            position: 'center',
-          },
-          labelLine: {
-            show: false,
-          },
-          data: normalizedData.value,
+          labelLayout: { hideOverlap: true },
+          labelLine: { show: true, length: 10, length2: 8, lineStyle: { color: token('--m-muted', '#64748b') } },
+          data: normalizedData.value.map((item: any) => ({ ...item, label: { show: item.value > 0 }, labelLine: { show: item.value > 0 } })),
         },
       ],
     }
@@ -200,144 +176,10 @@
 </script>
 
 <style lang="less" scoped>
-  .mango-chart-item-container {
-    height: 100%;
-    width: 100%;
-    min-height: 0;
-  }
-
-  .mango-chart-spin,
-  :deep(.mango-chart-spin > .mango-panel-spin__content) {
-    display: grid;
-    height: 100%;
-    width: 100%;
-    min-height: 0;
-  }
-
-  .mango-chart-content {
-    display: grid;
-    height: 100%;
-    width: 100%;
-    min-height: 0;
-    grid-template-columns: 44% minmax(0, 1fr);
-    align-items: center;
-    gap: 8px;
-  }
-
-  .mango-donut-wrap {
-    position: relative;
-    height: 100%;
-    min-height: 0;
-
-    .mango-chart-item {
-      height: 100%;
-      width: 100%;
-      min-width: 0;
-    }
-  }
-
-  .mango-donut-total {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    display: flex;
-    width: 78px;
-    height: 78px;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-
-    span {
-      color: var(--m-muted);
-      font-size: 11px;
-      line-height: 16px;
-    }
-
-    strong {
-      max-width: 76px;
-      overflow: hidden;
-      color: var(--m-text);
-      font-size: 20px;
-      font-weight: 700;
-      line-height: 24px;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-  }
-
-  .mango-legend-list {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .mango-legend-item {
-    display: grid;
-    min-width: 0;
-    grid-template-columns: 10px minmax(0, 1fr) 74px;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .mango-legend-dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-  }
-
-  .mango-legend-main {
-    min-width: 0;
-  }
-
-  .mango-legend-name {
-    display: block;
-    overflow: hidden;
-    color: var(--m-text-2);
-    font-size: 12px;
-    line-height: 18px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .mango-legend-bar {
-    height: 4px;
-    margin-top: 4px;
-    overflow: hidden;
-    border-radius: 999px;
-    background: var(--m-border);
-
-    span {
-      display: block;
-      height: 100%;
-      min-width: 2px;
-      border-radius: inherit;
-    }
-  }
-
-  .mango-legend-value {
-    text-align: right;
-
-    strong,
-    span {
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    strong {
-      color: var(--m-primary);
-      font-size: 12px;
-      line-height: 17px;
-    }
-
-    span {
-      color: var(--m-muted);
-      font-size: 11px;
-      line-height: 16px;
-    }
-  }
+  .mango-chart-item-container, .mango-chart-spin, :deep(.mango-chart-spin > .mango-panel-spin__content),
+  .mango-chart-content, .mango-donut-wrap, .mango-chart-item { height: 100%; width: 100%; min-width: 0; min-height: 0; }
+  .mango-donut-wrap { position: relative; }
+  .mango-donut-total { position: absolute; top: 44%; left: 50%; display: flex; width: 34%; align-items: center; justify-content: center; flex-direction: column; gap: 4px; transform: translate(-50%, -50%); pointer-events: none; }
+  .mango-donut-total span { color: var(--m-muted); font-size: 11px; line-height: 16px; }
+  .mango-donut-total strong { color: var(--m-text); font-size: 24px; font-variant-numeric: tabular-nums; line-height: 30px; white-space: nowrap; }
 </style>

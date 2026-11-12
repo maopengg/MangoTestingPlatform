@@ -1,10 +1,7 @@
 <template>
   <a-drawer v-model:visible="visible" :width="860" title="API 执行链路">
     <mango-panel-spin :loading="loading" class="mango-trace-drawer-spin">
-      <div v-if="errorText" class="mango-empty-state" role="alert">
-        <span>{{ errorText }}</span>
-        <a-button size="small" :loading="loading" @click="loadTrace">重试</a-button>
-      </div>
+      <MangoRequestFeedback v-if="errorText" :message="(errorText)"><a-button size="small" :loading="loading" @click="loadTrace">重试</a-button></MangoRequestFeedback>
       <div v-else-if="!trace" class="mango-empty-state">
         {{ loading ? '正在加载执行链路' : '本次执行没有链路记录，请重试该 API 用例后再查看' }}
       </div>

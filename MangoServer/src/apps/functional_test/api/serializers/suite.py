@@ -7,7 +7,7 @@ from src.apps.functional_test.api.serializers.requirement import FunctionalTestR
 from src.apps.functional_test.api.serializers.suite_mutation import ManualTestSuiteSerializer
 from src.apps.test_center.formatters.related import format_product_module_compact
 from src.apps.test_center.formatters.related import format_project_product
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.test_center.services.project.product_module import ProductModuleService
 from src.apps.user.api.formatters import format_department
 from src.apps.user.formatters import format_user, format_user_simple
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector

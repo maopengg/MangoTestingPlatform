@@ -23,6 +23,7 @@ class TimeTasksCRUD(ModelCRUD):
 
 
 class TimeTasksViews(ViewSet):
+    model = TimeTasks
 
     @action(methods=['get'], detail=False)
     @error_response('system')

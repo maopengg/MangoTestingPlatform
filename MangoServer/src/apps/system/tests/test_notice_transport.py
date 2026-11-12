@@ -6,7 +6,7 @@ import requests
 from src.apps.system.exceptions import SystemError, SYSTEM_NOTICE_EMAIL_FAILED, SYSTEM_NOTICE_WEBHOOK_FAILED
 from src.apps.system.schemas.notice import EmailNoticeModel, FeiShuNoticeModel, WeChatNoticeModel, DingDingNoticeModel
 from src.apps.system.services.notice import EmailSend, FeiShuSend, WeChatSend, DingDingSend
-from src.apps.user.services.credential import UserCredentialService
+from src.apps.user.services.authentication.credential import UserCredentialService
 from src.apps.user.exceptions import UserError, USER_CREDENTIAL_EMAIL_CONFIG_FAILED
 
 
@@ -66,8 +66,8 @@ class NoticeTransportTests(unittest.TestCase):
 
     def test_credential_email_uses_platform_sender_and_preserves_user_error_boundary(self):
         with patch.object(UserCredentialService, '_mail_config', return_value=('sender@example.com', 'smtp.example.com', 'example-password')), \
-             patch('src.apps.user.services.credential.SystemConfigService.get_platform_name', return_value='示例平台'), \
-             patch('src.apps.user.services.credential.EmailSend') as sender:
+             patch('src.apps.user.services.authentication.credential.SystemConfigService.get_platform_name', return_value='示例平台'), \
+             patch('src.apps.user.services.authentication.credential.EmailSend') as sender:
             UserCredentialService.send_email(email='reader@example.com', subject='验证码', content='示例验证码')
             sender.return_value.send_mail.assert_called_once_with('验证码', '示例验证码', subtype='html')
             sender.return_value.send_mail.side_effect = SystemError(SYSTEM_NOTICE_EMAIL_FAILED)

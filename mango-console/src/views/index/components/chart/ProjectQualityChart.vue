@@ -63,7 +63,7 @@
         ],
         grid: {
           top: 32,
-          right: 10,
+          right: 28,
           bottom: 32,
           left: 7,
           containLabel: true,
@@ -107,7 +107,7 @@
           min: 0,
           minInterval: 1,
           nameTextStyle: { color: token('--m-muted'), fontSize: 11 },
-          axisLabel: { color: token('--m-muted'), fontSize: 11 },
+          axisLabel: { color: token('--m-muted'), fontSize: 11, hideOverlap: true, showMaxLabel: true },
           axisLine: { show: false },
           axisTick: { show: false },
           splitLine: {

@@ -34,3 +34,16 @@ test('automatic density interpolates continuously and keeps the small-screen flo
   assert.equal(exports.getAutoDisplayScale(950), 0.5)
   assert.equal(exports.getAutoDisplayScale(600), 0.5)
 })
+
+test('account preferences update the shared 2K/4K anchors and reset to defaults safely', () => {
+  exports.setAutoDisplayScales(1.3, 1.6)
+  assert.equal(exports.getAutoDisplayScale(1900), 1)
+  assert.equal(exports.getAutoDisplayScale(2560), 1.3)
+  assert.equal(exports.getAutoDisplayScale(3840), 1.6)
+  assert.equal(exports.getAutoDisplayScale(5120), 1.6)
+  exports.setAutoDisplayScales(1.7, 1.2)
+  assert.equal(exports.getAutoDisplayScale(3840), 1.7)
+  exports.setAutoDisplayScales(NaN, Infinity)
+  assert.equal(exports.getAutoDisplayScale(2560), 1.15)
+  assert.equal(exports.getAutoDisplayScale(3840), 1.35)
+})

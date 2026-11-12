@@ -5,7 +5,7 @@ from django.test import SimpleTestCase
 
 from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.schemas.execution import ApiExecutionRequest, ApiExecutionResponse
-from src.apps.auto_api.services.base.api_base_test_setup import APIBaseTestSetup
+from src.apps.auto_api.services.execution.base.api_base_test_setup import APIBaseTestSetup
 
 
 class ApiInfoDebugVariableTests(SimpleTestCase):
@@ -32,7 +32,7 @@ class ApiInfoDebugVariableTests(SimpleTestCase):
         )
 
     @patch(
-        'src.apps.auto_api.services.base.api_base_test_setup.base_request.CacheDataValue.get_cache_value',
+        'src.apps.auto_api.services.execution.base.api_base_test_setup.base_request.CacheDataValue.get_cache_value',
         return_value=15,
     )
     def test_api_info_debug_replaces_cached_value_and_preserves_missing_value(self, _mock_timeout):
@@ -58,7 +58,7 @@ class ApiInfoDebugVariableTests(SimpleTestCase):
         )
 
     @patch(
-        'src.apps.auto_api.services.base.api_base_test_setup.base_request.CacheDataValue.get_cache_value',
+        'src.apps.auto_api.services.execution.base.api_base_test_setup.base_request.CacheDataValue.get_cache_value',
         return_value=15,
     )
     def test_default_api_request_keeps_authorization_and_case_execution_strict(self, _mock_timeout):

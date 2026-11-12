@@ -24,7 +24,7 @@ function execWithInput(file, args, input) {
     child.stdin.end(input);
   });
 }
-const archive = path.resolve(process.argv[2] || "mango-testing-platform-cli-7.2.4.tgz");
+const archive = path.resolve(process.argv[2] || "mango-testing-platform-cli-7.2.5.tgz");
 await readFile(archive);
 const prefix = await mkdtemp(path.join(os.tmpdir(), "mango-cli-package-smoke-"));
 await exec("npm", ["install", "--global", "--prefix", prefix, archive]);
@@ -33,7 +33,7 @@ const mango = process.platform === "win32"
   : path.join(prefix, "bin", "mango");
 
 const version = JSON.parse((await exec(mango, ["version"])).stdout);
-assert.equal(version.version, "7.2.4");
+assert.equal(version.version, "7.2.5");
 
 const capabilities = JSON.parse((await exec(mango, ["capability", "list", "--status", "complete"])).stdout);
 assert.equal(capabilities.data.count, 259);
@@ -53,9 +53,9 @@ assert.equal(status.user_id, 7);
 const browserConfigPath = path.join(prefix, "browser-config.json");
 let browserTokenRequest;
 const browserTokenServer = http.createServer(async (request, response) => {
-  if (request.method === "GET" && request.url === "/api/cli/auth/version?version=7.2.4") {
+  if (request.method === "GET" && request.url === "/api/cli/auth/version?version=7.2.5") {
     response.writeHead(200, { "Content-Type": "application/json", "Connection": "close" });
-    response.end(JSON.stringify({ code: 200, msg: "ok", data: { version: "7.2.4" } }));
+    response.end(JSON.stringify({ code: 200, msg: "ok", data: { version: "7.2.5" } }));
     return;
   }
   let raw = "";
@@ -102,7 +102,7 @@ try {
     .update(browserTokenRequest.code_verifier)
     .digest("base64url");
   assert.equal(params.get("code_challenge"), expectedChallenge);
-  assert.equal(params.get("version"), "7.2.4");
+  assert.equal(params.get("version"), "7.2.5");
   assert.equal(params.has("token"), false);
   const browserConfig = JSON.parse(await readFile(browserConfigPath, "utf8"));
   assert.equal(browserConfig.profiles.default.token, token);

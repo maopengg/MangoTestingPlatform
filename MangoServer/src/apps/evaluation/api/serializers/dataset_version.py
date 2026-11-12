@@ -2,7 +2,7 @@ from rest_framework import serializers
 from src.apps.evaluation.api.serializers.base import EvaluationModelSerializer
 from src.apps.evaluation.models import EvaluationDatasetVersion
 from src.apps.evaluation.selectors.version import item_count
-from src.apps.evaluation.services.versioning import EvaluationVersionService
+from src.apps.evaluation.services.dataset.versioning import EvaluationVersionService
 
 
 class DatasetVersionSerializer(EvaluationModelSerializer):

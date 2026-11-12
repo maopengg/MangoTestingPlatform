@@ -28,7 +28,7 @@
           <icon-file />
           <div>
             <strong>本次失败没有生成详细结果</strong>
-            <span>{{ resultData?.error_message || fallbackError || '后端未返回失败原因' }}</span>
+            <span data-feedback-kind="execution-result">{{ resultData?.error_message || fallbackError || '后端未返回失败原因' }}</span>
           </div>
         </div>
         <ElementTestReport v-else-if="hasDetail && normalizedCaseType === 0" :result-data="resultData" />

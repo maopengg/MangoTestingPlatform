@@ -13,7 +13,7 @@ from src.apps.auto_pytest.models import (
     PytestProduct,
     PytestRepository,
 )
-from src.apps.auto_pytest.services.batch_execution import PytestCaseBatchExecutionService
+from src.apps.auto_pytest.services.execution.batch_execution import PytestCaseBatchExecutionService
 from src.apps.test_center.models import (
     ProductModule,
     Project,
@@ -67,7 +67,7 @@ class PytestCaseBatchProjectValidationTests(TestCase):
         self.assertIn('服务端项目', context.exception.msg)
         self.assertIn('数据项目', context.exception.msg)
 
-    @patch('src.apps.auto_pytest.services.batch_execution.RepositoryGitService.for_product')
+    @patch('src.apps.auto_pytest.services.execution.batch_execution.RepositoryGitService.for_product')
     def test_batch_execution_creates_report_and_detail(self, for_product_mock):
         case = self.create_case('服务端项目', '主服务')
         for_product_mock.return_value = SimpleNamespace(
@@ -92,7 +92,7 @@ class PytestCaseBatchProjectValidationTests(TestCase):
         self.assertEqual(result['execution_group_count'], 1)
         self.assertEqual(result['execution_groups'][0]['case_ids'], [case.id])
 
-    @patch('src.apps.auto_pytest.services.batch_execution.RepositoryGitService.for_product')
+    @patch('src.apps.auto_pytest.services.execution.batch_execution.RepositoryGitService.for_product')
     def test_same_project_cases_from_two_repositories_are_split_into_groups(self, for_product_mock):
         project = Project.objects.create(name='统一业务项目')
         repositories = [

@@ -14,7 +14,6 @@ export interface UserRecord {
   departments: UserRelation[]
   requires_email_login_migration: boolean
   ip: string
-  last_login_time: string
   update_time: string
   update_user: { id: UserId; name: string; username: string } | null
 }
@@ -85,7 +84,7 @@ export function copyUserRecord(value: unknown): UserRecord {
     is_super_admin: flag(row.is_super_admin), department_ids: ids(row.department_ids),
     departments: row.departments.map(relation),
     requires_email_login_migration: flag(row.requires_email_login_migration),
-    ip: text(row.ip, true), last_login_time: text(row.last_login_time, true), update_time: text(row.update_time, true),
+    ip: text(row.ip, true), update_time: text(row.update_time, true),
     update_user: updateUser ? { id: userId(updateUser.id), name: text(updateUser.name, true), username: text(updateUser.username, true) } : null,
   }
 }

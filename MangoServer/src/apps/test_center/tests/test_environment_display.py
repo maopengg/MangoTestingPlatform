@@ -4,10 +4,8 @@ from unittest.mock import patch
 
 from django.test import SimpleTestCase
 
-from src.apps.system.services.enum_catalog import EnumCatalogService
-from src.apps.system.services.system_config import (
-    ENVIRONMENT_DISPLAY_NAMES_KEY, SYSTEM_CONFIG_REGISTRY, SystemConfigService,
-)
+from src.apps.system.services.catalog.enum_catalog import EnumCatalogService
+from src.apps.system.services.configuration.system_config import ENVIRONMENT_DISPLAY_NAMES_KEY, SYSTEM_CONFIG_REGISTRY, SystemConfigService
 from src.apps.test_center.enums.environment import EnvironmentEnum
 
 

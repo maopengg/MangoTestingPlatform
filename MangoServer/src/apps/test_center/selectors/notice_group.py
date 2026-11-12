@@ -1,5 +1,5 @@
 from src.apps.test_center.models import NoticeGroup, ProjectProduct
-from src.apps.user.services.permission import ProjectProductScopeService
+from src.apps.user.services.authorization.permission import ProjectProductScopeService
 
 
 class NoticeGroupOptionSelector:

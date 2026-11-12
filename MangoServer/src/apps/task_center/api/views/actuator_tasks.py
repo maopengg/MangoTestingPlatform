@@ -12,9 +12,9 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.apps.auto_pytest.services.git_credentials import PytestGitCredentialService
-from src.apps.auto_pytest.services.test_case.case_flow import PyCaseFlow
-from src.apps.auto_ui.services.test_case.case_flow import UiCaseFlow
+from src.apps.auto_pytest.services.repository.git_credentials import PytestGitCredentialService
+from src.apps.auto_pytest.services.execution.cases.case_flow import PyCaseFlow
+from src.apps.auto_ui.services.execution.cases.case_flow import UiCaseFlow
 from src.apps.system.enums import ClientTypeEnum
 from src.apps.system.services.runtime_center.system_error_event import (
     SystemErrorEventService,
@@ -62,6 +62,7 @@ class ActuatorTaskViews(ViewSet):
 
     @error_response("system")
     def pytest_git_credentials(self, request: Request):
+        """获取执行器任务所需的 Pytest 仓库凭据"""
         username = self._actuator_username(request)
         reference = str((request.data or {}).get("credential_ref") or "").strip()
         try:
@@ -106,6 +107,7 @@ class ActuatorTaskViews(ViewSet):
 
     @error_response("system")
     def ack(self, request: Request):
+        """确认执行器任务接收"""
         data = request.data or {}
         username = self._actuator_username(request)
         message_id = data.get("message_id")
@@ -124,6 +126,7 @@ class ActuatorTaskViews(ViewSet):
 
     @error_response("system")
     def claim(self, request: Request):
+        """领取执行器任务"""
         username = self._actuator_username(request)
         model = self._model(ExecutorTaskClaimContract, request.data)
         tasks = ExecutorTaskService.claim(
@@ -141,6 +144,7 @@ class ActuatorTaskViews(ViewSet):
 
     @error_response("system")
     def draining(self, request: Request):
+        """设置执行器任务排空状态"""
         username = self._actuator_username(request)
         model = self._model(ExecutorTaskDrainingContract, request.data)
         connection = ExecutorTaskService.set_connection_draining(
@@ -155,6 +159,7 @@ class ActuatorTaskViews(ViewSet):
 
     @error_response("system")
     def running(self, request: Request, task_id: int):
+        """上报执行器任务开始运行"""
         username = self._actuator_username(request)
         model = self._model(ExecutorTaskHeartbeatContract, request.data)
         task = ExecutorTaskService.mark_running(task_id, model.connection_id, username)
@@ -162,6 +167,7 @@ class ActuatorTaskViews(ViewSet):
 
     @error_response("system")
     def heartbeat(self, request: Request, task_id: int):
+        """上报执行器任务心跳"""
         username = self._actuator_username(request)
         model = self._model(ExecutorTaskHeartbeatContract, request.data)
         task = ExecutorTaskService.heartbeat(task_id, model.connection_id, username)
@@ -172,6 +178,7 @@ class ActuatorTaskViews(ViewSet):
 
     @error_response("system")
     def progress(self, request: Request, task_id: int):
+        """上报执行器任务执行进度"""
         username = self._actuator_username(request)
         model = self._model(ExecutorTaskProgressRequestContract, request.data)
         task = ExecutorTaskService.update_progress(
@@ -184,6 +191,7 @@ class ActuatorTaskViews(ViewSet):
 
     @error_response("system")
     def result(self, request: Request, task_id: int):
+        """上报执行器任务执行结果"""
         username = self._actuator_username(request)
         model = self._model(ExecutorTaskResultContract, request.data)
         task = ExecutorTaskService.complete(

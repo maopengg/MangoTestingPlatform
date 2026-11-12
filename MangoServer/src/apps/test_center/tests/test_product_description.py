@@ -6,7 +6,7 @@ from rest_framework.exceptions import ValidationError
 
 from src.apps.test_center.api.serializers.project_product import ProjectProductSerializers, ProjectProductSerializersC
 from src.apps.test_center.models import ProjectProduct
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.user.services.authorization.permission import PermissionMenuService
 from src.interfaces.mcp.tools.project.context import register_project_context_tools
 
 

@@ -23,10 +23,12 @@ from src.apps.auto_pytest.selectors.querysets import PytestQuerySelector
 from src.apps.auto_ui.selectors.querysets import UiQuerySelector
 from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
 from src.apps.user.models import User
-from src.apps.user.services.mcp_permission_registry import MCP_PERMISSION_RULES
+from src.apps.user.services.authorization.mcp_permission_registry import MCP_PERMISSION_RULES
 from src.apps.user.selectors.authorization import AuthorizationScopeSelector
 from src.apps.user.selectors.querysets import UserQuerySelector
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.endpoint_catalog import mcp_endpoint_id
+from src.apps.user.services.authorization.endpoint_permission import EndpointPermissionService
 from src.common.logging import log
 from src.interfaces.mcp.common import fail, get_auth_token
 
@@ -72,7 +74,8 @@ class MangoTokenVerifier(TokenVerifier):
                     subject=str(user.id),
                     scopes=permissions,
                     expires_at=expires_at,
-                    claims={"user_id": user.id, "role_id": user.role_id, "is_super_admin": user.is_super_admin},
+                    claims={"user_id": user.id, "role_id": user.role_id, "is_super_admin": user.is_super_admin,
+                            "endpoint_permissions": EndpointPermissionService.for_user(user)},
                 )
             except (User.DoesNotExist, jwt_exceptions.PyJWTError, TypeError, ValueError):
                 return None
@@ -113,16 +116,21 @@ def permission_error(user: User, component_name: str, arguments: dict[str, Any])
     policy = component_policy(component_name)
     if policy is None:
         return fail("该 MCP 组件未配置权限策略", "MCP_POLICY_MISSING", {"component": component_name})
-    if policy.public or policy.permission_key is None or PermissionMenuService.is_effective_super_admin(user):
+    if policy.public or policy.permission_key is None:
         return None
-    permissions = PermissionMenuService.permission_keys_for_user(user)
+    super_admin = PermissionMenuService.is_effective_super_admin(user)
     required_key = policy.permission_key
     if component_name == 'update_ui_case' and 'publication_status' in (arguments.get('fields') or {}):
         required_key = 'ui.case:change'
-    if required_key not in permissions:
+    if not EndpointPermissionService.allows(user, mcp_endpoint_id(component_name),
+                                            PermissionMenuService.is_default_read_key(required_key),
+                                            super_admin=super_admin):
         return fail("没有调用该 MCP 功能的角色权限", "MCP_PERMISSION_DENIED",
                     {"component": component_name, "permission": required_key})
-    if not set(policy.additional_permission_keys) <= permissions:
+    if super_admin:
+        return None
+    permissions = PermissionMenuService.permission_keys_for_user(user)
+    if not super_admin and not set(policy.additional_permission_keys) <= permissions:
         return fail('没有关联资源的查看权限', 'MCP_PERMISSION_DENIED', {'component': component_name})
     if not policy.project_scoped:
         return None
@@ -480,12 +488,14 @@ class MangoAuthorizationMiddleware(Middleware):
             return True
         if access is None:
             return False
-        if access.claims.get("is_super_admin"):
-            return True
         granted = set(access.scopes)
-        return (policy.permission_key is None or policy.permission_key in granted) and set(
-            policy.additional_permission_keys,
-        ) <= granted
+        allowed = EndpointPermissionService.decision(
+            access.claims.get('endpoint_permissions', access.claims.get('endpoint_overrides', {})),
+            mcp_endpoint_id(component_name),
+            policy.permission_key is None or PermissionMenuService.is_default_read_key(policy.permission_key),
+            super_admin=bool(access.claims.get('is_super_admin')),
+        )
+        return allowed and (bool(access.claims.get('is_super_admin')) or set(policy.additional_permission_keys) <= granted)
 
     async def _authorize(self, component_name: str, arguments: dict[str, Any] | None = None, access=None):
         policy = component_policy(component_name)

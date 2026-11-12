@@ -6,7 +6,7 @@ from src.apps.data_factory.selectors.template import template_configuration
 from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
 from src.apps.evaluation.selectors.scope import ensure_product_scope
 from src.apps.evaluation.exceptions import EvaluationError, EVALUATION_ASSET_CONFIG_INVALID
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.user.services.authorization.permission import PermissionMenuService
 from src.apps.evaluation.enums.workflow import EvaluationWorkflowActionEnum
 from src.apps.auto_api.enums.case import ApiCaseReleaseStatusEnum
 

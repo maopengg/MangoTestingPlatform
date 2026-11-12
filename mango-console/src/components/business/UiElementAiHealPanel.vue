@@ -9,7 +9,7 @@
     <div class="mango-ui-ai-heal">
       <div v-if="infoLoading" class="mango-soft-panel" role="status">正在加载元素自愈信息…</div>
       
-      <div v-if="applyError" class="mango-ui-ai-heal__error" role="alert">{{ applyError }}</div>
+      <MangoRequestFeedback v-if="applyError" :message="(applyError)" />
       <div class="mango-ui-ai-heal__summary">
         <div v-for="item in summaryCards" :key="item.label" class="mango-ui-ai-heal__card">
           <span>{{ item.label }}</span>
@@ -109,8 +109,7 @@
 </template>
 
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, onBeforeUnmount, ref, watch } from 'vue'
   import { cloneLosslessJson } from '@/utils/lossless-json'
   import { useLiveWorkbenchScope } from '@/hooks/use-live-workbench-scope'
@@ -281,7 +280,7 @@ import { reportLoadError } from '@/utils/load-error'
       emit('applied')
       await Promise.all([readResource('info'), readResource('snapshots'), readResource('heals')])
     } catch (error) {
-      if (current()) applyError.value = liveError(error, '写回失败，请重试')
+      if (current()) applyError.value = requestFailureMessage(error, liveError(error, '写回失败，请重试'))
     } finally {
       if (applyingKey.value === key) applyingKey.value = ''
     }

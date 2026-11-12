@@ -97,7 +97,7 @@
         </div>
       </section>
     </a-form>
-    <a-alert v-if="saveError" type="error">{{ saveError }}</a-alert>
+    <MangoRequestFeedback v-if="saveError" :message="(saveError)" />
     <template #footer-buttons
       ><a-space
         ><a-button size="small" type="primary" :loading="itemSaving" @click="saveItem"
@@ -110,6 +110,8 @@
   </BaseSidePanel>
 </template>
 <script setup lang="ts">
+import { requestFailureMessage } from '@/utils/load-error'
+
   import { onBeforeUnmount, onDeactivated, reactive, ref, watch } from 'vue'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
@@ -198,9 +200,9 @@
     } catch (error) {
       if (current === generation && itemEditorVisible.value)
         saveError.value =
-          error instanceof SyntaxError
+          requestFailureMessage(error, error instanceof SyntaxError
             ? '数据条目 JSON 格式不正确'
-            : '数据条目保存失败，草稿已保留，请重试'
+            : '数据条目保存失败，草稿已保留，请重试')
       return false
     } finally {
       itemSaving.value = false

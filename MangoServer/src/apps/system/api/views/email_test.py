@@ -1,7 +1,7 @@
 from rest_framework.viewsets import ViewSet
 
 from src.apps.system.api.serializers.email_test import EmailTestSerializer
-from src.apps.system.services.email_test import EmailConfigTestService
+from src.apps.system.services.configuration.email_test import EmailConfigTestService
 from src.apps.user.exceptions import UserError
 from src.common.decorators.error_response import error_response
 from src.common.responses.response_data import ResponseData
@@ -12,6 +12,7 @@ class EmailTestViews(ViewSet):
 
     @error_response('system')
     def test(self, request):
+        """测试邮箱配置"""
         serializer = EmailTestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:

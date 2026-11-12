@@ -71,7 +71,7 @@ test('status changes are backend-confirmed, immutable and locked until actual wr
 test('failed status, refresh and clear operations release their locks without success and allow retry', async () => {
   for (const [method, api, action] of [['onStatusChange', 'putUiAuthConfigStatus', 'status'], ['onRefresh', 'postUiAuthConfigRefresh', 'refresh'], ['onClear', 'postUiAuthConfigClear', 'clear']]) {
     let fail = true; const h = setupUiAuthList({ [api]: async () => ({ code: fail ? 403 : 200 }) })
-    try { await h.mount(); const row = h.rows.value[0]; assert.equal(await h[method](row, 0), false); assert.equal(h.isOperationLoading(0, action), false); assert.match(h.operationError.value, /失败/); assert.deepEqual(h.messages, []); fail = false; assert.equal(await h[method](row, 0), true) } finally { h.close() }
+    try { await h.mount(); const row = h.rows.value[0]; assert.equal(await h[method](row, 0), false); assert.equal(h.isOperationLoading(0, action), false); assert.match(h.operationError.value, /失败/); assert.deepEqual(h.messages, [['error', h.operationError.value]]); fail = false; assert.equal(await h[method](row, 0), true) } finally { h.close() }
   }
 })
 test('network write failure keeps controlled status unchanged and permits another attempt', async t => {

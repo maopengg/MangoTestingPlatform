@@ -14,9 +14,9 @@ from src.apps.auto_api.presenters import format_module_coverage_case, format_mod
     format_module_coverage_interface, format_module_coverage_interface_snapshot, format_module_coverage_scan
 from src.apps.auto_api.schemas.module_coverage import ModuleCoverageCaseUploadItem
 from src.apps.auto_api.selectors.querysets import ApiQuerySelector
-from src.apps.auto_api.services.module_coverage import ModuleCoverageService
-from src.apps.auto_api.services.module_coverage_diff import build_structured_diff
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.auto_api.services.coverage.module_coverage import ModuleCoverageService
+from src.apps.auto_api.services.coverage.module_coverage_diff import build_structured_diff
+from src.apps.test_center.services.project.product_module import ProductModuleService
 from src.interfaces.mcp.common import current_user, ok, paginate_list, paginate_queryset
 
 

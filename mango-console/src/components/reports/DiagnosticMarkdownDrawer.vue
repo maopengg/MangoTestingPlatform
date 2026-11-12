@@ -36,10 +36,7 @@
 
     <div class="mango-diagnostic-markdown">
       <mango-panel-spin :loading="loading" class="mango-diagnostic-markdown__loading">
-        <div v-if="errorText" class="mango-empty-state mango-diagnostic-markdown__empty" role="alert">
-          <strong>{{ errorText }}</strong>
-          <a-button size="small" :loading="loading" @click="loadDocument">重试</a-button>
-        </div>
+        <MangoRequestFeedback v-if="errorText" :message="(errorText)"><a-button size="small" :loading="loading" @click="loadDocument">重试</a-button></MangoRequestFeedback>
         <div v-else-if="document" class="mango-diagnostic-markdown__document">
           <div
             class="mango-diagnostic-markdown__reader-layout"

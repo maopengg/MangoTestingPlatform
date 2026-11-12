@@ -91,6 +91,32 @@ MangoServer/
 10. 所有包含 Python 模块的源码目录必须提供 `__init__.py`，不得依赖隐式命名空间包。
 11. 新增或调整目录、跨层导入后必须运行 `python manage.py test src.apps.system.tests.test_architecture_boundaries --env=dev --keepdb`。
 
+### Service 业务分类
+
+所有 App 的 `services/` 根目录只保留 `__init__.py`，实现按下表的业务能力分组。
+
+| App | Service 一级分类 |
+| --- | --- |
+| auto_api | api_case、api_import、api_info、authentication、callbacks、configuration、coverage、execution、execution_trace、mock、protocols、resource_cleanup |
+| auto_pytest | assets、execution、reporting、repository、synchronization |
+| auto_ui | assets、authentication、cases、elements、execution、live_stream、page_steps、pages、reporting |
+| data_factory | assets、cleanup、datasource、execution、governance、pool、preview、protocols、recovery、reporting、schema、sql |
+| evaluation | assets、dataset、execution、grading、model、reporting、targets、workflow |
+| functional_test | cases、execution、integration、requirements、suites |
+| monitoring | diagnostics、execution、logging、tasks |
+| perf | capacity、compilation、execution、reporting、scenario、security |
+| system | actuator、ai、catalog、configuration、coordination、initialization、notice、runtime_center、runtime_kv、socket_link |
+| task_center | execution、scheduling、selection、workbench |
+| test_center | datasource、diagnostics、environment、project、reporting、results、storage |
+| user | account、authentication、authorization、preferences、audit |
+
+1. 新文件优先进入现有业务分类；确需增加一级分类时，先同步本表和 `test_architecture_boundaries` 中的分类约束，不恢复根级平铺。
+2. 二级目录只用于同一业务聚合的真实子能力，例如执行引擎、协议实现、版本组件；不机械按文件数拆目录，不建立没有实现的占位包。
+3. `__init__.py` 仅声明包或显式导出稳定入口，不用旧路径转发、动态注册、批量导入或启动业务来掩盖导入问题。
+4. 移动时更新全部调用方、测试 mock/源码定位、动态路径及配套资源；相对导入和 `__file__` 层级必须重新核对。业务实现与模型不随分类顺手重构。
+5. 平台数据的只读 ORM 查询使用 Selector；被测数据源查询涉及连接、审计、限流或执行编排时仍属于 Service，不因文件名含 query 就迁入 Selector。
+6. 分类变更必须通过 compile、Django check、服务分类架构守卫及相关业务回归；进程入口验证 `--help` 或等价导入，不启动真实任务进行验证。
+
 ### Django App 固定模板
 
 新增 App 或重构现有 App 时必须使用下列模板，不得只参考顶层分类自由命名：
@@ -148,9 +174,9 @@ src/apps/<app_name>/
 4. 当前异常需要堆栈时使用 `exception()`；禁止记录 Token、Authorization、Cookie、密码和完整敏感请求体。
 5. 完整文件布局、环境变量和验证要求见 `docs/架构设计/日志管理规范.md`。
 
-## 菜单页面 CRUD 权限
+## 菜单与接口权限
 
-遵循根目录 `AGENTS.md` 的“页面与操作权限”：HTTP、MCP 共用菜单 CRUD，子页面和半屏窗口不另设权限。不修改资产配置的 Case 执行归查看，执行记录与报告可正常写入；自助注册保留开关控制的公开入口。后端先查显式映射再判断管理员，漏配包括管理员一律拒绝；Selector/Service 仍校验产品及记录归属。新增接口同步映射完整性、游客及管理员漏配拒绝测试，不恢复旧细分键或分散映射。
+遵循根目录权限规则：菜单可见性与 HTTP/MCP 接口授权独立，CRUD 仅作分类，普通接口默认拒绝；明确拒绝优先于管理员，漏配连管理员也拒绝。授权保存在 `Role.authorization`，通过专用服务校验并原子保存，通用角色编辑不得改写；删除旧表前显式备份、迁移后导入。所属 Service/Selector 继续校验产品、记录及关联资产范围。
 
 ## 命令边界
 

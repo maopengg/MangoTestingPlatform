@@ -2,7 +2,7 @@ from rest_framework import serializers
 from src.apps.evaluation.api.serializers.base import EVALUATION_DATETIME_FORMAT
 from src.apps.evaluation.api.serializers.relation import ProjectRelationSerializer
 from src.apps.evaluation.models import EvaluationCase
-from src.apps.evaluation.services.case import EvaluationCaseService
+from src.apps.evaluation.services.assets.case import EvaluationCaseService
 from src.apps.evaluation.formatters.case_description import case_description
 
 
@@ -36,7 +36,7 @@ class CaseSerializer(ProjectRelationSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
-        from src.apps.test_center.services.product_module import ProductModuleService
+        from src.apps.test_center.services.project.product_module import ProductModuleService
         return ProductModuleService.with_full_paths(queryset, "module").select_related("project_product", "module", "owner", "dataset_version__dataset")
 
     def validate(self, attrs):

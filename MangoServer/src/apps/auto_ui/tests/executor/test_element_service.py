@@ -5,14 +5,14 @@ from unittest.mock import MagicMock, patch
 from django.test import SimpleTestCase
 
 from src.apps.auto_ui.exceptions import AutoUiError
-from src.apps.auto_ui.services.element_service import PageElementService
+from src.apps.auto_ui.services.elements.element_service import PageElementService
 
 
 class UiElementExecutorServiceTest(SimpleTestCase):
-    @patch("src.apps.auto_ui.services.element_service.PageElementCRUD.inside_post")
-    @patch("src.apps.auto_ui.services.element_service.PageElement.objects.filter")
-    @patch("src.apps.auto_ui.services.element_service.Page.objects.select_for_update")
-    @patch("src.apps.auto_ui.services.element_service.transaction.atomic", side_effect=nullcontext)
+    @patch("src.apps.auto_ui.services.elements.element_service.PageElementCRUD.inside_post")
+    @patch("src.apps.auto_ui.services.elements.element_service.PageElement.objects.filter")
+    @patch("src.apps.auto_ui.services.elements.element_service.Page.objects.select_for_update")
+    @patch("src.apps.auto_ui.services.elements.element_service.transaction.atomic", side_effect=nullcontext)
     def test_description_only_element_can_be_created(
             self, _atomic, select_page, filter_elements, inside_post):
         select_page.return_value.get.return_value = SimpleNamespace(id=6)
@@ -34,10 +34,10 @@ class UiElementExecutorServiceTest(SimpleTestCase):
         self.assertEqual(payload['name'], '提交按钮')
         self.assertEqual(payload['category'], '弹窗')
 
-    @patch("src.apps.auto_ui.services.element_service.PageElementCRUD.inside_post")
-    @patch("src.apps.auto_ui.services.element_service.PageElement.objects.filter")
-    @patch("src.apps.auto_ui.services.element_service.Page.objects.select_for_update")
-    @patch("src.apps.auto_ui.services.element_service.transaction.atomic", side_effect=nullcontext)
+    @patch("src.apps.auto_ui.services.elements.element_service.PageElementCRUD.inside_post")
+    @patch("src.apps.auto_ui.services.elements.element_service.PageElement.objects.filter")
+    @patch("src.apps.auto_ui.services.elements.element_service.Page.objects.select_for_update")
+    @patch("src.apps.auto_ui.services.elements.element_service.transaction.atomic", side_effect=nullcontext)
     def test_structured_description_only_element_can_be_created(
             self, _atomic, select_page, filter_elements, inside_post):
         select_page.return_value.get.return_value = SimpleNamespace(id=6)
@@ -67,10 +67,10 @@ class UiElementExecutorServiceTest(SimpleTestCase):
                 user_id=4,
             )
 
-    @patch("src.apps.auto_ui.services.element_service.PageElementCRUD.inside_put")
-    @patch("src.apps.auto_ui.services.element_service.PageElement.objects.filter")
-    @patch("src.apps.auto_ui.services.element_service.Page.objects.select_for_update")
-    @patch("src.apps.auto_ui.services.element_service.transaction.atomic", side_effect=nullcontext)
+    @patch("src.apps.auto_ui.services.elements.element_service.PageElementCRUD.inside_put")
+    @patch("src.apps.auto_ui.services.elements.element_service.PageElement.objects.filter")
+    @patch("src.apps.auto_ui.services.elements.element_service.Page.objects.select_for_update")
+    @patch("src.apps.auto_ui.services.elements.element_service.transaction.atomic", side_effect=nullcontext)
     def test_duplicate_element_identity_is_updated(
             self, _atomic, select_page, filter_elements, inside_put):
         select_page.return_value.get.return_value = SimpleNamespace(id=6)
@@ -89,7 +89,7 @@ class UiElementExecutorServiceTest(SimpleTestCase):
         self.assertEqual(result['action'], 'update')
         inside_put.assert_called_once()
 
-    @patch("src.apps.auto_ui.services.element_service.PageElement.objects.filter")
+    @patch("src.apps.auto_ui.services.elements.element_service.PageElement.objects.filter")
     def test_element_identity_prefers_current_exact_match(self, filter_elements):
         queryset = MagicMock()
         filter_elements.return_value = queryset
@@ -121,7 +121,7 @@ class UiElementExecutorServiceTest(SimpleTestCase):
         self.assertTrue(result["element"]["is_current"])
         queryset.order_by.assert_not_called()
 
-    @patch("src.apps.auto_ui.services.element_service.PageElement.objects.filter")
+    @patch("src.apps.auto_ui.services.elements.element_service.PageElement.objects.filter")
     def test_element_identity_returns_create_when_no_exact_match(self, filter_elements):
         queryset = MagicMock()
         filter_elements.return_value = queryset
@@ -139,7 +139,7 @@ class UiElementExecutorServiceTest(SimpleTestCase):
         self.assertIsNone(result["element"])
 
     @patch(
-        "src.apps.auto_ui.services.element_service.TestCase"
+        "src.apps.auto_ui.services.elements.element_service.TestCase"
     )
     @patch.object(
         PageElementService,
@@ -152,10 +152,10 @@ class UiElementExecutorServiceTest(SimpleTestCase):
         return_value=1,
     )
     @patch(
-        "src.apps.auto_ui.services.element_service.PageElement.objects.filter"
+        "src.apps.auto_ui.services.elements.element_service.PageElement.objects.filter"
     )
     @patch(
-        "src.apps.auto_ui.services.element_service.uuid.uuid4",
+        "src.apps.auto_ui.services.elements.element_service.uuid.uuid4",
         return_value="check-mango-mock",
     )
     def test_element_check_uses_live_workspace_executor(
@@ -194,10 +194,10 @@ class UiElementExecutorServiceTest(SimpleTestCase):
         self.assertEqual(result["check_id"], "check-mango-mock")
         self.assertEqual(result["check_mode"], "normal")
 
-    @patch("src.apps.auto_ui.services.element_service.TestCase")
+    @patch("src.apps.auto_ui.services.elements.element_service.TestCase")
     @patch.object(PageElementService, "_workspace_actuator_username", return_value=None)
     @patch.object(PageElementService, "_selected_env", return_value=1)
-    @patch("src.apps.auto_ui.services.element_service.PageElement.objects.filter")
+    @patch("src.apps.auto_ui.services.elements.element_service.PageElement.objects.filter")
     def test_deep_element_check_is_forwarded_to_executor(
             self,
             filter_elements,
@@ -223,10 +223,10 @@ class UiElementExecutorServiceTest(SimpleTestCase):
         )
         self.assertEqual(result["check_mode"], "deep")
 
-    @patch("src.apps.auto_ui.services.element_service.TestCase")
+    @patch("src.apps.auto_ui.services.elements.element_service.TestCase")
     @patch.object(PageElementService, "_workspace_actuator_username", return_value=None)
     @patch.object(PageElementService, "_selected_env", return_value=1)
-    @patch("src.apps.auto_ui.services.element_service.PageElement.objects.filter")
+    @patch("src.apps.auto_ui.services.elements.element_service.PageElement.objects.filter")
     def test_deep_element_check_forwards_temporary_variables(
             self,
             filter_elements,
@@ -254,10 +254,10 @@ class UiElementExecutorServiceTest(SimpleTestCase):
         )
 
     @patch(
-        "src.apps.auto_ui.services.element_service.TestCase"
+        "src.apps.auto_ui.services.elements.element_service.TestCase"
     )
     @patch(
-        "src.apps.auto_ui.services.element_service.PageElement.objects.filter"
+        "src.apps.auto_ui.services.elements.element_service.PageElement.objects.filter"
     )
     def test_missing_element_is_rejected_before_executor_dispatch(
             self,

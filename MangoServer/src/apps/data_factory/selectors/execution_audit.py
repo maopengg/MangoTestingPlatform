@@ -1,10 +1,26 @@
 from django.db.models import Q
 
 from src.apps.data_factory.models import SqlExecutionRecord
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 
 
 class ExecutionAuditSelector:
+    @staticmethod
+    def case_operations_confirmed(detail_id, attempt, request_ids=()):
+        own = Q(source_detail__case_detail_id=detail_id, source_detail__case_attempt=attempt)
+        if request_ids:
+            own |= Q(request_id__in=request_ids)
+        return not SqlExecutionRecord.objects.filter(own).filter(
+            Q(status='running') | Q(source_detail__outcome_unknown=True,
+                source_detail__outcome_resolution__isnull=True)).exists()
+
+    @staticmethod
+    def permit_evidence(record_ids):
+        return {record.id: record for record in SqlExecutionRecord.objects.filter(
+            id__in=record_ids,
+        ).only('id', 'request_id', 'database_id', 'source_detail', 'status', 'source_type', 'source_id', 'source_stage',
+               'datasource_alias_id', 'project_product_id', 'test_env')}
+
     @staticmethod
     def visible(user):
         queryset = SqlExecutionRecord.objects.select_related('project_product', 'datasource_alias', 'database')

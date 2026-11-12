@@ -6,7 +6,7 @@ from django.test import SimpleTestCase, override_settings
 from src.apps.auto_api.api.serializers.api_mock import ApiMockConfigSerializer
 from src.apps.auto_api.exceptions import AutoApiError, MockRequestDecryptionError
 from src.apps.auto_api.models import ApiMockConfig
-from src.apps.auto_api.services.mock_request_decryption import MockRequestDecryptionService as Service
+from src.apps.auto_api.services.mock.mock_request_decryption import MockRequestDecryptionService as Service
 
 
 class MockStorageKeyTests(SimpleTestCase):

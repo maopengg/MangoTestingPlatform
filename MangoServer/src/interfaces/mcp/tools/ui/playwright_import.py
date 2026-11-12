@@ -5,10 +5,10 @@ from mangotools.enums import TaskEnum
 
 from src.apps.auto_ui.models import PageStepsDetailed
 from src.apps.auto_ui.selectors.querysets import UiQuerySelector
-from src.apps.auto_ui.services.asset_mutation import UiAssetMutationService
-from src.apps.auto_ui.services.element_service import PageElementService
-from src.apps.auto_ui.services.page_service import PageService
-from src.apps.auto_ui.services.persistence import UiPersistenceService
+from src.apps.auto_ui.services.assets.asset_mutation import UiAssetMutationService
+from src.apps.auto_ui.services.elements.element_service import PageElementService
+from src.apps.auto_ui.services.pages.page_service import PageService
+from src.apps.auto_ui.services.assets.persistence import UiPersistenceService
 from src.interfaces.mcp.audit import mcp_current_user_id, mcp_with_update_user
 from src.interfaces.mcp.exceptions import MCP_IMPORTED_STEP_INVALID, McpError
 from .helpers import (

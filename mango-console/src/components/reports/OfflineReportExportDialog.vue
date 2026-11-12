@@ -21,7 +21,8 @@
       
     </div>
     <a-alert>实时生成 HTML 报告，不会重新执行 Case。</a-alert>
-    <p role="status" :class="{ 'mango-offline-export__error': error }">{{ statusText }}</p>
+    <MangoRequestFeedback :message="error" />
+    <p role="status">{{ statusText }}</p>
     <div v-if="links" class="mango-offline-export__result">
       <div class="mango-offline-export__links">
         <a :href="links.preview_url" target="_blank" rel="noopener noreferrer">在线预览</a>
@@ -36,8 +37,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import { downloadOfflineReport, generateOfflineReport, getOfflineReportOptions, offlineReportId, parseOfflineReportLinks, parseOfflineReportOptions } from '@/api/system/offline_report'
@@ -113,7 +113,7 @@ import { reportLoadError } from '@/utils/load-error'
   }
   function loadMoreOptions() { return loadOptions(true) }
   function retryOptions() { return loadOptions(page.value > 0) }
-  const statusText = computed(() => error.value || (downloading.value ? '正在生成并上传，请稍候…' : busy.value ? '正在结束上次生成，请稍候…' : links.value ? '报告已生成，可直接预览或下载。' : downloaded.value ? '当前为本地存储，已发起 HTML 下载；在线预览需配置 MinIO/TOS。' : '每次生成均使用最新结果，链接有效期沿用报告配置。'))
+  const statusText = computed(() => downloading.value ? '正在生成并上传，请稍候…' : busy.value ? '正在结束上次生成，请稍候…' : links.value ? '报告已生成，可直接预览或下载。' : downloaded.value ? '当前为本地存储，已发起 HTML 下载；在线预览需配置 MinIO/TOS。' : '每次生成均使用最新结果，链接有效期沿用报告配置。')
   async function generate() {
     const id = targetId.value
     if (!available() || busy.value || !canGenerate.value || id === null) return false
@@ -135,7 +135,7 @@ import { reportLoadError } from '@/utils/load-error'
       }
       return true
     } catch (cause: unknown) {
-      if (current()) error.value = cause instanceof Error ? cause.message : '生成或上传失败，请重试。'
+      if (current()) error.value = requestFailureMessage(cause, cause instanceof Error ? cause.message : '生成或上传失败，请重试。')
       return false
     } finally {
       if (controller === request) { busy.value = false; downloading.value = false; controller = undefined; resume() }

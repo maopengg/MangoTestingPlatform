@@ -21,12 +21,13 @@ from src.common.responses.response_msg import (
 )
 from src.common.responses.update_audit import ApiUpdateUserCRUDMixin, save_update_user
 from src.apps.auto_api.selectors.public_variable import ApiPublicTagSelector
-from src.apps.auto_api.services.api_public import ApiPublicMutationService
+from src.apps.auto_api.services.configuration.api_public import ApiPublicMutationService
 from src.common.responses.response_msg import RESPONSE_MSG_0001
 
 
 class ApiPublicCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
     def list_response(self, request, books, paging):
+        """整理API 公共变量列表返回数据"""
         if request.query_params.get('tag_summary') == 'true':
             return ResponseData.success(RESPONSE_MSG_0001, ApiPublicTagSelector.summarize(books))
         books = ApiPublicTagSelector.filter(books, request.query_params.get('tag'),
@@ -35,6 +36,7 @@ class ApiPublicCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @error_response('api')
     def put(self, request):
+        """修改API 公共变量"""
         if 'tag_operation' not in request.data:
             return super().put(request)
         scoped = self.filter_queryset_by_data_scope(request, self.queryset.all())

@@ -2,10 +2,7 @@
   <mango-panel-spin :loading="loading || rendering" class="mango-effectiveness-chart-spin">
     <div class="mango-effectiveness-chart-wrap" :style="{ height: chartHeight }">
       <div ref="chartRef" class="mango-effectiveness-chart"></div>
-      <div v-if="renderError && !loading" class="mango-empty-state mango-effectiveness-chart-empty" role="alert">
-        <strong>{{ renderError }}</strong>
-        <a-button size="small" :loading="rendering" @click="scheduleRender">重试</a-button>
-      </div>
+      <MangoRequestFeedback v-if="renderError && !loading" :message="(renderError)"><a-button size="small" :loading="rendering" @click="scheduleRender">重试</a-button></MangoRequestFeedback>
       <div v-else-if="empty && !loading && !rendering" class="mango-effectiveness-chart-empty">
         <EffectivenessEmptyState
           :title="emptyText"

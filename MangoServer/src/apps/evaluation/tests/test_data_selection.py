@@ -3,7 +3,7 @@ from unittest.mock import Mock
 from django.test import SimpleTestCase
 from pydantic import ValidationError
 from src.apps.evaluation.schemas.case import EvaluationDataSelection
-from src.apps.evaluation.services.case import EvaluationCaseService
+from src.apps.evaluation.services.assets.case import EvaluationCaseService
 from src.apps.evaluation.exceptions import EvaluationError
 
 

@@ -184,6 +184,10 @@ async function resolveExecutionResultResponse(res: any, silentError = false) {
       responseType: 'json',
       ...(silentError ? { silentError: true } : {}),
     })
+    // 文件接口失败也可能返回 HTTP 200 的业务错误，不能把错误响应当成完整执行结果。
+    if (!response.headers?.['content-disposition']?.includes('inline;')) {
+      throw new Error('完整结果文件读取失败，请确认结果未被清理且存储服务可用')
+    }
     detail.result_data = response.data
     detail.result_too_large = false
   }

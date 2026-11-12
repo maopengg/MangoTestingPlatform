@@ -7,7 +7,7 @@ from django.test import SimpleTestCase
 
 from src.apps.monitoring.constants import SCRIPT_DEPENDENCIES
 from src.apps.monitoring.selectors.script_context import MonitoringScriptContextSelector
-from src.apps.monitoring.services.script_capabilities import MonitoringScriptCapabilitiesService
+from src.apps.monitoring.services.execution.script_capabilities import MonitoringScriptCapabilitiesService
 from src.interfaces.mcp.skill_catalog import McpSkillCatalogService
 
 
@@ -26,8 +26,8 @@ class MonitoringScriptContextTests(SimpleTestCase):
                 'packages': {name: packages.get(name, '1.0') for name, _ in SCRIPT_DEPENDENCIES}}}
 
     def test_capabilities_are_inspected_without_importing_or_installing_packages(self):
-        with patch('src.apps.monitoring.services.script_capabilities.importlib.util.find_spec', return_value=object()) as find, \
-                patch('src.apps.monitoring.services.script_capabilities.version', return_value='1.2.3'):
+        with patch('src.apps.monitoring.services.execution.script_capabilities.importlib.util.find_spec', return_value=object()) as find, \
+                patch('src.apps.monitoring.services.execution.script_capabilities.version', return_value='1.2.3'):
             result = MonitoringScriptCapabilitiesService.inspect_local.__wrapped__()
         self.assertEqual(find.call_count, len(SCRIPT_DEPENDENCIES))
         self.assertTrue(all(value == '1.2.3' for value in result['packages'].values()))
@@ -53,7 +53,7 @@ class MonitoringScriptContextTests(SimpleTestCase):
             self.assertNotIn(field, result['runtime'])
 
     def test_probe_failure_and_incomplete_package_map_remain_unknown(self):
-        with patch('src.apps.monitoring.services.script_capabilities.importlib.util.find_spec', side_effect=ValueError):
+        with patch('src.apps.monitoring.services.execution.script_capabilities.importlib.util.find_spec', side_effect=ValueError):
             report = MonitoringScriptCapabilitiesService.inspect_local.__wrapped__()
         self.assertEqual(report['packages'], {})
         result = self.context([{'monitoring_script_capabilities': report}])

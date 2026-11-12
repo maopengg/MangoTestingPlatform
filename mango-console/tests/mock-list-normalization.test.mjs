@@ -71,16 +71,20 @@ function page(api = {}, lifecycle = null) {
               vue: {
                 ...vue,
                 onMounted: (fn) => {
-                  lifecycle.mount = fn
+                  const previous = lifecycle.mount
+                  lifecycle.mount = () => { previous?.(); fn() }
                 },
                 onActivated: (fn) => {
-                  lifecycle.activate = fn
+                  const previous = lifecycle.activate
+                  lifecycle.activate = () => { previous?.(); fn() }
                 },
                 onDeactivated: (fn) => {
-                  lifecycle.deactivate = fn
+                  const previous = lifecycle.deactivate
+                  lifecycle.deactivate = () => { previous?.(); fn() }
                 },
                 onBeforeUnmount: (fn) => {
-                  lifecycle.unmount = fn
+                  const previous = lifecycle.unmount
+                  lifecycle.unmount = () => { previous?.(); fn() }
                 },
               },
             }

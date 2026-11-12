@@ -237,7 +237,7 @@
           ><a-descriptions-item label="缺少真值">{{
             qualityReport.missing_expected_count ?? '-'
           }}</a-descriptions-item></a-descriptions
-        ><a-alert
+        ><a-alert data-feedback-kind="execution-result"
           v-for="item in qualityReport.errors || []"
           :key="`e-${item.key}-${item.item_id || ''}`"
           type="error"

@@ -7,7 +7,7 @@ from django.test import SimpleTestCase
 from src.apps.evaluation.models import EvaluationItemResult
 from src.apps.evaluation.schemas import EvaluationGradingConfig, GraderMetric, GraderResult
 from src.apps.evaluation.schemas.case import EvaluationCaseConfig, EvaluationGraderBinding
-from src.apps.evaluation.services.execution import EvaluationCaseExecutionService as Executions
+from src.apps.evaluation.services.execution.execution import EvaluationCaseExecutionService as Executions
 from src.apps.evaluation.tests.test_case_flow import case_config
 
 
@@ -20,9 +20,9 @@ class DecisionPolicyTests(SimpleTestCase):
         with ExitStack() as stack:
             for name in ("_metric_summary", "_classification_summary", "_performance_summary", "_stability_summary"):
                 stack.enter_context(patch.object(Executions, name, return_value={}))
-            query = stack.enter_context(patch("src.apps.evaluation.services.execution.EvaluationGradeResult.objects.filter"))
+            query = stack.enter_context(patch("src.apps.evaluation.services.execution.execution.EvaluationGradeResult.objects.filter"))
             query.return_value.values.return_value.distinct.return_value.count.return_value = hard_failures
-            stack.enter_context(patch("src.apps.evaluation.services.report.sync_report"))
+            stack.enter_context(patch("src.apps.evaluation.services.reporting.report.sync_report"))
             return Executions.aggregate(execution, config)
 
     @staticmethod
@@ -80,11 +80,11 @@ class DecisionPolicyTests(SimpleTestCase):
         with ExitStack() as stack:
             stack.enter_context(patch.object(EvaluationItemResult, "save"))
             stack.enter_context(patch.object(EvaluationItemResult, "grade_results", MagicMock()))
-            stack.enter_context(patch("src.apps.evaluation.services.execution.EvaluationAttemptService.start", return_value=1))
-            stack.enter_context(patch("src.apps.evaluation.services.execution.EvaluationAttemptService.finish"))
+            stack.enter_context(patch("src.apps.evaluation.services.execution.execution.EvaluationAttemptService.start", return_value=1))
+            stack.enter_context(patch("src.apps.evaluation.services.execution.execution.EvaluationAttemptService.finish"))
             stack.enter_context(patch.object(Executions, "_save_grade_results"))
-            stack.enter_context(patch("src.apps.evaluation.services.execution.EvaluationGraderRegistry.resolve", return_value=(grader, {})))
-            stack.enter_context(patch("src.apps.evaluation.services.execution.EvaluationGraderRegistry.validate_result"))
+            stack.enter_context(patch("src.apps.evaluation.services.execution.execution.EvaluationGraderRegistry.resolve", return_value=(grader, {})))
+            stack.enter_context(patch("src.apps.evaluation.services.execution.execution.EvaluationGraderRegistry.validate_result"))
             Executions._execute_item_core(SimpleNamespace(created_by_id=1), row, config, adapter, SimpleNamespace(executor_config={}), SimpleNamespace(), SimpleNamespace())
         self.assertGreater(float(row.score), 99)
         self.assertEqual(row.verdict, "failed")

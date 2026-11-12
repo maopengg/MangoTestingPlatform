@@ -28,6 +28,7 @@ test("every completed capability dispatches its declared REST method and path", 
       });
     };
     const argv = ["node", "mango", "--server", "https://example.com", spec.domain, spec.command];
+    if (spec.command === "switch-user-test-environment") argv.push("-p", "selected_environment=0");
     if (spec.multipart) argv.push("--file", path.join(projectRoot, "package.json"));
     await run(argv, {
       stdin: new PassThrough(),
@@ -39,5 +40,8 @@ test("every completed capability dispatches its declared REST method and path", 
     assert.equal(observed.init.method, spec.method, spec.legacy_name);
     assert.equal(observed.url.pathname, `/api/${spec.path}`, spec.legacy_name);
     assert.equal(observed.init.headers.Authorization, token, spec.legacy_name);
+    if (spec.command === "switch-user-test-environment") {
+      assert.deepEqual(JSON.parse(observed.init.body), [{ key: "selected_environment", value: 0 }]);
+    }
   }
 });

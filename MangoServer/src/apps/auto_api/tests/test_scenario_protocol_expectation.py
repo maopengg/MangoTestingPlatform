@@ -9,7 +9,7 @@ from src.apps.auto_api.schemas.case_schema import (
     unpack_scenario_body_config,
 )
 from src.apps.auto_api.services.api_case.parameter_validation import ApiCaseParameterValidationService
-from src.apps.auto_api.services.test_case.test_case import TestCase as ApiCaseRunner
+from src.apps.auto_api.services.execution.cases.test_case import TestCase as ApiCaseRunner
 
 
 class ScenarioProtocolExpectationTest(TestCase):

@@ -6,22 +6,22 @@ from rest_framework.viewsets import ViewSet
 from src.apps.auto_pytest.api.serializers.pytest_case import PytestCaseSerializersC
 from src.apps.auto_pytest.api.serializers.pytest_case_mutation import PytestCaseSerializers
 from src.apps.auto_pytest.selectors.case_publication import PytestCasePublicationSelector
-from src.apps.auto_pytest.services.case_publication import PytestCasePublicationService
+from src.apps.auto_pytest.services.assets.case_publication import PytestCasePublicationService
 from src.apps.auto_pytest.exceptions import (
     AutoPytestError,
 )
 from src.apps.auto_pytest.models import PytestCase, PytestProduct
-from src.apps.auto_pytest.services.base.method_nodes import PytestMethodNodeService
-from src.apps.auto_pytest.services.batch_execution import PytestCaseBatchExecutionService
-from src.apps.auto_pytest.services.file_management import PytestFileManagementService
-from src.apps.auto_pytest.services.product_sync import PytestProductSyncService
-from src.apps.auto_pytest.services.test_case.ai_inference import PytestCaseAiInferenceService
-from src.apps.auto_pytest.services.test_case.batch_update import PytestCaseBatchUpdateService
-from src.apps.auto_pytest.services.test_case.directory_tree import PytestCaseDirectoryTreeService
-from src.apps.auto_pytest.services.test_case.module_binding import PytestCaseModuleBindingService
-from src.apps.auto_pytest.services.test_case.sync import PytestCaseSyncService
-from src.apps.auto_pytest.services.test_case.test_case import TestCase
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.auto_pytest.services.synchronization.base.method_nodes import PytestMethodNodeService
+from src.apps.auto_pytest.services.execution.batch_execution import PytestCaseBatchExecutionService
+from src.apps.auto_pytest.services.assets.file_management import PytestFileManagementService
+from src.apps.auto_pytest.services.synchronization.product_sync import PytestProductSyncService
+from src.apps.auto_pytest.services.synchronization.ai_inference import PytestCaseAiInferenceService
+from src.apps.auto_pytest.services.synchronization.batch_update import PytestCaseBatchUpdateService
+from src.apps.auto_pytest.services.synchronization.directory_tree import PytestCaseDirectoryTreeService
+from src.apps.auto_pytest.services.synchronization.module_binding import PytestCaseModuleBindingService
+from src.apps.auto_pytest.services.synchronization.sync import PytestCaseSyncService
+from src.apps.auto_pytest.services.execution.cases.test_case import TestCase
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -58,6 +58,7 @@ class PytestCaseCRUD(ModelCRUD):
 
     @error_response('pytest')
     def get(self, request: Request):
+        """获取Pytest 用例列表或指定记录"""
         queryset = self.filter_queryset_by_data_scope(request, self.queryset.all())
         queryset = PytestCasePublicationSelector.filter_search(queryset, request.query_params)
         queryset = PytestCasePublicationSelector.with_owner(queryset, request.user['id'])
@@ -69,6 +70,7 @@ class PytestCaseCRUD(ModelCRUD):
         return ResponseData.success(RESPONSE_MSG_0084, self.serializer_class(queryset, many=True).data, queryset.count())
 
     def filter_queryset_by_data_scope(self, request: Request, queryset):
+        """按当前用户的数据范围筛选Pytest 用例"""
         queryset = super().filter_queryset_by_data_scope(request, queryset)
         return queryset.filter(
             project_product_id__in=PytestProductSyncService.active_project_ids(),
@@ -137,6 +139,7 @@ class PytestCaseViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('pytest')
     def pytest_read(self, request: Request):
+        """读取 Pytest 用例源文件"""
         if not self._has_case_scope(request, request.query_params.get('id')):
             return ResponseData.fail(RESPONSE_MSG_0210)
         result = PytestFileManagementService.read_case_file(
@@ -148,6 +151,7 @@ class PytestCaseViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('pytest')
     def pytest_write(self, request: Request):
+        """保存 Pytest 用例源文件"""
         if not self._has_case_scope(request, request.data.get('id')):
             return ResponseData.fail(RESPONSE_MSG_0210)
         result = PytestFileManagementService.write_case_file(
@@ -163,6 +167,7 @@ class PytestCaseViews(ViewSet):
     @action(methods=['GET'], detail=False)
     @error_response('pytest')
     def pytest_test_case(self, request: Request):
+        """执行指定 Pytest 用例"""
         if not self._has_case_scope(request, request.query_params.get('id')):
             return ResponseData.fail(RESPONSE_MSG_0210)
         report_data = TestCase(request.user.get('username')) \
@@ -183,6 +188,7 @@ class PytestCaseViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('pytest')
     def pytest_test_case_batch(self, request: Request):
+        """批量执行 Pytest 用例"""
         case_ids = PytestCaseBatchExecutionService.normalize_case_ids(
             request.data.get('case_id_list')
         )
@@ -198,6 +204,7 @@ class PytestCaseViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('pytest')
     def set_publication(self, request: Request):
+        """设置Pytest 用例发布状态"""
         try:
             case_id = int(request.data.get('case_id'))
         except (TypeError, ValueError):
@@ -220,6 +227,7 @@ class PytestCaseViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('pytest')
     def publication_review(self, request: Request):
+        """获取Pytest 用例发布审核信息"""
         case_id = request.query_params.get('case_id')
         if not str(case_id or '').isdigit():
             return ResponseData.fail(RESPONSE_MSG_0280)
@@ -235,6 +243,7 @@ class PytestCaseViews(ViewSet):
     @action(methods=['GET'], detail=False)
     @error_response('pytest')
     def pytest_method_nodes(self, request: Request):
+        """获取 Pytest 方法节点"""
         if not self._has_case_scope(request, request.query_params.get('id')):
             return ResponseData.fail(RESPONSE_MSG_0210)
         file_data = PytestFileManagementService.read_case_file(
@@ -252,6 +261,7 @@ class PytestCaseViews(ViewSet):
     @action(methods=['GET'], detail=False)
     @error_response('pytest')
     def pytest_directory_tree(self, request: Request):
+        """获取 Pytest 用例目录树"""
         queryset = PytestCaseCRUD().filter_queryset_by_data_scope(
             request,
             PytestCase.objects.filter(
@@ -312,6 +322,7 @@ class PytestCaseViews(ViewSet):
     @action(methods=['PUT'], detail=False)
     @error_response('pytest')
     def set_module(self, request: Request):
+        """设置 Pytest 用例所属模块"""
         queryset = PytestCaseCRUD().filter_queryset_by_data_scope(
             request,
             PytestCase.objects.all(),
@@ -327,6 +338,7 @@ class PytestCaseViews(ViewSet):
     @action(methods=['PUT'], detail=False)
     @error_response('pytest')
     def batch_update(self, request: Request):
+        """批量更新Pytest 用例"""
         updates = PytestCaseBatchUpdateService.normalize_updates(
             request.data.get('updates'),
         )
@@ -347,6 +359,7 @@ class PytestCaseViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('pytest')
     def ai_infer(self, request: Request):
+        """推断 Pytest 用例信息"""
         case_ids = PytestCaseAiInferenceService.normalize_case_ids(
             request.data.get('case_ids'),
         )

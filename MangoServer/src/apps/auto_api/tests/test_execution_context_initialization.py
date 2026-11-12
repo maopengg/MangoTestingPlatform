@@ -6,21 +6,21 @@ from django.test import SimpleTestCase
 from src.apps.auto_api.enums import ApiPublicTypeEnum
 from src.apps.auto_api.exceptions import AutoApiError
 from src.apps.auto_api.schemas.execution import ApiExecutionRequest
-from src.apps.auto_api.services.base.api_base_test_setup import APIBaseTestSetup
-from src.apps.auto_api.services.base.api_base_test_setup.public_base import PublicBase
-from src.apps.auto_api.services.base.api_base_test_setup.auth_manager import ApiAuthManager
-from src.apps.auto_api.services.base.case_base import CaseBase
-from src.apps.auto_api.services.base.case_data_factory import CaseDataFactory, ParameterDataFactory
-from src.apps.auto_api.services.base.case_parameter import CaseParameter
+from src.apps.auto_api.services.execution.base.api_base_test_setup import APIBaseTestSetup
+from src.apps.auto_api.services.execution.base.api_base_test_setup.public_base import PublicBase
+from src.apps.auto_api.services.execution.base.api_base_test_setup.auth_manager import ApiAuthManager
+from src.apps.auto_api.services.execution.base.case_base import CaseBase
+from src.apps.auto_api.services.execution.base.case_data_factory import CaseDataFactory, ParameterDataFactory
+from src.apps.auto_api.services.execution.base.case_parameter import CaseParameter
 from src.apps.data_factory.models import DataFactoryField
-from src.apps.data_factory.services.generator import DataFactoryValueGenerator
+from src.apps.data_factory.services.execution.generator import DataFactoryValueGenerator
 from src.apps.test_center.exceptions import TestCenterError
 from src.apps.test_center.exceptions import TEST_TARGET_UNRESOLVED
 
 
 class ExecutionContextInitializationTests(SimpleTestCase):
     def setup_context(self):
-        with patch('src.apps.auto_api.services.base.api_base_test_setup.base_request.CacheDataValue.get_cache_value',
+        with patch('src.apps.auto_api.services.execution.base.api_base_test_setup.base_request.CacheDataValue.get_cache_value',
                    return_value=30):
             setup = PublicBase()
         setup.test_object = SimpleNamespace(id=1, project_product_id=1, environment=0, value='', target_config={
@@ -95,7 +95,7 @@ class ExecutionContextInitializationTests(SimpleTestCase):
         setup = self.setup_context()
         with patch.object(ApiAuthManager, 'load', side_effect=self.authorize):
             setup.ensure_execution_context()
-        with patch('src.apps.auto_api.services.base.api_base_test_setup.public_base.TestTargetService.resolve',
+        with patch('src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.TestTargetService.resolve',
                    side_effect=TestCenterError(TEST_TARGET_UNRESOLVED, value=('example',))), self.assertRaises(TestCenterError):
             setup.ensure_execution_context()
         self.assertNotIn('v2token', setup.test_data.get_all())
@@ -150,7 +150,7 @@ class ExecutionContextInitializationTests(SimpleTestCase):
             with self.subTest(cls=cls):
                 setup = self.setup_context()
                 with patch.object(ApiAuthManager, 'load', side_effect=self.authorize), \
-                        patch('src.apps.auto_api.services.base.case_data_factory.DataFactoryCaseConfigRunner') as factory:
+                        patch('src.apps.auto_api.services.execution.base.case_data_factory.DataFactoryCaseConfigRunner') as factory:
                     cls(setup, SimpleNamespace(id=1), configs=[]).run_front()
                 self.assertIs(factory.call_args.kwargs['test_data'], setup.test_data)
                 self.assertIn('v2token', setup.test_data.get_all())
@@ -161,7 +161,7 @@ class ExecutionContextInitializationTests(SimpleTestCase):
 def variable(context):
     return {"iso_form_modules": '[{"name":"example"}]', "iso_schema_version": "1"}
 ''')
-        with patch('src.apps.auto_api.services.base.api_base_test_setup.public_base.ApiCaseGlobalVariableService.list_public',
+        with patch('src.apps.auto_api.services.execution.base.api_base_test_setup.public_base.ApiCaseGlobalVariableService.list_public',
                    return_value=[variable]), patch.object(ApiAuthManager, 'load') as load:
             setup.init_public(1, 0)
         load.assert_not_called()

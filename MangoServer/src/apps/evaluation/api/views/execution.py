@@ -4,7 +4,7 @@ from src.apps.evaluation.api.views.support import paginate, request_user
 from src.apps.evaluation.models import EvaluationCaseExecution
 from src.apps.evaluation.selectors.case import get_case
 from src.apps.evaluation.selectors.execution import case_executions, get_execution
-from src.apps.evaluation.services.execution import EvaluationCaseExecutionService
+from src.apps.evaluation.services.execution.execution import EvaluationCaseExecutionService
 from src.common.decorators.error_response import error_response
 from src.common.responses import RESPONSE_MSG_0001, RESPONSE_MSG_0005, RESPONSE_MSG_0082, ResponseData
 
@@ -15,6 +15,7 @@ class CaseExecutionViews(ViewSet):
 
     @error_response("system")
     def list(self, request, case_id=None):
+        """获取评测执行记录列表"""
         queryset = case_executions(case_id, request_user(request))
         for field in ("test_env", "status"):
             if request.query_params.get(field):
@@ -28,6 +29,7 @@ class CaseExecutionViews(ViewSet):
 
     @error_response("system")
     def latest(self, request, case_id=None):
+        """获取最新评测执行记录"""
         queryset = case_executions(case_id, request_user(request))
         if request.query_params.get("test_env"):
             queryset = queryset.filter(test_env=request.query_params["test_env"])
@@ -36,10 +38,12 @@ class CaseExecutionViews(ViewSet):
 
     @error_response("system")
     def retrieve(self, request, case_id=None, execution_id=None):
+        """获取评测执行记录详情"""
         return ResponseData.success(RESPONSE_MSG_0001, CaseExecutionSerializer(get_execution(case_id, execution_id, request_user(request))).data)
 
     @error_response("system")
     def create(self, request, case_id=None):
+        """创建评测执行记录"""
         get_case(case_id, request_user(request))
         values = dict(request.data)
         values["case_id"] = case_id
@@ -51,12 +55,14 @@ class CaseExecutionViews(ViewSet):
 
     @error_response("system")
     def stop(self, request, case_id=None, execution_id=None):
+        """停止评测执行记录"""
         record = get_execution(case_id, execution_id, request_user(request))
         EvaluationCaseExecutionService.stop(record.id)
         return ResponseData.success(RESPONSE_MSG_0082)
 
     @error_response("system")
     def retry(self, request, case_id=None, execution_id=None):
+        """重试评测执行记录"""
         record = get_execution(case_id, execution_id, request_user(request))
         new_record = EvaluationCaseExecutionService.retry_failed(record.id, request_user(request), request.headers.get("Idempotency-Key"))
         EvaluationCaseExecutionService.submit(new_record.id)

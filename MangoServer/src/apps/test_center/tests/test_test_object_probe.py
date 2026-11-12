@@ -11,9 +11,9 @@ from src.apps.test_center.api.serializers.test_object import TestObjectProbeSeri
 from src.apps.test_center.api.views.test_object import TestObjectViews
 from src.apps.test_center.enums.environment import AutoTypeEnum
 from src.apps.test_center.exceptions import TestCenterError
-from src.apps.test_center.services.test_object_probe import TestObjectProbeService as Probe
+from src.apps.test_center.services.environment.test_object_probe import TestObjectProbeService as Probe
 from src.apps.user.middleware.permission import MenuActionPermission
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 
 
 class TestObjectProbeTests(SimpleTestCase):
@@ -49,14 +49,14 @@ class TestObjectProbeTests(SimpleTestCase):
         user = SimpleNamespace(id=1)
         with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False), \
                 patch.object(PermissionMenuService, 'permission_keys_for_user', return_value={'config.test_object'}), \
-                patch('src.apps.test_center.services.test_object_probe.TestObject.objects') as objects:
+                patch('src.apps.test_center.services.environment.test_object_probe.TestObject.objects') as objects:
             for identity in (user, None):
                 with self.assertRaises(TestCenterError):
                     Probe.test(7, '', identity)
             objects.select_related.assert_not_called()
         with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=True), \
                 patch.object(ProjectProductScopeService, 'has_project_product', return_value=False), \
-                patch('src.apps.test_center.services.test_object_probe.TestObject.objects') as objects, \
+                patch('src.apps.test_center.services.environment.test_object_probe.TestObject.objects') as objects, \
                 patch.object(Probe, '_probe') as network:
             objects.select_related.return_value.filter.return_value.first.return_value = self.obj()
             with self.assertRaises(TestCenterError):
@@ -66,7 +66,7 @@ class TestObjectProbeTests(SimpleTestCase):
     def test_only_saved_and_applicable_addresses_can_be_tested(self):
         with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=True), \
                 patch.object(ProjectProductScopeService, 'has_project_product', return_value=True), \
-                patch('src.apps.test_center.services.test_object_probe.TestObject.objects') as objects, \
+                patch('src.apps.test_center.services.environment.test_object_probe.TestObject.objects') as objects, \
                 patch.object(Probe, '_probe') as network:
             obj = self.obj()
             objects.select_related.return_value.filter.return_value.first.return_value = obj
@@ -81,7 +81,7 @@ class TestObjectProbeTests(SimpleTestCase):
     def test_request_result_and_busy_timeout_are_bounded(self):
         with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=True), \
                 patch.object(ProjectProductScopeService, 'has_project_product', return_value=True), \
-                patch('src.apps.test_center.services.test_object_probe.TestObject.objects') as objects, \
+                patch('src.apps.test_center.services.environment.test_object_probe.TestObject.objects') as objects, \
                 patch.object(Probe, '_slots') as slots, patch.object(Probe, '_executor') as executor:
             objects.select_related.return_value.filter.return_value.first.return_value = self.obj()
             slots.acquire.return_value = True
@@ -106,18 +106,18 @@ class TestObjectProbeTests(SimpleTestCase):
                    '0.0.0.0', '224.0.0.1', '::ffff:127.0.0.1'):
             self.assertFalse(Probe._safe_ip(ip), ip)
         self.assertTrue(Probe._safe_ip('10.0.0.5'))
-        with patch('src.apps.test_center.services.test_object_probe.socket.getaddrinfo', return_value=[
+        with patch('src.apps.test_center.services.environment.test_object_probe.socket.getaddrinfo', return_value=[
             (socket.AF_INET, socket.SOCK_STREAM, 6, '', ('169.254.169.254', 80))]), \
-                patch('src.apps.test_center.services.test_object_probe.socket.socket') as sock:
+                patch('src.apps.test_center.services.environment.test_object_probe.socket.socket') as sock:
             self.assertIn('不允许', Probe._probe('api.example.com', 80)['message'])
             sock.assert_not_called()
 
     def test_dns_and_connection_failure_and_pinned_success(self):
-        with patch('src.apps.test_center.services.test_object_probe.socket.getaddrinfo', side_effect=socket.gaierror):
+        with patch('src.apps.test_center.services.environment.test_object_probe.socket.getaddrinfo', side_effect=socket.gaierror):
             self.assertIn('解析失败', Probe._probe('api.example.com', 443)['message'])
         entry = (socket.AF_INET, socket.SOCK_STREAM, 6, '', ('10.0.0.5', 443))
-        with patch('src.apps.test_center.services.test_object_probe.socket.getaddrinfo', return_value=[entry]), \
-                patch('src.apps.test_center.services.test_object_probe.socket.socket') as sock:
+        with patch('src.apps.test_center.services.environment.test_object_probe.socket.getaddrinfo', return_value=[entry]), \
+                patch('src.apps.test_center.services.environment.test_object_probe.socket.socket') as sock:
             result = Probe._probe('api.example.com', 443)
             self.assertTrue(result['connected'])
             sock.return_value.__enter__.return_value.connect.assert_called_once_with(('10.0.0.5', 443))
@@ -126,14 +126,32 @@ class TestObjectProbeTests(SimpleTestCase):
 
     def test_http_permission_registration_and_guest_boundary(self):
         self.assertEqual(resolve('/api/system/test/object/test').func.actions['post'], 'test_connection')
-        self.assertIn('config.test_object:change', PermissionMenuService.all_permission_keys())
+        self.assertIn('config.test_object:read', PermissionMenuService.guest_permission_keys())
         self.assertNotIn('config.test_object:change', PermissionMenuService.guest_permission_keys())
         request = SimpleNamespace(method='POST', path='/api/system/test/object/test', data={'id': 7},
-                                  user=SimpleNamespace(user_obj=SimpleNamespace(id=1)))
+                                  user=SimpleNamespace(user_obj=SimpleNamespace(id=1, role_id=None)))
         view = TestObjectViews()
         view.action = 'test_connection'
         with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False):
-            for keys, allowed in (({'config.test_object:change'}, True), ({'config.test_object'}, False),
-                                  ({'config.test_object:change'}, False)):
-                with patch.object(PermissionMenuService, 'permission_keys_for_user', return_value=keys):
-                    self.assertEqual(MenuActionPermission().has_permission(request, view), allowed)
+            self.assertTrue(MenuActionPermission().has_permission(request, view))
+
+    def test_guest_probe_preserves_scope_and_never_mutates_saved_target(self):
+        user = SimpleNamespace(id=1, role_id=None)
+        future = Future()
+        future.set_result({'connected': True, 'message': 'ok'})
+        with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=False), \
+                patch.object(ProjectProductScopeService, 'has_project_product', return_value=True) as scope, \
+                patch('src.apps.test_center.services.environment.test_object_probe.TestObject.objects') as objects, \
+                patch.object(Probe, '_executor') as executor:
+            objects.select_related.return_value.filter.return_value.first.return_value = self.obj()
+            executor.submit.return_value = future
+            self.assertTrue(Probe.test(7, '', user)['connected'])
+            executor.submit.assert_called_once_with(Probe._probe, 'api.example.com', 443)
+            objects.create.assert_not_called()
+            objects.update.assert_not_called()
+            objects.select_related.return_value.filter.return_value.update.assert_not_called()
+            scope.return_value = False
+            executor.submit.reset_mock()
+            with self.assertRaises(TestCenterError):
+                Probe.test(7, '', user)
+            executor.submit.assert_not_called()

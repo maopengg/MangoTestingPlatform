@@ -6,9 +6,9 @@ from django.test import SimpleTestCase
 from mangotools.enums import StatusEnum
 
 from src.apps.data_factory.exceptions import DataFactoryError
-from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService as Resources
-from src.apps.data_factory.services.schema_monitor import DataFactorySchemaMonitorService as Monitor
-from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditService as Audit
+from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as Resources
+from src.apps.data_factory.services.schema.schema_monitor import DataFactorySchemaMonitorService as Monitor
+from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditService as Audit
 
 
 class CleanupIndexResolutionTests(SimpleTestCase):
@@ -19,7 +19,7 @@ class CleanupIndexResolutionTests(SimpleTestCase):
         response.__exit__ = Mock(return_value=False)
         response.read.return_value = json.dumps(payload).encode()
         with patch.object(Audit, 'call', side_effect=lambda target, operation, callback, **kwargs: callback()) as audit, \
-                patch('src.apps.data_factory.services.cleanup_resource.open_elasticsearch_request', return_value=response) as http:
+                patch('src.apps.data_factory.services.cleanup.cleanup_resource.open_elasticsearch_request', return_value=response) as http:
             result = Resources.resolve_index(target, name)
         self.assertEqual(audit.call_args.args[1]['operation'], 'resolve_cleanup_index')
         self.assertIn('/example_alias?filter_path=', http.call_args.args[0].full_url)
@@ -53,13 +53,13 @@ class ActivationDiagnosticTests(SimpleTestCase):
         column = {'name': 'id', 'db_type': 'BIGINT', 'nullable': False, 'primary_key': True,
                   'autoincrement': True, 'max_length': None}
         expected = Monitor.columns_signature([column])
-        with patch('src.apps.data_factory.services.schema_monitor.DataFactoryEntity.objects') as entities, \
-                patch('src.apps.data_factory.services.schema_monitor.DataFactoryDatasourceBinding.objects') as sources, \
+        with patch('src.apps.data_factory.services.schema.schema_monitor.DataFactoryEntity.objects') as entities, \
+                patch('src.apps.data_factory.services.schema.schema_monitor.DataFactoryDatasourceBinding.objects') as sources, \
                 patch.object(Monitor, 'configured_validation_environments', return_value=[0]), \
                 patch.object(Monitor, 'entity_signature', return_value=expected), \
-                patch('src.apps.data_factory.services.schema_monitor.DataFactoryDatasourceResolver.require_binding_permission'), \
-                patch('src.apps.data_factory.services.schema_monitor.DatasourceTargetService.resolve'), \
-                patch('src.apps.data_factory.services.schema_monitor.DataFactoryDiscover.get_table_schema') as discover:
+                patch('src.apps.data_factory.services.schema.schema_monitor.DataFactoryDatasourceResolver.require_binding_permission'), \
+                patch('src.apps.data_factory.services.schema.schema_monitor.DatasourceTargetService.resolve'), \
+                patch('src.apps.data_factory.services.schema.schema_monitor.DataFactoryDiscover.get_table_schema') as discover:
             entities.select_related.return_value.get.return_value = entity
             sources.select_related.return_value.filter.return_value.order_by.return_value = bindings
             discover.return_value = {'columns': [column]}

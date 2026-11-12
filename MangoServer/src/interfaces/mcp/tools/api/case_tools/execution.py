@@ -10,8 +10,8 @@ from src.apps.auto_api.schemas.resource_cleanup import (
 )
 from src.apps.auto_api.selectors.querysets import ApiQuerySelector
 from src.apps.auto_api.services.api_case.batch_execution import ApiCaseBatchExecutionService
-from src.apps.auto_api.services.test_case.test_case import TestCase
-from src.apps.test_center.services.execution_result import ExecutionResultService
+from src.apps.auto_api.services.execution.cases.test_case import TestCase
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
 from src.common.exceptions import MangoServerError
 from src.interfaces.mcp.common import (
     current_user,
@@ -70,7 +70,7 @@ def register_case_execution_tools(mcp):
         必须有原执行已结束、完整结果校验和、精确步骤请求及拒绝响应证据；仍执行完整无新增观察，
         不接受调用者自报“已拒绝/已清理”，不覆盖原规则或把业务失败改为通过。
         """
-        from src.apps.auto_api.services.resource_cleanup import ApiResourceCleanupRetryService
+        from src.apps.auto_api.services.resource_cleanup.resource_cleanup import ApiResourceCleanupRetryService
         return ok(ApiResourceCleanupRetryService.retry(user=current_user(), case_id=case_id,
                                                        resource_id=resource_id, preview=preview,
                                                        identity_mapping=identity_mapping, child_mapping=child_mapping,

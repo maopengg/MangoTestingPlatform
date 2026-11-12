@@ -12,7 +12,7 @@
         <a-descriptions-item label="有效题通过率">{{ record.effectPassRate }}</a-descriptions-item>
         <a-descriptions-item label="无效条目">{{ record.invalid ?? '—' }}</a-descriptions-item>
       </a-descriptions>
-      <a-alert v-if="record.errorMessage" type="error">{{ record.errorMessage }}</a-alert>
+        <a-alert data-feedback-kind="execution-result" v-if="record.errorMessage" type="error">{{ record.errorMessage }}</a-alert>
       <a-descriptions v-if="record.memory" :column="3" size="small" title="记忆问答能力">
         <a-descriptions-item label="正确率">{{ record.memory.correct }}</a-descriptions-item>
         <a-descriptions-item label="幻觉率">{{ record.memory.hallucination }}</a-descriptions-item>

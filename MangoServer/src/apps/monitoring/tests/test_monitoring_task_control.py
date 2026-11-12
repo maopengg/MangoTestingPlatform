@@ -4,12 +4,12 @@ from unittest import TestCase, mock
 
 from src.apps.monitoring.enums import MonitoringTaskStatusEnum
 from src.apps.monitoring.exceptions import MonitoringError
-from src.apps.monitoring.services.task_control import MonitoringTaskControlService
+from src.apps.monitoring.services.tasks.task_control import MonitoringTaskControlService
 
 
 class MonitoringTaskControlServiceTest(TestCase):
     @mock.patch(
-        'src.apps.monitoring.services.task_control.ServiceHeartbeatService.count_online_instances',
+        'src.apps.monitoring.services.tasks.task_control.ServiceHeartbeatService.count_online_instances',
         return_value=0,
     )
     def test_request_start_rejects_when_runtime_service_is_offline(self, _heartbeat_mock):
@@ -18,10 +18,10 @@ class MonitoringTaskControlServiceTest(TestCase):
         with self.assertRaises(MonitoringError):
             MonitoringTaskControlService.request_start(task)
 
-    @mock.patch('src.apps.monitoring.services.task_control.transaction.atomic', return_value=nullcontext())
-    @mock.patch('src.apps.monitoring.services.task_control.MonitoringTask.objects.select_for_update')
+    @mock.patch('src.apps.monitoring.services.tasks.task_control.transaction.atomic', return_value=nullcontext())
+    @mock.patch('src.apps.monitoring.services.tasks.task_control.MonitoringTask.objects.select_for_update')
     @mock.patch(
-        'src.apps.monitoring.services.task_control.ServiceHeartbeatService.count_online_instances',
+        'src.apps.monitoring.services.tasks.task_control.ServiceHeartbeatService.count_online_instances',
         return_value=1,
     )
     def test_request_start_sets_starting_until_process_is_created(

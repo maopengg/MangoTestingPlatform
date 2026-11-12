@@ -10,13 +10,13 @@ from src.apps.task_center.exceptions import TaskCenterError
 from src.apps.task_center.models import Tasks, ScheduledTaskGroup
 from src.apps.task_center.services.selection.recent_results import TaskRecentResultService
 from src.apps.task_center.services.scheduling.task_group import ScheduledTaskGroupService
-from src.apps.test_center.services.test_suite.retention import TestSuiteRetentionService
+from src.apps.test_center.services.reporting.test_suite.retention import TestSuiteRetentionService
 
 
 class ReportRetentionTests(SimpleTestCase):
     def test_recent_quality_keeps_success_counts_without_a_report_link(self):
         from django.utils import timezone
-        from src.apps.test_center.services.test_suite.summary import TestSuiteSummaryService
+        from src.apps.test_center.services.reporting.test_suite.summary import TestSuiteSummaryService
         now = timezone.now()
         suite = {'id': 1, 'tasks_id': 2, 'test_env': 0, 'status': TaskEnum.SUCCESS.value,
                  'create_time': now, 'update_time': now, 'retained_summary': {
@@ -85,11 +85,11 @@ class ReportRetentionTests(SimpleTestCase):
         self.assertFalse(TestSuiteRetentionService.eligible(self.suite(), []))
 
     def test_cleanup_saves_counts_before_deleting_heavy_data_without_changing_execution_time(self):
-        with patch('src.apps.test_center.services.test_suite.retention.TestSuite') as suites, \
-             patch('src.apps.test_center.services.test_suite.retention.TestSuiteDetails') as details, \
-             patch('src.apps.test_center.services.test_suite.retention.ExecutionResult') as results, \
-             patch('src.apps.test_center.services.test_suite.retention.default_storage') as storage, \
-             patch('src.apps.test_center.services.test_suite.retention.TestSuiteSummaryService.counter_data',
+        with patch('src.apps.test_center.services.reporting.test_suite.retention.TestSuite') as suites, \
+             patch('src.apps.test_center.services.reporting.test_suite.retention.TestSuiteDetails') as details, \
+             patch('src.apps.test_center.services.reporting.test_suite.retention.ExecutionResult') as results, \
+             patch('src.apps.test_center.services.reporting.test_suite.retention.default_storage') as storage, \
+             patch('src.apps.test_center.services.reporting.test_suite.retention.TestSuiteSummaryService.counter_data',
                    return_value={'case_sum': 3, 'success': 3}):
             suites.objects.select_for_update.return_value.filter.return_value.first.return_value = self.suite()
             details.objects.filter.return_value.values.return_value = self.rows()
@@ -104,11 +104,11 @@ class ReportRetentionTests(SimpleTestCase):
             details.objects.filter.return_value.delete.assert_called_once()
 
     def test_storage_failure_does_not_delete_report_rows(self):
-        with patch('src.apps.test_center.services.test_suite.retention.TestSuite') as suites, \
-             patch('src.apps.test_center.services.test_suite.retention.TestSuiteDetails') as details, \
-             patch('src.apps.test_center.services.test_suite.retention.ExecutionResult') as results, \
-             patch('src.apps.test_center.services.test_suite.retention.default_storage.delete', side_effect=OSError), \
-             patch('src.apps.test_center.services.test_suite.retention.TestSuiteSummaryService.counter_data', return_value={}):
+        with patch('src.apps.test_center.services.reporting.test_suite.retention.TestSuite') as suites, \
+             patch('src.apps.test_center.services.reporting.test_suite.retention.TestSuiteDetails') as details, \
+             patch('src.apps.test_center.services.reporting.test_suite.retention.ExecutionResult') as results, \
+             patch('src.apps.test_center.services.reporting.test_suite.retention.default_storage.delete', side_effect=OSError), \
+             patch('src.apps.test_center.services.reporting.test_suite.retention.TestSuiteSummaryService.counter_data', return_value={}):
             suites.objects.select_for_update.return_value.filter.return_value.first.return_value = self.suite()
             details.objects.filter.return_value.values.return_value = self.rows()
             results.objects.filter.return_value.exclude.return_value.values_list.return_value = ['result/report.json']

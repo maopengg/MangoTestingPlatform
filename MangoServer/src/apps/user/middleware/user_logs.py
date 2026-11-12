@@ -11,7 +11,7 @@ from django.core.handlers.asgi import ASGIRequest
 from django.utils.deprecation import MiddlewareMixin
 from rest_framework.response import Response
 
-from src.apps.user.services.user_logs import UserLogService
+from src.apps.user.services.audit.user_logs import UserLogService
 
 logger = logging.getLogger(__name__)
 

@@ -31,7 +31,7 @@
     </template>
     <template #default>
       <a-alert v-if="!id" type="warning" title="运行 ID 无效，请从运行历史重新打开" />
-      <a-alert
+      <a-alert data-feedback-kind="execution-result"
         v-if="overview.error_message"
         type="error"
         class="mango-perf-run-error-alert"

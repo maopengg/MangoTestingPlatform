@@ -14,7 +14,7 @@ from src.apps.auto_api.services.api_case.version import ApiCaseRevisionService
 from src.apps.task_center.services.execution.add_tasks import AddTasks
 from src.apps.task_center.services.selection.api_concurrency import ApiConcurrencyService
 from src.apps.test_center.enums import TestCaseTypeEnum
-from src.apps.test_center.services.test_suite.batch_execution_validation import BatchExecutionValidationService
+from src.apps.test_center.services.reporting.test_suite.batch_execution_validation import BatchExecutionValidationService
 
 
 class ApiCaseBatchExecutionService:

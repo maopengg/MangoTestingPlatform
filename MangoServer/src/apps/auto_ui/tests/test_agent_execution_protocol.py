@@ -9,9 +9,9 @@ from src.apps.auto_ui.schemas.agent_execution import (
     AgentUiRuntimeOperationRequest,
     AgentUiStepReport,
 )
-from src.apps.auto_ui.services.agent_execution import AgentUiExecutionService
-from src.apps.auto_ui.services.agent_runtime import AgentUiRuntimeOperationService
-from src.interfaces.mcp.authentication import _domain, _operation, component_policy
+from src.apps.auto_ui.services.execution.agent.agent_execution import AgentUiExecutionService
+from src.apps.auto_ui.services.execution.agent.agent_runtime import AgentUiRuntimeOperationService
+from src.interfaces.mcp.authentication import component_policy
 from src.interfaces.mcp.server import _tool_operation
 from src.interfaces.mcp.tools.ui.agent_execution import register_agent_ui_execution_tools
 
@@ -50,10 +50,6 @@ class AgentUiExecutionProtocolTests(SimpleTestCase):
         self.assertNotIn("agent_ui_get_run_status", mcp.names)
 
     def test_agent_tools_use_ui_case_permissions(self):
-        self.assertEqual(_domain("agent_ui_get_case"), ("ui_case", True))
-        self.assertEqual(_operation("agent_ui_get_case"), "base")
-        self.assertEqual(_operation("agent_ui_report_step"), "execute")
-        self.assertEqual(_operation("agent_ui_execute_runtime"), "execute")
         self.assertEqual(_tool_operation("agent_ui_get_case"), "read")
         self.assertEqual(_tool_operation("agent_ui_execute_runtime"), "execute")
         self.assertEqual(_tool_operation("agent_ui_report_step"), "execute")
@@ -123,8 +119,8 @@ class AgentUiExecutionProtocolTests(SimpleTestCase):
                 "_runtime_node",
                 return_value=(node, [31]),
             ),
-            patch("src.apps.auto_ui.services.agent_runtime.cache.get", return_value=None),
-            patch("src.apps.auto_ui.services.agent_runtime.cache.set"),
+            patch("src.apps.auto_ui.services.execution.agent.agent_runtime.cache.get", return_value=None),
+            patch("src.apps.auto_ui.services.execution.agent.agent_runtime.cache.set"),
         ):
             result = AgentUiRuntimeOperationService.execute(
                 execution_token="signed",

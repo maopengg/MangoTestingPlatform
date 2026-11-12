@@ -26,22 +26,19 @@ from src.apps.data_factory.schemas.configuration import (
     DataFactoryPostInsertUpdates,
     validate_data_factory_scene_overrides,
 )
-from src.apps.data_factory.services.case_config_runner import DataFactoryCaseConfigRunner
-from src.apps.data_factory.services.cleanup import DataFactoryCleanup
-from src.apps.data_factory.services.discover import DataFactoryDiscover
-from src.apps.data_factory.services.entity import DataFactoryEntityService
-from src.apps.data_factory.services.execution_recovery import DataFactoryExecutionRecovery
-from src.apps.data_factory.services.execution_snapshot import (
-    DATA_FACTORY_INSERT_SNAPSHOT_KEY,
-    build_insert_snapshot,
-)
-from src.apps.data_factory.services.factory_sql_execution import DataFactorySqlExecutionService
-from src.apps.data_factory.services.field import DataFactoryFieldService
-from src.apps.data_factory.services.generator import DataFactoryValueGenerator
-from src.apps.data_factory.services.runner import DataFactoryRunner
-from src.apps.data_factory.services.schema_monitor import DataFactorySchemaMonitorService
-from src.apps.data_factory.services.template import DataFactoryTemplateService
-from src.apps.data_factory.services.type_cast import DataFactoryTypeCast
+from src.apps.data_factory.services.execution.case_config_runner import DataFactoryCaseConfigRunner
+from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
+from src.apps.data_factory.services.schema.discover import DataFactoryDiscover
+from src.apps.data_factory.services.assets.entity import DataFactoryEntityService
+from src.apps.data_factory.services.recovery.execution_recovery import DataFactoryExecutionRecovery
+from src.apps.data_factory.services.execution.execution_snapshot import DATA_FACTORY_INSERT_SNAPSHOT_KEY, build_insert_snapshot
+from src.apps.data_factory.services.sql.factory_sql_execution import DataFactorySqlExecutionService
+from src.apps.data_factory.services.assets.field import DataFactoryFieldService
+from src.apps.data_factory.services.execution.generator import DataFactoryValueGenerator
+from src.apps.data_factory.services.execution.runner import DataFactoryRunner
+from src.apps.data_factory.services.schema.schema_monitor import DataFactorySchemaMonitorService
+from src.apps.data_factory.services.assets.template import DataFactoryTemplateService
+from src.apps.data_factory.services.execution.type_cast import DataFactoryTypeCast
 from src.common.exceptions import ErrorDefinition
 from src.apps.test_center.enums.data_source import DataSourceTypeEnum
 
@@ -130,8 +127,8 @@ class DataFactoryCleanupAvailabilityTests(SimpleTestCase):
 
         self.assertFalse(DataFactoryCleanup.is_cleanup_required(execution))
 
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryCleanup.cleanup_execution")
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryExecution.objects.get")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryCleanup.cleanup_execution")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryExecution.objects.get")
     def test_on_demand_cleanup_skips_status_without_cleanup_responsibility(
             self,
             get_execution,
@@ -145,8 +142,8 @@ class DataFactoryCleanupAvailabilityTests(SimpleTestCase):
         self.assertFalse(result["cleanup_required"])
         self.assertEqual(result["skipped"], 1)
 
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryCleanup.cleanup_execution")
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryExecution.objects")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryCleanup.cleanup_execution")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryExecution.objects")
     def test_batch_cleanup_isolated_results(self, execution_objects, cleanup_execution):
         cleanable = self.execution(DataFactoryCleanupStatusEnum.FAIL.value, execution_id=1)
         no_cleanup = self.execution(DataFactoryCleanupStatusEnum.SUCCESS.value, execution_id=2)
@@ -312,8 +309,8 @@ class DataFactoryCleanupTests(SimpleTestCase):
 
         resolve_todo.assert_called_once_with(12)
 
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryDatasourceResolver.require_binding_permission")
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryCleanup.get_item_entity")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryDatasourceResolver.require_binding_permission")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryCleanup.get_item_entity")
     def test_legacy_delete_type_does_not_block_sql_cleanup(self, get_entity, require_permission):
         get_entity.return_value = SimpleNamespace(
             name="历史实体",
@@ -333,9 +330,9 @@ class DataFactoryCleanupTests(SimpleTestCase):
 
         require_permission.assert_called_once_with(item.datasource_binding, write=True)
 
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryDatasourceResolver.require_binding_permission")
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryDatasourceBinding.objects")
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryCleanup.get_item_entity")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryDatasourceResolver.require_binding_permission")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryDatasourceBinding.objects")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryCleanup.get_item_entity")
     def test_cleanup_recovers_unique_binding_for_legacy_item(
             self,
             get_entity,
@@ -373,7 +370,7 @@ class DataFactoryCleanupTests(SimpleTestCase):
         self.assertIs(item.datasource_binding, binding)
         item.save.assert_called_once_with(update_fields=['datasource_binding', 'update_time'])
 
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryDatasourceBinding.objects")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryDatasourceBinding.objects")
     def test_cleanup_rejects_legacy_item_without_matching_binding(self, binding_objects):
         entity = SimpleNamespace(datasource_alias_id=1)
         item = SimpleNamespace(id=99, database_id=4, datasource_binding_id=None)
@@ -385,7 +382,7 @@ class DataFactoryCleanupTests(SimpleTestCase):
 
         self.assertIn("找不到逻辑数据源", str(error.exception))
 
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryDatasourceBinding.objects")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryDatasourceBinding.objects")
     def test_cleanup_rejects_ambiguous_legacy_bindings(self, binding_objects):
         entity = SimpleNamespace(datasource_alias_id=1)
         item = SimpleNamespace(id=99, database_id=4, datasource_binding_id=None)
@@ -397,9 +394,9 @@ class DataFactoryCleanupTests(SimpleTestCase):
 
         self.assertIn("存在多个环境绑定", str(error.exception))
 
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryDatasourceResolver.require_binding_permission")
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryDatasourceBinding.objects")
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryCleanup.get_item_entity")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryDatasourceResolver.require_binding_permission")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryDatasourceBinding.objects")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryCleanup.get_item_entity")
     def test_cleanup_does_not_persist_recovered_binding_without_write_permission(
             self,
             get_entity,
@@ -434,8 +431,8 @@ class DataFactoryCleanupTests(SimpleTestCase):
 
         item.save.assert_not_called()
 
-    @patch("src.apps.data_factory.services.cleanup.DataFactorySqlExecutionService.execute")
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryDatasource.get_worker_engine")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactorySqlExecutionService.execute")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryDatasource.get_worker_engine")
     def test_force_cleanup_recovers_historical_primary_key_by_recorded_unique_value(
             self,
             get_worker_engine,
@@ -494,8 +491,8 @@ class DataFactoryCleanupTests(SimpleTestCase):
         ])
         engine.dispose()
 
-    @patch("src.apps.data_factory.services.cleanup.DataFactorySqlExecutionService.execute")
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryDatasource.get_worker_engine")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactorySqlExecutionService.execute")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryDatasource.get_worker_engine")
     def test_historical_primary_key_recovery_rejects_ambiguous_rows(
             self,
             get_worker_engine,
@@ -545,10 +542,10 @@ class DataFactoryCleanupTests(SimpleTestCase):
         item.save.assert_not_called()
         engine.dispose()
 
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryCleanup.sync_workbench_todo")
-    @patch("src.apps.data_factory.services.cleanup.transaction.on_commit")
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryExecutionItem.objects")
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryExecution.objects.get")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryCleanup.sync_workbench_todo")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.transaction.on_commit")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryExecutionItem.objects")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryExecution.objects.get")
     def test_cleanup_execution_uses_smaller_order_first(
             self,
             get_execution,
@@ -650,8 +647,8 @@ class DataFactoryCleanupTests(SimpleTestCase):
 
         self.assertIn("跨库事务一致性", str(error.exception))
 
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryDatasource.get_worker_engine")
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryCleanup.get_item_entity")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryDatasource.get_worker_engine")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryCleanup.get_item_entity")
     def test_cleanup_uses_immutable_storage_snapshot(self, get_entity, get_worker_engine):
         from sqlalchemy import Column, Integer, MetaData, String, Table, create_engine, insert, select
 
@@ -689,9 +686,9 @@ class DataFactoryCleanupTests(SimpleTestCase):
             self.assertEqual(connection.execute(select(actual_table.c.actual_id)).all(), [])
         engine.dispose()
 
-    @patch("src.apps.data_factory.services.cleanup.DataFactorySqlExecutionService.execute")
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryDatasource.get_worker_engine")
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryCleanup.get_item_entity")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactorySqlExecutionService.execute")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryDatasource.get_worker_engine")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryCleanup.get_item_entity")
     def test_cleanup_and_residual_check_use_unified_sql_audit(
             self,
             get_entity,
@@ -816,7 +813,7 @@ class DataFactoryRunnerPersistenceTests(SimpleTestCase):
 
         self.assertNotIn("external_id", created)
 
-    @patch("src.apps.data_factory.services.runner_parts.persistence.DataFactoryDatasource.get_worker_engine")
+    @patch("src.apps.data_factory.services.execution.parts.persistence.DataFactoryDatasource.get_worker_engine")
     def test_insert_maps_generated_value_to_actual_database_primary_key(self, get_worker_engine):
         from sqlalchemy import Column, Integer, MetaData, String, Table, create_engine
 
@@ -846,7 +843,7 @@ class DataFactoryRunnerPersistenceTests(SimpleTestCase):
         self.assertIsNone(result["created"]["cleanup_id"])
         engine.dispose()
 
-    @patch("src.apps.data_factory.services.runner_parts.persistence.DataFactoryDatasource.get_worker_engine")
+    @patch("src.apps.data_factory.services.execution.parts.persistence.DataFactoryDatasource.get_worker_engine")
     def test_insert_rejects_mismatched_cleanup_primary_key_before_writing(self, get_worker_engine):
         from sqlalchemy import Column, Integer, MetaData, String, Table, create_engine, select
 
@@ -874,7 +871,7 @@ class DataFactoryRunnerPersistenceTests(SimpleTestCase):
             self.assertEqual(connection.execute(select(table.c.actual_id)).all(), [])
         engine.dispose()
 
-    @patch("src.apps.data_factory.services.runner_parts.persistence.DataFactoryDatasource.get_worker_engine")
+    @patch("src.apps.data_factory.services.execution.parts.persistence.DataFactoryDatasource.get_worker_engine")
     def test_execution_item_failure_rolls_back_business_insert(self, get_worker_engine):
         from sqlalchemy import Column, Integer, MetaData, String, Table, create_engine, select
 
@@ -901,13 +898,13 @@ class DataFactoryRunnerPersistenceTests(SimpleTestCase):
             self.assertEqual(connection.execute(select(table.c.id)).all(), [])
         engine.dispose()
 
-    @patch('src.apps.data_factory.services.factory_sql_execution.DatasourceTargetService.resolve')
+    @patch('src.apps.data_factory.services.sql.factory_sql_execution.DatasourceTargetService.resolve')
     @patch(
-        "src.apps.data_factory.services.factory_sql_execution."
+        "src.apps.data_factory.services.sql.factory_sql_execution."
         "SqlExecutionAuditService.finish_success"
     )
     @patch(
-        "src.apps.data_factory.services.factory_sql_execution."
+        "src.apps.data_factory.services.sql.factory_sql_execution."
         "SqlExecutionAuditService.start"
     )
     def test_factory_sql_reuses_business_connection_and_records_source(
@@ -976,7 +973,7 @@ class DataFactoryRunnerPersistenceTests(SimpleTestCase):
         audit_finish.assert_called_once()
         engine.dispose()
 
-    @patch("src.apps.data_factory.services.cleanup.DataFactoryCleanup.cleanup_execution")
+    @patch("src.apps.data_factory.services.cleanup.cleanup.DataFactoryCleanup.cleanup_execution")
     def test_failed_scene_forces_cleanup_of_all_created_nodes(self, cleanup_execution):
         execution = SimpleNamespace(id=88)
 
@@ -990,11 +987,11 @@ class DataFactoryRunnerPersistenceTests(SimpleTestCase):
 
 
 class DataFactoryExecutionRecoveryTests(SimpleTestCase):
-    @patch("src.apps.data_factory.services.execution_recovery.DataFactoryCleanup.sync_workbench_todo")
-    @patch("src.apps.data_factory.services.execution_recovery.DataFactoryCleanup.mark_pending_manual")
-    @patch("src.apps.data_factory.services.execution_recovery.DataFactoryCleanup.manual_cleanup_item_exists")
-    @patch("src.apps.data_factory.services.execution_recovery.DataFactoryExecutionItem.objects")
-    @patch("src.apps.data_factory.services.execution_recovery.DataFactoryExecution.objects")
+    @patch("src.apps.data_factory.services.recovery.execution_recovery.DataFactoryCleanup.sync_workbench_todo")
+    @patch("src.apps.data_factory.services.recovery.execution_recovery.DataFactoryCleanup.mark_pending_manual")
+    @patch("src.apps.data_factory.services.recovery.execution_recovery.DataFactoryCleanup.manual_cleanup_item_exists")
+    @patch("src.apps.data_factory.services.recovery.execution_recovery.DataFactoryExecutionItem.objects")
+    @patch("src.apps.data_factory.services.recovery.execution_recovery.DataFactoryExecution.objects")
     def test_existing_manual_cleanup_data_is_recorded_as_pending_not_failed(
             self,
             execution_objects,
@@ -1036,11 +1033,11 @@ class DataFactoryExecutionRecoveryTests(SimpleTestCase):
         mark_pending_manual.assert_called_once_with(item)
         sync_todo.assert_called_once_with(execution)
 
-    @patch("src.apps.data_factory.services.execution_recovery.DataFactoryCleanup.sync_workbench_todo")
-    @patch("src.apps.data_factory.services.execution_recovery.DataFactoryCleanup.mark_success")
-    @patch("src.apps.data_factory.services.execution_recovery.DataFactoryCleanup.manual_cleanup_item_exists")
-    @patch("src.apps.data_factory.services.execution_recovery.DataFactoryExecutionItem.objects")
-    @patch("src.apps.data_factory.services.execution_recovery.DataFactoryExecution.objects")
+    @patch("src.apps.data_factory.services.recovery.execution_recovery.DataFactoryCleanup.sync_workbench_todo")
+    @patch("src.apps.data_factory.services.recovery.execution_recovery.DataFactoryCleanup.mark_success")
+    @patch("src.apps.data_factory.services.recovery.execution_recovery.DataFactoryCleanup.manual_cleanup_item_exists")
+    @patch("src.apps.data_factory.services.recovery.execution_recovery.DataFactoryExecutionItem.objects")
+    @patch("src.apps.data_factory.services.recovery.execution_recovery.DataFactoryExecution.objects")
     def test_missing_manual_cleanup_data_is_reconciled_as_success(
             self,
             execution_objects,
@@ -1078,7 +1075,7 @@ class DataFactoryExecutionRecoveryTests(SimpleTestCase):
 
 
 class DataFactoryCaseConfigRunnerTests(SimpleTestCase):
-    @patch("src.apps.data_factory.services.case_config_runner.DataFactoryCleanup.cleanup_execution",
+    @patch("src.apps.data_factory.services.execution.case_config_runner.DataFactoryCleanup.cleanup_execution",
            return_value={'fail': 1})
     def test_auto_cleanup_failure_is_propagated(self, cleanup):
         runner = DataFactoryCaseConfigRunner.__new__(DataFactoryCaseConfigRunner)
@@ -1541,7 +1538,7 @@ class DataFactoryTemplateSerializerTests(SimpleTestCase):
 
         entity = SimpleNamespace(table_name="risk_state", primary_key="id")
         with patch(
-                "src.apps.data_factory.services.runner_parts.scene.DataFactoryDatasource.get_worker_engine",
+                "src.apps.data_factory.services.execution.parts.scene.DataFactoryDatasource.get_worker_engine",
                 return_value=(engine, True),
         ):
             affected_rows = DataFactoryRunner.update_created_record(
@@ -1703,11 +1700,11 @@ class DataFactorySchemaMonitorTests(SimpleTestCase):
             binding.database.cache_key = binding.database.id
             return binding.database
         self.enterContext(patch(
-            'src.apps.data_factory.services.schema_monitor.DatasourceTargetService.for_metadata',
+            'src.apps.data_factory.services.schema.schema_monitor.DatasourceTargetService.for_metadata',
             side_effect=metadata_target,
         ))
         self.enterContext(patch(
-            'src.apps.data_factory.services.schema_monitor.DatasourceTargetService.resolve',
+            'src.apps.data_factory.services.schema.schema_monitor.DatasourceTargetService.resolve',
             side_effect=lambda binding, **_: binding.database,
         ))
         self.enterContext(patch.object(DataFactorySchemaMonitorService, '_record_workbench_todo'))
@@ -1779,9 +1776,9 @@ class DataFactorySchemaMonitorTests(SimpleTestCase):
         }]
 
         with (
-            patch("src.apps.data_factory.services.schema_monitor.DataFactoryEntity.objects") as entity_objects,
+            patch("src.apps.data_factory.services.schema.schema_monitor.DataFactoryEntity.objects") as entity_objects,
             patch(
-                "src.apps.data_factory.services.schema_monitor.DataFactoryDatasourceBinding.objects") as binding_objects,
+                "src.apps.data_factory.services.schema.schema_monitor.DataFactoryDatasourceBinding.objects") as binding_objects,
             patch.object(DataFactorySchemaMonitorService, "configured_validation_environments", return_value=[0]),
             patch.object(
                 DataFactorySchemaMonitorService,
@@ -1789,7 +1786,7 @@ class DataFactorySchemaMonitorTests(SimpleTestCase):
                 return_value=DataFactorySchemaMonitorService.columns_signature(columns),
             ),
             patch(
-                "src.apps.data_factory.services.schema_monitor.DataFactoryDatasourceResolver.require_binding_permission"
+                "src.apps.data_factory.services.schema.schema_monitor.DataFactoryDatasourceResolver.require_binding_permission"
             ) as require_permission,
             patch.object(DataFactoryDiscover, "get_table_schema", return_value={"columns": columns}),
         ):
@@ -1847,7 +1844,7 @@ class DataFactorySchemaMonitorTests(SimpleTestCase):
         )
 
         with patch(
-                "src.apps.data_factory.services.template.SystemConfigService.get_data_factory_validation_environments",
+                "src.apps.data_factory.services.assets.template.SystemConfigService.get_data_factory_validation_environments",
                 return_value=[0, 3],
         ):
             environments = DataFactoryTemplateService.activation_environments(template)
@@ -1856,7 +1853,7 @@ class DataFactorySchemaMonitorTests(SimpleTestCase):
 
     def test_disable_entity_records_schema_monitor_audit_context(self):
         with patch(
-                "src.apps.data_factory.services.schema_monitor.DataFactoryEntityService.change_status",
+                "src.apps.data_factory.services.schema.schema_monitor.DataFactoryEntityService.change_status",
                 return_value={"invalidated_template_count": 2},
         ) as change_status:
             invalidated_count = DataFactorySchemaMonitorService.disable_entity(
@@ -2022,9 +2019,9 @@ class DataFactorySchemaMonitorTests(SimpleTestCase):
         }]
 
         with (
-            patch("src.apps.data_factory.services.schema_monitor.DataFactoryEntity.objects") as entity_objects,
+            patch("src.apps.data_factory.services.schema.schema_monitor.DataFactoryEntity.objects") as entity_objects,
             patch(
-                "src.apps.data_factory.services.schema_monitor.DataFactoryDatasourceBinding.objects") as binding_objects,
+                "src.apps.data_factory.services.schema.schema_monitor.DataFactoryDatasourceBinding.objects") as binding_objects,
             patch.object(DataFactorySchemaMonitorService, "entity_signatures", return_value={57: expected}),
             patch.object(
                 DataFactoryDiscover,
@@ -2095,9 +2092,9 @@ class DataFactorySchemaMonitorTests(SimpleTestCase):
         expected = DataFactorySchemaMonitorService.columns_signature(columns)
 
         with (
-            patch("src.apps.data_factory.services.schema_monitor.DataFactoryEntity.objects") as entity_objects,
+            patch("src.apps.data_factory.services.schema.schema_monitor.DataFactoryEntity.objects") as entity_objects,
             patch(
-                "src.apps.data_factory.services.schema_monitor.DataFactoryDatasourceBinding.objects") as binding_objects,
+                "src.apps.data_factory.services.schema.schema_monitor.DataFactoryDatasourceBinding.objects") as binding_objects,
             patch.object(DataFactorySchemaMonitorService, "configured_validation_environments", return_value=[0]),
             patch.object(DataFactorySchemaMonitorService, "entity_signatures", return_value={57: expected}),
             patch.object(
@@ -2131,9 +2128,9 @@ class DataFactorySchemaMonitorTests(SimpleTestCase):
         binding = SimpleNamespace(id=21, database_id=12, datasource_alias_id=8, database=database)
 
         with (
-            patch("src.apps.data_factory.services.schema_monitor.DataFactoryEntity.objects") as entity_objects,
+            patch("src.apps.data_factory.services.schema.schema_monitor.DataFactoryEntity.objects") as entity_objects,
             patch(
-                "src.apps.data_factory.services.schema_monitor.DataFactoryDatasourceBinding.objects") as binding_objects,
+                "src.apps.data_factory.services.schema.schema_monitor.DataFactoryDatasourceBinding.objects") as binding_objects,
             patch.object(DataFactorySchemaMonitorService, "entity_signatures", return_value={57: ()}),
             patch.object(
                 DataFactoryDiscover,
@@ -2170,9 +2167,9 @@ class DataFactorySchemaMonitorTests(SimpleTestCase):
         }
 
         with (
-            patch("src.apps.data_factory.services.schema_monitor.DataFactoryEntity.objects") as entity_objects,
+            patch("src.apps.data_factory.services.schema.schema_monitor.DataFactoryEntity.objects") as entity_objects,
             patch(
-                "src.apps.data_factory.services.schema_monitor.DataFactoryDatasourceBinding.objects") as binding_objects,
+                "src.apps.data_factory.services.schema.schema_monitor.DataFactoryDatasourceBinding.objects") as binding_objects,
             patch.object(DataFactorySchemaMonitorService, "entity_signatures", return_value=expected),
             patch.object(DataFactoryDiscover, "get_mysql_table_schemas", return_value={}),
             patch.object(DataFactorySchemaMonitorService, "disable_entity") as disable_entity,

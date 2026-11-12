@@ -2,9 +2,9 @@ from django.test import SimpleTestCase
 from pydantic import ValidationError
 from src.apps.evaluation.exceptions import EvaluationError
 from src.apps.evaluation.schemas.case import EvaluationDataSelection, EvaluationCaseConfig
-from src.apps.evaluation.services.python_target import run_python_target
+from src.apps.evaluation.services.targets.python_target import run_python_target
 from src.apps.evaluation.schemas.item import EvaluationDatasetItemPayload
-from src.apps.evaluation.services.versioning import EvaluationVersionService
+from src.apps.evaluation.services.dataset.versioning import EvaluationVersionService
 from types import SimpleNamespace
 
 

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>公共错误提示验证</title></head>
+<body><div id="app"></div>
+<script type="module">
+import { createApp, h, ref } from 'vue'
+import ArcoVue from '@arco-design/web-vue'
+import '@arco-design/web-vue/dist/arco.css'
+import '../../src/styles/index.css'
+import MangoRequestFeedback from '../../src/components/feedback/MangoRequestFeedback.vue'
+import { reportLoadError, requestFailureMessage } from '../../src/utils/load-error'
+const App = {
+  setup() {
+    const error = ref(''), attempts = ref(0)
+    function fail() {
+      const cause = Error('synthetic request rejection')
+      reportLoadError(cause, '模拟请求：当前记录不能删除')
+      error.value = requestFailureMessage(cause, '删除失败，请重试')
+      attempts.value++
+    }
+    return () => h('main', {class:'mango-section-card'}, [
+      h('h1', '公共错误提示验证'),
+      h('p', '仅使用演示数据，不连接业务接口。'),
+      h('button', {onClick:fail}, '模拟删除失败'),
+      h('p', `操作次数：${attempts.value}`),
+      h(MangoRequestFeedback, {message:error.value}, {default:() => error.value ? h('button', {onClick:() => { error.value=''; attempts.value++ }}, '重试') : []}),
+      h('table', [h('thead', h('tr', [h('th','ID'),h('th','名称')])),h('tbody',h('tr',[h('td','1'),h('td','演示记录')]))]),
+    ])
+  },
+}
+createApp(App).use(ArcoVue).mount('#app')
+</script></body></html>

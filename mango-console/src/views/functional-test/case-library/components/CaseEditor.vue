@@ -8,9 +8,7 @@
     :on-before-cancel="canCancel"
     @cancel="invalidate"
   >
-    <a-alert v-if="saveError" type="error" class="mango-library-case-editor__feedback"
-      >保存失败，输入已保留，请重试。</a-alert
-    >
+    <MangoRequestFeedback v-if="saveError" :message="&quot;保存失败，输入已保留，请重试。&quot;" />
     <a-spin :loading="categoryLoading" class="mango-library-case-editor__categories">
       <span v-if="categoryLoading">正在加载分类选项…</span>
       
@@ -187,8 +185,7 @@
 </template>
 
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { nextTick, onActivated, onBeforeUnmount, onDeactivated, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
@@ -325,8 +322,8 @@ import { reportLoadError } from '@/utils/load-error'
         invalidate()
         emit('saved')
       }
-    } catch {
-      if (current(version)) saveError.value = true
+    } catch (requestFailure) {
+      if (current(version)) saveError.value = requestFailureMessage(requestFailure, true, "保存失败，输入已保留，请重试。")
     } finally {
       // A context change invalidates UI ownership, but must not release an in-flight write lock.
       saving.value = false

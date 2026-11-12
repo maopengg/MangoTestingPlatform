@@ -10,9 +10,7 @@
     :ok-loading="saving"
     :on-before-ok="save"
   >
-    <a-alert v-if="saveError" type="error" class="mango-case-plan__notice"
-      >加入失败，选择已保留，请重试。</a-alert
-    >
+    <MangoRequestFeedback v-if="saveError" :message="&quot;加入失败，选择已保留，请重试。&quot;" />
     
     <a-form auto-label-width class="mango-simple-form" :model="joinForm" layout="horizontal" :disabled="saving">
       <a-form-item class="mango-simple-form-item" label="测试计划" required>
@@ -41,9 +39,7 @@
     <a-alert v-if="createdPlanId !== null && saveError" type="warning" class="mango-case-plan__notice"
       >计划已创建（ID {{ createdPlanId }}），用例尚未加入。再次提交只重试加入操作。</a-alert
     >
-    <a-alert v-else-if="saveError" type="error" class="mango-case-plan__notice"
-      >创建失败，输入已保留，请重试。</a-alert
-    >
+    <MangoRequestFeedback v-else-if="saveError" :message="&quot;创建失败，输入已保留，请重试。&quot;" />
     
     
     <a-form auto-label-width class="mango-simple-form" :model="form" layout="horizontal" :disabled="saving || createdPlanId !== null">
@@ -148,8 +144,7 @@
 </template>
 
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { onActivated, onBeforeUnmount, onDeactivated, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
@@ -397,8 +392,8 @@ import { reportLoadError } from '@/utils/load-error'
             : '测试计划创建成功'
         )
       }
-    } catch {
-      if (current(version)) saveError.value = true
+    } catch (requestFailure) {
+      if (current(version)) saveError.value = requestFailureMessage(requestFailure, true, "创建失败，输入已保留，请重试。")
     } finally {
       saving.value = false
     }

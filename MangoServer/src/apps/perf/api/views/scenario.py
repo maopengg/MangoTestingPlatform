@@ -36,6 +36,7 @@ from src.common.responses.response_msg import RESPONSE_MSG_0001, RESPONSE_MSG_00
 
 
 def request_user(request: Request):
+    """获取当前请求用户"""
     wrapper = getattr(request, "user", None)
     user = getattr(wrapper, "user_obj", None)
     if user is not None:
@@ -52,6 +53,7 @@ class PerfScenarioCRUD(ModelCRUD):
 
     @error_response("system")
     def delete(self, request):
+        """删除性能测试场景"""
         scenario_id = request.query_params.get("id")
         if scenario_id and PerfScenario.objects.filter(id=scenario_id, runs__isnull=False).exists():
             raise PerfError(PERF_SCENARIO_DELETE_PERF_NOT_ALLOWED)
@@ -62,11 +64,13 @@ class PerfScenarioViews(ViewSet):
 
     @error_response("system")
     def executors(self, request: Request):
+        """获取性能场景可用执行器"""
         rows = PerfCapacityService.list_available_executors()
         return ResponseData.success(RESPONSE_MSG_0001, [format_perf_row_datetimes(row) for row in rows])
 
     @error_response("system")
     def retrieve(self, request: Request, pk=None):
+        """获取性能测试场景详情"""
         scenario = PerfScenario.objects.select_related("project_product", "module", "owner", "source_api_case",
                                                        "source_case_release", "source_case_revision").filter(
             id=pk).first()
@@ -88,6 +92,7 @@ class PerfScenarioViews(ViewSet):
 
     @error_response("system")
     def source_api_cases(self, request: Request, pk=None):
+        """获取性能场景可选 API 用例"""
         scenario = PerfScenario.objects.only("id", "project_product_id").filter(id=pk).first()
         if not scenario:
             raise PerfError(PERF_SCENARIO_CONFIG_PERF_INVALID, value=("场景不存在",))
@@ -96,6 +101,7 @@ class PerfScenarioViews(ViewSet):
 
     @error_response("system")
     def configuration(self, request: Request, pk=None):
+        """获取或保存性能测试场景配置"""
         from django.db import transaction
         with transaction.atomic():
             scenario = PerfScenario.objects.select_for_update().filter(id=pk).first()
@@ -144,6 +150,7 @@ class PerfScenarioViews(ViewSet):
 
     @error_response("system")
     def validate(self, request: Request, pk=None):
+        """校验性能测试场景配置"""
         scenario = PerfScenario.objects.filter(id=pk).first()
         if not scenario:
             raise PerfError(PERF_SCENARIO_CONFIG_PERF_INVALID, value=("场景不存在",))
@@ -156,6 +163,7 @@ class PerfScenarioViews(ViewSet):
 
     @error_response("system")
     def script_preview(self, request: Request, pk=None):
+        """预览性能测试编译脚本"""
         scenario = PerfScenario.objects.select_related("source_case_release", "source_case_revision").filter(
             id=pk).first()
         if not scenario:
@@ -171,6 +179,7 @@ class PerfScenarioViews(ViewSet):
 
     @error_response("system")
     def execute(self, request: Request, pk=None):
+        """执行性能测试场景"""
         scenario = PerfScenario.objects.filter(id=pk).only("project_product_id").first()
         if not scenario:
             raise PerfError(PERF_SCENARIO_CONFIG_PERF_INVALID, value=("场景不存在",))
@@ -193,6 +202,7 @@ class PerfScenarioViews(ViewSet):
 
     @error_response("system")
     def preflight(self, request: Request, pk=None):
+        """检查性能测试执行前的容量与条件"""
         scenario = PerfScenario.objects.filter(id=pk, status=1).first()
         if not scenario:
             raise PerfError(PERF_SCENARIO_CONFIG_PERF_INVALID, value=("场景不存在",))

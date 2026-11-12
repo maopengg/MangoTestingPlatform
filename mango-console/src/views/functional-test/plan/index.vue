@@ -57,9 +57,7 @@
           
           
           
-          <a-alert v-if="navigationError" type="error"
-            >计划详情打开失败，请重新点击进入用例。</a-alert
-          >
+          <MangoRequestFeedback v-if="navigationError" :message="&quot;计划详情打开失败，请重新点击进入用例。&quot;" />
           <a-table
             class="mango-native-scroll-table"
             :data="rows"
@@ -157,8 +155,7 @@
   />
 </template>
 <script lang="ts" setup>
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import {
     computed,
     nextTick,
@@ -393,8 +390,8 @@ import { reportLoadError } from '@/utils/load-error'
         query: { id: record.id },
       })
       if (failure && current(version)) navigationError.value = true
-    } catch {
-      if (current(version)) navigationError.value = true
+    } catch (requestFailure) {
+      if (current(version)) navigationError.value = requestFailureMessage(requestFailure, true, "计划详情打开失败，请重新点击进入用例。")
     } finally {
       navigatingId.value = null
     }

@@ -11,7 +11,7 @@
         >{{ local ? '选择模板' : '增加' }}</a-button
       >
     </div>
-    <div v-if="collectionOperationError" class="mango-soft-panel" role="alert">{{ collectionOperationError }} <a-button v-if="collectionCanRetry" size="small" :loading="!!collectionPending" @click="retryCollectionOperation()">重试</a-button></div>
+    <MangoRequestFeedback v-if="collectionOperationError" :message="(collectionOperationError)"><a-button v-if="collectionCanRetry" size="small" :loading="!!collectionPending" @click="retryCollectionOperation()">重试</a-button></MangoRequestFeedback>
     <div v-if="collectionPending?.kind === 'sort'" class="mango-soft-panel" role="status"><a-spin :size="scaleDensityPixels(16)" /> 正在保存配置顺序…</div>
     <a-table
       :bordered="false"
@@ -97,8 +97,8 @@
     unmount-on-close
   >
     <div class="mango-data-factory-config-drawer">
-      <a-alert v-if="readonlyError" type="error">配置数据无效，请关闭后重新加载。</a-alert>
-      <a-alert v-if="collectionOperationError && !readonly" type="error">{{ collectionOperationError }}</a-alert>
+      <a-alert data-feedback-kind="validation" v-if="readonlyError" type="error">配置数据无效，请关闭后重新加载。</a-alert>
+      <MangoRequestFeedback v-if="collectionOperationError && !readonly" :message="(collectionOperationError)" />
       <a-form
         :model="form"
         :disabled="readonly"

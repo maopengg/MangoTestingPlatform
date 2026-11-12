@@ -43,7 +43,7 @@
           ><dd>{{ result.elapsed_ms }} ms</dd>
         </dl>
       </div>
-      <a-alert v-if="error" type="error" role="alert">{{ error }}</a-alert>
+      <MangoRequestFeedback v-if="error" :message="(error)" />
     </div>
     <template #footer>
       <a-space class="mango-modal-dialog-footer-actions">
@@ -62,6 +62,8 @@
 </template>
 
 <script setup lang="ts">
+import { requestFailureMessage } from '@/utils/load-error'
+
   import { ref } from 'vue'
   import { testObjectConnection, type TestObjectProbeResult } from '@/api/system/test_object'
   import { useTestObjectScope } from '../composables/useTestObjectScope'
@@ -120,9 +122,9 @@
       const response = await testObjectConnection(id, selectedAddress)
       if (version === requestVersion && scope.current(context) && address.value === selectedAddress)
         result.value = response.data
-    } catch {
+    } catch (requestFailure) {
       if (version === requestVersion && scope.current(context))
-        error.value = '检测请求失败，请检查操作权限或稍后重试。'
+        error.value = requestFailureMessage(requestFailure, '检测请求失败，请检查操作权限或稍后重试。')
     } finally {
       loading.value = false
       emit('testing-change', id, false)

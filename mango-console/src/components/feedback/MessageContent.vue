@@ -91,7 +91,7 @@
             </template>
             <template #description>
               <div v-if="item.kind === 'task_result'" class="mango-message-result">
-                <div v-if="item.status !== 1" class="mango-message-result__reason">
+                <div data-feedback-kind="execution-result" v-if="item.status !== 1" class="mango-message-result__reason">
                   失败原因：{{ item.errorMessage || '未返回具体原因，请进入结果详情查看' }}
                 </div>
                 <div v-else class="mango-message-result__summary">

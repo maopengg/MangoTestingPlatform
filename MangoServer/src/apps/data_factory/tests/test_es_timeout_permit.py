@@ -11,12 +11,12 @@ from django.utils import timezone
 from src.apps.data_factory.exceptions import DataFactoryError, DATASOURCE_AUDIT_COMPLETION_FAILED, DATASOURCE_SETTLEMENT_FAILED
 from src.apps.data_factory.schemas.cleanup_resource import CleanupResourceState, EsCleanupRule, EsCleanupSnapshot
 from src.apps.data_factory.schemas.performance import DatasourcePerformancePolicy
-from src.apps.data_factory.services.cleanup_resource import DataFactoryCleanupResourceService as Resources
-from src.apps.data_factory.services.data_source_error import DataSourceErrorService as Errors
-from src.apps.data_factory.services.datasource_governor import DatasourceGovernorService as Governor
-from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
-from src.apps.data_factory.services.protocol_pool import ProtocolPoolRegistry as Pools
-from src.apps.data_factory.services.sql_execution_audit import SqlExecutionAuditHandle, SqlExecutionAuditService as Audit
+from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as Resources
+from src.apps.data_factory.services.datasource.data_source_error import DataSourceErrorService as Errors
+from src.apps.data_factory.services.governance.datasource_governor import DatasourceGovernorService as Governor
+from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService as Infrastructure
+from src.apps.data_factory.services.pool.protocol_pool import ProtocolPoolRegistry as Pools
+from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditHandle, SqlExecutionAuditService as Audit
 from src.apps.data_factory.tests.test_datasource_performance import AtomicMemoryStore
 
 
@@ -62,11 +62,12 @@ class EsTimeoutPermitTests(SimpleTestCase):
             patch.object(Pools, '_entries', {}), patch.object(Pools, '_building', set()),
             patch.object(Pools, '_pid', os.getpid()), patch.object(Pools, '_thread', Mock()),
             patch.object(Resources, 'resolve_binding', return_value=self.binding),
-            patch('src.apps.data_factory.services.cleanup_resource.DatasourceTargetService.resolve', return_value=self.target),
-            patch('src.apps.data_factory.services.elasticsearch_http.httpx.Client', return_value=self.client),
-            patch('src.apps.data_factory.services.cleanup_resource.sleep', side_effect=self.advance),
-            patch('src.apps.data_factory.services.cleanup_resource.monotonic', side_effect=lambda: self.clock[0]),
+            patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve', return_value=self.target),
+            patch('src.apps.data_factory.services.protocols.elasticsearch_http.httpx.Client', return_value=self.client),
+            patch('src.apps.data_factory.services.cleanup.cleanup_resource.sleep', side_effect=self.advance),
+            patch('src.apps.data_factory.services.cleanup.cleanup_resource.monotonic', side_effect=lambda: self.clock[0]),
             patch.object(Audit, 'start', side_effect=self.audit),
+            patch.object(Audit, 'confirm_resource_requests'),
             patch.object(Audit, 'save_completion'), patch.object(Audit, 'notify_slow'),
         ):
             guard.start()
@@ -108,7 +109,7 @@ class EsTimeoutPermitTests(SimpleTestCase):
     def permits(self):
         return next(iter(self.store.values.values()))['permits']
 
-    def test_real_transport_timeout_then_full_verification_releases_only_exact_owner(self):
+    def test_real_delete_timeout_then_full_verification_keeps_audit_without_operation_quota(self):
         unrelated = Governor.acquire(self.target)
         Governor.release(unrelated, unknown=True)
         with Infrastructure.scope():
@@ -116,75 +117,58 @@ class EsTimeoutPermitTests(SimpleTestCase):
             Resources.verify(self.item)
             self.assertEqual(len(Infrastructure.current()), 1)
             self.assertEqual(Infrastructure.current()[0].code, DATASOURCE_AUDIT_COMPLETION_FAILED.code)
-        permit = self.delete_permit
-        self.assertIsNotNone(permit)
-        self.assertNotIn(permit[1], self.permits())
+        self.assertIsNone(self.delete_permit)
+        self.assertTrue(all(value['kind'] == 'connection' for value in self.permits().values()))
         self.assertEqual(self.permits()[unrelated[1]]['state'], 'suspect')
         self.assertEqual(sum(method == 'DELETE' for method, url in self.requests), 1)
         self.assertTrue(any('realtime=false' in url for method, url in self.requests))
         self.assertGreaterEqual(self.clock[0], self.rule.timeout_seconds)
         self.assertTrue(self.item.cleanup_resources['results'][0]['success'])
-        self.assertFalse(self.item.cleanup_resources['unknown_permits'])
         failures = [record for operation, record in self.records if record.status == 'timeout']
         self.assertEqual(len(failures), 1)
         self.assertTrue(failures[0].source_detail['outcome_unknown'])
         self.assertIn('34183', failures[0].error_message)
-        # 同一关闭证明重复结算必须幂等，不得多返额度或影响其他 owner。
-        completed = next(iter(self.store.values.values()))['completed']
-        Governor.release(permit)
-        self.assertEqual(next(iter(self.store.values.values()))['completed'], completed)
+        self.assertIn(failures[0].request_id, Audit.confirm_resource_requests.call_args.args[0])
         Pools.close_all()
         self.assertEqual(set(self.permits()), {unrelated[1]})
 
-    def test_search_visible_document_keeps_unknown_permit_and_failure(self):
+    def test_search_visible_document_keeps_cleanup_failure_and_request_evidence(self):
         self.search_visible = True
         with Infrastructure.scope(), self.assertRaises(DataFactoryError):
             Resources.verify(self.item)
-        permit = self.delete_permit
-        self.assertEqual(self.permits()[permit[1]]['state'], 'suspect')
-        self.assertEqual(self.item.cleanup_resources['unknown_permits'][0]['owner'], permit[1])
+        self.assertTrue(self.item.cleanup_resources['uncertain_requests'])
         self.assertFalse(self.item.cleanup_resources['results'][0]['success'])
+        self.assertFalse(self.item.cleanup_resources['unknown_permits'])
 
-    def test_failed_read_persists_both_delete_and_read_unknown_permits(self):
+    def test_failed_read_persists_both_requests_without_blocking_other_sql_operations(self):
         self.fail_read = True
         with Infrastructure.scope(), self.assertRaises(DataFactoryError):
             Resources.verify(self.item)
-        owners = {value['owner'] for value in self.item.cleanup_resources['unknown_permits']}
-        self.assertEqual(len(owners), 2)
-        self.assertTrue(all(self.permits()[owner]['state'] == 'suspect' for owner in owners))
+        requests = self.item.cleanup_resources['uncertain_requests']
+        self.assertEqual(len({value['request_id'] for value in requests}), 2)
+        self.assertFalse(self.item.cleanup_resources['unknown_permits'])
         self.assertFalse(self.item.cleanup_resources['results'][0]['success'])
 
-    def test_settlement_failure_keeps_snapshot_and_retry_rechecks_without_replaying_delete(self):
-        release = Governor.release
-        def fail_verified_release(permit, *, unknown=False):
-            if (not unknown and hasattr(self, 'delete_error')
-                    and permit == self.delete_permit):
-                raise DataFactoryError(DATASOURCE_SETTLEMENT_FAILED)
-            return release(permit, unknown=unknown)
-        with Infrastructure.scope(), patch.object(Governor, 'release', side_effect=fail_verified_release):
+    def test_verification_audit_failure_does_not_replay_delete_on_cleanup_retry(self):
+        with Infrastructure.scope(), patch.object(Audit, 'confirm_resource_requests',
+                side_effect=DataFactoryError(DATASOURCE_AUDIT_COMPLETION_FAILED)):
             with self.assertRaises(DataFactoryError):
                 Resources.verify(self.item)
-        permit = self.delete_permit
-        self.assertIn(permit[1], self.permits())
-        self.assertEqual(self.item.cleanup_resources['unknown_permits'][0]['owner'], permit[1])
-        self.assertFalse(self.item.cleanup_resources['results'][0]['success'])
         retry_started = self.clock[0]
         with Infrastructure.scope():
             Resources.verify(self.item)
-        self.assertNotIn(permit[1], self.permits())
         self.assertGreaterEqual(self.clock[0] - retry_started, self.rule.timeout_seconds)
         self.assertEqual(sum(method == 'DELETE' for method, url in self.requests), 1)
 
-    def test_checkpoint_path_persists_a_read_timeout_owner_before_returning_failure(self):
+    def test_checkpoint_keeps_read_timeout_request_evidence_for_recovery(self):
         from datetime import datetime, timezone as dt_timezone
         self.present = False
         self.fail_read = True
         with Infrastructure.scope(), self.assertRaises(DataFactoryError):
             Resources.advance(self.item, generation=0, task_id=1,
                 clock=lambda: datetime.fromtimestamp(1800000000 + self.clock[0], dt_timezone.utc))
-        owners = [value['owner'] for value in self.item.cleanup_resources['unknown_permits']]
-        self.assertEqual(len(owners), 1)
-        self.assertEqual(self.permits()[owners[0]]['state'], 'suspect')
+        self.assertEqual(len(self.item.cleanup_resources['uncertain_requests']), 1)
+        self.assertFalse(self.item.cleanup_resources['unknown_permits'])
         self.assertFalse(self.item.cleanup_resources['results'])
 
     def test_explicit_chain_lookup_is_bounded_and_does_not_copy_private_fields(self):

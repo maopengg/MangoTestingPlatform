@@ -8,7 +8,7 @@ from src.apps.test_center.enums.report_delivery import ReportSourceEnum
 from src.apps.test_center.exceptions import REPORT_ARTIFACT_INVALID, REPORT_LOCAL_LINK_UNAVAILABLE, TestCenterError
 from src.apps.test_center.schemas.report_delivery import ReportDeliveryConfig
 from src.apps.test_center.selectors.offline_report import OfflineReportSelector
-from src.apps.test_center.services.offline_report import OfflineReportService
+from src.apps.test_center.services.reporting.offline_report import OfflineReportService
 
 
 class OfflineReportPublishTests(SimpleTestCase):
@@ -16,7 +16,7 @@ class OfflineReportPublishTests(SimpleTestCase):
         config = ReportDeliveryConfig(enabled=False, link_ttl_seconds=300)
         for kind in ReportSourceEnum:
             with self.subTest(kind=kind), \
-                    patch('src.apps.test_center.services.offline_report.service.ReportStorageService') as storage_class, \
+                    patch('src.apps.test_center.services.reporting.offline_report.service.ReportStorageService') as storage_class, \
                     patch.object(OfflineReportService, 'config', return_value=config), \
                     patch.object(OfflineReportService, 'render', side_effect=[('report.html', b'first'), ('report.html', b'latest')]) as render:
                 storage = storage_class.return_value
@@ -37,7 +37,7 @@ class OfflineReportPublishTests(SimpleTestCase):
                 self.assertEqual([call.args[-1] for call in storage.url.call_args_list if len(call.args) == 4], [True, True])
 
     def test_local_storage_does_not_upload_or_render_twice_before_download_fallback(self):
-        with patch('src.apps.test_center.services.offline_report.service.ReportStorageService') as storage, \
+        with patch('src.apps.test_center.services.reporting.offline_report.service.ReportStorageService') as storage, \
                 patch.object(OfflineReportService, 'render') as render:
             storage.return_value.local = object()
             with self.assertRaises(TestCenterError) as caught:

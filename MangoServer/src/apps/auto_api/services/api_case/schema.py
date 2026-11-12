@@ -6,7 +6,7 @@ from src.apps.auto_api.exceptions import (
 )
 from src.apps.auto_api.models import ApiCaseDetailedParameter
 from src.apps.auto_api.services.api_case.mutation import ApiCaseAggregateMutationService
-from src.apps.test_center.services.execution_result import ExecutionResultService
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
 
 
 class ApiCaseScenarioSchemaService:

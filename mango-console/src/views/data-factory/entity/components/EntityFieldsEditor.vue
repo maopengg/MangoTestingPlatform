@@ -12,8 +12,7 @@
     unmount-on-close
     @cancel="close"
   >
-    <a-alert v-if="operationError" type="error">{{ operationError }}</a-alert
-    >
+    <MangoRequestFeedback v-if="operationError" :message="(operationError)" />
     <div class="mango-entity-toolbar mango-entity-field-toolbar">
       <a-space wrap>
         <a-tag color="arcoblue">当前表：{{ currentEntity?.table_name || '-' }}</a-tag>
@@ -153,8 +152,7 @@
   <EntityEnumEditor ref="enumRef" @apply="applyEnum" />
 </template>
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, ref, watch } from 'vue'
   import type { Ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
@@ -328,9 +326,9 @@ import { reportLoadError } from '@/utils/load-error'
       })
       void dependencies.load(record, fieldRows.value)
       Message.success('字段同步完成')
-    } catch {
+    } catch (requestFailure) {
       if (current === session && scope.current(version))
-        operationError.value = '字段同步失败，可重试'
+        operationError.value = requestFailureMessage(requestFailure, '字段同步失败，可重试')
     } finally {
       fieldSyncLoading.value = false
       emit('saving-change', record.id, false)
@@ -362,9 +360,9 @@ import { reportLoadError } from '@/utils/load-error'
       Message.success(response.msg)
       close()
       return true
-    } catch {
+    } catch (requestFailure) {
       if (current === session && scope.current(version))
-        operationError.value = '字段规则保存失败，可重试'
+        operationError.value = requestFailureMessage(requestFailure, '字段规则保存失败，可重试')
       return false
     } finally {
       fieldSaving.value = false
@@ -414,9 +412,9 @@ import { reportLoadError } from '@/utils/load-error'
       const failed = values.filter((item) => item.valid === false).length
       if (failed) Message.warning(`实际值生成完成，${failed} 个字段生成失败`)
       else Message.success('实际值生成完成')
-    } catch {
+    } catch (requestFailure) {
       if (current === session && scope.current(version))
-        operationError.value = '实际值生成失败，可重试'
+        operationError.value = requestFailureMessage(requestFailure, '实际值生成失败，可重试')
     } finally {
       fieldPreviewLoading.value = false
       emit('saving-change', id, false)

@@ -106,7 +106,7 @@ if sys.argv[2] == 'init':
         editor.create_model(User)
         editor.create_model(CacheData)
 elif sys.argv[2] in ('generate', 'generate_report'):
-    with patch('src.apps.system.services.id_sequence.time.time_ns', return_value=1792382400123000000):
+    with patch('src.apps.system.services.coordination.id_sequence.time.time_ns', return_value=1792382400123000000):
         with ThreadPoolExecutor(max_workers=8) as pool:
             if sys.argv[2] == 'generate_report':
                 values = list(pool.map(lambda _: int(Snowflake.generate_id()), range(1024)))
@@ -117,12 +117,12 @@ elif sys.argv[2] in ('generate', 'generate_report'):
         print(','.join(map(str, values)))
 else:
     Snowflake._after_fork()
-    with patch('src.apps.system.services.id_sequence.time.time_ns', return_value=1792382400123000000):
+    with patch('src.apps.system.services.coordination.id_sequence.time.time_ns', return_value=1792382400123000000):
         with transaction.atomic():
             first = int(Snowflake.generate_id())
             transaction.set_rollback(True)
     Snowflake._after_fork()
-    with patch('src.apps.system.services.id_sequence.time.time_ns', return_value=1792382300123000000):
+    with patch('src.apps.system.services.coordination.id_sequence.time.time_ns', return_value=1792382300123000000):
         second = int(Snowflake.generate_id())
     assert second > first
     print('rollback_and_clock_regression_ok')

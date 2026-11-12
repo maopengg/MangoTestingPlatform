@@ -22,7 +22,7 @@ def main():
     from src.apps.task_center.models import Tasks
     from src.apps.task_center.enums.execution import ReportRetentionPolicyEnum
     from src.apps.test_center.schemas.report_delivery import ReportDeliveryConfig
-    from src.apps.test_center.services.offline_report import OfflineReportService
+    from src.apps.test_center.services.reporting.offline_report import OfflineReportService
     from src.apps.test_center.exceptions import TestCenterError
 
     assert connection.vendor == 'sqlite' and connection.settings_dict['NAME'] == ':memory:'
@@ -41,11 +41,11 @@ def main():
         return row
 
     with connection.constraint_checks_disabled(), \
-         patch('src.apps.test_center.services.offline_report.snapshot.EnvironmentEnum.get_value', return_value='测试环境'), \
-         patch('src.apps.test_center.services.offline_report.service.SystemConfigService.get_platform_name', return_value='示例测试平台'), \
-         patch('src.apps.test_center.services.offline_report.snapshot.SystemConfigService.get', return_value='https://example.com'), \
+         patch('src.apps.test_center.services.reporting.offline_report.snapshot.EnvironmentEnum.get_value', return_value='测试环境'), \
+         patch('src.apps.test_center.services.reporting.offline_report.service.SystemConfigService.get_platform_name', return_value='示例测试平台'), \
+         patch('src.apps.test_center.services.reporting.offline_report.snapshot.SystemConfigService.get', return_value='https://example.com'), \
          patch.object(OfflineReportService, 'config', return_value=ReportDeliveryConfig(enabled=True)), \
-         patch('src.apps.test_center.services.offline_report.service.ReportStorageService') as storage:
+         patch('src.apps.test_center.services.reporting.offline_report.service.ReportStorageService') as storage:
         seed(Project, 1)
         seed(ProjectProduct, 1)
         seed(TestSuite, 1, status=TaskEnum.FAIL.value, project_product_id=1, test_env=0, tasks_id=None)
@@ -55,7 +55,7 @@ def main():
              test_suite_id=1, project_product_id=1, case_id=11, case_sum=1, success=1, fail=0)
         initial_time = TestSuite.objects.get(id=1).update_time
         tables = connection.introspection.table_names()
-        with patch('src.apps.test_center.services.offline_report.snapshot.TestSuiteExecutionResultService.get_result_data',
+        with patch('src.apps.test_center.services.reporting.offline_report.snapshot.TestSuiteExecutionResultService.get_result_data',
                    return_value={'response': 'failed-case-response', 'token': 'example-secret'}) as result_reader:
             filename, content = OfflineReportService.render(ReportSourceEnum.SUITE, 1)
             result_reader.assert_called_once()

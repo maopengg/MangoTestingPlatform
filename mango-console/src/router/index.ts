@@ -279,48 +279,6 @@ export const extraRoutes = [
     ],
   },
   {
-    path: '/gray',
-    name: 'gray',
-    component: Layout,
-    meta: {
-      title: '灰度管理',
-    },
-    children: [
-      {
-        path: 'repository/index',
-        component: () => import('@/views/gray/repository/index.vue'),
-        meta: {
-          title: '灰度仓库',
-          permissionKey: 'gray.repository',
-        },
-      },
-      {
-        path: 'config-file/index',
-        component: () => import('@/views/gray/config-file/index.vue'),
-        meta: {
-          title: '配置文件',
-          permissionKey: 'gray.config_file',
-        },
-      },
-      {
-        path: 'feature/index',
-        component: () => import('@/views/gray/feature/index.vue'),
-        meta: {
-          title: '灰度开关',
-          permissionKey: 'gray.feature',
-        },
-      },
-      {
-        path: 'execution-log/index',
-        component: () => import('@/views/gray/execution-log/index.vue'),
-        meta: {
-          title: '执行记录',
-          permissionKey: 'gray.execution_log',
-        },
-      },
-    ],
-  },
-  {
     path: '/report',
     name: 'report',
     component: Layout,

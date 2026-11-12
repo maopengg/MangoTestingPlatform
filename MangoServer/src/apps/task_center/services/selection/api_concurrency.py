@@ -1,7 +1,7 @@
 from src.apps.auto_api.exceptions import API_CONCURRENCY_LIMIT_EXCEEDED
 from src.apps.system.enums import RuntimeServiceName
 from src.apps.system.services.runtime_center.heartbeat import ServiceHeartbeatService
-from src.apps.system.services.system_config import SystemConfigService
+from src.apps.system.services.configuration.system_config import SystemConfigService
 from src.apps.task_center.exceptions import (
     TASK_API_CONCURRENCY_INVALID,
     TaskCenterError,

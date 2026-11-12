@@ -4,7 +4,7 @@ from rest_framework.request import Request
 from src.apps.functional_test.api.serializers.context_resource import FunctionalTestContextResourceSerializer, \
     FunctionalTestContextResourceSerializerC
 from src.apps.functional_test.models import FunctionalTestContextResource
-from src.apps.functional_test.services.mutation import FunctionalTestMutationService
+from src.apps.functional_test.services.cases.mutation import FunctionalTestMutationService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -29,6 +29,7 @@ class FunctionalTestContextResourceCRUD(ModelCRUD):
 
     @error_response("system")
     def post(self, request: Request):
+        """新增功能测试上下文资料"""
         user_id = request.user.get("id") if isinstance(request.user, dict) else getattr(request.user, "id", None)
         result = FunctionalTestMutationService.create_context_resource(
             dict(request.data),
@@ -43,6 +44,7 @@ class FunctionalTestContextResourceCRUD(ModelCRUD):
 
     @error_response("system")
     def put(self, request: Request):
+        """修改功能测试上下文资料"""
         user_id = request.user.get("id") if isinstance(request.user, dict) else getattr(request.user, "id", None)
         result = FunctionalTestMutationService.update_context_resource(
             request.data.get("id"),
@@ -58,6 +60,7 @@ class FunctionalTestContextResourceCRUD(ModelCRUD):
 
     @error_response("system")
     def delete(self, request: Request):
+        """删除功能测试上下文资料"""
         resource_ids = [
             int(item)
             for item in (

@@ -11,7 +11,7 @@ from src.apps.data_factory.exceptions import (
     DataFactoryError, DATA_FACTORY_FIELD_DEPENDENCY_ENTITY_REQUIRED,
     DATA_FACTORY_FIELD_GENERATOR_CONFIG_INVALID,
 )
-from src.apps.data_factory.services.field import DataFactoryFieldService as Fields
+from src.apps.data_factory.services.assets.field import DataFactoryFieldService as Fields
 from src.interfaces.mcp.server import _mcp_failure_result
 
 
@@ -54,8 +54,8 @@ class FieldConfigurationErrorTests(SimpleTestCase):
         self.assertEqual(field['generator_config'], {'dependency_entity_id': 12, 'field': 'id'})
 
     def test_invalid_batch_never_saves_or_deletes_fields(self):
-        with patch('src.apps.data_factory.services.field.DataFactoryField.objects') as objects, \
-                patch('src.apps.data_factory.services.field.save_model') as save, \
+        with patch('src.apps.data_factory.services.assets.field.DataFactoryField.objects') as objects, \
+                patch('src.apps.data_factory.services.assets.field.save_model') as save, \
                 self.assertRaises(DataFactoryError):
             objects.filter.return_value.first.return_value = None
             Fields.save_schema_fields.__wrapped__(Fields, SimpleNamespace(id=1), [self.field({'field': 'id'})])
@@ -84,7 +84,7 @@ class FieldConfigurationErrorTests(SimpleTestCase):
         with patch('src.apps.data_factory.api.views.field.DataFactoryEntity.objects') as entities, \
                 patch('src.apps.data_factory.api.views.field.DataFactoryFieldCRUD.has_data_scope_permission', return_value=True), \
                 patch.object(Fields, 'save_schema_fields', side_effect=lambda *args: save(Fields, *args)), \
-                patch('src.apps.data_factory.services.field.DataFactoryField.objects') as objects, \
+                patch('src.apps.data_factory.services.assets.field.DataFactoryField.objects') as objects, \
                 patch('src.common.decorators.error_response.report_system_error') as report:
             entities.get.return_value = SimpleNamespace(id=1)
             objects.filter.return_value.first.return_value = None
@@ -105,6 +105,6 @@ class FieldConfigurationErrorTests(SimpleTestCase):
         report.assert_not_called()
 
     def test_unexpected_internal_errors_are_not_swallowed_as_bad_input(self):
-        with patch('src.apps.data_factory.services.field.validate_data_factory_generator_config',
+        with patch('src.apps.data_factory.services.assets.field.validate_data_factory_generator_config',
                    side_effect=RuntimeError('AUTO_INTERNAL_FAILURE')), self.assertRaises(RuntimeError):
             Fields.normalize_field_data(self.field({'dependency_entity_id': 12}))

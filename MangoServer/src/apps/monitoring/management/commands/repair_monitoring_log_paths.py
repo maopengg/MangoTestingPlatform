@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from src.apps.monitoring.services.log_path import MonitoringLogPathService
+from src.apps.monitoring.services.logging.log_path import MonitoringLogPathService
 
 
 class Command(BaseCommand):

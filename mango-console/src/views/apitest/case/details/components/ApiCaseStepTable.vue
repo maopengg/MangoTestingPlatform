@@ -1,5 +1,6 @@
 <template>
   <a-table
+    class="mango-api-case-step-table"
     :bordered="false"
     :columns="columns"
     :data="data"
@@ -7,7 +8,7 @@
     :draggable="editLocked || executionActive ? undefined : { type: 'handle', width: 40 }"
     :pagination="false"
     :row-class="rowClass"
-    :scroll="{ x: 760 }"
+    :scroll="{ x: 760, y: '100%' }"
     @change="$emit('reorder', $event)"
     @row-click="$emit('select', $event)"
   >
@@ -114,6 +115,9 @@
 </script>
 
 <style scoped>
+  .mango-api-case-step-table { height: 100%; min-height: 0; }
+  :deep(.arco-table-body) { overscroll-behavior: contain; }
+
   :deep(.arco-table-tr) {
     cursor: pointer;
   }

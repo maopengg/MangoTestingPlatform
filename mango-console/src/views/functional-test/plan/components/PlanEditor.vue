@@ -9,9 +9,7 @@
     :on-before-cancel="canCancel"
     @cancel="reset"
   >
-    <a-alert v-if="saveError" type="error" class="mango-plan-editor__notice"
-      >保存失败，草稿已保留，请重试。</a-alert
-    >
+    <MangoRequestFeedback v-if="saveError" :message="&quot;保存失败，草稿已保留，请重试。&quot;" />
     
     
     
@@ -99,8 +97,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import {
     computed,
     onActivated,
@@ -304,8 +301,8 @@ import { reportLoadError } from '@/utils/load-error'
       reset()
       Message.success('保存成功')
       emit('saved', savedId)
-    } catch {
-      if (current(version)) saveError.value = true
+    } catch (requestFailure) {
+      if (current(version)) saveError.value = requestFailureMessage(requestFailure, true, "保存失败，草稿已保留，请重试。")
     } finally {
       saving.value = false
       savingId.value = null

@@ -7,7 +7,7 @@ from mangotools.enums import StatusEnum
 from src.apps.auto_api.enums import ApiProtocolTypeEnum
 from src.apps.auto_api.schemas.execution import ApiExecutionResponse
 from src.apps.auto_api.services.protocols.outcome import ProtocolCallOutcomeService
-from src.apps.auto_api.services.test_case.test_api_info import TestApiInfo
+from src.apps.auto_api.services.execution.cases.test_api_info import TestApiInfo
 
 
 def response(**kwargs) -> ApiExecutionResponse:

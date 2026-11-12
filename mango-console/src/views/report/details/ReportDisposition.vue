@@ -3,7 +3,7 @@
   <a-modal modal-class="mango-simple-form-modal" v-model:visible="visible" title="排查与排除" :width="560" :mask-closable="false"
     :closable="!saving" :cancel-button-props="{ disabled: saving }" :ok-loading="saving"
     ok-text="保存" @before-ok="save">
-    <a-alert v-if="errorText" type="error">{{ errorText }}</a-alert>
+    <MangoRequestFeedback v-if="errorText" :message="(errorText)" />
     <a-descriptions :column="1" size="small">
       <a-descriptions-item label="执行项">{{ snapshot?.name || snapshot?.id || '-' }}</a-descriptions-item>
       <a-descriptions-item label="影响范围">整条执行项，共 {{ snapshot?.case_sum ?? 1 }} 个用例；原始结果保留</a-descriptions-item>
@@ -21,6 +21,8 @@
 </template>
 
 <script setup lang="ts">
+import { requestFailureMessage } from '@/utils/load-error'
+
   import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, reactive, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import { Message } from '@arco-design/web-vue'
@@ -88,8 +90,8 @@
       close()
       emit('saved')
       return true
-    } catch {
-      if (current()) errorText.value = '排查结论保存失败，请重试'
+    } catch (requestFailure) {
+      if (current()) errorText.value = requestFailureMessage(requestFailure, '排查结论保存失败，请重试')
       return false
     } finally {
       writePending.value = false

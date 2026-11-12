@@ -43,7 +43,7 @@
       <div v-if="currentPageId === null" class="mango-soft-panel" role="alert">缺少有效页面ID，请返回后重新进入。</div>
       <div v-if="pageLoading || metadataLoading" class="mango-soft-panel" role="status">正在加载页面信息与元素操作选项…</div>
       
-      <div v-if="actionError || checks.error.value" class="mango-element-page-error" role="alert">{{ actionError || checks.error.value }}</div>
+      <MangoRequestFeedback v-if="actionError || checks.error.value" :message="(actionError || checks.error.value)" />
       <div class="mango-workbench-scroll-x mango-ui-element-workbench-scroll">
         <div class="mango-ui-element-workbench">
           <aside class="mango-ui-element-category-panel">
@@ -251,8 +251,7 @@
   <UiElementCheckResultPanel v-model:visible="elementCheck.visible" :title="elementCheck.title" :data="elementCheck.data" :apply-loading="deepCheckApplyLoading" :applied="deepCheckApplied" @apply="applyDeepCheckUpdates" />
 </template>
 <script lang="ts" setup>
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { computed, onMounted, ref } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import { IconDesktop } from '@arco-design/web-vue/es/icon'
@@ -379,7 +378,7 @@ import { reportLoadError } from '@/utils/load-error'
           elementRows.value = elementRows.value.filter(row => !deletingIds.value.includes(String(row.id)))
           selectedRowKeys.value = selectedRowKeys.value.filter(id => !deletingIds.value.includes(String(id)))
           Message.success('删除成功'); await refreshAll(); return true
-        } catch (error) { if (current()) actionError.value = liveError(error, '删除失败，请重试'); return false }
+        } catch (error) { if (current()) actionError.value = requestFailureMessage(error, liveError(error, '删除失败，请重试')); return false }
         finally { deleting.value = false; deletingIds.value = [] }
       },
       onClose() { confirmation = null },
@@ -403,7 +402,7 @@ import { reportLoadError } from '@/utils/load-error'
     if (!current() || browserOpening.value || pageId === null || environment === null || !isWebClient.value) return
     browserOpening.value = true; actionError.value = ''
     try { const response: unknown = await postUiElementOpenBrowser({ page_id: pageId, test_env: environment }); elementResponse(response); if (current()) Message.success('已通知执行器打开目标页面') }
-    catch (reason) { if (current()) actionError.value = liveError(reason, '打开浏览器失败，请重试') }
+    catch (reason) { if (current()) actionError.value = requestFailureMessage(reason, liveError(reason, '打开浏览器失败，请重试')) }
     finally { browserOpening.value = false }
   }
   onMounted(() => void initialize())

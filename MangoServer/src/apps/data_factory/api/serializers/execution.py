@@ -7,7 +7,7 @@ from src.apps.data_factory.models import DataFactoryExecution
 from src.apps.data_factory.selectors.execution import format_execution_source_info
 from src.apps.test_center.formatters.related import format_product_module_compact
 from src.apps.test_center.formatters.related import format_project_product
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.test_center.services.project.product_module import ProductModuleService
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.common.validators.serializer_fields import RelatedObjectField
 

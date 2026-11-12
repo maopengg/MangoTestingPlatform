@@ -9,7 +9,7 @@ from src.apps.system.enums import RuntimeServiceName
 from src.apps.system.services.runtime_center.heartbeat import ServiceHeartbeatService
 from src.apps.task_center.services.execution.worker_recovery import ApiWorkerRecoveryService
 from src.apps.test_center.selectors.execution_result import ExecutionResultAccessSelector
-from src.apps.test_center.services.execution_result import ExecutionResultService
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
 
 
 class ApiTraceReconciliationService:

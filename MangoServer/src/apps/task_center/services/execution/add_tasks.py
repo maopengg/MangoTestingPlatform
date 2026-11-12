@@ -19,8 +19,8 @@ from src.apps.auto_ui.models import UiCase
 from src.apps.task_center.enums.execution import AutomationExecutionScopeEnum
 from src.apps.task_center.services.selection.api_concurrency import ApiConcurrencyService
 from src.apps.test_center.enums import TestCaseTypeEnum
-from src.apps.test_center.services.test_suite.create import TestSuiteCreateService
-from src.apps.test_center.services.testcounter import TestCounter
+from src.apps.test_center.services.reporting.test_suite.create import TestSuiteCreateService
+from src.apps.test_center.services.reporting.testcounter import TestCounter
 from src.common.logging import log
 from src.common.utils.snowflake import Snowflake
 

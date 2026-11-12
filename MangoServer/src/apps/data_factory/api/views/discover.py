@@ -10,12 +10,12 @@ from src.apps.data_factory.exceptions import (
     DataFactoryError,
 )
 from src.apps.data_factory.models import Database
-from src.apps.data_factory.services.datasource import DataFactoryDatasourceResolver, is_missing_value
-from src.apps.data_factory.services.datasource_discovery import DataSourceDiscoveryService
-from src.apps.data_factory.services.datasource_target import DatasourceTargetService
-from src.apps.data_factory.services.discover import DataFactoryDiscover
+from src.apps.data_factory.services.datasource.datasource import DataFactoryDatasourceResolver, is_missing_value
+from src.apps.data_factory.services.datasource.datasource_discovery import DataSourceDiscoveryService
+from src.apps.data_factory.services.datasource.datasource_target import DatasourceTargetService
+from src.apps.data_factory.services.schema.discover import DataFactoryDiscover
 from src.apps.test_center.enums.data_source import DataSourceTypeEnum
-from src.apps.test_center.services.data_source import DataSourceConnectionService
+from src.apps.test_center.services.datasource.data_source import DataSourceConnectionService
 from src.common.decorators.error_response import error_response
 from src.common.responses.response_data import ResponseData
 from src.common.responses.response_msg import RESPONSE_MSG_0001
@@ -75,6 +75,7 @@ class DataFactoryDiscoverViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def tables(self, request: Request):
+        """发现数据源中的表"""
         binding = self._get_binding(request)
         DataFactoryDatasourceResolver.require_binding_permission(binding, write=False)
         if binding.database.db_type in {DataSourceTypeEnum.MYSQL.value,
@@ -102,6 +103,7 @@ class DataFactoryDiscoverViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def table(self, request: Request):
+        """获取指定表的结构信息"""
         binding = self._get_binding(request)
         DataFactoryDatasourceResolver.require_binding_permission(binding, write=False)
         database = DatasourceTargetService.resolve(binding,

@@ -14,7 +14,7 @@ from src.apps.functional_test.models import (
     ManualTestCase,
     ManualTestSuite,
 )
-from src.apps.functional_test.services.iteration import FunctionalTestIterationService
+from src.apps.functional_test.services.requirements.iteration import FunctionalTestIterationService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import ModelCRUD
 from src.common.responses.response_data import ResponseData
@@ -31,6 +31,7 @@ class FunctionalTestIterationCRUD(ModelCRUD):
 
     @error_response("system")
     def delete(self, request: Request):
+        """删除功能测试迭代"""
         instance = self.model.objects.filter(id=request.query_params.get("id")).first()
         if not instance:
             return ResponseData.success(RESPONSE_MSG_0005)
@@ -51,6 +52,7 @@ class FunctionalTestIterationViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def retrieve(self, request: Request):
+        """获取功能测试迭代详情"""
         queryset = FunctionalTestIterationListSerializer.setup_eager_loading(self._scoped(request))
         item = queryset.get(id=request.query_params.get("id"))
         return ResponseData.success(RESPONSE_MSG_0001, FunctionalTestIterationListSerializer(item).data)
@@ -58,6 +60,7 @@ class FunctionalTestIterationViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def gantt(self, request: Request):
+        """获取功能测试迭代甘特图数据"""
         iteration = self._scoped(request).get(id=request.query_params.get("iteration_id"))
         suites = FunctionalTestIterationCRUD().filter_queryset_by_data_scope(
             request, ManualTestSuite.objects.all(),
@@ -70,6 +73,7 @@ class FunctionalTestIterationViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def board(self, request: Request):
+        """获取功能测试迭代看板数据"""
         from src.apps.functional_test.api.serializers.suite import ManualTestSuiteSerializerC
 
         iteration = self._scoped(request).get(id=request.query_params.get("iteration_id"))
@@ -109,6 +113,7 @@ class FunctionalTestIterationViews(ViewSet):
     @action(methods=["get"], detail=False)
     @error_response("system")
     def cases(self, request: Request):
+        """获取功能测试迭代关联用例"""
         from src.apps.functional_test.api.serializers.case import ManualTestCaseListSerializer
         from src.apps.functional_test.selectors.access_scope import filter_manual_case_by_data_scope
 

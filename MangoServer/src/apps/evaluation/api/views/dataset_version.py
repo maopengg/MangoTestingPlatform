@@ -10,9 +10,9 @@ from src.apps.evaluation.exceptions import (
 from src.apps.evaluation.models import EvaluationDatasetVersion
 from src.apps.evaluation.selectors.dataset_version import get_dataset_version, version_diff
 from src.apps.evaluation.selectors.querysets import EvaluationQuerySelector
-from src.apps.evaluation.services.dataset_version import EvaluationDatasetVersionService
-from src.apps.evaluation.services.importing import EvaluationApiCaseImportService
-from src.apps.evaluation.services.versioning import EvaluationVersionService
+from src.apps.evaluation.services.dataset.dataset_version import EvaluationDatasetVersionService
+from src.apps.evaluation.services.dataset.importing import EvaluationApiCaseImportService
+from src.apps.evaluation.services.dataset.versioning import EvaluationVersionService
 from src.common.decorators.error_response import error_response
 from src.common.responses.response_data import ResponseData
 from src.common.responses.response_msg import RESPONSE_MSG_0001, RESPONSE_MSG_0005, RESPONSE_MSG_0082
@@ -24,6 +24,7 @@ class DatasetVersionViews(ViewSet):
 
     @error_response("system")
     def list(self, request, dataset_id=None):
+        """获取评测数据集版本列表"""
         dataset = EvaluationQuerySelector.datasets().filter(id=dataset_id).first()
         if not dataset:
             raise EvaluationError(EVALUATION_OBJECT_NOT_FOUND)
@@ -33,6 +34,7 @@ class DatasetVersionViews(ViewSet):
 
     @error_response("system")
     def retrieve(self, request, pk=None):
+        """获取评测数据集版本详情"""
         version = EvaluationQuerySelector.dataset_versions().select_related("dataset").filter(id=pk).first()
         if not version:
             raise EvaluationError(EVALUATION_DATASET_VERSION_NOT_FOUND)
@@ -41,9 +43,10 @@ class DatasetVersionViews(ViewSet):
 
     @error_response("system")
     def workflow_resources(self, request, pk=None):
+        """获取数据集工作流可用资源"""
         from src.apps.evaluation.selectors.workflow import resource_choices
         from src.apps.evaluation.enums.workflow import EvaluationWorkflowActionEnum
-        from src.apps.evaluation.services.validation import invalid_config
+        from src.apps.evaluation.services.assets.validation import invalid_config
         get_dataset_version(pk, request_user(request))
         try:
             action = EvaluationWorkflowActionEnum(request.query_params.get("action"))
@@ -57,11 +60,12 @@ class DatasetVersionViews(ViewSet):
 
     @error_response("system")
     def input_preview(self, request, pk=None):
+        """预览评测数据集输入"""
         from types import SimpleNamespace
         from pydantic import ValidationError
         from src.apps.evaluation.schemas.dataset import EvaluationDatasetSchema
-        from src.apps.evaluation.services.target_input import compile_target_input
-        from src.apps.evaluation.services.validation import invalid_config
+        from src.apps.evaluation.services.targets.target_input import compile_target_input
+        from src.apps.evaluation.services.assets.validation import invalid_config
         from src.apps.evaluation.formatters.payload import mask_sensitive
         get_dataset_version(pk, request_user(request))
         try:
@@ -74,6 +78,7 @@ class DatasetVersionViews(ViewSet):
 
     @error_response("system")
     def create(self, request, dataset_id=None):
+        """创建评测数据集版本"""
         serializer = DatasetVersionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         version = EvaluationDatasetVersionService.create(
@@ -84,6 +89,7 @@ class DatasetVersionViews(ViewSet):
 
     @error_response("system")
     def update(self, request, pk=None):
+        """更新评测数据集版本"""
         version = get_dataset_version(pk, request_user(request))
         serializer = DatasetVersionSerializer(version, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -92,11 +98,13 @@ class DatasetVersionViews(ViewSet):
 
     @error_response("system")
     def delete(self, request, pk=None):
+        """删除评测数据集版本"""
         EvaluationDatasetVersionService.delete(pk, request_user(request))
         return ResponseData.success(RESPONSE_MSG_0082)
 
     @error_response("system")
     def publish(self, request, pk=None):
+        """发布评测数据集版本"""
         version = EvaluationQuerySelector.dataset_versions().select_related("dataset").filter(id=pk).first()
         if not version:
             raise EvaluationError(EVALUATION_DATASET_VERSION_NOT_FOUND)
@@ -106,6 +114,7 @@ class DatasetVersionViews(ViewSet):
 
     @error_response("system")
     def quality(self, request, pk=None):
+        """获取评测数据集质量检查结果"""
         version = EvaluationQuerySelector.dataset_versions().select_related("dataset").filter(id=pk).first()
         if not version:
             raise EvaluationError(EVALUATION_DATASET_VERSION_NOT_FOUND)
@@ -114,18 +123,21 @@ class DatasetVersionViews(ViewSet):
 
     @error_response("system")
     def acknowledge_quality(self, request, pk=None):
+        """确认评测数据集质量检查结果"""
         version = get_dataset_version(pk, request_user(request))
         report = EvaluationDatasetVersionService.acknowledge_quality(version, request_user(request))
         return ResponseData.success(RESPONSE_MSG_0082, report)
 
     @error_response("system")
     def diff(self, request, pk=None):
+        """比较评测数据集版本版本差异"""
         current = get_dataset_version(pk, request_user(request))
         baseline = get_dataset_version(request.query_params.get("baseline_version_id"), request_user(request))
         return ResponseData.success(RESPONSE_MSG_0001, version_diff(current, baseline))
 
     @error_response("system")
     def audit_api_cases(self, request, pk=None):
+        """检查评测数据集可导入的 API 用例"""
         EvaluationApiCaseImportService.ensure_source_access(request_user(request))
         version = EvaluationQuerySelector.dataset_versions().select_related("dataset").filter(id=pk).first()
         if not version:
@@ -138,6 +150,7 @@ class DatasetVersionViews(ViewSet):
 
     @error_response("system")
     def import_api_cases(self, request, pk=None):
+        """将 API 用例导入评测数据集"""
         EvaluationApiCaseImportService.ensure_source_access(request_user(request))
         version = EvaluationQuerySelector.dataset_versions().select_related("dataset").filter(id=pk).first()
         if not version:

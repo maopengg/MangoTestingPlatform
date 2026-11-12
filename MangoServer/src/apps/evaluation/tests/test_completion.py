@@ -6,16 +6,16 @@ from django.test import SimpleTestCase
 
 from src.apps.evaluation.api.views.dataset import DatasetCRUD
 from src.apps.evaluation.exceptions import EvaluationError
-from src.apps.evaluation.services.graders import JsonSchemaGrader, ExactMatchGrader, SetMatchGrader
+from src.apps.evaluation.services.grading.graders import JsonSchemaGrader, ExactMatchGrader, SetMatchGrader
 from src.apps.user.middleware.permission import MenuActionPermission
-from src.apps.user.services.permission import PermissionMenuService
+from src.apps.user.services.authorization.permission import PermissionMenuService
 
 
 class EvaluationCompletionTests(SimpleTestCase):
     def test_file_import_routes_and_tools_are_removed(self):
         from src.apps.evaluation.api.urls import urlpatterns
         from src.apps.evaluation.api.views.dataset_version import DatasetVersionViews
-        from src.apps.user.services.mcp_permission_registry import MCP_PERMISSION_RULES
+        from src.apps.user.services.authorization.mcp_permission_registry import MCP_PERMISSION_RULES
         self.assertFalse(any("import-preview" in str(route.pattern) or "import-confirm" in str(route.pattern) for route in urlpatterns))
         self.assertFalse(hasattr(DatasetVersionViews, "import_preview"))
         self.assertFalse(hasattr(DatasetVersionViews, "import_confirm"))

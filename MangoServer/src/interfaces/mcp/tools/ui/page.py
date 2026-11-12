@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from src.apps.auto_ui.services.page_service import PageService
+from src.apps.auto_ui.services.pages.page_service import PageService
 from .helpers import _ui_service_call
 from .helpers import (
     current_user,

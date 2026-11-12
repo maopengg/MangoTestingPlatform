@@ -4,8 +4,8 @@ from django.test import SimpleTestCase
 from pydantic import ValidationError
 from src.apps.evaluation.schemas.dataset import EvaluationDatasetSchema
 from src.apps.evaluation.schemas.workflow import EvaluationItemScenario, EvaluationWorkflowStep
-from src.apps.evaluation.services.target_input import compile_target_input
-from src.apps.evaluation.services.workflow import replace_workflow_values, EvaluationWorkflowRunner
+from src.apps.evaluation.services.targets.target_input import compile_target_input
+from src.apps.evaluation.services.workflow.workflow import replace_workflow_values, EvaluationWorkflowRunner
 from src.apps.evaluation.exceptions import EvaluationError
 
 
@@ -23,7 +23,7 @@ class DatasetWorkflowTests(SimpleTestCase):
                 EvaluationDatasetSchema(input_variables=variables)
 
     def test_turn_schemas_validate_turn_data_instead_of_unused_parent_input(self):
-        from src.apps.evaluation.services.versioning import EvaluationVersionService
+        from src.apps.evaluation.services.dataset.versioning import EvaluationVersionService
         version = SimpleNamespace(schema_snapshot={"input_schema": {"type": "object", "required": ["question"]},
             "workflow": {"sequence": "conversation"}})
         sample = {"input_data": {}, "expected_output": {}, "priority": "P1", "scenario": {
@@ -66,7 +66,7 @@ class DatasetWorkflowTests(SimpleTestCase):
         def call(step, *args):
             calls.append(step.id)
             if step.id == "create":
-                from src.apps.evaluation.services.validation import invalid_config
+                from src.apps.evaluation.services.assets.validation import invalid_config
                 raise invalid_config("准备失败")
             return {"cleaned": True}
         runner.call = call

@@ -18,16 +18,16 @@ from src.apps.test_center.api.serializers.test_suite import TestSuiteSerializers
 from src.apps.test_center.api.serializers.test_suite_details import TestSuiteDetailsSerializers, \
     TestSuiteDetailsSerializersC
 from src.apps.test_center.models import ExecutionResult, TestSuiteDetails, TestSuite
-from src.apps.test_center.services.execution_result import ExecutionResultService
-from src.apps.test_center.services.test_suite.api_report_export import ApiReportExportService
-from src.apps.test_center.services.test_suite.detail_query import TestSuiteDetailQueryService
-from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService
-from src.apps.test_center.services.test_suite.failure_reason import TestSuiteFailureReasonService
-from src.apps.test_center.services.test_suite.report_overview import TestSuiteReportOverviewService
-from src.apps.test_center.services.test_suite.retry import TestSuiteRetryService
-from src.apps.test_center.services.test_suite.disposition import TestSuiteDispositionService
-from src.apps.test_center.services.test_suite.summary import TestSuiteSummaryService
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
+from src.apps.test_center.services.reporting.test_suite.api_report_export import ApiReportExportService
+from src.apps.test_center.services.reporting.test_suite.detail_query import TestSuiteDetailQueryService
+from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService
+from src.apps.test_center.services.reporting.test_suite.failure_reason import TestSuiteFailureReasonService
+from src.apps.test_center.services.reporting.test_suite.report_overview import TestSuiteReportOverviewService
+from src.apps.test_center.services.reporting.test_suite.retry import TestSuiteRetryService
+from src.apps.test_center.services.reporting.test_suite.disposition import TestSuiteDispositionService
+from src.apps.test_center.services.reporting.test_suite.summary import TestSuiteSummaryService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
 from src.common.decorators.retry import db_connection_context
 from src.common.responses import (
@@ -62,6 +62,7 @@ class TestSuiteDetailsCRUD(ModelCRUD):
 
     @error_response('system')
     def get(self, request: Request):
+        """获取测试报告明细列表或指定记录"""
         query_dict = {}
         for k, v in dict(request.query_params.lists()).items():
             if k and isinstance(v[0], str) and k not in self.not_matching_str and 'id' not in k:
@@ -104,6 +105,7 @@ class TestSuiteDetailsViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def update_disposition(self, request: Request):
+        """更新报告明细处置结果"""
         detail_id = TestSuiteDispositionService.validate_id(request.data.get('id'))
         if not self._has_detail_scope(request, detail_id):
             return ResponseData.fail(RESPONSE_MSG_0210)
@@ -129,11 +131,13 @@ class TestSuiteDetailsViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def execution_options(self, request: Request):
+        """获取测试报告明细可选执行记录"""
         return ResponseData.success(RESPONSE_MSG_0001, ApiConcurrencyService.capacity())
 
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_all_retry(self, request: Request):
+        """重试测试报告中的全部用例"""
         if not self._has_suite_scope(request, request.query_params.get('test_suite_id')):
             return ResponseData.fail(RESPONSE_MSG_0210)
         requested_api_concurrency_limit = request.query_params.get('api_concurrency_limit')
@@ -154,6 +158,7 @@ class TestSuiteDetailsViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_retry(self, request: Request):
+        """重试指定报告明细"""
         if not self._has_detail_scope(request, request.query_params.get('id')):
             return ResponseData.fail(RESPONSE_MSG_0210)
         TestSuiteRetryService.retry_detail(request.query_params.get('id'))
@@ -162,6 +167,7 @@ class TestSuiteDetailsViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def retry_failed(self, request: Request):
+        """重试报告中的失败用例"""
         suite_id = request.data.get('test_suite_id')
         if not self._has_suite_scope(request, suite_id):
             return ResponseData.fail(RESPONSE_MSG_0210)
@@ -171,6 +177,7 @@ class TestSuiteDetailsViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('user')
     def test_suite_details_report(self, request):
+        """获取测试报告明细总览"""
         return ResponseData.success(
             RESPONSE_MSG_0110,
             TestSuiteReportOverviewService.overview(request),
@@ -180,6 +187,7 @@ class TestSuiteDetailsViews(ViewSet):
     @error_response('system')
     def get_summary(self, request: Request):
         # 使用数据库连接上下文管理器确保连接被正确释放
+        """获取测试报告明细结果汇总"""
         with db_connection_context():
             test_suite_id = request.query_params.get('test_suite_id')
             return ResponseData.success(RESPONSE_MSG_0065, TestSuiteSummaryService.summary_data(test_suite_id))
@@ -187,6 +195,7 @@ class TestSuiteDetailsViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def execution_trace(self, request: Request):
+        """获取测试报告明细执行链路"""
         result_id = request.query_params.get('result_id')
         trace_id = request.query_params.get('trace_id')
         test_suite_detail_id = request.query_params.get('test_suite_detail_id')
@@ -247,6 +256,7 @@ class TestSuiteDetailsShareViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_test_suite(self, request: Request):
+        """获取分享测试报告概览"""
         test_suite_id = request.query_params.get('id')
         model = TestSuite.objects.filter(id=test_suite_id).first()
         if not model:
@@ -256,6 +266,7 @@ class TestSuiteDetailsShareViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_details(self, request: Request):
+        """获取分享测试报告明细列表"""
         test_suite_id = request.query_params.get('test_suite_id')
         if not test_suite_id:
             return ResponseData.fail(RESPONSE_MSG_0212)
@@ -289,6 +300,7 @@ class TestSuiteDetailsShareViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_detail_result(self, request: Request):
+        """获取分享报告指定明细的执行结果"""
         test_suite_detail_id = request.query_params.get('test_suite_detail_id')
         if not test_suite_detail_id:
             return ResponseData.fail(RESPONSE_MSG_0211)
@@ -316,6 +328,7 @@ class TestSuiteDetailsShareViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_detail_result_options(self, request: Request):
+        """获取分享报告明细可选执行记录"""
         test_suite_detail_id = request.query_params.get('test_suite_detail_id')
         if not test_suite_detail_id:
             return ResponseData.fail(RESPONSE_MSG_0211)
@@ -334,6 +347,7 @@ class TestSuiteDetailsShareViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def execution_trace(self, request: Request):
+        """获取分享报告执行链路"""
         trace_id = request.query_params.get('trace_id')
         test_suite_detail_id = request.query_params.get('test_suite_detail_id')
         case_id = request.query_params.get('case_id')
@@ -351,6 +365,7 @@ class TestSuiteDetailsShareViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_summary(self, request: Request):
+        """获取分享报告结果汇总"""
         test_suite_id = request.query_params.get('test_suite_id')
         if not test_suite_id:
             return ResponseData.fail(RESPONSE_MSG_0212)
@@ -363,6 +378,7 @@ class TestSuiteDetailsShareViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_failure_reasons(self, request: Request):
+        """获取分享报告失败原因分布"""
         test_suite_id = request.query_params.get('test_suite_id')
         if not test_suite_id:
             return ResponseData.fail(RESPONSE_MSG_0212)
@@ -378,6 +394,7 @@ class TestSuiteDetailsShareViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def post_api_export(self, request: Request):
+        """创建分享报告 API 明细导出任务"""
         test_suite_id = request.data.get('test_suite_id')
         status = request.data.get('status')
         if not test_suite_id or not str(test_suite_id).isdigit():
@@ -395,6 +412,7 @@ class TestSuiteDetailsShareViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_api_export_status(self, request: Request):
+        """获取分享报告 API 明细导出状态"""
         task_id = request.query_params.get('task_id')
         task = ApiReportExportService.get(task_id)
         if not task:
@@ -404,6 +422,7 @@ class TestSuiteDetailsShareViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def download_api_export(self, request: Request):
+        """下载分享报告 API 明细导出文件"""
         task_id = request.query_params.get('task_id')
         task = ApiReportExportService.get(task_id)
         if not task:

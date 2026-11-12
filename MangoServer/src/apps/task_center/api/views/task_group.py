@@ -11,7 +11,7 @@ from src.apps.task_center.models import ScheduledTaskGroup
 from src.apps.task_center.selectors.querysets import ScheduleFireQuerySelector
 from src.apps.task_center.services.scheduling.task_group import ScheduledTaskGroupService
 from src.apps.task_center.services.scheduling.task_group_execution import ScheduledTaskGroupExecutionService
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
 from src.common.exceptions import RESOURCE_ACCESS_DENIED
 from src.common.responses.response_data import ResponseData
@@ -26,6 +26,7 @@ class ScheduledTaskGroupTriggerViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def trigger(self, request: Request):
+        """触发定时任务组"""
         group_id = ScheduledTaskGroupViews._required_id(request.query_params.get('id'), '任务组ID')
         ScheduledTaskGroupViews._group(request, group_id)
         response = ResponseData.success(
@@ -74,6 +75,7 @@ class ScheduledTaskGroupViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_list(self, request: Request):
+        """获取定时任务组列表"""
         query = request.query_params
         filters = {
             'project_product_id': query.get('project_product_id'),
@@ -107,6 +109,7 @@ class ScheduledTaskGroupViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_options(self, request: Request):
+        """获取定时任务组选项"""
         requested = request.query_params.get('project_product_id')
         user = self._user(request)
         if requested not in (None, ''):
@@ -130,6 +133,7 @@ class ScheduledTaskGroupViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_detail(self, request: Request):
+        """获取定时任务组详情"""
         group_id = self._required_id(request.query_params.get('id'), '任务组ID')
         self._group(request, group_id)
         return ResponseData.success(RESPONSE_MSG_0001, ScheduledTaskGroupService.detail(group_id))
@@ -137,6 +141,7 @@ class ScheduledTaskGroupViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def latest_executions(self, request: Request):
+        """获取定时任务组最近执行批次"""
         group_id = self._required_id(request.query_params.get('id'), '任务组ID')
         self._group(request, group_id)
         return ResponseData.success(RESPONSE_MSG_0001, ScheduleFireQuerySelector.latest_group_executions(group_id))
@@ -144,6 +149,7 @@ class ScheduledTaskGroupViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def resend_notice(self, request: Request):
+        """重发定时任务组执行通知"""
         group_id = self._required_id(request.data.get('id'), '任务组ID')
         self._group(request, group_id)
         execution_id = self._required_id(request.data.get('execution_id'), '执行批次ID')
@@ -153,6 +159,7 @@ class ScheduledTaskGroupViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def preview(self, request: Request):
+        """预览定时任务组"""
         product_id = self._required_id(request.data.get('project_product_id'), '项目产品ID')
         if not self._has_product_scope(request, product_id):
             return ResponseData.fail(RESPONSE_MSG_0210)
@@ -168,6 +175,7 @@ class ScheduledTaskGroupViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def create(self, request: Request):
+        """创建定时任务组"""
         product_id = self._required_id(request.data.get('project_product_id'), '项目产品ID')
         if not self._has_product_scope(request, product_id):
             return ResponseData.fail(RESPONSE_MSG_0210)
@@ -181,6 +189,7 @@ class ScheduledTaskGroupViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('system')
     def update(self, request: Request):
+        """更新定时任务组"""
         group_id = self._required_id(request.data.get('id'), '任务组ID')
         self._group(request, group_id)
         user = self._user(request)
@@ -194,6 +203,7 @@ class ScheduledTaskGroupViews(ViewSet):
     @action(methods=['delete'], detail=False)
     @error_response('system')
     def delete(self, request: Request):
+        """删除定时任务组"""
         group_id = self._required_id(request.data.get('id'), '任务组ID')
         self._group(request, group_id)
         ScheduledTaskGroupService.delete(group_id)
@@ -202,6 +212,7 @@ class ScheduledTaskGroupViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('system')
     def set_member_status(self, request: Request):
+        """设置定时任务组成员启用状态"""
         group_id = self._required_id(request.data.get('group_id'), '任务组ID')
         self._group(request, group_id)
         enabled = request.data.get('enabled')

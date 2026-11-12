@@ -4,8 +4,8 @@ from src.apps.monitoring.presenters import task_data
 from src.apps.monitoring.schemas.task import MonitoringTaskCreate, MonitoringTaskPatch
 from src.apps.monitoring.selectors.task import MonitoringTaskSelector
 from src.apps.monitoring.selectors.script_context import MonitoringScriptContextSelector
-from src.apps.monitoring.services.task_mutation import MonitoringTaskMutationService
-from src.apps.monitoring.services.task_log import MonitoringTaskLogService
+from src.apps.monitoring.services.tasks.task_mutation import MonitoringTaskMutationService
+from src.apps.monitoring.services.logging.task_log import MonitoringTaskLogService
 from src.interfaces.mcp.common import current_user, ok, paginate_queryset
 
 

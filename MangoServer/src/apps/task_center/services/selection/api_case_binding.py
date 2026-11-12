@@ -11,7 +11,7 @@ from src.apps.auto_api.services.api_case.version import ApiCaseRevisionService
 from src.apps.system.enums import TaskCaseVersionPolicyEnum, TaskCaseVersionStatusEnum
 from src.apps.task_center.models import Tasks, TasksDetails
 from src.apps.test_center.enums import TestCaseTypeEnum
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.test_center.services.project.product_module import ProductModuleService
 
 
 class ApiCaseTaskBindingService:

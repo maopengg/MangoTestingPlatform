@@ -12,7 +12,7 @@ from django.db import close_old_connections
 from jwt import exceptions
 
 from src.apps.system.enums.mcp_confirmation import McpConfirmationStatusEnum
-from src.apps.system.services.mcp_confirmation import McpConfirmationService
+from src.apps.system.services.coordination.mcp_confirmation import McpConfirmationService
 from src.apps.user.models import User
 from src.apps.user.selectors.querysets import UserQuerySelector
 from src.interfaces.mcp.enums import McpAuthErrorCode
@@ -301,7 +301,7 @@ def log_mcp_tool_call_async(
 
     def _save():
         try:
-            from src.apps.user.services.user_logs import UserLogService
+            from src.apps.user.services.audit.user_logs import UserLogService
             from src.apps.system.enums import ClientTypeEnum
 
             response_payload = result

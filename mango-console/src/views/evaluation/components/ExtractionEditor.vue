@@ -23,7 +23,7 @@
         >移除</a-button
       >
     </div>
-    <p v-if="error" role="alert" class="mango-extraction-error">{{ error }}</p>
+    <p data-feedback-kind="validation" v-if="error" role="alert" class="mango-extraction-error">{{ error }}</p>
   </section>
 </template>
 <script setup lang="ts">

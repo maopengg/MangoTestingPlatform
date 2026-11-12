@@ -9,12 +9,12 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.apps.auto_pytest.models import PytestProduct
-from src.apps.auto_pytest.services.product_sync import PytestProductSyncService
+from src.apps.auto_pytest.services.synchronization.product_sync import PytestProductSyncService
 from src.apps.test_center.api.serializers.project import ProjectSerializers
 from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.apps.test_center.models import TestObject, Project, ProjectProduct, ProductModule
-from src.apps.test_center.services.project_product_cache import ProjectProductCacheService
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.test_center.services.project.project_product_cache import ProjectProductCacheService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
 from src.common.responses import (
     RESPONSE_MSG_0025,

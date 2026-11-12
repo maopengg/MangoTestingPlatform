@@ -12,7 +12,7 @@
     unmount-on-close
     @cancel="close"
   >
-    <a-alert v-if="error" type="error">{{ error }}</a-alert>
+    <MangoRequestFeedback v-if="error" :message="(error)" />
     <a-form auto-label-width class="mango-simple-form" :model="draft" :disabled="saving" layout="horizontal">
       <a-form-item class="mango-simple-form-item" label="项目/产品" required
         ><ProjectProductSelect
@@ -38,6 +38,8 @@
   </a-modal>
 </template>
 <script setup lang="ts">
+import { requestFailureMessage } from '@/utils/load-error'
+
   import { reactive, ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { postUiPage, putUiPage } from '@/api/uitest/page'
@@ -84,8 +86,8 @@
     let payload: ReturnType<typeof pagePayload>
     try {
       payload = pagePayload(draft, editingId.value)
-    } catch {
-      error.value = '请完整填写项目/产品、模块、页面名称和页面地址'
+    } catch (requestFailure) {
+      error.value = requestFailureMessage(requestFailure, '请完整填写项目/产品、模块、页面名称和页面地址')
       return false
     }
     const valid = scope.capture(),
@@ -102,8 +104,8 @@
       close()
       emit('saved')
       return true
-    } catch {
-      if (current()) error.value = '保存失败，草稿已保留，请重试'
+    } catch (requestFailure) {
+      if (current()) error.value = requestFailureMessage(requestFailure, '保存失败，草稿已保留，请重试')
       return false
     } finally {
       saving.value = false

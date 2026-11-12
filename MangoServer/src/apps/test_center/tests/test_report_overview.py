@@ -9,7 +9,7 @@ from mangotools.enums import TaskEnum
 
 from src.apps.task_center.models import Tasks, TimeTasks
 from src.apps.test_center.models import Project, ProjectProduct, TestSuite
-from src.apps.test_center.services.test_suite.report_overview import TestSuiteReportOverviewService
+from src.apps.test_center.services.reporting.test_suite.report_overview import TestSuiteReportOverviewService
 from src.apps.user.models import User
 
 

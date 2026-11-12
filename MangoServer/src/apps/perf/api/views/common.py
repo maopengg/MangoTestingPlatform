@@ -4,10 +4,11 @@ from src.apps.perf.exceptions import (
     PERF_PROJECT_PRODUCT_PERF_ACCESS_DENIED,
     PerfError,
 )
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 
 
 def ensure_perf_data_scope(request: Request, project_product_id: int | None):
+    """校验当前用户对性能测试资产的数据范围"""
     user = getattr(getattr(request, "user", None), "user_obj", None)
     if user is None or PermissionMenuService.is_effective_super_admin(user):
         return

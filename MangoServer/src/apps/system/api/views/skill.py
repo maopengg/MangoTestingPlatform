@@ -21,6 +21,7 @@ class SkillResourceService:
 
     @classmethod
     def list_skills(cls) -> list[dict]:
+        """获取已发布 Skill 资源列表"""
         if not os.path.isdir(cls.SKILL_ROOT):
             return []
         items = []
@@ -41,6 +42,7 @@ class SkillResourceService:
 
     @classmethod
     def detail(cls, key: str) -> dict | None:
+        """获取 Skill 资源详情"""
         skill_dir = cls.safe_skill_dir(key)
         if not skill_dir:
             return None
@@ -60,6 +62,7 @@ class SkillResourceService:
 
     @classmethod
     def safe_skill_dir(cls, key: str) -> str | None:
+        """校验并定位 Skill 资源目录"""
         if not key or not cls.SAFE_KEY_RE.match(key):
             return None
         skill_root = os.path.abspath(cls.SKILL_ROOT)
@@ -72,6 +75,7 @@ class SkillResourceService:
 
     @classmethod
     def read_skill_content(cls, key: str) -> str:
+        """读取 Skill 说明内容"""
         skill_dir = cls.safe_skill_dir(key)
         if not skill_dir:
             return ''
@@ -80,6 +84,7 @@ class SkillResourceService:
 
     @staticmethod
     def parse_frontmatter(content: str) -> dict:
+        """解析 Skill 文档元数据"""
         if not content.startswith('---'):
             return {}
         end_index = content.find('\n---', 3)
@@ -95,6 +100,7 @@ class SkillResourceService:
 
     @staticmethod
     def extract_sections(content: str) -> list[dict]:
+        """提取 Skill 文档章节"""
         if content.startswith('---'):
             end_index = content.find('\n---', 3)
             if end_index >= 0:
@@ -120,6 +126,7 @@ class SkillResourceService:
 
     @classmethod
     def list_skill_files(cls, skill_dir: str) -> list[str]:
+        """获取 Skill 配套文件清单"""
         files = []
         for root, _, names in os.walk(skill_dir):
             for name in names:
@@ -129,6 +136,7 @@ class SkillResourceService:
 
     @classmethod
     def build_zip_response(cls, key: str):
+        """打包并返回 Skill 下载文件"""
         skill_dir = cls.safe_skill_dir(key)
         if not skill_dir:
             return None
@@ -150,11 +158,13 @@ class SkillResourceViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_list(self, request: Request):
+        """获取Skill 资源列表"""
         return ResponseData.success(RESPONSE_MSG_0001, SkillResourceService.list_skills())
 
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_detail(self, request: Request):
+        """获取Skill 资源详情"""
         data = SkillResourceService.detail(request.query_params.get('key') or '')
         if not data:
             return ResponseData.fail(RESPONSE_MSG_0242)
@@ -163,6 +173,7 @@ class SkillResourceViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_download(self, request: Request):
+        """下载 Skill 资源包"""
         response = SkillResourceService.build_zip_response(request.query_params.get('key') or '')
         if not response:
             return ResponseData.fail(RESPONSE_MSG_0242)

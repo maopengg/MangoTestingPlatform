@@ -6,9 +6,9 @@ from mangotools.enums import TaskEnum
 
 from src.apps.auto_ui.api.views.ui_case import UiCaseViews
 from src.apps.auto_ui.exceptions import AutoUiError
-from src.apps.auto_ui.services.element_service import PageElementService
-from src.apps.auto_ui.services.executor_slot import ExecutorSlotLeaseService
-from src.apps.auto_ui.services.test_case.test_case import TestCase
+from src.apps.auto_ui.services.elements.element_service import PageElementService
+from src.apps.auto_ui.services.execution.executor_slot import ExecutorSlotLeaseService
+from src.apps.auto_ui.services.execution.cases.test_case import TestCase
 from src.apps.system.enums import ClientTypeEnum
 from src.apps.system.enums import ServerUiCommandEnum
 from src.common.exceptions import ErrorDefinition
@@ -52,7 +52,7 @@ class UiExecutorDispatchTest(SimpleTestCase):
         require_actuator.assert_called_once_with("selected-offline")
 
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.UiCaseStepsDetailed.objects.filter"
+        "src.apps.auto_ui.services.execution.cases.test_case.UiCaseStepsDetailed.objects.filter"
     )
     def test_new_case_execution_resets_all_step_runtime_states(self, filter_mock):
         TestCase._reset_case_step_runtime_status(12)
@@ -64,10 +64,10 @@ class UiExecutorDispatchTest(SimpleTestCase):
         )
 
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketMessageService.send_socket_data"
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketMessageService.send_socket_data"
     )
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketConnectionService.require_actuator"
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketConnectionService.require_actuator"
     )
     def test_page_step_debug_is_sent_to_selected_executor(
             self,
@@ -90,13 +90,13 @@ class UiExecutorDispatchTest(SimpleTestCase):
         self.assertEqual(send_socket_data.call_args.kwargs["created_by"], 1)
 
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.ExecutorSlotLeaseService.set_running"
+        "src.apps.auto_ui.services.execution.cases.test_case.ExecutorSlotLeaseService.set_running"
     )
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketMessageService.send_socket_data"
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketMessageService.send_socket_data"
     )
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketConnectionService.require_actuator"
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketConnectionService.require_actuator"
     )
     def test_open_target_page_reuses_idle_slot_without_marking_task_running(
             self,
@@ -118,10 +118,10 @@ class UiExecutorDispatchTest(SimpleTestCase):
         set_running.assert_not_called()
 
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketMessageService.send_socket_data"
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketMessageService.send_socket_data"
     )
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketConnectionService.require_actuator"
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketConnectionService.require_actuator"
     )
     def test_element_check_is_sent_to_selected_executor(
             self,
@@ -144,10 +144,10 @@ class UiExecutorDispatchTest(SimpleTestCase):
         self.assertEqual(command.data.func_args["check_id"], "check-mango-mock")
 
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketMessageService.send_socket_data"
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketMessageService.send_socket_data"
     )
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketConnectionService.require_actuator"
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketConnectionService.require_actuator"
     )
     def test_case_execution_is_sent_to_selected_executor(
             self,
@@ -168,14 +168,14 @@ class UiExecutorDispatchTest(SimpleTestCase):
         self.assertEqual(command.data.func_args["id"], 12)
 
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketMessageService.send_socket_data"
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketMessageService.send_socket_data"
     )
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketConnectionService.list_open_actuator_usernames",
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketConnectionService.list_open_actuator_usernames",
         return_value=["shared-open"],
     )
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketConnectionService.require_actuator",
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketConnectionService.require_actuator",
     )
     def test_case_execution_can_fallback_to_open_executor(
             self,
@@ -203,14 +203,14 @@ class UiExecutorDispatchTest(SimpleTestCase):
         self.assertEqual(command.user, "shared-open")
 
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketMessageService.send_socket_data"
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketMessageService.send_socket_data"
     )
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketConnectionService.list_open_actuator_usernames",
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketConnectionService.list_open_actuator_usernames",
         return_value=["shared-open"],
     )
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketConnectionService.require_actuator",
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketConnectionService.require_actuator",
     )
     def test_case_execution_falls_back_when_self_disconnects_during_dispatch(
             self,
@@ -244,13 +244,13 @@ class UiExecutorDispatchTest(SimpleTestCase):
             self.assertEqual(call.kwargs["ttl_seconds"], 0)
 
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketMessageService.send_socket_data"
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketMessageService.send_socket_data"
     )
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketConnectionService.list_open_actuator_usernames"
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketConnectionService.list_open_actuator_usernames"
     )
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketConnectionService.require_actuator",
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketConnectionService.require_actuator",
         side_effect=AutoUiError(ErrorDefinition(code=1028, message="执行器不在线")),
     )
     def test_explicit_executor_failure_is_reported_without_fallback(
@@ -277,14 +277,14 @@ class UiExecutorDispatchTest(SimpleTestCase):
         self.assertEqual(send_socket_data.call_args.kwargs["ttl_seconds"], 0)
 
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketMessageService.send_socket_data"
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketMessageService.send_socket_data"
     )
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketConnectionService.list_open_actuator_usernames",
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketConnectionService.list_open_actuator_usernames",
         return_value=[],
     )
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketConnectionService.require_actuator",
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketConnectionService.require_actuator",
         side_effect=AutoUiError(ErrorDefinition(code=1028, message="执行器不在线")),
     )
     def test_case_execution_without_self_or_open_executor_fails_immediately(
@@ -309,10 +309,10 @@ class UiExecutorDispatchTest(SimpleTestCase):
         self.assertEqual(send_socket_data.call_args.kwargs["ttl_seconds"], 0)
 
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketMessageService.send_socket_data"
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketMessageService.send_socket_data"
     )
     @patch(
-        "src.apps.auto_ui.services.test_case.test_case.SocketConnectionService.require_actuator",
+        "src.apps.auto_ui.services.execution.cases.test_case.SocketConnectionService.require_actuator",
         side_effect=AutoUiError(ErrorDefinition(code=1028, message="执行器不在线")),
     )
     def test_offline_interactive_task_is_created_fail_fast(
@@ -340,9 +340,9 @@ class UiExecutorDispatchTest(SimpleTestCase):
         )
 
         with patch(
-                "src.apps.auto_ui.services.test_case.test_case.SocketConnectionService.require_actuator"
+                "src.apps.auto_ui.services.execution.cases.test_case.SocketConnectionService.require_actuator"
         ) as require_actuator, patch(
-            "src.apps.auto_ui.services.test_case.test_case.SocketMessageService.send_socket_data"
+            "src.apps.auto_ui.services.execution.cases.test_case.SocketMessageService.send_socket_data"
         ) as send_socket_data:
             service._TestCase__socket_send(
                 SimpleNamespace(id=8),
@@ -354,7 +354,7 @@ class UiExecutorDispatchTest(SimpleTestCase):
 
     @patch("src.apps.system.services.socket_link.message_service.SocketMessageService.send_socket_data")
     @patch("src.apps.auto_ui.services.live_stream.workspace_service.LiveWorkspaceService.get_workspace")
-    @patch("src.apps.auto_ui.services.element_service.Page.objects.filter")
+    @patch("src.apps.auto_ui.services.elements.element_service.Page.objects.filter")
     def test_page_scan_is_created_as_workspace_executor_task(
             self,
             page_filter,
@@ -386,7 +386,7 @@ class UiExecutorDispatchTest(SimpleTestCase):
         self.assertEqual(send_socket_data.call_args.kwargs["executor_mode"], "workspace")
         self.assertEqual(send_socket_data.call_args.kwargs["ttl_seconds"], 0)
 
-    @patch("src.apps.auto_ui.services.element_service.Page.objects.filter")
+    @patch("src.apps.auto_ui.services.elements.element_service.Page.objects.filter")
     def test_page_scan_rejects_missing_page(self, page_filter):
         page_filter.return_value.exists.return_value = False
 
@@ -399,7 +399,7 @@ class UiExecutorDispatchTest(SimpleTestCase):
                 scan_mode="quick",
             )
 
-    @patch("src.apps.auto_ui.services.element_service.Page.objects.filter")
+    @patch("src.apps.auto_ui.services.elements.element_service.Page.objects.filter")
     def test_page_scan_rejects_unknown_mode(self, page_filter):
         page_filter.return_value.exists.return_value = True
 

@@ -23,6 +23,7 @@ class WorkbenchTodoViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def list_items(self, request: Request):
+        """获取工作台待办列表"""
         try:
             page = max(1, int(request.query_params.get('page') or 1))
         except (TypeError, ValueError):
@@ -67,6 +68,7 @@ class WorkbenchTodoViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def mark_handled(self, request: Request):
+        """将工作台待办标记为已处理"""
         try:
             todo_id = int(request.data.get('id'))
         except (TypeError, ValueError):

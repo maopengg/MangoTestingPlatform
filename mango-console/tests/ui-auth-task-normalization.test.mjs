@@ -50,7 +50,7 @@ test('read failures keep retrying silently, retain the task and never repeat the
 })
 test('terminal failure clears the matching record and does not expose raw task error content', async t => {
   const h = setupUiAuthTasks({ getExecutorTask: async taskId => taskResponse(taskId, 0, 'start', 'failed', { error_message: 'example-private-error' }) }); t.after(h.close)
-  await h.start(target(), 'start'); await flush(); assert.equal(h.messages.length, 0); assert.match(h.error.value, /failed/); assert.equal(h.error.value.includes('example-private-error'), false); assert.equal(h.observation(), null); assert.equal(h.timers.size, 0)
+  await h.start(target(), 'start'); await flush(); assert.equal(h.messages.length, 0); assert.match(h.error.value, /请查看任务通知/); assert.deepEqual(h.errors, [h.error.value]); assert.equal(h.error.value.includes('example-private-error'), false); assert.equal(h.observation(), null); assert.equal(h.timers.size, 0)
 })
 test('two/fifteen-minute observation limits retain task recovery and clicking again resumes GET without a new POST', async () => {
   for (const [action, minutes] of [['start', 2], ['capture', 15]]) {

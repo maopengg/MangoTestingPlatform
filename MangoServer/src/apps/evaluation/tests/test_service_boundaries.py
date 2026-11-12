@@ -10,9 +10,9 @@ from src.apps.evaluation.exceptions import (
 )
 from src.apps.evaluation.models import EvaluationDataset, EvaluationDatasetVersion, EvaluationDatasetItem
 from src.apps.evaluation.selectors.scope import ensure_product_scope, scope_queryset
-from src.apps.evaluation.services.dataset_version import EvaluationDatasetVersionService
-from src.apps.evaluation.services.failure import failure_message
-from src.apps.evaluation.services.dataset_item import EvaluationDatasetItemService
+from src.apps.evaluation.services.dataset.dataset_version import EvaluationDatasetVersionService
+from src.apps.evaluation.services.execution.failure import failure_message
+from src.apps.evaluation.services.dataset.dataset_item import EvaluationDatasetItemService
 from src.common.prompts import get_prompt
 from src.common.prompts.evaluation_judge import build_evaluation_judge_messages
 from types import SimpleNamespace
@@ -38,8 +38,8 @@ class EvaluationServiceBoundaryTests(SimpleTestCase):
             patch.object(EvaluationDataset, "versions", versions),
             patch.object(EvaluationDatasetVersion.objects, "create", return_value=copied) as create,
             patch.object(EvaluationDatasetItem.objects, "bulk_create") as bulk_create,
-            patch("src.apps.evaluation.services.dataset_version.ensure_dataset_access"),
-            patch("src.apps.evaluation.services.dataset_version.EvaluationVersionService.next_dataset_version", return_value=3),
+            patch("src.apps.evaluation.services.dataset.dataset_version.ensure_dataset_access"),
+            patch("src.apps.evaluation.services.dataset.dataset_version.EvaluationVersionService.next_dataset_version", return_value=3),
         ):
             locked.return_value.filter.return_value.first.return_value = dataset
             result = EvaluationDatasetVersionService.create.__wrapped__(
@@ -69,7 +69,7 @@ class EvaluationServiceBoundaryTests(SimpleTestCase):
             patch.object(EvaluationDatasetItem, "save"),
             patch.object(EvaluationDatasetVersion, "items", MagicMock()) as items,
             patch.object(EvaluationDatasetItemService, "reset_quality_ack") as reset,
-            patch("src.apps.evaluation.services.dataset_item.EvaluationVersionService.validate_item") as validate,
+            patch("src.apps.evaluation.services.dataset.dataset_item.EvaluationVersionService.validate_item") as validate,
         ):
             locked.return_value.get.return_value = version
             items.filter.return_value.exclude.return_value.exists.return_value = False
@@ -122,7 +122,7 @@ class EvaluationServiceBoundaryTests(SimpleTestCase):
 
 
     def test_runtime_failure_does_not_expose_internal_details(self):
-        with patch("src.apps.evaluation.services.failure.logger.error") as log:
+        with patch("src.apps.evaluation.services.execution.failure.logger.error") as log:
             result = failure_message(RuntimeError("private database connection details"))
         self.assertEqual(result, EVALUATION_EXECUTION_FAILED.message)
         self.assertNotIn("database", result)

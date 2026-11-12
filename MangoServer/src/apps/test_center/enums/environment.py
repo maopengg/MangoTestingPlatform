@@ -35,7 +35,7 @@ class EnvironmentEnum(BaseEnum):
 
     @classmethod
     def obj(cls):
-        from src.apps.system.services.system_config import SystemConfigService
+        from src.apps.system.services.configuration.system_config import SystemConfigService
 
         aliases = SystemConfigService.get_environment_display_names()
         return {key: aliases.get(str(key), name) for key, name in cls.default_obj().items()}

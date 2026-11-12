@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from src.apps.auto_ui.models import PageElement
-from src.apps.auto_ui.services.element_ai.data_sanitizer import ElementAiDataSanitizer
+from src.apps.auto_ui.services.elements.ai.data_sanitizer import ElementAiDataSanitizer
 
 
 class PageElementSerializers(serializers.ModelSerializer):

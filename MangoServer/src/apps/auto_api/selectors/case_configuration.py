@@ -8,7 +8,7 @@ from src.apps.auto_api.enums.case import ApiCaseConfigurationFilterEnum, ApiCase
 from src.apps.auto_api.models import ApiCase, ApiCaseDetailedParameter, ApiCaseRelease, ApiPublic
 from src.apps.data_factory.enums import DataFactoryCaseSourceTypeEnum, DataFactoryExecutionStageEnum
 from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.apps.test_center.selectors.publication_review import publication_configuration_summary
 
 

@@ -16,6 +16,7 @@ class AiViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def test(self, request: Request):
+        """测试AI 模型配置"""
         try:
             capability = str(request.data.get('capability') or 'text').strip().lower()
             data = AiService.test_config(capability)

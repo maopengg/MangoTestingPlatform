@@ -7,9 +7,9 @@ from rest_framework.test import APIRequestFactory
 
 from src.apps.test_center.api.views.execution_result import ExecutionResultViews
 from src.apps.test_center.models import ExecutionResult
-from src.apps.test_center.services.execution_result import ExecutionResultService
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
 from src.apps.system.models import CacheData
-from src.apps.system.services.system_config import SystemConfigService, get_config_definition_map
+from src.apps.system.services.configuration.system_config import SystemConfigService, get_config_definition_map
 
 
 class ExecutionResultAdminServiceTests(TestCase):

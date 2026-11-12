@@ -55,7 +55,7 @@ class UiBrowserSessionExecutorTest(SimpleTestCase):
             require_actuator,
             send_socket_data,
     ):
-        get_user.return_value = SimpleNamespace(selected_environment=1)
+        get_user.return_value = SimpleNamespace(config=[{'key': 'selected_environment', 'value': 1}])
         product_queryset = SimpleNamespace(
             values_list=lambda *args, **kwargs: [7],
         )

@@ -9,6 +9,6 @@ def reconcile_finished_executor_task(*, task_type, business_id, **_kwargs):
     if task_type != ExecutorTaskTypeEnum.PERF_EXECUTION.value or not business_id:
         return
 
-    from src.apps.perf.services.recovery import PerfRecoveryService
+    from src.apps.perf.services.execution.recovery import PerfRecoveryService
 
     PerfRecoveryService.reconcile_executor_task(business_id)

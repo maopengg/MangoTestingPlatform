@@ -8,7 +8,7 @@ export const taskResponse = (taskId = 91, id = 0, action = 'start', status = 'ru
 export function setupUiAuthTasks(overrides = {}) {
   const previous = globalThis.window, originalNow = Date.now
   let now = 1_000_000, timerId = 0, epoch = 0, available = true, owner = '[1,2,0]', manualBusy = false
-  const timers = new Map(), storage = new Map(), reads = [], writes = [], messages = [], captured = []
+  const timers = new Map(), storage = new Map(), reads = [], writes = [], messages = [], errors = [], captured = []
   const sessionStorage = { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key) }
   globalThis.window = { sessionStorage, setTimeout: (fn, delay) => { const id = ++timerId; timers.set(id, { fn, at: now + delay }); return id }, clearTimeout: id => timers.delete(id) }
   Date.now = () => now
@@ -17,7 +17,7 @@ export function setupUiAuthTasks(overrides = {}) {
     postUiAuthConfigAutoStart: (...args) => { writes.push(['start', ...args]); return (overrides.start || (async () => ({ code: 200, data: { task_id: 91 } })))(...args) },
     postUiAuthConfigAutoCapture: (...args) => { writes.push(['capture', ...args]); return (overrides.capture || (async () => ({ code: 200, data: { task_id: 92 } })))(...args) },
   }
-  const modules = { vue, '@arco-design/web-vue': { Message: { success: message => messages.push(message) } },
+  const modules = { vue, '@arco-design/web-vue': { Message: { success: message => messages.push(message), error: message => errors.push(message) } },
     '@/api/system/executor-task': api, '@/api/uitest/auth-config': api, '@/utils/executor-task-observer.mjs': storageObserver,
     '@/utils/lossless-json': { cloneLosslessJson: value => JSON.parse(JSON.stringify(value)) },
   }
@@ -32,7 +32,7 @@ export function setupUiAuthTasks(overrides = {}) {
     onCaptured: () => { captured.push(true); return overrides.onCaptured?.() },
   }
   const h = useAuthTaskObserver(context), records = load(path.join(recordsBase, 'auth-task-records.ts'))
-  return { ...h, records, reads, writes, messages, captured, timers, storage, sessionStorage,
+  return { ...h, records, reads, writes, messages, errors, captured, timers, storage, sessionStorage,
     createObserver: () => useAuthTaskObserver(context),
     getOwner: () => owner, setOwner(value) { epoch++; owner = value; h.pause() },
     setBusy(value) { manualBusy = value }, invalidate() { epoch++; h.pause() },

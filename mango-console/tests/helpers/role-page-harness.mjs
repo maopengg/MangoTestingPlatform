@@ -3,7 +3,7 @@ import * as vue from 'vue'
 import { harness, flush } from './case-details-harness.mjs'
 export const roleOk = (data = []) => ({ code: 200, data, msg: 'ok' })
 export const roleFixture = (id = 1) => ({ key: id, title: 'Example role', description: 'Description' })
-export const permissionFixture = () => ({ tree: [{ permissionKey: 'index.home', actions: [], children: [] }, { permissionKey: 'system.role', actions: [{ permissionKey: 'system.role:change', permissionName: '修改' }], children: [] }], checked_keys: ['index.home', 'system.role', 'system.role:change'] })
+export const permissionFixture = () => ({ tree: [{ permissionKey: 'index.home', children: [] }, { permissionKey: 'system.role', children: [] }], menu_keys: ['index.home', 'system.role'], endpoint_groups: [], endpoint_permissions: {} })
 export function setupRolePage(options = {}) {
   const life = { mount: [], activate: [], deactivate: [], unmount: [] }, calls = [], dialogs = [], messages = []
   const route = vue.reactive({ path: '/organization-permission/role/index', fullPath: '/organization-permission/role/index' })
@@ -13,7 +13,7 @@ export function setupRolePage(options = {}) {
   const api = Object.fromEntries(['getUserAllRole', 'getUserRolePermission', 'postUserRoleList', 'putUserRoleList', 'deleteUserRoleList', 'putUserRolePermission'].map(name => [name, payload => {
     calls.push([name, structuredClone(payload)]); return options[name]?.(payload) ?? Promise.resolve(roleOk(name === 'getUserAllRole' ? [roleFixture()] : name === 'getUserRolePermission' ? permissionFixture() : []))
   }]))
-  const h = harness('index', 'roles,listLoading,listError,permissionError,selectedRole,loadedRoleId,permissionPanel,canSavePermission,isPermissionReadonly,form,editorId,editorVisible,actionTitle,saving,writeBusy,modalDialogRef,routeRefreshError,routeRefreshing,doRefresh,onSelectRole,retryPermission,onAdd,onUpdate,closeEditor,onDataForm,onDelete,onSavePermission,refreshOwnRoutes,onPageCheck,onActionCheck', {
+  const h = harness('index', 'roles,listLoading,listError,permissionError,selectedRole,loadedRoleId,permissionPanel,pageCheckedKeys,endpointGroups,endpointOverrides,onEndpointChange,canSavePermission,isPermissionReadonly,form,editorId,editorVisible,actionTitle,saving,writeBusy,modalDialogRef,routeRefreshError,routeRefreshing,doRefresh,onSelectRole,retryPermission,onAdd,onUpdate,closeEditor,onDataForm,onDelete,onSavePermission,refreshOwnRoutes,onPageCheck,onPageSelect,onPageExpand,expandPermissionTree', {
     base: path.resolve('src/views/system/role'), api, modules: {
       vue: { ...vue, onMounted: f => life.mount.push(f), onActivated: f => life.activate.push(f), onDeactivated: f => life.deactivate.push(f), onBeforeUnmount: f => life.unmount.push(f) },
       'vue-router': { useRoute: () => route, useRouter: () => ({ replace: options.replace || (async () => {}) }) },

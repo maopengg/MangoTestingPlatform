@@ -30,7 +30,7 @@ from src.apps.task_center.exceptions import (
 from src.apps.task_center.models import Tasks
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.test_center.enums.environment import EnvironmentEnum
-from src.apps.test_center.services.product_module import ProductModuleService
+from src.apps.test_center.services.project.product_module import ProductModuleService
 
 
 @dataclass(frozen=True)

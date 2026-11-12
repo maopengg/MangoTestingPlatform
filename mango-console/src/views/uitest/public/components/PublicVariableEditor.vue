@@ -13,7 +13,7 @@
     :cancel-button-props="{ disabled: saving }"
     @cancel="close"
   >
-    <a-alert v-if="error" type="error">{{ error }}</a-alert>
+    <MangoRequestFeedback v-if="error" :message="(error)" />
     
     <a-form auto-label-width :model="draft" layout="horizontal" class="mango-public-editor mango-simple-form">
       <div class="mango-public-editor__fields mango-simple-form-fields">
@@ -106,7 +106,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
 import VariableTagSelect from '@/components/business/VariableTagSelect.vue'
 import { getUiPublic } from '@/api/uitest/public'
 
@@ -245,7 +245,7 @@ import { getUiPublic } from '@/api/uitest/public'
     try {
       payload = publicPayload(draft, editingId.value)
     } catch (cause) {
-      error.value = cause instanceof Error ? cause.message : '请检查变量配置'
+      error.value = requestFailureMessage(cause, cause instanceof Error ? cause.message : '请检查变量配置')
       return false
     }
     if (
@@ -270,8 +270,8 @@ import { getUiPublic } from '@/api/uitest/public'
       close()
       emit('saved')
       return true
-    } catch {
-      if (current()) error.value = '保存失败，草稿已保留，请重试'
+    } catch (requestFailure) {
+      if (current()) error.value = requestFailureMessage(requestFailure, '保存失败，草稿已保留，请重试')
       return false
     } finally {
       saving.value = false

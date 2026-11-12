@@ -33,7 +33,7 @@ from src.apps.test_center.models import (
     ProjectProduct,
     TestSuiteDetails,
 )
-from src.apps.test_center.services.test_suite.retry import TestSuiteRetryService
+from src.apps.test_center.services.reporting.test_suite.retry import TestSuiteRetryService
 from src.apps.user.models import User
 
 

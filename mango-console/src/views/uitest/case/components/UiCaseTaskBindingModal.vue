@@ -1,6 +1,6 @@
 <template>
   <a-modal modal-class="mango-simple-form-modal" v-model:visible="visible" title="设为定时任务" :width="560" :on-before-ok="save" :closable="!saving" :mask-closable="!saving" :cancel-button-props="{ disabled: saving }" @cancel="close">
-    <a-alert v-if="error" type="error">{{ error }}</a-alert>
+    <MangoRequestFeedback v-if="error" :message="(error)" />
     
     <a-form auto-label-width class="mango-simple-form" :model="draft" :disabled="saving" layout="horizontal">
       <a-form-item class="mango-simple-form-item" label="项目产品" required><ProjectProductSelect v-model="draft.product" placeholder="请选择项目产品" @change="productChanged" /></a-form-item>
@@ -10,8 +10,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
-
+  import { requestFailureMessage, reportLoadError } from '@/utils/load-error'
   import { reactive, ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { fieldNames } from '@/setting'
@@ -54,7 +53,7 @@ import { reportLoadError } from '@/utils/load-error'
     const valid = scope.capture(), version = session, current = () => valid() && version === session && visible.value, snapshot = [...ids], task = draft.task
     saving.value = true; error.value = ''
     try { uiCaseAssetResponse(await postSystemTasksBatchSetCases(snapshot, task, 0)); if (!current()) return false; Message.success('绑定成功'); emit('saved'); close(); return true }
-    catch { if (current()) error.value = '绑定失败，当前选择已保留，请重试'; return false }
+    catch (requestFailure) { if (current()) error.value = requestFailureMessage(requestFailure, '绑定失败，当前选择已保留，请重试'); return false }
     finally { saving.value = false }
   }
   defineExpose({ open, close })

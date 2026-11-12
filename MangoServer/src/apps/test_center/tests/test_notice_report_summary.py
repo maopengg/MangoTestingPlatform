@@ -8,8 +8,8 @@ from mangotools.enums import TaskEnum
 
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.test_center.models import TestSuite, TestSuiteDetails
-from src.apps.test_center.services.test_suite.base_notice import NoticeMain
-from src.apps.test_center.services.test_suite.detail_result import TestSuiteExecutionResultService
+from src.apps.test_center.services.reporting.test_suite.base_notice import NoticeMain
+from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService
 
 
 class FakeDetailQuerySet:
@@ -61,7 +61,7 @@ class FakeDetailQuerySet:
 
 class NoticeReportSummaryTests(SimpleTestCase):
     def setUp(self):
-        patcher = patch('src.apps.system.services.system_config.SystemConfigService.get_environment_display_names',
+        patcher = patch('src.apps.system.services.configuration.system_config.SystemConfigService.get_environment_display_names',
                         return_value={})
         patcher.start()
         self.addCleanup(patcher.stop)

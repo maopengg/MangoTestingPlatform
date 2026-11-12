@@ -10,8 +10,8 @@ from src.apps.test_center.enums.data_source import (
     DataSourceCategoryEnum,
     DataSourceTypeEnum,
 )
-from src.apps.test_center.services.data_source import DataSourceConnectionService
-from src.apps.test_center.services.data_source_configuration import DataSourceConfigurationService
+from src.apps.test_center.services.datasource.data_source import DataSourceConnectionService
+from src.apps.test_center.services.datasource.data_source_configuration import DataSourceConfigurationService
 from src.apps.user.formatters import format_user_simple
 from src.common.validators.serializer_fields import RelatedObjectField
 

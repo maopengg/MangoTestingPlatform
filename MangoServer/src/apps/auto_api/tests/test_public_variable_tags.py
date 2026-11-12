@@ -6,11 +6,11 @@ from django.test import SimpleTestCase
 
 from src.apps.auto_api.api.serializers.api_pulic import ApiPublicSerializers
 from src.apps.auto_api.api.views.api_pulic import ApiPublicCRUD
-from src.apps.auto_api.services.api_public import ApiPublicMutationService
-from src.apps.auto_api.services.api_auth_config import ApiAuthConfigService
+from src.apps.auto_api.services.configuration.api_public import ApiPublicMutationService
+from src.apps.auto_api.services.authentication.api_auth_config import ApiAuthConfigService
 from src.apps.auto_ui.api.serializers.ui_public import UiPublicSerializers
 from src.apps.auto_ui.api.views.ui_public import UiPublicCRUD
-from src.apps.auto_ui.services.asset_mutation import UiAssetMutationService
+from src.apps.auto_ui.services.assets.asset_mutation import UiAssetMutationService
 from src.common.database.variable_tags import update_variable_tags
 from src.common.exceptions import MangoServerError
 from src.common.utils.variable_tags import normalize_variable_tags, filter_variable_tags, summarize_variable_tags

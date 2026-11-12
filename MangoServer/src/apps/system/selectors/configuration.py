@@ -5,6 +5,10 @@ from src.apps.system.models import CacheData
 
 class ConfigurationSelector:
     @staticmethod
+    def locked_datasource_policy():
+        return CacheData.objects.select_for_update().get(key='DATASOURCE_PERFORMANCE_POLICY')
+
+    @staticmethod
     def shared_locked_value(key, using):
         """调用方必须持有短事务；共享锁允许不同实例并发准入，配置保存使用排他锁。"""
         connection = connections[using]

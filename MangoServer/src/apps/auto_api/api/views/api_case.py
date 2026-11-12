@@ -52,7 +52,7 @@ from src.apps.auto_api.services.api_case.batch_execution import ApiCaseBatchExec
 from src.apps.auto_api.services.api_case.copying import ApiCaseCopyService
 from src.apps.auto_api.services.api_case.mutation_io import ApiCaseMutationService
 from src.apps.auto_api.services.api_case.version import ApiCaseRevisionService
-from src.apps.auto_api.services.test_case.test_case import TestCase
+from src.apps.auto_api.services.execution.cases.test_case import TestCase
 from src.apps.task_center.enums.execution import AutomationExecutionScopeEnum
 from src.apps.task_center.models import Tasks, TasksDetails
 from src.apps.task_center.services.selection.api_concurrency import ApiConcurrencyService
@@ -60,8 +60,8 @@ from src.apps.task_center.services.selection.case_selection import ScheduledTask
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
-from src.apps.test_center.services.execution_result import ExecutionResultService
-from src.apps.user.services.permission import PermissionMenuService, ProjectProductScopeService
+from src.apps.test_center.services.results.execution_result import ExecutionResultService
+from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
 from src.common.responses.model_crud import (
     ModelCRUD,
@@ -92,6 +92,7 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @classmethod
     def parse_query_filter(cls, key: str, value_list: list) -> dict:
+        """解析API 用例的查询过滤条件"""
         if not value_list:
             return {}
         if key.endswith('__in'):
@@ -118,6 +119,7 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @staticmethod
     def split_identity_and_config(data: dict) -> tuple[dict, dict]:
+        """拆分API 用例基本信息与运行配置"""
         identity_fields = {
             'id',
             'project_product',
@@ -140,6 +142,7 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @staticmethod
     def validate_case_config(config: dict, project_product_id=None) -> dict:
+        """校验 API 用例运行配置"""
         validators = {
             'resource_cleanup': lambda value: ApiCaseMutationService.validate_config(
                 {'resource_cleanup': value}, project_product_id,
@@ -182,14 +185,17 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @classmethod
     def inside_post(cls, data: dict, *, record_config: bool = True) -> dict:
+        """处理API 用例新增时的业务逻辑"""
         return cls._create_with_version(data, operator_id=data.get('update_user'), record_config=record_config)
 
     @classmethod
     def inside_put(cls, _id: int, data: dict, *, record_config: bool = True) -> dict:
+        """处理API 用例修改时的业务逻辑"""
         return cls._update_with_version(_id, data, operator_id=data.get('update_user'), record_config=record_config)
 
     @error_response('api')
     def post(self, request: Request):
+        """新增API 用例"""
         data = self.with_update_user(request, request.data)
         if not self.has_data_scope_permission(request, data):
             return ResponseData.fail(RESPONSE_MSG_0210)
@@ -201,6 +207,7 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @error_response('api')
     def put(self, request: Request):
+        """修改API 用例"""
         data = self.with_update_user(request, request.data)
         instance_id = request.data.get('id')
         try:
@@ -222,6 +229,7 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @error_response('api')
     def get(self, request: Request):
+        """获取API 用例列表或指定记录"""
         query_dict = {}
         configuration_filter = ApiCaseConfigurationFilterQuery(data={
             'execution_configuration': self.parse_in_filter_values(
@@ -332,6 +340,7 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @staticmethod
     def enrich_publication_state(data_list, operator_id=None):
+        """补充 API 用例的发布状态"""
         project_product_ids = {
             item.get('project_product', {}).get('id')
             for item in data_list
@@ -353,6 +362,7 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 
     @staticmethod
     def annotate_publication_state(queryset):
+        """为 API 用例查询集标注发布状态"""
         latest_revision = ApiCaseRevision.objects.filter(api_case_id=OuterRef('pk')).order_by('-revision_no')
         prepublished_release = ApiCaseRelease.objects.filter(
             api_case_id=OuterRef('pk'),
@@ -390,6 +400,7 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
 class ApiCaseViews(ViewSet):
     @error_response('api')
     def resource_cleanup_results(self, request):
+        """获取 API 用例资源清理结果"""
         from src.apps.auto_api.api.serializers.api_case import ApiResourceResultsQuery
         from src.apps.auto_api.selectors.resource_cleanup import ApiResourceCleanupSelector
         query = ApiResourceResultsQuery(data=request.query_params)
@@ -399,8 +410,9 @@ class ApiCaseViews(ViewSet):
 
     @error_response('api')
     def resource_cleanup_retry(self, request):
+        """重试已登记的 API 用例资源清理"""
         from src.apps.auto_api.api.serializers.api_case import ApiResourceCleanupCommand
-        from src.apps.auto_api.services.resource_cleanup import ApiResourceCleanupRetryService
+        from src.apps.auto_api.services.resource_cleanup.resource_cleanup import ApiResourceCleanupRetryService
         command = ApiResourceCleanupCommand(data=request.data)
         command.is_valid(raise_exception=True)
         return ResponseData.success(RESPONSE_MSG_0001, ApiResourceCleanupRetryService.retry(
@@ -412,6 +424,7 @@ class ApiCaseViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('api')
     def configuration_summary(self, request: Request):
+        """获取API 用例配置概览"""
         query = ApiCaseConfigurationSummaryQuery(data={
             'case_ids': request.query_params.get('case_ids', '').split(','),
         })
@@ -423,6 +436,7 @@ class ApiCaseViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('api')
     def configuration_details(self, request: Request):
+        """获取API 用例配置明细"""
         query = ApiCaseConfigurationDetailQuery(data=request.query_params)
         query.is_valid(raise_exception=True)
         values = query.validated_data
@@ -454,6 +468,7 @@ class ApiCaseViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('api')
     def api_test_case(self, request: Request):
+        """执行指定 API 用例"""
         if not self._has_case_scope(request, request.query_params.get('case_id')):
             return ResponseData.fail(RESPONSE_MSG_0210)
         revision_id = request.query_params.get('revision_id')
@@ -493,6 +508,7 @@ class ApiCaseViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('api')
     def api_debug_case_step(self, request: Request):
+        """调试指定 API 用例步骤"""
         case_id = request.data.get('case_id')
         case_detailed_id = request.data.get('case_detailed_id')
         if not self._has_case_scope(request, case_id):
@@ -530,6 +546,7 @@ class ApiCaseViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('api')
     def api_test_case_batch(self, request: Request):
+        """批量执行 API 用例"""
         if request.data.get('case_items') is not None:
             raise AutoApiError(API_VERSION_EXECUTION_UNSUPPORTED)
         case_id_list = ApiCaseBatchExecutionService.normalize_case_ids(
@@ -550,11 +567,13 @@ class ApiCaseViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('api')
     def execution_options(self, request: Request):
+        """获取API 用例可选执行记录"""
         return ResponseData.success(RESPONSE_MSG_0001, ApiConcurrencyService.capacity())
 
     @action(methods=['get'], detail=False)
     @error_response('api')
     def get_bound_tasks(self, request: Request):
+        """获取 API 用例已绑定的定时任务"""
         case_id = request.query_params.get('id') or request.query_params.get('case_id')
         api_case = self.model.objects.filter(id=case_id).first()
         if not api_case:
@@ -611,6 +630,7 @@ class ApiCaseViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('api')
     def get_related_tasks(self, request: Request):
+        """获取 API 用例关联的定时任务"""
         case_id = request.query_params.get('id') or request.query_params.get('case_id')
         api_case = self.model.objects.select_related('module').filter(id=case_id).first()
         if not api_case:
@@ -672,18 +692,20 @@ class ApiCaseViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('api')
     def copy_case(self, request: Request):
+        """复制 API 用例及其配置"""
         case_id = request.data.get('case_id')
         if not self._has_case_scope(request, case_id):
             return ResponseData.fail(RESPONSE_MSG_0210)
         copied = ApiCaseCopyService.copy(
             int(case_id),
-            operator_id=self.get_operator_id(request),
+            operator_id=ModelCRUD.get_operator_id(request),
         )
         return ResponseData.success(RESPONSE_MSG_0009, self.serializer_class(instance=copied).data)
 
     @action(methods=['GET'], detail=False)
     @error_response('api')
     def case_name(self, request: Request):
+        """获取 API 用例名称选项"""
         res = ApiCaseCRUD().filter_queryset_by_data_scope(
             request,
             self.model.objects.filter(module_id=request.query_params.get('module_id'))

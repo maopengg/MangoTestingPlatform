@@ -16,7 +16,7 @@ from src.apps.auto_ui.exceptions import (
     AUTO_UI_LIVE_STREAM_SESSION_WORKSPACE_EXPIRED,
     AutoUiError,
 )
-from src.apps.auto_ui.services.executor_slot import ExecutorSlotLeaseService
+from src.apps.auto_ui.services.execution.executor_slot import ExecutorSlotLeaseService
 from src.apps.auto_ui.services.live_stream.constants import REALTIME_COMMAND_TTL_SECONDS
 from src.apps.auto_ui.services.live_stream.permission_service import LiveStreamPermissionService
 from src.apps.auto_ui.services.live_stream.session_store import LiveStreamSessionStore

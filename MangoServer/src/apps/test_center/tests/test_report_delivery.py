@@ -1,4 +1,4 @@
-from src.apps.user.services.http_permission_registry import permission_for_view
+from src.apps.user.services.authorization.http_permission_registry import permission_for_view
 from types import SimpleNamespace
 from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock, patch
@@ -13,11 +13,11 @@ from src.apps.test_center.enums.report_delivery import ReportSourceEnum
 from src.apps.test_center.exceptions import TestCenterError
 from src.apps.test_center.schemas.report_delivery import ReportDeliveryConfig
 from src.apps.test_center.selectors.offline_report import OfflineReportSelector
-from src.apps.test_center.services.offline_report import OfflineReportService
-from src.apps.test_center.services.report_delivery import ReportDeliveryService
-from src.apps.test_center.services.offline_report.renderer import ReportHtmlService
-from src.apps.test_center.services.offline_report.snapshot import ReportSnapshotService
-from src.apps.test_center.services.offline_report.storage import ReportStorageService
+from src.apps.test_center.services.reporting.offline_report import OfflineReportService
+from src.apps.test_center.services.reporting.report_delivery import ReportDeliveryService
+from src.apps.test_center.services.reporting.offline_report.renderer import ReportHtmlService
+from src.apps.test_center.services.reporting.offline_report.snapshot import ReportSnapshotService
+from src.apps.test_center.services.reporting.offline_report.storage import ReportStorageService
 
 
 def sample_snapshot():
@@ -57,7 +57,7 @@ class ReportDeliveryTests(SimpleTestCase):
         session = ReportDeliveryService(ReportDeliveryConfig(enabled=True))
         session.filename, session.content = 'report.html', b'html'
         notice = SimpleNamespace(mail=None, work_weixin=None, feishu='https://example.com/webhook', dingding=None)
-        with patch('src.apps.test_center.services.report_delivery.FeiShuSend') as feishu:
+        with patch('src.apps.test_center.services.reporting.report_delivery.FeiShuSend') as feishu:
             feishu.return_value.build_test_report_card.return_value = {'elements': []}
             session.send(notice, '示例平台', 'https://example.com/report', lambda: {})
         card = feishu.return_value.send_interactive_card.call_args.args[0]
@@ -98,7 +98,7 @@ class ReportDeliveryTests(SimpleTestCase):
         storage = MagicMock(local=None)
         storage.key.return_value = 'offline_reports/example.html'
         storage.url.side_effect = RuntimeError('private')
-        with patch('src.apps.test_center.services.offline_report.service.ReportStorageService', return_value=storage):
+        with patch('src.apps.test_center.services.reporting.offline_report.service.ReportStorageService', return_value=storage):
             with self.assertRaises(TestCenterError):
                 OfflineReportService.upload_links(ReportDeliveryConfig(), 'example.html', b'example')
         storage.save.assert_called_once()
@@ -109,7 +109,7 @@ class ReportDeliveryTests(SimpleTestCase):
         with patch.object(OfflineReportService, 'config', return_value=ReportDeliveryConfig(enabled=True)), \
              patch.object(OfflineReportService, 'render', return_value=('report.html', b'example')), \
              patch.object(OfflineReportService, 'upload_links', return_value={'查看离线报告': 'https://example.com/preview', '下载 HTML': 'https://example.com/download'}) as upload, \
-             patch('src.apps.test_center.services.report_delivery.EmailSend') as sender:
+             patch('src.apps.test_center.services.reporting.report_delivery.EmailSend') as sender:
             sender.return_value.build_test_report_html.return_value = '<p>example</p>'
             sender.return_value.build_test_report_title.return_value = '❌示例平台自动化测试报告 - 失败'
             session = ReportDeliveryService.prepare(ReportSourceEnum.SUITE, 1, notice)
@@ -127,8 +127,8 @@ class ReportDeliveryTests(SimpleTestCase):
         with patch.object(OfflineReportService, 'config', return_value=ReportDeliveryConfig(enabled=True)), \
              patch.object(OfflineReportService, 'render', side_effect=[('a.html', b'first'), ('b.html', b'latest')]) as render, \
              patch.object(OfflineReportService, 'upload_links', return_value={'下载离线报告': 'https://example.com/report.html'}) as upload, \
-             patch('src.apps.test_center.services.report_delivery.WeChatSend') as wechat, \
-             patch('src.apps.test_center.services.report_delivery.FeiShuSend') as feishu:
+             patch('src.apps.test_center.services.reporting.report_delivery.WeChatSend') as wechat, \
+             patch('src.apps.test_center.services.reporting.report_delivery.FeiShuSend') as feishu:
             wechat.return_value.build_test_report_markdown.return_value = 'example'
             feishu.return_value.build_test_report_card.side_effect = lambda: {'elements': []}
             for _ in range(2):
@@ -182,8 +182,8 @@ class ReportDeliveryTests(SimpleTestCase):
                        MINIO_STORAGE_SECRET_KEY='example-secret', MINIO_STORAGE_USE_VIRTUAL_HOST_STYLE=True,
                        MINIO_PUBLIC_BASE_URL='https://reports.example.com')
     def test_tos_s3_storage_uses_s3_for_upload_read_and_delete(self):
-        with patch('src.apps.test_center.services.offline_report.storage.Minio') as s3, \
-             patch('src.apps.test_center.services.offline_report.storage.TosClientV2') as native:
+        with patch('src.apps.test_center.services.reporting.offline_report.storage.Minio') as s3, \
+             patch('src.apps.test_center.services.reporting.offline_report.storage.TosClientV2') as native:
             storage = ReportStorageService()
             s3.return_value.get_object.return_value.read.return_value = b'html'
             storage.save('sample.html', b'html')
@@ -198,7 +198,7 @@ class ReportDeliveryTests(SimpleTestCase):
                        MINIO_STORAGE_MEDIA_BUCKET_NAME='reports', MINIO_STORAGE_ACCESS_KEY='example-access',
                        MINIO_STORAGE_SECRET_KEY='example-secret', MINIO_PUBLIC_BASE_URL='https://reports.example.com')
     def test_custom_domain_signing_converts_s3_endpoint_for_native_sdk(self):
-        with patch('src.apps.test_center.services.offline_report.storage.TosClientV2') as native:
+        with patch('src.apps.test_center.services.reporting.offline_report.storage.TosClientV2') as native:
             ReportStorageService().url('sample.html', 'sample.html', 300)
         self.assertEqual(native.call_args.args[2], 'https://tos-cn-beijing.example.com')
         self.assertTrue(native.return_value.pre_signed_url.call_args.kwargs['is_custom_domain'])
@@ -216,7 +216,7 @@ class ReportDeliveryTests(SimpleTestCase):
         error = RuntimeError('Authorization: private-secret https://example.com?Signature=private')
         error.code = 'secret=private'
         error.status_code = 400
-        with patch('src.apps.test_center.services.offline_report.service.log.system.warning') as warning:
+        with patch('src.apps.test_center.services.reporting.offline_report.service.log.system.warning') as warning:
             OfflineReportService.log_storage_failure('upload', error)
         message = warning.call_args.args[0]
         self.assertIn('stage=upload', message)
@@ -235,7 +235,7 @@ class ReportDeliveryTests(SimpleTestCase):
             self.assertTrue(storage.key('sample').startswith('example/test/offline_reports/'))
 
     def test_screenshot_reader_never_follows_http_or_parent_path(self):
-        with patch('src.apps.test_center.services.offline_report.snapshot.default_storage.open') as opened:
+        with patch('src.apps.test_center.services.reporting.offline_report.snapshot.default_storage.open') as opened:
             self.assertEqual(ReportSnapshotService.images({'screenshot': 'https://example.com/image.png',
                 'child': {'screenshot_path': '../image.png'}}), [])
             opened.assert_not_called()
@@ -269,7 +269,7 @@ class ReportDeliveryTests(SimpleTestCase):
         self.assertNotRegex(content, r'(?:src|href)="https?://')
 
     def test_report_domain_config_is_relocated_without_replacing_existing_key(self):
-        from src.apps.system.services.system_config import get_config_definition_map
+        from src.apps.system.services.configuration.system_config import get_config_definition_map
         definitions = get_config_definition_map()
         domain = definitions['SYSTEM_DOMAIN_NAME']
         self.assertEqual(domain.group, 'report_delivery')
@@ -313,10 +313,10 @@ class ReportDeliveryTests(SimpleTestCase):
         with patch.object(OfflineReportService, 'config', return_value=ReportDeliveryConfig(enabled=True)), \
              patch.object(OfflineReportService, 'render', return_value=('report.html', b'example')), \
              patch.object(OfflineReportService, 'upload_links', side_effect=RuntimeError('private')) as upload, \
-             patch('src.apps.test_center.services.report_delivery.EmailSend') as mail, \
-             patch('src.apps.test_center.services.report_delivery.WeChatSend') as wechat, \
-             patch('src.apps.test_center.services.report_delivery.DingDingSend') as dingding, \
-             patch('src.apps.test_center.services.report_delivery.FeiShuSend') as feishu:
+             patch('src.apps.test_center.services.reporting.report_delivery.EmailSend') as mail, \
+             patch('src.apps.test_center.services.reporting.report_delivery.WeChatSend') as wechat, \
+             patch('src.apps.test_center.services.reporting.report_delivery.DingDingSend') as dingding, \
+             patch('src.apps.test_center.services.reporting.report_delivery.FeiShuSend') as feishu:
             mail.return_value.build_test_report_html.return_value = 'example'
             wechat.return_value.build_test_report_markdown.return_value = 'example'
             dingding.return_value.build_test_report_markdown.return_value = 'example'

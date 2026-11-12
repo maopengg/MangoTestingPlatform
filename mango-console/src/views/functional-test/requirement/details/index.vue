@@ -44,18 +44,16 @@
         >
       </a-space>
     </header>
-    <a-alert v-if="suiteId === null" type="error">需求版本 ID 无效，请返回列表重新打开。</a-alert>
+    <a-alert data-feedback-kind="validation" v-if="suiteId === null" type="error">需求版本 ID 无效，请返回列表重新打开。</a-alert>
     
-    <a-alert v-if="navigationError" type="error">跳转失败，请再次点击对应操作重试。</a-alert>
-    <a-alert v-if="transitionError" type="error"
-      >状态更新失败，请重试。<a-button
+    <MangoRequestFeedback v-if="navigationError" :message="&quot;跳转失败，请再次点击对应操作重试。&quot;" />
+    <MangoRequestFeedback v-if="transitionError" :message="&quot;状态更新失败，请重试。&quot;"><a-button
         size="mini"
         :loading="transitioning"
         :disabled="operationBlocked"
         @click="retryTransition"
         >重试</a-button
-      ></a-alert
-    >
+      ></MangoRequestFeedback>
     <section
       class="mango-section-card mango-requirement-detail__workflow mango-horizontal-scroll-region"
       aria-label="需求阶段"
@@ -238,9 +236,7 @@
               >
             </div>
             
-            <a-alert v-if="unbindError" type="error"
-              >取消关联失败，请再次点击对应操作重试。</a-alert
-            >
+            <MangoRequestFeedback v-if="unbindError" :message="&quot;取消关联失败，请再次点击对应操作重试。&quot;" />
             <a-table
               :data="cases"
               :columns="caseColumns"
@@ -384,6 +380,8 @@
   </main>
 </template>
 <script setup lang="ts">
+import { requestFailureMessage } from '@/utils/load-error'
+
   import {
     computed,
     onActivated,
@@ -881,8 +879,8 @@
       applySuite(next)
       Message.success('需求状态已更新')
       return true
-    } catch {
-      if (current(version)) transitionError.value = true
+    } catch (requestFailure) {
+      if (current(version)) transitionError.value = requestFailureMessage(requestFailure, true, "状态更新失败，请重试。")
       return false
     } finally {
       transitioning.value = false
@@ -931,8 +929,8 @@
       wantedCases.value = true
       wantedSuite.value = true
       return true
-    } catch {
-      if (current(version)) unbindError.value = true
+    } catch (requestFailure) {
+      if (current(version)) unbindError.value = requestFailureMessage(requestFailure, true, "取消关联失败，请再次点击对应操作重试。")
       return false
     } finally {
       unbindingIds.value = []
@@ -947,8 +945,8 @@
       const failure = await router.push({ path, query })
       if (current(version) && failure) navigationError.value = true
       return !failure
-    } catch {
-      if (current(version)) navigationError.value = true
+    } catch (requestFailure) {
+      if (current(version)) navigationError.value = requestFailureMessage(requestFailure, true, "跳转失败，请再次点击对应操作重试。")
       return false
     } finally {
       navigating.value = null

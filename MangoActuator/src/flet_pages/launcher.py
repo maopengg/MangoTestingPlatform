@@ -1,16 +1,12 @@
-"""Desktop command dispatch and runtime startup."""
+"""Desktop runtime startup and version lookup."""
 
-import argparse
 import json
 import os
 from pathlib import Path
 import sys
 
-from .packaging import APP_NAME, PROJECT_ROOT
-
-
-def _version() -> str:
-    resource_root = Path(getattr(sys, "_MEIPASS", PROJECT_ROOT))
+def desktop_version(project_root: Path) -> str:
+    resource_root = Path(getattr(sys, "_MEIPASS", project_root))
     settings_path = resource_root / "src" / "settings" / "settings.json"
     return str(json.loads(settings_path.read_text(encoding="utf-8")).get("version", "dev"))
 
@@ -28,14 +24,19 @@ def _show_duplicate_instance_warning(message: str) -> None:
         print(message, file=sys.stderr)
 
 
-def run_desktop() -> None:
-    if sys.platform == "darwin" and getattr(sys, "frozen", False):
-        os.environ["FLET_VIEW_PATH"] = str(Path(sys.executable).resolve().parents[1] / "Helpers")
+def run_desktop(*, app_name: str, project_root: Path) -> None:
     from src.services.runtime import RuntimeInstanceAlreadyRunning
     from src.flet_pages.application import run_flet_application
     from src.tools.log_collector import log
 
     try:
+        if sys.platform == "darwin":
+            if getattr(sys, "frozen", False):
+                client_directory = Path(sys.executable).resolve().parents[1] / "Helpers"
+            else:
+                from .native_client import development_client_directory
+                client_directory = development_client_directory(app_name=app_name, project_root=project_root)
+            os.environ["FLET_VIEW_PATH"] = str(client_directory)
         run_flet_application()
     except RuntimeInstanceAlreadyRunning as error:
         log.warning(str(error))
@@ -43,21 +44,3 @@ def run_desktop() -> None:
     except Exception as error:
         log.error(f"Flet 执行器启动失败：{error}")
         raise
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description="芒果执行器桌面入口")
-    parser.add_argument("--build", action="store_true", help="使用 PyInstaller 打包当前平台桌面程序")
-    parser.add_argument("--self-check", action="store_true", help=argparse.SUPPRESS)
-    parser.add_argument("--version", action="store_true", help="输出执行器版本")
-    args = parser.parse_args()
-    if args.build:
-        from .packaging import build_desktop_executable
-        build_desktop_executable()
-    elif args.self_check:
-        from .packaging import packaged_self_check
-        packaged_self_check()
-    elif args.version:
-        print(f"mango-actuator { _version() }")
-    else:
-        run_desktop()

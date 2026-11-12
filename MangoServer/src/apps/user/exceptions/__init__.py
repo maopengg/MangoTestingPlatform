@@ -47,3 +47,8 @@ USER_GENERAL_PROJECT_PRODUCT_PERMISSION_RELATION_DELETE_BINDING_INVALID = ErrorD
 
 USER_PROJECT_PRODUCT_OWNER_DELETE_BINDING_INVALID = ErrorDefinition(code=41017,
                                                                     message='项目产品负责人-有关联数据，请先更换负责人后再删除用户！')
+USER_ENDPOINT_PERMISSION_INVALID = ErrorDefinition(code=41018, message='角色菜单或接口授权配置无效，请刷新后重试。')
+USER_CONFIG_INVALID = ErrorDefinition(code=41019, message='用户配置格式无效，请检查后重试。')
+USER_ROLE_AUTHORIZATION_INVALID = ErrorDefinition(code=41020, message='角色授权配置格式无效，请联系管理员检查。')
+USER_ROLE_AUTHORIZATION_TRANSFER_INVALID = ErrorDefinition(code=41021, message='授权备份、角色身份或现有授权冲突，未写入授权，请检查后重试。')
+USER_HTTP_PERMISSION_POLICY_MISSING = ErrorDefinition(code=41022, message='接口未登记权限策略，请联系开发人员补充配置。')

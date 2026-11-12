@@ -5,7 +5,7 @@ from django.test import SimpleTestCase
 from django.utils import timezone
 
 from src.apps.test_center.exceptions import TestCenterError
-from src.apps.test_center.services.diagnostic_markdown import DiagnosticMarkdownService
+from src.apps.test_center.services.diagnostics.diagnostic_markdown import DiagnosticMarkdownService
 
 
 class DiagnosticMarkdownServiceTests(SimpleTestCase):
@@ -47,10 +47,10 @@ class DiagnosticMarkdownServiceTests(SimpleTestCase):
             self.assertFalse(storage_name.startswith(('test_file/', 'uitest/')))
 
     @patch(
-        'src.apps.test_center.services.diagnostic_markdown.build_public_file_url',
+        'src.apps.test_center.services.diagnostics.diagnostic_markdown.build_public_file_url',
         return_value='https://files.example.com/diagnostic.md',
     )
-    @patch('src.apps.test_center.services.diagnostic_markdown.default_storage.get_modified_time')
+    @patch('src.apps.test_center.services.diagnostics.diagnostic_markdown.default_storage.get_modified_time')
     def test_metadata_returns_download_url(self, get_modified_time, build_url):
         modified_time = timezone.now()
         get_modified_time.return_value = modified_time

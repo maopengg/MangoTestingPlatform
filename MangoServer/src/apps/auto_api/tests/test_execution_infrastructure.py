@@ -4,7 +4,7 @@ from django.test import SimpleTestCase
 from mangotools.enums import TaskEnum
 
 from src.apps.data_factory.exceptions import DataFactoryError, DATASOURCE_GOVERNOR_UNAVAILABLE, DATASOURCE_SETTLEMENT_FAILED
-from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService
+from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
 
 
 class ApiInfrastructureTests(SimpleTestCase):
@@ -27,7 +27,7 @@ class ApiInfrastructureTests(SimpleTestCase):
                                                            summary={'infrastructure_blocked': True})
 
     def test_reconciled_cleanup_finishes_success_without_masking_business_failure(self):
-        from src.apps.data_factory.services.infrastructure import DatasourceInfrastructureService as Infrastructure
+        from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService as Infrastructure
         for status in (TaskEnum.SUCCESS.value, TaskEnum.FAIL.value):
             runtime = self.runtime()
             def cleanup():
@@ -85,9 +85,9 @@ class ApiInfrastructureTests(SimpleTestCase):
         self.assertFalse(getattr(result, 'infrastructure_blocked', False))
 
     def test_read_row_limit_in_post_custom_function_is_case_failure_with_direct_reason(self):
-        from src.apps.auto_api.services.base.api_base_test_setup import APIBaseTestSetup
+        from src.apps.auto_api.services.execution.base.api_base_test_setup import APIBaseTestSetup
         from src.apps.auto_api.exceptions import API_CASE_POST_FUNCTION_FAILED
-        from src.apps.data_factory.services.datasource_cost import DatasourceCostService
+        from src.apps.data_factory.services.governance.datasource_cost import DatasourceCostService
         setup = APIBaseTestSetup.__new__(APIBaseTestSetup)
         def sql(*args):
             DatasourceCostService.abort_result(Mock(), Mock(), limit=100, observed_rows=101)
@@ -120,15 +120,15 @@ class ApiInfrastructureTests(SimpleTestCase):
 
     def test_business_request_never_calls_datasource_governor_or_backlog_gate(self):
         from types import SimpleNamespace
-        from src.apps.auto_api.services.base.api_base_test_setup.base_request import BaseRequest
+        from src.apps.auto_api.services.execution.base.api_base_test_setup.base_request import BaseRequest
         from src.apps.auto_api.schemas.execution import ApiExecutionRequest
         request = BaseRequest.__new__(BaseRequest)
         request.timeout, request.test_data = 30, None
         request.test_object = SimpleNamespace(environment=0, project_product_id=1)
         body = SimpleNamespace(request_body=None, request_files=None, content_type=None, close=Mock())
         request.send_request = Mock()
-        with patch('src.apps.auto_api.services.base.api_base_test_setup.base_request.prepare_request_body', return_value=body), \
-                patch('src.apps.data_factory.services.datasource_governor.DatasourceGovernorService.acquire',
+        with patch('src.apps.auto_api.services.execution.base.api_base_test_setup.base_request.prepare_request_body', return_value=body), \
+                patch('src.apps.data_factory.services.governance.datasource_governor.DatasourceGovernorService.acquire',
                       side_effect=AssertionError('business request must not acquire SQL quota')), \
                 patch('src.apps.data_factory.services.execution_capacity.DatasourceExecutionCapacityService.wait_for_cleanup_backlog',
                       side_effect=AssertionError('business request must not wait for fixture backlog')):
@@ -140,7 +140,7 @@ class ApiInfrastructureTests(SimpleTestCase):
         import threading
         from concurrent.futures import ThreadPoolExecutor
         from types import SimpleNamespace
-        from src.apps.auto_api.services.base.api_base_test_setup.base_request import BaseRequest
+        from src.apps.auto_api.services.execution.base.api_base_test_setup.base_request import BaseRequest
         from src.apps.auto_api.schemas.execution import ApiExecutionRequest
         barrier = threading.Barrier(100)
         lock = threading.Lock()
@@ -160,9 +160,9 @@ class ApiInfrastructureTests(SimpleTestCase):
             instance = BaseRequest.__new__(BaseRequest)
             instance.timeout, instance.test_data = 30, None
             return instance.http(ApiExecutionRequest(method='GET', url=f'https://example.com/{index}'), 1)
-        with patch('src.apps.auto_api.services.base.api_base_test_setup.base_request.prepare_request_body', side_effect=prepare), \
+        with patch('src.apps.auto_api.services.execution.base.api_base_test_setup.base_request.prepare_request_body', side_effect=prepare), \
                 patch.object(BaseRequest, 'send_request', transport), \
-                patch('src.apps.data_factory.services.datasource_governor.DatasourceGovernorService.policy',
+                patch('src.apps.data_factory.services.governance.datasource_governor.DatasourceGovernorService.policy',
                       side_effect=AssertionError('business request must not read datasource policy')), \
                 ThreadPoolExecutor(max_workers=100) as pool:
             futures = [pool.submit(execute, index) for index in range(100)]
@@ -175,12 +175,12 @@ class ApiInfrastructureTests(SimpleTestCase):
 
     def test_direct_debug_request_does_not_consult_datasource_policy(self):
         from types import SimpleNamespace
-        from src.apps.auto_api.services.base.api_base_test_setup.base_request import BaseRequest
+        from src.apps.auto_api.services.execution.base.api_base_test_setup.base_request import BaseRequest
         from src.apps.auto_api.schemas.execution import ApiExecutionRequest
         body = SimpleNamespace(request_body=None, request_files=None, content_type=None, close=Mock())
-        with patch('src.apps.auto_api.services.base.api_base_test_setup.base_request.prepare_request_body', return_value=body), \
-                patch('src.apps.auto_api.services.base.api_base_test_setup.base_request.HttpSseProtocolClient') as client, \
-                patch('src.apps.data_factory.services.datasource_governor.DatasourceGovernorService.policy',
+        with patch('src.apps.auto_api.services.execution.base.api_base_test_setup.base_request.prepare_request_body', return_value=body), \
+                patch('src.apps.auto_api.services.execution.base.api_base_test_setup.base_request.HttpSseProtocolClient') as client, \
+                patch('src.apps.data_factory.services.governance.datasource_governor.DatasourceGovernorService.policy',
                       side_effect=AssertionError('business debug must not read datasource policy')):
             BaseRequest.test_http(ApiExecutionRequest(method='GET', url='https://example.com'))
         client.return_value.test_request.assert_called_once()
