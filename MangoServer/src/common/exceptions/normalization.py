@@ -1,11 +1,12 @@
 """Normalize expected failures at Django REST and MCP protocol boundaries."""
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models.deletion import ProtectedError, RestrictedError
 from mangotools.exceptions import MangoToolsError
 from rest_framework.exceptions import ValidationError
 
 from .base import MangoServerError
-from .definitions import ExpectedExceptionInfo, RESOURCE_NOT_FOUND
+from .definitions import ExpectedExceptionInfo, RESOURCE_NOT_FOUND, RESOURCE_DELETE_PROTECTED
 
 
 def _safe_validation_details(value):
@@ -22,6 +23,13 @@ def _safe_validation_details(value):
 
 def normalize_expected_exception(error: Exception) -> ExpectedExceptionInfo | None:
     """Convert expected exceptions without exposing model or infrastructure internals."""
+    if isinstance(error, (ProtectedError, RestrictedError)):
+        return ExpectedExceptionInfo(
+            code=RESOURCE_DELETE_PROTECTED.code,
+            message=RESOURCE_DELETE_PROTECTED.message,
+            error_code=str(RESOURCE_DELETE_PROTECTED.code),
+            log_status_code=409,
+        )
     if isinstance(error, (MangoServerError, MangoToolsError)):
         code = int(getattr(error, "code", 300) or 300)
         message = str(getattr(error, "msg", None) or error)

@@ -141,11 +141,12 @@ class SqlExecutionRecord(models.Model):
     )
     test_env = models.SmallIntegerField(verbose_name="测试环境", db_index=True, null=True, blank=True)
     datasource_type = models.SmallIntegerField(verbose_name="执行时数据源类型", null=True, blank=True)
+    # 历史审计保留执行证据，不阻止删除已无业务资产使用的逻辑数据源。
     datasource_alias = models.ForeignKey(
-        to="DataFactoryDatasourceAlias", to_field="id", on_delete=models.PROTECT, null=True, blank=True,
+        to="DataFactoryDatasourceAlias", to_field="id", on_delete=models.SET_NULL, null=True, blank=True,
     )
     database = models.ForeignKey(
-        to=Database, to_field="id", on_delete=models.PROTECT, null=True, blank=True,
+        to=Database, to_field="id", on_delete=models.SET_NULL, null=True, blank=True,
     )
     sql_text = models.TextField(verbose_name="脱敏执行内容")
     sql_parameters = models.JSONField(verbose_name="脱敏执行参数", default=dict, blank=True)

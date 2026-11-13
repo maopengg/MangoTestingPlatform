@@ -14,12 +14,14 @@ from .definitions import (
     SAVE_VALIDATION_FAILED,
     UPDATE_VALIDATION_FAILED,
     RESOURCE_ACCESS_DENIED,
+    RESOURCE_DELETE_PROTECTED,
     JSONPATH_OPERATION_FAILED,
 )
 from .normalization import normalize_expected_exception
 
 __all__ = [
     "CommonError",
+    "RESOURCE_DELETE_PROTECTED",
     "ErrorDefinition",
     "ExpectedExceptionInfo",
     "MangoServerError",

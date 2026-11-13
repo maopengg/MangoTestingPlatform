@@ -31,4 +31,7 @@ RESOURCE_NOT_FOUND = ErrorDefinition(code=300, message='指定的数据不存在
 SAVE_VALIDATION_FAILED = ErrorDefinition(code=1201, message='内部保存失败，请检查数据：{}')
 UPDATE_VALIDATION_FAILED = ErrorDefinition(code=1202, message='内部更新失败，请检查数据：{}')
 RESOURCE_ACCESS_DENIED = ErrorDefinition(code=1203, message='暂无权限访问当前资源，请联系管理员开通权限')
+RESOURCE_DELETE_PROTECTED = ErrorDefinition(
+    code=1205, message='当前记录仍被业务数据引用，不能删除；请先处理相关关联后重试。',
+)
 JSONPATH_OPERATION_FAILED = ErrorDefinition(code=1204, message='{}失败{}。{}')

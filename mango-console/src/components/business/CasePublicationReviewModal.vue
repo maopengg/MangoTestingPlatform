@@ -216,6 +216,10 @@
     }
     try { await Promise.all(Array.from({ length: Math.min(3, ids.value.length) }, worker)) }
     finally { if (version === requestVersion) loading.value = false }
+    if (version === requestVersion) {
+      const reasons = [...new Set(rows.value.flatMap(row => row.eligibility_reasons || []))]
+      if (reasons.length) Message.warning(reasons.join('；'))
+    }
   }
 
   function selectRows(keys: Array<string | number>) {

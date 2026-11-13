@@ -58,7 +58,7 @@ function setup() {
     requiresCaseReview, readPublicationReview, checkPublicationResponse,
     approveApiCasePrepublication: async (id) => { calls.push(id); return { code: 200 } },
     putUiCasePublication: async (id) => { calls.push(id); return { code: 200 } }, putPytestCasePublication: async (id) => { calls.push(id); return { code: 200 } },
-    Message: { success: () => {} }, emit: (...args) => emitted.push(args),
+    Message: { success: () => {}, warning: (message) => calls.push({ warning: message }) }, emit: (...args) => emitted.push(args),
     get: async ({ data }) => summary(data().case_id),
   }
   const names = Object.keys(state)
@@ -72,6 +72,38 @@ test('review selection excludes blocked rows and clears acknowledgment', () => {
   create().selectRows([1, 2])
   assert.deepEqual(state.selectedIds.value, [1])
   assert.equal(state.acknowledged.value, false)
+})
+
+test('batch eligibility warning explains the condition without listing case names', () => {
+  const source = read('src/views/apitest/case/index.vue')
+  assert.match(source, /prepublicationActionWarning\(selectedRows, action\)/)
+  assert.doesNotMatch(source, /以下用例不符合操作条件/)
+})
+
+test('batch warnings distinguish state, ownership, mixed selection and revert', () => {
+  const page = parse(read('src/views/apitest/case/index.vue')).descriptor.scriptSetup.content
+  const ast = ts.createSourceFile('case.ts', page, ts.ScriptTarget.Latest, true)
+  const fn = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name.text === 'prepublicationActionWarning')
+  const code = ts.transpileModule(fn.getText(ast), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
+  const warn = new Function(code + ';return prepublicationActionWarning')()
+  const row = { publication_status: 'prepublished', prepublished_revision_id: 1, is_product_owner: true }
+  assert.equal(warn([row], 'publish'), '')
+  assert.match(warn([{ ...row, is_product_owner: false }], 'publish'), /请联系产品负责人/)
+  assert.equal(warn([{ ...row, publication_status: 'published' }], 'revert'), '包含已发布用例，请使用取消发布')
+  assert.equal(warn([{ ...row, publication_status: 'unpublished' }], 'revert'), '包含未发布用例，无需重复退回')
+  assert.equal(warn([{ ...row, publication_status: 'published' }, { ...row, publication_status: 'published' },
+    { ...row, publication_status: 'unpublished' }], 'publish'), '包含已发布用例，无需重复发布；包含未发布用例，请先提交预发布')
+})
+
+test('review warnings use authoritative candidate eligibility reasons and deduplicate them', async () => {
+  const { state, calls, create } = setup()
+  state.get = async ({ data }) => {
+    const response = summary(data().case_id)
+    response.data.eligibility_reasons = ['预发布版本执行失败，请执行通过后再发布']
+    return response
+  }
+  await create().reload()
+  assert.deepEqual(calls, [{ warning: '预发布版本执行失败，请执行通过后再发布' }])
 })
 
 test('single and batch publication only publish checked eligible rows', async () => {
@@ -366,7 +398,7 @@ test('API batch review rejects mixed states before passing IDs into the drawer',
   const page = parse(read('src/views/apitest/case/index.vue')).descriptor.scriptSetup.content
   const ast = ts.createSourceFile('case.ts', page, ts.ScriptTarget.Latest, true)
   const code = ast.statements.filter((node) => ts.isFunctionDeclaration(node) &&
-    ['batchUpdatePrepublication', 'canApproveCasePrepublication'].includes(node.name.text))
+    ['batchUpdatePrepublication', 'canApproveCasePrepublication', 'prepublicationActionWarning'].includes(node.name.text))
     .map((node) => ts.transpileModule(node.getText(ast), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText).join('\n')
   for (const status of ['published', 'unpublished', 'draft_changed', null]) {
     const opened = [], warnings = []
@@ -377,7 +409,9 @@ test('API batch review rejects mixed states before passing IDs into the drawer',
       { warning: (message) => warnings.push(message) }, { value: { open: (...args) => opened.push(args) } })
     invoke('publish')
     assert.deepEqual(opened, [])
-    assert.match(warnings[0], /#30 Invalid/)
+    assert.equal(warnings[0], status === 'published' ? '包含已发布用例，无需重复发布'
+      : status === 'unpublished' ? '包含未发布用例，请先提交预发布'
+      : '预发布版本信息异常，请刷新后重试')
     dataList[1].publication_status = 'prepublished'
     invoke('publish')
     assert.deepEqual(opened, [['api', [29, 30]]])

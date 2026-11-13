@@ -8,6 +8,7 @@ from functools import wraps
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import close_old_connections, utils
+from django.db.models.deletion import ProtectedError, RestrictedError
 from mangotools.exceptions import MangoToolsError
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
@@ -45,7 +46,7 @@ def error_response(app: str):
         def wrapper(self, request: Request, *args, **kwargs):
             try:
                 return func(self, request, *args, **kwargs)
-            except (MangoServerError, MangoToolsError) as error:
+            except (MangoServerError, MangoToolsError, ProtectedError, RestrictedError) as error:
                 normalized = normalize_expected_exception(error)
                 return ResponseData.fail(
                     (normalized.code, normalized.message),

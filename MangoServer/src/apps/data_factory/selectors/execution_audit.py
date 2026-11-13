@@ -36,7 +36,9 @@ class ExecutionAuditSelector:
             product_scope &= Q(project_product_id__in=ProjectProductScopeService.project_product_ids_for_user(user))
         # 全局连接当前没有产品归属；读取需要连接管理菜单权限，不能借用产品可见范围。
         if 'config.datasource:read' in keys:
-            product_scope |= Q(project_product_id__isnull=True, database_id__isnull=False)
+            product_scope |= Q(project_product_id__isnull=True) & (
+                Q(database_id__isnull=False) | Q(source_detail__target_kind='connection')
+            )
         return queryset.filter(product_scope)
 
     @staticmethod

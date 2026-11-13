@@ -8,6 +8,14 @@ class TestCenterError(MangoServerError):
     pass
 
 
+PRODUCT_MODULE_COVERAGE_DELETE_PROTECTED = ErrorDefinition(
+    code=40050, message='模块存在覆盖扫描、接口快照或覆盖用例，不能删除；请先迁移或清理相关覆盖资产。',
+)
+PRODUCT_MODULE_DELETE_PROTECTED = ErrorDefinition(
+    code=40051, message='模块仍被业务数据引用，不能删除；请先处理相关业务资产。',
+)
+
+
 EXECUTION_EFFICIENCY_RANGE_INVALID = ErrorDefinition(code=40105, message='执行效能查询时间范围须为正且不超过31天')
 EXECUTION_EFFICIENCY_TOO_LARGE = ErrorDefinition(code=40106, message='执行效能数据量超过查询上限，请缩小时间或项目、任务范围')
 

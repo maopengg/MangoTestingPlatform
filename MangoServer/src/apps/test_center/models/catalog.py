@@ -1,4 +1,11 @@
-from django.db import models
+from django.db import models, transaction
+from django.db.models.deletion import ProtectedError
+
+from src.apps.test_center.exceptions import (
+    PRODUCT_MODULE_COVERAGE_DELETE_PROTECTED,
+    PRODUCT_MODULE_DELETE_PROTECTED,
+    TestCenterError,
+)
 
 from src.apps.system.exceptions import (
     SYSTEM_CATALOG_PROJECT_PRODUCT_RELATION_DELETE_BINDING_INVALID,
@@ -84,6 +91,7 @@ class ProjectProduct(models.Model):
         ordering = ['-id']
         unique_together = ('project', 'name')
 
+    @transaction.atomic
     def delete(self, *args, **kwargs):
         if ProductModule.objects.filter(project_product=self).exists():
             raise SystemError(SYSTEM_CATALOG_MODULE_RELATION_DELETE_BINDING_INVALID)
@@ -210,7 +218,18 @@ class ProductModule(models.Model):
             raise SystemError(SYSTEM_CATALOG_REQUIREMENT_RELATION_DELETE_BINDING_INVALID)
         if ManualTestCase.objects.filter(module=self).exists():
             raise SystemError(SYSTEM_FUNCTIONAL_CASE_DELETE_PROTECTED)
-        super().delete(*args, **kwargs)
+        try:
+            super().delete(*args, **kwargs)
+        except ProtectedError as error:
+            from src.apps.auto_api.models import (
+                ModuleCoverageCase, ModuleCoverageInterfaceSnapshot, ModuleCoverageModuleInterface, ModuleCoverageScan,
+            )
+            coverage_models = (ModuleCoverageCase, ModuleCoverageInterfaceSnapshot,
+                               ModuleCoverageModuleInterface, ModuleCoverageScan)
+            definition = (PRODUCT_MODULE_COVERAGE_DELETE_PROTECTED
+                          if any(isinstance(item, coverage_models) for item in error.protected_objects)
+                          else PRODUCT_MODULE_DELETE_PROTECTED)
+            raise TestCenterError(definition) from error
 
 
 class TestObject(models.Model):

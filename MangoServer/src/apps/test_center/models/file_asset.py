@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, router, transaction
 
 from src.apps.user.models import User
 
@@ -41,8 +41,12 @@ class FileData(models.Model):
         db_table = "file_data"
 
     def delete(self, *args, **kwargs):
-        if self.test_file:
-            self.test_file.delete()
-        if self.failed_screenshot:
-            self.failed_screenshot.delete()
-        super().delete(*args, **kwargs)
+        using = kwargs.get('using') or router.db_for_write(type(self), instance=self)
+        files = [(field.storage, field.name) for field in (self.test_file, self.failed_screenshot) if field]
+        with transaction.atomic(using=using):
+            result = super().delete(*args, **kwargs)
+            # 文件存储不参与数据库回滚，整批提交后才能实际删除文件。
+            for storage, name in files:
+                transaction.on_commit(lambda storage=storage, name=name: storage.delete(name),
+                                      using=using, robust=True)
+        return result

@@ -1,12 +1,22 @@
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models.deletion import ProtectedError, RestrictedError
 from django.test import SimpleTestCase
 from rest_framework.exceptions import ValidationError
 
 from src.apps.auto_api.exceptions import AutoApiError
-from src.common.exceptions import ErrorDefinition, normalize_expected_exception
+from src.common.exceptions import ErrorDefinition, RESOURCE_DELETE_PROTECTED, normalize_expected_exception
 
 
 class UnifiedExceptionTests(SimpleTestCase):
+    def test_foreign_key_protection_is_expected_and_does_not_expose_internal_objects(self):
+        for error in (ProtectedError('private database and object details', []),
+                      RestrictedError('private database and object details', [])):
+            normalized = normalize_expected_exception(error)
+            self.assertEqual(normalized.code, RESOURCE_DELETE_PROTECTED.code)
+            self.assertEqual(normalized.log_status_code, 409)
+            self.assertEqual(normalized.details, {})
+            self.assertNotIn('private', normalized.message)
+
     def test_definition_formats_message_and_defaults_machine_code(self):
         definition = ErrorDefinition(code=1234, message="对象 {} 不存在")
 

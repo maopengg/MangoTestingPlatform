@@ -9,7 +9,7 @@ from threading import Thread
 from django.conf import settings
 from django.core.exceptions import FieldError, FieldDoesNotExist
 from django.core.paginator import Paginator
-from django.db import models, transaction
+from django.db import models, router, transaction
 from django.db.models.query import QuerySet
 from django.utils.module_loading import import_string
 from minio.error import S3Error
@@ -388,22 +388,24 @@ class ModelCRUD(GenericAPIView):
         _id = request.query_params.get('id')
         id_list = [int(id_str) for id_str in request.query_params.getlist('id[]')]
         try:
-            if not _id and id_list:
-                for i in id_list:
-                    instance = self.model.objects.get(pk=i)
+            using = router.db_for_write(self.model)
+            with transaction.atomic(using=using):
+                # 先锁定并核对全部目标，后续任一删除或审计失败均回滚整批。
+                ids = [_id] if _id else id_list
+                if not ids:
+                    return ResponseData.fail(RESPONSE_MSG_0029)
+                manager = self.model._default_manager.using(using).select_for_update()
+                instances = [manager.get(pk=key) for key in sorted(set(ids), key=str)]
+                for instance in instances:
                     if not self.has_instance_data_scope_permission(request, instance):
                         return ResponseData.fail(RESPONSE_MSG_0210)
-                    before_snapshot = self.capture_config_snapshot(instance).snapshot
+                snapshots = [(instance, self.capture_config_snapshot(instance).snapshot) for instance in instances]
+                for instance, before_snapshot in snapshots:
                     instance.delete()
                     self.record_config_delete(instance, before_snapshot, request=request)
-            else:
-                instance = self.model.objects.get(id=_id)
-                if not self.has_instance_data_scope_permission(request, instance):
-                    return ResponseData.fail(RESPONSE_MSG_0210)
-                before_snapshot = self.capture_config_snapshot(instance).snapshot
-                instance.delete()
-                self.record_config_delete(instance, before_snapshot, request=request)
-                self.asynchronous_callback(request.query_params.get('parent_id'))
+                if _id:
+                    parent_id = request.query_params.get('parent_id')
+                    transaction.on_commit(lambda: self.asynchronous_callback(parent_id), using=using, robust=True)
         except CommonError as error:
             return ResponseData.fail((error.code, error.msg))
         except self.model.DoesNotExist:
@@ -444,10 +446,12 @@ class ModelCRUD(GenericAPIView):
 
     @classmethod
     def inside_delete(cls, _id: int) -> None:
-        instance = cls.model.objects.get(id=_id)
-        before_snapshot = cls.capture_config_snapshot(instance).snapshot
-        instance.delete()
-        cls.record_config_delete(instance, before_snapshot, source='internal')
+        using = router.db_for_write(cls.model)
+        with transaction.atomic(using=using):
+            instance = cls.model._default_manager.using(using).select_for_update().get(pk=_id)
+            before_snapshot = cls.capture_config_snapshot(instance).snapshot
+            instance.delete()
+            cls.record_config_delete(instance, before_snapshot, source='internal')
 
     def asynchronous_callback(self, parent_id: int = None):
         if hasattr(self, 'callback'):

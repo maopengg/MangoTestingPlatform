@@ -452,9 +452,22 @@ class AuditVisibilityTests(SimpleTestCase):
         ExecutionAuditSelector.visible(Mock())
         product_predicate = queryset.filter.call_args.args[0]
         self.assertEqual(product_predicate.connector, 'AND')
+        self.assertNotIn('source_detail__target_kind', str(product_predicate))
         permissions.permission_keys_for_user.return_value.add('config.datasource:read')
         ExecutionAuditSelector.visible(Mock())
-        self.assertEqual(queryset.filter.call_args.args[0].connector, 'OR')
+        predicate = queryset.filter.call_args.args[0]
+        self.assertEqual(predicate.connector, 'OR')
+        self.assertIn("('source_detail__target_kind', 'connection')", str(predicate))
+        self.assertIn("('project_product_id__isnull', True)", str(predicate))
+
+    @patch('src.apps.data_factory.selectors.execution_audit.SqlExecutionRecord.objects')
+    @patch('src.apps.data_factory.selectors.execution_audit.PermissionMenuService')
+    def test_super_admin_keeps_all_audit_history_with_read_permission(self, permissions, objects):
+        permissions.permission_keys_for_user.return_value = {'system.sql_execution:read'}
+        permissions.is_effective_super_admin.return_value = True
+        queryset = objects.select_related.return_value
+        self.assertIs(ExecutionAuditSelector.visible(Mock()), queryset)
+        queryset.filter.assert_not_called()
 
     def test_serializer_historical_type_and_empty_scope(self):
         historical = SimpleNamespace(datasource_type=None, database=SimpleNamespace(db_type=10),

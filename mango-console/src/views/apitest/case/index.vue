@@ -727,6 +727,22 @@
     )
   }
 
+  function prepublicationActionWarning(rows: ApiCaseVersionListRow[], action: 'publish' | 'revert') {
+    const reasons = new Set<string>()
+    for (const row of rows) {
+      if (row.publication_status === 'published') {
+        reasons.add(action === 'publish' ? '包含已发布用例，无需重复发布' : '包含已发布用例，请使用取消发布')
+      } else if (row.publication_status === 'unpublished') {
+        reasons.add(action === 'publish' ? '包含未发布用例，请先提交预发布' : '包含未发布用例，无需重复退回')
+      } else if (row.publication_status !== 'prepublished' || !row.prepublished_revision_id) {
+        reasons.add('预发布版本信息异常，请刷新后重试')
+      } else if (!row.is_product_owner) {
+        reasons.add('包含非本人负责产品的用例，请联系产品负责人处理')
+      }
+    }
+    return [...reasons].join('；')
+  }
+
   function batchUpdatePrepublication(action: 'publish' | 'revert') {
     const version = pageVersion
     if (publicationActionCaseId.value !== null || batchPublicationAction.value !== null) return
@@ -742,16 +758,9 @@
       Message.warning('部分选中用例已不在当前列表，请刷新后重新选择')
       return
     }
-    const invalidRows = selectedRows.filter((row) => !canApproveCasePrepublication(row))
-    if (invalidRows.length) {
-      const names = invalidRows
-        .slice(0, 5)
-        .map((row) => `#${row.id} ${row.name}`)
-        .join('、')
-      const suffix = invalidRows.length > 5 ? ` 等 ${invalidRows.length} 条` : ''
-      Message.warning(
-        `以下用例不符合操作条件：${names}${suffix}。仅允许产品负责人处理预发布状态的用例`
-      )
+    const warning = prepublicationActionWarning(selectedRows, action)
+    if (warning) {
+      Message.warning(warning)
       return
     }
     if (action === 'publish') {
