@@ -3,6 +3,20 @@
 from django.db import migrations, models
 
 
+class RemoveFieldIfExists(migrations.RemoveField):
+    def database_forwards(self, app_label, schema_editor, from_state, to_state):
+        model = from_state.apps.get_model(app_label, self.model_name)
+        column = model._meta.get_field(self.name).column
+        # MySQL DDL may commit after the client times out, before Django records
+        # this migration. Retrying must retain the remaining operations.
+        with schema_editor.connection.cursor() as cursor:
+            columns = schema_editor.connection.introspection.get_table_description(
+                cursor, model._meta.db_table,
+            )
+        if any(item.name == column for item in columns):
+            super().database_forwards(app_label, schema_editor, from_state, to_state)
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,15 +24,15 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
+        RemoveFieldIfExists(
             model_name='user',
             name='last_login_time',
         ),
-        migrations.RemoveField(
+        RemoveFieldIfExists(
             model_name='user',
             name='mailbox',
         ),
-        migrations.RemoveField(
+        RemoveFieldIfExists(
             model_name='user',
             name='selected_environment',
         ),
