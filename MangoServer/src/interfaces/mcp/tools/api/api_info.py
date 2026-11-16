@@ -181,7 +181,7 @@ def register_api_info_tools(mcp):
             body_config: dict | None = None,
             sse_config: dict | None = None,
     ) -> dict:
-        """创建 API 接口定义。url 只能传路径，不能传域名；params 请传 JSON 字符串或对象。ApiInfo.headers 默认保持 null。
+        """创建 API 接口定义。url 只能传路径，不能传域名；路径变量必须写成 ${{变量名}}，例如 /categories/${{CATEGORY_ID}}，不能写 {CATEGORY_ID}；变量名须与 Case 缓存一致，区分大小写。params 请传 JSON 字符串或对象。ApiInfo.headers 默认保持 null。
 
         protocol_type 当前执行 http/sse/mcp/grpc/websocket；MCP接口必须通过MCP Tool导入生成，gRPC接口必须通过gRPC Method导入生成，不允许用本工具手工创建。
         WebSocket接口可以用本工具创建：protocol_type=websocket，method 传 WEBSOCKET_CONNECT 对应枚举值，url 仍只传路径，body_type 固定按 json 保存，body_config 保存 {connect,messages,close} 消息脚本。
@@ -308,7 +308,7 @@ def register_api_info_tools(mcp):
             preview_token: str | None = None,
             confirm_text: str | None = None,
     ) -> dict:
-        """更新 API 接口定义。module_id 可修改接口所属模块；url 只能传路径，不能传域名。
+        """更新 API 接口定义。module_id 可修改接口所属模块；url 只能传路径，不能传域名。路径变量必须写成 ${{变量名}}，例如 /categories/${{CATEGORY_ID}}，不能写 {CATEGORY_ID}；变量名须与 Case 缓存一致，区分大小写。
 
         headers 为接口请求头对象，值可使用全局变量表达式；省略时保留原配置。
         如需更新请求体，请同时传 body_type/body_config；body_type=raw 时 body_config.content_type 默认 application/json；文件上传使用 body_config.files[].file_id。

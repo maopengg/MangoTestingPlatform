@@ -43,22 +43,28 @@ class TestSuiteInfrastructureService:
                 or (expected_push_time is not None and detail.push_time != expected_push_time)):
             return False
         control = ReportInfrastructureBlock(attempt=attempt, observed_at=timezone.now().isoformat(), issues=issues)
+        detail.status = TaskEnum.INFRASTRUCTURE_BLOCKED.value
         if snapshot is not None:
-            TestSuiteExecutionResultService.save_snapshot(detail, snapshot)
+            try:
+                with transaction.atomic():
+                    TestSuiteExecutionResultService.save_snapshot(detail, snapshot)
+            except Exception:
+                from src.common.logging import log
+                log.system.exception('平台受阻快照保存失败，保留受阻控制记录：detail=%s', detail.id)
         children, meta = TestSuiteExecutionResultService.unpack_summary_data(detail.summary_data)
         detail.summary_data = {'children': children or [], 'meta': {**(meta or {}),
             'execution_control': control.model_dump(mode='json')}}
         reasons = list(dict.fromkeys(issue.message for issue in issues))
         detail.error_message = '本次回归未完成：' + '；'.join(reasons) if reasons else '执行已中断，平台未收到完整结果。请核查本次请求及清理状态，勿直接重复写入'
-        detail.success = detail.fail = detail.warning = 0
         detail.failure_reason = (ReportFailureReasonEnum.PLATFORM.value if not issues or any(
             issue.origin == ReportFailureReasonEnum.PLATFORM for issue in issues) else ReportFailureReasonEnum.ENVIRONMENT.value)
         detail.failure_description = '；'.join(reasons) or detail.error_message
-        detail.status = TaskEnum.FAIL.value
+        detail.status = TaskEnum.INFRASTRUCTURE_BLOCKED.value
         detail.save(update_fields=['status', 'summary_data', 'error_message', 'success', 'fail', 'warning',
                                    'failure_reason', 'failure_description', 'update_time'])
         cls.close_interrupted_trace(detail)
         cls._finish_suite(suite)
+        transaction.on_commit(lambda: cls.sync_todos(suite.id))
         from src.common.logging import log
         log.system.warning('event=report_infrastructure_blocked detail_id=%s attempt=%s issue_codes=%s',
                            detail.id, attempt, [issue.code for issue in issues])
@@ -82,8 +88,29 @@ class TestSuiteInfrastructureService:
         statuses = set(TestSuiteDetails.objects.filter(test_suite_id=suite.id).values_list('status', flat=True))
         if statuses.intersection((TaskEnum.STAY_BEGIN.value, TaskEnum.PROCEED.value)):
             return
-        suite.status = TaskEnum.FAIL.value
+        suite.status = (TaskEnum.FAIL.value if TaskEnum.FAIL.value in statuses or TestSuiteDetails.objects.filter(
+                            test_suite_id=suite.id, is_excluded=False, fail__gt=0).exists()
+                        else TaskEnum.INFRASTRUCTURE_BLOCKED.value)
         suite.save(update_fields=['status', 'update_time'])
+        transaction.on_commit(lambda: TestSuiteInfrastructureService.finish_notice(suite.id))
+
+    @staticmethod
+    def finish_notice(suite_id):
+        from src.apps.test_center.services.reporting.test_suite.send_notice import SendNotice
+        from src.common.logging import log
+        try:
+            SendNotice(suite_id).send_test_suite()
+        except Exception:
+            log.system.exception('平台受阻报告通知收口失败：report=%s', suite_id)
+
+    @staticmethod
+    def sync_todos(suite_id):
+        from src.apps.task_center.services.workbench.report_infrastructure import ReportInfrastructureTodoService
+        from src.common.logging import log
+        try:
+            ReportInfrastructureTodoService.sync(suite_id)
+        except Exception:
+            log.system.exception('报告受阻待办同步失败，保留报告并等待定时补偿：report=%s', suite_id)
 
     @classmethod
     def repair_legacy_blocks(cls, limit=200):
@@ -107,7 +134,7 @@ class TestSuiteInfrastructureService:
                 or not cls.is_blocked(detail.summary_data)):
             return False
         # 不改执行次数、快照、复核许可或清理责任；更不重新领取原请求。
-        detail.status = TaskEnum.FAIL.value
+        detail.status = TaskEnum.INFRASTRUCTURE_BLOCKED.value
         detail.save(update_fields=['status'])
         cls.close_interrupted_trace(detail)
         cls._finish_suite(suite)

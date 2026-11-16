@@ -24,6 +24,7 @@ export interface HomeReportSummary {
 }
 
 export interface HomeExecutionTrend {
+  api_label: string
   labels: string[]
   api_count: number[]
   ui_count: number[]

@@ -924,6 +924,18 @@
   },
   "PytestExecutionResult": {
     "properties": {
+      "collected_count": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Collected Count"
+      },
       "dispatch_id": {
         "title": "Dispatch Id",
         "type": "string"
@@ -964,6 +976,11 @@
         ],
         "default": null,
         "title": "Result Data"
+      },
+      "results_complete": {
+        "default": false,
+        "title": "Results Complete",
+        "type": "boolean"
       },
       "source_snapshot": {
         "additionalProperties": true,

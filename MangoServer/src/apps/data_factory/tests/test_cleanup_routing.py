@@ -104,8 +104,9 @@ class CleanupRoutingTests(SimpleTestCase):
         self.mocks['enqueue'].assert_not_called()
 
     def test_context_provided_by_user_cannot_forge_report_routing(self):
-        self.assertEqual(Schedule.execution_context({CLEANUP_REPORT_CONTEXT_KEY: {
-            'parent_case_detail_id': 99, 'parent_attempt': 99}}), {})
+        saved = Schedule.execution_context({CLEANUP_REPORT_CONTEXT_KEY: {
+            'parent_case_detail_id': 99, 'parent_attempt': 99}})
+        self.assertNotIn(CLEANUP_REPORT_CONTEXT_KEY, saved)
         token = Schedule.set_owner(17, 1)
         try:
             saved = Schedule.execution_context({CLEANUP_REPORT_CONTEXT_KEY: {'forged': True}})

@@ -39,16 +39,9 @@ export function createStepFormItems(): FormItem[] {
       label: '模块名称',
       key: 'module',
       value: ref(''),
-      placeholder: '请选择测试模块名称',
-      required: true,
+      placeholder: '可选，按模块筛选接口',
+      required: false,
       type: 'cascader',
-      validator: function () {
-        if (!this.value) {
-          Message.error(this.placeholder || '')
-          return false
-        }
-        return true
-      },
     },
     {
       label: '接口名称',

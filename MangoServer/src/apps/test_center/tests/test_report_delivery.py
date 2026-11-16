@@ -70,6 +70,7 @@ class ReportDeliveryTests(SimpleTestCase):
         self.assertTrue(ReportDeliveryConfig().failed_cases_only)
         self.assertEqual(set(ReportDeliveryConfig().model_dump()), {
             'version', 'enabled', 'include_details', 'failed_cases_only', 'include_screenshots', 'link_ttl_seconds',
+            'html_public_base_url',
         })
         for values in ({'feishu': 'attachment'}, {'storage': 'tos'}, {'retention_days': 1}, {'auto_generate': False},
                        {'failure_policy': 'strict'}, {'link_mode': 'download'}, {'max_size_mb': 25}, {'payload_scope': 'all'},

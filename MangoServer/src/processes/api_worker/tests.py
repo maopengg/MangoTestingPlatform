@@ -27,7 +27,7 @@ class _FakeEngine:
 
 class WorkerDbContextTests(TestCase):
     def test_api_connection_reused_in_same_context(self):
-        database = SimpleNamespace(id=1)
+        database = SimpleNamespace(id=1, cache_key='example-database-v1', update_time=timezone.now())
         test_object = SimpleNamespace(id=2)
         connection = _FakeConnection()
 

@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from src.apps.auto_api.enums.module_coverage import (
     ModuleCoverageCaseStatus,
+    ModuleCoverageExecutionResult,
     ModuleCoverageInterfaceStatus,
     ModuleCoverageScanMode,
     ModuleCoverageScanScope,
@@ -222,7 +223,9 @@ class ModuleCoverageCompletionMixin:
                 latest_result, executed_revision_id = cls.latest_api_case_execution(
                     snapshot.api_case_id, **({'revision_id': snapshot.api_case_revision_id} if cross_module else {}),
                 )
-                if latest_result:
+                if cross_module:
+                    item.execution_result = latest_result or ModuleCoverageExecutionResult.NOT_EXECUTED
+                elif latest_result:
                     item.execution_result = latest_result
                 if executed_revision_id and not cross_module:
                     item.api_case_revision = ApiCaseRevision.objects.filter(

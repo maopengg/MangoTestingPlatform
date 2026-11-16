@@ -146,14 +146,18 @@ class ExecutionResultService:
         ).values_list('attempt_no', flat=True).first()
         execution_result = ExecutionResult.objects.create(**fields, attempt_no=(latest_attempt_no or 0) + 1)
         if fields['target_type'] == cls.TARGET_API_CASE:
-            from src.apps.auto_api.services.coverage.module_coverage import ModuleCoverageService
-
-            ModuleCoverageService.sync_api_case_execution_result(
-                fields['target_id'],
-                fields['status'],
-                fields['revision_id'],
-            )
+            transaction.on_commit(lambda: cls.sync_coverage_result(
+                fields['target_id'], fields['status'], fields['revision_id']))
         return execution_result
+
+    @staticmethod
+    def sync_coverage_result(case_id, status, revision_id):
+        from src.apps.auto_api.services.coverage.module_coverage import ModuleCoverageService
+        try:
+            with transaction.atomic():
+                ModuleCoverageService.sync_api_case_execution_result(case_id, status, revision_id)
+        except Exception:
+            log.system.exception('覆盖状态同步失败，执行结果已保存：case=%s revision=%s', case_id, revision_id)
 
     @classmethod
     def prepare_result_payload(

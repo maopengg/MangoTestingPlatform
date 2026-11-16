@@ -69,6 +69,9 @@ class BaseRequest:
         finally:
             prepared_body.close()
         log.api.debug(f'API响应数据：{response.model_dump_json()}')
+        recorder = getattr(self, 'trace_recorder', None)
+        if recorder is not None:
+            recorder.record_request_progress()
         return response
 
     def send_request(self, request_data, prepared_body):

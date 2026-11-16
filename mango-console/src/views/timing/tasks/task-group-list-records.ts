@@ -51,10 +51,10 @@ export function taskGroupSummary(value: unknown): TaskGroupSummary {
 }
 function readRecent(value: unknown): GroupRecentResult {
   const row = taskListObject(value), status = row.status_key
-  if (status !== 'success' && status !== 'fail' && status !== 'warning' && status !== 'proceed' && status !== 'stay_begin' && status !== 'stopped') throw Error('Invalid group recent status')
+  if (status !== 'success' && status !== 'fail' && status !== 'warning' && status !== 'proceed' && status !== 'stay_begin' && status !== 'stopped' && status !== 'blocked') throw Error('Invalid group recent status')
   return { group_execution_id: taskListId(row.group_execution_id), status: number(row.status), status_key: status, status_text: text(row.status_text),
     test_env: number(row.test_env), test_env_text: text(row.test_env_text), create_time: row.create_time == null ? null : text(row.create_time), update_time: row.update_time == null ? null : text(row.update_time),
-    duration_ms: number(row.duration_ms), total: count(row.total), success: count(row.success), fail: count(row.fail), warning: count(row.warning), proceed: count(row.proceed), stay_begin: count(row.stay_begin), stopped: count(row.stopped), excluded_count: row.excluded_count == null ? 0 : count(row.excluded_count), pass_rate: row.pass_rate == null ? null : number(row.pass_rate) }
+    duration_ms: number(row.duration_ms), total: count(row.total), success: count(row.success), fail: count(row.fail), warning: count(row.warning), proceed: count(row.proceed), stay_begin: count(row.stay_begin), stopped: count(row.stopped), blocked: row.blocked == null ? 0 : count(row.blocked), excluded_count: row.excluded_count == null ? 0 : count(row.excluded_count), pass_rate: row.pass_rate == null ? null : number(row.pass_rate) }
 }
 export function readTaskGroupRecord(value: unknown): TaskGroupListRecord {
   const row = taskListObject(value), draft = readTaskGroupDraft(row), product = relation(row.project_product)

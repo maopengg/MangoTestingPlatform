@@ -67,6 +67,47 @@ test('step selection ignores old module responses and retains failed form withou
   assert.equal(h.visible.value,true);assert.equal(h.saving.value,false);assert.equal(h.draft.pinned_api_info_revision,30)
   h.exposed.close();h.exposed.open();assert.equal(h.draft.api_info,null);assert.equal(h.apiOptions.value.length,0);h.close()
 })
+test('module is optional; opening and clearing the filter loads product interfaces and saves without a module',async()=>{
+  const calls=[],writes=[]
+  const h=harness('ApiCaseStepEditor','draft,apiOptions,getModuleApi,loadApiInfoRevisions,save,formItems',{
+    api:{getApiInfoOptions:async product=>{calls.push(product);return [{id:40,name:'Product API',published_revision_id:50,published_version_label:'V2'}]},
+      getApiInfoName:async()=>({data:[{key:20,title:'Module API',published_revision_id:30}]}),
+      postApiCaseDetailed:async p=>{writes.push(p);return {msg:'ok'}}},
+  })
+  h.exposed.open();await flush()
+  assert.deepEqual(calls,[2]);assert.equal(h.formItems.find(item=>item.key==='module').required,false)
+  assert.equal(h.apiOptions.value[0].title,'Product API（已发布 V2）')
+  h.getModuleApi(8);await flush();assert.equal(h.apiOptions.value[0].key,20)
+  h.draft.module=null;h.getModuleApi(null);await flush()
+  assert.deepEqual(calls,[2,2]);assert.equal(h.apiOptions.value[0].key,40)
+  h.draft.api_info=40;h.loadApiInfoRevisions(40)
+  assert.equal(await h.save(),true);assert.equal(writes[0].api_info,40)
+  assert.equal(writes[0].pinned_api_info_revision,50);h.close()
+})
+test('editing without a module retains the exact bound revision even when product options omit it',async()=>{
+  const writes=[]
+  const h=harness('ApiCaseStepEditor','draft,apiOptions,save',{
+    api:{getApiInfoOptions:async()=>[{id:40,name:'Other API',published_revision_id:50}],
+      putApiCaseDetailed:async p=>{writes.push(p);return {msg:'ok'}}},
+  })
+  h.exposed.open({...step,pinned_api_info_revision:30});await flush()
+  assert.equal(h.draft.module,null);assert.equal(h.draft.api_info,20)
+  assert.equal(h.draft.pinned_api_info_revision,30)
+  assert.deepEqual(h.apiOptions.value.map(item=>item.key),[40,20])
+  assert.equal(await h.save(),true);assert.equal(writes[0].pinned_api_info_revision,30);h.close()
+})
+test('switching products loads its unfiltered interfaces and ignores late product responses',async()=>{
+  const requests=[]
+  const h=harness('ApiCaseStepEditor','draft,apiOptions,changeProduct,optionsLoading',{
+    api:{getApiInfoOptions:product=>{const request=deferred();requests.push({product,...request});return request.promise}},
+  })
+  h.exposed.open();h.changeProduct(3)
+  assert.deepEqual(requests.map(item=>item.product),[2,3])
+  assert.equal(h.draft.module,null);assert.equal(h.draft.api_info,'')
+  requests[1].resolve([{id:40,name:'New product',published_revision_id:50}]);await flush()
+  requests[0].resolve([{id:20,name:'Old product',published_revision_id:30}]);await flush()
+  assert.deepEqual(h.apiOptions.value.map(item=>item.key),[40]);assert.equal(h.optionsLoading.value,false);h.close()
+})
 test('new steps persist normal or recovery timing and reopening resets the timing draft',async()=>{
   const writes=[]
   const h=harness('ApiCaseStepEditor','draft,save',{

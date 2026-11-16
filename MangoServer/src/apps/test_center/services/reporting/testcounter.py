@@ -14,6 +14,7 @@ from src.apps.auto_pytest.models import PytestCase
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.test_center.models import TestSuiteDetails
 from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService
+from src.apps.test_center.services.reporting.api_counting import ApiReportCountingService
 
 
 class TestCounter:
@@ -45,7 +46,7 @@ class TestCounter:
         result_data = TestSuiteExecutionResultService.get_result_data(test_suite_details)
         if not result_data:
             case_counter['fail'] += test_suite_details.case_sum
-            return case_counter
+            return ApiReportCountingService.counter(test_suite_details, case_counter)
         for r in result_data:
             if r.get('status') == StatusEnum.SUCCESS.value:
                 case_counter['success'] += 1
@@ -54,7 +55,7 @@ class TestCounter:
             else:
                 case_counter['fail'] += 1
         TestCounter.fill_missing_warnings(case_counter, test_suite_details.case_sum)
-        return case_counter
+        return ApiReportCountingService.counter(test_suite_details, case_counter)
 
     @staticmethod
     def res_pytest(test_suite_details) -> dict:
@@ -85,6 +86,22 @@ class TestCounter:
     @staticmethod
     def default_counter() -> dict:
         return {'success': 0, 'fail': 0, 'warning': 0}
+
+    @staticmethod
+    def completed_pytest_count(result):
+        """仅完整且匹配收集数量的真实结果可替换预估；旧协议和异常占位保持原数量。"""
+        if not getattr(result, 'results_complete', False) or getattr(result, 'error_message', None):
+            return None
+        items = result.result_data
+        count = getattr(result, 'collected_count', None)
+        if (not isinstance(items, list) or not items or type(count) is not int
+                or count != len(items)):
+            return None
+        if not all(isinstance(item, dict) and item.get('status') in (
+                TaskEnum.SUCCESS.value, TaskEnum.FAIL.value, TaskEnum.WARNING.value,
+        ) for item in items):
+            return None
+        return count
 
     @staticmethod
     def fill_missing_warnings(case_counter: dict, case_sum: int):

@@ -8,6 +8,7 @@ class WorkbenchTodoSourceTypeEnum(BaseEnum):
     DATA_FACTORY_EXECUTION = 4
     SQL_EXECUTION = 5
     API_CASE = 6
+    TEST_REPORT = 7
 
     @classmethod
     def obj(cls):
@@ -18,6 +19,7 @@ class WorkbenchTodoSourceTypeEnum(BaseEnum):
             4: "数据工厂执行记录",
             5: "SQL执行记录",
             6: "API Case",
+            7: "测试报告",
         }
 
 
@@ -31,6 +33,7 @@ class WorkbenchTodoEventTypeEnum(BaseEnum):
     SLOW_SQL = 7
     DATA_FACTORY_CLEANUP_REQUIRED = 8
     API_CASE_PREPUBLICATION_REVIEW = 9
+    REPORT_INFRASTRUCTURE_BLOCKED = 10
 
     @classmethod
     def obj(cls):
@@ -44,6 +47,7 @@ class WorkbenchTodoEventTypeEnum(BaseEnum):
             7: "慢SQL",
             8: "数据工厂需要清理",
             9: "API Case 预发布待审核",
+            10: "测试执行平台受阻",
         }
 
 

@@ -219,6 +219,16 @@ class SqlDriverAuditService:
 
         @event.listens_for(engine, 'handle_error')
         def failed(error_context):
+            from sqlalchemy.exc import InvalidRequestError, StatementError
+            original = error_context.original_exception
+            wrapped = error_context.sqlalchemy_exception
+            # construct_params 在 DBAPI execute 前发现缺少绑定值；不能把该错误当成写入结果未知。
+            # 不泛化到所有 StatementError：驱动拒绝、断连和事务提交异常仍走原分类。
+            if (error_context.execution_context is None and not error_context.is_disconnect
+                    and isinstance(wrapped, StatementError)
+                    and isinstance(original, InvalidRequestError) and original.code == 'cd3x'):
+                original._datasource_operation_not_sent = True
+                wrapped._datasource_operation_not_sent = True
             started = getattr(error_context.execution_context, 'mango_execute_started', None)
             if started is not None:
                 error_context.execution_context.mango_execute_started = None

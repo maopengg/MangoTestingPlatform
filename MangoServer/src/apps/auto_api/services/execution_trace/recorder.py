@@ -2,7 +2,8 @@ import os
 import uuid
 import socket
 from functools import wraps
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
+from contextvars import ContextVar
 from typing import Any
 
 import time
@@ -13,13 +14,22 @@ from src.apps.auto_api.models import ApiCaseExecutionStep, ApiCaseExecutionTrace
 from src.apps.auto_api.services.execution_trace.context import ApiCaseExecutionContext
 from src.common.logging import log
 
+_execution_trace = ContextVar('api_execution_trace', default=None)
+
+
+def current_execution_trace():
+    recorder = _execution_trace.get()
+    return recorder.trace if recorder is not None else None
+
 
 def trace_lifecycle(stage):
     def decorate(function):
         @wraps(function)
         def guarded(self, *args, **kwargs):
             try:
-                return function(self, *args, **kwargs)
+                recorder = getattr(self, 'trace_recorder', None)
+                with recorder.execution_scope() if recorder is not None else nullcontext():
+                    return function(self, *args, **kwargs)
             except BaseException as error:
                 recorder = getattr(self, 'trace_recorder', None)
                 if recorder is not None:
@@ -71,6 +81,35 @@ class ApiCaseExecutionTraceRecorder:
         self.trace: ApiCaseExecutionTrace | None = None
         self._sort = 0
         self._start_time = time.time()
+        self._custom_depth = 0
+        self._last_request_progress = float('-inf')
+
+    @contextmanager
+    def execution_scope(self):
+        token = _execution_trace.set(self)
+        try:
+            yield
+        finally:
+            _execution_trace.reset(token)
+
+    @contextmanager
+    def custom_function(self):
+        self._custom_depth += 1
+        try:
+            yield
+        finally:
+            self._custom_depth -= 1
+
+    def record_request_progress(self):
+        """只有自定义函数内真实返回的接口调用才是进展，存活和续租不作为进展。"""
+        now = time.monotonic()
+        if (not self._custom_depth or self.trace is None or self.trace.finished_at is not None
+                or self.trace.status != ApiCaseTraceStatus.PROCEED or now - self._last_request_progress < 15):
+            return
+        self._last_request_progress = now
+        step = self.start_step(ApiCaseTraceStepType.REQUEST, '自定义函数内部接口调用完成',
+                               input_summary={'internal_call': True})
+        self.finish_step(step)
 
     def create_trace(self, context: ApiCaseExecutionContext) -> ApiCaseExecutionTrace | None:
         try:

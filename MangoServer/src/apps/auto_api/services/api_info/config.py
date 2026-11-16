@@ -1,6 +1,8 @@
+import re
 from urllib.parse import urlparse
 
 from src.apps.auto_api.enums import ApiBodyTypeEnum, ApiProtocolTypeEnum
+from src.apps.auto_api.exceptions import API_INFO_PATH_VARIABLE_INVALID
 from src.apps.auto_api.models import ApiInfo
 from src.apps.auto_api.services.api_info.runtime import ApiInfoRuntimeService
 from src.apps.test_center.models import ProjectProduct
@@ -23,7 +25,45 @@ class ApiInfoConfigService:
             return "ApiInfo.url 必须以 / 开头，只保存请求路径，例如 /clm/api/category/update。"
         if parsed.query or parsed.fragment:
             return "ApiInfo.url 只保存路径，不保存 query 或 fragment；query 参数请放到 params 字段。"
+        if not ApiInfoConfigService.valid_path_variables(value):
+            return API_INFO_PATH_VARIABLE_INVALID.message
         return None
+
+    @staticmethod
+    def valid_path_variables(value: str) -> bool:
+        # 只检查占位符边界，不执行表达式；保留嵌套表达式及函数参数中的 JSON/大括号。
+        cursor = 0
+        while match := re.search(r"[{}]", value[cursor:]):
+            opening = cursor + match.start()
+            if value[opening:opening + 2] != '{{' or opening == 0 or value[opening - 1] != '$':
+                return False
+            start = opening + 2
+            index, depth, quote, escaped = start, 0, None, False
+            while index < len(value):
+                character = value[index]
+                if escaped:
+                    escaped = False
+                elif quote:
+                    if character == '\\':
+                        escaped = True
+                    elif character == quote:
+                        quote = None
+                elif character in ('"', "'"):
+                    quote = character
+                elif character == '{':
+                    depth += 1
+                elif character == '}':
+                    if depth:
+                        depth -= 1
+                    else:
+                        if value[index:index + 2] != '}}' or not value[start:index].strip():
+                            return False
+                        cursor = index + 2
+                        break
+                index += 1
+            else:
+                return False
+        return True
 
     @staticmethod
     def find_duplicate_api_config(

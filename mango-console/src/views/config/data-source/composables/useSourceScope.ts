@@ -27,7 +27,7 @@ export function useSourceScope(reset: () => void, resume: () => void = () => {})
     }
   })
   watch(
-    () => [route.path, user.token, user.roleId],
+    [() => route.path, () => user.token, () => user.roleId],
     () => {
       invalidate()
       if (isActive()) resume()

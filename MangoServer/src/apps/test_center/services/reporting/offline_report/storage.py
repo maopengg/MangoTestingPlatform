@@ -20,7 +20,7 @@ from src.apps.test_center.exceptions import REPORT_ARTIFACT_FAILED, TestCenterEr
 class ReportStorageService:
     """报告使用独立前缀；本地文件放在非公开目录，仅通过鉴权下载。"""
 
-    def __init__(self):
+    def __init__(self, *, public_base=None):
         backend = getattr(settings, 'FILE_STORAGE_BACKEND', 'local')
         self.identity = {
             'backend': backend,
@@ -35,7 +35,7 @@ class ReportStorageService:
         self.region = getattr(settings, 'MINIO_STORAGE_REGION', None) or (
             'cn-beijing' if backend == 'tos' else 'us-east-1'
         )
-        self.public_base = getattr(settings, 'MINIO_PUBLIC_BASE_URL', '')
+        self.public_base = public_base or getattr(settings, 'MINIO_PUBLIC_BASE_URL', '')
         self.local = FileSystemStorage(location=self.identity['location']) if backend == 'local' else None
 
     def _client(self, public=False):

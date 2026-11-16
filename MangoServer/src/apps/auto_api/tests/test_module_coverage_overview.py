@@ -21,9 +21,9 @@ def queryset(rows=()):
     return result
 
 
-def module(identity, parent=None, product=1):
+def module(identity, parent=None, product=1, level=3):
     return SimpleNamespace(
-        id=identity, parent_id=parent.id if parent else None, project_product_id=product,
+        id=identity, parent_id=parent.id if parent else None, project_product_id=product, level=level,
         project_product=SimpleNamespace(name="后端服务", project=SimpleNamespace(name="测试项目")),
         name=f"模块{identity}", get_full_path=lambda: f"{parent.get_full_path()}/模块{identity}" if parent else f"模块{identity}",
     )
@@ -56,6 +56,24 @@ def case(identity, interface_id, module_id, **kwargs):
 
 
 class ModuleCoverageOverviewTests(SimpleTestCase):
+    def test_only_third_level_rows_preserve_parent_filters_and_legacy_totals(self):
+        root = module(1, level=1)
+        branch = module(2, root, level=2)
+        leaf = module(3, branch)
+        modules = [root, branch, leaf]
+        result = self.overview(modules, interfaces=[interface(1, 1), interface(2, 3)],
+                               scans=[scan(1, 1, include_descendants=True)])
+        self.assertEqual([row['id'] for row in result['modules']], [3])
+        self.assertEqual(result['summary']['module_count'], 1)
+        self.assertEqual(result['summary']['interface_count'], 2)
+        self.assertEqual(result['project_scan_summary']['leaf_count'], 1)
+        self.assertTrue(result['modules'][0]['scan_completed'])
+        scoped = self.overview(modules, module_ids=[2, 3])
+        self.assertEqual([row['id'] for row in scoped['modules']], [3])
+        empty = self.overview([root, branch])
+        self.assertEqual(empty['modules'], [])
+        self.assertEqual(empty['project_scan_summary']['leaf_count'], 0)
+
     def test_analysis_gap_keeps_bindings_and_scene_progress_but_not_full_coverage(self):
         for options in (
             {"gap_reason": "缺少业务分支"},

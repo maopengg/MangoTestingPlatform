@@ -35,6 +35,9 @@ class TaskGroupRecentResultTests(SimpleTestCase):
         self.assertEqual(result['excluded_count'], 10)
 
     def setUp(self):
+        display_names = patch('src.apps.system.services.configuration.system_config.SystemConfigService.get_environment_display_names', return_value={})
+        display_names.start()
+        self.addCleanup(display_names.stop)
         now = timezone.now()
         self.execution = SimpleNamespace(id=68, task_group_id=2, test_env=0,
                                          expected_count=2, planned_at=now, update_time=now,
@@ -44,6 +47,12 @@ class TaskGroupRecentResultTests(SimpleTestCase):
                                       status=ScheduleFireStatusEnum.FAIL.value),
                       SimpleNamespace(group_execution_id=68, test_suite_id=None,
                                       status=ScheduleFireStatusEnum.SKIPPED.value)]
+
+    def test_platform_blocked_is_not_shown_as_business_failure(self):
+        self.suite.status = TaskEnum.INFRASTRUCTURE_BLOCKED.value
+        rows = {101: [{'status': 6, 'case_sum': 10, 'success': 0, 'fail': 0, 'warning': 0}]}
+        result = TaskGroupRecentResultService.summarize(self.execution, self.fires, rows)
+        self.assertEqual((result['status'], result['status_key'], result['blocked'], result['fail']), (6, 'blocked', 10, 0))
 
     def test_current_results_replace_previous_failure_without_counting_generation_failure(self):
         rows = {101: [{'status': TaskEnum.SUCCESS.value, 'case_sum': 10, 'success': 10, 'fail': 0, 'warning': 0}]}

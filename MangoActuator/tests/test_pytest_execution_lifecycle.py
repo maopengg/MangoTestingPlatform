@@ -45,6 +45,29 @@ def build_case_model():
 
 
 class PytestExecutionLifecycleTests(IsolatedAsyncioTestCase):
+    async def test_real_parameterized_allure_results_report_actual_complete_count(self):
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / 'test_count.py'
+            target.write_text(
+                'import pytest\n@pytest.mark.parametrize("n", [1, 2, 3])\n'
+                'def test_count(n):\n    assert n != 2\n', encoding='utf-8',
+            )
+            runner = TestCase(None, build_case_model(), report_result=False)
+            results = await runner.pytest_test_case(
+                allure=str(root / 'allure'), log=MagicMock(), test_env_name='MANGO_TEST_ENV',
+                test_env=0, file_path=str(target), work_dir=str(root), quiet=True,
+            )
+            await runner.result_data(results)
+            self.assertEqual(len(results), 3)
+            self.assertTrue(runner.case_result.results_complete)
+            self.assertEqual(runner.case_result.collected_count, 3)
+            self.assertEqual(sum(item['status'] == 1 for item in results), 2)
+            self.assertEqual(sum(item['status'] == 0 for item in results), 1)
+
     async def test_workspace_failure_is_not_silently_suppressed(self):
         runner = TestCase(None, build_case_model(), report_result=False)
         with patch.object(runner, 'resolve_git_credentials', new=AsyncMock()), \

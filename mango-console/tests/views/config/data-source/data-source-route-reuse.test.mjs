@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 import ts from 'typescript'
+import * as vue from 'vue'
 import {
   createRenderer,
   defineComponent,
@@ -24,6 +25,17 @@ new Function(
   }).outputText
 )(exports)
 const { getRouteViewKey } = exports
+
+const scopeExports = {}
+new Function('exports', 'require', ts.transpileModule(
+  fs.readFileSync(new URL('../../../../src/views/config/data-source/composables/useSourceScope.ts', import.meta.url), 'utf8'),
+  { compilerOptions: { module: ts.ModuleKind.CommonJS } }
+).outputText)(scopeExports, name => {
+  if (name === 'vue') return vue
+  if (name === 'vue-router') return { useRoute }
+  if (name === '@/store/modules/user') return { default: () => ({ token: 'fixture-session', roleId: 1 }) }
+  throw new Error('Unexpected dependency: ' + name)
+})
 
 // Use Vue's renderer and memory history without launching a browser.
 const renderer = createRenderer({
@@ -53,11 +65,12 @@ const renderer = createRenderer({
   patchProp() {},
 })
 
-test('connection query changes reuse the page and do not reload the connection list', async () => {
+test('dynamic menu connection routes without static meta reuse the page and connection list', async () => {
   let connectionListRequests = 0
   const page = defineComponent({
     setup() {
       const route = useRoute()
+      scopeExports.useSourceScope(() => {}, () => { connectionListRequests++ })
       onMounted(() => {
         connectionListRequests++
       })
@@ -67,7 +80,7 @@ test('connection query changes reuse the page and do not reload the connection l
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
-      { path: '/config/data-source/index', component: page, meta: { reuseOnQueryChange: true } },
+      { path: '/config/data-source/index', component: page, meta: { permissionKey: 'config.datasource' } },
       { path: '/other', component: page },
     ],
   })

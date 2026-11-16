@@ -303,7 +303,7 @@ import { reportLoadError } from '@/utils/load-error'
     const target = new Date(item.due_at || item.occurred_at).getTime()
     if (!Number.isFinite(target)) return '-'
     const minutes = Math.round((target - Date.now()) / 60_000)
-    if (item.source_type === 6) {
+    if (item.source_type === 6 || item.source_type === 7) {
       const waiting = Math.abs(Math.min(minutes, 0))
       if (waiting < 60) return `已等待 ${waiting} 分钟`
       if (waiting < 1440) return `已等待 ${Math.floor(waiting / 60)} 小时`
@@ -379,7 +379,7 @@ import { reportLoadError } from '@/utils/load-error'
     if (!polling.isAvailable() || handlingTodoId.value !== null || navigatingTodoId.value !== null) return
     const generation = actionGeneration, context = contextKey.value
     const path =
-      item.source_type === 6 ? '/apitest/case/index' : item.source_type === 1
+      item.source_type === 7 ? '/report/system/details' : item.source_type === 6 ? '/apitest/case/index' : item.source_type === 1
         ? '/uitest/auth-config/index'
         : item.source_type === 2
         ? '/apitest/auth-config/index'
@@ -405,7 +405,9 @@ import { reportLoadError } from '@/utils/load-error'
     const isCleanupFailure = item.event_type === 6
     dialog = Modal.confirm({
       title: '确认标记为已处理？',
-      content: isCleanupFailure
+      content: item.event_type === 10
+        ? '请确认平台已恢复，相关请求结果及清理状态已经核查。此操作只关闭待办，不会重试或修改原报告结果。'
+        : isCleanupFailure
         ? '请确认已在线下完成清理。该操作只关闭当前清理失败待办，不会再次执行数据清理。'
         : '该操作只关闭当前结构待确认事件，不会修改数据模型或数据库表结构。',
       okText: '已处理',
@@ -419,7 +421,8 @@ import { reportLoadError } from '@/utils/load-error'
         invalidateRead()
         let acknowledged = false
         try {
-          const message = readHandledTodo(await postSystemWorkbenchTodoHandled({ id }), id)
+          const message = readHandledTodo(await postSystemWorkbenchTodoHandled(item.event_type === 10
+            ? { id, handle_note: '已确认平台恢复，并核查相关请求结果及清理状态。' } : { id }), id)
           if (!current()) return false
           acknowledged = true
           items.value = items.value.filter(row => row.id !== id)

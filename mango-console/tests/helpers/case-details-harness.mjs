@@ -12,7 +12,7 @@ export function harness(name, bindings, overrides={}) {
   const events=[], cleanup=[]
   const props=vue.reactive({caseId:1,projectProductId:2,editLocked:false,stepCount:0,resultId:1,...overrides.props})
   let exposed
-  const api=new Proxy(overrides.api||{}, {get:(o,k)=>o[k]|| (async()=>({data:[],msg:'ok',code:200}))})
+  const api=new Proxy(overrides.api||{}, {get:(o,k)=>o[k]|| (k==='getApiInfoOptions'?async()=>[]:async()=>({data:[],msg:'ok',code:200}))})
   const modules={
     vue:{...vue,onBeforeUnmount:fn=>cleanup.push(fn),onDeactivated:fn=>cleanup.push(fn),onScopeDispose:fn=>cleanup.push(fn),onMounted:()=>{},onActivated:()=>{}},
     '@arco-design/web-vue':{Message:{success(){},error(){},warning(){},info(){}},Modal:overrides.Modal||{confirm(){}}},

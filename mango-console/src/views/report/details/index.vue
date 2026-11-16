@@ -13,7 +13,7 @@
             <i></i>
             <span>{{ currentStatusLabel }}</span>
             <i></i>
-            <span>通过率 {{ passRate }}%</span>
+            <span>通过率 {{ passRateLabel }}</span>
           </p>
           <a-button
             v-if="reportInfo?.diagnostic_file_path"
@@ -33,7 +33,7 @@
           </div>
           <div class="success-rate">
             <span>成功率</span>
-            <strong>{{ passRate }}%</strong>
+            <strong>{{ passRateLabel }}</strong>
           </div>
           <div class="success-rate-bar">
             <i :style="{ width: `${passRate}%` }"></i>
@@ -92,7 +92,7 @@
                 <span>执行结果占比</span>
                 <p>总用例 {{ totalCount }}，按当前报告状态分布</p>
               </div>
-              <strong>{{ passRate }}%</strong>
+              <strong>{{ passRateLabel }}</strong>
             </div>
             <StatusChart
               :loading="summaryLoading && !totalCount"
@@ -102,6 +102,7 @@
               :pending="summary.proceed_count || 0"
               :todo="summary.stay_begin_count || 0"
               :stopped="summary.stopped_count || 0"
+              :blocked="summary.blocked_count || 0"
             />
           </div>
 
@@ -164,7 +165,7 @@
           <div class="panel-title">
             <div>
               <span>执行覆盖进度</span>
-              <p>各自动化类型已执行 / 总用例</p>
+              <p>各自动化类型已结束 / 总用例；平台受阻不代表验证完成</p>
             </div>
             <em v-if="summaryLoading">更新中</em>
           </div>
@@ -172,7 +173,7 @@
             <div class="type-row">
               <div>
                 <span>{{ item.label }}</span>
-                <small>{{ item.done >= item.total ? '已执行完成' : '执行中' }}</small>
+                <small>{{ item.done >= item.total ? (item.blocked ? '执行已结束，结果不完整' : '已执行完成') : '执行中' }}</small>
               </div>
               <em>{{ item.done }}/{{ item.total }}</em>
             </div>
@@ -525,6 +526,7 @@ import { runLoadRequest } from '@/utils/load-error'
   })
   const failRatio = computed(() => ratio(summary.value.fail_count, totalCount.value))
   const passRate = computed(() => !totalCount.value && summary.value.excluded_count ? 100 : ratio(summary.value.success_count, totalCount.value))
+  const passRateLabel = computed(() => summary.value.blocked_count === totalCount.value && totalCount.value > 0 ? '—' : `${passRate.value}%`)
   const reportExecutionName = computed(
     () => reportInfo.value?.tasks?.name || reportInfo.value?.execution_name || ''
   )
@@ -541,6 +543,7 @@ import { runLoadRequest } from '@/utils/load-error'
         tabLabel: 'UI',
         total: summary.value.raw_ui_count ?? summary.value.ui_count ?? 0,
         done: summary.value.ui_in_progress_count || 0,
+        blocked: summary.value.ui_blocked_count,
         percent: ratioValue(summary.value.ui_in_progress_count, summary.value.ui_count) / 100,
       },
       {
@@ -550,6 +553,7 @@ import { runLoadRequest } from '@/utils/load-error'
         tabLabel: 'API',
         total: summary.value.raw_api_count ?? summary.value.api_count ?? 0,
         done: summary.value.api_in_progress_count || 0,
+        blocked: summary.value.api_blocked_count,
         percent: ratioValue(summary.value.api_in_progress_count, summary.value.api_count) / 100,
       },
       {
@@ -559,6 +563,7 @@ import { runLoadRequest } from '@/utils/load-error'
         tabLabel: 'Pytest',
         total: summary.value.raw_pytest_count ?? summary.value.pytest_count ?? 0,
         done: summary.value.pytest_in_progress_count || 0,
+        blocked: summary.value.pytest_blocked_count,
         percent:
           ratioValue(summary.value.pytest_in_progress_count, summary.value.pytest_count) / 100,
       },
@@ -566,6 +571,7 @@ import { runLoadRequest } from '@/utils/load-error'
         key: 'evaluation', type: '4', label: '效果测试', tabLabel: '效果测试',
         total: summary.value.raw_evaluation_count ?? summary.value.evaluation_count ?? 0,
         done: summary.value.evaluation_in_progress_count || 0,
+        blocked: 0,
         percent: ratioValue(summary.value.evaluation_in_progress_count, summary.value.evaluation_count) / 100,
       },
     ].filter((item) => item.total > 0)
@@ -634,6 +640,7 @@ import { runLoadRequest } from '@/utils/load-error'
   }
 
   function noticeText(status: number | null | undefined) {
+    if (summary.value.blocked_count && !summary.value.fail_count) return '平台受阻，未发送常规报告'
     return status == null ? '-' : enumStore.test_suite_notice.find(item => Number(item.key) === status)?.title || '-'
   }
 

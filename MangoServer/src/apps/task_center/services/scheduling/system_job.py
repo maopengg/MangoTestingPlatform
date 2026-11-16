@@ -137,8 +137,8 @@ class SystemJobService:
         SystemJobDefinition(
             key='clean_api_case_execution_traces',
             name='API 用例执行链路清理',
-            description='每天 02:15 删除超过 30 天的 API 用例执行链路 trace/step。',
-            cron='15 2 * * *',
+            description='每小时 15 分有界分批清理超过保留期的已结束 trace/step；待核查及资源台账引用保留，未清完下轮续跑。',
+            cron='15 * * * *',
             source_type=ScheduleFireSourceTypeEnum.DATA_CLEANUP.value,
             handler=SchedulerSystemJobService.clean_api_case_execution_traces,
         ),

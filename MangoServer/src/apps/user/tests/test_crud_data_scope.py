@@ -9,12 +9,57 @@ from django.http import QueryDict
 from django.test import SimpleTestCase
 
 from src.apps.auto_api.models import ApiCase, ApiCaseDetailed, ApiInfo
+from src.apps.system.models import CacheData
 from src.apps.user.constants import RELATED_PRODUCT_SCOPE_PATHS
 from src.apps.user.services.authorization.model_crud_scope import ModelCrudDataScopePolicy as Policy
 from src.apps.user.services.authorization.permission import ProjectProductScopeService
 
 
 class CrudDataScopeTests(SimpleTestCase):
+
+    def test_configuration_list_body_is_supported_without_relaxing_scope(self):
+        for unrestricted in (True, False):
+            with self.subTest(unrestricted=unrestricted), patch.object(Policy, '_unrestricted', return_value=unrestricted):
+                self.request.data = [{'id': 1, 'value': True}, {'id': 2, 'value': 60}]
+                self.assertTrue(Policy.has_request_permission(CacheData, self.request, set()))
+
+    def test_list_body_checks_each_supplied_product(self):
+        self.request.data = [{'project_product': 2}, {'project_product': 3}]
+        with patch.object(Policy, '_allowed_ids', return_value={2}), patch.object(ApiInfo.objects, 'filter') as rows:
+            self.assertFalse(Policy.has_request_permission(ApiInfo, self.request, set()))
+        rows.assert_not_called()
+
+    def test_list_body_checks_all_record_ids_and_query_target(self):
+        self.request.data = [{'id': 1, 'project_product': 2}, {'id': 2, 'project_product': 2}]
+        self.request.query_params = QueryDict('id=3&id[]=4')
+        with patch.object(Policy, '_allowed_ids', return_value={2}), \
+                patch.object(ApiInfo.objects, 'filter') as requested, \
+                patch.object(Policy, 'filter_queryset') as visible:
+            visible.return_value.count.return_value = 3
+            self.assertFalse(Policy.has_request_permission(ApiInfo, self.request, set()))
+            self.assertEqual(set(requested.call_args.kwargs['pk__in']), {'3', '4', 1, 2})
+            visible.return_value.count.return_value = 4
+            self.assertTrue(Policy.has_request_permission(ApiInfo, self.request, set()))
+
+    def test_malformed_body_is_denied_instead_of_raising_attribute_error(self):
+        for payload in (None, 'invalid', 1, [None], [1], [{'id': 1}, []]):
+            with self.subTest(payload=payload):
+                self.request.data = payload
+                self.assertFalse(Policy.has_request_permission(CacheData, self.request, set()))
+
+    def test_parent_scope_cannot_be_bypassed_with_a_list_body(self):
+        self.request.method = 'POST'
+        self.request.data = [{'case': 1}, {'case': 2}]
+        with patch.object(ApiCase.objects, 'filter'), patch.object(Policy, 'filter_queryset') as visible:
+            visible.return_value.exists.side_effect = [True, False]
+            self.assertFalse(Policy.has_request_permission(ApiCaseDetailed, self.request, set()))
+
+    def test_get_ignores_non_mapping_body_without_losing_query_scope_check(self):
+        self.request.method = 'GET'
+        self.request.data = []
+        self.request.query_params = QueryDict('project_product=3')
+        with patch.object(Policy, '_allowed_ids', return_value={2}):
+            self.assertFalse(Policy.has_request_permission(ApiInfo, self.request, set()))
 
     def test_product_authorization_is_reused_only_within_the_same_request(self):
         request = SimpleNamespace(user=SimpleNamespace(user_obj=SimpleNamespace(id=7)))

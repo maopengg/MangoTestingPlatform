@@ -463,6 +463,12 @@ AUTO_API_PROTOCOLS_GRPC_JSON_INVALID_CODE_JSON_INVALID = ErrorDefinition(code=31
 API_MCP_SESSION_CLOSED = ErrorDefinition(code=31204, message='MCP Session不存在或已关闭')
 API_RECOVERY_CONFIG_INVALID = ErrorDefinition(code=31215, message='步骤执行配置必须为对象，且仅支持布尔值 is_recovery')
 API_CURL_IMPORT_INVALID = ErrorDefinition(code=31216, message='cURL 命令格式不正确，请提供包含有效 HTTP/HTTPS 地址的 cURL（bash）命令')
+API_INFO_PATH_VARIABLE_INVALID = ErrorDefinition(
+    code=31234,
+    message='接口路径中的变量格式不正确，不能使用 {变量名}、${变量名} 或 {{变量名}}。'
+            '请填写 ${{变量名}}，例如将 /categories/{CATEGORY_ID} 改为 /categories/${{CATEGORY_ID}}；'
+            '变量名不能为空，并须与 Case 中准备的缓存变量名一致（区分大小写）。固定路径无需添加占位符。',
+)
 API_AUTH_PUBLIC_VARIABLES_INVALID = ErrorDefinition(code=31217, message='授权关联公共变量无效：请选择同产品、适用当前被测环境且键名不重复的有效变量')
 API_AUTH_CONTEXT_MISMATCH = ErrorDefinition(code=31218, message='用例与授权的租户或地址条件不匹配，请在用例中选择与该授权一致的公共变量')
 API_AUTH_TARGET_INVALID = ErrorDefinition(code=31219, message='授权适用目标地址无效或与当前请求不匹配，请选择当前产品、被测环境中已配置的地址；留空使用默认地址')
@@ -475,6 +481,6 @@ MODULE_COVERAGE_CASE_NOT_FOUND = ErrorDefinition(code=31227, message='绑定的A
 MODULE_COVERAGE_CASE_PRODUCT_MISMATCH = ErrorDefinition(code=31228, message='API Case {} 不属于当前产品 {}，不能绑定，请选择同产品用例')
 MODULE_COVERAGE_CASE_MODULE_MISMATCH = ErrorDefinition(code=31229, message='覆盖场景模块 {} 与API Case {} 的模块 {} 不同：{}。请核对原绑定及接口Owner/Consumer关系，不要复制Case绕过校验')
 MODULE_COVERAGE_CASE_REVISION_MISMATCH = ErrorDefinition(code=31230, message='API Case {} 的修订 {} 不存在或不属于该Case，请选择该Case的精确修订')
-MODULE_COVERAGE_CASE_TARGET_MISMATCH = ErrorDefinition(code=31231, message='API Case {} 的修订 {} 未能证明调用覆盖目标接口 {}，不能保留跨模块绑定，请核对修订中的接口步骤')
+MODULE_COVERAGE_CASE_TARGET_MISMATCH = ErrorDefinition(code=31231, message='API Case {} 的修订 {} 中未找到目标接口 {}，请选择包含该接口的正确修订')
 API_RESOURCE_CONFIG_INVALID = ErrorDefinition(code=31232, message='API执行资源清理配置无效：{}')
 API_RESOURCE_CLEANUP_FAILED = ErrorDefinition(code=31233, message='API执行资源清理未完成：{}。请按资源台账核查并重试清理，不要重跑创建请求')

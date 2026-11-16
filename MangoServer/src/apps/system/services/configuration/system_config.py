@@ -166,6 +166,11 @@ SYSTEM_CONFIG_REGISTRY = [
         value_type=CacheValueTypeEnum.DICT.value, default_value={}, sort=10,
     ),
     SystemConfigDefinition(
+        key='API_REPORT_COUNT_BY_SCENARIO', describe='API 按场景统计', group='report_delivery',
+        value_type=CacheValueTypeEnum.BOOL.value, default_value=True, sort=5,
+        placeholder='开启按各步骤场景数统计；关闭按参数化后的 Case 数统计。首页汇总随当前开关变化，单份报告保留创建时口径；不改变执行次数，UI/Pytest 不变。',
+    ),
+    SystemConfigDefinition(
         key="PLATFORM_NAME", describe="测试平台中文名称", group="system",
         default_value="芒果测试平台", required=True, sort=11,
         placeholder="登录页、导航、浏览器标题及通知中使用的名称",

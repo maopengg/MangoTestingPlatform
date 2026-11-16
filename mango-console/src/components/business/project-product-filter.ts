@@ -1,6 +1,7 @@
 export interface ProjectProductOption {
   label: string
   value: string | number
+  description?: string
   children?: ProjectProductOption[]
 }
 
@@ -9,6 +10,7 @@ export interface ProjectProductFilterNode {
   title: string
   selectable?: boolean
   productId?: string | number
+  productDescription?: string
   moduleId?: string | number
   projectGroupStart?: boolean
   children?: ProjectProductFilterNode[]
@@ -86,6 +88,7 @@ export function flattenProjectProducts(options: ProjectProductOption[]) {
     sortByLabel(project.children || []).map((product, productIndex) => ({
       projectProductId: product.value,
       title: `${project.label} / ${product.label}`,
+      ...(product.description?.trim() ? { productDescription: product.description.trim() } : {}),
       projectGroupStart: productIndex === 0,
     }))
   )
@@ -114,6 +117,7 @@ export function buildProjectProductFilterTree(
       key: `product:${product.value}`,
       title: product.label,
       productId: product.value,
+      ...(product.description?.trim() ? { productDescription: product.description.trim() } : {}),
     })),
   }))
 }
@@ -162,6 +166,7 @@ export function buildAllProductModuleFilterTree(
     projectProductId: string | number
     title: string
     projectGroupStart?: boolean
+    productDescription?: string
   }>,
   modulesByProduct: Record<string, ModuleOption[]>
 ): ProjectProductFilterNode[] {
@@ -172,6 +177,7 @@ export function buildAllProductModuleFilterTree(
         key: `product-group:${entry.projectProductId}`,
         title: entry.title,
         productId: entry.projectProductId,
+        ...(entry.productDescription ? { productDescription: entry.productDescription } : {}),
         projectGroupStart: entry.projectGroupStart,
         selectable: true,
         ...(children.length ? { children } : {}),

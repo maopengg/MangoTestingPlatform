@@ -1,5 +1,7 @@
 """通用 CRUD 的项目产品数据范围策略。"""
 
+from collections.abc import Mapping
+
 from django.db.models.query import QuerySet
 from django.db.models import Q
 
@@ -120,14 +122,18 @@ class ModelCrudDataScopePolicy:
 
     @classmethod
     def has_request_permission(cls, model, request, pytest_models: set[str]) -> bool:
-        if not cls.has_data_permission(model, request, request.query_params if request.method.lower() == 'get' else request.data, pytest_models):
+        payload = request.query_params if request.method.lower() == 'get' else request.data
+        items = payload if isinstance(payload, list) else [payload]
+        # 配置等批量接口使用列表请求；逐项校验，不能因兼容列表而放过跨产品写入。
+        if not all(isinstance(item, Mapping) and cls.has_data_permission(model, request, item, pytest_models)
+                   for item in items):
             return False
         if request.method.lower() not in {'get', 'put', 'patch', 'delete'}:
             return True
         ids = request.query_params.getlist('id[]') if hasattr(request.query_params, 'getlist') else request.query_params.get('id[]', [])
-        item_id = request.query_params.get('id') or request.data.get('id')
-        if item_id:
-            ids = [*ids, item_id]
+        body_items = request.data if isinstance(request.data, list) else [request.data]
+        ids = [*ids, *([request.query_params['id']] if request.query_params.get('id') else []),
+               *(item['id'] for item in body_items if isinstance(item, Mapping) and item.get('id'))]
         if not ids:
             return True
         user = cls._user(request)

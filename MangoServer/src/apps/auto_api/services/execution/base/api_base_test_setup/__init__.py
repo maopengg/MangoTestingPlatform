@@ -339,7 +339,9 @@ class APIBaseTestSetup(PublicBase):
 
     def execute_analytic_func(self, func_str, *args, error_msg=API_CUSTOM_FUNCTION_PARSE_FAILED):
         try:
-            return self.analytic_func(func_str)(*args)
+            recorder = getattr(self, 'trace_recorder', None)
+            with recorder.custom_function() if recorder is not None else nullcontext():
+                return self.analytic_func(func_str)(*args)
         except MangoServerError as error:
             raise AutoApiError(error_msg, value=(error.msg,)) from error
         except MangoToolsError as error:

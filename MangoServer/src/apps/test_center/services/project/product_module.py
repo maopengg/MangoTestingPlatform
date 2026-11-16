@@ -22,6 +22,11 @@ from src.common.database import save_model
 
 class ProductModuleService:
     @staticmethod
+    def validate_business_binding(module_id) -> None:
+        if not ProductModule.objects.filter(id=module_id, level=3).exists():
+            raise TestCenterError(SYSTEM_MODULE_MODULE_BINDING_INVALID)
+
+    @staticmethod
     def validate_crud_binding(model, data: dict, instance=None) -> None:
         try:
             module_field = model._meta.get_field("module")
@@ -41,8 +46,7 @@ class ProductModuleService:
             return
         if instance is not None and str(getattr(instance, "module_id", "")) == str(module_id):
             return
-        if not ProductModule.objects.filter(id=module_id, level=3).exists():
-            raise TestCenterError(SYSTEM_MODULE_MODULE_BINDING_INVALID)
+        ProductModuleService.validate_business_binding(module_id)
 
     @staticmethod
     def with_full_paths(queryset, *relation_fields):

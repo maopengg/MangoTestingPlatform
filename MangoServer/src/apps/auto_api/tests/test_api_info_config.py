@@ -5,6 +5,7 @@ from django.test import SimpleTestCase
 
 from src.apps.auto_api.models import ApiInfo
 from src.apps.auto_api.services.api_info.config import ApiInfoConfigService
+from src.apps.auto_api.exceptions import AutoApiError
 
 
 class ToolRegistry:
@@ -21,6 +22,69 @@ class ToolRegistry:
 
 
 class ApiInfoConfigServiceTests(SimpleTestCase):
+
+    def test_path_variables_accept_platform_expressions_without_rewriting_names(self):
+        for url in (
+            '/categories', '/categories/${{CATEGORY_ID}}',
+            '/categories/${{categoryId}}/items/${{item.id}}',
+            '/files/prefix-${{文件名}}.json', '/items/${{random_number(1, 10)}}',
+            '/items/${{lookup(${{tenant_id}})}}',
+            '/items/${{lookup({"id": 1})}}',
+            '/items/${{lookup("}")}}', '/files/%7Bexample%7D',
+        ):
+            with self.subTest(url=url):
+                self.assertIsNone(ApiInfoConfigService.validate_url_path(url))
+
+    def test_path_variables_reject_source_routes_and_incomplete_placeholders(self):
+        for url in (
+            '/categories/{CATEGORY_ID}', '/categories/${CATEGORY_ID}',
+            '/categories/{{CATEGORY_ID}}', '/items/${{}}', '/items/${{  }}',
+            '/items/${{id}', '/items/${{id}}}', '/items/${{id',
+            '/items/id}', '/items/${{id}}/{other}', '/items/${{lookup("}")}',
+        ):
+            for protocol in ('http', 'sse', 'websocket'):
+                with self.subTest(url=url, protocol=protocol):
+                    error = ApiInfoConfigService.validate_url_path(url, protocol)
+                    self.assertIn('变量格式不正确', error)
+                    self.assertIn('/categories/${{CATEGORY_ID}}', error)
+                    self.assertIn('区分大小写', error)
+
+    def test_http_create_and_edit_reject_bad_path_before_persisting(self):
+        from src.apps.auto_api.api.views.api_info import ApiInfoCRUD
+        from src.apps.auto_api.services.api_info.mutation import ApiInfoMutationService
+
+        invalid_url = '/categories/{CATEGORY_ID}'
+        expected = ApiInfoConfigService.validate_url_path(invalid_url)
+        payload = {'project_product': 1, 'module': 2, 'name': '分类查询',
+                   'url': invalid_url, 'method': 0, 'protocol_type': 'http'}
+        with patch.object(ApiInfoMutationService, 'create_validated') as create:
+            with self.assertRaises(AutoApiError) as raised:
+                ApiInfoCRUD.inside_post(payload)
+            self.assertEqual(raised.exception.msg, expected)
+        create.assert_not_called()
+        with (
+            patch('src.apps.auto_api.services.api_info.mutation.ApiInfo.objects.get',
+                  return_value=SimpleNamespace(id=12, project_product_id=1, module_id=2)),
+            patch('src.apps.auto_api.services.api_info.mutation.ApiInfoRuntimeService.resolve_runtime',
+                  return_value=SimpleNamespace(url='/categories', method=0, protocol_type='http', body_type='none')),
+            patch.object(ApiInfoMutationService, 'update_validated') as update,
+        ):
+            with self.assertRaises(AutoApiError) as raised:
+                ApiInfoCRUD.inside_put(12, {'url': invalid_url})
+            self.assertEqual(raised.exception.msg, expected)
+        update.assert_not_called()
+
+    def test_recording_import_cannot_bypass_path_variable_validation(self):
+        from src.apps.auto_api.services.api_info.mutation import ApiInfoMutationService
+
+        with patch('src.apps.auto_api.services.api_info.mutation.save_model') as save:
+            with self.assertRaises(AutoApiError) as raised:
+                ApiInfoMutationService.create.__wrapped__(
+                    ApiInfoMutationService, {'url': '/categories/{CATEGORY_ID}'}, source='recording',
+                )
+            self.assertEqual(raised.exception.code, 31234)
+            self.assertIn('/categories/${{CATEGORY_ID}}', raised.exception.msg)
+        save.assert_not_called()
 
     def setUp(self):
         self.existing = SimpleNamespace(id=10, name='上传附件')
@@ -86,6 +150,39 @@ class ApiInfoMcpToolTests(SimpleTestCase):
 
         self.registry = ToolRegistry()
         register_api_info_tools(self.registry)
+
+    def test_mcp_create_and_edit_return_same_friendly_path_validation(self):
+        module = 'src.interfaces.mcp.tools.api.api_info'
+        invalid_url = '/categories/{CATEGORY_ID}'
+        expected = ApiInfoConfigService.validate_url_path(invalid_url)
+        with patch(module + '.ApiInfoMutationService.create_definition') as create:
+            result = self.registry.tools['create_api_info'](
+                project_product_id=1, module_id=2, name='分类查询', url=invalid_url, method=0,
+            )
+            self.assertFalse(result['success'])
+            self.assertEqual(result['message'], expected)
+            self.assertEqual(result['error_code'], 'INVALID_API_INFO_URL')
+        create.assert_not_called()
+        with (
+            patch(module + '._require_published_api_info_modify_confirmation', return_value=None),
+            patch(module + '.ApiInfoRuntimeService.resolve_runtime',
+                  return_value=SimpleNamespace(protocol_type='http')),
+            patch(module + '.ApiInfoMutationService.update_definition') as update,
+        ):
+            result = self.registry.tools['update_api_info'](api_info_id=12, url=invalid_url)
+            self.assertFalse(result['success'])
+            self.assertEqual(result['message'], expected)
+            self.assertEqual(result['error_code'], 'INVALID_API_INFO_URL')
+        update.assert_not_called()
+
+    def test_mcp_curl_import_rejects_source_route_placeholder(self):
+        result = self.registry.tools['create_api_info_from_curl'](
+            project_product_id=1, module_id=2, name='分类查询',
+            curl_command="curl 'https://example.com/categories/{CATEGORY_ID}'",
+        )
+        self.assertFalse(result['success'])
+        self.assertEqual(result['error_code'], 'INVALID_API_INFO_URL')
+        self.assertIn('/categories/${{CATEGORY_ID}}', result['message'])
 
     def test_update_api_info_saves_expression_headers_through_existing_service(self):
         module = 'src.interfaces.mcp.tools.api.api_info'

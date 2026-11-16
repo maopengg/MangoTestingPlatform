@@ -6,7 +6,7 @@ import * as vue from 'vue'
 import { parse, compileScript, compileTemplate, compileStyleAsync } from '@vue/compiler-sfc'
 import { harness, deferred, flush } from './helpers/case-details-harness.mjs'
 const base = path.resolve('src/views/system/settings')
-const config = () => ({ version: 1, enabled: false, include_details: true, failed_cases_only: true, include_screenshots: false, link_ttl_seconds: 604800 })
+const config = () => ({ version: 1, enabled: false, include_details: true, failed_cases_only: true, include_screenshots: false, link_ttl_seconds: 604800, html_public_base_url: '' })
 const ok = () => ({ code: 200, data: { defaults: config() } })
 function setup(options = {}) {
   const life = { mount: [], activate: [], deactivate: [], unmount: [] }, calls = [], messages = []
@@ -36,6 +36,23 @@ test('report DTO accepts finite fields and rejects broken metadata, booleans, TT
   assert.deepEqual(m.parseReportDeliveryConfig(JSON.stringify(config())), config())
   assert.throws(() => m.parseReportDeliveryMetadata({ code: 403, data: { defaults: config() } }))
   for (const value of [null, [], false, {}, { ...config(), enabled: 'false' }, { ...config(), version: 2 }, { ...config(), link_ttl_seconds: 0 }, { ...config(), link_ttl_seconds: 1.5 }]) assert.throws(() => m.parseReportDeliveryConfig(value))
+})
+test('HTML domain is optional for legacy configs and accepts only a plain HTTP origin', t => {
+  const h = setup(); t.after(h.close); const m = h.load('report-delivery.ts')
+  const legacy = config(); delete legacy.html_public_base_url
+  assert.equal(m.parseReportDeliveryConfig(legacy).html_public_base_url, '')
+  assert.equal(m.parseReportDeliveryConfig({ ...config(), html_public_base_url: ' https://reports.example.com/ ' }).html_public_base_url, 'https://reports.example.com')
+  for (const value of [null, 3, 'javascript:alert(1)', 'https://user:secret@reports.example.com', 'https://reports.example.com/path', 'https://reports.example.com?token=example', 'https://reports.example.com#test', 'https://reports.example.com:99999'])
+    assert.throws(() => m.parseReportDeliveryConfig({ ...config(), html_public_base_url: value }))
+})
+test('HTML domain saves in the report-only payload and invalid input cannot emit a save', async t => {
+  const h = setup(); t.after(h.close); h.mount(); await flush()
+  h.draft.value.html_public_base_url = 'https://reports.example.com/path'; h.save()
+  assert.equal(h.events.length, 0)
+  h.draft.value.html_public_base_url = 'https://reports.example.com/'; h.save()
+  assert.equal(h.events[0][1].html_public_base_url, 'https://reports.example.com')
+  assert.equal('MINIO_PUBLIC_BASE_URL' in h.events[0][1], false)
+  assert.ok(h.messages.some(([, value]) => value.includes('HTML')))
 })
 test('metadata requests coalesce; no save before successful read; failure retries without defaulting to empty', async t => {
   const first = deferred(); let n = 0; const h = setup({ read: () => ++n === 1 ? first.promise : Promise.resolve(ok()) }); t.after(h.close)

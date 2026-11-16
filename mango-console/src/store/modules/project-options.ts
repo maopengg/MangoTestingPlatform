@@ -3,6 +3,7 @@ export interface ProjectOption { key: ProjectOptionId | null; title: string }
 export interface ProjectProductOption {
   value: ProjectOptionId
   label: string
+  description?: string
   project_product_id?: ProjectOptionId
   children?: ProjectProductOption[]
 }
@@ -46,6 +47,7 @@ export function productOptions(value: unknown): ProjectProductOption[] {
     const row = record(value)
     return {
       value: id(row.value), label: text(row.label),
+      ...(typeof row.description === 'string' ? { description: row.description } : {}),
       ...(row.project_product_id !== undefined ? { project_product_id: id(row.project_product_id) } : {}),
       ...(row.children != null ? { children: productOptions(row.children) } : {}),
     }

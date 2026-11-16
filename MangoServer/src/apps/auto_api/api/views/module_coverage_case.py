@@ -3,7 +3,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.apps.auto_api.api.serializers.module_coverage_case import ModuleCoverageCaseSnapshotSerializer, \
-    ModuleCoverageCaseSerializer
+    ModuleCoverageCaseSerializer, ModuleCoverageCaseBindingInput
 from src.apps.auto_api.api.views.module_coverage_common import (
     filter_module_scope,
     page_response,
@@ -186,7 +186,9 @@ class ModuleCoverageCaseViews(ViewSet):
     def binding(self, request: Request):
         """更新模块用例覆盖记录的资产绑定"""
         item = self.queryset(request).get(id=request.data.get("id"))
-        item = ModuleCoverageService.bind_api_case(item.id, int(request.data.get("api_case_id")))
+        binding = ModuleCoverageCaseBindingInput(data=request.data)
+        binding.is_valid(raise_exception=True)
+        item = ModuleCoverageService.bind_api_case(item.id, **binding.validated_data)
         return ResponseData.success(RESPONSE_MSG_0001, self.serializer_class(item).data)
 
     @action(methods=["post"], detail=False)

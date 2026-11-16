@@ -58,6 +58,7 @@ class UpdateTestSuite:
             result_data = data.result_data.result_data
 
         original_detail = TestSuiteDetails.objects.get(id=data.id, test_suite_id=data.test_suite)
+        pytest_count = TestCounter.completed_pytest_count(data.result_data) if data.type == TestCaseTypeEnum.PYTEST else None
         result_data = TestSuiteExecutionResultService.normalize_detail_result_data(original_detail, result_data)
         prepared = ExecutionResultService.prepare_result_payload(
             result_data,
@@ -92,6 +93,8 @@ class UpdateTestSuite:
                 test_suite_detail.error_message = data.error_message
             else:
                 test_suite_detail.case_name = data.result_data.name
+                if pytest_count is not None:
+                    test_suite_detail.case_sum = pytest_count
             test_suite_detail.save()
             TestSuiteExecutionResultService.save_result(
                 test_suite_detail,
@@ -130,6 +133,9 @@ class UpdateTestSuite:
                 final_status = TaskEnum.WARNING.value
             else:
                 final_status = StatusEnum.SUCCESS.value
+            if final_status != StatusEnum.FAIL.value and TestSuiteDetails.objects.filter(
+                    test_suite=data.test_suite, status=TaskEnum.INFRASTRUCTURE_BLOCKED.value).exists():
+                final_status = TaskEnum.INFRASTRUCTURE_BLOCKED.value
             if cls.update_test_suite(data.test_suite, final_status):
                 cls.send_test_result(data.test_suite, data.error_message)
         return True

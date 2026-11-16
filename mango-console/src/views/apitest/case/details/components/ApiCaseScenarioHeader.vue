@@ -29,7 +29,7 @@
 <script setup lang="ts">
   import { computed } from 'vue'
   import MangoTableActions from '@/components/table/MangoTableActions.vue'
-  import { useScenarioCurl } from '../composables/useScenarioCurl'
+  import { useScenarioCurl } from '@/hooks/useScenarioCurl'
 
   const props = defineProps<{
     item: any

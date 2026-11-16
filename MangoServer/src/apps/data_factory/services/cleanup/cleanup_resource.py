@@ -18,7 +18,7 @@ from src.apps.data_factory.exceptions import (
     DATA_SOURCE_ELASTICSEARCH_REQUEST_TIMEOUT,
     DATA_SOURCE_ELASTICSEARCH_NETWORK_FAILED,
 )
-from src.apps.data_factory.models import DataFactoryDatasourceAlias, DataFactoryField
+from src.apps.data_factory.models import DataFactoryDatasourceAlias, DataFactoryEntity, DataFactoryField
 from src.apps.data_factory.schemas.cleanup_resource import CleanupResourceState, EsCleanupRules, EsCleanupSnapshot
 from src.apps.data_factory.services.datasource.data_source_error import DataSourceErrorService
 from src.apps.data_factory.services.datasource.datasource import DataFactoryDatasourceResolver
@@ -93,6 +93,17 @@ class DataFactoryCleanupResourceService:
                     raise DataFactoryError(DATA_FACTORY_ES_CLEANUP_CONFIG_INVALID, value=('租户来源字段不在当前实体中',))
                 if rule.document_id_field is not None and rule.document_id_field not in fields:
                     raise DataFactoryError(DATA_FACTORY_ES_CLEANUP_CONFIG_INVALID, value=('ES文档ID来源字段不在当前实体中',))
+                if rule.tenant_lineage is not None:
+                    reference = rule.tenant_lineage
+                    child = DataFactoryEntity.objects.filter(id=reference.entity_id,
+                        project_product_id=project_product_id, datasource_alias_id=entity.datasource_alias_id).first()
+                    if child is None or child.id == entity.id:
+                        raise DataFactoryError(DATA_FACTORY_ES_CLEANUP_CONFIG_INVALID,
+                            value=('租户关联证明必须引用同产品、同逻辑数据源的子实体',))
+                    child_fields = set(DataFactoryField.objects.filter(entity_id=child.id).values_list('name', flat=True))
+                    if not {reference.parent_field, reference.tenant_field, reference.id_field} <= child_fields:
+                        raise DataFactoryError(DATA_FACTORY_ES_CLEANUP_CONFIG_INVALID,
+                            value=('租户关联证明中的父引用、租户或业务ID字段不在子实体中',))
                 if not DataFactoryDatasourceAlias.objects.filter(
                         id=rule.datasource_alias_id, project_product_id=project_product_id,
                         db_type=DataSourceTypeEnum.ELASTICSEARCH.value).exists():
@@ -194,6 +205,19 @@ class DataFactoryCleanupResourceService:
             if (snapshot.requested_index or snapshot.index) != snapshot.rule.index_template.replace('{tenant}', snapshot.tenant):
                 raise cls.resource_error(DATA_FACTORY_ES_CLEANUP_OWNERSHIP_INVALID, item=item, snapshot=snapshot,
                     reason='快照索引与租户渲染后的精确索引不一致')
+        changed = False
+        for snapshot in state.snapshots:
+            if snapshot.rule.tenant_lineage is not None:
+                from src.apps.data_factory.services.cleanup.cleanup_lineage import CleanupLineageService
+                rows = CleanupLineageService.rows(item, snapshot)
+                if snapshot.lineage_rows and snapshot.lineage_rows != rows:
+                    CleanupLineageService.reject()
+                if not snapshot.lineage_rows and rows:
+                    snapshot.lineage_rows = rows
+                    changed = True
+        if changed:
+            item.cleanup_resources = state.model_dump(mode='json')
+            CleanupPersistenceService.save(item, ['cleanup_resources', 'update_time'])
         return state
 
     @classmethod
@@ -289,11 +313,15 @@ class DataFactoryCleanupResourceService:
             if physical != snapshot.index or index_uuid != snapshot.index_uuid:
                 raise cls.resource_error(DATA_FACTORY_ES_CLEANUP_TARGET_CHANGED, snapshot=snapshot,
                                          reason='索引别名指向或索引UUID已变化，禁止使用新索引清理历史数据')
+        tenant_path = snapshot.rule.tenant_path
+        if snapshot.rule.tenant_lineage is not None:
+            reference = snapshot.rule.tenant_lineage
+            tenant_path += ',' + reference.collection_path + '.' + reference.document_id_path
         doc = cls.document(target, snapshot.index, snapshot.document_id,
-                           tenant_path=snapshot.rule.tenant_path, timeout=5)
+                           tenant_path=tenant_path, timeout=5)
         if doc is None:
             visible = cls.document(target, snapshot.index, snapshot.document_id,
-                                   tenant_path=snapshot.rule.tenant_path, timeout=5, realtime=False)
+                                   tenant_path=tenant_path, timeout=5, realtime=False)
             if visible is not None:
                 cls.check_owner(visible, snapshot)
             elif unknown_permits:
@@ -491,11 +519,27 @@ class DataFactoryCleanupResourceService:
     @staticmethod
     def check_owner(document, snapshot):
         value = document.get('_source', {})
+        tenant_present = True
         for part in snapshot.rule.tenant_path.split('.'):
-            value = value.get(part) if isinstance(value, dict) else None
+            if not isinstance(value, dict):
+                value = None
+                break
+            if part not in value:
+                tenant_present = False
+                value = None
+                break
+            value = value[part]
+        if str(document.get('_id')) == snapshot.document_id and str(value) == snapshot.tenant:
+            return
+        if not tenant_present and str(document.get('_id')) == snapshot.document_id:
+            from src.apps.data_factory.services.cleanup.cleanup_lineage import CleanupLineageService
+            if CleanupLineageService.matches(document.get('_source', {}), snapshot):
+                return
         if str(document.get('_id')) != snapshot.document_id or str(value) != snapshot.tenant:
             raise DataFactoryCleanupResourceService.resource_error(DATA_FACTORY_ES_CLEANUP_OWNERSHIP_INVALID,
-                snapshot=snapshot, reason='ES实际返回的文档ID或租户字段与本次执行快照不一致')
+                snapshot=snapshot, reason=(f'ES租户路径 {snapshot.rule.tenant_path} 缺失，且没有有效的冻结子记录归属证明；'
+                    '请核查实际同步结构并配置同执行的关联证明，禁止仅凭文档ID删除'
+                    if not tenant_present else 'ES实际返回的文档ID或租户字段与本次执行快照不一致'))
 
     @classmethod
     def document(cls, target, index, document_id, *, delete=False, timeout=5, expected=None, tenant_path=None,
@@ -530,7 +574,8 @@ class DataFactoryCleanupResourceService:
             if type(sequence) is not int or sequence < 0 or type(term) is not int or term < 1:
                 raise DataFactoryCleanupResourceService.resource_error(DATA_FACTORY_ES_CLEANUP_OWNERSHIP_INVALID,
                     reason='ES文档缺少有效的_seq_no或_primary_term版本，无法安全执行条件删除。请检查文档回查结果')
-            url += f'?refresh=wait_for&if_seq_no={sequence}&if_primary_term={term}'
+            # 删除响应不等待刷新；sample 同时核对实时和非实时视图，完整观察窗口仍必须完成。
+            url += f'?refresh=false&if_seq_no={sequence}&if_primary_term={term}'
         else:
             # 回查仅获取租户字段和文档版本，不读取无关业务正文或凭据。
             url += '?_source_includes=' + parse.quote(tenant_path, safe='') if tenant_path else '?_source=false'

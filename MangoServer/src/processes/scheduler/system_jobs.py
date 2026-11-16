@@ -387,17 +387,17 @@ class SchedulerSystemJobService:
     @async_task_db_connection()
     def clean_api_case_execution_traces(cls):
         try:
+            from src.apps.auto_api.services.execution_trace.retention import ApiTraceRetentionService
             retention_days = cls.retention_days('API_CASE_TRACE_RETENTION_DAYS')
             cutoff_time = timezone.now() - timedelta(days=retention_days)
-            deleted = ApiQuerySelector.api_case_execution_trace().filter(
-                create_time__lt=cutoff_time,
-            ).delete()[0]
+            result = ApiTraceRetentionService.cleanup(cutoff_time)
             log.system.info(
-                f'scheduler-service 清理超过 {retention_days} 天的 API 用例执行链路：{deleted} 条'
+                'scheduler-service 清理超过 %s 天的 API 用例执行链路：%s 条，批次=%s，剩余=%s',
+                retention_days, result['deleted_count'], result['batches'], result['has_more'],
             )
             return {
                 'retention_days': retention_days,
-                'deleted_count': deleted,
+                **result,
             }
         except Exception as error:
             log.system.error(f'scheduler-service 清理 API 用例执行链路失败：{error}')

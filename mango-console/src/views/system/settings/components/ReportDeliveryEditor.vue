@@ -9,6 +9,8 @@
           <div class="mango-system-settings__control">
             <a-switch v-if="field.type === 'switch'"  v-model="draft[field.key]" :loading="loading" :disabled="loading" :aria-label="field.label" size="medium" @change="save" />
             <a-input-number v-else-if="field.type === 'number'"  v-model="draft[field.key]" class="mango-system-settings__input mango-system-settings__input--number" :disabled="loading" :aria-label="field.label" :min="300" :max="604800" :precision="0" size="medium" @blur="save" @press-enter="save" />
+            <a-input v-else-if="field.type === 'input'" v-model="draft[field.key]" class="mango-system-settings__input"
+              :disabled="loading" :aria-label="field.label" :placeholder="field.placeholder" allow-clear @blur="save" @press-enter="save" />
             <span v-else>{{ field.text }}</span>
           </div>
         </div>
@@ -80,7 +82,7 @@ import { reportLoadError } from '@/utils/load-error'
     try {
       const payload = parseReportDeliveryConfig(draft.value)
       emit('update:modelValue', payload); emit('save')
-    } catch { Message.warning('链接有效期必须是300～604800秒的整数，请检查报告配置') }
+    } catch (error) { Message.warning(error instanceof Error ? error.message : '请检查报告配置') }
   }
   async function sample() {
     if (!available() || sampling.value || metadataLoading.value || metadataError.value || !draft.value) return

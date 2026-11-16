@@ -198,7 +198,7 @@ test('重试确认固定 ID 0、防重复，提交成功后只刷新一次', asy
   h.retry.confirm(0); assert.equal(h.confirmations.length, 1)
   read.resolve(response(null)); assert.equal(await pending, true)
   assert.equal(h.refreshed(), 1); assert.deepEqual(h.retry.busyIds.value, [])
-  assert.deepEqual(h.calls[0], ['getSystemTestSuiteDetailsRetry', '0'])
+  assert.deepEqual(h.calls[0], ['getSystemTestSuiteDetailsRetry', '0', true])
 })
 
 test('重试失败保持确认可再提交，错误码不产生成功或刷新', async t => {

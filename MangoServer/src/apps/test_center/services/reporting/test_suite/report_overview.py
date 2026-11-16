@@ -26,6 +26,7 @@ class TestSuiteReportOverviewService:
         TaskEnum.SUCCESS.value,
         TaskEnum.WARNING.value,
         TaskEnum.STOPPED.value,
+        TaskEnum.INFRASTRUCTURE_BLOCKED.value,
     )
 
     @classmethod
@@ -59,6 +60,7 @@ class TestSuiteReportOverviewService:
                 TaskEnum.PROCEED.value,
                 TaskEnum.STAY_BEGIN.value,
                 TaskEnum.STOPPED.value,
+                TaskEnum.INFRASTRUCTURE_BLOCKED.value,
             )
         ]
         trend = cls._weekly_trend(queryset)

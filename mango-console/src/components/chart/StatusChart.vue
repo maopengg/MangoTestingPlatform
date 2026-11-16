@@ -10,6 +10,7 @@
     pending?: number // 进行中（可选）
     todo?: number // 待开始（可选）
     stopped?: number // 已停止（可选）
+    blocked?: number
     other?: number // 合并后的其他状态（可选）
     loading?: boolean
     totalLabel?: string
@@ -24,15 +25,15 @@
   let resizeFrame = 0
   let active = true, mounted = false
 
-  const token = (name: string, fallback: string) =>
+  const token = (name: string, fallback = '') =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
 
   const getPalette = () => [
-    token('--m-success', '#22c55e'),
-    token('--m-danger', '#ef4444'),
-    token('--m-warning', '#f59e0b'),
-    token('--m-primary', '#165dff'),
-    token('--m-muted', '#64748b'),
+    token('--m-success'),
+    token('--m-danger'),
+    token('--m-warning'),
+    token('--m-primary'),
+    token('--m-muted'),
   ]
   const palette = ref(getPalette())
 
@@ -53,6 +54,9 @@
     }
     if (props.stopped !== undefined) {
       items.push({ name: '已停止', value: Number(props.stopped || 0), color: colors[4] })
+    }
+    if (props.blocked !== undefined) {
+      items.push({ name: '平台受阻', value: Number(props.blocked || 0), color: colors[2] })
     }
     if (props.other !== undefined) {
       items.push({ name: '其他', value: Number(props.other || 0), color: colors[4] })
@@ -101,7 +105,7 @@
         },
       },
       legend: { bottom: 0, left: 'center', selectedMode: false, itemWidth: 9, itemHeight: 7,
-        textStyle: { color: token('--m-text-2', '#64748b'), fontSize: 11 }, data: chartItems.value.map(item => item.name) },
+        textStyle: { color: token('--m-text-2'), fontSize: 11 }, data: chartItems.value.map(item => item.name) },
       series: [
         {
           name: '测试状态',
@@ -111,12 +115,12 @@
           avoidLabelOverlap: true,
           itemStyle: {
             borderRadius: 5,
-            borderColor: token('--m-surface', '#fff'),
+            borderColor: token('--m-surface'),
             borderWidth: 3,
           },
           label: {
             show: true, position: 'outside', alignTo: 'edge', edgeDistance: 8,
-            color: token('--m-text-2', '#64748b'), fontSize: 11, lineHeight: 17,
+            color: token('--m-text-2'), fontSize: 11, lineHeight: 17,
             formatter(item: { name: string; value: number }) {
               return `${item.name}\n${item.value.toLocaleString('zh-CN')} ${props.unit || '个'} · ${total.value ? (item.value * 100 / total.value).toFixed(2) : '0.00'}%`
             },
@@ -125,7 +129,7 @@
           emphasis: {
             scaleSize: 3,
           },
-          labelLine: { show: true, length: 10, length2: 8, lineStyle: { color: token('--m-muted', '#64748b') } },
+          labelLine: { show: true, length: 10, length2: 8, lineStyle: { color: token('--m-muted') } },
           data: getChartData(), // 动态生成数据
         },
       ],
@@ -156,6 +160,7 @@
       props.pending,
       props.todo,
       props.stopped,
+      props.blocked,
       props.other,
     ],
     () => {
@@ -208,7 +213,7 @@
         <div class="mango-status-donut">
           <div ref="pieChart" class="mango-chart"></div>
           <div class="mango-status-total">
-            <strong>{{ centerValue ?? total.toLocaleString('zh-CN') }}</strong>
+            <strong :style="{ '--mango-status-value-length': Math.max(1, String(centerValue ?? total.toLocaleString('zh-CN')).length * 0.7) }">{{ centerValue ?? total.toLocaleString('zh-CN') }}</strong>
             <span>{{ centerLabel || totalLabel || '总数' }}</span>
           </div>
         </div>
@@ -221,8 +226,8 @@
 <style lang="less" scoped>
   .mango-status-chart, .mango-chart-spin, :deep(.mango-chart-spin > .mango-panel-spin__content),
   .mango-status-chart__content, .mango-status-donut, .mango-chart { width: 100%; height: 100%; min-width: 0; min-height: 0; }
-  .mango-status-donut { position: relative; }
-  .mango-status-total { position: absolute; top: 44%; left: 50%; display: flex; width: 34%; align-items: center; justify-content: center; flex-direction: column; gap: 4px; transform: translate(-50%, -50%); pointer-events: none; }
-  .mango-status-total span { color: var(--m-muted); font-size: 11px; line-height: 16px; }
-  .mango-status-total strong { color: var(--m-text); font-size: 24px; font-variant-numeric: tabular-nums; line-height: 30px; white-space: nowrap; }
+  .mango-status-donut { position: relative; container-type: size; }
+  .mango-status-total { position: absolute; top: 44%; left: 50%; display: flex; width: 32cqmin; align-items: center; justify-content: center; flex-direction: column; gap: 4px; transform: translate(-50%, -50%); pointer-events: none; }
+  .mango-status-total span { color: var(--m-muted); font-size: min(11px, 5cqmin); line-height: 1.5; white-space: nowrap; }
+  .mango-status-total strong { color: var(--m-text); font-size: min(24px, calc(32cqmin / var(--mango-status-value-length))); font-variant-numeric: tabular-nums; line-height: 1.25; white-space: nowrap; }
 </style>

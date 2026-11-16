@@ -35,10 +35,12 @@ class TestSuiteSummaryService:
             return TaskEnum.SUCCESS.value
         if status == TaskEnum.STOPPED.value:
             return status
-        if status == TaskEnum.FAIL.value and not counts.get('excluded_count'):
+        if status == TaskEnum.FAIL.value and not counts.get('excluded_count') and not counts.get('blocked'):
             return status
         if counts.get('fail'):
             return TaskEnum.FAIL.value
+        if counts.get('blocked'):
+            return TaskEnum.INFRASTRUCTURE_BLOCKED.value
         if counts.get('warning'):
             return TaskEnum.WARNING.value
         if counts.get('stopped'):
@@ -66,6 +68,7 @@ class TestSuiteSummaryService:
             'proceed': 0,
             'stay_begin': 0,
             'stopped': 0,
+            'blocked': 0,
         }
         status_keys = {
             TaskEnum.SUCCESS.value: 'success',
@@ -74,6 +77,7 @@ class TestSuiteSummaryService:
             TaskEnum.PROCEED.value: 'proceed',
             TaskEnum.STAY_BEGIN.value: 'stay_begin',
             TaskEnum.STOPPED.value: 'stopped',
+            TaskEnum.INFRASTRUCTURE_BLOCKED.value: 'blocked',
         }
         for row in rows:
             getter = (
@@ -82,6 +86,15 @@ class TestSuiteSummaryService:
                 else lambda key, default=0: getattr(row, key, default)
             )
             case_sum = cls.effective_case_sum(row)
+            from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService
+            blocked = (getter('status') == TaskEnum.INFRASTRUCTURE_BLOCKED.value
+                       or TestSuiteInfrastructureService.is_blocked(getter('summary_data', {})))
+            if blocked:
+                # 局部步骤通过不能代替完整执行结论；已确认的业务失败仍保留。
+                failed = min(max(int(getter('fail', 0) or 0), 0), case_sum)
+                result['fail'] += failed
+                result['blocked'] += max(case_sum - failed, 1 if not failed else 0)
+                continue
             success = max(int(getter('success', 0) or 0), 0)
             fail = max(int(getter('fail', 0) or 0), 0)
             warning = max(int(getter('warning', 0) or 0), 0)
@@ -91,7 +104,7 @@ class TestSuiteSummaryService:
             result['warning'] += min(warning, max(case_sum - min(success + fail, case_sum), 0))
 
             missing = max(case_sum - recorded, 0)
-            status_key = status_keys.get(int(getter('status', TaskEnum.FAIL.value)))
+            status_key = 'blocked' if blocked else status_keys.get(int(getter('status', TaskEnum.FAIL.value)))
             if not status_key:
                 status_key = 'fail'
             result[status_key] += missing
@@ -189,6 +202,7 @@ class TestSuiteSummaryService:
                 'fail': detail.fail,
                 'warning': detail.warning,
                 'is_excluded': detail.is_excluded,
+                'summary_data': getattr(detail, 'summary_data', None),
             }
             if detail.type == TestCaseTypeEnum.API.value:
                 row.update(
@@ -204,7 +218,7 @@ class TestSuiteSummaryService:
         raw_rows = rows
         rows = [row for row in rows if not cls._excluded(row)]
         counts = cls.execution_status_counts_from_rows(rows)
-        completed_keys = {'success', 'fail', 'warning', 'stopped'}
+        completed_keys = {'success', 'fail', 'warning', 'stopped', 'blocked'}
 
         def type_counter(case_type: int) -> tuple[dict, int, int]:
             type_rows = [row for row in rows if row.get('type') == case_type]
@@ -239,14 +253,17 @@ class TestSuiteSummaryService:
             'api_success': api_counter['success'],
             'api_fail': api_counter['fail'],
             'api_warning': api_counter['warning'],
+            'api_blocked': api_counter['blocked'],
             'ui_case_sum': ui_case_sum,
             'ui_success': ui_counter['success'],
             'ui_fail': ui_counter['fail'],
             'ui_warning': ui_counter['warning'],
+            'ui_blocked': ui_counter['blocked'],
             'pytest_case_sum': pytest_case_sum,
             'pytest_success': pytest_counter['success'],
             'pytest_fail': pytest_counter['fail'],
             'pytest_warning': pytest_counter['warning'],
+            'pytest_blocked': pytest_counter['blocked'],
             'api_in_progress_case_sum': api_completed,
             'ui_in_progress_case_sum': ui_completed,
             'pytest_in_progress_case_sum': pytest_completed,
@@ -272,6 +289,10 @@ class TestSuiteSummaryService:
             'stay_begin_count': counter['stay_begin'],
             'proceed_count': counter['proceed'],
             'stopped_count': counter['stopped'],
+            'blocked_count': counter.get('blocked', 0),
+            'api_blocked_count': counter.get('api_blocked', 0),
+            'ui_blocked_count': counter.get('ui_blocked', 0),
+            'pytest_blocked_count': counter.get('pytest_blocked', 0),
             'api_count': counter['api_case_sum'],
             'ui_count': counter['ui_case_sum'],
             'pytest_count': counter['pytest_case_sum'],

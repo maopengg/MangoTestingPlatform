@@ -19,6 +19,14 @@ test('recent DTOs use requested task IDs only and preserve retained statistics a
   assert.throws(() => dto.readTaskRecentResults({ code: 200, data: { 0: [taskRecent({ status_key: 'unknown' })] } }, [0]))
   assert.deepEqual(dto.readTaskRecentResults({ code: 200, data: {} }, [0]), { 0: [] })
 })
+test('平台受阻最近结果保留独立状态与计数，兼容旧响应缺少 blocked', t => {
+  const h = setupTaskList(); t.after(h.close)
+  const dto = h.load('task-list-records.ts')
+  const result = dto.readTaskRecentResults({ code: 200, data: { 0: [taskRecent({ status: 6, status_key: 'blocked', blocked: 380, fail: 0 })] } }, [0])
+  assert.equal(result[0][0].status_key, 'blocked')
+  assert.equal(result[0][0].blocked, 380)
+  assert.equal(result[0][0].fail, 0)
+})
 test('list, recent results and metadata have independent loading and include task ID zero', async t => {
   const list = deferred(), recent = deferred(), users = deferred(), h = setupTaskList({ getSystemTasks: () => list.promise, getSystemTaskRecentResults: () => recent.promise, getUserName: () => users.promise }); t.after(h.close)
   await h.mount(); assert.equal(h.listLoading.value, true); assert.equal(h.usersLoading.value, true); assert.equal(h.taskGroupOptionsLoading.value, false)

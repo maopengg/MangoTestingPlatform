@@ -25,7 +25,7 @@ from src.apps.task_center.selectors.querysets import TaskCenterQuerySelector
 from src.apps.system.enums.executor import ExecutorTaskStatusEnum
 from src.apps.data_factory.schemas.cleanup_resource import CleanupTaskPayload, CleanupTaskProgress
 from src.apps.data_factory.schemas.cleanup_resource import CleanupReportOwner
-from src.apps.data_factory.constants import CLEANUP_REPORT_CONTEXT_KEY
+from src.apps.data_factory.constants import CLEANUP_REPORT_CONTEXT_KEY, EXECUTION_OWNER_CONTEXT_KEY
 from src.apps.data_factory.enums.cleanup import DataFactoryCleanupModeEnum
 from src.common.logging import log
 
@@ -41,8 +41,19 @@ class DataFactoryCleanupScheduleService:
 
     @classmethod
     def execution_context(cls, context):
+        import os
+        import socket
+        from src.apps.system.services.runtime_center.process_identity import RuntimeProcessIdentity
+        from src.apps.auto_api.services.execution_trace.recorder import current_execution_trace
+        from src.apps.data_factory.schemas.cleanup_resource import FactoryExecutionOwner
         value = deepcopy(context or {})
         value.pop(CLEANUP_REPORT_CONTEXT_KEY, None)
+        trace = current_execution_trace()
+        value[EXECUTION_OWNER_CONTEXT_KEY] = FactoryExecutionOwner(
+            **RuntimeProcessIdentity.current(),
+            worker_name=(trace.worker_name if trace else None) or os.getenv('HOSTNAME') or socket.gethostname(),
+            trace_id=trace.id if trace else None, trace_key=trace.trace_id if trace else None,
+        ).model_dump(mode='json')
         owner = cls.current_owner()
         if owner is not None:
             value[CLEANUP_REPORT_CONTEXT_KEY] = owner

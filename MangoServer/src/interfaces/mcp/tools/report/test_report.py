@@ -75,9 +75,11 @@ def _detail_queryset(
     filters: dict[str, Any] = {"test_suite_id": test_suite_id}
     if type is not None:
         filters["type"] = type
+    queryset = TestCenterQuerySelector.test_suite_details().filter(**filters)
     if status is not None:
-        filters["status"] = status
-    return TestCenterQuerySelector.test_suite_details().filter(**filters)
+        from src.apps.test_center.selectors.infrastructure import ReportInfrastructureSelector
+        queryset = ReportInfrastructureSelector.filter_status(queryset, status)
+    return queryset
 
 
 def _paged_details(
@@ -100,13 +102,15 @@ def _paged_details(
 
 
 def _status_counts(queryset) -> dict:
+    from src.apps.test_center.selectors.infrastructure import ReportInfrastructureSelector
     counts = Counter(dict(queryset.values_list("status").annotate(count=Count("id"))))
     return {
-        "fail": counts.get(TaskEnum.FAIL.value, 0),
+        "fail": ReportInfrastructureSelector.filter_status(queryset, TaskEnum.FAIL.value).count(),
         "success": counts.get(TaskEnum.SUCCESS.value, 0),
         "stay_begin": counts.get(TaskEnum.STAY_BEGIN.value, 0),
         "proceed": counts.get(TaskEnum.PROCEED.value, 0),
         "stopped": counts.get(TaskEnum.STOPPED.value, 0),
+        "blocked": ReportInfrastructureSelector.filter_status(queryset, TaskEnum.INFRASTRUCTURE_BLOCKED.value).count(),
     }
 
 
@@ -249,7 +253,7 @@ def register_test_report_tools(mcp):
                     "api_concurrency_limit": "本报告创建时保存的API执行并发快照",
                     "test_env": "测试环境枚举值",
                     "user": "执行人",
-                    "status": "报告最终状态：0失败、1通过、2待开始、3进行中、4警告、5已停止",
+                    "status": "报告最终状态：0失败、1通过、2待开始、3进行中、4警告、5已停止、6平台受阻；受阻不代表业务断言失败",
                     "is_notice": "通知状态",
                     "create_time": "报告创建/执行开始时间",
                     "update_time": "最后更新时间",
@@ -265,7 +269,7 @@ def register_test_report_tools(mcp):
                     "case_id": "业务用例 ID",
                     "case_name": "业务用例名称",
                     "parametrize": "本次执行使用的参数化数据",
-                    "status": "详情状态：0失败、1通过、2待开始、3进行中、4警告、5已停止",
+                    "status": "详情状态：0失败、1通过、2待开始、3进行中、4警告、5已停止、6平台受阻",
                     "error_message": "详情级失败信息",
                     "children": "列表查询返回轻量步骤/场景摘要，每个 child 会补充 case_type；完整详情请查询单条测试报告详情。",
                     "case_sum/success/fail/warning": "该详情下用例/步骤统计",
@@ -402,7 +406,7 @@ def register_test_report_tools(mcp):
             page: int = 1,
             page_size: int = 10,
     ) -> dict:
-        """分页查询测试报告用例明细摘要。status=0 表示只看失败，type=1 表示只看 API。"""
+        """分页查询报告明细。status=0只看业务失败，status=6只看平台受阻（含旧标记）；type=1只看API。受阻可经用户确认数据及清理安全后手动重试，不需排除Case。"""
         if not TestCenterQuerySelector.test_suite().filter(id=test_suite_id).exists():
             return fail("测试报告不存在", "TEST_REPORT_NOT_FOUND")
         items, count = _paged_details(test_suite_id, type=type, status=status, page=page, page_size=page_size)
@@ -478,12 +482,13 @@ def register_test_report_tools(mcp):
         )
 
     @mcp.tool()
-    def retry_test_report_case(test_suite_detail_id: int) -> dict:
-        """直接重试单个测试报告详情，无需预览或二次确认。"""
+    def retry_test_report_case(test_suite_detail_id: int, confirm_infrastructure_retry: bool = False) -> dict:
+        """重试单个报告明细。平台受阻可能已产生写入，须用户确认数据及清理安全后传 confirm_infrastructure_retry=true；无需填写排查记录。"""
         item = TestCenterQuerySelector.test_suite_details().filter(id=test_suite_detail_id).first()
         if not item:
             return fail("测试报告详情不存在", "TEST_REPORT_DETAIL_NOT_FOUND")
-        TestSuiteRetryService.retry_detail(item.id)
+        TestSuiteRetryService.retry_detail(item.id,
+            confirm_infrastructure_retry=confirm_infrastructure_retry, user=current_user())
         item.refresh_from_db(fields=["status"])
         return ok({"test_suite_detail_id": item.id, "status": item.status}, "重试任务已重置为待开始")
 
@@ -494,6 +499,7 @@ def register_test_report_tools(mcp):
             api_concurrency_limit: int | None = None,
             preview_token: str | None = None,
             confirm_text: str | None = None,
+            confirm_infrastructure_retry: bool = False,
     ) -> dict:
         """重试整份测试报告。
 
@@ -501,6 +507,7 @@ def register_test_report_tools(mcp):
         test_env 和 api_concurrency_limit 再次调用。两项不传时保留报告当前值。
         注意：用户没有明确要求重试整份报告时，不允许调用本工具；
         应优先引导使用 retry_test_report_case 对单个失败 case 进行重试。
+        平台受阻可能已有写入；须用户核查数据与清理后传 confirm_infrastructure_retry=true。
         """
         report = TestCenterQuerySelector.test_suite().filter(id=test_suite_id).first()
         if not report:
@@ -580,6 +587,8 @@ def register_test_report_tools(mcp):
             resolved_test_env,
             resolved_concurrency_limit,
             concurrency_override_provided=api_concurrency_limit is not None,
+            confirm_infrastructure_retry=confirm_infrastructure_retry,
+            user=current_user(),
         )
         report.refresh_from_db()
         return ok(

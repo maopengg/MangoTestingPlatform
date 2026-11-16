@@ -55,6 +55,7 @@ class WorkbenchTodoService:
         WorkbenchTodoEventTypeEnum.DATA_FACTORY_SCHEMA_REVIEW.value,
         WorkbenchTodoEventTypeEnum.DATA_FACTORY_CLEANUP_FAILED.value,
         WorkbenchTodoEventTypeEnum.SLOW_SQL.value,
+        WorkbenchTodoEventTypeEnum.REPORT_INFRASTRUCTURE_BLOCKED.value,
     }
 
     @classmethod
@@ -188,6 +189,8 @@ class WorkbenchTodoService:
     @classmethod
     def mark_handled(cls, todo: WorkbenchTodo, user, note: str = '') -> bool:
         if not cls.can_mark_handled(todo) or user is None:
+            return False
+        if todo.event_type == WorkbenchTodoEventTypeEnum.REPORT_INFRASTRUCTURE_BLOCKED.value and not note.strip():
             return False
         handled_at = timezone.now()
         details = dict(todo.details or {})
@@ -948,12 +951,14 @@ class WorkbenchTodoService:
 
     @classmethod
     def reconcile_todos(cls) -> dict:
+        from src.apps.task_center.services.workbench.report_infrastructure import ReportInfrastructureTodoService
         with cls._reconcile_lock() as acquired:
             if not acquired:
                 log.system.info('首页风险待办已有其他进程正在对账，本次跳过')
                 return {'reconciliation_skipped': True}
             return {
                 **cls.reconcile_auth_todos(),
+                **ReportInfrastructureTodoService.reconcile(),
                 **cls.reconcile_data_factory_todos(),
                 **cls.reconcile_data_factory_cleanup_todos(),
                 **cls.reconcile_api_case_prepublication_todos(),
@@ -969,12 +974,14 @@ class WorkbenchTodoService:
 
     @classmethod
     def reconcile_non_auth_todos(cls) -> dict:
+        from src.apps.task_center.services.workbench.report_infrastructure import ReportInfrastructureTodoService
         with cls._reconcile_lock() as acquired:
             if not acquired:
                 log.system.info('首页非授权风险待办已有其他进程正在对账，本次跳过')
                 return {'reconciliation_skipped': True}
             return {
                 **cls.reconcile_data_factory_todos(),
+                **ReportInfrastructureTodoService.reconcile(),
                 **cls.reconcile_data_factory_cleanup_todos(),
                 **cls.reconcile_api_case_prepublication_todos(),
             }
@@ -1023,6 +1030,12 @@ class WorkbenchTodoService:
             )
             if owners:
                 return owners
+        if getattr(todo, 'event_type', None) == WorkbenchTodoEventTypeEnum.REPORT_INFRASTRUCTURE_BLOCKED.value:
+            from src.apps.user.models import User
+            from src.apps.user.selectors.authorization import AuthorizationScopeSelector
+            owner_id = (todo.details or {}).get('fallback_owner_id')
+            if owner_id:
+                return list(AuthorizationScopeSelector.queryset(User).filter(id=owner_id))
         return []
 
     @classmethod

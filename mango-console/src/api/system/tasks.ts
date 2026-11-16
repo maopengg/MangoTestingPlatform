@@ -198,7 +198,7 @@ export interface TaskRecentResult {
   test_suite_id: number | null
   report_retained?: boolean
   status: number
-  status_key: 'success' | 'fail' | 'warning' | 'proceed' | 'stay_begin' | 'stopped'
+  status_key: 'success' | 'fail' | 'warning' | 'proceed' | 'stay_begin' | 'stopped' | 'blocked'
   status_text: string
   test_env: number
   test_env_text: string
@@ -212,6 +212,7 @@ export interface TaskRecentResult {
   proceed: number
   stay_begin: number
   stopped: number
+  blocked?: number
   pass_rate: number | null
   excluded_count?: number
 }

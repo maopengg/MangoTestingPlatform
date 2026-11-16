@@ -73,6 +73,9 @@ export function errorRecordDetail(record: ErrorRecordRow): string {
     record.traceback ? `异常堆栈：\n${record.traceback}` : '',
   ].filter(Boolean).join('\n')
 }
+export function errorRecordStatusColor(status: ErrorRecordRow['status']): string {
+  return status === 'success' ? 'green' : status === 'warning' ? 'orange' : 'red'
+}
 export function errorRecordSourcePath(value: string): string | null {
   return value.startsWith('/') && !value.startsWith('//') && !/[\\\u0000-\u001f]/.test(value) ? value : null
 }

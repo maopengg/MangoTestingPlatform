@@ -68,8 +68,13 @@
               <template #title="nodeData">
                 <span
                   class="execution-result-history__tree-node"
-                  :class="{ 'is-scenario': nodeData['data-result-kind'] === 'scenario' }"
+                  :class="{
+                    'is-scenario': nodeData['data-result-kind'] === 'scenario',
+                    'mango-execution-result-current': nodeData.key === selectedScenarioKey,
+                  }"
+                  :aria-current="nodeData.key === selectedScenarioKey ? 'true' : undefined"
                 >
+                  <span v-if="nodeData.key === selectedScenarioKey" class="mango-execution-result-current-label">当前</span>
                   <span class="execution-result-history__tree-node-main">
                     <strong :title="nodeData.title">{{ nodeData.title }}</strong>
                     <small v-if="nodeData.description">{{ nodeData.description }}</small>
@@ -466,13 +471,13 @@ import { reportLoadError } from '@/utils/load-error'
       const stepKey = key.replace(/^step:/, '')
       const step = stepOptions.value.find((item) => item.key === stepKey)
       if (!step) return
-      selectedTreeKey.value = key
       const scenario =
         step.scenarios.find((item) => item.status === 0) ||
         step.scenarios.find((item) => Number(item.status) === 4) ||
         step.scenarios[0]
       selectedStepKey.value = step.key
       selectedScenarioKey.value = scenario?.key || ''
+      selectedTreeKey.value = scenario?.key || key
       return
     }
     const step = stepOptions.value.find((item) =>
@@ -736,6 +741,7 @@ import { reportLoadError } from '@/utils/load-error'
   }
 
   .execution-result-history__tree-node {
+    box-sizing: border-box;
     display: flex;
     width: 100%;
     min-width: 0;
@@ -744,7 +750,25 @@ import { reportLoadError } from '@/utils/load-error'
     gap: 8px;
     min-height: 30px;
     padding: 2px 4px;
+    border: 1px solid transparent;
+    border-radius: var(--m-radius-sm);
     color: var(--m-text);
+  }
+
+  .execution-result-history__tree-node.mango-execution-result-current {
+    border-color: var(--m-primary-border);
+    background: var(--m-primary-soft);
+  }
+
+  .mango-execution-result-current .execution-result-history__tree-node-main strong {
+    color: var(--m-primary);
+  }
+
+  .mango-execution-result-current-label {
+    flex: 0 0 auto;
+    color: var(--m-primary);
+    font-size: 12px;
+    font-weight: 600;
   }
 
   .execution-result-history__tree-node-main {

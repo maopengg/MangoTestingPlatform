@@ -28,7 +28,7 @@ class TaskGroupRecentResultService:
             by_execution[fire.group_execution_id].append(fire)
         for row in TestSuiteDetails.objects.filter(
                 test_suite_id__in=[fire.test_suite_id for fire in fires if fire.test_suite_id],
-        ).values('test_suite_id', 'status', 'case_sum', 'success', 'fail', 'warning', 'is_excluded'):
+        ).values('test_suite_id', 'status', 'case_sum', 'success', 'fail', 'warning', 'is_excluded', 'summary_data'):
             by_suite[row['test_suite_id']].append(row)
         for execution in executions:
             result[str(execution.task_group_id)].append(cls.summarize(
@@ -79,5 +79,5 @@ class TaskGroupRecentResultService:
             'update_time': TaskRecentResultService._format_time(updated),
             'duration_ms': max(int((updated - started).total_seconds() * 1000), 0),
             'total': total, **counts,
-            'pass_rate': round(counts['success'] / total * 100, 2) if total else (100 if counts['excluded_count'] else None),
+            'pass_rate': None if total and counts.get('blocked') == total else round(counts['success'] / total * 100, 2) if total else (100 if counts['excluded_count'] else None),
         }

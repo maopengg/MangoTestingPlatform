@@ -290,7 +290,7 @@ test('全量重试失败恢复、重复提交只发一次，环境和并发提�
   assert.equal(await h.onConfirmRetryModal(config), false); assert.equal(h.retryState.record.id, 0); assert.equal(h.retryState.loading, false)
   const next = h.onConfirmRetryModal(config); config.testEnv = 3
   assert.equal(await h.onConfirmRetryModal(config), false)
-  assert.deepEqual(h.calls.filter(item => item[0] === 'retry').at(-1), ['retry', 0, 0, 2])
+  assert.deepEqual(h.calls.filter(item => item[0] === 'retry').at(-1), ['retry', 0, 0, 2, true])
   pending.resolve(response({})); assert.equal(await next, true); assert.equal(h.retryState.record, null)
   assert.ok(view.some(item => item[0] === 'close')); assert.equal(h.retryState.loading, false)
 })
@@ -357,7 +357,7 @@ test('API参数边界不丢0产品、不舍入大ID；报告重试和通知保�
   assert.deepEqual(tasks.getScheduledTaskGroupOptions(0), { project_product_id: 0 })
   assert.deepEqual(tasks.getScheduledTaskGroupOptions('90071992547409931234'), { project_product_id: '90071992547409931234' })
   assert.deepEqual(notice.getSystemNoticeName('90071992547409931234'), { project_product_id: '90071992547409931234' })
-  assert.deepEqual(retry.getSystemTestSuiteDetailsAllRetry('90071992547409931234', 0, 2), { test_suite_id: '90071992547409931234', test_env: 0, api_concurrency_limit: 2 })
+  assert.deepEqual(retry.getSystemTestSuiteDetailsAllRetry('90071992547409931234', 0, 2), { test_suite_id: '90071992547409931234', test_env: 0, api_concurrency_limit: 2, confirm_infrastructure_retry: false })
 })
 test('任务组导出使用路由首个合法ID，0保留；无效目标不打开无范围窗口', async t => {
   const h = setup(); t.after(h.close); h.mount(); await flush()

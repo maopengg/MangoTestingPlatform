@@ -15,6 +15,11 @@ from src.apps.auto_api.models import (
 )
 
 
+class ModuleCoverageCaseBindingInput(serializers.Serializer):
+    api_case_id = serializers.IntegerField(min_value=1)
+    api_case_revision_id = serializers.IntegerField(min_value=1, required=False, allow_null=True)
+
+
 class ModuleCoverageCaseSnapshotSerializer(serializers.ModelSerializer):
     commit_sha = serializers.CharField(source="scan.commit_sha", read_only=True)
     create_time = serializers.DateTimeField(format=MODULE_COVERAGE_DATETIME_FORMAT, read_only=True)

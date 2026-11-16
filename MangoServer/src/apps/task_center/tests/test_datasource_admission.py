@@ -13,7 +13,6 @@ from mangotools.enums import TaskEnum
 
 from src.apps.data_factory.schemas.performance import DatasourcePerformancePolicy
 from src.apps.data_factory.services.governance.datasource_governor import DatasourceGovernorService as Governor
-from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
 from src.apps.task_center.services.execution.claim import ApiTaskClaimService as Claim
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.test_center.models import TestSuite, TestSuiteDetails
@@ -72,7 +71,7 @@ class DatasourceClaimTests(TestCase):
                   side_effect=lambda *args, **kwargs: original_atomic(using=self.alias)),
             patch.object(Infrastructure, 'block', side_effect=lambda *args, **kwargs: block(Infrastructure, *args, **kwargs)),
             patch.object(Infrastructure, 'close_interrupted_trace'),
-            patch.object(DataFactoryQuerySelector, 'execution_targets', side_effect=lambda *args: self.bindings),
+            patch('src.apps.test_center.services.reporting.test_suite.infrastructure.transaction.on_commit'),
             patch.object(Governor, 'policy', return_value=self.policy),
         ]
         for guard in guards:
@@ -127,11 +126,11 @@ class DatasourceClaimTests(TestCase):
 
     def test_renewal_does_not_reorder_reports_after_dispatch(self):
         self.add_cases(2)
-        first = self.resource_claim(platform_limit=2)
+        first = self.claim()
         other = self.suites.create(id=2, project_product_id=1, user_id=1, test_env=0,
                                   api_concurrency_limit=2, status=2, is_notice=0)
         self.add_cases(2, other)
-        second = self.resource_claim(platform_limit=2)
+        second = self.claim()
         self.assertEqual(second.test_suite, 2)
         self.details.filter(id=first.test_suite_details).update(push_time=timezone.now() + timedelta(days=1))
         order = Claim.candidate_suite_ids(timezone.now() - timedelta(hours=1), 3)
@@ -162,7 +161,7 @@ class DatasourceClaimTests(TestCase):
         old.refresh_from_db(using=self.alias)
         self.assertTrue(Infrastructure.is_blocked(old.summary_data))
         self.assertEqual(old.retry, 1)
-        self.assertEqual((old.status, old.fail), (TaskEnum.FAIL.value, 0))
+        self.assertEqual((old.status, old.fail), (TaskEnum.INFRASTRUCTURE_BLOCKED.value, 0))
         self.assertIsNotNone(self.claim())
         self.assertEqual(self.details.get(id=rows[3].id).retry, 1)
         self.assertIsNone(self.claim())
@@ -177,8 +176,8 @@ class DatasourceClaimTests(TestCase):
         issue = DatasourceInfrastructureIssue(code=34185, message='control unavailable')
         self.assertTrue(Infrastructure.block(command.test_suite_details, command.attempt, [issue]))
         row = self.details.get(id=command.test_suite_details)
-        self.assertEqual((row.status, row.retry, row.success, row.fail, row.warning), (TaskEnum.FAIL.value, 1, 0, 0, 0))
-        self.assertEqual(self.suites.get(id=self.suite.id).status, TaskEnum.FAIL.value)
+        self.assertEqual((row.status, row.retry, row.success, row.fail, row.warning), (TaskEnum.INFRASTRUCTURE_BLOCKED.value, 1, 0, 0, 0))
+        self.assertEqual(self.suites.get(id=self.suite.id).status, TaskEnum.INFRASTRUCTURE_BLOCKED.value)
         self.assertTrue(Infrastructure.blocked_suites([self.suite.id]).exists())
         with self.assertRaises(TestCenterError):
             TestSuiteRetryService.ensure_infrastructure_reviewed(row)
@@ -236,8 +235,8 @@ class DatasourceClaimTests(TestCase):
         untouched = self.details.get(id=commands[1].test_suite_details)
         self.assertFalse(row.summary_data['meta']['execution_control']['requires_review'])
         self.assertTrue(untouched.summary_data['meta']['execution_control']['requires_review'])
-        self.assertEqual((row.status, row.retry, row.success, row.fail, row.warning), (TaskEnum.FAIL.value, 1, 0, 0, 0))
-        self.assertEqual(self.suites.get(id=self.suite.id).status, TaskEnum.FAIL.value)
+        self.assertEqual((row.status, row.retry, row.success, row.fail, row.warning), (TaskEnum.INFRASTRUCTURE_BLOCKED.value, 1, 0, 0, 0))
+        self.assertEqual(self.suites.get(id=self.suite.id).status, TaskEnum.INFRASTRUCTURE_BLOCKED.value)
 
     def test_pending_and_running_siblings_prevent_blocked_review(self):
         from src.apps.test_center.services.reporting.test_suite.disposition import TestSuiteDispositionService as Disposition
@@ -268,9 +267,9 @@ class DatasourceClaimTests(TestCase):
             self.assertEqual(Infrastructure.repair_legacy_blocks(), 1)
             self.assertEqual(Infrastructure.repair_legacy_blocks(), 0)
         row.refresh_from_db(using=self.alias)
-        self.assertEqual((row.status, row.retry), (TaskEnum.FAIL.value, command.attempt))
+        self.assertEqual((row.status, row.retry), (TaskEnum.INFRASTRUCTURE_BLOCKED.value, command.attempt))
         self.assertEqual(row.summary_data, summary)
-        self.assertEqual(self.suites.get(id=self.suite.id).status, TaskEnum.FAIL.value)
+        self.assertEqual(self.suites.get(id=self.suite.id).status, TaskEnum.INFRASTRUCTURE_BLOCKED.value)
         self.assertIsNone(self.claim())
 
     def test_legacy_repair_preserves_stopped_report_and_unrelated_pending_cases(self):
@@ -290,7 +289,7 @@ class DatasourceClaimTests(TestCase):
         self.assertFalse(UpdateTestSuite.update_test_suite_details_status(
             command.test_suite_details, TaskEnum.PROCEED.value, 'late progress'))
         row = self.details.get(id=command.test_suite_details)
-        self.assertEqual(row.status, TaskEnum.FAIL.value)
+        self.assertEqual(row.status, TaskEnum.INFRASTRUCTURE_BLOCKED.value)
         self.assertIn('执行已中断', row.error_message)
 
     def test_interrupted_trace_and_running_steps_finish_but_other_attempts_are_untouched(self):
@@ -328,9 +327,9 @@ class DatasourceClaimTests(TestCase):
             case_sum=2, summary_data={'children': [{'status': 1}], 'meta': {}})
         Infrastructure.block(command.test_suite_details, command.attempt, [])
         counter = TestSuiteSummaryService.counter_data(self.suite.id)
-        self.assertEqual((counter['success'], counter['fail'], counter['proceed']), (0, 2, 0))
+        self.assertEqual((counter['success'], counter['fail'], counter['blocked'], counter['proceed']), (0, 0, 2, 0))
 
-    def test_interrupted_notice_uses_normal_idempotent_delivery_without_unlocking_retry(self):
+    def test_interrupted_notice_suppresses_business_report_without_unlocking_retry(self):
         from src.apps.test_center.services.reporting.test_suite.send_notice import SendNotice
         from src.apps.system.enums import TestSuiteNoticeEnum
         self.add_cases(1)
@@ -345,8 +344,8 @@ class DatasourceClaimTests(TestCase):
                 patch('src.apps.test_center.services.reporting.test_suite.send_notice.NoticeMain') as sender:
             notice.send_test_suite()
             notice.send_test_suite()
-        sender.return_value.notice_main.assert_called_once_with(self.suite.id)
-        self.assertEqual(self.suites.get(id=self.suite.id).is_notice, TestSuiteNoticeEnum.SENT.value)
+        sender.return_value.notice_main.assert_not_called()
+        self.assertEqual(self.suites.get(id=self.suite.id).is_notice, TestSuiteNoticeEnum.EXPIRED.value)
         row = self.details.get(id=command.test_suite_details)
         self.assertTrue(row.summary_data['meta']['execution_control']['requires_review'])
 
@@ -378,20 +377,20 @@ class DatasourceClaimTests(TestCase):
         command = self.claim()
         Infrastructure.block(command.test_suite_details, command.attempt, [])
         row = self.details.get(id=command.test_suite_details)
-        with patch.object(DatasourceInfrastructureService, 'review_ready') as review_ready:
+        with patch.object(DatasourceInfrastructureService, 'cleanup_review_ready') as review_ready:
             with self.assertRaises(TestCenterError) as raised:
                 TestSuiteRetryService.ensure_infrastructure_reviewed(row)
             self.assertEqual(raised.exception.code, 40107)
-            self.assertIn('填写核查说明并保存', raised.exception.msg)
+            self.assertIn('重试可能重复写入', raised.exception.msg)
             self.assertNotIn('请先停止报告', raised.exception.msg)
             review_ready.assert_not_called()
         row.summary_data['meta']['execution_control']['requires_review'] = False
-        with patch.object(DatasourceInfrastructureService, 'review_ready', return_value=False):
+        with patch.object(DatasourceInfrastructureService, 'cleanup_review_ready', return_value=False):
             with self.assertRaises(TestCenterError) as raised:
                 TestSuiteRetryService.ensure_infrastructure_reviewed(row)
             self.assertEqual(raised.exception.code, 40109)
             self.assertIn('数据清理或数据源配额核查未通过', raised.exception.msg)
-        with patch.object(DatasourceInfrastructureService, 'review_ready', return_value=True):
+        with patch.object(DatasourceInfrastructureService, 'cleanup_review_ready', return_value=True):
             TestSuiteRetryService.ensure_infrastructure_reviewed(row)
             row.retry += 1
             with self.assertRaises(TestCenterError) as raised:
@@ -419,7 +418,8 @@ class DatasourceClaimTests(TestCase):
         first, second = self.details.get(id=first_id), self.details.get(id=second_id)
         self.assertEqual(first.test_suite_id, self.suite.id)
         self.assertEqual(first.status, TaskEnum.STAY_BEGIN.value)
-        self.assertIsNone(first.summary_data)
+        self.assertEqual(first.summary_data['meta']['retry_confirmation']['previous_attempt'], 1)
+        self.assertNotIn('execution_control', first.summary_data['meta'])
         self.assertEqual((second.status, second.success), (TaskEnum.SUCCESS.value, 1))
         self.assertEqual(self.suites.count(), 1)
         self.assertEqual(self.details.count(), 2)
@@ -447,7 +447,7 @@ class DatasourceClaimTests(TestCase):
         row = self.details.get(id=stale.id)
         self.assertTrue(Infrastructure.is_blocked(row.summary_data))
         self.assertTrue(row.summary_data['meta']['execution_control']['requires_review'])
-        self.assertEqual(row.status, TaskEnum.FAIL.value)
+        self.assertEqual(row.status, TaskEnum.INFRASTRUCTURE_BLOCKED.value)
 
     def test_lazy_summary_backfill_cannot_erase_block_or_termination(self):
         from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService as Results

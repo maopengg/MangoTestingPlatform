@@ -1,6 +1,6 @@
 import { normalizeEmptyListTotal } from '@/utils/api-response'
 export type ReportId = number | string
-export type ReportSummaryKey = 'total' | 'success' | 'fail' | 'warning' | 'proceed' | 'stay_begin' | 'stopped' | 'excluded_count'
+export type ReportSummaryKey = 'total' | 'success' | 'fail' | 'warning' | 'proceed' | 'stay_begin' | 'stopped' | 'blocked' | 'excluded_count'
 export interface ReportOption { value: ReportId; label: string }
 export interface ReportTrendItem {
   label: string; batch_count: number; scheduled_count: number; other_count: number
@@ -38,7 +38,7 @@ export function reportEnvelope(value: unknown) {
   return response
 }
 function linkedId(value: unknown) { return reportId(value) ?? reportId(reportObject(value).id) }
-const summaryKeys: ReportSummaryKey[] = ['total', 'success', 'fail', 'warning', 'proceed', 'stay_begin', 'stopped', 'excluded_count']
+const summaryKeys: ReportSummaryKey[] = ['total', 'success', 'fail', 'warning', 'proceed', 'stay_begin', 'stopped', 'blocked', 'excluded_count']
 export function parseReportRow(value: unknown): ReportRow | null {
   const row = reportObject(value), id = reportId(row.id)
   if (id === null) return null
@@ -85,7 +85,7 @@ export function parseReportOptions(value: unknown): ReportOption[] {
   }
   return [...items.values()]
 }
-export function createReportCounts() { return { success: 0, fail: 0, warning: 0, pending: 0, todo: 0, stopped: 0 } }
+export function createReportCounts() { return { success: 0, fail: 0, warning: 0, pending: 0, todo: 0, stopped: 0, blocked: 0 } }
 export function parseReportTrendItems(value: unknown): ReportTrendItem[] {
   if (!Array.isArray(value)) return []
   return value.flatMap(entry => {
@@ -108,6 +108,7 @@ export function parseReportOverview(value: unknown, today = new Date()) {
     counts.success = byStatus.get(1) ?? 0; counts.fail = byStatus.get(0) ?? 0
     counts.warning = byStatus.get(4) ?? 0; counts.pending = byStatus.get(3) ?? 0
     counts.todo = byStatus.get(2) ?? 0; counts.stopped = byStatus.get(5) ?? 0
+    counts.blocked = byStatus.get(6) ?? 0
   } else { counts.success = reportNumber(data.successSun) ?? 0; counts.fail = reportNumber(data.failSun) ?? 0 }
   let trend: ReportTrendItem[]
   if (Array.isArray(data.trend)) trend = parseReportTrendItems(data.trend)

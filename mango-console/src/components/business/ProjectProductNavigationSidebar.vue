@@ -66,13 +66,18 @@
           @select="onSelect"
         >
           <template #title="nodeData">
-            <span
-              :class="{
-                'mango-project-navigation-sidebar__project-start': nodeData.projectGroupStart,
-              }"
-            >
-              {{ nodeData.title }}
-            </span>
+            <a-tooltip :disabled="!nodeData.productDescription" position="right">
+              <template #content>
+                <div class="mango-project-navigation-sidebar__product-description">{{ nodeData.productDescription }}</div>
+              </template>
+              <span
+                :class="{
+                  'mango-project-navigation-sidebar__project-start': nodeData.projectGroupStart,
+                }"
+              >
+                {{ nodeData.title }}
+              </span>
+            </a-tooltip>
           </template>
           <template #switcher-icon>
             <IconRight class="mango-project-navigation-sidebar__switcher-icon" />
@@ -510,6 +515,15 @@ import { reportLoadError } from '@/utils/load-error'
 </script>
 
 <style lang="less" scoped>
+  .mango-project-navigation-sidebar__product-description {
+    max-width: min(360px, 70vw);
+    max-height: 320px;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.6;
+  }
+
   .mango-project-navigation-sidebar {
     display: flex;
     width: 100%;

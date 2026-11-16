@@ -60,7 +60,8 @@ export function getSystemTestSuiteDetailsExecutionOptions() {
 export function getSystemTestSuiteDetailsAllRetry(
   test_suite_id: number | string,
   testEnv?: number | null,
-  apiConcurrencyLimit?: number | null
+  apiConcurrencyLimit?: number | null,
+  confirmInfrastructureRetry = false
 ) {
   return get({
     url: 'system/test/suite/details/all/retry',
@@ -68,6 +69,7 @@ export function getSystemTestSuiteDetailsAllRetry(
       const params: Record<string, any> = {
         test_suite_id: test_suite_id,
         test_env: testEnv,
+        confirm_infrastructure_retry: confirmInfrastructureRetry,
       }
       if (apiConcurrencyLimit !== null && apiConcurrencyLimit !== undefined) {
         params.api_concurrency_limit = apiConcurrencyLimit
@@ -76,19 +78,19 @@ export function getSystemTestSuiteDetailsAllRetry(
     },
   })
 }
-export function getSystemTestSuiteDetailsRetry(id: number | string) {
+export function getSystemTestSuiteDetailsRetry(id: number | string, confirmInfrastructureRetry = false) {
   return get({
     url: 'system/test/suite/details/retry',
     data: () => {
-      return { id: id }
+      return { id: id, confirm_infrastructure_retry: confirmInfrastructureRetry }
     },
   })
 }
 
-export function retryFailedReportCases(testSuiteId: number | string) {
+export function retryFailedReportCases(testSuiteId: number | string, confirmInfrastructureRetry = false) {
   return post({
     url: 'system/test/suite/details/failed/retry',
-    data: () => ({ test_suite_id: testSuiteId }),
+    data: () => ({ test_suite_id: testSuiteId, confirm_infrastructure_retry: confirmInfrastructureRetry }),
   })
 }
 

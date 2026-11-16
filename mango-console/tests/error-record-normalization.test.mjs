@@ -8,6 +8,18 @@ import { harness,deferred,flush } from './helpers/case-details-harness.mjs'
 const base=path.resolve('src/views/system/error-record')
 const row=(id=1,extra={})=>({source:'system_error_event',event_source:'http',object_id:id,title:'Example',message:'Failure',status:'warning',status_name:'待排查',traceback:'Line 1\nLine 2',...extra})
 const ok=(data=[row()],totalSize=data.length)=>({code:200,data,totalSize})
+test('recovered health incidents keep their evidence and use success colors in list and detail',t=>{
+  const h=setup();t.after(h.close);const m=h.load('error-record.ts')
+  const recovered=row(343,{status:'success',status_name:'已恢复',exception_type:'DatasourceExecutionHealth',traceback:'{"active":false,"resolved_at":1}'})
+  const parsed=m.parseErrorRecords(ok([recovered])).rows[0]
+  assert.equal(parsed.status_name,'已恢复');assert.equal(parsed.traceback,recovered.traceback)
+  assert.equal(m.errorRecordStatusColor(parsed.status),'green')
+  assert.equal(m.errorRecordStatusColor('warning'),'orange');assert.equal(m.errorRecordStatusColor('error'),'red')
+  assert.equal(m.errorRecordStatusColor(4),'red');assert.equal(m.errorRecordStatusColor(null),'red')
+  const source=readFileSync(path.join(base,'index.vue'),'utf8')
+  assert.ok(source.includes('errorRecordStatusColor(record.status)'))
+  assert.ok(source.includes('errorRecordStatusColor(detail.record.status)'))
+})
 function setup(options={}) {
   const life={mount:[],activate:[],deactivate:[],unmount:[]},calls=[],messages=[],navigations=[],windows=[],copies=[]
   const route=vue.reactive({path:'/system/error-record/index',fullPath:'/system/error-record/index'})

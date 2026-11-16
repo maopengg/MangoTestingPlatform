@@ -29,6 +29,7 @@ from src.apps.auto_api.schemas.module_coverage import (
     ModuleCoverageCasePayload,
 )
 from src.apps.test_center.models import ProductModule
+from src.apps.test_center.services.project.product_module import ProductModuleService
 
 
 class ModuleCoverageFoundationMixin:
@@ -263,7 +264,8 @@ class ModuleCoverageFoundationMixin:
                 ModuleCoverageCaseBindingService.validate(coverage_case.project_product_id,
                     coverage_case.module_id, coverage_case.api_case_id, coverage_case.api_case_revision_id,
                     interface=interface_snapshot, previous=coverage_case,
-                    api_case=coverage_case.api_case, revision=coverage_case.api_case_revision)
+                    api_case=coverage_case.api_case, revision=coverage_case.api_case_revision,
+                    coverage_payload=case_snapshot.payload)
             except AutoApiError as error:
                 return {"status": ModuleCoverageValidity.INVALID, "reason": error.msg}
         return {"status": ModuleCoverageValidity.VALID, "reason": ""}
@@ -291,5 +293,6 @@ class ModuleCoverageFoundationMixin:
     @classmethod
     def validate_module_scope(cls, scan: ModuleCoverageScan, module_id: int):
         cls.validate_module(scan.project_product_id, module_id)
+        ProductModuleService.validate_business_binding(module_id)
         if module_id not in cls.module_ids(scan.module_id, scan.include_descendants):
             raise AutoApiError(QUALITY_COVERAGE_PROJECT_PRODUCT_MODULE_INVALID)

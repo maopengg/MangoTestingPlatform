@@ -51,7 +51,8 @@ export function parseReportOverview(response: unknown, expectedId: string): Repo
 export function emptyReportSummary() {
   return {
     count: 0, excluded_count: 0, fail_count: 0, success_count: 0, warning_count: 0,
-    stay_begin_count: 0, proceed_count: 0, stopped_count: 0,
+    stay_begin_count: 0, proceed_count: 0, stopped_count: 0, blocked_count: 0,
+    api_blocked_count: 0, ui_blocked_count: 0, pytest_blocked_count: 0,
     ui_count: 0, api_count: 0, pytest_count: 0, evaluation_count: 0,
     raw_ui_count: 0, raw_api_count: 0, raw_pytest_count: 0, raw_evaluation_count: 0,
     ui_in_progress_count: 0, api_in_progress_count: 0, pytest_in_progress_count: 0, evaluation_in_progress_count: 0,

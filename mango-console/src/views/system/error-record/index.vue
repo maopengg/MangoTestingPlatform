@@ -70,7 +70,7 @@
               {{ record.count }}
             </template>
             <template v-else-if="item.key === 'status_name'" #cell="{ record }">
-              <a-tag :color="record.status === 'warning' ? 'orange' : 'red'" size="small">{{ record.status_name || '异常' }}</a-tag>
+              <a-tag :color="errorRecordStatusColor(record.status)" size="small">{{ record.status_name || '异常' }}</a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <MangoTableActions
@@ -115,7 +115,7 @@
             <h3>基础信息</h3>
             <p>异常来源、发生位置和聚合次数</p>
           </div>
-          <a-tag :color="detail.record.status === 'warning' ? 'orange' : 'red'" size="small">{{ detail.record.status_name || '异常' }}</a-tag>
+          <a-tag :color="errorRecordStatusColor(detail.record.status)" size="small">{{ detail.record.status_name || '异常' }}</a-tag>
         </div>
         <a-descriptions :column="2" bordered size="small">
           <a-descriptions-item label="记录类型">
@@ -192,7 +192,7 @@ import { reportLoadError } from '@/utils/load-error'
   import { useEnum } from '@/store/modules/get-enum'
   import { getEnumTagColor } from '@/utils/business-format'
   import { createConditionItems, sourceTagOptions, tableColumns, tableScrollX } from './config'
-  import { buildErrorRecordQuery, resetErrorRecordConditions, parseErrorRecords, errorRecordDetail, errorRecordSourcePath, errorRecordLogUrl } from './error-record'
+  import { buildErrorRecordQuery, resetErrorRecordConditions, parseErrorRecords, errorRecordDetail, errorRecordSourcePath, errorRecordLogUrl, errorRecordStatusColor } from './error-record'
   import type { ErrorRecordRow } from './error-record'
 
   const router = useRouter(), route = useRoute(), user = useUserStore(), permission = usePermissionStore(), pagePath = route.path

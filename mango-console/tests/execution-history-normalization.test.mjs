@@ -254,7 +254,20 @@ test('initially visible drawer loads and preserves manual scenario choice after 
   assert.equal(h.selectedScenarioKey.value, '1:2')
   h.selectTreeNode(['unknown'])
   assert.equal(h.selectedTreeKey.value, '1:2')
+  h.selectTreeNode(['step:1'])
+  assert.equal(h.selectedScenarioKey.value, '1:1')
+  assert.equal(h.selectedTreeKey.value, h.selectedScenarioKey.value)
+  h.selectTreeNode([])
+  assert.equal(h.selectedTreeKey.value, '1:1')
   h.dispose()
+})
+
+test('current scenario has persistent themed selection and a non-color current marker', () => {
+  const source = readFileSync(path.join(base, 'ExecutionResultHistoryDrawer.vue'), 'utf8')
+  assert.match(source, /'mango-execution-result-current': nodeData.key === selectedScenarioKey/)
+  assert.match(source, /:aria-current="nodeData.key === selectedScenarioKey \? 'true' : undefined"/)
+  assert.match(source, /v-if="nodeData.key === selectedScenarioKey"[^>]*>当前<\/span>/)
+  assert.match(source, /\.execution-result-history__tree-node\.mango-execution-result-current\s*\{\s*border-color: var\(--m-primary-border\);\s*background: var\(--m-primary-soft\);/)
 })
 
 test('closing during detail fetch clears previous evidence and fences the response', async () => {

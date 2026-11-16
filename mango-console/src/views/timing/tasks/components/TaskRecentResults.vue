@@ -69,6 +69,7 @@
     if (!item.total) return '暂无用例明细'
     const parts = [`${item.total} 个用例`]
     if (item.fail) parts.push(`失败 ${item.fail}`)
+    if (item.blocked) parts.push(`平台受阻 ${item.blocked}`)
     if (item.warning) parts.push(`警告 ${item.warning}`)
     if (item.excluded_count) parts.push(`排除 ${item.excluded_count}`)
     if (item.proceed) parts.push(`进行中 ${item.proceed}`)
@@ -79,6 +80,7 @@
     if (status === 'success') return '✓'
     if (status === 'fail') return '×'
     if (status === 'warning') return '!'
+    if (status === 'blocked') return '!'
     if (status === 'proceed') return '↻'
     if (status === 'stopped') return '—'
     return '·'
@@ -139,6 +141,8 @@
   }
 
   .mango-task-recent-results__point--warning,
+  .mango-task-recent-results__point--blocked,
+  .mango-task-recent-results__status.is-blocked,
   .mango-task-recent-results__status.is-warning {
     color: var(--m-warning);
   }

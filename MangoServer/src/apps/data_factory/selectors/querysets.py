@@ -14,6 +14,20 @@ from src.apps.data_factory.models import (
 
 class DataFactoryQuerySelector:
     @staticmethod
+    def has_unfinished_cleanup_for_details(detail_ids, product_id):
+        from django.db.models.fields.json import KeyTransform
+        from src.apps.data_factory.constants import CLEANUP_REPORT_CONTEXT_KEY
+        from src.apps.data_factory.enums import DataFactoryCleanupStatusEnum
+        executions = DataFactoryExecution.objects.alias(
+            report_owner=KeyTransform(CLEANUP_REPORT_CONTEXT_KEY, 'context')).filter(
+                project_product_id=product_id, report_owner__parent_case_detail_id__in=detail_ids)
+        if executions.exclude(cleanup_status__in=[DataFactoryCleanupStatusEnum.SUCCESS.value,
+                DataFactoryCleanupStatusEnum.SKIPPED.value]).exists():
+            return True
+        return DataFactoryExecutionItem.objects.filter(execution_id__in=executions.values('id')).exclude(
+            cleanup_status=DataFactoryCleanupStatusEnum.SUCCESS.value).exists()
+
+    @staticmethod
     def resource_cleanup_aliases(ids, product_id):
         return DataFactoryDatasourceAlias.objects.filter(id__in=ids, project_product_id=product_id)
 

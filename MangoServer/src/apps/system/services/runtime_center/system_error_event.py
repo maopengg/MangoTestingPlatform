@@ -226,6 +226,16 @@ class SystemErrorEventService:
     @classmethod
     def serialize(cls, item: SystemErrorEvent) -> dict:
         validation = item.exception_type == 'RequestValidationError'
+        recovered = False
+        if item.exception_type == 'DatasourceExecutionHealth':
+            try:
+                health = json.loads(item.traceback or '{}')
+            except (TypeError, ValueError):
+                health = None
+            if isinstance(health, dict):
+                recovered = (health.get('active') is False
+                             and type(health.get('resolved_at')) in (int, float)
+                             and health['resolved_at'] > 0)
         return {
             'time': cls.format_time(item.last_seen_at),
             'sort_time': cls.ensure_aware(item.last_seen_at),
@@ -238,8 +248,8 @@ class SystemErrorEventService:
             'service_name': item.service_name,
             'exception_type': item.exception_type,
             'traceback': item.traceback,
-            'status': 'warning' if validation else 'error',
-            'status_name': '待排查' if validation else '异常',
+            'status': 'success' if recovered else 'warning' if validation else 'error',
+            'status_name': '已恢复' if recovered else '待排查' if validation else '异常',
             'count': item.count,
             'link': None,
             'log_query': f'service="{item.service_name}" AND fingerprint="{item.fingerprint}"',

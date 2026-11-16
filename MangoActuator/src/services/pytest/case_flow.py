@@ -168,6 +168,8 @@ class PytestCaseFlow:
             ExecutionCaseQueue.mark_error(queue_id, error)
             log.error(f'执行Pytest用例任务异常，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
             case_runner.case_result.status = StatusEnum.FAIL.value
+            case_runner.case_result.results_complete = False
+            case_runner.case_result.collected_count = None
             case_runner.case_result.result_data = [{
                 'name': case_model.name,
                 'status': StatusEnum.FAIL.value,

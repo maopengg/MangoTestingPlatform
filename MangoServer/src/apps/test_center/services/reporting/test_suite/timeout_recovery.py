@@ -7,6 +7,7 @@ from mangotools.enums import TaskEnum
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.test_center.models import TestSuiteDetails
 from src.apps.test_center.services.results.execution_result import ExecutionResultService
+from src.apps.test_center.services.reporting.api_counting import ApiReportCountingService
 
 
 class TestSuiteTimeoutRecoveryService:
@@ -70,7 +71,8 @@ class TestSuiteTimeoutRecoveryService:
         trace_id = cls.close_api_traces(detail, message, termination, now)
         detail.status, detail.error_message = TaskEnum.FAIL.value, message
         detail.success = detail.fail = detail.warning = 0
-        detail.summary_data = {'children': None, 'meta': {'termination': termination}}
+        counting = ApiReportCountingService.empty_summary(detail) or {'meta': {}}
+        detail.summary_data = {'children': None, 'meta': {**counting['meta'], 'termination': termination}}
         detail.save(update_fields=['status', 'error_message', 'success', 'fail', 'warning', 'summary_data', 'update_time'])
         cls.save_empty_execution_record(detail, message, trace_id)
         cls.project_business_status(detail, TaskEnum.FAIL.value)
@@ -108,9 +110,10 @@ class TestSuiteTimeoutRecoveryService:
         detail.success = 0
         detail.fail = 0
         detail.warning = 0
+        counting = ApiReportCountingService.empty_summary(detail) or {'meta': {}}
         detail.summary_data = {
             'children': None,
-            'meta': {'termination': termination},
+            'meta': {**counting['meta'], 'termination': termination},
         }
         detail.save(update_fields=[
             'status',

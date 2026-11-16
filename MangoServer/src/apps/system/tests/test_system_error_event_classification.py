@@ -1,3 +1,4 @@
+import json
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -19,6 +20,39 @@ from src.common.decorators.system_error import system_error_guard
 
 
 class SystemErrorEventClassificationTests(SimpleTestCase):
+    def test_health_status_requires_explicit_recovery_evidence(self):
+        states = [
+            ({'active': False, 'resolved_at': 1794548254.0}, 'success', '已恢复'),
+            ({'active': True, 'resolved_at': None}, 'error', '异常'),
+            ({'active': True, 'resolved_at': 1794548254.0}, 'error', '异常'),
+            ({'active': False}, 'error', '异常'),
+            ({'active': 'false', 'resolved_at': 1}, 'error', '异常'),
+            ({'active': False, 'resolved_at': True}, 'error', '异常'),
+            ({'active': False, 'resolved_at': 0}, 'error', '异常'),
+            ({'active': False, 'resolved_at': 'invalid'}, 'error', '异常'),
+            ([], 'error', '异常'), (None, 'error', '异常'),
+        ]
+        for state, status, label in states:
+            with self.subTest(state=state):
+                item = SimpleNamespace(last_seen_at=timezone.now(), source='api-worker', id=1,
+                                       request_path='datasource-health/example', service_name='api-worker',
+                                       message='执行进展异常', exception_type='DatasourceExecutionHealth',
+                                       traceback=json.dumps(state), count=2, fingerprint='example')
+                data = SystemErrorEventService.serialize(item)
+                self.assertEqual((data['status'], data['status_name']), (status, label))
+                self.assertEqual(data['traceback'], item.traceback)
+                self.assertEqual(data['count'], 2)
+
+    def test_invalid_health_trace_and_ordinary_errors_remain_errors(self):
+        for exception_type, trace in (
+            ('DatasourceExecutionHealth', 'invalid JSON'),
+            ('RuntimeError', '{"active":false,"resolved_at":1}'),
+        ):
+            item = SimpleNamespace(last_seen_at=timezone.now(), source='http', id=1, request_path='/api/example',
+                                   service_name='core-api', message='error', exception_type=exception_type,
+                                   traceback=trace, count=1, fingerprint='example')
+            data = SystemErrorEventService.serialize(item)
+            self.assertEqual((data['status'], data['status_name']), ('error', '异常'))
     @patch.object(SystemErrorEventService, 'record')
     def test_http_validation_is_sanitized_and_stable_for_deduplication(self, record):
         request = SimpleNamespace(method='POST', path='/api/example/config',

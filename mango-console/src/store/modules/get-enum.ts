@@ -159,7 +159,7 @@ function createEnumState(): EnumState {
       'cyan',
       'purple',
     ],
-    status_colors: ['red', 'green', 'gold', 'gray', 'orange', 'gray', 'gray'],
+    status_colors: ['red', 'green', 'gold', 'gray', 'orange', 'gray', 'orange'],
   }
 }
 

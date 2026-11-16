@@ -2,6 +2,9 @@
 import hashlib
 import json
 import uuid
+from datetime import datetime, timezone as dt_timezone
+
+from django.utils import timezone
 
 from src.apps.data_factory.schemas.performance import DatasourceHealthIncident, DatasourceHealthMetrics
 from src.apps.data_factory.services.governance.datasource_governor import DatasourceGovernorService as Governor
@@ -91,7 +94,9 @@ class DatasourceHealthIncidentService:
     @classmethod
     def retry_entry(cls, store, row):
         state = DatasourceHealthIncident.model_validate(row.value['data'])
-        if state.scope and state.revision > state.delivered_revision:
+        if state.active and state.worker and cls.replaced_worker_ended(state):
+            cls.observe(state.scope, active=False, worker=True, metrics={})
+        elif state.scope and state.revision > state.delivered_revision:
             cls.observe(state.scope, active=state.active, worker=state.worker,
                         metrics=state.metrics, delivery_only=True)
         elif (not state.active and state.resolved_at is not None
@@ -104,6 +109,30 @@ class DatasourceHealthIncidentService:
                         and current.delivered_revision == current.revision
                         and current.resolved_at == state.resolved_at):
                     store.delete_if_version(row.key, entry.version)
+
+    @staticmethod
+    def replaced_worker_ended(state):
+        from src.apps.system.enums import RuntimeServiceName
+        from src.apps.system.services.runtime_center.heartbeat import ServiceHeartbeatService
+        from src.apps.task_center.services.execution.worker_recovery import ApiWorkerRecoveryService
+        from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
+        from mangotools.enums import TaskEnum
+        parts = state.scope.split(':')
+        if len(parts) != 3 or parts[0] != 'api-worker' or state.opened_at is None:
+            return False
+        _, worker, process = parts
+        now = timezone.now()
+        opened = datetime.fromtimestamp(state.opened_at, dt_timezone.utc)
+        replaced = any(row.instance_name == worker and ApiWorkerRecoveryService.replacement_confirmed(
+            {'process_token': process}, row, opened, now)
+            for row in ServiceHeartbeatService.get_online_instances(RuntimeServiceName.API_WORKER))
+        if not replaced:
+            return False
+        # 新进程在线不代表旧执行已结算；有同持有者的进行中明细时继续保留告警。
+        return not TestCenterQuerySelector.test_suite_details().filter(
+            status=TaskEnum.PROCEED.value,
+            summary_data__meta__worker_owner__process_token=process,
+            summary_data__meta__worker_owner__worker_name=worker).exists()
 
     @classmethod
     def safe_observe(cls, scope, **kwargs):

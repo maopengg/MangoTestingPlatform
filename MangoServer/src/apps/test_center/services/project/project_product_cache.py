@@ -8,7 +8,7 @@ T = TypeVar('T')
 
 class ProjectProductCacheService:
     CACHE_TIMEOUT = 60 * 5
-    KEY_PREFIX = 'system:project-product:options:v1'
+    KEY_PREFIX = 'system:project-product:options:v2'
 
     @classmethod
     def key(cls, project_id: int) -> str:
@@ -34,10 +34,10 @@ class ProjectProductCacheService:
 
         products = ProjectProduct.objects.filter(
             project_id=project_id
-        ).values_list('id', 'name')
+        ).values_list('id', 'name', 'description')
         return [
-            {'value': product_id, 'label': product_name}
-            for product_id, product_name in products
+            {'value': product_id, 'label': product_name, 'description': description or ''}
+            for product_id, product_name, description in products
         ]
 
     @classmethod

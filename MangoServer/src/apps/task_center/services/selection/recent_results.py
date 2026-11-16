@@ -22,6 +22,7 @@ class TaskRecentResultService:
         TaskEnum.PROCEED.value: 'proceed',
         TaskEnum.WARNING.value: 'warning',
         TaskEnum.STOPPED.value: 'stopped',
+        TaskEnum.INFRASTRUCTURE_BLOCKED.value: 'blocked',
     }
 
     @classmethod
@@ -72,6 +73,7 @@ class TaskRecentResultService:
             'fail',
             'warning',
             'is_excluded',
+            'summary_data',
         )
         details_by_suite = defaultdict(list)
         for row in detail_rows:
@@ -110,7 +112,8 @@ class TaskRecentResultService:
                 'proceed': counts['proceed'],
                 'stay_begin': counts['stay_begin'],
                 'stopped': counts['stopped'],
-                'pass_rate': round(counts['success'] / total * 100, 2) if total else (100 if counts['excluded_count'] else None),
+                'blocked': counts.get('blocked', 0),
+                'pass_rate': None if total and counts.get('blocked') == total else round(counts['success'] / total * 100, 2) if total else (100 if counts['excluded_count'] else None),
             })
         return result
 
@@ -126,6 +129,8 @@ class TaskRecentResultService:
             return suite_status
         if counts['fail'] > 0:
             return TaskEnum.FAIL.value
+        if counts.get('blocked'):
+            return TaskEnum.INFRASTRUCTURE_BLOCKED.value
         if counts['warning'] > 0:
             return TaskEnum.WARNING.value
         if counts['success'] > 0:

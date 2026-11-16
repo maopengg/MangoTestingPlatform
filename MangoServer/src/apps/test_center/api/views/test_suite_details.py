@@ -71,7 +71,11 @@ class TestSuiteDetailsCRUD(ModelCRUD):
                 query_dict[k] = v[0]
         del query_dict['pageSize']
         del query_dict['page']
+        requested_status = query_dict.pop('status', None)
         books = self.filter_queryset_by_data_scope(request, self.model.objects.filter(**query_dict)).order_by('-id')
+        if requested_status is not None:
+            from src.apps.test_center.selectors.infrastructure import ReportInfrastructureSelector
+            books = ReportInfrastructureSelector.filter_status(books, requested_status)
         books = self.filter_queryset_by_data_scope(request, books)
         data_list, count = self.paging_list(
             request.query_params.get("pageSize"),
@@ -146,6 +150,8 @@ class TestSuiteDetailsViews(ViewSet):
             request.query_params.get('test_env'),
             requested_api_concurrency_limit,
             concurrency_override_provided=requested_api_concurrency_limit not in (None, ''),
+            confirm_infrastructure_retry=str(request.query_params.get('confirm_infrastructure_retry', '')).lower() == 'true',
+            user=request.user.user_obj,
         )
         return ResponseData.success(
             RESPONSE_MSG_0132,
@@ -161,7 +167,9 @@ class TestSuiteDetailsViews(ViewSet):
         """重试指定报告明细"""
         if not self._has_detail_scope(request, request.query_params.get('id')):
             return ResponseData.fail(RESPONSE_MSG_0210)
-        TestSuiteRetryService.retry_detail(request.query_params.get('id'))
+        TestSuiteRetryService.retry_detail(request.query_params.get('id'),
+            confirm_infrastructure_retry=str(request.query_params.get('confirm_infrastructure_retry', '')).lower() == 'true',
+            user=request.user.user_obj)
         return ResponseData.success(RESPONSE_MSG_0133)
 
     @action(methods=['post'], detail=False)
@@ -171,7 +179,9 @@ class TestSuiteDetailsViews(ViewSet):
         suite_id = request.data.get('test_suite_id')
         if not self._has_suite_scope(request, suite_id):
             return ResponseData.fail(RESPONSE_MSG_0210)
-        count = TestSuiteRetryService.retry_failed(suite_id)
+        count = TestSuiteRetryService.retry_failed(suite_id,
+            confirm_infrastructure_retry=request.data.get('confirm_infrastructure_retry') is True,
+            user=request.user.user_obj)
         return ResponseData.success(RESPONSE_MSG_0132, {'retry_count': count})
 
     @action(methods=['get'], detail=False)

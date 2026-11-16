@@ -153,7 +153,7 @@
       </main>
     </div>
   </div>
-  <BaseSidePanel v-model:visible="bindingPage.visible" mode="page" title="逻辑数据库">
+  <BaseSidePanel v-model:visible="bindingPage.visible" mode="page" title="逻辑数据库" width="calc(92vw - 150px)">
     <ProductDataSourcePage
       v-if="bindingPage.visible"
       embedded

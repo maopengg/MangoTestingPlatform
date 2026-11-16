@@ -159,11 +159,20 @@ class TestCase:
         # 设置环境变量
         env = os.environ.copy()
         env[kwargs.get('test_env_name')] = f'{kwargs.get("test_env")}'
+        self.case_result.results_complete = False
+        self.case_result.collected_count = None
+        completion_path = Path(allure_results_dir) / 'mango-completion.json'
+        # 仅将无业务依赖的插件目录加入搜索路径，不引入执行器 src 覆盖被测仓库的同名包。
+        shutil.copyfile(Path(__file__).with_name('result_tracking.py'),
+                        Path(allure_results_dir) / 'mango_pytest_completion.py')
+        env['MANGO_PYTEST_COMPLETION_FILE'] = str(completion_path.resolve())
+        env['PYTHONPATH'] = os.pathsep.join(filter(None, [str(Path(allure_results_dir).resolve()), env.get('PYTHONPATH')]))
 
         pytest_cmd = [
             sys.executable,  # 当前虚拟环境 python
             "-m",
             "pytest",
+            '-p', 'mango_pytest_completion',
             kwargs.get('file_path') if "::" in kwargs.get('file_path') else os.path.abspath(kwargs.get('file_path')),
             "--alluredir",
             allure_results_dir
@@ -209,6 +218,7 @@ class TestCase:
                     stderr_text,
                 )
                 kwargs.get('log').error(self.pytest_error_message)
+            self.read_completion(completion_path, report_data, self.process.returncode)
             return report_data
         except asyncio.TimeoutError:
             await self.stop_process()
@@ -221,6 +231,23 @@ class TestCase:
         finally:
             self.process = None
             self.delete_allure_results(allure_results_dir)
+
+    def read_completion(self, path: Path, report_data: list[dict], return_code: int):
+        try:
+            data = json.loads(path.read_text(encoding='utf-8'))
+            count = data.get('collected_count')
+            if type(count) is not int or count < 0:
+                return
+            self.case_result.collected_count = count
+            self.case_result.results_complete = (
+                data.get('results_complete') is True
+                and return_code in (0, 1)
+                and not self.pytest_error_message
+                and count > 0
+                and len(report_data) == count
+            )
+        except (OSError, ValueError, AttributeError):
+            return
 
     async def stop_process(self) -> None:
         if self.process is None or self.process.returncode is not None:

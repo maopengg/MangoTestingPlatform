@@ -110,6 +110,7 @@
                 :pending="charts.counts.pending"
                 :todo="charts.counts.todo"
                 :stopped="charts.counts.stopped"
+                :blocked="charts.counts.blocked"
                 :loading="charts.loading"
                 total-label="报告总数"
               />
@@ -286,15 +287,15 @@
         <a-descriptions-item label="通过用例">{{ reportResultCount(retryState.record, 'success') }}</a-descriptions-item>
         <a-descriptions-item label="告警用例">{{ reportResultCount(retryState.record, 'warning') }}</a-descriptions-item>
       </a-descriptions>
-      <p class="mango-report-retry-hint">全量重试使用下方配置；只重试失败保留原环境、并发及通过结果，含失败子用例的场景会整体重试。</p>
+      <p class="mango-report-retry-hint">重试失败及平台受阻项保留通过结果。原请求可能已执行，请先确认数据及清理状态，避免重复写入。</p>
     </template>
     <template #footer="{ confirm }">
       <a-space class="mango-modal-dialog-footer-actions">
         <a-button  :loading="retryState.loading"
           :disabled="retryState.failedId !== null" @click="confirm">全量重试</a-button>
         <a-button  type="primary" :loading="retryState.failedId !== null"
-          :disabled="retryState.loading || !retryState.record || isReportRunning(retryState.record) || reportResultCount(retryState.record, 'fail') === 0"
-          @click="onRetryFailed(retryState.record)">只重试失败</a-button>
+          :disabled="retryState.loading || !retryState.record || isReportRunning(retryState.record) || reportResultCount(retryState.record, 'fail') + reportResultCount(retryState.record, 'blocked') === 0"
+          @click="onRetryFailed(retryState.record)">重试失败及受阻</a-button>
       </a-space>
     </template>
   </TestExecutionModal>
@@ -676,7 +677,7 @@ import { runLoadRequest } from '@/utils/load-error'
     const current = () => actionCurrent(version, key) && generation === retryGeneration
     retryState.loading = true
     try {
-      const response = reportEnvelope(await getSystemTestSuiteDetailsAllRetry(id, environment, concurrency))
+      const response = reportEnvelope(await getSystemTestSuiteDetailsAllRetry(id, environment, concurrency, true))
       if (!current()) return false
       Message.success(reportText(response.msg) || '已提交重试')
       retryModalRef.value?.close(); onCancelRetryModal(); void doRefresh()
@@ -690,12 +691,12 @@ import { runLoadRequest } from '@/utils/load-error'
     }
   }
   async function onRetryFailed(record: ReportRow | null) {
-    if (!available() || !record || retryState.loading || retryState.failedId !== null || isReportRunning(record) || record.automation_types.includes(4) || reportResultCount(record, 'fail') === 0) return false
+    if (!available() || !record || retryState.loading || retryState.failedId !== null || isReportRunning(record) || record.automation_types.includes(4) || reportResultCount(record, 'fail') + reportResultCount(record, 'blocked') === 0) return false
     const id = record.id, version = actionVersion, key = identityKey(), generation = retryGeneration
     const current = () => actionCurrent(version, key) && generation === retryGeneration
     retryState.failedId = id
     try {
-      const response = reportEnvelope(await retryFailedReportCases(id)), count = reportNumber(reportObject(response.data).retry_count)
+      const response = reportEnvelope(await retryFailedReportCases(id, true)), count = reportNumber(reportObject(response.data).retry_count)
       if (count === null || !Number.isInteger(count)) throw new Error('Invalid retry result')
       if (!current()) return false
       if (count) Message.success(`已提交 ${count} 个失败执行项重试`)

@@ -208,14 +208,14 @@ export function readStatistics(value: unknown): StatisticsData {
 }
 
 export function emptyExecutionTrend(): HomeExecutionTrend {
-  return { labels: [], api_count: [], ui_count: [], pytest_count: [] }
+  return { labels: [], api_count: [], ui_count: [], pytest_count: [], api_label: 'API 场景' }
 }
 export function readExecutionTrend(value: unknown): HomeExecutionTrend {
   const data = object(payload(value)), labels = array(data.labels).map(text)
   const api_count = array(data.api_count).map(count), ui_count = array(data.ui_count).map(count)
   const pytest_count = array(data.pytest_count).map(count)
   if ([api_count, ui_count, pytest_count].some(values => values.length !== labels.length)) throw Error('Invalid trend series length')
-  return { labels, api_count, ui_count, pytest_count }
+  return { labels, api_count, ui_count, pytest_count, api_label: data.api_label == null ? 'API 场景' : text(data.api_label) }
 }
 
 export function emptyHomeActivity(): HomeActivitySnapshot {

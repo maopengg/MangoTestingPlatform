@@ -29,14 +29,14 @@ export function useReportCaseRetry(options: RetryOptions) {
     const currentVersion = version, reportId = options.reportId()
     const current = () => !disposed && options.available() && currentVersion === version && reportId === options.reportId()
     confirmation = Modal.confirm({
-      title: '提示', content: '是否要重试这个测试任务？', cancelText: '取消', okText: '重试',
+      title: '确认重试', content: '是否重试？如原执行因平台受阻中断，请确认相关数据及清理状态，避免重复写入。', cancelText: '取消', okText: '确认重试',
       onCancel: () => { if (currentVersion === version) dismiss() },
       onBeforeOk: async () => {
         if (!current() || busyIds.value.includes(id)) return false
         busyIds.value = [...busyIds.value, id]
         let accepted = false
         try {
-          reportPayload(await getSystemTestSuiteDetailsRetry(id))
+          reportPayload(await getSystemTestSuiteDetailsRetry(id, true))
           accepted = true
           if (!current()) return false
           Message.success('重试任务已提交')

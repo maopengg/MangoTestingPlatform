@@ -35,7 +35,8 @@ class DataFactoryExecutionRecovery:
         detail = TestCenterQuerySelector.test_suite_details().filter(
             id=owner['parent_case_detail_id'], retry=owner['parent_attempt']).only('id', 'status', 'type').first()
         if detail is None or detail.status not in {
-                TaskEnum.SUCCESS.value, TaskEnum.FAIL.value, TaskEnum.WARNING.value, TaskEnum.STOPPED.value}:
+                TaskEnum.SUCCESS.value, TaskEnum.FAIL.value, TaskEnum.WARNING.value, TaskEnum.STOPPED.value,
+                TaskEnum.INFRASTRUCTURE_BLOCKED.value}:
             return False
         if detail.type == TestCaseTypeEnum.API.value:
             from src.apps.auto_api.selectors.querysets import ApiQuerySelector
@@ -139,7 +140,10 @@ class DataFactoryExecutionRecovery:
                 )
 
         manual_cleanup = cls.reconcile_manual_cleanup_states()
+        from src.apps.data_factory.services.recovery.execution_reconciliation import DataFactoryExecutionReconciliation
+        reconciliation = DataFactoryExecutionReconciliation.reconcile()
         return {
+            **reconciliation,
             'data_factory_recovery_count': recovered,
             'data_factory_recovery_failed_count': failed,
             'data_factory_recovery_queued_count': queued,

@@ -17,6 +17,11 @@ const todo = (id = 0) => ({ id, source_type: 4, source_id: 0, event_type: 6, eve
 })
 const response = (ids, count = ids.length) => ({ code: 200, data: { items: ids.map(todo), count, summary: { pending: count } } })
 const ack = id => ({ code: 200, data: { id, can_mark_handled: false }, msg: 'Handled' })
+test('平台受阻待办跳转对应报告而非数据工厂', async t => {
+  const p = panel(); t.after(p.close); await p.mount(); await flush()
+  await p.goToSource({ ...todo(), source_type: 7, source_id: '2071505428254720' })
+  assert.deepEqual(p.pushes[0], { path: '/report/system/details', query: { id: '2071505428254720' } })
+})
 function panel(api = {}) {
   const hooks = { mount: [], activate: [], deactivate: [], unmount: [] }, timers = new Map(), listeners = new Set(), reads = [], writes = [], dialogs = [], messages = [], pushes = [], badges = []
   let timerId = 0

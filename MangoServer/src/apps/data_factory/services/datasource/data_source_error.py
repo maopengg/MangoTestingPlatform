@@ -125,7 +125,12 @@ class DataSourceErrorService:
         else:
             # OperationalError/InterfaceError/DBAPIError 既可能是连接错误，也可能是库表不存在等执行错误。
             message = DATA_SOURCE_SQL_EXECUTION_FAILED
-        raise DataFactoryError(message, value=(type_name, detail)) from error
+        translated = DataFactoryError(message, value=(type_name, detail))
+        if (getattr(error, '_datasource_operation_not_sent', False)
+                and not getattr(error, '_datasource_outcome_unknown', False)
+                and not getattr(error, 'connection_invalidated', False)):
+            translated._datasource_operation_not_sent = True
+        raise translated from error
 
     @classmethod
     def raise_redis_error(cls, database, error: Exception) -> None:

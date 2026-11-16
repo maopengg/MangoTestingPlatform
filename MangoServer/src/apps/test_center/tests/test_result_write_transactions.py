@@ -137,6 +137,7 @@ class ResultWriteTransactionTests(SimpleTestCase):
             id=3, test_suite_id=2, case_id=1, type=case_type.value, test_env=0,
             api_case_revision_id=None, api_case_release_id=None, status=TaskEnum.PROCEED.value,
             error_message=None, case_name='case', summary_data=None, retry=1,
+            case_sum=1,
         )
 
         def save(**_kwargs):
@@ -220,6 +221,32 @@ class ResultWriteTransactionTests(SimpleTestCase):
         self.assertEqual(self.store, {'status': TaskEnum.PROCEED.value, 'rows': 0, 'summary': None})
         self.upload.assert_called_once()
         self.counter.assert_not_called()
+
+    def test_complete_pytest_result_replaces_estimate_before_counter_in_same_transaction(self):
+        for estimate, actual in ((1, 10), (10, 5)):
+            with self.subTest(estimate=estimate, actual=actual):
+                data = self.callback_context(TestCaseTypeEnum.PYTEST)
+                from src.apps.test_center.services.reporting.test_suite import update_test_suite
+                detail = update_test_suite.TestSuiteDetails.objects.get.return_value
+                detail.case_sum = estimate
+                data.result_data.results_complete = True
+                data.result_data.collected_count = actual
+                data.result_data.result_data = [{'status': 1} for _ in range(actual)]
+                self.counter.side_effect = lambda _id: self.assertEqual(detail.case_sum, actual)
+                with patch.object(ExecutionResultService, '_save_result_record', return_value=SimpleNamespace(id=7)):
+                    self.assertTrue(UpdateTestSuite.update_test_suite_details(data))
+                self.assertEqual(detail.case_sum, actual)
+
+    def test_incomplete_and_old_pytest_results_preserve_estimate(self):
+        data = self.callback_context(TestCaseTypeEnum.PYTEST)
+        from src.apps.test_center.services.reporting.test_suite import update_test_suite
+        detail = update_test_suite.TestSuiteDetails.objects.get.return_value
+        detail.case_sum = 10
+        data.result_data.results_complete = False
+        data.result_data.collected_count = 5
+        with patch.object(ExecutionResultService, '_save_result_record', return_value=SimpleNamespace(id=7)):
+            self.assertTrue(UpdateTestSuite.update_test_suite_details(data))
+        self.assertEqual(detail.case_sum, 10)
 
     def test_stopped_report_does_not_accept_late_result(self):
         data = self.callback_context()

@@ -137,6 +137,8 @@ def register_template_tools(mcp):
         tenant_field/tenant_path（默认tenant_id）、mode（verify默认仅回查，delete_and_verify精确删除后回查）、
         timeout_seconds（2至60，默认15）、poll_seconds（1至5，默认1）。document_id_field 可指定本次落库记录的业务ID字段；
         不传/null才使用SQL主键，显式指定字段缺值时失败，禁止回退及存量接管。
+        tenant_lineage 可为缺少根租户的局部文档配置同执行子记录证明，字段见get_data_factory_schema；
+        必须与已创建子记录的父ID、租户和完整ES子ID集合一致，不能替代存在但不符的租户或改写历史快照。
 
         is_default=True 时设为该实体的默认模板，同实体其他默认模板会自动取消。
         usage_scope 场景用途，默认 1：
@@ -243,6 +245,8 @@ def register_template_tools(mcp):
         SQL行主键与ES文档ID分别冻结，不能把业务id覆盖到SQL清理主键。SQL提交前确认ES不存在，拒绝接管存量文档。
         清理先完成SQL，再验证ES；仅delete_and_verify且环境允许写入时可精确删除本次文档，禁止生产环境写入。
         缺失索引、归属不符、权限不足、版本冲突、超时都会清理失败并进入执行记录及待办；重试不会重建数据。
+        tenant_lineage 可显式配置同执行子实体的关联证明，仅补充根租户缺失的局部文档；
+        同库绑定、SQL创建快照、父ID、租户及完整无重复子ID集合全部校验，不追溯改变历史规则。
         """
         payload: dict[str, Any] = {"id": template_id}
         for key, value in {

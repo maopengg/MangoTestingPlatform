@@ -47,6 +47,8 @@ from src.apps.test_center.models import (
     TestSuiteDetails,
 )
 from src.apps.test_center.services.reporting.test_suite.summary import TestSuiteSummaryService
+from src.apps.test_center.services.reporting.api_counting import ApiReportCountingService
+from src.apps.test_center.selectors.statistics import ReportStatisticsSelector
 from src.apps.user.models import UserLogs, User
 from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
@@ -97,7 +99,16 @@ class IndexViews(ViewSet):
         user_id = getattr(user, 'id', 'anonymous')
         allowed_ids = cls._allowed_product_ids(request)
         scope_key = 'all' if allowed_ids is None else ','.join(map(str, sorted(allowed_ids)))
-        return f'index:{action_name}:user:{user_id}:scope:{scope_key}'
+        key = f'index:{action_name}:user:{user_id}:scope:{scope_key}'
+        mode = getattr(request, '_api_statistics_by_scenario', None)
+        return f'{key}:api-scenarios:{int(mode)}' if mode is not None else key
+
+    @staticmethod
+    def _api_statistics_mode(request):
+        from src.apps.system.services.configuration.system_config import SystemConfigService
+        mode = bool(SystemConfigService.get('API_REPORT_COUNT_BY_SCENARIO', default=True))
+        request._api_statistics_by_scenario = mode
+        return mode
 
     @classmethod
     def _cached_success(cls, request: Request, action_name: str, message: str, build_data):
@@ -150,6 +161,7 @@ class IndexViews(ViewSet):
         """
         # 使用数据库连接上下文管理器确保连接被正确释放
         with db_connection_context():
+            by_scenario = self._api_statistics_mode(request)
             def build_data():
                 today = self._current_date()
                 current_monday = today - timedelta(days=today.weekday())
@@ -165,7 +177,9 @@ class IndexViews(ViewSet):
                     TestCaseTypeEnum.API.value: [0] * 12,
                     TestCaseTypeEnum.PYTEST.value: [0] * 12,
                 }
-                for row in queryset.values('create_time', 'type', 'case_sum'):
+                rows = ReportStatisticsSelector.rows(queryset,
+                    ('create_time', 'type', 'case_sum', 'status', 'success', 'fail', 'warning'), by_scenario)
+                for row in ApiReportCountingService.statistics_rows(rows, by_scenario):
                     row_day = self._local_date(row['create_time'])
                     week_index = (row_day - first_monday).days // 7
                     if row['type'] in counts and 0 <= week_index < 12:
@@ -189,6 +203,7 @@ class IndexViews(ViewSet):
                     'api_count': counts[TestCaseTypeEnum.API.value],
                     'ui_count': counts[TestCaseTypeEnum.UI.value],
                     'pytest_count': counts[TestCaseTypeEnum.PYTEST.value],
+                    'api_label': 'API 场景' if by_scenario else 'API 用例',
                 }
 
             return self._cached_success(
@@ -208,15 +223,16 @@ class IndexViews(ViewSet):
         """
         # 使用数据库连接上下文管理器确保连接被正确释放
         with db_connection_context():
+            by_scenario = self._api_statistics_mode(request)
             return self._cached_success(request, 'case_sum_v2', RESPONSE_MSG_0093, lambda: [
                 {'value': self._filter_project_product_queryset(request, UiCase.objects.all()).count(),
                  'name': 'UI 用例'},
                 {'value': self._filter_project_product_queryset(
                     request,
-                    ApiCaseDetailedParameter.objects.all(),
-                    'case_detailed__case__project_product_id',
+                    ApiCaseDetailedParameter.objects.all() if by_scenario else ApiCase.objects.all(),
+                    'case_detailed__case__project_product_id' if by_scenario else 'project_product_id',
                 ).count(),
-                 'name': 'API 场景'},
+                 'name': 'API 场景' if by_scenario else 'API 用例'},
                 {'value': self._filter_project_product_queryset(
                     request,
                     PytestCase.objects.all(),
@@ -298,6 +314,7 @@ class IndexViews(ViewSet):
         """
         # 使用数据库连接上下文管理器确保连接被正确释放
         with db_connection_context():
+            by_scenario = self._api_statistics_mode(request)
             def build_data():
                 end_date = self._current_date()
                 start_date = end_date - timedelta(days=6)
@@ -308,9 +325,8 @@ class IndexViews(ViewSet):
                     ),
                 )
                 counts = TestSuiteSummaryService.execution_status_counts_from_rows(
-                    queryset.values(
-                        'status', 'case_sum', 'success', 'fail', 'warning'
-                    )
+                    ApiReportCountingService.statistics_rows(ReportStatisticsSelector.rows(queryset,
+                        ('type', 'status', 'case_sum', 'success', 'fail', 'warning'), by_scenario), by_scenario)
                 )
                 completed = counts['success'] + counts['fail'] + counts['warning']
                 return {

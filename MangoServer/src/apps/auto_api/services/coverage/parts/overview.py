@@ -77,7 +77,7 @@ class ModuleCoverageOverviewMixin:
             "project_inventory_summary": overview["project_inventory_summary"],
             "modules": overview["modules"],
             "definitions": {
-                "module_scan": "所选项目/产品/模块范围内的叶子模块；仅已生效的完整链路扫描计为完成，随模块筛选变化",
+                "module_scan": "所选范围内的三级模块；仅已生效的完整链路扫描计为完成，随模块筛选变化",
                 "module_inventory": "第一阶段：完整模块接口清单已生效；包含纯盘点，零接口模块须有完整盘点证据；多仓库分别核实",
                 "interface_analysis": "第二阶段：当前生效业务图和场景分析完整且修订匹配才算已分析；版本差异单列analysis_review_count，实际分析不完整列analysis_gap_count；排除项不计分母，暂缓单列；ApiInfo绑定不是分析完成",
                 "interface_entry": "bound_count / interface_count；已正确绑定 ApiInfo 的当前有效接口；排除接口不计入",
@@ -85,7 +85,7 @@ class ModuleCoverageOverviewMixin:
                 "automation": "completed_count / target_count；暂不处理单独统计；执行失败不影响有效覆盖完成状态",
                 "rates": "百分比为 0–100；分母为零时为 null，不代表已完成；overview 为页面概览口径，顶层保留旧指标",
                 "scope": "不传仓库或分支时汇总所选范围全部基线；项目统计仅含当前账号可见产品",
-                "modules": "父模块已包含后代；模块行不可直接累加，请使用 summary；scan_completed 表示完整链路扫描而非纯接口盘点",
+                "modules": "仅列出三级模块，一级二级用于范围筛选；summary 保留范围内全部历史资产统计，不可用模块行累加替代；scan_completed 表示完整链路扫描而非纯接口盘点",
             },
         }}
 
@@ -279,7 +279,7 @@ class ModuleCoverageOverviewMixin:
                 if baseline and latest_applied and baseline.commit_sha == latest_applied.commit_sha:
                     inventory_scans.append(baseline)
             inventoried = bool(source_groups) and len(inventory_scans) == len(source_groups)
-            if module.id not in selected:
+            if module.id not in selected or module.level != 3:
                 continue
             if len(descendants[module.id]) == 1:
                 project_scan_summary["leaf_count"] += 1

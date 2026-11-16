@@ -5,7 +5,7 @@
         <div class="mango-trend-summary" aria-label="近 12 周自动化执行总次数">
           <div class="mango-trend-summary__item is-api">
             <span class="mango-trend-summary__dot"></span>
-            <span class="mango-trend-summary__label">API 场景</span>
+            <span class="mango-trend-summary__label">{{ apiLabel }}</span>
             <strong>{{ formatNumber(summary.api) }}</strong>
             <small>次</small>
           </div>
@@ -61,6 +61,7 @@
         ui: data.value.ui_count.reduce((sum, value) => sum + value, 0),
         pytest: data.value.pytest_count.reduce((sum, value) => sum + value, 0),
       }))
+      const apiLabel = computed(() => data.value.api_label)
 
       function clearChart() {
         drawGeneration++
@@ -184,7 +185,7 @@
           yAxis: [
             {
               type: 'value',
-              name: 'API 场景（个）',
+              name: `${apiLabel.value}（个）`,
               nameLocation: 'end',
               nameGap: 9,
               min: 0,
@@ -272,7 +273,7 @@
             },
             {
               type: 'line',
-              name: 'API 场景',
+              name: apiLabel.value,
               yAxisIndex: 0,
               data: data.value.api_count || [],
               symbol: 'circle',
@@ -370,6 +371,7 @@
         caseResultWeekSum,
         fullYearSalesChart,
         summary,
+        apiLabel,
         formatNumber,
         updateChart,
       }

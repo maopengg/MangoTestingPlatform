@@ -14,6 +14,7 @@ from src.apps.auto_api.services.api_info.runtime import ApiInfoRuntimeService
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.test_center.models import ExecutionResult, TestSuite, TestSuiteDetails
 from src.apps.test_center.services.results.execution_result import ExecutionResultService
+from src.apps.test_center.services.reporting.api_counting import ApiReportCountingService
 
 
 class TestSuiteExecutionResultService:
@@ -220,10 +221,10 @@ class TestSuiteExecutionResultService:
             return counter
         result_data = cls.get_result_data(detail)
         if isinstance(result_data, dict) and result_data.get('__summary_skipped__'):
-            return cls.count_by_detail_fields(detail)
+            return ApiReportCountingService.counter(detail, cls.count_by_detail_fields(detail))
         if not result_data:
             counter['fail'] = detail.case_sum or 0
-            return counter
+            return ApiReportCountingService.counter(detail, counter)
         for item in result_data:
             if item.get('status') == StatusEnum.SUCCESS.value:
                 counter['success'] += 1
@@ -233,7 +234,7 @@ class TestSuiteExecutionResultService:
                 counter['fail'] += 1
         result_sum = counter['success'] + counter['fail'] + counter['warning']
         counter['warning'] += max((detail.case_sum or 0) - result_sum, 0)
-        return counter
+        return ApiReportCountingService.counter(detail, counter)
 
     @staticmethod
     def count_by_detail_fields(detail: TestSuiteDetails):
@@ -511,9 +512,18 @@ class TestSuiteExecutionResultService:
         # 只能信任锁内的最新元数据；进度写入方持有的旧对象可能早于阻塞/终止决定。
         _, previous_meta = cls.unpack_summary_data(detail.summary_data)
         meta = dict(summary_meta or {})
-        for key in ('execution_control', 'termination', 'worker_owner', 'resource_wait', 'dispatch_started_at'):
+        for key in ('execution_control', 'termination', 'worker_owner', 'resource_wait', 'dispatch_started_at',
+                    'api_count_by_scenario', 'api_scene_count'):
             if isinstance(previous_meta, dict) and key in previous_meta:
                 meta[key] = previous_meta[key]
+        if getattr(detail, 'type', None) == TestCaseTypeEnum.API.value:
+            observed = len(summary_data) if isinstance(summary_data, list) else 0
+            planned = meta.get('api_scene_count')
+            if planned is None:
+                planned = observed if not ApiReportCountingService.by_scenario(detail) else detail.case_sum
+            meta['api_scene_count'] = max(int(planned or 1), observed, 1)
+            meta['api_scene_counter'] = ApiReportCountingService.scene_counter(
+                detail.status, summary_data, meta['api_scene_count'])
         detail.summary_data = cls.pack_summary_data(summary_data, meta)
         detail.save(update_fields=['summary_data', 'update_time'])
 

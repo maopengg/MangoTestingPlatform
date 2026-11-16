@@ -72,6 +72,13 @@
     </div>
 
     <a-tabs v-model:active-key="activeTab" class="mango-api-report__tabs" lazy-load>
+      <template #extra>
+        <a-button
+          size="small"
+          :loading="copying"
+          @click="copyCurl"
+        >复制 cURL</a-button>
+      </template>
       <a-tab-pane
         key="response"
         title="响应结果"
@@ -210,6 +217,7 @@
 <script lang="ts" setup>
   import { computed, ref, watch } from 'vue'
   import AssertionResult from '@/components/feedback/AssertionResult.vue'
+  import { useScenarioCurl } from '@/hooks/useScenarioCurl'
   import { apiReport } from './api-report'
 
   type EvidenceSection = {
@@ -224,6 +232,8 @@
 
   const props = withDefaults(defineProps<{ resultData: unknown; contained?: boolean }>(), { contained: false })
   const resultData = computed(() => apiReport(props.resultData))
+  const { copying, copyScenarioCurl } = useScenarioCurl()
+  const copyCurl = () => copyScenarioCurl({ result_data: props.resultData })
 
   const activeTab = ref('response')
 

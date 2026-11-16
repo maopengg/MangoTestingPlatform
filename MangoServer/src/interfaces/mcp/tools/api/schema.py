@@ -61,6 +61,7 @@ def register_schema_tools(mcp):
         return ok(
             {
                 "http_methods": MethodEnum.obj(),
+                "api_info_url_rule": "仅填写路径；路径变量使用 ${{变量名}}，例如 /categories/${{CATEGORY_ID}}，不接受 {CATEGORY_ID}、${CATEGORY_ID} 或 {{CATEGORY_ID}}。变量名保持与 Case 缓存一致，区分大小写；源码扫描路由不受此写入规则影响。",
                 "protocol_support": {
                     "enabled_executable": ["http", "sse", "mcp", "grpc", "websocket"],
                     "reserved_not_executable": ["json_rpc", "xml_rpc", "soap", "graphql", "dubbo", "thrift"],

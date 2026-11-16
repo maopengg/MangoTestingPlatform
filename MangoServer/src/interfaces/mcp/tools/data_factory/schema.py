@@ -38,6 +38,7 @@ def register_schema_tools(mcp):
                     "ownership": "document_id_field指定本次落库记录的业务唯一ID字段（如id），不传/null使用SQL主键；显式字段缺值不回退。SQL主键与ES ID独立冻结。SQL提交前确认ES文档不存在，不接管存量或猜测历史归属。",
                     "completion": "SQL清理成功不代表全部完成；观察完整等待窗口，末尾至少连续两次查无文档才成功。超时、归属或版本冲突进入清理失败待办，重试仅补未完成资源。",
                     "history": "配置仅对后续执行生效。历史没有所有权快照时，需要另行核对并授权处理，不得伪造快照强清理。",
+                    "tenant_lineage": "局部同步文档缺少根租户时可显式配置tenant_lineage：entity_id、parent_field、tenant_field、id_field、collection_path、document_id_path。平台仅采用同执行、同SQL绑定的已创建子记录冻结归属；ES集合必须与其业务ID集合完全一致且无重复。已有租户不符、历史未配置、索引或版本变化仍拒绝删除。",
                 },
                 "operation_type": {2: "SQL（创建方式；关联ES可按保存的规则清理补偿）"},
                 "case_source_type": {1: "API用例", 2: "UI用例", 3: "API接口场景"},

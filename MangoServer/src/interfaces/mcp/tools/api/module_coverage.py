@@ -42,7 +42,7 @@ def register_module_coverage_tools(mcp):
             schema_version: int = 3,
             inventory_only: bool = False,
     ) -> dict:
-        """按模块盘点接口：scope_type=module、module_id必填、inventory_only=true、expected_case_count=0，允许省略链路及Case。默认false仍执行完整链路分析；project兼容历史无模块盘点，不作为默认流程。"""
+        """按模块盘点接口：scope_type=module、module_id必填、inventory_only=true、expected_case_count=0，允许省略链路及Case。扫描范围可选父模块，但上传接口、场景必须指定范围内三级模块；project兼容无模块盘点。默认false执行完整链路分析。"""
         scan = ModuleCoverageService.create_scan({
             "project_product_id": project_product_id,
             "module_id": module_id,
@@ -77,8 +77,9 @@ def register_module_coverage_tools(mcp):
     ) -> dict:
         """分批上传 Case。已绑定场景在 item 顶层传 api_case_id 和 api_case_revision_id。
 
-        历史跨模块复用只保留原 Case 和精确修订，并校验同产品、正式Owner/Consumer及修订中的目标接口步骤；
-        原绑定未固定修订时须明确提交经核对的修订，平台不会选择最新版本。不能复制Case或取消绑定来绕过冲突。
+        同产品跨模块复用使用已有 Case ID 和精确修订 ID，按接口身份核验修订中的目标步骤、
+        正式Owner/Consumer及本消费场景自己的场景/断言/覆盖路径证据，无需额外填写步骤ID。
+        不移动Case、不复制Owner完成状态。历史原绑定可保留；平台不会猜测最新修订。
         deferred 场景在 payload.remark 同时填写暂不处理原因和重新启用条件。
         """
         normalized_items = [
@@ -489,12 +490,17 @@ def register_module_coverage_tools(mcp):
         })
 
     @mcp.tool()
-    def update_module_coverage_case_binding(coverage_case_id: int, api_case_id: int) -> dict:
-        """绑定同产品、同模块的既有ApiCase；允许重新确认合法的历史跨模块原绑定，不更换冻结修订。
+    def update_module_coverage_case_binding(coverage_case_id: int, api_case_id: int,
+                                          api_case_revision_id: int | None = None) -> dict:
+        """绑定同产品既有ApiCase，不移动Case或更改其他模块绑定。
 
-        不新增任意跨模块关系。历史绑定无精确修订时，先核对版本并通过扫描上传显式提交修订，不能自动绑定最新版本。
+        跨模块新增/更换复用必填 api_case_revision_id；平台按接口身份核验精确修订中的目标步骤。
+        同一接口允许多次调用并共同覆盖，逐个校验冻结接口身份，无需指定步骤或场景参数。
+        须有正式Owner/Consumer关系和本消费模块独立上传且有效的场景/断言/覆盖路径，不继承Owner完成状态。
+        原历史绑定可不传新字段以保留冻结修订；无精确修订时不能自动选择最新版本。
         """
-        item = ModuleCoverageService.bind_api_case(coverage_case_id, api_case_id)
+        item = ModuleCoverageService.bind_api_case(coverage_case_id, api_case_id=api_case_id,
+            api_case_revision_id=api_case_revision_id)
         return ok(format_module_coverage_case(item), "ApiCase 绑定已更新")
 
     @mcp.tool()
@@ -523,7 +529,7 @@ def register_module_coverage_tools(mcp):
         repository_key/branch 限定代码基线，不传则聚合；不能将聚合结果冒充单一分支结论。
 
         AI 分析优先读取与页面同口径的 overview，而非顶层兼容旧指标：
-        - project_scan_summary：全部叶子模块的已完整扫描/未完整扫描数量、scan_completion_rate；
+        - project_scan_summary：全部三级模块的已完整扫描/未完整扫描数量、scan_completion_rate；
           与其余概览指标一样随 module_id 限定模块及后代，纯接口盘点不算完整链路扫描。
         - project_inventory_summary：①模块接口盘点进度，inventoried_count/leaf_count与inventory_rate；
           完整模块清单生效即完成，包含inventory_only，不要求图或Case；modules.inventory_completed用于阶段一验收。
@@ -535,8 +541,8 @@ def register_module_coverage_tools(mcp):
           同时返回已覆盖、部分覆盖、未覆盖、暂不处理及已排除数量。
         - summary.automation_rate：目标 Case 场景完成率；completed_count/target_count；
           incomplete_case_count 为未完成数，deferred_count 为暂不处理数。
-        - modules：分页模块进度（items/count/page/page_size，默认10条），用于定位落后模块；
-          需要完整排名或缺口清单须翻完各页。父模块包含后代，禁止累加父子行重复统计。
+        - modules：仅三级模块的分页进度（items/count/page/page_size，默认10条）；
+          一级二级用于范围筛选。完整排名须翻完各页；summary 保留历史父模块资产，不以三级行累加代替总计。
 
         按①模块接口盘点、②接口分析、③场景自动化、④接口覆盖顺序报告；ApiInfo绑定另列，不合成未经定义的总完成率。
         排除接口及其场景不参与覆盖统计；暂不处理单独列示。执行通过率不等于覆盖完成率，

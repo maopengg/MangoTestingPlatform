@@ -7,6 +7,7 @@ from src.apps.auto_api.enums import ApiBodyTypeEnum, ApiProtocolTypeEnum
 from src.apps.auto_api.exceptions import (
     API_PROJECT_PRODUCT_API_INFO_MODULE_REQUEST_TYPE_DUPLICATED,
     API_VERSION_API_INFO_NOT_FOUND,
+    API_INFO_PATH_VARIABLE_INVALID,
     AUTO_API_DYNAMIC_ERROR,
     AutoApiError,
 )
@@ -173,6 +174,9 @@ class ApiInfoMutationService:
     @classmethod
     @transaction.atomic
     def create(cls, payload: dict, *, source: str = "internal") -> ApiInfo:
+        url = payload.get('url')
+        if isinstance(url, str) and not ApiInfoConfigService.valid_path_variables(url):
+            raise AutoApiError(API_INFO_PATH_VARIABLE_INVALID)
         ProductModuleService.validate_crud_binding(ApiInfo, payload)
         try:
             instance = save_model(ApiInfo, payload)

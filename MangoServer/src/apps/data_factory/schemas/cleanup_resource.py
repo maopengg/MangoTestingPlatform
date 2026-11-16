@@ -8,6 +8,29 @@ from src.apps.data_factory.schemas.performance import DatasourceInfrastructureIs
 from src.common.schemas import StrictSchema
 
 
+class EsCleanupLineageRule(StrictSchema):
+    entity_id: int = Field(gt=0)
+    parent_field: str = Field(max_length=128, pattern=r'^[A-Za-z_][A-Za-z0-9_]*$',
+        description='子记录中的父引用字段，其值必须等于本次根记录已冻结的ES文档ID；不推测SQL主键/业务ID映射。')
+    tenant_field: str = Field(max_length=128, pattern=r'^[A-Za-z_][A-Za-z0-9_]*$')
+    id_field: str = Field(default='id', max_length=128, pattern=r'^[A-Za-z_][A-Za-z0-9_]*$')
+    collection_path: str = Field(max_length=256, pattern=r'^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$')
+    document_id_path: str = Field(max_length=256, pattern=r'^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$')
+
+    @field_validator('parent_field', 'tenant_field', 'id_field', 'collection_path', 'document_id_path')
+    @classmethod
+    def reject_credentials(cls, value):
+        if re.search(r'password|passwd|pwd|token|secret|cookie|authorization|credential', value, re.IGNORECASE):
+            raise ValueError('资源定位字段不能是凭据字段')
+        return value
+
+
+class EsCleanupLineageRow(StrictSchema):
+    item_id: int = Field(gt=0)
+    primary_value: str = Field(min_length=1, max_length=256)
+    document_id: str = Field(min_length=1, max_length=256, pattern=r'^[A-Za-z0-9_-]+$')
+
+
 class EsCleanupRule(StrictSchema):
     datasource_alias_id: int = Field(gt=0)
     document_id_field: str | None = Field(
@@ -20,6 +43,8 @@ class EsCleanupRule(StrictSchema):
     mode: EsCleanupModeEnum = EsCleanupModeEnum.VERIFY
     timeout_seconds: int = Field(default=15, ge=2, le=60)
     poll_seconds: int = Field(default=1, ge=1, le=5)
+    tenant_lineage: EsCleanupLineageRule | None = Field(default=None,
+        description='仅用于根租户字段缺失的局部ES文档：以同执行、同数据库绑定的已创建子记录证明租户和父子归属；必须匹配完整且无重复的子ID集合。不能使用存量行或修改历史冻结规则。')
 
     @field_validator('tenant_field', 'tenant_path', 'document_id_field')
     @classmethod
@@ -47,6 +72,7 @@ class EsCleanupSnapshot(StrictSchema):
     baseline_absent: bool
     requested_index: str | None = Field(default=None, max_length=255, pattern=r'^[a-z0-9][a-z0-9_-]*$')
     index_uuid: str | None = Field(default=None, min_length=1, max_length=128)
+    lineage_rows: list[EsCleanupLineageRow] = Field(default_factory=list, max_length=100)
 
 
 class EsCleanupCheckResult(StrictSchema):
@@ -113,6 +139,20 @@ class CleanupTaskPayload(StrictSchema):
 class CleanupReportOwner(StrictSchema):
     parent_case_detail_id: int = Field(ge=1)
     parent_attempt: int = Field(ge=1)
+
+
+class FactoryExecutionOwner(StrictSchema):
+    process_token: str = Field(min_length=1, max_length=64)
+    process_started_at: str = Field(min_length=1, max_length=64)
+    worker_name: str = Field(min_length=1, max_length=128)
+    trace_id: int | None = Field(default=None, ge=1)
+    trace_key: str | None = Field(default=None, max_length=64)
+
+
+class FactoryExecutionReconciliation(StrictSchema):
+    checked_at: str
+    reason: str
+    previous_error: str | None = Field(default=None, max_length=1000)
 
 
 class CleanupTaskProgress(StrictSchema):

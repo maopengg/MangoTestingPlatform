@@ -31,10 +31,11 @@ class RetryFailedReportTests(SimpleTestCase):
         self.addCleanup(atomic.stop)
         self.suites.select_for_update.return_value.filter.return_value.first.side_effect = lambda: self.suite
         self.rows.select_for_update.return_value.filter.return_value.__iter__.side_effect = lambda: iter(self.details)
+        self.retry_failed = lambda *args, **kwargs: TestSuiteRetryService.retry_failed.__wrapped__(TestSuiteRetryService, *args, **kwargs)
 
     def test_only_failed_execution_items_retry_using_existing_detail_logic(self):
         with patch.object(TestSuiteRetryService, 'retry_detail') as retry:
-            self.assertEqual(TestSuiteRetryService.retry_failed(10), 2)
+            self.assertEqual(self.retry_failed(10), 2)
         self.assertEqual([call.args[0] for call in retry.call_args_list], [1, 4])
         values = self.suites.filter.return_value.update.call_args.kwargs
         self.assertEqual(values['status'], TaskEnum.STAY_BEGIN.value)
@@ -44,15 +45,15 @@ class RetryFailedReportTests(SimpleTestCase):
     def test_no_failure_leaves_report_untouched(self):
         self.details = self.details[1:3]
         with patch.object(TestSuiteRetryService, 'retry_detail') as retry:
-            self.assertEqual(TestSuiteRetryService.retry_failed(10), 0)
+            self.assertEqual(self.retry_failed(10), 0)
         retry.assert_not_called()
         self.suites.filter.return_value.update.assert_not_called()
 
     def test_failed_retry_skips_excluded_items(self):
         self.details[0].is_excluded = True
         with patch.object(TestSuiteRetryService, 'retry_detail') as retry:
-            self.assertEqual(TestSuiteRetryService.retry_failed(10), 1)
-        retry.assert_called_once_with(4)
+            self.assertEqual(self.retry_failed(10), 1)
+        retry.assert_called_once_with(4, confirm_infrastructure_retry=False, user=None)
 
     def test_running_report_or_detail_blocks_duplicate_retry(self):
         for report_running in (True, False):
@@ -61,10 +62,10 @@ class RetryFailedReportTests(SimpleTestCase):
                 self.details[1].status = TaskEnum.SUCCESS.value if report_running else TaskEnum.STAY_BEGIN.value
                 with patch.object(TestSuiteRetryService, 'retry_detail') as retry:
                     with self.assertRaises(TestCenterError):
-                        TestSuiteRetryService.retry_failed(10)
+                        self.retry_failed(10)
                 retry.assert_not_called()
 
     def test_missing_report_is_rejected(self):
         self.suite = None
         with self.assertRaises(TestCenterError):
-            TestSuiteRetryService.retry_failed(10)
+            self.retry_failed(10)

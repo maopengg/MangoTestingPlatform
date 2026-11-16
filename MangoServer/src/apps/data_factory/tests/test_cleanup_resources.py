@@ -468,7 +468,8 @@ class CleanupResourceTests(SimpleTestCase):
         request = open_request.call_args.args[0]
         self.assertEqual(request.method, 'DELETE')
         self.assertIn('if_seq_no=0&if_primary_term=1', request.full_url)
-        self.assertIn('refresh=wait_for', request.full_url)
+        self.assertIn('refresh=false', request.full_url)
+        self.assertNotIn('refresh=wait_for', request.full_url)
         self.assertNotIn('_delete_by_query', request.full_url)
         with self.assertRaises(DataFactoryError):
             Resources.request_document(target, 'example_template_7', '1001', delete=True, timeout=2, expected={})

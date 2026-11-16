@@ -1,1 +1,3 @@
 CLEANUP_REPORT_CONTEXT_KEY = '__platform_cleanup_report'
+EXECUTION_OWNER_CONTEXT_KEY = '__platform_execution_owner'
+EXECUTION_RECONCILIATION_CONTEXT_KEY = '__platform_execution_reconciliation'

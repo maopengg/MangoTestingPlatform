@@ -66,7 +66,7 @@ class OfflineReportService:
 
     @staticmethod
     def upload_links(config, filename, content):
-        storage = ReportStorageService()
+        storage = ReportStorageService(public_base=config.html_public_base_url or None)
         if storage.local is not None:
             raise TestCenterError(REPORT_LOCAL_LINK_UNAVAILABLE)
         key = storage.key(uuid.uuid4().hex)

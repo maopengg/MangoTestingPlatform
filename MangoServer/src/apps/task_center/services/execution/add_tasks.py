@@ -53,7 +53,7 @@ class AddTasks:
         self.add_test_suite()
 
     def add_test_suite(self):
-        TestSuiteCreateService.create_suite(
+        suite = TestSuiteCreateService.create_suite(
             suite_id=self.test_suite_id,
             project_product_id=self.project_product,
             module_id=self.module_id,
@@ -67,6 +67,7 @@ class AddTasks:
             execution_name=self.execution_name,
             api_concurrency_limit=self.api_concurrency_limit,
         )
+        self.api_count_by_scenario = suite.api_count_by_scenario is not False
 
     def add_test_suite_details(
             self,
@@ -92,6 +93,7 @@ class AddTasks:
                 api_case_revision_id=api_case_revision_id,
                 api_case_release_id=api_case_release_id,
                 config_checksum=bound_checksum,
+                api_count_by_scenario=self.api_count_by_scenario,
             )
 
         if _type == TestCaseTypeEnum.UI:

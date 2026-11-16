@@ -201,6 +201,19 @@ test('趋势图聚合口径不变，主题、密度与 resize 只作用于当前
   p.activate(); await flush(); assert.equal(p.charts.at(-1).disposed, false); p.close(); assert.equal(p.charts.at(-1).disposed, true)
 })
 
+test('API 统计名称同步到趋势卡片、坐标轴和 tooltip 系列名称', async () => {
+  const p = panel('FullYearSalesChart', { read: async () => ({
+    ...trend(2), data: { ...trend(2).data, api_label: 'API 用例' },
+  }) })
+  p.fullYearSalesChart.value = { clientWidth: 600 }; p.mount(); await flush(); p.flushFrames()
+  const option = p.charts.at(-1).options.findLast(option => option.series)
+  assert.equal(p.apiLabel.value, 'API 用例')
+  assert.equal(option.yAxis[0].name, 'API 用例（个）')
+  assert.equal(option.series[1].name, 'API 用例')
+  assert.equal(p.records().readExecutionTrend(trend()).api_label, 'API 场景')
+  p.close()
+})
+
 test('趋势解析拒绝错位数组；活跃排行有限解析保留 0 并拒绝失败和错位数组', () => {
   const p = panel('FullYearSalesChart'), records = p.records()
   assert.throws(() => records.readExecutionTrend({ code: 200, data: { ...trend().data, api_count: [] } }))

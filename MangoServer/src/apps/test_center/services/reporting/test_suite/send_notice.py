@@ -36,12 +36,20 @@ class SendNotice:
     def send_test_suite(self):
         log.system.info(f'开始发送通知：{self.test_suite.id}')
         with self._test_suite_lock:
+            from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService
+            from src.apps.test_center.services.reporting.test_suite.summary import TestSuiteSummaryService
+            TestSuiteInfrastructureService.sync_todos(self.test_suite.id)
+            counts = TestSuiteSummaryService.counter_data(self.test_suite.id)
             # 调度触发的任务组子任务只归集结果，不单独发送通知。
             from src.apps.task_center.services.scheduling.task_group_execution import (
                 ScheduledTaskGroupExecutionService,
             )
             if ScheduledTaskGroupExecutionService.complete_test_suite(self.test_suite.id):
                 return True
+            if counts.get('blocked') and not counts.get('fail'):
+                self.test_suite.is_notice = TestSuiteNoticeEnum.EXPIRED.value
+                self.test_suite.save(update_fields=['is_notice', 'update_time'])
+                return False
             # 只有测试完成的时候才发送
             if self.test_suite.status not in [StatusEnum.SUCCESS.value, StatusEnum.FAIL.value]:
                 return

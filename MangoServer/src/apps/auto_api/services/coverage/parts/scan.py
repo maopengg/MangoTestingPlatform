@@ -303,10 +303,12 @@ class ModuleCoverageScanMixin:
     def validate_api_case(
             cls, scan: ModuleCoverageScan, module_id: int, api_case_id: int | None,
             api_case_revision_id: int | None, *, interface_snapshot=None, coverage_case=None,
+            coverage_payload=None,
     ) -> tuple[ApiCase | None, ApiCaseRevision | None]:
         from src.apps.auto_api.services.coverage.parts.binding import ModuleCoverageCaseBindingService
         return ModuleCoverageCaseBindingService.validate(scan.project_product_id, module_id,
-            api_case_id, api_case_revision_id, interface=interface_snapshot, previous=coverage_case)
+            api_case_id, api_case_revision_id, interface=interface_snapshot, previous=coverage_case,
+            coverage_payload=coverage_payload)
 
     @classmethod
     def resolve_api_info_binding(
@@ -628,6 +630,8 @@ class ModuleCoverageScanMixin:
                 module_id = cls.parse_int("module_id", module_id, minimum=1)
                 if scan.scope_type == ModuleCoverageScanScope.PROJECT:
                     cls.validate_module(scan.project_product_id, module_id)
+                    from src.apps.test_center.services.project.product_module import ProductModuleService
+                    ProductModuleService.validate_business_binding(module_id)
                 else:
                     cls.validate_module_scope(scan, module_id)
             elif not inventory:
@@ -673,6 +677,9 @@ class ModuleCoverageScanMixin:
                 raise AutoApiError(MODULE_COVERAGE_ANALYSIS_BLOCKED)
             if scan.scope_type == ModuleCoverageScanScope.PROJECT:
                 module_id = module_interface.module_id
+                if module_id is not None:
+                    from src.apps.test_center.services.project.product_module import ProductModuleService
+                    ProductModuleService.validate_business_binding(module_id)
             if scan.scope_type == ModuleCoverageScanScope.INTERFACE:
                 if previous is None or previous.id != scan.target_interface_id:
                     raise AutoApiError(QUALITY_COVERAGE_API_INFO_UPLOAD_INVALID)
@@ -792,6 +799,7 @@ class ModuleCoverageScanMixin:
             api_case, api_case_revision = cls.validate_api_case(
                 scan, module_id, raw.get("api_case_id"), raw.get("api_case_revision_id"),
                 interface_snapshot=interface_snapshot, coverage_case=coverage_case,
+                coverage_payload=payload,
             )
             is_completed = payload["current_status"] == ModuleCoverageCaseStatus.COMPLETED
             if is_completed != (api_case is not None):
@@ -966,7 +974,8 @@ class ModuleCoverageScanMixin:
                     ModuleCoverageCaseBindingService.validate(scan.project_product_id,
                         snapshot.coverage_case.module_id, snapshot.api_case_id, snapshot.api_case_revision_id,
                         interface=interface_snapshot, previous=snapshot.coverage_case,
-                        api_case=snapshot.api_case, revision=snapshot.api_case_revision)
+                        api_case=snapshot.api_case, revision=snapshot.api_case_revision,
+                        coverage_payload=payload)
                 except AutoApiError as error:
                     blocking_errors.append(error.msg)
             if interface_snapshot is not None and (

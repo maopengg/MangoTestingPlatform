@@ -104,6 +104,7 @@ class TestSuiteSerializersC(serializers.ModelSerializer):
                     'fail',
                     'warning',
                     'is_excluded',
+                    'summary_data',
                 ),
                 to_attr='_execution_summary_rows',
             ),

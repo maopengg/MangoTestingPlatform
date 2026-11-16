@@ -45,6 +45,24 @@ function factory(read = async kind => response(kind === 'modules' ? modules('Mod
 
 const sidebarFilename = 'src/components/business/ProjectProductNavigationSidebar.vue'
 const selectFilename = 'src/components/business/ProjectProductSelect.vue'
+test('产品说明穿过目录缓存和两类导航，筛选后仍保留且不冒充模块说明', () => {
+  const f = factory(), filters = {}
+  new Function('exports', compile(readFileSync('src/components/business/project-product-filter.ts', 'utf8')))(filters)
+  const options = f.parsers.productOptions([{ value: 1, label: '项目', children: [
+    { value: 10, label: '产品', description: '  第一行说明\n第二行说明  ' },
+    { value: 11, label: '空说明', description: null },
+  ] }])
+  const tree = filters.buildProjectProductFilterTree(filters.filterProjectProductOptions(options, '产品'))
+  assert.equal(tree[0].children[0].productDescription, '第一行说明\n第二行说明')
+  assert.equal(tree[0].productDescription, undefined)
+  const entries = filters.flattenProjectProducts(options)
+  const moduleTree = filters.buildAllProductModuleFilterTree(entries, { 10: modules('模块') })
+  const product = moduleTree.find(node => node.productId === 10)
+  assert.equal(product.productDescription, '第一行说明\n第二行说明')
+  assert.equal(product.children[0].productDescription, undefined)
+  assert.equal(moduleTree.find(node => node.productId === 11).productDescription, undefined)
+})
+
 test('same-project product selector is anchored to the case product instead of the global project',()=>{
   const f=factory(), a=f.root()
   a.store.projectProduct=[

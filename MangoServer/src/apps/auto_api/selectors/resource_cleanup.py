@@ -8,6 +8,12 @@ from src.common.exceptions import RESOURCE_ACCESS_DENIED
 
 class ApiResourceCleanupSelector:
     @staticmethod
+    def has_unfinished_for_report(suite_id):
+        from src.apps.auto_api.enums.resource_cleanup import ApiResourceCleanupStatus
+        return ApiCaseExecutionResource.objects.filter(trace__test_suite_id=suite_id).exclude(
+            status__in=[ApiResourceCleanupStatus.PREPARED.value, ApiResourceCleanupStatus.CLEANED.value]).exists()
+
+    @staticmethod
     def records(user, case_id):
         if (user is None or 'api.case:read' not in PermissionMenuService.permission_keys_for_user(user)
                 or not ApiCaseConfigurationSelector.scoped_cases([case_id], user).exists()):

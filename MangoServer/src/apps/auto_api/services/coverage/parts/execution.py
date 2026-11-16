@@ -1,5 +1,7 @@
+from copy import copy
+
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Q
 from django.utils import timezone
 from mangotools.enums import TaskEnum
 
@@ -63,9 +65,10 @@ class ModuleCoverageExecutionMixin:
             status=ModuleCoverageCaseStatus.COMPLETED,
             removed_at__isnull=True,
         )
-        same_module = rows.filter(module_id=F('api_case__module_id')).update(**updates)
-        cross_module = rows.exclude(module_id=F('api_case__module_id'))
-        # 跨模块历史复用固定修订，别的编辑态/修订执行不能给它补通过结果或换版本。
+        pinned = ~Q(module_id=F('api_case__module_id'))
+        same_module = rows.exclude(pinned).update(**updates)
+        cross_module = rows.filter(pinned)
+        # 跨模块复用固定修订，别的编辑态/修订执行不能给它补通过结果或换版本。
         if revision_id:
             same_module += cross_module.filter(api_case_revision_id=revision_id).update(execution_result=execution_result)
         return same_module
@@ -123,23 +126,40 @@ class ModuleCoverageExecutionMixin:
 
     @classmethod
     @transaction.atomic
-    def bind_api_case(cls, coverage_case_id: int, api_case_id: int) -> ModuleCoverageCase:
+    def bind_api_case(cls, coverage_case_id: int, api_case_id: int, *,
+                      api_case_revision_id: int | None = None) -> ModuleCoverageCase:
         item = ModuleCoverageCase.objects.get(id=coverage_case_id, removed_at__isnull=True)
         ProjectProduct.objects.select_for_update().get(id=item.project_product_id)
         item = ModuleCoverageCase.objects.select_for_update().get(id=coverage_case_id, removed_at__isnull=True)
+        if item.api_case_id != api_case_id or (
+                api_case_revision_id is not None and item.api_case_revision_id != api_case_revision_id):
+            from src.apps.test_center.services.project.product_module import ProductModuleService
+            ProductModuleService.validate_business_binding(item.module_id)
         cls.repair_case_target(item)
         if cls.interface_analysis_blocked(item):
             raise AutoApiError(MODULE_COVERAGE_ANALYSIS_BLOCKED)
         from src.apps.auto_api.services.coverage.parts.binding import ModuleCoverageCaseBindingService
         interface = item.current_snapshot.interface_snapshot if item.current_snapshot_id else None
         old_revision_id = item.api_case_revision_id if item.api_case_id == api_case_id else None
+        revision_id = api_case_revision_id if api_case_revision_id is not None else old_revision_id
         api_case, preserved_revision = ModuleCoverageCaseBindingService.validate(
-            item.project_product_id, item.module_id, api_case_id, old_revision_id,
-            interface=interface, previous=item)
+            item.project_product_id, item.module_id, api_case_id, revision_id,
+            interface=interface, previous=item,
+            coverage_payload=getattr(item.current_snapshot, 'payload', None) if item.current_snapshot_id else None)
+        if api_case.module_id != item.module_id and (
+                item.api_case_id != api_case_id or revision_id != old_revision_id):
+            consumer = copy(item)
+            consumer.api_case_id = None
+            assessment = cls.case_coverage_assessment(consumer, interface)
+            if assessment['status'] != 'valid':
+                from src.apps.auto_api.exceptions import MODULE_COVERAGE_CASE_MODULE_MISMATCH
+                raise AutoApiError(MODULE_COVERAGE_CASE_MODULE_MISMATCH,
+                                  value=(item.module_id, api_case_id, api_case.module_id, assessment['reason']))
         item.api_case = api_case
         execution_result, executed_revision_id = cls.latest_api_case_execution(api_case.id,
-            **({'revision_id': preserved_revision.id} if api_case.module_id != item.module_id else {}))
-        if api_case.module_id != item.module_id:
+            **({'revision_id': preserved_revision.id} if preserved_revision and (
+                api_case.module_id != item.module_id or api_case_revision_id is not None) else {}))
+        if api_case.module_id != item.module_id or api_case_revision_id is not None:
             item.api_case_revision = preserved_revision
         else:
             item.api_case_revision = (

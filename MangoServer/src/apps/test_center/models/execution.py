@@ -11,6 +11,7 @@ from src.apps.user.models import User
 
 
 class TestSuite(models.Model):
+    api_count_by_scenario = models.BooleanField(verbose_name='API按场景统计快照', default=True)
     report_retained = models.BooleanField(verbose_name="保留完整报告", default=True)
     report_retention_policy = models.CharField(verbose_name="报告保留策略快照", max_length=32,
         choices=ReportRetentionPolicyEnum.choices(), default=ReportRetentionPolicyEnum.ALL.value)

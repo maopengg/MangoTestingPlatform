@@ -196,7 +196,7 @@ class ApiTestCaseExecutionMixin:
             issues = DatasourceInfrastructureService.current()
             if issues:
                 self.api_case_result.infrastructure_blocked = True
-                self.api_case_result.status = TaskEnum.FAIL.value
+                self.api_case_result.status = TaskEnum.INFRASTRUCTURE_BLOCKED.value
                 self.api_case_result.error_message = DatasourceInfrastructureService.summary(issues)
                 self.trace_recorder.fail_trace(self.api_case_result.error_message,
                                                summary={'infrastructure_blocked': True})

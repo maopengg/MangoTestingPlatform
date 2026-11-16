@@ -18,7 +18,7 @@ class ApiInfrastructureTests(SimpleTestCase):
         runtime.case_base.case_front_main.side_effect = DataFactoryError(DATASOURCE_GOVERNOR_UNAVAILABLE)
         result = runtime.test_case()
         self.assertTrue(result.infrastructure_blocked)
-        self.assertEqual(result.status, TaskEnum.FAIL.value)
+        self.assertEqual(result.status, TaskEnum.INFRASTRUCTURE_BLOCKED.value)
         runtime.update_test_case.assert_called_with(runtime.case_id, TaskEnum.FAIL.value)
         runtime.update_test_case_detailed_unfinished.assert_not_called()
         runtime.case_base.case_posterior_main.assert_called_once()
@@ -50,7 +50,7 @@ class ApiInfrastructureTests(SimpleTestCase):
         runtime.case_base.case_posterior_main.side_effect = DataFactoryError(DATASOURCE_SETTLEMENT_FAILED)
         result = runtime.test_case()
         self.assertEqual(result.main_status, TaskEnum.SUCCESS.value)
-        self.assertEqual(result.status, TaskEnum.FAIL.value)
+        self.assertEqual(result.status, TaskEnum.INFRASTRUCTURE_BLOCKED.value)
         self.assertTrue(result.infrastructure_blocked)
         runtime.case_base.case_posterior_main.assert_called_once()
 
@@ -71,7 +71,7 @@ class ApiInfrastructureTests(SimpleTestCase):
                     definition, **({'value': values} if values else {}))
                 result = runtime.test_case()
                 self.assertEqual(result.main_status, TaskEnum.SUCCESS.value)
-                self.assertEqual(result.status, TaskEnum.FAIL.value)
+                self.assertEqual(result.status, TaskEnum.INFRASTRUCTURE_BLOCKED.value)
                 self.assertTrue(result.infrastructure_blocked)
                 runtime.case_base.case_posterior_main.assert_called_once()
 
@@ -130,8 +130,8 @@ class ApiInfrastructureTests(SimpleTestCase):
         with patch('src.apps.auto_api.services.execution.base.api_base_test_setup.base_request.prepare_request_body', return_value=body), \
                 patch('src.apps.data_factory.services.governance.datasource_governor.DatasourceGovernorService.acquire',
                       side_effect=AssertionError('business request must not acquire SQL quota')), \
-                patch('src.apps.data_factory.services.execution_capacity.DatasourceExecutionCapacityService.wait_for_cleanup_backlog',
-                      side_effect=AssertionError('business request must not wait for fixture backlog')):
+                patch('src.apps.data_factory.services.governance.datasource_governor.DatasourceGovernorService.policy',
+                      side_effect=AssertionError('business request must not load SQL quota')):
             request.http(ApiExecutionRequest(method='GET', url='https://example.com'), 1)
         request.send_request.assert_called_once()
         body.close.assert_called_once()

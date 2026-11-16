@@ -1,4 +1,5 @@
 import { Message } from '@arco-design/web-vue'
+import { ref } from 'vue'
 
 function parseJson(value: any) {
   if (typeof value !== 'string') return value
@@ -99,13 +100,18 @@ async function copyText(text: string) {
 }
 
 export function useScenarioCurl() {
+  const copying = ref(false)
   async function copyScenarioCurl(item: any) {
+    if (copying.value) return
+    copying.value = true
     try {
       await copyText(buildCurl(item))
       Message.success('复制 cURL 成功')
     } catch (error: any) {
       Message.error(error?.message || '复制 cURL 失败')
+    } finally {
+      copying.value = false
     }
   }
-  return { copyScenarioCurl }
+  return { copying, copyScenarioCurl }
 }

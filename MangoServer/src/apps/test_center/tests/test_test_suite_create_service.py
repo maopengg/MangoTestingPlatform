@@ -6,6 +6,11 @@ from src.apps.test_center.services.reporting.test_suite.create import TestSuiteC
 
 
 class TestSuiteCreateServiceTests(SimpleTestCase):
+    def setUp(self):
+        config = patch('src.apps.test_center.services.reporting.test_suite.create.SystemConfigService.get', return_value=True)
+        self.config_get = config.start()
+        self.addCleanup(config.stop)
+
     @patch('src.apps.test_center.services.reporting.test_suite.create.Tasks.objects.filter')
     @patch('src.apps.test_center.services.reporting.test_suite.create.TestSuite.objects.create')
     def test_create_suite_uses_model_ids_without_http_crud(self, create, tasks):
@@ -39,6 +44,7 @@ class TestSuiteCreateServiceTests(SimpleTestCase):
             report_retention_policy='abnormal_only',
             execution_name='regression',
             api_concurrency_limit=6,
+            api_count_by_scenario=True,
         )
 
     @patch('src.apps.test_center.services.reporting.test_suite.create.TestSuiteDetails.objects.create')
@@ -74,4 +80,5 @@ class TestSuiteCreateServiceTests(SimpleTestCase):
             api_case_revision_id=9,
             api_case_release_id=10,
             config_checksum='checksum',
+            summary_data={'children': None, 'meta': {'api_count_by_scenario': True, 'api_scene_count': 3}},
         )

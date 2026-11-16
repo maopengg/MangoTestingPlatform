@@ -86,13 +86,14 @@ export function readTaskRecentResults(response: unknown, taskIds: TaskEditorId[]
     if (!Array.isArray(values)) throw Error('Invalid recent results')
     result[String(id)] = values.map(value => {
       const row = taskListObject(value), status = row.status_key
-      if (status !== 'success' && status !== 'fail' && status !== 'warning' && status !== 'proceed' && status !== 'stay_begin' && status !== 'stopped') throw Error('Invalid recent status')
+      if (status !== 'success' && status !== 'fail' && status !== 'warning' && status !== 'proceed' && status !== 'stay_begin' && status !== 'stopped' && status !== 'blocked') throw Error('Invalid recent status')
       return {
         test_suite_id: row.test_suite_id == null ? null : taskListId(row.test_suite_id), report_retained: row.report_retained !== false,
         status: numeric(row.status), status_key: status, status_text: text(row.status_text), test_env: numeric(row.test_env), test_env_text: text(row.test_env_text),
         create_time: row.create_time == null ? null : text(row.create_time), update_time: row.update_time == null ? null : text(row.update_time),
         duration_ms: numeric(row.duration_ms), total: numeric(row.total), success: numeric(row.success), fail: numeric(row.fail), warning: numeric(row.warning),
         proceed: numeric(row.proceed), stay_begin: numeric(row.stay_begin), stopped: numeric(row.stopped),
+        blocked: numeric(row.blocked, 0),
         pass_rate: row.pass_rate == null ? null : numeric(row.pass_rate), excluded_count: numeric(row.excluded_count, 0),
       }
     })

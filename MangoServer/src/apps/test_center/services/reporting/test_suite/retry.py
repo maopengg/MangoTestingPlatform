@@ -19,21 +19,23 @@ from src.apps.test_center.exceptions import (
 )
 from src.apps.test_center.models import TestSuite, TestSuiteDetails
 from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService
+from src.apps.test_center.services.reporting.api_counting import ApiReportCountingService
 
 
 class TestSuiteRetryService:
     @staticmethod
-    def ensure_infrastructure_reviewed(detail):
+    def ensure_infrastructure_reviewed(detail, *, confirmed=False):
         from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService
-        if TestSuiteInfrastructureService.is_blocked(detail.summary_data):
-            control = detail.summary_data['meta']['execution_control']
+        if (getattr(detail, 'status', None) == TaskEnum.INFRASTRUCTURE_BLOCKED.value
+                or TestSuiteInfrastructureService.is_blocked(detail.summary_data)):
+            control = (detail.summary_data or {}).get('meta', {}).get('execution_control', {})
             from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
             # 人工核查不是永久通行证；重试前名额、清理状态变化仍须拒绝重放。
-            if control.get('requires_review', True):
+            if control.get('requires_review', True) and not confirmed:
                 raise TestCenterError(TEST_REPORT_INFRASTRUCTURE_REVIEW_REQUIRED)
-            if control.get('attempt') != detail.retry:
+            if control.get('attempt', detail.retry) != detail.retry:
                 raise TestCenterError(TEST_REPORT_INFRASTRUCTURE_REVIEW_STALE)
-            if not DatasourceInfrastructureService.review_ready(detail):
+            if not DatasourceInfrastructureService.cleanup_review_ready(detail.id, detail.retry):
                 raise TestCenterError(TEST_REPORT_INFRASTRUCTURE_RESOURCES_UNREADY)
 
     @staticmethod
@@ -43,7 +45,7 @@ class TestSuiteRetryService:
 
     @classmethod
     @transaction.atomic
-    def retry_failed(cls, test_suite_id: int) -> int:
+    def retry_failed(cls, test_suite_id: int, *, confirm_infrastructure_retry=False, user=None) -> int:
         suite = TestSuite.objects.select_for_update().filter(id=test_suite_id).first()
         if suite is None or getattr(suite, 'retained_summary', None):
             raise TestCenterError(TEST_REPORT_NOT_FOUND)
@@ -53,11 +55,12 @@ class TestSuiteRetryService:
         if suite.status in active or any(detail.status in active for detail in details):
             raise TestCenterError(TEST_REPORT_RETRY_RUNNING)
         # API 场景可能整体通过但仍有失败计数，重试其所属执行项，不拆散场景步骤。
-        failed = [detail for detail in details if not detail.is_excluded and (detail.status == TaskEnum.FAIL.value or detail.fail > 0)]
+        failed = [detail for detail in details if not detail.is_excluded and (
+            detail.status in (TaskEnum.FAIL.value, TaskEnum.INFRASTRUCTURE_BLOCKED.value) or detail.fail > 0)]
         if not failed:
             return 0
         for detail in failed:
-            cls.retry_detail(detail.id)
+            cls.retry_detail(detail.id, confirm_infrastructure_retry=confirm_infrastructure_retry, user=user)
         TestSuite.objects.filter(id=suite.id).update(status=TaskEnum.STAY_BEGIN.value, update_time=timezone.now())
         return len(failed)
 
@@ -114,6 +117,8 @@ class TestSuiteRetryService:
             test_env=None,
             api_concurrency_limit=None,
             concurrency_override_provided: bool = False,
+            confirm_infrastructure_retry: bool = False,
+            user=None,
     ) -> tuple[int, int | None]:
         test_suite = TestSuite.objects.select_for_update().filter(id=test_suite_id).first()
         if not test_suite or getattr(test_suite, 'retained_summary', None):
@@ -129,6 +134,9 @@ class TestSuiteRetryService:
         details = list(
             TestSuiteDetails.objects.select_for_update().filter(test_suite_id=test_suite.id)
         )
+        active = (TaskEnum.STAY_BEGIN.value, TaskEnum.PROCEED.value)
+        if test_suite.status in active or any(detail.status in active for detail in details):
+            raise TestCenterError(TEST_REPORT_RETRY_RUNNING)
         detail_ids = [detail.id for detail in details]
         cls.ensure_retry_supported(details)
         version_policy_by_case = {}
@@ -141,7 +149,7 @@ class TestSuiteRetryService:
                 ).values_list('api_case_id', 'version_policy')
             )
         for detail in details:
-            cls.ensure_infrastructure_reviewed(detail)
+            cls.ensure_infrastructure_reviewed(detail, confirmed=confirm_infrastructure_retry)
             cls.refresh_current_api_release(
                 detail,
                 version_policy_by_case.get(
@@ -151,6 +159,7 @@ class TestSuiteRetryService:
             )
         now = timezone.now()
         for detail in details:
+            prior_control = (detail.summary_data or {}).get('meta', {}).get('execution_control')
             detail.retry = 0
             detail.status = TaskEnum.STAY_BEGIN.value
             detail.error_message = None
@@ -158,7 +167,14 @@ class TestSuiteRetryService:
             detail.success = 0
             detail.warning = 0
             detail.fail = 0
-            detail.summary_data = None
+            detail.summary_data = ApiReportCountingService.empty_summary(detail)
+            if prior_control:
+                detail.summary_data = detail.summary_data or {}
+                detail.summary_data.setdefault('meta', {})['retry_confirmation'] = {
+                    'previous_attempt': prior_control.get('attempt'),
+                    'previous_observed_at': prior_control.get('observed_at'),
+                    'confirmed_at': now.isoformat(), 'confirmed_by': getattr(user, 'id', None),
+                }
             detail.is_excluded = False
             detail.failure_reason = ''
             detail.failure_description = ''
@@ -196,11 +212,14 @@ class TestSuiteRetryService:
 
     @classmethod
     @transaction.atomic
-    def retry_detail(cls, test_suite_detail_id: int) -> None:
+    def retry_detail(cls, test_suite_detail_id: int, *, confirm_infrastructure_retry=False, user=None) -> None:
         detail = TestSuiteDetails.objects.select_for_update().get(id=test_suite_detail_id)
-        cls.ensure_infrastructure_reviewed(detail)
+        if detail.status in (TaskEnum.STAY_BEGIN.value, TaskEnum.PROCEED.value):
+            raise TestCenterError(TEST_REPORT_RETRY_RUNNING)
+        cls.ensure_infrastructure_reviewed(detail, confirmed=confirm_infrastructure_retry)
         cls.ensure_retry_supported([detail])
         cls.refresh_current_api_release(detail)
+        prior_control = (detail.summary_data or {}).get('meta', {}).get('execution_control')
         detail.retry = 0
         detail.status = TaskEnum.STAY_BEGIN.value
         detail.error_message = None
@@ -208,7 +227,15 @@ class TestSuiteRetryService:
         detail.success = 0
         detail.warning = 0
         detail.fail = 0
-        detail.summary_data = None
+        detail.summary_data = ApiReportCountingService.empty_summary(detail)
+        if prior_control:
+            detail.summary_data = detail.summary_data or {}
+            detail.summary_data.setdefault('meta', {})['retry_confirmation'] = {
+                'previous_attempt': prior_control.get('attempt'),
+                'previous_observed_at': prior_control.get('observed_at'),
+                'confirmed_at': timezone.now().isoformat(),
+                'confirmed_by': getattr(user, 'id', None),
+            }
         detail.is_excluded = False
         detail.failure_reason = ''
         detail.failure_description = ''

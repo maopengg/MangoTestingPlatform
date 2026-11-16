@@ -71,7 +71,8 @@
   import ProjectProductSelect from '@/components/business/ProjectProductSelect.vue'
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
-  import { getApiInfoName } from '@/api/apitest/info'
+  import { getApiInfoName, getApiInfoOptions } from '@/api/apitest/info'
+  import { reportLoadError } from '@/utils/load-error'
   import { postApiCaseDetailed, putApiCaseDetailed } from '@/api/apitest/case_detailed'
   import type { ApiCaseStep } from '../types'
   import { createStepFormItems } from '../config'
@@ -143,9 +144,9 @@
       ? [{ key: Number(step.pinned_api_info_revision), title: '当前绑定版本' }]
       : []
     visible.value = true
-    if (moduleId) getModuleApi(moduleId, true)
+    getModuleApi(moduleId, true)
   }
-  function getModuleApi(moduleId: string | number, preserveSelection = false) {
+  function getModuleApi(moduleId: string | number | null | undefined, preserveSelection = false) {
     const apiInfoItem = formItems.find((item) => item.key === 'api_info')
     const revisionItem = formItems.find((item) => item.key === 'pinned_api_info_revision')
     const selectedOptions = preserveSelection ? [...apiOptions.value] : []
@@ -156,14 +157,26 @@
       apiOptions.value = []
     }
     const token = ++optionRequest
-    if (!moduleId) {
+    const productId = selectedProductId.value
+    if (productId === null || productId === '') {
       optionsLoading.value = false
       return
     }
+    const isCurrent = () => token === optionRequest && visible.value
     optionsLoading.value = true
-    getApiInfoName(moduleId)
+    const request = moduleId
+      ? getApiInfoName(moduleId)
+      : getApiInfoOptions(productId, isCurrent).then((items) => ({
+          data: items.map((item) => ({
+            key: item.id,
+            title: `${item.name}（${item.published_revision_id ? `已发布 ${item.published_version_label || ''}`.trim() : '未发布'}）`,
+            published_revision_id: item.published_revision_id,
+            published_version_label: item.published_version_label,
+          })),
+        }))
+    request
       .then((response) => {
-        if (token === optionRequest && visible.value) {
+        if (isCurrent()) {
           const options: typeof apiOptions.value = response.data || []
           apiOptions.value = [
             ...options,
@@ -173,7 +186,9 @@
           ]
         }
       })
-      .catch(() => {})
+      .catch((error) => {
+        if (isCurrent()) reportLoadError(error, '接口列表加载失败，请重试')
+      })
       .finally(() => {
         if (token === optionRequest) optionsLoading.value = false
       })

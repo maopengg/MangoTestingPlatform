@@ -126,6 +126,7 @@ class ProjectViews(ViewSet):
                     project['children'].append({
                         'value': product_id,
                         'label': product_option['label'],
+                        'description': product_option.get('description', ''),
                         'children': [{'value': module_id, 'label': module_name} for module_id, module_name in v]})
                 else:
                     project['children'].append(dict(product_option))

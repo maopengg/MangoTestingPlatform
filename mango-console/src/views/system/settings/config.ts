@@ -36,6 +36,7 @@ export function normalizeRetryConditions(value: unknown): string[] {
 }
 
 export const REPORT_DELIVERY_FIELDS = [
+  { key: 'html_public_base_url', label: 'HTML 报告访问地址', type: 'input', placeholder: 'https://reports.example.com（留空复用平台文件域名）' },
   { key: 'enabled', label: '开启离线报告', type: 'switch' },
   { key: 'include_details', label: '包含 Case 明细', type: 'switch' },
   { key: 'failed_cases_only', label: '仅包含失败用例', type: 'switch' },

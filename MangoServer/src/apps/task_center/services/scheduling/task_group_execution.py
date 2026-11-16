@@ -52,6 +52,7 @@ class ScheduledTaskGroupExecutionService:
         TaskEnum.SUCCESS.value,
         TaskEnum.WARNING.value,
         TaskEnum.STOPPED.value,
+        TaskEnum.INFRASTRUCTURE_BLOCKED.value,
     }
     TERMINAL_FIRE_STATUSES = {
         ScheduleFireStatusEnum.FAIL.value,
@@ -341,6 +342,10 @@ class ScheduledTaskGroupExecutionService:
             if batch_failed_task_count
             else TaskEnum.WARNING.value if warning_task_count else TaskEnum.SUCCESS.value
         )
+        blocked_reports = [fire for fire in report_fires
+                           if fire.test_suite.status == TaskEnum.INFRASTRUCTURE_BLOCKED.value]
+        if blocked_reports and not batch_failed_task_count:
+            execution.status = TaskEnum.INFRASTRUCTURE_BLOCKED.value
         execution.finished_at = execution.finished_at or timezone.now()
 
         suite_ids = [fire.test_suite_id for fire in report_fires]
@@ -355,6 +360,8 @@ class ScheduledTaskGroupExecutionService:
             and execution.notice_group_id
         )
         if execution.fail_notice == StatusEnum.SUCCESS.value and failed_task_count == 0:
+            should_notice = False
+        if blocked_reports and not failed_task_count:
             should_notice = False
         if not should_notice:
             execution.notice_status = TestSuiteNoticeEnum.EXPIRED.value
@@ -432,7 +439,7 @@ class ScheduledTaskGroupExecutionService:
                 counters[key] += int(summary.get(key) or 0)
 
             fire_failed = summary_failed or int(summary.get('fail') or 0) > 0 or (
-                cls._fire_failed(fire) and not summary.get('excluded_count')
+                cls._fire_failed(fire) and not summary.get('excluded_count') and not summary.get('blocked')
             )
             fire_warning = bool(
                 not fire_failed
@@ -448,6 +455,8 @@ class ScheduledTaskGroupExecutionService:
             if fire_failed:
                 failed_task_count += 1
                 result = '失败'
+            elif fire.test_suite.status == TaskEnum.INFRASTRUCTURE_BLOCKED.value or summary.get('blocked'):
+                result = '平台受阻'
             elif fire_warning:
                 warning_task_count += 1
                 result = '告警'
