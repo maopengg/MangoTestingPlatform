@@ -106,7 +106,7 @@ dev/dev1 流水线明确传入 `--allow-disabled-scheduler`：scheduler 目标�
 | --- | --- | --- | --- |
 | `internal`（默认） | 是：Compose 容器或 K8s StatefulSet | `.env.example` 的库名、业务账号/密码和 root 密码；内部地址固定 `db:3306` | 新部署，没有现成数据库 |
 | `external` | 否 | `.env.example` 的 `MYSQL_HOST/PORT/DATABASE/USER/PASSWORD` | 已有 MySQL、云数据库或独立数据库服务 |
-| `settings` | 否 | `DJANGO_ENV` 所选 `MangoServer/src/settings/dev.py`、`test.py` 或 `master.py` | 沿用公司或用户已有 Python 数据库配置 |
+| `settings` | 否 | `DJANGO_ENV` 所选 `MangoServer/src/settings/dev.py`、`test.py` 或 `master.py` | 沿用已有 Python 数据库配置 |
 
 **internal 示例：**
 
@@ -166,7 +166,7 @@ MYSQL_PASSWORD='填写自己的密码'
 此模式不会启动内置 MySQL，也不会依赖或进入 db 容器。启动前验证连接，再停止应用消费者并使用
 临时 MySQL 客户端备份同一个目标库；外部账号需具备备份读取与平台迁移所需权限。
 验证或备份失败立即停止，不继续迁移。脚本只执行仓库已有迁移，不生成迁移文件，不清库。
-真实外部数据库请自行备份验证恢复能力，不要在公司生产库试部署。
+真实外部数据库请自行备份验证恢复能力，不要在生产库试部署。
 
 ## 文件存储
 
@@ -239,8 +239,8 @@ docker compose --env-file /dev/null -f deploy/generated/compose.json logs --tail
 
 ## Compose 与 Kubernetes 共用配置
 
-两个仓库的部署脚本、配置模板、生成器与 Dockerfile 保持一致。环境差异只放在各部署的 `.env.example`，
-不使用“公司专用 YAML”或“开源专用脚本”。Compose 与 Kubernetes 都消费同一份校验后的配置；
+Compose 与 Kubernetes 共用部署入口、配置模板、生成器和 Dockerfile。环境差异统一放在 `.env.example`，
+两种部署方式都消费同一份校验后的配置；
 资源清单各自生成，不能直接把 Compose 文件交给 Kubernetes。
 
 配置分层：`deploy/defaults.env` 保存程序默认值；`.env.example` 是用户配置；私有 `.env` 保存生效输入和自动密钥；
@@ -260,7 +260,7 @@ sh deploy.sh --target k8s
 Kubernetes 使用与 Compose 相同的 SERVER_IMAGE / CONSOLE_IMAGE / ACTUATOR_IMAGE。
 请提前构建并推送这些镜像到集群可访问的仓库；K8s 模式不在节点上编译源码。
 私有仓库需在目标命名空间准备 imagePullSecret，再填写 K8S_IMAGE_PULL_SECRET。
-切换公司/开源源码版本时构建对应的镜像，部署脚本保持相同。
+切换源码版本或部署环境时构建对应的镜像，无需维护额外的部署脚本。
 
 集群需准备可用 StorageClass，内置 MySQL / MinIO 使用独立 PVC。
 多个应用 Pod 共享 runtime，默认 K8S_RUNTIME_ACCESS_MODE=ReadWriteMany，要求存储类支持 RWX；
@@ -329,8 +329,8 @@ PUBLIC_URL=https://platform-dev.example.com
 部署脚本不生成、不覆盖 dev.py/test.py/master.py，也不修改用户的 database.json。
 `git pull` 仍遵循 Git 自身的冲突规则，不使用 reset、checkout 或强制覆盖配置的命令。
 
-公司原有 GitLab CI / Argo CD 流程继续使用 DJANGO_ENV 选择 Python 配置；未传入 MYSQL_* 环境变量时，
-后端仍使用对应配置文件的原有值。本次提交不替换既有集群发布方式。
+已有 GitLab CI / Argo CD 流程可继续使用 DJANGO_ENV 选择 Python 配置；未传入 MYSQL_* 环境变量时，
+后端仍使用对应配置文件的原有值，无需替换既有集群发布方式。
 
 
 ## 唯一启动入口与代码同步

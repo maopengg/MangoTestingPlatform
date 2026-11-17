@@ -13,4 +13,4 @@
 
 更新版本时必须同时更新 Dockerfile、两个架构的安装包、校验值及 `src/services/perf/k6_runtime.py` 中的版本定义。
 
-Python 内部包继续存放在项目根目录的 `local_packages/`。Playwright/Ubuntu 基础镜像仍通过公司内部 OCI 镜像仓库提供，不应作为镜像归档提交到 Git。
+本地 Python 依赖包存放在 `MangoActuator/local_packages/`。Playwright/Ubuntu 基础镜像按执行器 Dockerfile 中的镜像地址获取，不作为镜像归档提交到 Git。
