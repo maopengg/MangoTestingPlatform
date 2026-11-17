@@ -178,12 +178,7 @@ class AutomationEffectivenessOverviewMixin:
             detail_rows
         )
         detail_total = sum(status_counts.values())
-        completed = (
-                status_counts['success']
-                + status_counts['fail']
-                + status_counts['warning']
-                + status_counts['stopped']
-        )
+        completed = TestSuiteSummaryService.completed_execution_count(status_counts)
         final_success = status_counts['success']
         failed_count = status_counts['fail']
         warning_count = status_counts['warning']
@@ -225,6 +220,7 @@ class AutomationEffectivenessOverviewMixin:
             'proceed_count': status_counts['proceed'],
             'stay_begin_count': status_counts['stay_begin'],
             'stopped_count': status_counts['stopped'],
+            'blocked_count': status_counts['blocked'],
             'issue_count': failed_count + warning_count,
             'unfinished_count': status_counts['proceed'] + status_counts['stay_begin'],
             'p95_first_feedback_seconds': feedback['p95_seconds'],
@@ -257,6 +253,7 @@ class AutomationEffectivenessOverviewMixin:
             'proceed_count': cards.get('proceed_count', 0),
             'stay_begin_count': cards.get('stay_begin_count', 0),
             'stopped_count': cards.get('stopped_count', 0),
+            'blocked_count': cards.get('blocked_count', 0),
             'unfinished_count': cards.get('unfinished_count', 0),
             'final_pass_rate': cards.get('final_pass_rate'),
             'completion_rate': cards.get('completion_rate'),

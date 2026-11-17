@@ -76,8 +76,22 @@ export interface CoverageOverview {
   interface_gap_count: number
 }
 
+export type CoverageOverviewStatistics = Pick<CoverageOverview, 'summary' | 'interface_gaps' | 'interface_gap_count'>
+
 export function getCoverageOverview(data: Record<string, unknown>) {
-  return get<CoverageOverview>({ url: `${base}/overview`, data: () => data })
+  return get<CoverageOverviewStatistics>({ url: `${base}/overview`, data: () => ({ ...data, section: 'summary' }) })
+}
+
+export function getCoverageInventory(data: Record<string, unknown>) {
+  return get<Pick<CoverageOverview, 'project_inventory_summary'>>({
+    url: `${base}/overview`, data: () => ({ ...data, section: 'inventory' }),
+  })
+}
+
+export function getCoverageModuleProgress(data: Record<string, unknown>) {
+  return get<PageResult<CoverageModuleOverview>>({
+    url: `${base}/overview`, data: () => ({ ...data, section: 'modules' }),
+  })
 }
 
 export function getCoverageMetrics(data: {

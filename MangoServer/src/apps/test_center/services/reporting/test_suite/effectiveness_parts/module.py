@@ -88,12 +88,7 @@ class AutomationEffectivenessModuleMixin:
             )
             row_counts = TestSuiteSummaryService.execution_status_counts_from_rows([row])
             item['detail_count'] += sum(row_counts.values())
-            item['completed_count'] += (
-                    row_counts['success']
-                    + row_counts['fail']
-                    + row_counts['warning']
-                    + row_counts['stopped']
-            )
+            item['completed_count'] += TestSuiteSummaryService.completed_execution_count(row_counts)
             item['success_count'] += row_counts['success']
             item['failed_count'] += row_counts['fail']
             item['warning_count'] += row_counts['warning']
@@ -190,7 +185,7 @@ class AutomationEffectivenessModuleMixin:
         matrix = defaultdict(dict)
         for (env, scene), rows in grouped.items():
             counts = TestSuiteSummaryService.execution_status_counts_from_rows(rows)
-            completed = counts['success'] + counts['fail'] + counts['warning'] + counts['stopped']
+            completed = TestSuiteSummaryService.completed_execution_count(counts)
             matrix[str(env)][scene] = {
                 'detail_count': sum(counts.values()),
                 'final_pass_rate': cls._rate(counts['success'], completed),
@@ -247,12 +242,7 @@ class AutomationEffectivenessModuleMixin:
             if not type_rows:
                 continue
             counts = TestSuiteSummaryService.execution_status_counts_from_rows(type_rows)
-            completed = (
-                    counts['success']
-                    + counts['fail']
-                    + counts['warning']
-                    + counts['stopped']
-            )
+            completed = TestSuiteSummaryService.completed_execution_count(counts)
             result.append({
                 'type': case_type.value,
                 'type_name': TestCaseTypeEnum.get_value(case_type.value),

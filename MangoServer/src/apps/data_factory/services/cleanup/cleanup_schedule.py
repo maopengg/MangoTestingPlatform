@@ -25,7 +25,7 @@ from src.apps.task_center.selectors.querysets import TaskCenterQuerySelector
 from src.apps.system.enums.executor import ExecutorTaskStatusEnum
 from src.apps.data_factory.schemas.cleanup_resource import CleanupTaskPayload, CleanupTaskProgress
 from src.apps.data_factory.schemas.cleanup_resource import CleanupReportOwner
-from src.apps.data_factory.constants import CLEANUP_REPORT_CONTEXT_KEY, EXECUTION_OWNER_CONTEXT_KEY
+from src.apps.data_factory.constants import CLEANUP_REPORT_CONTEXT_KEY, EXECUTION_OWNER_CONTEXT_KEY, EXECUTION_AUDIT_CONTEXT_KEY
 from src.apps.data_factory.enums.cleanup import DataFactoryCleanupModeEnum
 from src.common.logging import log
 
@@ -48,6 +48,13 @@ class DataFactoryCleanupScheduleService:
         from src.apps.data_factory.schemas.cleanup_resource import FactoryExecutionOwner
         value = deepcopy(context or {})
         value.pop(CLEANUP_REPORT_CONTEXT_KEY, None)
+        value.pop(EXECUTION_AUDIT_CONTEXT_KEY, None)
+        from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditService
+        from src.apps.data_factory.schemas.execution_audit import DatasourceAuditOrigin
+        source = SqlExecutionAuditService.current_source()
+        value[EXECUTION_AUDIT_CONTEXT_KEY] = DatasourceAuditOrigin(**{
+            key: source[key] for key in DatasourceAuditOrigin.model_fields if source.get(key) is not None
+        }).model_dump(mode='json', exclude_none=True)
         trace = current_execution_trace()
         value[EXECUTION_OWNER_CONTEXT_KEY] = FactoryExecutionOwner(
             **RuntimeProcessIdentity.current(),

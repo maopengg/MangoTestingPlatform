@@ -88,7 +88,12 @@ class ApiCaseExecutionTraceRecorder:
     def execution_scope(self):
         token = _execution_trace.set(self)
         try:
-            yield
+            from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditService
+            context = {key: getattr(self.trace, key, None) for key in (
+                'case_id', 'test_suite_id', 'test_suite_detail_id', 'trace_id',
+            )}
+            with SqlExecutionAuditService.source({key: value for key, value in context.items() if value is not None}):
+                yield
         finally:
             _execution_trace.reset(token)
 

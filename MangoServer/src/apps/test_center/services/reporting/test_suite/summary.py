@@ -110,6 +110,11 @@ class TestSuiteSummaryService:
             result[status_key] += missing
         return result
 
+    @staticmethod
+    def completed_execution_count(counts: dict) -> int:
+        # 平台受阻已终结，不能继续计入运行中，也不能冒充通过或业务失败。
+        return sum(counts[key] for key in ('success', 'fail', 'warning', 'stopped', 'blocked'))
+
     @classmethod
     def unique_case_count(cls, queryset):
         """按最新一份任务报告的 case_sum 快照统计覆盖用例数量。"""
@@ -218,13 +223,12 @@ class TestSuiteSummaryService:
         raw_rows = rows
         rows = [row for row in rows if not cls._excluded(row)]
         counts = cls.execution_status_counts_from_rows(rows)
-        completed_keys = {'success', 'fail', 'warning', 'stopped', 'blocked'}
 
         def type_counter(case_type: int) -> tuple[dict, int, int]:
             type_rows = [row for row in rows if row.get('type') == case_type]
             type_counts = cls.execution_status_counts_from_rows(type_rows)
             type_total = sum(type_counts.values())
-            type_completed = sum(type_counts[key] for key in completed_keys)
+            type_completed = cls.completed_execution_count(type_counts)
             return type_counts, type_total, type_completed
 
         api_counter, api_case_sum, api_completed = type_counter(TestCaseTypeEnum.API.value)

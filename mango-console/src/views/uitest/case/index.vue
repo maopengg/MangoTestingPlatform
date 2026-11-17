@@ -139,7 +139,7 @@
           <TableTabs :active-key="activePublicationStatus" @tab-click="switchPublicationTab">
             <a-tab-pane v-for="tab in publicationTabs" :key="tab.key" :title="tab.title" />
             <template #extra>
-          <a-space>
+          <a-space wrap>
             <div>
               <a-button
                 size="small"
@@ -151,6 +151,7 @@
               </a-button>
             </div>
             <a-button size="small" status="warning" :disabled="!!actions.pending.value" @click="openTaskBinding" data-testid="qa-views-uitest-case-button-设为定时任务">设为定时任务</a-button>
+            <a-button size="small" :loading="actions.pending.value?.kind === 'batch-publication'" :disabled="!!actions.pending.value" @click="actions.batchPublication(selectedRowKeys)" data-testid="qa-views-uitest-case-button-批量提交预发布">批量预发布</a-button>
             <div>
               <a-button  size="small" type="primary" @click="onAdd" data-testid="qa-views-uitest-case-button-新增">新增</a-button>
             </div>
@@ -310,11 +311,12 @@ import { reportLoadError } from '@/utils/load-error'
     if (list.rows.value.some(isPendingExecution)) pagePolling.start(); else pagePolling.stop()
   } })
   const actions = useUiCaseActions({ available: scope.available, capture: scope.capture, environment: () => userStore.selected_environment, rows: () => list.rows.value, filterKey: () => JSON.stringify(query()),
-    beforeWrite: () => list.invalidateRows(), committed: async (kind, ids, target) => {
-      selectedRowKeys.value = []; list.invalidateRows()
+    beforeWrite: () => list.invalidateRows(), committed: async (kind, ids, target, remaining) => {
+      selectedRowKeys.value = kind === 'batch-publication' ? [...(remaining ?? [])] : []
+      list.invalidateRows()
       const selected = new Set(ids.map(String))
       if (kind === 'delete') { list.rows.value = list.rows.value.filter(row => !selected.has(String(row.id))); pagination.setTotalSize(Math.max(0, pagination.pageCount - selected.size)) }
-      if (kind === 'publication' && target) list.rows.value = list.rows.value.map(row => selected.has(String(row.id)) ? { ...row, publication_status: target } : row)
+      if ((kind === 'publication' || kind === 'batch-publication') && target) list.rows.value = list.rows.value.map(row => selected.has(String(row.id)) ? { ...row, publication_status: target } : row)
       if (kind === 'run' || kind === 'batch-run') { list.rows.value = list.rows.value.map(row => selected.has(String(row.id)) ? { ...row, status: 2 } : row); pagePolling.start() }
       await list.load(false)
     },

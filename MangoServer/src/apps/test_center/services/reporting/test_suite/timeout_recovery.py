@@ -36,7 +36,8 @@ class TestSuiteTimeoutRecoveryService:
             return False
         if (detail.type == TestCaseTypeEnum.API.value and detail.status == TaskEnum.PROCEED.value
                 and detail.push_time and timezone.now() - detail.push_time > timedelta(minutes=timeout_minutes)):
-            TestSuiteInfrastructureService.block(detail.id, max(1, int(detail.retry or 0)), [])
+            TestSuiteInfrastructureService.block(detail.id, max(1, int(detail.retry or 0)), [],
+                interruption_reason=f'执行超过 {timeout_minutes} 分钟未完成。请核查执行进展及数据清理状态')
             return False
         if not cls.can_reset(detail, timeout_minutes, max_attempts):
             return False
@@ -89,7 +90,8 @@ class TestSuiteTimeoutRecoveryService:
             return False
         if (detail.type == TestCaseTypeEnum.API.value and detail.status == TaskEnum.PROCEED.value
                 and detail.push_time and timezone.now() - detail.push_time > timedelta(minutes=timeout_minutes)):
-            TestSuiteInfrastructureService.block(detail.id, max(1, int(detail.retry or 0)), [])
+            TestSuiteInfrastructureService.block(detail.id, max(1, int(detail.retry or 0)), [],
+                interruption_reason=f'执行超过 {timeout_minutes} 分钟未完成。请核查执行进展及数据清理状态')
             return False
         if not cls.can_terminate(detail, timeout_minutes, max_attempts):
             return False

@@ -42,3 +42,48 @@ test('backend-rejected mutation releases lock, leaves state untouched and allows
   let fail = true; const h = uiCaseHarness({ api: { postUiCaseCopy: async () => ({ code: fail ? 403 : 200 }) } }); t.after(h.cleanup); await h.mount(); await flush()
   assert.equal(await h.actions.copy(0), false); assert.equal(h.actions.pending.value, null); assert.match(h.actions.error.value, /重试/); assert.equal(h.list.rows.value.length, 1); fail = false; assert.equal(await h.actions.copy(0), true)
 })
+
+test('UI batch submission freezes IDs, supports long IDs and retains only failed selections',async t=>{
+  const h=uiCaseHarness({api:{getUiCase:async()=>caseResponse([caseRow({id:1}),caseRow({id:long}),caseRow({id:3})]),
+    putUiCasePublication:async id=>{if(id===long)throw Error('rejected');return {code:200}}}})
+  t.after(h.cleanup);await h.mount();await flush()
+  h.selectedRowKeys.value=[1,long,3]
+  assert.equal(h.actions.batchPublication(h.selectedRowKeys.value),true)
+  h.selectedRowKeys.value=[long,3]
+  assert.equal(await h.confirmations[0].onBeforeOk(),true)
+  assert.deepEqual(h.writes,[['putUiCasePublication',1,'prepublished'],['putUiCasePublication',long,'prepublished'],['putUiCasePublication',3,'prepublished']])
+  assert.deepEqual(h.selectedRowKeys.value,[long]);assert.equal(h.actions.pending.value,null)
+  assert.ok(h.messages.some(([kind,text])=>kind==='warning'&&/成功 2 条，失败 1 条/.test(text)))
+})
+
+test('UI batch prevalidates mixed publication and execution states, without auto-return or publication',async t=>{
+  const h=uiCaseHarness({api:{getUiCase:async()=>caseResponse([caseRow({id:1}),caseRow({id:2,publication_status:'prepublished'}),
+    caseRow({id:3,publication_status:'published'}),caseRow({id:4,status:0})])}})
+  t.after(h.cleanup);await h.mount();await flush()
+  for(const ids of [[],[1,2],[1,3],[1,4],[99]])assert.equal(h.actions.batchPublication(ids),false)
+  assert.equal(h.confirmations.length,0);assert.equal(h.writes.length,0)
+})
+
+test('UI batch keeps its physical write lock, stops when identity changes and ignores late responses',async t=>{
+  const pending=deferred(),h=uiCaseHarness({api:{getUiCase:async()=>caseResponse([caseRow({id:1}),caseRow({id:2})]),putUiCasePublication:()=>pending.promise}})
+  t.after(h.cleanup);await h.mount();await flush()
+  h.actions.batchPublication([1,2]);const saving=h.confirmations[0].onBeforeOk();await flush()
+  assert.equal(h.actions.pending.value.kind,'batch-publication')
+  assert.equal(h.actions.batchPublication([2]),false)
+  h.user.roleId++;await flush();const messages=h.messages.length
+  pending.resolve({code:200});await saving
+  assert.deepEqual(h.writes,[['putUiCasePublication',1,'prepublished']])
+  assert.equal(h.messages.length,messages);assert.equal(h.actions.pending.value,null)
+})
+
+test('UI batch confirms latest row state and preserves successful acknowledgements after list refresh fails',async t=>{
+  let fail=false
+  const h=uiCaseHarness({api:{getUiCase:async()=>{if(fail)throw Error('offline');return caseResponse([caseRow({id:1}),caseRow({id:2})])}}})
+  t.after(h.cleanup);await h.mount();await flush()
+  h.actions.batchPublication([1,2]);h.list.rows.value[0].status=0
+  assert.equal(await h.confirmations[0].onBeforeOk(),false);assert.equal(h.writes.length,0)
+  h.list.rows.value[0].status=1;h.selectedRowKeys.value=[1,2];h.actions.batchPublication([1,2]);fail=true
+  assert.equal(await h.confirmations[1].onBeforeOk(),true)
+  assert.deepEqual(h.list.rows.value.map(row=>row.publication_status),['prepublished','prepublished'])
+  assert.deepEqual(h.selectedRowKeys.value,[])
+})

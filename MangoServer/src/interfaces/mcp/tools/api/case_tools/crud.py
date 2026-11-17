@@ -122,8 +122,9 @@ def register_case_crud_tools(mcp):
         """创建 API case 主体。
 
         复杂字段格式见 get_api_case_schema.api_case_fields。front_headers 只传 ApiHeaders.id 数组，
-        表示用例级默认请求头；如果某个场景参数 headers 非空，执行时会完全覆盖 front_headers，不会合并。
-        如果场景 headers 和 front_headers 都为空，执行时使用当前项目产品下 status=1 的 ApiHeaders。
+        默认开启的请求头无需重复勾选：场景 headers 和 front_headers 都为空时，编辑态自动使用当前产品 status=1 的 ApiHeaders。
+        front_headers 非空时仅使用所选项，不合并产品默认项；场景 headers 非空时再整体替代 Case 请求头，不合并。
+        固定 Case 修订执行使用冻结的请求头快照，管理页后续修改不影响旧快照；其中变量仍在运行时替换。
         front_public/front_auth_config 只传 ID 数组，表示本 case 显式选择的全局变量/授权配置；执行时与默认开启项合并为加载范围。
         front_sql/posterior_sql 每条 SQL 必须传 datasource_alias；可传 test_envs 多选执行环境，不传、null 或 [] 表示全部环境执行。
         SQL 的 key 支持单个缓存变量，也支持 id,name 这种英文逗号分隔多 key；查询结果取第一行，按列名优先、列顺序兜底写入多个缓存变量。
@@ -189,6 +190,8 @@ def register_case_crud_tools(mcp):
     ) -> dict:
         """更新 API case 主体配置。module_id 可修改所属模块，case_people_id 可修改负责人；复杂字段格式见 get_api_case_schema.api_case_fields。
 
+        默认开启的请求头无需重复勾选；front_headers=[] 时回退产品默认项，非空时仅使用所选项、不合并默认项；场景 headers 非空时整体替代 Case 请求头。
+        本工具修改编辑态，不更新已有修订的请求头快照；固定修订中的变量仍在运行时替换。
         front_public/front_auth_config 为 ID 数组，只决定加载范围，不改变平台已有变量类型加载顺序。
         front_sql/posterior_sql 每条 SQL 必须传 datasource_alias；可传 test_envs 多选执行环境，不传、null 或 [] 表示全部环境执行。
         SQL 的 key 支持单个缓存变量，也支持 id,name 这种英文逗号分隔多 key；查询结果取第一行，按列名优先、列顺序兜底写入多个缓存变量。

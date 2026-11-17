@@ -18,7 +18,7 @@ from mangotools.exceptions import MangoToolsError
 from mangotools.enums import ClientTypeEnum
 from mangotools.enums import StatusEnum, TestCaseTypeEnum
 from src.enums.tools_enum import MessageEnum
-from src.exceptions import UiError
+from src.exceptions import MangoActuatorError, UiError
 from mangotools.contracts import TestSuiteDetailResultContract
 from mangoautomation.models import CaseModel, PageStepsResultModel, UiCaseResultModel
 from src.network import HTTP, socket_conn, ActuatorUiEventEnum
@@ -55,7 +55,6 @@ class TestCase:
             self._runtime_execution_id,
             self.base_data,
         )
-        self._is_page_init = True
         self._ui_auth_applied = False
         self._page_context_closed = False
         self._record_video_saved = False
@@ -148,6 +147,11 @@ class TestCase:
     async def case_main(self) -> None:
         await self.refresh_runtime_config()
         try:
+            first_page_steps = None
+            if self.case_model.steps:
+                first_page_steps = self._create_page_steps(self.case_model.steps[0])
+                # 全局数据先准备，驱动仍在前置和参数化完成后按最终地址初始化。
+                await first_page_steps.page_init()
             await self.case_front(self.case_model.front_custom, self.case_model.front_sql)
             await self.case_parametrize()
         except (MangoActuatorError, MangoToolsError, MangoAutomationError) as error:
@@ -172,20 +176,7 @@ class TestCase:
                 progress_current=step_index - 1,
                 progress_total=len(self.case_model.steps),
             )
-            page_steps = PageSteps(
-                self.base_data,
-                self.web_runtime,
-                steps,
-                steps.is_auth_step,
-                progress_mode=PageSteps.PROGRESS_MODE_CASE,
-                progress_user=self.case_model.send_user,
-                case_id=self.case_model.id,
-            )
-            page_steps.page_step_result_model.execution_id = self.case_model.execution_id
-            page_steps.page_step_result_model.slot_id = self.case_model.slot_id
-            page_steps.page_step_result_model.executor_connection_id = (
-                self.case_model.executor_connection_id
-            )
+            page_steps = first_page_steps if step_index == 1 else self._create_page_steps(steps)
             try:
                 await page_steps.driver_init()
                 runtime_state = await UiRuntimeRegistry.register(
@@ -194,8 +185,7 @@ class TestCase:
                 for execution_id in self._runtime_execution_aliases:
                     await UiRuntimeRegistry.register_alias('ui_case', execution_id, runtime_state)
                 await self.apply_ui_auth_cache()
-                await page_steps.page_init(self._is_page_init)
-                self._is_page_init = False
+                await page_steps.page_init(False)
                 page_steps_result_model = await page_steps.steps_main()
                 self.set_page_steps(page_steps_result_model)
                 ExecutionActivity.update(activity_id, progress_current=step_index)
@@ -229,6 +219,21 @@ class TestCase:
         except Exception:
             await self.send_case_result(
                 f'用例【{self.case_model.name}】后置处理失败了，如果是因为开启视频录制则忽略，开启视频录制需要安装：playwright install ffmpeg，或者请联系管理员来解决!')
+
+    def _create_page_steps(self, steps):
+        page_steps = PageSteps(
+            self.base_data,
+            self.web_runtime,
+            steps,
+            steps.is_auth_step,
+            progress_mode=PageSteps.PROGRESS_MODE_CASE,
+            progress_user=self.case_model.send_user,
+            case_id=self.case_model.id,
+        )
+        page_steps.page_step_result_model.execution_id = self.case_model.execution_id
+        page_steps.page_step_result_model.slot_id = self.case_model.slot_id
+        page_steps.page_step_result_model.executor_connection_id = self.case_model.executor_connection_id
+        return page_steps
 
     async def case_front(self, front_custom: list[dict], front_sql: list[dict]):
         # front_custom/front_sql 经 socket 反序列化为 pydantic 模型列表，

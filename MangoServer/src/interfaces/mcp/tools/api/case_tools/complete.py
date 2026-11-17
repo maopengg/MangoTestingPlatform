@@ -63,10 +63,12 @@ def register_case_complete_tools(mcp):
         正式发布由项目产品负责人通过同一工具传 target_status='published' 完成。
 
         未提供 case_people_id 时默认使用当前 MCP APIKey/JWT 对应用户作为负责人。
-        出于公共请求头安全控制，本工具不再直接创建 ApiHeaders。需要请求头时，请先对每个必需 header
+        默认开启的请求头无需重复勾选：case_front_headers 和 scenarios[].headers 都为空时，编辑态自动使用产品默认开启项。
+        出于公共请求头安全控制，本工具不再直接创建 ApiHeaders。确需新增请求头时，请先对每个必需 header
         调用 preview_create_api_header_impact 并由用户手动确认，再调用 create_api_header 创建，最后把返回 id
         通过 case_front_headers 或 scenarios[].headers 传入。
-        如果 scenarios[].headers 非空，执行该场景时会覆盖 case_front_headers，不会合并。
+        case_front_headers 非空时仅使用所选项、不合并产品默认项；scenarios[].headers 非空时再整体替代 Case 请求头。
+        固定 Case 修订使用冻结的请求头快照，管理页修改不更新旧快照；其中变量仍在运行时替换。
         case_front_public/case_front_auth_config 用于保存 API case 显式选择的全局变量/授权配置 ID。
         api 必须传 api_info_id，并且该接口已经完成调试、生成修订和发布。
         新接口请先调用 create_api_info；MCP/gRPC 请先分别调用

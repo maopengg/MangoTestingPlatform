@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head><meta charset="UTF-8"><title>批量预发布 · 工具栏验证</title></head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import { createApp, ref } from 'vue/dist/vue.esm-bundler.js'
+      import Arco from '@arco-design/web-vue'
+      import '@arco-design/web-vue/dist/arco.css'
+      import '../../src/styles/index.css'
+      import TableTabs from '../../src/components/table/TableTabs.vue'
+      import apiSource from '../../src/views/apitest/case/index.vue?raw'
+      import uiSource from '../../src/views/uitest/case/index.vue?raw'
+      import { applyDisplayDensity } from '../../src/hooks/useDisplayDensity'
+
+      applyDisplayDensity('auto')
+      const toolbar = source => source.match(/<TableTabs[\s\S]*?<\/TableTabs>/)[0]
+      createApp({
+        template: `<main class="mango-batch-publication-preview">
+          <p>演示工具栏：不连接业务数据，不执行真实发布</p>
+          <h2>API 用例</h2>${toolbar(apiSource)}
+          <h2>UI 用例</h2>${toolbar(uiSource)}
+          <p>{{ notice }}</p>
+        </main>`,
+        setup() {
+          const notice = ref(''), noop = () => {}
+          return {
+            notice, activePublicationStatus: ref('unpublished'),
+            publicationTabs: [{ key: 'all', title: '全部' }, { key: 'published', title: '已发布' },
+              { key: 'prepublished', title: '预发布' }, { key: 'unpublished', title: '未发布' }],
+            caseRunning: ref(false), batchPublicationAction: ref(null), publicationActionCaseId: ref(null),
+            selectedRowKeys: ref([1, 2]), switchPublicationTab: noop, onAdd: noop, onCaseBatchRun: noop,
+            handleClick: noop, batchUpdatePrepublication: noop, onDelete: noop, openTaskBinding: noop,
+            batchSubmitPrepublication: () => { notice.value = 'API 提交预发布入口已触发（演示）' },
+            actions: { pending: ref(null), batchRun: noop, remove: noop,
+              batchPublication: () => { notice.value = 'UI 提交预发布入口已触发（演示）' } },
+          }
+        },
+      }).use(Arco).component('TableTabs', TableTabs).mount('#app')
+    </script>
+    <style>
+      .mango-batch-publication-preview {
+        max-width: calc(100vw - 460px);
+        margin: var(--m-page-gap) auto;
+        padding: var(--m-card-padding);
+      }
+    </style>
+  </body>
+</html>

@@ -37,7 +37,10 @@ class EsCleanupRule(StrictSchema):
         default=None, max_length=128, pattern=r'^[A-Za-z_][A-Za-z0-9_]*$',
         description='ES文档ID取自本次落库记录的哪个字段；不传/null使用数据库主键。显式指定后缺值必须失败，不回退主键。',
     )
-    index_template: str = Field(min_length=1, max_length=200, pattern=r'^[a-z0-9][a-z0-9_-]*(?:\{tenant\})?$')
+    index_template: str = Field(
+        min_length=1, max_length=200, pattern=r'^(?:\{tenant\}|[a-z0-9][a-z0-9_-]*(?:\{tenant\})?)$',
+        description='精确索引名称，支持固定名称、example_{tenant}或单独{tenant}；最多一个末尾租户占位符，禁止通配符、多索引及路径。渲染后仍校验实际索引和资源归属。',
+    )
     tenant_field: str = Field(default='tenant_id', max_length=128, pattern=r'^[A-Za-z_][A-Za-z0-9_]*$')
     tenant_path: str = Field(default='tenant_id', max_length=256, pattern=r'^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$')
     mode: EsCleanupModeEnum = EsCleanupModeEnum.VERIFY

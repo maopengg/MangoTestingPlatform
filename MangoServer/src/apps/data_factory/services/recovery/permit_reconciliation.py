@@ -18,7 +18,7 @@ class DatasourcePermitReconciliationService:
         """审计保留期清理不能先删除仍被在途/未知占用引用的恢复证据。"""
         from src.apps.system.selectors.runtime_kv import RuntimeKVSelector
         store = Governor.store()
-        ids, cursor = set(), 0
+        ids, requests, cursor = set(), set(), 0
         while True:
             with store.control_connection():
                 page = store.scan(prefix='group:', after_id=cursor, page_size=100)
@@ -27,7 +27,12 @@ class DatasourcePermitReconciliationService:
                     state = Governor.read_state(row.value['data'])
                     ids.update(permit.audit_record_id for permit in state.permits.values()
                                if permit.audit_record_id is not None)
+                    requests.update(permit.audit_request_id for permit in state.permits.values()
+                                    if permit.audit_request_id is not None)
             if page['next_cursor'] is None:
+                if requests:
+                    from src.apps.data_factory.selectors.execution_audit import ExecutionAuditSelector
+                    ids.update(record.id for record in ExecutionAuditSelector.request_evidence(requests).values())
                 return ids
             cursor = page['next_cursor']
 
@@ -192,6 +197,10 @@ class DatasourcePermitReconciliationService:
                 records = ExecutionAuditSelector.permit_evidence({value['audit_record_id']
                     for value in [*result['operation_permits'], *result['permits']]
                     if value.get('audit_record_id')})
+                requests = {value['audit_request_id'] for value in [*result['operation_permits'], *result['permits']]
+                            if value.get('audit_request_id')}
+                if requests:
+                    records.update(ExecutionAuditSelector.request_evidence(requests))
             except Exception as error:
                 audit_lookup_ok = False
                 records = {}
@@ -200,7 +209,7 @@ class DatasourcePermitReconciliationService:
                                  group, type(error).__name__)
             terminal_audits = []
             for permit in result['operation_permits']:
-                record = records.get(permit.get('audit_record_id'))
+                record = records.get(permit.get('audit_record_id')) or records.get(permit.get('audit_request_id'))
                 if record is not None and record.status in ('success', 'fail', 'timeout', 'rolled_back'):
                     terminal_audits.append(record.id)
                     log.system.error('event=datasource_terminal_audit_occupied group=%s owner=%s '
@@ -221,7 +230,7 @@ class DatasourcePermitReconciliationService:
                     'connection_waiting=%s oldest_unknown_seconds=%s action=inspect_datasource_permit', group,
                     result['suspect_count'], result['connection_waiting'], result['oldest_unknown_seconds'])
                 for permit in result['permits']:
-                    record = records.get(permit.get('audit_record_id'))
+                    record = records.get(permit.get('audit_record_id')) or records.get(permit.get('audit_request_id'))
                     permit['audit'] = ({'request_id': record.request_id, 'database_id': record.database_id}
                                        if record else None)
                     context = {}
@@ -242,7 +251,7 @@ class DatasourcePermitReconciliationService:
                     log.system.warning('event=datasource_unresolved_permit group=%s owner=%s kind=%s '
                         'request_id=%s audit_record_id=%s database_id=%s process=%s case_detail_id=%s '
                         'case_attempt=%s context=%s action=verify_original_result_and_cleanup', group, permit['owner'],
-                        permit['kind'], getattr(record, 'request_id', None), permit.get('audit_record_id'),
+                        permit['kind'], getattr(record, 'request_id', None) or permit.get('audit_request_id'), permit.get('audit_record_id'),
                         getattr(record, 'database_id', None),
                         permit['process'], permit.get('case_detail_id'), permit.get('case_attempt'), context)
         return {'groups': groups, 'errors': errors, 'recovered_count': recovered, 'next_cursor': page['next_cursor']}

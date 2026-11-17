@@ -2261,9 +2261,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     getSystemCacheDataKeyValue('ass_select_value')
       .then((res) => {
         filterDeprecatedAssertionMethods(res.data).forEach((item: any) => {
-          if (item.value.includes('断言')) {
-            optionLists.ass.push(item)
-          }
+          optionLists.ass.push(item)
           if (item.value === '内容断言') {
             optionLists.textAss.push(...item.children)
           }

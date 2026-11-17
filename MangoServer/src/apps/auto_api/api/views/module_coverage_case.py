@@ -4,6 +4,7 @@ from rest_framework.viewsets import ViewSet
 
 from src.apps.auto_api.api.serializers.module_coverage_case import ModuleCoverageCaseSnapshotSerializer, \
     ModuleCoverageCaseSerializer, ModuleCoverageCaseBindingInput
+from src.apps.auto_api.api.serializers.module_coverage_common import ModuleCoverageOverviewQuery
 from src.apps.auto_api.api.views.module_coverage_common import (
     filter_module_scope,
     page_response,
@@ -161,6 +162,9 @@ class ModuleCoverageCaseViews(ViewSet):
     @error_response("system")
     def overview(self, request: Request):
         """获取模块用例覆盖记录概览"""
+        query = ModuleCoverageOverviewQuery(data=request.query_params)
+        query.is_valid(raise_exception=True)
+        params = query.validated_data
         product = request.query_params.get("project_product")
         if product:
             require_project_scope(request, int(product))
@@ -179,6 +183,8 @@ class ModuleCoverageCaseViews(ViewSet):
             repository_key=request.query_params.get("repository_key"),
             branch=request.query_params.get("branch"),
             module_ids=[int(item) for item in selected.split(",") if item.strip()] if selected else None,
+            section=params["section"], page=params["page"], page_size=params["pageSize"],
+            keyword=params["keyword"], progress=params["progress"],
         ))
 
     @action(methods=["put"], detail=False)

@@ -231,20 +231,20 @@ class DatasourceAuditTests(SimpleTestCase):
     @patch.object(Audit, 'database_alias', return_value='default')
     @patch('src.apps.data_factory.services.sql.sql_execution_audit.transaction.atomic', side_effect=lambda **_: nullcontext())
     @patch('src.apps.data_factory.services.sql.sql_execution_audit.SystemConfigService.get_sql_slow_query_threshold_seconds', return_value=20)
-    @patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionRecord.objects')
-    def test_audit_creation_failure_records_original_error_and_blocks_execution(self, objects, threshold, atomic, alias, report):
+    @patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionRecord.save')
+    def test_audit_insert_failure_follows_operation_and_never_replays_it(self, save, threshold, atomic, alias, report):
         original = OperationalError(1054, "Unknown column 'datasource_type'")
-        objects.using.return_value.create.side_effect = original
+        save.side_effect = original
         target = SimpleNamespace(id=7, db_type=20, database_name='sample')
-        callback = Mock()
+        callback = Mock(return_value={'result': 'ok'})
         with self.assertRaises(DataFactoryError) as caught, self.assertLogs(Audit.__module__, level='ERROR'):
             Audit.call(target, {'index': 'example', 'query': {}}, callback)
-        self.assertEqual(caught.exception.code, 34173)
+        self.assertEqual(caught.exception.code, 34174)
         self.assertIs(caught.exception.__cause__, original)
         self.assertNotIn('datasource_type', caught.exception.msg)
-        callback.assert_not_called()
+        callback.assert_called_once()
         report.assert_called_once_with(original, source=SystemErrorEventSource.MCP,
-                                       service_name='mcp-service', request_path='datasource_audit:create')
+                                       service_name='mcp-service', request_path='datasource_audit:completion')
 
     @patch('src.apps.data_factory.services.sql.sql_execution_audit.report_system_error', side_effect=RuntimeError('reporter offline'))
     def test_reporting_failure_keeps_original_completion_error_and_never_retries(self, report):
@@ -255,7 +255,7 @@ class DatasourceAuditTests(SimpleTestCase):
             Audit.save_completion(target, update_fields=['status'])
         self.assertEqual(caught.exception.code, 34174)
         self.assertIs(caught.exception.__cause__, original)
-        target.save.assert_called_once()
+        self.assertEqual(target.save.call_count, 3)
         report.assert_called_once()
 
     @patch('src.apps.data_factory.services.sql.sql_execution_audit.report_system_error')
@@ -299,14 +299,13 @@ class DatasourceAuditTests(SimpleTestCase):
     @patch.object(Audit, 'database_alias', return_value='default')
     @patch('src.apps.data_factory.services.sql.sql_execution_audit.transaction.atomic', return_value=nullcontext())
     @patch('src.apps.data_factory.services.sql.sql_execution_audit.SystemConfigService.get_sql_slow_query_threshold_seconds', return_value=20)
-    @patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionRecord.objects')
-    def test_new_record_has_type_snapshot_and_environment_zero(self, objects, *_):
+    def test_new_record_has_type_snapshot_and_environment_zero(self, *_):
         target = SimpleNamespace(id=7, db_type=0, database_name='sample', redis_db=None)
         binding = SimpleNamespace(database=target, database_id=7, datasource_alias_id=8)
-        Audit.start(binding=binding, project_product_id=3, test_env=0, sql='SELECT 1', parameters={},
+        handle = Audit.start(binding=binding, project_product_id=3, test_env=0, sql='SELECT 1', parameters={},
                     source_context={'source_type': 'api_case', 'source_stage': 'front', 'case_id': 9},
-                    request_id='same-request', started_monotonic=0)
-        values = objects.using.return_value.create.call_args.kwargs
+                    request_id=None, started_monotonic=0)
+        values = vars(handle.record)
         self.assertEqual(values['datasource_type'], 0)
         self.assertEqual(values['test_env'], 0)
         self.assertEqual(values['source_id'], 9)
@@ -318,16 +317,18 @@ class DatasourceAuditTests(SimpleTestCase):
     @patch('src.apps.data_factory.services.sql.sql_execution_audit.transaction.atomic', side_effect=lambda **_: nullcontext())
     @patch('src.apps.data_factory.services.sql.sql_execution_audit.SystemConfigService.get_sql_slow_query_threshold_seconds', return_value=20)
     @patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionRecord.objects')
-    def test_duplicate_id_is_claimed_atomically_and_conflicting_operation_rejected(self, objects, *_):
+    @patch('src.apps.data_factory.services.sql.audit_request.DatasourceAuditRequestService.claim')
+    def test_duplicate_id_is_claimed_atomically_and_conflicting_operation_rejected(self, claim, objects, *_):
         target = SimpleNamespace(id=7, db_type=10, database_name='', redis_db=0)
         kwargs = dict(database=target, sql='GET key', parameters={}, source_context={
             'source_type': 'mcp', 'source_stage': 'query', 'operator_id': 4},
                       request_id='same-request', started_monotonic=0)
-        Audit.start(**kwargs)
-        values = objects.using.return_value.create.call_args.kwargs
-        objects.using.return_value.create.side_effect = IntegrityError()
-        existing = SimpleNamespace(source_detail=values['source_detail'])
-        objects.using.return_value.get.return_value = existing
+        objects.using.return_value.filter.return_value.first.return_value = None
+        first = Audit.start(**kwargs)
+        claim.assert_called_once()
+        objects.using.return_value.create.assert_not_called()
+        existing = SimpleNamespace(source_detail=first.record.source_detail)
+        objects.using.return_value.filter.return_value.first.return_value = existing
         self.assertTrue(Audit.start(**kwargs).existing)
         with self.assertRaises(DataFactoryError) as error:
             Audit.start(**{**kwargs, 'sql': 'GET other-key'})
@@ -357,8 +358,8 @@ class DatasourceAuditTests(SimpleTestCase):
                 with Audit.scope(handles[-1]):
                     connection.execute(text('SELECT 2')).fetchall()
                     connection.execute(text('SELECT 3')).fetchall()
-                self.assertEqual(len(handles), before + 1)
-                self.assertEqual(start.call_args.kwargs['source_context']['source_stage'], 'generated_key_lookup')
+                self.assertEqual(len(handles), before + 2)
+                self.assertEqual(start.call_args.kwargs['source_context']['source_stage'], 'statement')
                 with self.assertRaises(Exception):
                     connection.execute(text('SELECT * FROM absent_table'))
                 self.assertEqual(handles[-1].record.status, 'fail')

@@ -6,6 +6,15 @@ from src.apps.user.services.authorization.permission import PermissionMenuServic
 
 class ExecutionAuditSelector:
     @staticmethod
+    def filter_case(queryset, case_id):
+        from src.apps.data_factory.enums.execution import DataFactoryExecutionSourceEnum
+        return queryset.filter(
+            Q(source_detail__case_id=case_id)
+            | Q(source_type='api_case', source_id=case_id)
+            | Q(source_type='data_factory', source_detail__case_source_type=DataFactoryExecutionSourceEnum.API_CASE.value,
+                source_detail__case_source_id=case_id))
+
+    @staticmethod
     def case_operations_confirmed(detail_id, attempt, request_ids=()):
         own = Q(source_detail__case_detail_id=detail_id, source_detail__case_attempt=attempt)
         if request_ids:
@@ -20,6 +29,12 @@ class ExecutionAuditSelector:
             id__in=record_ids,
         ).only('id', 'request_id', 'database_id', 'source_detail', 'status', 'source_type', 'source_id', 'source_stage',
                'datasource_alias_id', 'project_product_id', 'test_env')}
+
+    @staticmethod
+    def request_evidence(request_ids):
+        return {record.request_id: record for record in SqlExecutionRecord.objects.filter(
+            request_id__in=request_ids).only('id', 'request_id', 'database_id', 'source_detail', 'status',
+                'source_type', 'source_id', 'source_stage', 'datasource_alias_id', 'project_product_id', 'test_env')}
 
     @staticmethod
     def visible(user):

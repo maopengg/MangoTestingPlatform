@@ -69,6 +69,16 @@
                 <div>
                   <a-button
                     size="small"
+                    :loading="batchPublicationAction === 'submit'"
+                    :disabled="publicationActionCaseId !== null || batchPublicationAction !== null"
+                    @click="batchSubmitPrepublication"
+                    data-testid="qa-views-apitest-case-button-批量提交预发布"
+                    >批量预发布</a-button
+                  >
+                </div>
+                <div>
+                  <a-button
+                    size="small"
                     :loading="batchPublicationAction === 'publish'"
                     :disabled="publicationActionCaseId !== null || batchPublicationAction !== null"
                     @click="batchUpdatePrepublication('publish')"
@@ -235,6 +245,7 @@
                       {
                         label: '执行',
                         loading: caseRunning,
+                        disabled: batchPublicationAction !== null,
                         onClick: () => caseRun(record),
                       },
                       { label: '步骤', onClick: () => onStep(record) },
@@ -266,14 +277,14 @@
                         loading: publicationActionCaseId === record.id,
                         onClick: () => unpublishCaseVersion(record),
                       },
-                      { label: '编辑', onClick: () => onUpdate(record) },
+                      { label: '编辑', disabled: batchPublicationAction !== null, onClick: () => onUpdate(record) },
                       {
                         label: '复制',
                         loading: copyingIds.has(record.id),
                         disabled: copyingIds.has(record.id),
                         onClick: () => pageStepsCody(record),
                       },
-                      { label: '删除', danger: true, onClick: () => onDelete(record) },
+                      { label: '删除', danger: true, disabled: batchPublicationAction !== null, onClick: () => onDelete(record) },
                     ]"
                   />
                 </template>
@@ -455,7 +466,7 @@
 
   const caseRunning = ref(false)
   const publicationActionCaseId = ref<number | null>(null)
-  const batchPublicationAction = ref<'publish' | 'revert' | null>(null)
+  const batchPublicationAction = ref<'submit' | 'publish' | 'revert' | null>(null)
   const sidebarModuleIds = ref<Array<string | number>>([])
   const sidebarResetKey = ref(0)
   const apiPlatformLimit = ref(1)
@@ -812,6 +823,96 @@
     })
   }
 
+  function batchPrepublicationWarning(rows: ApiCaseVersionListRow[]) {
+    const reasons = new Set<string>()
+    for (const row of rows) {
+      if (!['unpublished', 'prepublished', 'published'].includes(row.publication_status))
+        reasons.add('用例发布状态异常，请刷新后重试')
+      else if (row.prepublished_revision_id || row.publication_status === 'prepublished')
+        reasons.add('包含已有预发布候选的用例，请先处理旧候选')
+      else if (!canSubmitCasePrepublication(row))
+        reasons.add(!row.has_product_owner ? '部分产品未配置负责人，请先配置' : '包含已发布且无新修改的用例，无需重复提交')
+      if (row.status !== 1) reasons.add('包含未执行通过的用例，请执行通过后再提交')
+    }
+    return [...reasons].join('；')
+  }
+
+  async function generateAndSubmitPrepublication(caseId: number, current: () => boolean) {
+    const response = await createApiCaseRevision({
+      case_id: caseId,
+      summary: '从用例列表提交预发布时生成修订',
+    })
+    if (!current()) return false
+    const revision = response?.data ?? response
+    const revisionId = Number(revision?.id)
+    if (!Number.isSafeInteger(revisionId) || revisionId <= 0) {
+      Message.error('生成用例修订失败，请刷新后重试')
+      throw Error('Invalid case revision')
+    }
+    await submitApiCasePrepublication(caseId, revisionId)
+    return true
+  }
+
+  function batchSubmitPrepublication() {
+    if (publicationActionCaseId.value !== null || batchPublicationAction.value !== null) return
+    const selectedKeys = [...selectedRowKeys.value]
+    const ids = new Set(selectedKeys.map(String))
+    if (!ids.size) { Message.warning('请选择要提交预发布的用例'); return }
+    const selected = (table.dataList as ApiCaseVersionListRow[]).filter(row => ids.has(String(row.id)))
+    if (selected.length !== ids.size) { Message.warning('部分选中用例已不在当前列表，请重新选择'); return }
+    const warning = batchPrepublicationWarning(selected)
+    if (warning) { Message.warning(warning); return }
+    const version = pageVersion
+    let open = true
+    const scope = () => JSON.stringify([getFormItems(conditionItems), sidebarModuleIds.value,
+      activePublicationStatus.value, pagination.page, pagination.pageSize,
+      userStore.userId, userStore.roleId, userStore.token, userStore.selected_environment])
+    const scopeKey = scope()
+    const current = () => open && pageActive.value && version === pageVersion && scopeKey === scope()
+    const fingerprint = (row: ApiCaseVersionListRow) => JSON.stringify([
+      row.id, row.status, row.publication_status, row.prepublished_revision_id, row.update_time,
+    ])
+    const frozen = selected.map(row => ({ id: Number(row.id), fingerprint: fingerprint(row) }))
+    if (frozen.some(row => !Number.isSafeInteger(row.id) || row.id <= 0)) {
+      Message.warning('用例标识异常，请刷新后重新选择'); return
+    }
+    Modal.confirm({
+      title: '批量预发布',
+      content: `确认将所选 ${frozen.length} 个用例的当前编辑态生成修订并提交审核吗？提交后旧正式版本转为历史版本，用例暂停参与定时执行。`,
+      okText: '提交预发布',
+      onCancel() { open = false },
+      onClose() { open = false },
+      async onBeforeOk() {
+        if (!current() || publicationActionCaseId.value !== null || batchPublicationAction.value !== null) return false
+        const latest = (table.dataList as ApiCaseVersionListRow[]).filter(row => ids.has(String(row.id)))
+        if (latest.length !== frozen.length || latest.some(row =>
+          frozen.find(item => item.id === Number(row.id))?.fingerprint !== fingerprint(row))) {
+          Message.warning('用例状态已变化，请重新选择后提交'); return false
+        }
+        const latestWarning = batchPrepublicationWarning(latest)
+        if (latestWarning) { Message.warning(latestWarning); return false }
+        batchPublicationAction.value = 'submit'
+        const succeeded = new Set<string>()
+        let failed = 0
+        try {
+          for (const row of frozen) {
+            if (!current()) break
+            try {
+              if (!await generateAndSubmitPrepublication(row.id, current)) break
+              succeeded.add(String(row.id))
+            } catch { failed++ }
+          }
+          if (!current()) return true
+          selectedRowKeys.value = selectedKeys.filter(id => !succeeded.has(String(id)))
+          if (failed) Message.warning(`提交预发布成功 ${succeeded.size} 条，失败 ${failed} 条；失败项已保留勾选，请检查后重试`)
+          else Message.success(`已提交预发布，共 ${succeeded.size} 条，待产品负责人审核`)
+          await doRefresh(null, false, true)
+          return true
+        } finally { batchPublicationAction.value = null }
+      },
+    })
+  }
+
   function submitCasePrepublication(record: ApiCaseVersionListRow) {
     const version = pageVersion
     if (publicationActionCaseId.value !== null || batchPublicationAction.value !== null) return
@@ -823,17 +924,8 @@
         if (version !== pageVersion || !pageActive.value) return false
         publicationActionCaseId.value = Number(record.id)
         try {
-          const response: any = await createApiCaseRevision({
-            case_id: Number(record.id),
-            summary: '从用例列表提交预发布时生成修订',
-          })
-          const revision = response?.data ?? response
-          const revisionId = Number(revision?.id)
-          if (!revisionId) {
-            Message.error('生成用例修订失败，请稍后重试')
-            return false
-          }
-          await submitApiCasePrepublication(Number(record.id), revisionId)
+          if (!await generateAndSubmitPrepublication(Number(record.id),
+            () => version === pageVersion && pageActive.value)) return true
           if (version !== pageVersion || !pageActive.value) return true
           Message.success('已生成修订并提交预发布')
           doRefresh(null, false, true)

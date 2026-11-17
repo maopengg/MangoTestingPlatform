@@ -114,8 +114,9 @@
               </template>
               <template v-else-if="item.key === 'status'" #cell="{ record }">
                 <a-switch
-                  :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
-                  :checked="record.status === 1"
+                  :before-change="(newValue) => onModifyStatus(newValue, record.id)"
+                  :model-value="record.status === 1"
+                  :loading="statusUpdatingIds.has(record.id)"
                 />
               </template>
               <template v-else-if="item.key === 'project_product'" #cell="{ record }">
@@ -387,8 +388,8 @@
     try {
       const response = await putApiAuthConfigStatus(id, newValue ? 1 : 0)
       if (response.code !== 200) return false
-      const record: AuthRecord | undefined = table.dataList.find((row) => row.id === id)
-      if (record) record.status = newValue ? 1 : 0
+      const index = table.dataList.findIndex((row) => row.id === id)
+      if (index >= 0) table.dataList.splice(index, 1, { ...table.dataList[index], status: newValue ? 1 : 0 })
       Message.success(response.msg)
       return true
     } catch {

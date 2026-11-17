@@ -28,7 +28,7 @@ class AutomationEffectivenessService(AutomationEffectivenessAiMixin, AutomationE
     DEFAULT_DAYS = 7
     MAX_DAYS = 366
     HEALTHY_FLAKY_RATE = 1.0
-    CACHE_PREFIX = 'system:test-suite:effectiveness:v20'
+    CACHE_PREFIX = 'system:test-suite:effectiveness:v21'
     AI_SUMMARY_PROMPT_VERSION = QUALITY_EFFECTIVENESS_SUMMARY_PROMPT_VERSION
     AI_INSIGHT_PROMPT_VERSION = QUALITY_EFFECTIVENESS_INSIGHT_PROMPT_VERSION
     AI_METRIC_LABELS = {
@@ -61,6 +61,7 @@ class AutomationEffectivenessService(AutomationEffectivenessAiMixin, AutomationE
         TaskEnum.SUCCESS.value,
         TaskEnum.WARNING.value,
         TaskEnum.STOPPED.value,
+        TaskEnum.INFRASTRUCTURE_BLOCKED.value,
     )
 
     @classmethod

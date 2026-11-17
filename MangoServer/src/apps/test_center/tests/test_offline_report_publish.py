@@ -4,14 +4,38 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 
 from src.apps.test_center.api.views.test_suite import TestSuiteViews
+from src.apps.test_center.constants import OFFLINE_REPORT_MAX_BYTES
 from src.apps.test_center.enums.report_delivery import ReportSourceEnum
-from src.apps.test_center.exceptions import REPORT_ARTIFACT_INVALID, REPORT_LOCAL_LINK_UNAVAILABLE, TestCenterError
+from src.apps.test_center.exceptions import REPORT_ARTIFACT_INVALID, REPORT_ARTIFACT_TOO_LARGE, REPORT_LOCAL_LINK_UNAVAILABLE, TestCenterError
 from src.apps.test_center.schemas.report_delivery import ReportDeliveryConfig
 from src.apps.test_center.selectors.offline_report import OfflineReportSelector
 from src.apps.test_center.services.reporting.offline_report import OfflineReportService
 
 
 class OfflineReportPublishTests(SimpleTestCase):
+    def test_generation_snapshot_and_storage_share_twenty_mib_limit(self):
+        from src.apps.test_center.services.reporting.offline_report import service, snapshot, storage
+
+        self.assertEqual(OFFLINE_REPORT_MAX_BYTES, 20 * 1024 * 1024)
+        for module in (service, snapshot, storage):
+            self.assertEqual(module.OFFLINE_REPORT_MAX_BYTES, OFFLINE_REPORT_MAX_BYTES)
+
+    def test_render_accepts_twenty_mib_and_rejects_one_extra_byte(self):
+        for size in (18 * 1024 * 1024, OFFLINE_REPORT_MAX_BYTES, OFFLINE_REPORT_MAX_BYTES + 1):
+            content = b'x' * size
+            with self.subTest(size=size), \
+                    patch('src.apps.test_center.services.reporting.offline_report.service.ReportSnapshotService.build', return_value={}), \
+                    patch('src.apps.test_center.services.reporting.offline_report.service.ReportHtmlService.render', return_value=content), \
+                    patch('src.apps.test_center.services.reporting.offline_report.service.SystemConfigService.get_platform_name', return_value='示例平台'):
+                if size <= OFFLINE_REPORT_MAX_BYTES:
+                    filename, rendered = OfflineReportService.render(ReportSourceEnum.GROUP, 3, ReportDeliveryConfig())
+                    self.assertEqual(filename, 'report-group-3.html')
+                    self.assertIs(rendered, content)
+                else:
+                    with self.assertRaises(TestCenterError) as caught:
+                        OfflineReportService.render(ReportSourceEnum.GROUP, 3, ReportDeliveryConfig())
+                    self.assertEqual(caught.exception.code, REPORT_ARTIFACT_TOO_LARGE.code)
+
     def test_each_publish_renders_latest_content_and_uploads_a_new_object(self):
         config = ReportDeliveryConfig(enabled=False, link_ttl_seconds=300)
         for kind in ReportSourceEnum:

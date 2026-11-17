@@ -85,12 +85,7 @@ class AutomationEffectivenessTaskMixin:
             counts = TestSuiteSummaryService.execution_status_counts_from_rows(
                 task_detail_rows
             )
-            completed = (
-                    counts['success']
-                    + counts['fail']
-                    + counts['warning']
-                    + counts['stopped']
-            )
+            completed = TestSuiteSummaryService.completed_execution_count(counts)
             consecutive_abnormal = 0
             for suite in task_suites:
                 if suite['status'] == TaskEnum.SUCCESS.value:
@@ -304,7 +299,7 @@ class AutomationEffectivenessTaskMixin:
             counts = TestSuiteSummaryService.execution_status_counts_from_rows(
                 details_by_suite.get(latest['id'], [])
             )
-            completed = counts['success'] + counts['fail'] + counts['warning'] + counts['stopped']
+            completed = TestSuiteSummaryService.completed_execution_count(counts)
             result.append({
                 'task_id': task_id,
                 'task_name': latest['tasks__name'],

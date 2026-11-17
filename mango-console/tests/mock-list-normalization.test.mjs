@@ -4,7 +4,7 @@ import path from 'node:path'
 import { readFileSync } from 'node:fs'
 import ts from 'typescript'
 import * as vue from 'vue'
-const { reactive, ref } = vue
+const { reactive, ref, shallowReactive } = vue
 import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
 import { harness, deferred, flush } from './helpers/case-details-harness.mjs'
 const base = path.resolve('src/views/apitest/mock')
@@ -31,7 +31,7 @@ function latestRequest() {
 }
 function page(api = {}, lifecycle = null) {
   const table = {
-    dataList: reactive([]),
+    dataList: shallowReactive([]),
     tableLoading: ref(false),
     handleSuccess: (r) => table.dataList.splice(0, table.dataList.length, ...r.data),
   }
@@ -282,11 +282,27 @@ test('successful state change patches current record and fetches authoritative l
   state.table.dataList.push(target)
   assert.equal(await state.changeState(target, { enabled: true }), true)
   await flush()
-  assert.equal(target.enabled, true)
+  assert.equal(state.table.dataList[0].enabled, true)
+  assert.equal(target.enabled, false)
   assert.equal(typeof target.project_product, 'object')
   assert.equal(requests.length, 1)
   state.close()
 })
+test('both mock switches render saved values even when the follow-up list request fails', async () => {
+  const state = page({
+    updateMockConfigState: async () => ({ code: 200 }),
+    getMockConfigs: async () => { throw Error('list unavailable') },
+  })
+  state.table.dataList.push(row())
+  const rendered = vue.computed(() => [state.table.dataList[0].enabled, state.table.dataList[0].record_call_log])
+  assert.deepEqual(rendered.value, [false, false])
+  assert.equal(await state.changeState(state.table.dataList[0], { enabled: true }), true)
+  assert.deepEqual(rendered.value, [true, false])
+  assert.equal(await state.changeState(state.table.dataList[0], { record_call_log: true }), true)
+  assert.deepEqual(rendered.value, [true, true])
+  state.close()
+})
+
 test('delete keeps original ID, waits for success and preserves confirmation on failure', async () => {
   let fail = true
   const calls = [],

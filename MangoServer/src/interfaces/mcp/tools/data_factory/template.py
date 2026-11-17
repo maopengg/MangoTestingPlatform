@@ -133,7 +133,7 @@ def register_template_tools(mcp):
 
         cleanup_strategy：1=执行结束自动清理（默认），2=手动清理，3=不清理。
         用户未明确要求保留数据时，必须优先选择 1，避免测试数据残留；2/3 仅在用户明确要求时使用。
-        cleanup_resources 可配置同产品ES的关联清理：datasource_alias_id、index_template（example_template_{tenant}）、
+        cleanup_resources 可配置同产品ES的关联清理：datasource_alias_id、index_template（固定名称、example_template_{tenant}或单独{tenant}）、
         tenant_field/tenant_path（默认tenant_id）、mode（verify默认仅回查，delete_and_verify精确删除后回查）、
         timeout_seconds（2至60，默认15）、poll_seconds（1至5，默认1）。document_id_field 可指定本次落库记录的业务ID字段；
         不传/null才使用SQL主键，显式指定字段缺值时失败，禁止回退及存量接管。
@@ -238,7 +238,7 @@ def register_template_tools(mcp):
         引用同一 execution 中已落库节点的自增主键或其他字段；不能引用当前项自身或后续关联项。
         post_insert_updates 不传则不修改；传入时整体覆盖。它只支持节点字段映射，不接受 SQL、表名或 WHERE 条件。
         cleanup_resources 为关联ES清理规则列表，不传不修改、[]清空。每项包含同产品的ES datasource_alias_id、
-        index_template（如example_template_{tenant}）、tenant_field（实体租户字段）、tenant_path（ES租户路径）、
+        index_template（固定名称、example_template_{tenant}或单独{tenant}）、tenant_field（实体租户字段）、tenant_path（ES租户路径）、
         mode=verify（仅验证，默认）或delete_and_verify（精确删除并回查）、timeout_seconds（2至60）、poll_seconds（1至5）。
         document_id_field 可指定ES文档ID的实体字段，如SQL主键为_id而ES使用业务id时设置document_id_field="id"。
         不传/null才使用SQL主键；指定字段必须存在于实体和本次落库记录，缺值不回退。

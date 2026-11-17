@@ -12,7 +12,8 @@ export function useCaseReferenceCounts(
   columns: ReferenceColumn[],
   read: (ids: EntityId[]) => Promise<{ data: Record<string, number> }>,
   listLoading: () => boolean,
-  closeDetails: () => void
+  closeDetails: () => void,
+  options: { includeDefaultEnabled?: boolean } = {}
 ) {
   const user = useUserStore()
   const active = ref(true), loading = ref(false), counts = ref<Record<string, number>>({})
@@ -34,7 +35,7 @@ export function useCaseReferenceCounts(
   async function refresh() {
     invalidate()
     if (!active.value || listLoading()) return
-    const ids = rows().filter(row => row.status !== 1).map(row => row.id)
+    const ids = rows().filter(row => options.includeDefaultEnabled || row.status !== 1).map(row => row.id)
     if (!ids.length) return
     const current = sequence
     loading.value = true

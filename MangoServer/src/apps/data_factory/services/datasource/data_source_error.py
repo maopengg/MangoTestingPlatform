@@ -35,6 +35,53 @@ class DataSourceErrorService:
     """把不同驱动和协议的错误统一转成可直接展示的业务错误。"""
 
     @staticmethod
+    def audit_reason(error):
+        """审计只保存可信错误类别，不保存驱动可能附带的SQL参数、响应体或凭据。"""
+        reasons = {1062: '唯一键冲突，请检查本轮生成值是否与已有数据重复',
+                   1064: 'SQL语法错误，请检查用例中的SQL',
+                   1054: 'SQL引用的字段不存在，请核对表结构和用例SQL',
+                   1146: 'SQL引用的数据表不存在，请核对库名和表名',
+                   1044: '数据库账号无访问权限，请核对数据源授权',
+                   1045: '数据库认证失败，请核对数据源账号和密码',
+                   1205: '数据库锁等待超时，请检查并发事务与锁持有情况',
+                   1213: '数据库检测到死锁，请检查并发事务的访问顺序',
+                   1406: '写入内容超过字段长度，请检查生成规则或用例参数',
+                   1451: '记录仍被外键引用，无法删除，请检查关联数据清理顺序',
+                   1452: '写入引用的父记录不存在，请检查前置数据和关联字段',
+                   2003: '无法连接数据库，请检查数据源地址、端口和网络',
+                   2006: '数据库连接已断开，请核查原操作结果，勿直接重放写入',
+                   2013: '数据库操作过程中连接中断，请核查原操作结果，勿直接重放写入',
+                   3024: '查询超过数据库执行时间限制，请检查查询范围和索引'}
+        seen = set()
+        while isinstance(error, BaseException) and id(error) not in seen:
+            seen.add(id(error))
+            number = DataSourceErrorService.server_error_number(error)
+            if number in reasons:
+                return f'数据库错误 {number}：{reasons[number]}'
+            state = getattr(error, 'sqlstate', None) or getattr(error, 'pgcode', None)
+            postgres = {'23505': '唯一键冲突', '23503': '外键约束冲突', '42601': 'SQL语法错误',
+                        '42P01': '数据表不存在', '42703': '字段不存在', '42501': '权限不足'}
+            if state in postgres:
+                return f'数据库错误 {state}：{postgres[state]}，请检查用例SQL、表结构和权限'
+            if isinstance(error, urllib_error.HTTPError):
+                return f'数据源返回HTTP {error.code}，请检查请求内容、目标资源及访问权限'
+            from redis.exceptions import ResponseError
+            if isinstance(error, ResponseError):
+                prefix = str(error).split(' ', 1)[0].upper()
+                redis_reasons = {'WRONGTYPE': 'Redis键类型与命令不匹配，请检查目标键及命令',
+                                 'NOPERM': 'Redis账号无权执行命令，请核对数据源授权',
+                                 'NOAUTH': 'Redis未完成认证，请核对数据源认证配置',
+                                 'WRONGPASS': 'Redis认证失败，请核对用户名和密码',
+                                 'READONLY': 'Redis连接指向只读节点，不能执行写操作，请核对数据源地址'}
+                if prefix in redis_reasons:
+                    return redis_reasons[prefix]
+                return 'Redis服务端拒绝命令，请检查命令参数、键类型及访问权限'
+            if isinstance(error, DataFactoryError) and 34173 <= error.code <= 34194:
+                return error.msg
+            error = getattr(error, 'orig', None) or error.__cause__
+        return None
+
+    @staticmethod
     def confirmed_rejection(error):
         """只认驱动返回的服务器错误码；未知异常、断连及提交结果丢失不能推定拒绝。"""
         seen = set()

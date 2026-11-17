@@ -388,8 +388,8 @@ import { getApiPublicReferenceCounts, getApiPublicReferenceCases } from '@/api/a
     try {
       await putApiPublicPutStatus(id, status)
       if (!pageActive || version !== pageVersion) return false
-      const target = rows.value.find((row) => row.id === id)
-      if (target) target.status = status
+      const index = rows.value.findIndex((row) => row.id === id)
+      if (index >= 0) table.dataList.splice(index, 1, { ...rows.value[index], status })
       invalidateRequests()
       await doRefresh(false)
       void tagWorkbenchRef.value?.refreshAfterMutation()

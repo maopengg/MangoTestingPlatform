@@ -242,7 +242,7 @@ DATA_FACTORY_TEMPLATE_STATUS_REQUIRED = ErrorDefinition(code=34159, message='状
 DATA_FACTORY_TYPE_CAST_FIELD_TYPE_CONVERT_FAILED = ErrorDefinition(code=34160, message='字段值类型转换失败：{} -> {}')
 SQL_AUDIT_SOURCE_TYPE_REQUIRED = ErrorDefinition(code=34162, message='平台未提供数据源执行来源 source_type，本次未执行。请管理员检查调用入口的来源登记')
 SQL_AUDIT_SOURCE_STAGE_REQUIRED = ErrorDefinition(code=34163, message='平台未提供数据源执行阶段 source_stage，本次未执行。请管理员检查调用入口的来源登记')
-SQL_AUDIT_REQUEST_RUNNING = ErrorDefinition(code=34164, message='数据源请求 {} 正在执行，请在系统运维－SQL执行记录中查看状态，勿重复提交')
+SQL_AUDIT_REQUEST_RUNNING = ErrorDefinition(code=34164, message='数据源原请求 {} 尚未确认完成，平台不会重复发送。请管理员按请求编号核查原执行及清理记录；未完成的操作尚无最终审计记录')
 SQL_AUDIT_REPLAY_FAILED = ErrorDefinition(code=34165, message='该数据源请求已有失败记录：{}。请查看原执行明细并核对实际数据后再决定是否重新执行')
 DATASOURCE_AUDIT_UNAVAILABLE = ErrorDefinition(code=34173, message='平台无法创建数据源执行记录，本次操作尚未发送。请管理员排查执行记录存储')
 DATASOURCE_AUDIT_COMPLETION_FAILED = ErrorDefinition(code=34174, message='平台保存数据源执行结果失败，最终状态无法确认。请管理员核对执行记录和实际数据；写入操作勿直接重试，避免重复数据')

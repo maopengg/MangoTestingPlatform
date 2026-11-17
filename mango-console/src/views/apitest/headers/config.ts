@@ -141,10 +141,10 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
-    title: '接口管理默认使用',
+    title: '默认开启',
     key: 'status',
     dataIndex: 'status',
-    width: 200,
+    width: 120,
   },
   { ...updateUserColumn(), key: 'update_user' },
   {

@@ -22,12 +22,16 @@ from src.apps.test_center.services.reporting.test_suite.summary import TestSuite
 class AutomationEffectivenessCacheTests(SimpleTestCase):
     def setUp(self):
         cache.clear()
+        environments = patch('src.apps.system.services.configuration.system_config.SystemConfigService.get_environment_display_names',
+                             return_value={})
+        environments.start()
+        self.addCleanup(environments.stop)
 
     @staticmethod
     def request(**query_params):
         return SimpleNamespace(query_params=query_params, user=None)
 
-    @patch('src.apps.test_center.services.reporting.test_suite.effectiveness.Tasks.objects')
+    @patch('src.apps.test_center.services.reporting.test_suite.effectiveness_parts.ai.Tasks.objects')
     def test_cached_task_health_refreshes_diagnostic_file_path(self, task_manager):
         task_manager.filter.return_value.values_list.return_value = [
             (23, 'diagnostics/task-23.md'),
@@ -496,7 +500,7 @@ class AutomationEffectivenessCacheTests(SimpleTestCase):
             AutomationEffectivenessService._cache_key(second),
         )
 
-    @patch('src.apps.test_center.services.reporting.test_suite.effectiveness.TestSuite.objects')
+    @patch('src.apps.test_center.services.reporting.test_suite.effectiveness_parts.query.TestSuite.objects')
     def test_suite_queryset_applies_multi_value_filters(self, test_suite_manager):
         queryset = MagicMock()
         test_suite_manager.filter.return_value.select_related.return_value = queryset
@@ -569,7 +573,7 @@ class AutomationEffectivenessCacheTests(SimpleTestCase):
     def test_default_date_range_uses_seven_days(self):
         now = datetime(2026, 8, 19, 19, 30, 0)
         with patch(
-                'src.apps.test_center.services.reporting.test_suite.effectiveness.timezone.now',
+                'src.apps.test_center.services.reporting.test_suite.effectiveness_parts.query.timezone.now',
                 return_value=now,
         ):
             start_at, end_at = AutomationEffectivenessService._date_range(self.request())
@@ -652,7 +656,7 @@ class AutomationEffectivenessCacheTests(SimpleTestCase):
             user=None,
         )
         with patch(
-                'src.apps.test_center.services.reporting.test_suite.effectiveness.AiService.load_config',
+                'src.apps.test_center.services.reporting.test_suite.effectiveness_parts.ai.AiService.load_config',
                 side_effect=ai_service_error('AI的APIKey未配置'),
         ):
             result = AutomationEffectivenessService.ai_summary(request)
@@ -700,16 +704,16 @@ class AutomationEffectivenessCacheTests(SimpleTestCase):
         }
         with (
             patch(
-                'src.apps.test_center.services.reporting.test_suite.effectiveness.AiService.load_config',
+                'src.apps.test_center.services.reporting.test_suite.effectiveness_parts.ai.AiService.load_config',
                 return_value=config,
             ),
-            patch('src.apps.test_center.services.reporting.test_suite.effectiveness.AiService._validate_base_config'),
+            patch('src.apps.test_center.services.reporting.test_suite.effectiveness_parts.ai.AiService._validate_base_config'),
             patch(
-                'src.apps.test_center.services.reporting.test_suite.effectiveness.AiService.json_chat',
+                'src.apps.test_center.services.reporting.test_suite.effectiveness_parts.ai.AiService.json_chat',
                 return_value={'choices': [{'message': {'content': '{}'}}]},
             ) as json_chat,
             patch(
-                'src.apps.test_center.services.reporting.test_suite.effectiveness.extract_ai_json',
+                'src.apps.test_center.services.reporting.test_suite.effectiveness_parts.ai.extract_ai_json',
                 return_value=ai_data,
             ),
         ):
@@ -757,16 +761,16 @@ class AutomationEffectivenessCacheTests(SimpleTestCase):
         }
         with (
             patch(
-                'src.apps.test_center.services.reporting.test_suite.effectiveness.AiService.load_config',
+                'src.apps.test_center.services.reporting.test_suite.effectiveness_parts.ai.AiService.load_config',
                 return_value=config,
             ),
-            patch('src.apps.test_center.services.reporting.test_suite.effectiveness.AiService._validate_base_config'),
+            patch('src.apps.test_center.services.reporting.test_suite.effectiveness_parts.ai.AiService._validate_base_config'),
             patch(
-                'src.apps.test_center.services.reporting.test_suite.effectiveness.AiService.json_chat',
+                'src.apps.test_center.services.reporting.test_suite.effectiveness_parts.ai.AiService.json_chat',
                 return_value={'choices': [{'message': {'content': '{}'}}]},
             ) as json_chat,
             patch(
-                'src.apps.test_center.services.reporting.test_suite.effectiveness.extract_ai_json',
+                'src.apps.test_center.services.reporting.test_suite.effectiveness_parts.ai.extract_ai_json',
                 return_value=ai_data,
             ),
             patch.object(cache, 'set', wraps=cache.set) as cache_set,
@@ -801,16 +805,16 @@ class AutomationEffectivenessCacheTests(SimpleTestCase):
         config = SimpleNamespace(model='test-model')
         with (
             patch(
-                'src.apps.test_center.services.reporting.test_suite.effectiveness.AiService.load_config',
+                'src.apps.test_center.services.reporting.test_suite.effectiveness_parts.ai.AiService.load_config',
                 return_value=config,
             ),
-            patch('src.apps.test_center.services.reporting.test_suite.effectiveness.AiService._validate_base_config'),
+            patch('src.apps.test_center.services.reporting.test_suite.effectiveness_parts.ai.AiService._validate_base_config'),
             patch(
-                'src.apps.test_center.services.reporting.test_suite.effectiveness.AiService.json_chat',
+                'src.apps.test_center.services.reporting.test_suite.effectiveness_parts.ai.AiService.json_chat',
                 return_value={'choices': [{'message': {'content': '{}'}}]},
             ) as json_chat,
             patch(
-                'src.apps.test_center.services.reporting.test_suite.effectiveness.extract_ai_json',
+                'src.apps.test_center.services.reporting.test_suite.effectiveness_parts.ai.extract_ai_json',
                 return_value={
                     'insight': '自动化覆盖18个用例，问题率下降且3个用例恢复，收益可验证。',
                 },
@@ -858,7 +862,7 @@ class AutomationEffectivenessCacheTests(SimpleTestCase):
             },
         ])
         with patch(
-                'src.apps.test_center.services.reporting.test_suite.effectiveness.ProductModuleService.with_full_paths',
+                'src.apps.test_center.services.reporting.test_suite.effectiveness_parts.task.ProductModuleService.with_full_paths',
                 return_value=[],
         ):
             result = AutomationEffectivenessService._aggregate_module_quality(details)

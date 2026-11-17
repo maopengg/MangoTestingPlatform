@@ -89,6 +89,9 @@
             <template v-else-if="item.key === 'source_stage'" #cell="{ record }">
               <a-tag :color="optionTagColor('source_stage', record.source_stage)" size="small">{{ optionTitle('source_stage', record.source_stage) }}</a-tag>
             </template>
+            <template v-else-if="item.key === 'case_id' || item.key === 'operation'" #cell="{ record }">
+              {{ auditSourceValue(record, String(item.key)) }}
+            </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-tag :color="statusColor(record.status)" size="small">
                 {{ statusText(record.status) }}
@@ -121,6 +124,8 @@
     <a-descriptions v-if="selectedRecord" :column="2" bordered size="small">
       <a-descriptions-item label="记录ID">{{ selectedRecord.id }}</a-descriptions-item>
       <a-descriptions-item label="请求ID">{{ selectedRecord.request_id }}</a-descriptions-item>
+      <a-descriptions-item label="Case ID">{{ auditSourceValue(selectedRecord, 'case_id') }}</a-descriptions-item>
+      <a-descriptions-item label="操作类型">{{ auditSourceValue(selectedRecord, 'operation') }}</a-descriptions-item>
       <a-descriptions-item label="数据源类型">{{ selectedRecord.datasource_type_name }}</a-descriptions-item>
       <a-descriptions-item label="来源">
         {{ optionTitle('source_type', selectedRecord.source_type) }} #{{ selectedRecord.source_id ?? '-' }}
@@ -190,7 +195,7 @@ import { reportLoadError } from '@/utils/load-error'
   import usePermissionStore from '@/store/modules/permission'
   import { getEnumTagColor } from '@/utils/business-format'
   import { createConditionItems, tableColumns, tableScrollX, SQL_EXECUTION_OPTION_KEYS, SQL_STATUS_TITLES, SQL_STATUS_COLORS } from './config'
-  import { emptyAuditOptions, parseAuditOptions, parseExecutionList, copyExecutionRecord, executionQuery } from './execution-records'
+  import { auditSourceValue, emptyAuditOptions, parseAuditOptions, parseExecutionList, copyExecutionRecord, executionQuery } from './execution-records'
   import type { AuditOptions, SqlExecutionRecord } from './execution-records'
 
   const route = useRoute(), user = useUserStore(), permission = usePermissionStore(), pagePath = route.path

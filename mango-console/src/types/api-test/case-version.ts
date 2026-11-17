@@ -24,6 +24,7 @@ export interface ApiCaseVersionListRow extends ApiCasePublicationReadModel {
   id: number
   name: string
   status?: number
+  update_time?: string
   project_product?: {
     id: number
     name: string

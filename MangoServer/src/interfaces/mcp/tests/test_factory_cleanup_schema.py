@@ -1,3 +1,4 @@
+import re
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -10,6 +11,7 @@ from fastmcp.server.auth import AccessToken
 from src.interfaces.mcp.authentication import TOKEN_VERIFIER
 from src.interfaces.mcp.server import mcp_asgi_app
 from src.interfaces.mcp.tools.data_factory.template import register_template_tools
+from src.apps.data_factory.schemas.cleanup_resource import EsCleanupRule
 
 
 class FactoryCleanupSchemaTests(SimpleTestCase):
@@ -45,6 +47,10 @@ class FactoryCleanupSchemaTests(SimpleTestCase):
                     self.assertIn('document_id_field', rule['properties'])
                     self.assertIsNone(rule['properties']['document_id_field']['default'])
                     self.assertFalse(rule['additionalProperties'])
+                    pattern = rule['properties']['index_template']['pattern']
+                    self.assertEqual(pattern, EsCleanupRule.model_json_schema()['properties']['index_template']['pattern'])
+                    self.assertIsNotNone(re.fullmatch(pattern, '{tenant}'))
+                    self.assertIsNone(re.fullmatch(pattern, '{tenant}*'))
 
     async def test_real_mcp_call_accepts_mapping_and_preserves_omission_semantics(self):
         server = FastMCP('factory-cleanup-input-test')
@@ -65,6 +71,20 @@ class FactoryCleanupSchemaTests(SimpleTestCase):
                 rules = update.call_args.args[1]['cleanup_resources']
                 self.assertEqual(rules[0]['document_id_field'], 'id')
                 self.assertEqual(rules[0]['mode'], 'verify')
+                response = await client.call_tool('update_data_factory_template', {
+                    'template_id': 31, 'cleanup_resources': [{
+                        'datasource_alias_id': 8, 'index_template': '{tenant}', 'document_id_field': 'id',
+                    }],
+                })
+                self.assertFalse(response.is_error)
+                self.assertEqual(update.call_args.args[1]['cleanup_resources'][0]['index_template'], '{tenant}')
+                update.reset_mock()
+                for index in ('{tenant}*', '{tenant}/_search', '{tenant}{tenant}', '{unknown}'):
+                    response = await client.call_tool('update_data_factory_template', {
+                        'template_id': 31, 'cleanup_resources': [{'datasource_alias_id': 8, 'index_template': index}],
+                    }, raise_on_error=False)
+                    self.assertTrue(response.is_error)
+                update.assert_not_called()
                 await client.call_tool('update_data_factory_template', {'template_id': 31, 'description': 'AUTO示例'})
                 self.assertNotIn('cleanup_resources', update.call_args.args[1])
                 await client.call_tool('update_data_factory_template', {'template_id': 31, 'cleanup_resources': []})

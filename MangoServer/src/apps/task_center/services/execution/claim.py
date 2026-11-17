@@ -228,7 +228,8 @@ class ApiTaskClaimService:
                     continue
                 if detail.status == TaskEnum.PROCEED.value:
                     from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService
-                    TestSuiteInfrastructureService.block(detail.id, int(detail.retry or 0), [])
+                    TestSuiteInfrastructureService.block(detail.id, int(detail.retry or 0), [],
+                        interruption_reason='执行租约已超时，平台未收到完整结果。请核查执行进展及数据清理状态')
                     continue
                 detail.test_suite = test_suite
                 claim_error_message = detail.error_message

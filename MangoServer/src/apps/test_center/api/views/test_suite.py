@@ -14,6 +14,7 @@ from src.apps.test_center.schemas.execution_efficiency import ExecutionEfficienc
 from src.apps.test_center.services.reporting.execution_efficiency import ExecutionEfficiencyService
 from src.apps.test_center.enums.report_delivery import ReportSourceEnum
 from src.apps.test_center.selectors.offline_report import OfflineReportSelector
+from src.apps.test_center.selectors.report_conclusion import ReportConclusionSelector
 from src.apps.test_center.services.reporting.offline_report import OfflineReportService
 from src.apps.test_center.services.reporting.offline_report.snapshot import ReportSnapshotService
 from src.apps.test_center.exceptions import (
@@ -80,6 +81,11 @@ class TestSuiteCRUD(ModelCRUD):
         query.pop('execution_scene__in', None)
         case_types = query.pop('case_type__in', [])
         self._case_type_filter = [value.strip() for raw in case_types for value in raw.split(',') if value.strip()]
+        self._conclusion_filters = []
+        if 'status' in query:
+            self._conclusion_filters.append([query.pop('status')[0]])
+        if 'status__in' in query:
+            self._conclusion_filters.append(self.parse_in_filter_values(query.pop('status__in')))
         group_execution_id = query.pop('group_execution_id', [None])[0]
         id_filters = []
         if scenes:
@@ -108,6 +114,8 @@ class TestSuiteCRUD(ModelCRUD):
     def filter_queryset_by_data_scope(self, request, queryset):
         """按当前用户的数据范围筛选测试报告"""
         queryset = super().filter_queryset_by_data_scope(request, queryset).filter(report_retained=True)
+        for values in getattr(self, '_conclusion_filters', []):
+            queryset = ReportConclusionSelector.filter_status(queryset, values)
         case_types = getattr(self, '_case_type_filter', [])
         if case_types:
             if not all(value.isdigit() for value in case_types):

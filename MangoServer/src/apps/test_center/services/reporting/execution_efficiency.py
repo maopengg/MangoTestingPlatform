@@ -36,7 +36,7 @@ class ExecutionEfficiencyService:
             normalized.pop('end_at')
             normalized['section'] = 'current'
         fingerprint = json.dumps([user.id, getattr(user, 'role_id', None), sql, params, normalized], default=str, sort_keys=True)
-        key = 'execution-efficiency:v1:' + sha256(fingerprint.encode()).hexdigest()
+        key = 'execution-efficiency:v2:' + sha256(fingerprint.encode()).hexdigest()
         snapshot = cache.get(key)
         if snapshot is None:
             if query.section == 'timing':

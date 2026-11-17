@@ -28,6 +28,10 @@ from src.interfaces.mcp.authentication import permission_error
 
 
 class ExecutionEfficiencyTests(SimpleTestCase):
+    def setUp(self):
+        from src.apps.user.tests.permission_fixtures import install_legacy_endpoint_snapshot
+        install_legacy_endpoint_snapshot(self)
+
     def test_range_limits_and_timezone_modes(self):
         now = timezone.now()
         for use_tz in (False, True):
@@ -85,7 +89,9 @@ class ExecutionEfficiencyTests(SimpleTestCase):
                 self.assertEqual(permission_error(user, 'list_execution_efficiency', {}) is None, allowed)
         view.action = 'unregistered_efficiency'
         with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=True):
-            self.assertFalse(MenuActionPermission().has_permission(request, view))
+            from src.apps.user.exceptions import UserError
+            with self.assertRaises(UserError):
+                MenuActionPermission().has_permission(request, view)
 
     def test_http_dispatch_validates_filters_and_uses_the_shared_service(self):
         user = SimpleNamespace(id=1)

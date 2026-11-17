@@ -65,6 +65,7 @@ class DatasourcePermit(StrictSchema):
     case_detail_id: int | None = Field(default=None, ge=1)
     case_attempt: int | None = Field(default=None, ge=1)
     audit_record_id: int | None = Field(default=None, ge=1)
+    audit_request_id: str | None = Field(default=None, min_length=1, max_length=64)
     created_at: float | None = Field(default=None, ge=0)
     unknown_since: float | None = Field(default=None, ge=0)
     mysql_session: MysqlOperationSession | None = None
@@ -73,7 +74,7 @@ class DatasourcePermit(StrictSchema):
     @model_serializer(mode='wrap')
     def compact_optional_evidence(self, handler):
         data = handler(self)
-        for key in ('audit_record_id', 'created_at', 'unknown_since', 'mysql_session', 'recovery_checked_at'):
+        for key in ('audit_record_id', 'audit_request_id', 'created_at', 'unknown_since', 'mysql_session', 'recovery_checked_at'):
             if data.get(key) is None:
                 data.pop(key, None)
         return data

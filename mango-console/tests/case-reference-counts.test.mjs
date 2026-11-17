@@ -8,7 +8,7 @@ import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
 import { harness, deferred, flush } from './helpers/case-details-harness.mjs'
 import { loadTableHooks } from './helpers/table-hooks.mjs'
 
-function setup(read, { initialLoading = false, initialRows = [{id:'9007199254740993'},{id:2}] } = {}) {
+function setup(read, { initialLoading = false, initialRows = [{id:'9007199254740993'},{id:2}], includeDefaultEnabled = false } = {}) {
   const rows=Vue.ref(initialRows), listLoading=Vue.ref(initialLoading)
   const user=Vue.reactive({userId:1,roleId:1,token:'fixture'}), feedback=[],cleanups=[], activations=[], deactivations=[]
   let closes=0
@@ -20,7 +20,7 @@ function setup(read, { initialLoading = false, initialRows = [{id:'9007199254740
   }).outputText
   new Function('exports','require',code)(exports,id=>modules[id])
   const scope=Vue.effectScope(),columns=[{key:'name'},{key:'status'},{key:'tags'},{key:'project_product'},{key:'actions'}]
-  const state=scope.run(()=>exports.useCaseReferenceCounts(()=>rows.value,columns,read,()=>listLoading.value,()=>closes++))
+  const state=scope.run(()=>exports.useCaseReferenceCounts(()=>rows.value,columns,read,()=>listLoading.value,()=>closes++,{includeDefaultEnabled}))
   return {...state,rows,listLoading,user,feedback,columns,closes:()=>closes,
     activate:()=>activations.forEach(fn=>fn()),deactivate:()=>deactivations.forEach(fn=>fn()),
     close:()=>{cleanups.forEach(fn=>fn());scope.stop()}}
@@ -93,6 +93,20 @@ test('enabling a default clears stale numbers and disabling it automatically res
   state.close()
 })
 
+test('headers count explicit references for default-enabled and disabled rows, including default-only pages',async()=>{
+  const calls=[],state=setup(async ids=>{
+    calls.push(ids)
+    return {data:Object.fromEntries(ids.map(id=>[id,id===1?3:0]))}
+  },{initialRows:[{id:1,status:1},{id:2,status:0}],includeDefaultEnabled:true})
+  await flush()
+  assert.deepEqual(calls,[[1,2]])
+  assert.deepEqual(state.counts.value,{'1':3,'2':0})
+  state.rows.value[1].status=1;await flush()
+  assert.deepEqual(calls[1],[1,2])
+  assert.deepEqual(state.counts.value,{'1':3,'2':0})
+  state.close()
+})
+
 test('failed or malformed counts never look like zero and may be retried',async()=>{
   let invalid=true
   const state=setup(async()=>({data:invalid?{}:{'9007199254740993':1,'2':0}}))
@@ -114,7 +128,13 @@ test('all three pages and the reused drawer compile and use the independent read
     assert.match(source,/<ApiInfoBoundCases[^>]+reference-mode/)
     assert.match(source,/case_reference_count/)
     assert.doesNotMatch(source,/查看引用Case数|隐藏引用Case数|toggleReferences|referencesVisible/)
-    assert.match(source, /<span v-if="record\.status === 1" class="mango-muted-text">不统计默认开启<\/span>/)
+    if(filename.includes('/headers/')) {
+      assert.match(source,/includeDefaultEnabled: true/)
+      assert.doesNotMatch(source,/不统计默认开启/)
+      assert.match(source,/<a-link v-if="referenceCounts\[String\(record.id\)\] != null" @click="referenceCasesRef\?\.open\(record\)"/)
+    } else {
+      assert.match(source, /<span v-if="record\.status === 1" class="mango-muted-text">不统计默认开启<\/span>/)
+    }
   }
 })
 

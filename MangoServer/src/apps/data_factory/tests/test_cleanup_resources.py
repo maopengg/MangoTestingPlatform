@@ -62,6 +62,49 @@ class CleanupResourceTests(SimpleTestCase):
             with self.subTest(values=values), self.assertRaises(DataFactoryError):
                 Resources.normalize([rules])
 
+    def test_exact_index_template_shapes_share_backend_validation(self):
+        for index in ('{tenant}', 'example_{tenant}', 'example', '123456'):
+            with self.subTest(index=index):
+                rule = {'datasource_alias_id': 8, 'index_template': index}
+                self.assertEqual(Resources.normalize([rule])[0]['index_template'], index)
+        for index in ('{tenant}*', '{tenant},other', '{tenant}/_search', '{tenant}{tenant}',
+                      '{tenant}_suffix', '{unknown}', 'example_{unknown}', 'UPPER', '', 'a' * 201):
+            with self.subTest(index=index), self.assertRaises(DataFactoryError):
+                Resources.normalize([{'datasource_alias_id': 8, 'index_template': index}])
+
+    @patch.object(Resources, 'resolve_binding')
+    @patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve')
+    @patch.object(Resources, 'document', return_value=None)
+    def test_tenant_only_template_freezes_exact_index_and_keeps_baseline_guard(self, document, target, binding):
+        binding.return_value = self.binding
+        self.template.cleanup_resources = [{**self.rule.model_dump(mode='json'), 'index_template': '{tenant}'}]
+        created = {'id': 1001, 'tenant_id': 7}
+        Resources.preflight(self.template, created, SimpleNamespace(environment=0))
+        self.assertEqual(document.call_args.args[1], '7')
+        state = Resources.capture(self.template, self.entity, created, SimpleNamespace(environment=0))
+        snapshot = state['snapshots'][0]
+        self.assertEqual(snapshot['index'], '7')
+        self.assertEqual(snapshot['requested_index'], '7')
+        self.assertEqual(snapshot['rule']['index_template'], '{tenant}')
+        self.assertTrue(snapshot['baseline_absent'])
+        self.item.cleanup_resources = state
+        Resources.validate_snapshot(self.item)
+        frozen = EsCleanupSnapshot.model_validate(snapshot)
+        Resources.check_owner({**owned_document(), '_index': '7'}, frozen)
+        for source in ({'tenant_id': '8'}, {}):
+            with self.subTest(source=source), self.assertRaises(DataFactoryError):
+                Resources.check_owner({**owned_document(), '_index': '7', '_source': source}, frozen)
+        document.return_value = {**owned_document(), '_index': '7'}
+        with self.assertRaises(DataFactoryError) as error:
+            Resources.capture(self.template, self.entity, created, SimpleNamespace(environment=0))
+        self.assertEqual(error.exception.code, 34179)
+        document.reset_mock()
+        for tenant in ('*', '7,8', '../7', '_all', 'UPPER', False, None):
+            with self.subTest(tenant=tenant), self.assertRaises(DataFactoryError):
+                Resources.capture(self.template, self.entity, {'id': 1001, 'tenant_id': tenant},
+                                  SimpleNamespace(environment=0))
+        document.assert_not_called()
+
     @patch.object(Resources, 'resolve_binding')
     @patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve')
     @patch.object(Resources, 'sample', return_value=True)

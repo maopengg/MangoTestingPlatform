@@ -60,6 +60,18 @@ test('audit DTOs preserve zero, long IDs, decimal strings, false and driver row 
   assert.equal(h.formatDuration(0), '0.00 ms'); assert.equal(h.formatDuration(null), '-')
 })
 
+test('case/report/operation filters and source labels retain exact identities without changing success', t => {
+  const h = setup(); t.after(h.close); const m = h.load('execution-records.ts')
+  assert.deepEqual(m.executionQuery({ case_id: '7224', case_detail_id: '1028546', test_suite_id: '9007199254740993', operation: 'delete_document' }),
+    { case_id: '7224', case_detail_id: '1028546', test_suite_id: '9007199254740993', operation: 'delete_document' })
+  const item = m.copyExecutionRecord(record({ source_detail: { case_id: 7224, operation: 'get_document' }, status: 'success' }))
+  assert.equal(m.auditSourceValue(item, 'case_id'), '7224')
+  assert.equal(m.auditSourceValue(item, 'operation'), 'get_document')
+  assert.equal(item.status, 'success')
+  assert.equal(m.auditSourceValue(record({ source_type: 'data_factory', source_detail: { case_source_type: 4, case_source_id: 7224 } }), 'case_id'), '7224')
+  assert.equal(m.auditSourceValue(record({ source_type: 'data_factory', source_detail: { case_source_type: 5, case_source_id: 7224 } }), 'case_id'), '-')
+})
+
 test('malformed lists and flags are rejected rather than displayed as successful empty data', t => {
   const h = setup(); t.after(h.close); const m = h.load('execution-records.ts')
   for (const value of [{ code: 403, data: [record()], totalSize: 1 }, ok({}), ok([record()], '1'), ok([record(), record()], 2),

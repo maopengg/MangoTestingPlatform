@@ -32,7 +32,7 @@
       aria-label="刷新当前页面"
       @click="onRefrehRoute"
     >
-      <RefreshIcon />
+      <template #icon><RefreshIcon /></template>
     </a-button>
     <span
       v-if="appStore.actionBar.isShowFullScreen && appStore.deviceType !== 'mobile'"

@@ -4,7 +4,7 @@ import { useTableIndexColumn, useTableColumn } from '@/hooks/table'
 import { createIdSearchValue } from '@/utils/id-search'
 import { enableMultiSelectSearch } from '@/utils/search-condition'
 
-export const tableScrollX = 2450
+export const tableScrollX = 2670
 export const SQL_EXECUTION_OPTION_KEYS = {
   datasource_type: 'datasource_type_options',
   project_product_id: 'project_product_options',
@@ -26,6 +26,10 @@ export function createConditionItems(): FormItem[] {
   const conditionItems: FormItem[] = reactive([
     { key: 'datasource_type', label: '数据源类型', type: 'select', placeholder: '请选择类型', value: ref([]) },
     { key: 'database_id', label: '连接ID', type: 'input', placeholder: '请输入连接ID', value: createIdSearchValue('', false) },
+    { key: 'case_id', label: 'Case ID', type: 'input', placeholder: '请输入Case ID', value: createIdSearchValue('', false) },
+    { key: 'case_detail_id', label: '报告明细ID', type: 'input', placeholder: '请输入报告明细ID', value: createIdSearchValue('', false) },
+    { key: 'test_suite_id', label: '报告ID', type: 'input', placeholder: '请输入报告ID', value: createIdSearchValue('', false) },
+    { key: 'operation', label: '操作类型', type: 'input', placeholder: 'select、delete、get_document等', value: ref('') },
     {
       key: 'id',
       label: '记录ID',
@@ -147,6 +151,8 @@ export const tableColumns = useTableColumn([
   },
   { title: '来源类型', key: 'source_type', dataIndex: 'source_type', width: 140 },
   { title: '来源ID', key: 'source_id', dataIndex: 'source_id', width: 100 },
+  { title: 'Case ID', key: 'case_id', dataIndex: 'case_id', width: 100, align: 'center' },
+  { title: '操作类型', key: 'operation', dataIndex: 'operation', width: 120, ellipsis: true, tooltip: true },
   { title: '执行阶段', key: 'source_stage', dataIndex: 'source_stage', width: 130 },
   { title: '状态', key: 'status', dataIndex: 'status', width: 90 },
   { title: '耗时', key: 'duration_ms', dataIndex: 'duration_ms', width: 110 },

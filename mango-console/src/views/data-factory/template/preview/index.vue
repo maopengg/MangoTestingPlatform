@@ -1302,6 +1302,14 @@ import { reportLoadError } from '@/utils/load-error'
     min-width: var(--mango-workbench-min-width);
   }
 
+  .mango-scene-config-workbench {
+    display: grid;
+    height: 100%;
+    min-height: 0;
+    gap: var(--m-page-gap);
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+
   .mango-scene-items-spin {
     display: block;
     height: 100%;

@@ -1,21 +1,77 @@
 from contextlib import nullcontext
+from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from django.db import OperationalError
 from django.test import SimpleTestCase
+from django.utils import timezone
 from mangotools.enums import TaskEnum
 
 from src.apps.test_center.exceptions import TestCenterError
 from src.apps.test_center.services.reporting.test_suite.summary import TestSuiteSummaryService as Summary
 from src.apps.test_center.services.reporting.test_suite.retry import TestSuiteRetryService as Retry
 from src.apps.test_center.services.reporting.test_suite.send_notice import SendNotice
+from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService as Infrastructure
 from src.apps.test_center.services.results.execution_result import ExecutionResultService
 from src.apps.task_center.services.workbench.report_infrastructure import ReportInfrastructureTodoService as Todos
 from src.apps.test_center.selectors.infrastructure import ReportInfrastructureSelector as Selector
 
 
 class PlatformBlockedResultsTests(SimpleTestCase):
+    def test_renewed_lease_closes_trace_from_original_dispatch_not_renewal(self):
+        claimed = timezone.now() - timedelta(minutes=3)
+        renewed = claimed + timedelta(minutes=2)
+        detail = SimpleNamespace(id=7, type=1, push_time=renewed, error_message='进程重启',
+            summary_data={'children': [], 'meta': {
+                'dispatch_started_at': claimed.isoformat(),
+                'execution_control': {'phase': 'infrastructure_blocked', 'attempt': 2},
+            }})
+        with patch('src.apps.auto_api.services.execution_trace.recorder.'
+                   'ApiCaseExecutionTraceRecorder.interrupt_report_attempt') as interrupt:
+            Infrastructure.close_interrupted_trace(detail)
+        interrupt.assert_called_once_with(7, claimed, '进程重启',
+            detail.summary_data['meta']['execution_control'])
+
+    def test_legacy_or_invalid_dispatch_time_keeps_current_attempt_boundary(self):
+        pushed = timezone.now()
+        for value in (None, '', 'invalid', '2026-99-99T00:00:00'):
+            with self.subTest(value=value):
+                detail = SimpleNamespace(id=7, type=1, push_time=pushed, error_message='中断',
+                    summary_data={'children': [], 'meta': {'dispatch_started_at': value,
+                        'execution_control': {'attempt': 2}}})
+                with patch('src.apps.auto_api.services.execution_trace.recorder.'
+                           'ApiCaseExecutionTraceRecorder.interrupt_report_attempt') as interrupt:
+                    Infrastructure.close_interrupted_trace(detail)
+                self.assertEqual(interrupt.call_args.args[1], pushed)
+
+    def test_non_api_block_does_not_close_api_trace(self):
+        with patch('src.apps.auto_api.services.execution_trace.recorder.'
+                   'ApiCaseExecutionTraceRecorder.interrupt_report_attempt') as interrupt:
+            Infrastructure.close_interrupted_trace(SimpleNamespace(type=2))
+        interrupt.assert_not_called()
+
+    def test_known_interruption_reason_is_saved_without_marking_business_failure(self):
+        detail = SimpleNamespace(id=7, retry=2, status=TaskEnum.PROCEED.value,
+            push_time=timezone.now(), summary_data=None, success=0, fail=0, warning=0, save=Mock())
+        suite = SimpleNamespace(id=1, status=TaskEnum.PROCEED.value)
+        reason = '执行进程已重启或被替换，本次执行未完成。请核查已发送请求及数据清理状态'
+        with patch('src.apps.test_center.services.reporting.test_suite.infrastructure.TestSuiteDetails.objects') as details, \
+                patch('src.apps.test_center.services.reporting.test_suite.infrastructure.TestSuite.objects') as suites, \
+                patch('src.apps.test_center.services.reporting.test_suite.infrastructure.transaction.on_commit'), \
+                patch.object(Infrastructure, 'close_interrupted_trace'), \
+                patch.object(Infrastructure, '_finish_suite'):
+            details.filter.return_value.values_list.return_value.get.return_value = 1
+            details.select_for_update.return_value.get.return_value = detail
+            suites.select_for_update.return_value.get.return_value = suite
+            accepted = Infrastructure.block.__wrapped__(Infrastructure, 7, 2, [],
+                expected_push_time=detail.push_time, interruption_reason=reason)
+        self.assertTrue(accepted)
+        self.assertIn(reason, detail.error_message)
+        self.assertEqual(detail.failure_description, reason)
+        self.assertEqual((detail.status, detail.fail), (TaskEnum.INFRASTRUCTURE_BLOCKED.value, 0))
+        self.assertTrue(detail.summary_data['meta']['execution_control']['requires_review'])
+
     def row(self, status=6, **changes):
         return {'status': status, 'type': 1, 'case_sum': 1, 'success': 0, 'fail': 0,
                 'warning': 0, 'is_excluded': False, 'summary_data': {}, **changes}

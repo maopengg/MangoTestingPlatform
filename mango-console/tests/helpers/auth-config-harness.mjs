@@ -49,7 +49,7 @@ export function component(name, bindings, mocks = {}) {
     '@arco-design/web-vue': { Message: { error: message => messages.push(message), success: () => {} }, Modal: mocks.Modal },
     'vue-router': { useRoute: () => ({path:'/apitest/auth-config/index',query:{}}) },
     '@/hooks/table': {
-      useTable: () => ({dataList:[],tableLoading:vue.ref(false),handleSuccess(response){this.dataList=response.data}}),
+      useTable: () => ({dataList:vue.shallowReactive([]),tableLoading:vue.ref(false),handleSuccess(response){this.dataList.splice(0,this.dataList.length,...response.data)}}),
       usePagination: () => ({page:1,pageSize:20,setTotalSize(){}}),
       useRowKey: key => key,
       useRowSelection: () => ({selectedRowKeys:vue.ref([]),showCheckedAll:vue.ref(true),onSelectionChange(){}}),

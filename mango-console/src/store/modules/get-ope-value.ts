@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
+import { mergeUiMethodCatalog } from '@/utils/assertion-catalog'
 
 // 参数配置项类型
 interface ParameterItem {
@@ -62,9 +63,15 @@ export const useSelectValueStore = defineStore('get-select-value', {
       if (selectValueRequest) {
         return selectValueRequest
       }
-      selectValueRequest = getSystemCacheDataKeyValue('select_value')
-        .then((res) => {
-          this.data = Array.isArray(res.data) ? res.data : []
+      selectValueRequest = Promise.all([
+        getSystemCacheDataKeyValue('select_value'),
+        getSystemCacheDataKeyValue('ass_select_value'),
+      ])
+        .then(([operations, assertions]) => {
+          this.data = mergeUiMethodCatalog(
+            Array.isArray(operations.data) ? operations.data : [],
+            Array.isArray(assertions.data) ? assertions.data : []
+          )
           this.dataList = []
           const appendChildren = (items: any[]) => {
             for (const item of items) {
@@ -97,7 +104,7 @@ export const useSelectValueStore = defineStore('get-select-value', {
               this.assWeb.push(...children)
             } else if (item.value === 'ass_ios') {
               this.assIos.push(...children)
-            } else if (item.value.includes('断言')) {
+            } else {
               this.ass.push(item)
               this.assAndroid.push(item)
               this.assWeb.push(item)

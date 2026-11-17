@@ -6,13 +6,7 @@
       aria-label="覆盖概览内容"
       tabindex="0"
     >
-      <template v-if="error && !data"></template>
-      <div v-else-if="data || loading" class="mango-coverage-overview__layout">
-        
-        <div v-if="!loading && !data?.modules.length" class="mango-empty-state"
-          >当前范围暂无模块，请选择项目/产品或创建模块。</div
-        >
-        <template v-else>
+      <div class="mango-coverage-overview__layout">
           <div
             class="mango-workbench-scroll-x mango-coverage-overview__charts-scroll"
             role="region"
@@ -27,7 +21,7 @@
                     ><p>完整接口清单上传生效即完成</p></div
                   ></header
                 >
-                <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
+                <MangoPanelSpin :loading="inventoryLoading" class="mango-coverage-overview__chart-spin">
                   <div ref="scanChart" class="mango-coverage-overview__chart"></div>
                 </MangoPanelSpin>
               </section>
@@ -99,9 +93,9 @@
               <div class="mango-section-title__main"
                 ><h2>模块进度</h2
                 ><p>{{
-                  loading && !data
+                  modulesLoading
                     ? '正在加载模块进度…'
-                    : `当前 ${filtered.length} 个模块，点击分析或自动化进度查看明细`
+                    : `当前 ${pagination.pageCount} 个模块，点击分析或自动化进度查看明细`
                 }}</p></div
               >
               <div class="mango-section-actions mango-coverage-overview__filters">
@@ -111,6 +105,10 @@
                   placeholder="搜索模块路径"
                   allow-clear
                   size="small"
+                  @blur="scheduleSearch"
+                  @mouseleave="scheduleSearch"
+                  @clear="scheduleSearch"
+                  @press-enter="searchModules"
                 />
                 <a-select
                   v-model="gapFilter"
@@ -129,9 +127,9 @@
               <StickyHorizontalTable :scroll-x="overviewModuleScrollX">
                 <a-table
                   class="mango-native-scroll-table"
-                  :data="visibleModules"
+                  :data="modules"
                   :columns="overviewModuleColumns"
-                  :loading="loading"
+                  :loading="modulesLoading"
                   :bordered="false"
                   :pagination="false"
                   :scroll="{ x: overviewModuleScrollX, y: overviewModuleScrollY }"
@@ -190,7 +188,7 @@
                   </template>
                   <template #empty
                     ><div class="mango-empty-state">{{
-                      loading ? '正在加载模块进度…' : '当前条件没有模块。'
+                      modulesLoading ? '正在加载模块进度…' : '当前条件没有模块。'
                     }}</div></template
                   >
                 </a-table>
@@ -198,7 +196,7 @@
             </div>
             <TableFooter
               compact-pages
-              v-if="filtered.length"
+              v-if="pagination.pageCount"
               :pagination="pagination"
               :show-refresh="false"
             />
@@ -246,7 +244,6 @@
               </div>
             </MangoPanelSpin>
           </section>
-        </template>
       </div>
     </div>
   </div>
@@ -271,8 +268,8 @@
   import TableFooter from '@/components/table/TableFooter.vue'
   import MangoTableActions from '@/components/table/MangoTableActions.vue'
   import StickyHorizontalTable from '@/components/table/StickyHorizontalTable.vue'
-  import { usePagination } from '@/hooks/table'
-  import type { CoverageOverview, CoverageModuleOverview } from '@/api/apitest/module-coverage'
+  import { useCoverageOverviewSections } from '../composables/useCoverageOverviewSections'
+  import type { CoverageOverviewStatistics, CoverageModuleOverview } from '@/api/apitest/module-coverage'
   import type { CoverageTab } from '../types'
   import {
     getAutomationStatusData,
@@ -286,7 +283,8 @@
 
   use([TitleComponent])
 
-  const props = defineProps<{ data?: CoverageOverview; loading: boolean; error: boolean }>()
+  const props = defineProps<{ data?: CoverageOverviewStatistics; loading: boolean; error: boolean;
+    scope: Record<string, unknown>; refreshKey?: number }>()
   const emit = defineEmits<{
     (event: 'retry'): void
     (
@@ -297,8 +295,8 @@
     ): void
     (event: 'interface', id: number): void
   }>()
-  const keyword = ref('')
-  const gapFilter = ref('all')
+  const { inventory, inventoryLoading, modules, modulesLoading, pagination, keyword, gapFilter,
+    scheduleSearch, searchModules } = useCoverageOverviewSections(() => props.scope, () => props.refreshKey)
   const moduleTableRegion = ref<HTMLElement>()
   function handleModuleTableWheel(event: WheelEvent) {
     if (event.ctrlKey || !event.cancelable || Math.abs(event.deltaY) <= Math.abs(event.deltaX))
@@ -312,10 +310,6 @@
     event.preventDefault()
     body.scrollTop += event.deltaY * unit
   }
-  const paginationLoading = ref(false)
-  const pagination = usePagination(() => {
-    paginationLoading.value = false
-  }, paginationLoading)
   const scanChart = ref<HTMLElement>()
   const entryChart = ref<HTMLElement>()
   const coverageChart = ref<HTMLElement>()
@@ -333,7 +327,7 @@
   const entryDescription = computed(() =>
     entryData.value.map((item) => `${item.name} ${item.value} 个接口`).join('，')
   )
-  const projectScanSummary = computed(() => props.data?.project_inventory_summary)
+  const projectScanSummary = inventory
   const statusData = computed(() => (props.data ? getAutomationStatusData(props.data.summary) : []))
   const statusTotal = computed(() => statusData.value.reduce((sum, item) => sum + item.value, 0))
   const statusPercent = (value: number) =>
@@ -347,36 +341,6 @@
   let observer: ResizeObserver | undefined
   let chartElements: HTMLElement[] = []
   const rate = (value: number | null | undefined) => (value == null ? '—' : `${value.toFixed(2)}%`)
-  const filtered = computed(() =>
-    (props.data?.modules || []).filter((row) => {
-      if (
-        !`${row.project_name}/${row.product_name}/${row.full_path}`
-          .toLowerCase()
-          .includes(keyword.value.toLowerCase())
-      )
-        return false
-      if (gapFilter.value === 'scan') return !row.inventory_completed && row.is_leaf
-      if (gapFilter.value === 'entry') return row.pending_analysis_count > 0
-      if (gapFilter.value === 'analysis_completed') return row.analyzed_interface_count > 0
-      if (gapFilter.value === 'analysis_gap') return row.analysis_gap_count > 0
-      if (gapFilter.value === 'analysis_review') return (row.analysis_review_count || 0) > 0
-      if (gapFilter.value === 'analysis_deferred') return row.deferred_analysis_count > 0
-      if (gapFilter.value === 'analysis_excluded') return (row.excluded_interface_count || 0) > 0
-      if (gapFilter.value === 'covered') return row.covered_interface_count > 0
-      if (gapFilter.value === 'partial') return row.partial_interface_count > 0
-      if (gapFilter.value === 'uncovered') return row.uncovered_interface_count > 0
-      if (gapFilter.value === 'deferred') return row.deferred_interface_count > 0
-      if (gapFilter.value === 'case') return row.incomplete_interface_count > 0
-      return true
-    })
-  )
-  const visibleModules = computed(() =>
-    filtered.value.slice(
-      (pagination.page - 1) * pagination.pageSize,
-      pagination.page * pagination.pageSize
-    )
-  )
-  watch(filtered, (rows) => pagination.setTotalSize(rows.length), { immediate: true })
   function scanLabel(row: CoverageModuleOverview) {
     if (row.inventory_completed) return `接口清单已生效 #${row.inventory_scan_ids.join('、#')}`
     return row.latest_scan_id ? `接口盘点未完成 · 最近 #${row.latest_scan_id}` : '未盘点'
@@ -454,7 +418,9 @@
     }
   }
   function render() {
-    if (disposed || suspended || !props.data || props.error) return
+    if (disposed || suspended) return
+    if (![scanChart.value, entryChart.value, coverageChart.value, statusChart.value].some(Boolean)) return
+    if (scanChart.value && !inventory.value) useEcharts(scanChart.value).clear()
     const text = token('--m-text-2')
     const tooltip = {
       trigger: 'item',
@@ -465,7 +431,7 @@
       textStyle: { color: text, fontSize: 12 },
       padding: 10,
     }
-    if (scanChart.value) {
+    if (scanChart.value && inventory.value) {
       const chart = useEcharts(scanChart.value)
       const rows = [
         { name: '已盘点', value: projectScanSummary.value?.inventoried_count || 0 },
@@ -494,7 +460,7 @@
         gapFilter.value = event.dataIndex === 1 ? 'scan' : 'all'
       })
     }
-    if (entryChart.value) {
+    if (entryChart.value && props.data && !props.error) {
       const chart = useEcharts(entryChart.value)
       chart.setOption(
         {
@@ -536,7 +502,7 @@
         gapFilter.value = entryData.value[event.dataIndex]?.filter || 'all'
       })
     }
-    if (coverageChart.value) {
+    if (coverageChart.value && props.data && !props.error) {
       const chart = useEcharts(coverageChart.value)
       chart.setOption(
         {
@@ -566,7 +532,7 @@
         gapFilter.value = ['covered', 'partial', 'uncovered', 'deferred'][event.dataIndex] || 'all'
       })
     }
-    if (statusChart.value) {
+    if (statusChart.value && props.data && !props.error) {
       useEcharts(statusChart.value).setOption(
         {
           ...donutStyle(statusChart.value, statusData.value, '场景总数'),
@@ -622,10 +588,7 @@
       if (element) observer?.observe(element)
     render()
   }
-  watch([keyword, gapFilter, () => props.data], () => {
-    pagination.page = 1
-  })
-  watch(() => [props.data, props.error, props.loading], update)
+  watch(() => [props.data, props.error, props.loading, inventory.value, inventoryLoading.value], update)
   function attach() {
     window.addEventListener('mango-theme-change', render)
     window.addEventListener('mango-density-change', resize)

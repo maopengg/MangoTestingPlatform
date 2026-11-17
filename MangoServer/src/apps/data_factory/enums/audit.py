@@ -23,3 +23,4 @@ class DatasourceAuditStageEnum(BaseEnum):
     EXECUTE = ('execute', '执行')
     CONDITION_EXECUTE = ('condition_execute', '条件执行')
     QUERY = ('query', '查询')
+    TRANSACTION = ('transaction', '事务提交与回滚')

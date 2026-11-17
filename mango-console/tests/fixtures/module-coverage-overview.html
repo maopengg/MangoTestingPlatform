@@ -12,6 +12,7 @@
       import '@arco-design/web-vue/dist/arco.css'
       import '../../src/styles/index.css'
       import CoverageOverview from '../../src/views/apitest/module-coverage/components/CoverageOverview.vue'
+      import request from '../../src/api/axios.config'
       import { applyDisplayDensity, scaleDensityLength } from '../../src/hooks/useDisplayDensity'
       ArcoTable.props.scrollbar.default = () => ({ type: 'embed' })
       const DensityTable = defineComponent({
@@ -113,6 +114,17 @@
           data.summary[key] = key.endsWith('_rate') ? null : 0
       }
       const pinia = createPinia()
+      request.defaults.adapter = async config => {
+        const { section, page = 1, pageSize = 20, keyword = '', progress = 'all' } = config.params
+        let result
+        if (section === 'inventory') result = { project_inventory_summary: data.project_inventory_summary }
+        else if (section === 'modules') {
+          const rows = data.modules.filter(row => row.full_path.includes(keyword)
+            && (progress !== 'scan' || !row.inventory_completed))
+          result = { items: rows.slice((page - 1) * pageSize, page * pageSize), count: rows.length, page, page_size: pageSize }
+        } else throw new Error('Unexpected preview request')
+        return { data: { code: 200, data: result }, status: 200, statusText: 'OK', headers: {}, config }
+      }
       pinia.state.value['permission-route'] = { permissionKeys: ['api.module_coverage:detail'], isSuperAdmin: false }
       createApp({
         setup() {
@@ -124,6 +136,7 @@
                 h('span', action.value),
               ]),
               h(CoverageOverview, {
+                scope: { project_product: 1 },
                 data: state === 'initial-loading' ? undefined : data,
                 loading: state === 'loading' || state === 'initial-loading',
                 error: state === 'error',

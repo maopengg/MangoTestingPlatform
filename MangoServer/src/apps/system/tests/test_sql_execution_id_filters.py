@@ -1,4 +1,4 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase
 from rest_framework.request import Request
@@ -8,6 +8,38 @@ from src.apps.system.api.views.sql_execution import SqlExecutionRecordViews
 
 
 class SqlExecutionIdFilterTests(SimpleTestCase):
+    def test_case_filter_uses_scoped_queryset_and_accepts_long_ids(self):
+        from src.apps.data_factory.selectors.execution_audit import ExecutionAuditSelector
+        queryset, scoped = Mock(), Mock()
+        request = Request(APIRequestFactory().get('/', {'case_id': '7224'}))
+        with patch.object(ExecutionAuditSelector, 'filter_case', return_value=scoped) as case_filter:
+            self.assertIs(SqlExecutionRecordViews._apply_filters(request, queryset), scoped)
+        case_filter.assert_called_once_with(queryset, 7224)
+
+    def test_invalid_case_cannot_fall_back_to_unfiltered_records(self):
+        for value in ('0', '-1', 'abc', '1,2'):
+            with self.subTest(value=value):
+                queryset = Mock()
+                request = Request(APIRequestFactory().get('/', {'case_id': value}))
+                self.assertIsNone(SqlExecutionRecordViews._apply_filters(request, queryset))
+                queryset.filter.assert_not_called()
+
+    def test_case_legacy_factory_source_is_not_confused_with_item_id(self):
+        from django.db.models import Q
+        from src.apps.data_factory.selectors.execution_audit import ExecutionAuditSelector
+        queryset = Mock()
+        ExecutionAuditSelector.filter_case(queryset, 7224)
+        queryset.filter.assert_called_once_with(Q(source_detail__case_id=7224)
+            | Q(source_type='api_case', source_id=7224)
+            | Q(source_type='data_factory', source_detail__case_source_type=4, source_detail__case_source_id=7224))
+
+    def test_operation_filter_and_report_scope_do_not_change_status(self):
+        queryset = Mock()
+        queryset.filter.return_value = queryset
+        request = Request(APIRequestFactory().get('/', {'operation': 'DELETE', 'test_suite_id': '99'}))
+        SqlExecutionRecordViews._apply_filters(request, queryset)
+        self.assertEqual(queryset.filter.call_args_list[0].kwargs, {'source_detail__test_suite_id': 99})
+        self.assertEqual(queryset.filter.call_args_list[1].kwargs, {'source_detail__operation': 'delete'})
     def test_comma_separated_ids_use_in_lookup(self):
         request = Request(APIRequestFactory().get('/', {'id__in': '2054,2014'}))
         queryset = Mock()

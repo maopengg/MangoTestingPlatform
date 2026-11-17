@@ -3,13 +3,25 @@ import assert from 'node:assert/strict'
 import path from 'node:path'
 import { readFileSync } from 'node:fs'
 import ts from 'typescript'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, shallowReactive } from 'vue'
 import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
 import { harness, deferred, flush } from './helpers/case-details-harness.mjs'
 
 const base = path.resolve('src/views/apitest/headers')
 const row = (id=1) => ({id,key:'X-Example',value:'example-value',status:0,project_product:{id:2,name:'Example product',api_client_type:0}})
 const columns = {useTableIndexColumn:()=>({key:'index'}),useTableColumn:items=>items}
+
+test('default header copy covers interface debugging and case fallback without changing switch behavior',()=>{
+  const config=readFileSync(path.join(base,'config.ts'),'utf8')
+  assert.match(config,/title: '默认开启',\s+key: 'status'/)
+  assert.doesNotMatch(config,/接口管理默认使用/)
+  const source=readFileSync(path.join(base,'index.vue'),'utf8')
+  const {descriptor}=parse(source)
+  const template=descriptor.template.content
+  assert.match(template,/接口调试及未指定请求头的用例默认使用；显式选择时仅使用所选项。/)
+  assert.match(template,/aria-label="默认开启"/)
+  assert.match(template,/:before-change="\(newValue\) => onModifyStatus\(newValue, record.id\)"/)
+})
 function editor(api={}) {
   return harness('HeaderEditor','open,save,visible,saving,editingId,draft,formItems',{base,api,modules:{'@/hooks/table':columns}})
 }
@@ -21,7 +33,7 @@ function loadPure(file) {
 function page(api={},options={}) {
   const confirmations=[]
   const selection=ref([])
-  const table={dataList:reactive([]),tableLoading:ref(false),handleSuccess:response=>table.dataList.splice(0,table.dataList.length,...response.data)}
+  const table={dataList:shallowReactive([]),tableLoading:ref(false),handleSuccess:response=>table.dataList.splice(0,table.dataList.length,...response.data)}
   const pagination=reactive({page:1,pageSize:20,pageCount:0,setTotalSize(total){this.pageCount=total}})
   const state=harness('index','doRefresh,onSearchRefresh,onResetSearch,onDelete,onModifyStatus,loadUsers,deactivate,conditionItems,projectProductCondition,sidebarResetKey,statusUpdatingIds,deletingIds,userOptions,userOptionsLoading,pageActive,navigationCreateRef,editorRef,onAdd',{base,api,
     Modal:{confirm:config=>{const handle={config,closed:false,close(){handle.closed=true;config.onClose?.()}};confirmations.push(handle);return handle}},
@@ -173,6 +185,8 @@ test('invalid mixed-product batches never open deletion confirmation',()=>{
 test('status switch waits for success, blocks duplicates and retains original state after failure',async()=>{
   const requests=[],state=page({putApiHeaders:payload=>{const pending=deferred();requests.push({pending,payload});return pending.promise}})
   state.table.dataList.push(row())
+  const renderedStatus = computed(() => state.table.dataList[0].status === 1)
+  assert.equal(renderedStatus.value, false)
   const update=state.onModifyStatus(true,1)
   assert.equal(state.table.dataList[0].status,0);assert.equal(state.statusUpdatingIds.has(1),true)
   assert.equal(await state.onModifyStatus(true,1),false)
@@ -180,7 +194,14 @@ test('status switch waits for success, blocks duplicates and retains original st
   assert.equal(state.table.dataList[0].status,0);assert.equal(state.statusUpdatingIds.size,0)
   const retry=state.onModifyStatus(true,1);requests[1].pending.resolve({code:200,msg:'ok'})
   assert.equal(await retry,true);assert.equal(state.table.dataList[0].status,1)
+  assert.equal(renderedStatus.value, true)
   assert.deepEqual(requests[1].payload,{id:1,status:1})
+  const disable = state.onModifyStatus(false, 1)
+  assert.equal(renderedStatus.value, true)
+  requests[2].pending.resolve({code:200,msg:'ok'})
+  assert.equal(await disable, true)
+  assert.equal(renderedStatus.value, false)
+  assert.deepEqual(requests[2].payload, {id:1,status:0})
   state.close()
 })
 

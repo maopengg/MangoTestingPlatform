@@ -76,8 +76,7 @@
                 {{ record.id }}
               </template>
               <template v-else-if="item.key === 'case_reference_count'" #cell="{ record }">
-                <span v-if="record.status === 1" class="mango-muted-text">不统计默认开启</span>
-                <a-link v-else-if="referenceCounts[String(record.id)] != null" @click="referenceCasesRef?.open(record)">{{ referenceCounts[String(record.id)] }}</a-link>
+                <a-link v-if="referenceCounts[String(record.id)] != null" @click="referenceCasesRef?.open(record)">{{ referenceCounts[String(record.id)] }}</a-link>
                 <span v-else>{{ referencesLoading ? '查询中…' : '-' }}</span>
               </template>
               <template v-else-if="item.key === 'client'" #cell="{ record }">
@@ -93,12 +92,15 @@
                 </a-tag>
               </template>
               <template v-else-if="item.key === 'status'" #cell="{ record }">
-                <a-switch
-                  :before-change="(newValue) => onModifyStatus(newValue, record.id)"
-                  :model-value="record.status === 1"
-                  :loading="statusUpdatingIds.has(record.id)"
-                  :disabled="deletingIds.has(String(record.id))"
-                />
+                <a-tooltip content="接口调试及未指定请求头的用例默认使用；显式选择时仅使用所选项。">
+                  <a-switch
+                    aria-label="默认开启"
+                    :before-change="(newValue) => onModifyStatus(newValue, record.id)"
+                    :model-value="record.status === 1"
+                    :loading="statusUpdatingIds.has(record.id)"
+                    :disabled="deletingIds.has(String(record.id))"
+                  />
+                </a-tooltip>
               </template>
               <template v-else-if="item.key === 'project_product'" #cell="{ record }">
                 {{ formatProjectProductPath(record.project_product) }}
@@ -178,7 +180,7 @@
   const referenceCasesRef = ref<InstanceType<typeof ApiInfoBoundCases> | null>(null)
   const { tableColumns, loading: referencesLoading, counts: referenceCounts } = useCaseReferenceCounts(
     () => rows.value, baseTableColumns, getApiHeaderReferenceCounts, () => table.tableLoading.value,
-    () => referenceCasesRef.value?.close()
+    () => referenceCasesRef.value?.close(), { includeDefaultEnabled: true }
   )
   const pagination = usePagination(
     () => doRefresh(true),
@@ -325,8 +327,10 @@
       const response = await putApiHeaders({ id, status })
       if (response.code !== 200 || version !== pageVersion || !pageActive.value) return false
       Message.success(response.msg)
-      if (rows.value.find((item) => item.id === id) === target) target.status = status
-      else await doRefresh(true)
+      const index = rows.value.findIndex((item) => item.id === id)
+      if (index >= 0 && rows.value[index] === target) {
+        table.dataList.splice(index, 1, { ...target, status })
+      } else await doRefresh(true)
       return true
     } catch {
       return false

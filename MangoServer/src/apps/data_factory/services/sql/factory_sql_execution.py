@@ -9,6 +9,9 @@ from inspect import signature
 
 from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditHandle, SqlExecutionAuditService
 from src.apps.data_factory.services.datasource.datasource_target import DatasourceTargetService
+from src.apps.data_factory.enums.execution import DataFactoryExecutionSourceEnum
+from src.apps.data_factory.constants import EXECUTION_AUDIT_CONTEXT_KEY
+from src.apps.data_factory.schemas.execution_audit import DatasourceAuditOrigin
 
 
 class DataFactorySqlExecutionService:
@@ -54,7 +57,11 @@ class DataFactorySqlExecutionService:
     ) -> dict:
         template = template or getattr(item, 'template', None)
         entity = entity or getattr(template, 'entity', None)
-        return {
+        saved = getattr(execution, 'context', None)
+        origin = DatasourceAuditOrigin.model_validate(
+            saved.get(EXECUTION_AUDIT_CONTEXT_KEY, {}) if isinstance(saved, dict) else {}).model_dump(exclude_none=True)
+        context = {
+            **origin,
             'source_type': cls.SOURCE_TYPE,
             'source_stage': stage,
             'source_id': getattr(item, 'id', None) or execution.id,
@@ -71,6 +78,9 @@ class DataFactorySqlExecutionService:
             'project_product_id': getattr(execution, 'project_product_id', None),
             'test_env': getattr(getattr(item, 'datasource_binding', None), 'environment', None),
         }
+        if getattr(execution, 'source_type', None) == DataFactoryExecutionSourceEnum.API_CASE.value:
+            context['case_id'] = execution.source_id
+        return context
 
     @classmethod
     def execute(
@@ -139,7 +149,9 @@ class DataFactorySqlExecutionService:
         detail['source_id'] = item.id
         record.source_id = item.id
         record.source_detail = detail
-        record.save(update_fields=['source_id', 'source_detail', 'update_time'])
+        if handle.completed:
+            SqlExecutionAuditService.save_completion(record,
+                update_fields=['source_id', 'source_detail', 'update_time'])
         for child in getattr(handle, 'children', []):
             DataFactorySqlExecutionService.bind_execution_item(child, item)
 
@@ -149,6 +161,14 @@ class DataFactorySqlExecutionService:
         unknown = DatasourceGovernorService.outcome_unknown(error)
         for handle in handles:
             record = handle.record
+            operation = (record.source_detail or {}).get('operation')
+            if operation in ('select', 'show', 'desc', 'describe', 'explain', 'pragma'):
+                # 查询已完成的事实不随外围写事务的回滚/未知结果改变。
+                record.source_detail = {**record.source_detail,
+                    'transaction_outcome': 'unknown' if unknown else 'rolled_back'}
+                SqlExecutionAuditService.save_completion(record, update_fields=['source_detail', 'update_time'])
+                DataFactorySqlExecutionService.mark_rolled_back(getattr(handle, 'children', []), error)
+                continue
             record.status = 'fail' if unknown else 'rolled_back'
             record.error_message = ('数据工厂事务结果未知，需按执行快照核查，不自动重放'
                                     if unknown else '数据工厂业务事务已回滚，请结合执行来源查看失败原因')

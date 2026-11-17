@@ -34,6 +34,7 @@ def register_schema_tools(mcp):
                 },
                 "external_cleanup": {
                     "configuration": "使用现有create/update_data_factory_template的cleanup_resources配置同产品ES逻辑数据源；页面场景模板配置中的关联ES清理也可设置。",
+                    "index_template": "支持固定精确索引、example_{tenant}或单独{tenant}；最多一个末尾租户占位符，禁止通配符、多索引及路径。实际租户、渲染后的索引和冻结归属仍须通过校验。",
                     "modes": {"verify": "默认只等待并回查", "delete_and_verify": "按精确文档ID、租户和版本条件删除后回查，需环境读写权限，禁止生产写入"},
                     "ownership": "document_id_field指定本次落库记录的业务唯一ID字段（如id），不传/null使用SQL主键；显式字段缺值不回退。SQL主键与ES ID独立冻结。SQL提交前确认ES文档不存在，不接管存量或猜测历史归属。",
                     "completion": "SQL清理成功不代表全部完成；观察完整等待窗口，末尾至少连续两次查无文档才成功。超时、归属或版本冲突进入清理失败待办，重试仅补未完成资源。",

@@ -16,7 +16,8 @@ from datetime import datetime
 from decimal import Decimal
 
 from django.conf import settings
-from django.db import IntegrityError, connections, transaction
+from django.db import IntegrityError, InterfaceError, OperationalError, connections, transaction
+from django.utils import timezone
 
 from src.apps.data_factory.exceptions import (
     DataFactoryError,
@@ -65,6 +66,7 @@ class SqlExecutionAuditHandle:
     children: list = field(default_factory=list)
     wait_started: float = field(default_factory=DatasourceWaitService.elapsed)
     timing_started: dict = field(default_factory=Timing.snapshot)
+    completed: bool = False
 
 
 class SqlExecutionAuditService:
@@ -74,10 +76,14 @@ class SqlExecutionAuditService:
     def cleanup_expired(cutoff_time):
         from src.apps.data_factory.services.recovery.permit_reconciliation import DatasourcePermitReconciliationService
         protected = DatasourcePermitReconciliationService.referenced_audit_ids()
-        return SqlExecutionRecord.objects.filter(create_time__lt=cutoff_time).exclude(
+        records = SqlExecutionRecord.objects.filter(create_time__lt=cutoff_time).exclude(
             status='running',
         ).exclude(source_detail__outcome_unknown=True,
-                  source_detail__outcome_resolution__isnull=True).exclude(id__in=protected).delete()[0]
+                  source_detail__outcome_resolution__isnull=True).exclude(id__in=protected)
+        from src.apps.data_factory.services.sql.audit_request import DatasourceAuditRequestService
+        for record in records.filter(source_detail__request_claimed=True).only('request_id').iterator():
+            DatasourceAuditRequestService.retire(record.request_id)
+        return records.delete()[0]
 
     @staticmethod
     def report_audit_failure(error, stage):
@@ -106,7 +112,8 @@ class SqlExecutionAuditService:
 
     @staticmethod
     def active():
-        return _active_audit.get()
+        handle = _active_audit.get()
+        return None if getattr(handle, 'completed', False) is True else handle
 
     @staticmethod
     def current_source():
@@ -133,15 +140,18 @@ class SqlExecutionAuditService:
 
     @classmethod
     def call(cls, database, operation, callback, *, stage=DatasourceAuditStageEnum.QUERY.value,
-             source_type=DatasourceAuditSourceEnum.CONNECTION.value, result_summary=None):
-        with cls.source({'source_stage': stage, **cls.current_source()}):
+             source_type=DatasourceAuditSourceEnum.CONNECTION.value, result_summary=None, independent=False):
+        context = {'source_stage': stage, **cls.current_source()}
+        if independent:
+            context['source_stage'] = stage
+        with cls.source(context):
             return cls._call_admitted(database, operation, callback, stage=stage, source_type=source_type,
-                                      result_summary=result_summary)
+                                      result_summary=result_summary, independent=independent)
 
     @classmethod
-    def _call_admitted(cls, database, operation, callback, *, stage, source_type, result_summary):
+    def _call_admitted(cls, database, operation, callback, *, stage, source_type, result_summary, independent=False):
         active = cls.active()
-        if active is not None and (
+        if not independent and active is not None and (
                 getattr(active.record, 'database_id', None) == getattr(database, 'id', None)
                 and getattr(active.record, 'datasource_type', None) == getattr(database, 'db_type', None)):
             return callback()
@@ -164,7 +174,11 @@ class SqlExecutionAuditService:
         if isinstance(result, dict) and (result.get('connected') is False or result.get('status') == 'failed'):
             cls.finish_failure(handle, OSError(), duration)
         else:
-            summary = result_summary(result) if result_summary is not None else result
+            try:
+                summary = result_summary(result) if result_summary is not None else result
+            except Exception:
+                cls.finish_success(handle, {'result_summary_unavailable': True}, duration)
+                raise
             cls.finish_success(handle, summary if isinstance(summary, dict) else {'result': summary}, duration)
         return result
 
@@ -281,7 +295,11 @@ class SqlExecutionAuditService:
             parameters: dict | None, source_context: dict, request_id: str | None,
             started_monotonic: float, database=None,
     ) -> SqlExecutionAuditHandle:
+        """准备内存审计；只有调用方提供的请求编号需要独立持久去重。"""
         context = cls.validate_source_context({**(_source_context.get() or {}), **source_context})
+        for key in ('request_claimed', 'started_at', 'finished_at', 'result_fully_read',
+                    'request_signature', 'outcome_unknown', 'transaction_outcome', 'error_category', 'error_code'):
+            context.pop(key, None)
         context.pop('completed_operation_permits', None)
         context.pop('driver_error_number', None)
         context.pop('physical_session_recovery', None)
@@ -319,6 +337,7 @@ class SqlExecutionAuditService:
             sort_keys=True, default=str, ensure_ascii=False,
         ).encode(), hashlib.sha256).hexdigest()
         context['request_signature'] = signature
+        request_id_supplied = request_id is not None
         request_id = str(request_id or uuid.uuid4().hex)
         if len(request_id) > 64:
             raise DataFactoryError(DATASOURCE_AUDIT_REQUEST_CONFLICT)
@@ -346,25 +365,26 @@ class SqlExecutionAuditService:
         from src.apps.system.services.runtime_center.process_identity import RuntimeProcessIdentity
         # 本机生成的进程UUID不是授权token；单独存储，不能被通用凭据脱敏抹掉。
         values['source_detail']['execution_owner'] = RuntimeProcessIdentity.current()
-        using = cls.database_alias()
         try:
-            try:
-                with transaction.atomic(using=using):
-                    record = SqlExecutionRecord.objects.using(using).create(**values)
-            except IntegrityError:
-                record = SqlExecutionRecord.objects.using(using).get(request_id=request_id)
-                if record.source_detail.get('request_signature') != signature:
-                    raise DataFactoryError(DATASOURCE_AUDIT_REQUEST_CONFLICT)
-                return SqlExecutionAuditHandle(record, started_monotonic, existing=True)
+            if request_id_supplied:
+                record = SqlExecutionRecord.objects.using(cls.database_alias()).filter(request_id=request_id).first()
+                if record is not None:
+                    if record.source_detail.get('request_signature') != signature:
+                        raise DataFactoryError(DATASOURCE_AUDIT_REQUEST_CONFLICT)
+                    return SqlExecutionAuditHandle(record, started_monotonic, existing=True, completed=True)
+                from src.apps.data_factory.services.sql.audit_request import DatasourceAuditRequestService
+                DatasourceAuditRequestService.claim(request_id, signature)
+                values['source_detail']['request_claimed'] = True
         except DataFactoryError:
             raise
         except Exception as error:
-            log.exception('数据源执行审计创建失败，已阻止执行')
+            log.exception('数据源请求去重凭据不可用，已阻止发送：request_id=%s', request_id)
             cls.report_audit_failure(error, 'create')
             from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
             raise DatasourceInfrastructureService.annotate(DataFactoryError(DATASOURCE_AUDIT_UNAVAILABLE),
                                                           request_id=request_id) from error
-        return SqlExecutionAuditHandle(record, perf_counter())
+        values['source_detail']['started_at'] = timezone.now().isoformat()
+        return SqlExecutionAuditHandle(SqlExecutionRecord(**values), perf_counter())
 
     @classmethod
     def sanitize_parameters(cls, parameters):
@@ -415,6 +435,8 @@ class SqlExecutionAuditService:
 
     @classmethod
     def finish_success(cls, handle: SqlExecutionAuditHandle, result: dict, duration_ms: float):
+        if handle.completed:
+            return
         duration_ms = cls.measured_duration(handle, duration_ms)
         record = handle.record
         payload = result
@@ -426,17 +448,20 @@ class SqlExecutionAuditService:
         record.row_count = int(result.get('row_count') or 0)
         record.affected_rows = int(result.get('affected_rows') or 0)
         record.result_preview = preview
-        record.result_truncated = truncated
+        record.result_truncated = truncated or bool(result.get('truncated'))
         record.is_slow = duration_ms > record.slow_threshold_ms
         cls.save_completion(record, update_fields=[
             'status', 'duration_ms', 'row_count', 'affected_rows',
             'result_preview', 'result_truncated', 'is_slow',
             'source_detail', 'update_time',
         ])
+        handle.completed = True
         cls.notify_slow(record)
 
     @classmethod
     def finish_failure(cls, handle: SqlExecutionAuditHandle, error: Exception, duration_ms: float):
+        if handle.completed:
+            return
         from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
         error._datasource_audit_request_id = handle.record.request_id
         if isinstance(error, DataFactoryError):
@@ -463,6 +488,9 @@ class SqlExecutionAuditService:
         if isinstance(error_code, int):
             record.error_message = f'[{error_code}] {record.error_message}'
         from src.apps.data_factory.services.datasource.data_source_error import DataSourceErrorService
+        reason = DataSourceErrorService.audit_reason(error)
+        if reason is not None:
+            record.error_message = (f'[{error_code}] ' if isinstance(error_code, int) else '') + reason
         if not_sent or getattr(error, '_datasource_operation_not_sent', False) or DataSourceErrorService.confirmed_rejection(error):
             outcome_unknown = False
         elif row_limit_error:
@@ -475,10 +503,17 @@ class SqlExecutionAuditService:
                                 'driver_error_number': DataSourceErrorService.server_error_number(error),
                                 'error_code': error_code if isinstance(error_code, int) else None}
         record.is_slow = duration_ms > record.slow_threshold_ms
-        cls.save_completion(record, update_fields=[
-            'status', 'duration_ms', 'error_message',
-            'source_detail', 'is_slow', 'update_time',
-        ])
+        try:
+            cls.save_completion(record, update_fields=[
+                'status', 'duration_ms', 'error_message',
+                'source_detail', 'is_slow', 'row_count', 'result_preview', 'result_truncated', 'update_time',
+            ])
+        except DataFactoryError as audit_error:
+            # 审计故障已单独告警；不能覆盖原始数据源失败原因。
+            error._datasource_audit_failure_code = audit_error.code
+            handle.completed = True
+            return
+        handle.completed = True
         cls.notify_slow(record)
 
     @staticmethod
@@ -494,10 +529,37 @@ class SqlExecutionAuditService:
 
     @staticmethod
     def save_completion(record, *, update_fields):
+        adding = bool(getattr(getattr(record, '_state', None), 'adding', False))
+        if adding:
+            record.source_detail = {**record.source_detail, 'finished_at': timezone.now().isoformat()}
         try:
-            record.save(update_fields=update_fields)
+            for attempt in range(3):
+                try:
+                    if adding:
+                        using = SqlExecutionAuditService.database_alias()
+                        with transaction.atomic(using=using):
+                            record.save(using=using, force_insert=True)
+                    else:
+                        record.save(update_fields=update_fields)
+                    break
+                except IntegrityError:
+                    if not adding:
+                        raise
+                    stored = SqlExecutionRecord.objects.using(using).get(request_id=record.request_id)
+                    if stored.source_detail.get('request_signature') != record.source_detail.get('request_signature'):
+                        raise DataFactoryError(DATASOURCE_AUDIT_REQUEST_CONFLICT)
+                    record.pk, record._state.adding, record._state.db = stored.pk, False, using
+                    break
+                except (OperationalError, InterfaceError):
+                    if attempt == 2:
+                        raise
+                    # 只重试审计持久化，绝不重试数据源操作；唯一请求ID处理提交响应丢失。
+                    if adding and not connections[using].in_atomic_block:
+                        connections[using].close()
         except Exception as error:
-            log.exception(f'数据源执行审计终态保存失败，record_id={record.id}，禁止自动重放')
+            log.exception('数据源执行审计保存失败 request_id=%s case_id=%s database_id=%s record_id=%s 禁止自动重放',
+                record.request_id, (record.source_detail or {}).get('case_id'),
+                getattr(record, 'database_id', None), record.id)
             SqlExecutionAuditService.report_audit_failure(error, 'completion')
             from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
             raise DatasourceInfrastructureService.annotate(DataFactoryError(DATASOURCE_AUDIT_COMPLETION_FAILED),

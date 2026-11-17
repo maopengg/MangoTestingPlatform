@@ -48,6 +48,30 @@ class MysqlSessionRecoveryTests(SimpleTestCase):
     def state(self):
         return self.store.values[f'group:{self.group}:control']
 
+    def test_deferred_audit_keeps_request_link_for_monitor_and_retention(self):
+        self.record.id = None
+        with Audit.scope(self.handle):
+            permit = Governor.acquire(self.target)
+        saved = self.state()['permits'][permit[1]]
+        self.assertNotIn('audit_record_id', saved)
+        self.assertEqual(saved['audit_request_id'], self.record.request_id)
+        Governor.finish_connection(permit, unknown=True)
+        self.record.id = 77
+        self.store.scan = Mock(return_value={'items': [{'key': f'group:{self.group}:control'}], 'next_cursor': None})
+        with patch('src.apps.data_factory.selectors.execution_audit.ExecutionAuditSelector.request_evidence',
+                   return_value={self.record.request_id: self.record}) as evidence, \
+                patch('src.apps.data_factory.services.recovery.health_incident.DatasourceHealthIncidentService.safe_observe'), \
+                self.assertLogs('system', level='WARNING'):
+            result = Reconcile.monitor()
+        self.assertEqual(result['groups'][0]['permits'][0]['audit']['request_id'], self.record.request_id)
+        evidence.assert_called_once_with({self.record.request_id})
+        self.assertIn(permit[1], self.state()['permits'])
+        with patch('src.apps.system.selectors.runtime_kv.RuntimeKVSelector.entries', return_value=[
+                SimpleNamespace(value={'data': self.state()})]), \
+                patch('src.apps.data_factory.selectors.execution_audit.ExecutionAuditSelector.request_evidence',
+                      return_value={self.record.request_id: self.record}):
+            self.assertEqual(Reconcile.referenced_audit_ids(), {77})
+
     def unknown(self, session=True):
         import uuid
         from src.apps.data_factory.schemas.performance import DatasourcePermit

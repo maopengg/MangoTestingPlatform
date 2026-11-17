@@ -1185,6 +1185,9 @@
       }
     }
     const label = liveObject(useSelectValue.getTopLevelLabelByValue(method))
+    const standaloneActual = ['函数断言', '文件断言', 'sql断言'].includes(String(label?.label)) ||
+      (inputItem?.parameter || []).some((parameter) => parameter.f === 'actual' &&
+        (parameter.input_type === 'object' || parameter.value_type === 'object'))
     if (String(value || '').startsWith('assert_excel_')) {
       loadUiTestFiles()
     }
@@ -1198,7 +1201,7 @@
           return
         }
         if (
-          !['函数断言', '文件断言', 'sql断言'].includes(String(label.label)) &&
+          !standaloneActual &&
           (select.f === 'actual' || select.f === 'locating') &&
           !(select.f === 'locating' && nodeFields.value.some((item) => item.key === 'ele_name')) &&
           !nodeFields.value.some((item) => item.key === select.f)
@@ -1220,7 +1223,7 @@
           })
         } else if (
           select.d === true && nodeType.value === 4
-            ? ['函数断言', '文件断言', 'sql断言'].includes(String(label.label)) &&
+            ? standaloneActual &&
               select.f !== 'expect' &&
               select.n !== '函数代码'
             : !nodeFields.value.some((item) => item.key === select.f)

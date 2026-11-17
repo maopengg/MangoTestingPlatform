@@ -181,18 +181,8 @@ class AutomationEffectivenessQualityMixin:
         previous_counts = TestSuiteSummaryService.execution_status_counts_from_rows(
             previous_rows
         )
-        current_completed = (
-                current_counts['success']
-                + current_counts['fail']
-                + current_counts['warning']
-                + current_counts['stopped']
-        )
-        previous_completed = (
-                previous_counts['success']
-                + previous_counts['fail']
-                + previous_counts['warning']
-                + previous_counts['stopped']
-        )
+        current_completed = TestSuiteSummaryService.completed_execution_count(current_counts)
+        previous_completed = TestSuiteSummaryService.completed_execution_count(previous_counts)
         current_issue_count = current_counts['fail'] + current_counts['warning']
         previous_issue_count = previous_counts['fail'] + previous_counts['warning']
         current_issue_rate = cls._rate(current_issue_count, current_completed)
@@ -247,9 +237,7 @@ class AutomationEffectivenessQualityMixin:
                 rows_by_environment.get(env_id, [])
             )
             total = sum(counts.values())
-            completed = (
-                    counts['success'] + counts['fail'] + counts['warning'] + counts['stopped']
-            )
+            completed = TestSuiteSummaryService.completed_execution_count(counts)
             rows.append({
                 'environment': env_id,
                 'environment_name': EnvironmentEnum.get_value(env_id),
@@ -283,9 +271,7 @@ class AutomationEffectivenessQualityMixin:
             counts = TestSuiteSummaryService.execution_status_counts_from_rows(rows)
             detail_rows[day] = {
                 'total': sum(counts.values()),
-                'completed': (
-                        counts['success'] + counts['fail'] + counts['warning'] + counts['stopped']
-                ),
+                'completed': TestSuiteSummaryService.completed_execution_count(counts),
                 'success': counts['success'],
                 'failed': counts['fail'],
                 'warning': counts['warning'],
@@ -332,6 +318,7 @@ class AutomationEffectivenessQualityMixin:
             TaskEnum.PROCEED.value: 'proceed',
             TaskEnum.STAY_BEGIN.value: 'stay_begin',
             TaskEnum.STOPPED.value: 'stopped',
+            TaskEnum.INFRASTRUCTURE_BLOCKED.value: 'blocked',
         }
         return [
             {
@@ -353,7 +340,7 @@ class AutomationEffectivenessQualityMixin:
         result = []
         for scene, rows in grouped.items():
             counts = TestSuiteSummaryService.execution_status_counts_from_rows(rows)
-            completed = counts['success'] + counts['fail'] + counts['warning'] + counts['stopped']
+            completed = TestSuiteSummaryService.completed_execution_count(counts)
             result.append({
                 'scene': scene,
                 'scene_name': AutomationExecutionSceneEnum.get_value(
@@ -377,7 +364,7 @@ class AutomationEffectivenessQualityMixin:
         result = []
         for scope, rows in grouped.items():
             counts = TestSuiteSummaryService.execution_status_counts_from_rows(rows)
-            completed = counts['success'] + counts['fail'] + counts['warning'] + counts['stopped']
+            completed = TestSuiteSummaryService.completed_execution_count(counts)
             result.append({
                 'scope': scope,
                 'scope_name': AutomationExecutionScopeEnum.get_value(

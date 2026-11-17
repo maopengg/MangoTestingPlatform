@@ -45,6 +45,26 @@ class SqlExecutionRecordViews(ViewSet):
 
     @classmethod
     def _apply_filters(cls, request: Request, queryset):
+        case_id = request.query_params.get('case_id')
+        if case_id not in (None, ''):
+            if not str(case_id).isascii() or not str(case_id).isdigit() or int(case_id) <= 0:
+                return None
+            queryset = ExecutionAuditSelector.filter_case(queryset, int(case_id))
+        for key in ('case_detail_id', 'test_suite_id', 'operation'):
+            value = request.query_params.get(key)
+            if value in (None, ''):
+                continue
+            if key != 'operation':
+                if not str(value).isascii() or not str(value).isdigit() or int(value) <= 0:
+                    return None
+                value = int(value)
+            elif len(value) > 64 or not value.replace('_', '').isalnum():
+                return None
+            if key == 'case_detail_id':
+                queryset = queryset.filter(Q(source_detail__case_detail_id=value)
+                    | Q(source_detail__test_suite_detail_id=value))
+            else:
+                queryset = queryset.filter(**{f'source_detail__{key}': value.lower() if key == 'operation' else value})
         id_values = [
             item.strip()
             for value in request.query_params.getlist('id__in')

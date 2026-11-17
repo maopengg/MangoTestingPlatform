@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
 import { config, form, record, component, deferred, flush } from './helpers/auth-config-harness.mjs'
 
 test('independent search and edit instances cannot leak values; edit drafts do not mutate rows', () => {
@@ -80,11 +80,14 @@ test('failed status/delete operations do not commit state or close confirmation;
     api:{putApiAuthConfigStatus:async()=>{if(fail)throw new Error('failure');return {code:200}},
       deleteApiAuthConfig:async()=>{if(fail)throw new Error('failure');return {msg:'ok'}}},
   })
-  page.table.dataList=[record()]
+  page.table.dataList.push(record())
+  const renderedStatus = computed(() => page.table.dataList[0].status === 1)
+  assert.equal(renderedStatus.value, true)
   assert.equal(await page.onModifyStatus(false,1),false);assert.equal(page.table.dataList[0].status,1)
   page.selectedRowKeys.value=['1'];page.onDelete(null);page.selectedRowKeys.value=[]
   assert.equal(await confirmation.onBeforeOk(),false)
   fail=false
   assert.equal(await page.onModifyStatus(false,1),true);assert.equal(page.table.dataList[0].status,0)
+  assert.equal(renderedStatus.value, false)
   assert.equal(await confirmation.onBeforeOk(),true);page.cleanup()
 })

@@ -169,6 +169,8 @@
           :data="overview"
           :loading="overviewLoading"
           :error="overviewError"
+          :scope="query('overview')"
+          :refresh-key="overviewRefreshKey"
           @retry="loadOverview"
           @drill="drillOverview"
           @interface="openOverviewInterface"
@@ -495,7 +497,7 @@ import { reportLoadError } from '@/utils/load-error'
     getCoverageOverview,
   } from '@/api/apitest/module-coverage'
   import type {
-    CoverageOverview as CoverageOverviewData,
+    CoverageOverviewStatistics as CoverageOverviewData,
     CoverageModuleOverview,
     PageResult,
   } from '@/api/apitest/module-coverage'
@@ -554,6 +556,7 @@ import { reportLoadError } from '@/utils/load-error'
   const overview = ref<CoverageOverviewData>(),
     overviewLoading = ref(false),
     overviewError = ref(false)
+  const overviewRefreshKey = ref(0)
   const rows = ref<CoverageRecord[]>([]),
     loading = ref(false),
     rowsError = ref(false)
@@ -660,6 +663,7 @@ import { reportLoadError } from '@/utils/load-error'
   }
   async function loadOverview() {
     if (!pageActive || activeTab.value !== 'overview') return
+    ++overviewRefreshKey.value
     const request = ++overviewRequest,
       params = query('overview'),
       scope = JSON.stringify(params)
@@ -714,18 +718,10 @@ import { reportLoadError } from '@/utils/load-error'
     tab: CoverageTab,
     drillQuery: Record<string, string[]> = {}
   ) {
-    const descendants = new Set([row.id]),
-      modules = overview.value?.modules || []
-    let previousSize = 0
-    while (descendants.size !== previousSize) {
-      previousSize = descendants.size
-      for (const item of modules)
-        if (item.parent_id != null && descendants.has(item.parent_id)) descendants.add(item.id)
-    }
     invalidateScope()
     projectProductId.value = row.project_product_id
     moduleId.value = row.id
-    moduleIds.value = [...descendants]
+    moduleIds.value = [row.id]
     activeTab.value = tab
     resetTabFilters()
     if (drillQuery.analysis_statuses) filters.analysis_statuses = [...drillQuery.analysis_statuses]

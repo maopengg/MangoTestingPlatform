@@ -57,25 +57,30 @@ test('interface multi-select changes and clearing send current collection filter
   assert.equal('analysis_status__in' in requests[1], false)
 })
 
-test('overview module search and progress selections filter immediately and reset local pagination', async t => {
+test('overview module search and progress selections request server pages and reset pagination', async t => {
   const previousWindow = globalThis.window
   globalThis.window = { removeEventListener() {} }
   const pagination = reactive({ page: 3, pageSize: 20, total: 0, setTotalSize(total) { this.total = total } })
-  const state = harness('CoverageOverview', 'keyword,gapFilter,filtered,visibleModules,pagination', {
+  const requests=[]
+  const state = harness('CoverageOverview', 'keyword,gapFilter,modules,pagination,searchModules', {
     base,
-    props: { loading: false, error: false, data: { modules: [
-      { id: 1, project_name: '示例', product_name: 'WEB', full_path: '订单/详情', is_leaf: true, inventory_completed: false },
-      { id: 2, project_name: '示例', product_name: 'WEB', full_path: '用户/详情', is_leaf: true, inventory_completed: true },
-    ], summary: {} } },
+    props: { loading: true, error: false, scope:{project_product:3} },
+    api:{getCoverageInventory:()=>new Promise(()=>{}),getCoverageModuleProgress:async params=>{
+      requests.push(params);return {data:{items:[{id:requests.length}],count:41}}
+    }},
     modules: { 'echarts/core': { use() {}, dispose() {} }, 'echarts/components': { TitleComponent: {} }, '@/hooks/useEcharts': { default() {} }, '@/hooks/table': { usePagination: () => pagination } },
   })
   t.after(() => { state.close(); globalThis.window = previousWindow })
-  state.keyword.value = '订单'; await flush()
-  assert.deepEqual(state.filtered.value.map(row => row.id), [1]); assert.equal(pagination.page, 1)
+  await flush()
+  assert.equal(requests[0].project_product,3)
+  state.keyword.value = '订单'; await state.searchModules(); await flush()
+  assert.equal(requests.at(-1).keyword,'订单'); assert.equal(pagination.page, 1)
+  assert.equal(pagination.total,41)
   pagination.page = 2; state.keyword.value = ''; state.gapFilter.value = 'scan'; await flush()
-  assert.deepEqual(state.visibleModules.value.map(row => row.id), [1]); assert.equal(pagination.page, 1)
+  assert.equal(requests.at(-1).progress,'scan'); assert.equal(pagination.page, 1)
   state.gapFilter.value = 'all'; await flush()
-  assert.equal(state.filtered.value.length, 2)
+  assert.equal(requests.at(-1).progress,'all')
+  assert.equal(state.modules.value.length,1)
 })
 function panel(name, bindings, api = {}, options = {}) {
   return harness(name, bindings, {
@@ -223,7 +228,7 @@ test('same-scope list retry retains data while navigation and reset restart pagi
   assert.deepEqual(state.filters.methods, [])
   state.close()
 })
-test('overview drill includes descendants, resets pages and carries only supported multi filters', async () => {
+test('overview drill selects the third-level module, resets pages and carries supported multi filters', async () => {
   const requests = [],
     state = coveragePage({
       getCoverageInterfaces: async (query) => {
@@ -245,7 +250,7 @@ test('overview drill includes descendants, resets pages and carries only support
     analysis_statuses: ['gap'],
   })
   await flush()
-  assert.equal(requests[0].module__in, '1,2,3')
+  assert.equal(requests[0].module__in, '1')
   assert.equal(requests[0].page, 1)
   assert.equal(requests[0].analysis_status__in, 'gap')
   state.close()

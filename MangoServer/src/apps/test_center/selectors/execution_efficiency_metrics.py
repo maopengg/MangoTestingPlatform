@@ -21,7 +21,8 @@ PHASES = {
     Step.DATA_FACTORY_CLEANUP.value: '后置处理', Step.ASSERTION.value: '断言',
     Step.REPORT_WRITE.value: '结果回写', Step.RETRY_WAIT.value: '重试等待',
 }
-COMPLETED = {TaskEnum.SUCCESS.value, TaskEnum.FAIL.value, TaskEnum.WARNING.value, TaskEnum.STOPPED.value}
+COMPLETED = {TaskEnum.SUCCESS.value, TaskEnum.FAIL.value, TaskEnum.WARNING.value, TaskEnum.STOPPED.value,
+             TaskEnum.INFRASTRUCTURE_BLOCKED.value}
 
 
 def milliseconds(start, end):

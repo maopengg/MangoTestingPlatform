@@ -206,7 +206,8 @@ class ProcessIdentityTests(SimpleTestCase):
                 query.exists.return_value = remaining
                 self.health.reset_mock()
                 self.assertEqual(Recovery.recover(), 1)
-                block.assert_called_once_with(7, 2, [], expected_push_time=row['push_time'])
+                block.assert_called_once_with(7, 2, [], expected_push_time=row['push_time'],
+                    interruption_reason='执行进程已重启或被替换，本次执行未完成。请核查已发送请求及数据清理状态')
                 if remaining:
                     self.health.assert_not_called()
                 else:

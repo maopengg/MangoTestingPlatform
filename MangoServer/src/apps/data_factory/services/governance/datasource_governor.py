@@ -265,6 +265,7 @@ class DatasourceGovernorService:
                     lane=lane, kind=DatasourcePermitKindEnum.CONNECTION, slots=cost,
                     created_at=now, expires_at=now + cls.CONNECTION_LEASE_SECONDS,
                     audit_record_id=getattr(record, 'id', None),
+                    audit_request_id=getattr(record, 'request_id', None),
                     case_detail_id=case_owner['parent_case_detail_id'] if case_owner else None,
                     case_attempt=case_owner['parent_attempt'] if case_owner else None)
                 state.admitted += 1

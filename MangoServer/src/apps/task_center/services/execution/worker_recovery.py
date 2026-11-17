@@ -23,7 +23,10 @@ class ApiWorkerRecoveryService:
             status=TaskEnum.PROCEED.value).first()
         if detail is None or TestSuiteInfrastructureService.is_blocked(detail.summary_data):
             return False
-        return TestSuiteInfrastructureService.block(detail.id, attempt, [], expected_push_time=detail.push_time)
+        return TestSuiteInfrastructureService.block(
+            detail.id, attempt, [], expected_push_time=detail.push_time,
+            interruption_reason='执行任务已结束，但未保存完整结果。请核查执行日志及数据清理状态',
+        )
 
     @staticmethod
     def parse_time(value):
@@ -95,7 +98,8 @@ class ApiWorkerRecoveryService:
             heartbeat = heartbeats.get(owner.get('worker_name'))
             if heartbeat and cls.replacement_confirmed(owner, heartbeat, detail['push_time'], now):
                 blocked = TestSuiteInfrastructureService.block(
-                    detail['id'], int(detail['retry'] or 0), [], expected_push_time=detail['push_time'])
+                    detail['id'], int(detail['retry'] or 0), [], expected_push_time=detail['push_time'],
+                    interruption_reason='执行进程已重启或被替换，本次执行未完成。请核查已发送请求及数据清理状态')
                 recovered += bool(blocked)
                 if blocked:
                     replaced_owners[owner['process_token']] = owner['worker_name']

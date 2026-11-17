@@ -502,11 +502,4 @@
     }
   }
 
-  .mango-scene-config-workbench {
-    display: grid;
-    height: 100%;
-    min-height: 0;
-    gap: var(--m-page-gap);
-    grid-template-columns: 300px minmax(0, 1fr);
-  }
 </style>

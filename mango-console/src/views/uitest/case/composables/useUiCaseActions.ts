@@ -3,10 +3,10 @@ import { Message, Modal } from '@arco-design/web-vue'
 import { deleteUiCase, getUiCaseRun, postUiCaseCopy, putUiCasePublication, postUiRunCaseBatch } from '@/api/uitest/case'
 import { requiredUiCaseAssetId, uiCaseAssetId, uiCaseAssetResponse } from '@/components/business/ui-case-step-create'
 import type { CaseId, PublicationStatus, UiCaseRow } from '../case-list-records'
-type Action = 'delete' | 'copy' | 'run' | 'batch-run' | 'publication'
+type Action = 'delete' | 'copy' | 'run' | 'batch-run' | 'publication' | 'batch-publication'
 export function useUiCaseActions(options: {
   available: () => boolean; capture: () => () => boolean; environment: () => unknown; rows: () => readonly UiCaseRow[]
-  filterKey: () => string; beforeWrite: () => void; committed: (kind: Action, ids: CaseId[], target?: PublicationStatus) => Promise<void>
+  filterKey: () => string; beforeWrite: () => void; committed: (kind: Action, ids: CaseId[], target?: PublicationStatus, remaining?: CaseId[]) => Promise<void>
 }) {
   const pending = ref<{ kind: Action; ids: CaseId[] } | null>(null), error = ref('')
   let confirmation: { close: () => void } | null = null
@@ -47,6 +47,64 @@ export function useUiCaseActions(options: {
     try { records([id]) } catch { error.value = '用例数据已变化，请重新加载'; return Promise.resolve(false) }
     return dispatch('copy', [id], capture(), null)
   }
+  async function dispatchBatchPublication(ids: CaseId[], current: () => boolean): Promise<boolean> {
+    if (pending.value || !options.available() || !current()) return false
+    const completionCurrent = capture()
+    pending.value = { kind: 'batch-publication', ids: [...ids] }
+    error.value = ''; options.beforeWrite()
+    const succeeded: CaseId[] = []
+    let failed = 0
+    try {
+      for (const id of ids) {
+        if (!current()) break
+        try {
+          uiCaseAssetResponse(await putUiCasePublication(id, 'prepublished'))
+          succeeded.push(id)
+        } catch { failed++ }
+      }
+      if (!current()) return false
+      closeConfirmation()
+      if (failed) Message.warning(`提交预发布成功 ${succeeded.length} 条，失败 ${failed} 条；失败项已保留勾选，请检查后重试`)
+      else Message.success(`已提交预发布，共 ${succeeded.length} 条，待产品负责人审核`)
+      const acknowledged = new Set(succeeded.map(String))
+      try { await options.committed('batch-publication', succeeded, 'prepublished', ids.filter(id => !acknowledged.has(String(id)))) }
+      catch { if (completionCurrent()) error.value = '提交已完成，列表刷新失败，请重新加载' }
+      return true
+    } finally { pending.value = null }
+  }
+  function batchPublication(values: readonly CaseId[]): boolean {
+    if (!options.available() || pending.value || confirmation) return false
+    let selected: UiCaseRow[]
+    try { selected = records(values) } catch { Message.warning('请选择当前列表中要提交预发布的用例'); return false }
+    function warning(rows: UiCaseRow[]) {
+      const reasons = new Set<string>()
+      if (rows.some(row => row.publication_status === 'prepublished')) reasons.add('包含已有预发布候选的用例，请先处理旧候选')
+      if (rows.some(row => row.publication_status === 'published')) reasons.add('包含已发布用例，请先退回未发布再提交')
+      if (rows.some(row => row.status !== 1)) reasons.add('包含未执行通过的用例，请执行通过后再提交')
+      return [...reasons].join('；')
+    }
+    const reason = warning(selected)
+    if (reason) { Message.warning(reason); return false }
+    const current = capture(), ids = selected.map(row => row.id)
+    const fingerprints = new Map(selected.map(row => [String(row.id), row.update_time]))
+    let open = true
+    const close = () => { if (!open) return; open = false; confirmation = null; handle.close() }
+    const handle = Modal.confirm({
+      title: '批量预发布',
+      content: `确认将所选 ${ids.length} 个用例提交预发布吗？提交后由产品负责人审核，预发布用例不参与定时执行。`,
+      okText: '提交预发布', cancelText: '取消', onCancel: close,
+      async onBeforeOk() {
+        if (!open || !current() || pending.value) return false
+        try {
+          const latest = records(ids)
+          if (warning(latest) || latest.some(row => row.update_time !== fingerprints.get(String(row.id)))) throw Error('Changed case')
+        } catch { Message.warning('用例状态已变化，请重新选择后提交'); close(); return false }
+        return dispatchBatchPublication(ids, () => open && current())
+      },
+    })
+    confirmation = { close }
+    return true
+  }
   function confirm(kind: 'delete' | 'batch-run' | 'publication', values: readonly CaseId[], target?: PublicationStatus): boolean {
     if (!options.available() || pending.value || confirmation) return false
     let selected: UiCaseRow[]
@@ -75,5 +133,5 @@ export function useUiCaseActions(options: {
     })
     confirmation = { close }; return true
   }
-  return { pending, error, run, copy, remove: (ids: readonly CaseId[]) => confirm('delete', ids), batchRun: (ids: readonly CaseId[]) => confirm('batch-run', ids), publication: (id: CaseId, target: 'prepublished' | 'unpublished') => confirm('publication', [id], target), invalidate, closeConfirmation }
+  return { pending, error, run, copy, batchPublication, remove: (ids: readonly CaseId[]) => confirm('delete', ids), batchRun: (ids: readonly CaseId[]) => confirm('batch-run', ids), publication: (id: CaseId, target: 'prepublished' | 'unpublished') => confirm('publication', [id], target), invalidate, closeConfirmation }
 }

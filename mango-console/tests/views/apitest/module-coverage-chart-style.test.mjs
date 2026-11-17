@@ -69,7 +69,7 @@ test('initial chart render tolerates getOption returning undefined', () => {
 
 test('analysis shares ring, labels and legend layout with the adjacent charts', () => {
   assert.doesNotMatch(source, /__analysis-chart|__analysis-legend|__analysis-state/)
-  const analysis = source.slice(source.indexOf('if (entryChart.value)'), source.indexOf('if (coverageChart.value)'))
+  const analysis = source.slice(source.indexOf('if (entryChart.value &&'), source.indexOf('if (coverageChart.value &&'))
   assert.match(analysis, /\.\.\.donutStyle\(/)
   assert.match(analysis, /\.\.\.donutSeries\(entryChart.value, entryData.value\)/)
   assert.doesNotMatch(analysis, /legend:|radius:|center:/)

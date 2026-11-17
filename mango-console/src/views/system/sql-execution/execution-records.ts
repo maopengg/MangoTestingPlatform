@@ -42,6 +42,17 @@ export interface SqlExecutionRecord {
   error_message: string
 }
 
+export function auditSourceValue(row: SqlExecutionRecord, key: string): string {
+  const source = row.source_detail
+  if (!source || typeof source !== 'object' || Array.isArray(source)) return '-'
+  let value = source[key]
+  if (key === 'case_id' && value == null) {
+    if (row.source_type === 'api_case') value = row.source_id
+    else if (row.source_type === 'data_factory' && source.case_source_type === 4) value = source.case_source_id
+  }
+  return typeof value === 'number' || typeof value === 'string' ? String(value) : '-'
+}
+
 const optionKeys: (keyof AuditOptions)[] = ['datasource_type_options', 'project_product_options',
   'source_type_options', 'source_stage_options', 'environment_options', 'datasource_alias_options', 'status_options', 'slow_options']
 
@@ -129,7 +140,7 @@ export function parseExecutionList(value: unknown): { rows: SqlExecutionRecord[]
   return { rows, total: result.totalSize }
 }
 
-const queryKeys = ['id', 'id__in', 'source_type', 'source_type__in', 'source_id', 'source_id__in', 'source_stage', 'source_stage__in',
+const queryKeys = ['case_id', 'case_detail_id', 'test_suite_id', 'operation', 'id', 'id__in', 'source_type', 'source_type__in', 'source_id', 'source_id__in', 'source_stage', 'source_stage__in',
   'project_product_id', 'project_product_id__in', 'test_env', 'test_env__in', 'datasource_alias_id', 'datasource_alias_id__in',
   'datasource_type', 'datasource_type__in', 'database_id', 'database_id__in', 'status', 'status__in', 'is_slow', 'is_slow__in',
   'duration_min', 'duration_max', 'sql_keyword'] as const

@@ -38,7 +38,9 @@ class AuditedResultCursor:
         self.count = 0
         self.preview_size = 0
         self.truncated = False
-        self.duration_ms = float(handle.record.duration_ms or 0)
+        self.duration_ms = (perf_counter() - handle.started_monotonic) * 1000
+        self.finished = False
+        self.fully_read = False
 
     def __getattr__(self, key):
         return getattr(self.cursor, key)
@@ -53,42 +55,58 @@ class AuditedResultCursor:
                 self.preview_size += sum(len(str(item)) for item in value)
             else:
                 self.truncated = True
-        columns = [item[0] for item in self.cursor.description or []]
-        record = self.handle.record
-        preview, truncated = SqlExecutionAuditService.result_preview({'columns': columns, 'rows': self.rows})
-        record.result_preview = preview
-        record.result_truncated = truncated or self.truncated
-        record.row_count = self.count
-        record.duration_ms = round(self.duration_ms, 2)
-        record.is_slow = record.duration_ms > record.slow_threshold_ms
-        record.source_detail = {**record.source_detail, 'timing_ms': Timing.delta(self.handle.timing_started)}
-        SqlExecutionAuditService.save_completion(record, update_fields=[
-            'result_preview', 'result_truncated', 'row_count', 'duration_ms', 'is_slow', 'source_detail', 'update_time',
-        ])
+
+    def finish(self, error=None):
+        if self.finished:
+            return
+        self.finished = True
+        self.handle.record.source_detail = {**self.handle.record.source_detail,
+                                           'result_fully_read': self.fully_read}
+        if error is not None:
+            self.handle.record.row_count = self.count
+            preview, truncated = SqlExecutionAuditService.result_preview({
+                'columns': [item[0] for item in self.cursor.description or []], 'rows': self.rows})
+            self.handle.record.result_preview = preview
+            self.handle.record.result_truncated = truncated or self.truncated
+            SqlExecutionAuditService.finish_failure(self.handle, error, self.duration_ms)
+        else:
+            SqlExecutionAuditService.finish_success(self.handle, {
+                'columns': [item[0] for item in self.cursor.description or []],
+                'rows': self.rows, 'row_count': self.count, 'affected_rows': 0,
+                'truncated': self.truncated,
+            }, self.duration_ms)
+
+    def fetch(self, method, *args, all_rows=False, **kwargs):
+        started = perf_counter()
+        try:
+            value = getattr(self.cursor, method)(*args, **kwargs)
+        except BaseException as error:
+            self.duration_ms += (perf_counter() - started) * 1000
+            self.finish(error)
+            raise
+        rows = ([] if value is None else [value]) if method == 'fetchone' else value
+        self.capture(rows, (perf_counter() - started) * 1000)
+        if all_rows or not rows:
+            self.fully_read = True
+            self.finish()
+        return value
 
     def fetchone(self):
-        started = perf_counter()
-        row = self.cursor.fetchone()
-        self.capture([] if row is None else [row], (perf_counter() - started) * 1000)
-        return row
+        return self.fetch('fetchone')
 
     def fetchmany(self, *args, **kwargs):
-        started = perf_counter()
-        rows = self.cursor.fetchmany(*args, **kwargs)
-        self.capture(rows, (perf_counter() - started) * 1000)
-        return rows
+        return self.fetch('fetchmany', *args, **kwargs)
 
     def fetchall(self):
-        started = perf_counter()
-        rows = self.cursor.fetchall()
-        self.capture(rows, (perf_counter() - started) * 1000)
-        return rows
+        return self.fetch('fetchall', all_rows=True)
 
     def close(self):
         try:
+            self.finish()
             return self.cursor.close()
-        finally:
-            SqlExecutionAuditService.notify_slow(self.handle.record)
+        except BaseException as error:
+            self.finish(error)
+            raise
 
 
 class SqlDriverAuditService:
@@ -102,15 +120,33 @@ class SqlDriverAuditService:
             from src.apps.data_factory.services.cleanup.cleanup_persistence import CleanupPersistenceService
             CleanupPersistenceService.check()
 
+        def transaction_operation(method, operation):
+            def execute(connection):
+                parent = SqlExecutionAuditService.active()
+                context = dict(parent.record.source_detail) if parent is not None else {}
+                if parent is not None:
+                    context['parent_request_id'] = parent.record.request_id
+                with SqlExecutionAuditService.source(context):
+                    return SqlExecutionAuditService.call(database, operation, lambda: method(connection),
+                        stage=DatasourceAuditStageEnum.TRANSACTION.value,
+                        source_type=DatasourceAuditSourceEnum.METADATA.value, independent=True)
+            return execute
+
+        engine.dialect.do_commit = transaction_operation(engine.dialect.do_commit, 'COMMIT')
+        engine.dialect.do_rollback = transaction_operation(engine.dialect.do_rollback, 'ROLLBACK')
+
         def start(statement, parameters=None, stage=DatasourceAuditStageEnum.STATEMENT.value, parent=None):
             source = {'source_type': DatasourceAuditSourceEnum.METADATA.value,
                       'source_id': database.id, **SqlExecutionAuditService.current_source(), 'source_stage': stage}
             if parent is not None:
                 source.update(parent.record.source_detail)
                 source.pop('request_signature', None)
-                source['parent_sql_execution_id'] = parent.record.id
-                source['source_stage'] = (DatasourceAuditStageEnum.GENERATED_KEY_LOOKUP.value
-                                          if parent.record.source_stage == 'create' else DatasourceAuditStageEnum.NESTED_QUERY.value)
+                source['parent_request_id'] = parent.record.request_id
+                if parent.record.id is not None:
+                    source['parent_sql_execution_id'] = parent.record.id
+                source['source_stage'] = (stage if stage != DatasourceAuditStageEnum.STATEMENT.value else
+                    (DatasourceAuditStageEnum.GENERATED_KEY_LOOKUP.value if parent.record.source_stage == 'create'
+                     else DatasourceAuditStageEnum.NESTED_QUERY.value))
             return SqlExecutionAuditService.start(
                 database=database, sql=statement, parameters={'bindings': parameters} if parameters else {},
                 source_context=source, request_id=None, started_monotonic=perf_counter(),
@@ -135,13 +171,14 @@ class SqlDriverAuditService:
                 raise
 
         def prepare_audit(statement, parameters, context):
-            if statement.lstrip().upper().startswith(('SET TRANSACTION ', 'PRAGMA QUERY_ONLY', 'SAVEPOINT ', 'RELEASE SAVEPOINT ')):
-                return
+            control = statement.lstrip().upper().startswith((
+                'SET TRANSACTION ', 'PRAGMA QUERY_ONLY', 'SAVEPOINT ', 'RELEASE SAVEPOINT ', 'ROLLBACK TO SAVEPOINT '))
             parent = SqlExecutionAuditService.active()
-            if parent is not None and not parent.statement_claimed:
+            if parent is not None and not parent.statement_claimed and not control:
                 parent.statement_claimed = True
                 return
-            context.mango_audit = start(statement, parameters, parent=parent)
+            context.mango_audit = start(statement, parameters, parent=parent,
+                stage=DatasourceAuditStageEnum.TRANSACTION.value if control else DatasourceAuditStageEnum.STATEMENT.value)
             # 各段耗时单独累计；不将连接等待重复算作物理 SQL 执行。
             context.mango_audit.timing_started = context.mango_timing_started
             if parent is not None:
@@ -210,12 +247,21 @@ class SqlDriverAuditService:
             handle = getattr(context, 'mango_audit', None)
             if handle is None:
                 return
-            SqlExecutionAuditService.finish_success(handle, {
-                'affected_rows': max(cursor.rowcount, 0) if not cursor.description else 0,
-                'columns': [item[0] for item in cursor.description or []],
-            }, round((perf_counter() - handle.started_monotonic) * 1000, 2))
             if cursor.description:
+                pending = connection.info.setdefault('_mango_audit_cursors', [])
+                pending[:] = [value for value in pending if not value.finished]
                 context.cursor = AuditedResultCursor(context.cursor, handle)
+                pending.append(context.cursor)
+            else:
+                SqlExecutionAuditService.finish_success(handle, {
+                    'affected_rows': max(cursor.rowcount, 0),
+                }, round((perf_counter() - handle.started_monotonic) * 1000, 2))
+
+        @event.listens_for(engine, 'checkin')
+        def close_pending_results(connection, connection_record):
+            for cursor in connection_record.info.pop('_mango_audit_cursors', []):
+                if not cursor.finished:
+                    cursor.close()
 
         @event.listens_for(engine, 'handle_error')
         def failed(error_context):
@@ -236,6 +282,13 @@ class SqlDriverAuditService:
             if error_context.connection is not None and (error_context.is_disconnect
                     or DatasourceGovernorService.outcome_unknown(error_context.original_exception)):
                 error_context.original_exception._datasource_outcome_unknown = True
+                if not error_context.connection.invalidated:
+                    try:
+                        error_context.connection.invalidate(error_context.original_exception)
+                    except Exception:
+                        from src.common.logging import log
+                        log.system.warning('event=datasource_transaction_connection_retirement_pending database_id=%s',
+                                           database.id)
             handle = getattr(error_context.execution_context, 'mango_audit', None)
             if handle is not None:
                 SqlExecutionAuditService.finish_failure(handle, error_context.original_exception,

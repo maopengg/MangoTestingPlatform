@@ -316,8 +316,8 @@ def register_schema_tools(mcp):
                     "front_headers": {
                         "type": "list[int]",
                         "default": [],
-                        "description": "用例级默认请求头，只保存 ApiHeaders.id。只勾选当前 case 必须的公共请求头。",
-                        "execution": "场景 headers 为空时使用；场景 headers 非空时被场景 headers 完全覆盖，不合并。",
+                        "description": "用例级请求头，只保存 ApiHeaders.id。默认开启的请求头无需重复勾选。",
+                        "execution": "front_headers 非空时仅使用所选项，不合并产品默认请求头；为空时自动使用当前产品 status=1 的请求头。场景 headers 非空时整体替代上述请求头。固定修订使用冻结快照，详见 execution_rules.headers。",
                         "example": [1, 2, 3],
                     },
                     "front_public": {
@@ -431,8 +431,8 @@ def register_schema_tools(mcp):
                     "headers": {
                         "type": "list[int]",
                         "default": [],
-                        "description": "场景级请求头，只保存 ApiHeaders.id。",
-                        "execution": "只要 headers 非空，就完全覆盖 api_case.front_headers，不会合并；headers=[] 时使用用例级 front_headers；front_headers 也为空时使用当前项目产品下 status=1 的 ApiHeaders。",
+                        "description": "场景级请求头，只保存 ApiHeaders.id；沿用 Case 或产品默认请求头时留空，无需重复勾选。",
+                        "execution": "headers 非空时仅使用所选项，不合并 Case 或产品默认请求头；headers=[] 时使用 Case front_headers；两者都为空时自动使用当前产品 status=1 的请求头。固定修订使用冻结快照，详见 execution_rules.headers。",
                         "example": [4, 5],
                     },
                     "params": {
@@ -548,10 +548,11 @@ def register_schema_tools(mcp):
                         "函数不得修改状态码/业务字段、吞异常或伪造结果来通过断言；保留原始响应证据。替换已有冗余脚本须保留类型、动态值和断言强度，回读并完整验证失败清理。",
                     ],
                     "headers": [
-                        "api_case.front_headers 是用例级默认请求头，只保存 ApiHeaders.id 数组。",
+                        "默认开启的请求头无需重复勾选：编辑态中场景 headers 和 Case front_headers 都为空时，自动使用当前产品 status=1 的 ApiHeaders。",
+                        "api_case.front_headers 只保存 ApiHeaders.id 数组；非空时仅使用所选项，不与产品默认开启项合并，包括显式选择默认关闭项的情况。",
                         "api_case_scenario.headers 也是 ApiHeaders.id 数组；只要场景 headers 非空，就会完全覆盖 api_case.front_headers，不会合并。",
                         "如果场景 headers=[]，执行时使用用例级 front_headers。",
-                        "如果用例级 front_headers=[]，执行时使用当前项目产品下 status=1 的 ApiHeaders。",
+                        "执行已发布、预发布或指定的 Case 精确修订时，使用该修订冻结的请求头选择与内容快照；请求头管理后续修改不更新旧快照。快照内容中的变量表达式仍在运行时替换，不是冻结 Token 值。",
                         "ApiInfo 主表不再保存 headers；接口定义页的请求头配置写入协议配置表，不作为 API case 的请求头来源。",
                     ],
                     "execution_order": [

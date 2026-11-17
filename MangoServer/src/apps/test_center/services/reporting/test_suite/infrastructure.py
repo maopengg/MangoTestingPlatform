@@ -1,5 +1,6 @@
 from django.db import transaction
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from mangotools.enums import TaskEnum
 
 from src.apps.test_center.enums.case import ReportFailureReasonEnum
@@ -34,7 +35,7 @@ class TestSuiteInfrastructureService:
 
     @classmethod
     @transaction.atomic
-    def block(cls, detail_id, attempt, issues, *, snapshot=None, expected_push_time=None):
+    def block(cls, detail_id, attempt, issues, *, snapshot=None, expected_push_time=None, interruption_reason=None):
         suite_id = TestSuiteDetails.objects.filter(id=detail_id).values_list('test_suite_id', flat=True).get()
         suite = TestSuite.objects.select_for_update().get(id=suite_id)
         detail = TestSuiteDetails.objects.select_for_update().get(id=detail_id, test_suite_id=suite_id)
@@ -55,6 +56,8 @@ class TestSuiteInfrastructureService:
         detail.summary_data = {'children': children or [], 'meta': {**(meta or {}),
             'execution_control': control.model_dump(mode='json')}}
         reasons = list(dict.fromkeys(issue.message for issue in issues))
+        if interruption_reason:
+            reasons.insert(0, interruption_reason)
         detail.error_message = '本次回归未完成：' + '；'.join(reasons) if reasons else '执行已中断，平台未收到完整结果。请核查本次请求及清理状态，勿直接重复写入'
         detail.failure_reason = (ReportFailureReasonEnum.PLATFORM.value if not issues or any(
             issue.origin == ReportFailureReasonEnum.PLATFORM for issue in issues) else ReportFailureReasonEnum.ENVIRONMENT.value)
@@ -75,8 +78,14 @@ class TestSuiteInfrastructureService:
         from src.apps.test_center.enums import TestCaseTypeEnum
         if detail.type == TestCaseTypeEnum.API.value:
             from src.apps.auto_api.services.execution_trace.recorder import ApiCaseExecutionTraceRecorder
+            _, meta = TestSuiteExecutionResultService.unpack_summary_data(detail.summary_data)
+            # push_time 在等待清理时会续租，不能用它排除本轮较早开始的 Trace。
+            try:
+                dispatched_at = parse_datetime(str((meta or {}).get('dispatch_started_at') or ''))
+            except ValueError:
+                dispatched_at = None
             ApiCaseExecutionTraceRecorder.interrupt_report_attempt(
-                detail.id, detail.push_time, detail.error_message,
+                detail.id, dispatched_at or detail.push_time, detail.error_message,
                 detail.summary_data['meta']['execution_control'],
             )
 

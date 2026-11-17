@@ -4,7 +4,7 @@ import path from 'node:path'
 import ts from 'typescript'
 import { readFileSync } from 'node:fs'
 import * as vue from 'vue'
-const { reactive, ref } = vue
+const { reactive, ref, shallowReactive } = vue
 import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
 import { harness, deferred, flush } from './helpers/case-details-harness.mjs'
 const base = path.resolve('src/views/apitest/public')
@@ -25,7 +25,7 @@ function latest() {
 function page(api = {}, lifecycle = null) {
   const selection = ref([]),
     table = {
-      dataList: reactive([]),
+      dataList: shallowReactive([]),
       tableLoading: ref(false),
       handleSuccess: (response) =>
         table.dataList.splice(0, table.dataList.length, ...response.data),
@@ -484,6 +484,19 @@ test('status failures preserve original value and successful retry reads authori
   assert.equal(state.table.tableLoading.value, false)
   state.close()
 })
+test('saved default-use switch renders without depending on the follow-up list request', async () => {
+  const state = page({
+    putApiPublicPutStatus: async () => ({ code: 200 }),
+    getApiPublic: async () => { throw Error('list unavailable') },
+  })
+  state.table.dataList.push(record())
+  const rendered = vue.computed(() => state.table.dataList[0].status === 1)
+  assert.equal(rendered.value, true)
+  assert.equal(await state.onModifyStatus(false, 1), true)
+  assert.equal(rendered.value, false)
+  state.close()
+})
+
 test('users loading fails independently, retries and cannot repopulate after deactivation', async () => {
   let fail = true
   const pending = deferred(),

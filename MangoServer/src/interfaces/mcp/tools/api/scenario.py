@@ -69,7 +69,8 @@ def register_scenario_tools(mcp):
         仅现有配置无法表达的请求计算或响应解码/派生计算才用 front_func/posterior_func，并说明能力缺口；不得为 JSON 拼装/序列化或原样返回写函数，也不改响应或吞错刷通过。详见 get_api_case_schema.execution_rules.function_usage。
         allow_failure=true 时，场景在全部重试后仍失败会标记为警告并继续执行后续步骤；默认 false。
         headers 只传 ApiHeaders.id 数组；只要 headers 非空，就会完全覆盖 API case 的 front_headers，不会合并。
-        headers 为空时回退到 API case.front_headers；如果 front_headers 也为空，则使用当前项目产品下 status=1 的 ApiHeaders。
+        默认开启的请求头无需重复勾选：headers 为空时使用 Case front_headers；两者都为空时，编辑态自动使用产品 status=1 的 ApiHeaders。Case 显式选择项也不合并产品默认项。
+        固定 Case 修订使用冻结的请求头快照，管理页修改不更新旧快照；其中变量仍在运行时替换。
         front_sql/posterior_sql 每条 SQL 必须传 datasource_alias；可传 test_envs 多选执行环境，不传、null 或 [] 表示全部环境执行。
         SQL 的 key 支持单个缓存变量，也支持 id,name 这种英文逗号分隔多 key；查询结果取第一行，按列名优先、列顺序兜底写入多个缓存变量。
         先调用 list_data_factory_datasource_aliases 查询数据库。
@@ -143,6 +144,8 @@ def register_scenario_tools(mcp):
         """更新场景参数。fields 使用 ApiCaseDetailedParameter 字段名。
 
         字段格式见 get_api_case_schema.api_case_scenario_fields。fields.headers 非空时会覆盖 API case 的 front_headers。
+        默认开启的请求头无需重复勾选；headers=[] 时使用 Case front_headers，两者都为空时编辑态自动使用产品默认开启项；任何显式选择均不合并上层请求头。
+        修改仅作用于编辑态，固定 Case 修订仍使用冻结的请求头快照，其中变量在运行时替换。
         fields.protocol_expectation 可保存协议断言 JSON：inherit_system=true 跟随系统，false 时 checks 仅使用所选检查项，不叠加默认项；详见 schema。普通名称/重试修改不要传此字段，以保留已有协议配置。
         前后置函数遵循 get_api_case_schema.execution_rules.function_usage：JSON/变量、提取、常规断言优先现有配置；仅不可表达的计算/解码才写函数，不改响应或吞错刷通过。改已有脚本须保留类型、动态值、测试意图及断言强度。
         fields.allow_failure=true 时，场景在全部重试后仍失败会标记为警告并继续执行后续步骤。

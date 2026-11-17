@@ -327,8 +327,8 @@ import { reportLoadError } from '@/utils/load-error'
     try {
       await updateMockConfigState(id, patch)
       if (!current(version)) return false
-      const row = rows.value.find((item) => item.id === id)
-      if (row) Object.assign(row, patch)
+      const index = rows.value.findIndex((item) => item.id === id)
+      if (index >= 0) table.dataList.splice(index, 1, { ...rows.value[index], ...patch })
       invalidateList()
       await refresh(false)
       return true

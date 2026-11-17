@@ -1,6 +1,10 @@
 import { get } from '@/api/http'
 
 export interface SqlExecutionQuery {
+  case_id?: number | string
+  case_detail_id?: number | string
+  test_suite_id?: number | string
+  operation?: string
   id?: number | string
   id__in?: string
   source_type?: string

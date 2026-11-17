@@ -10,6 +10,7 @@ const source = fs.readFileSync(new URL('components/CoverageOverview.vue', base),
 const index = fs.readFileSync(new URL('index.vue', base), 'utf8')
 const querySource = fs.readFileSync(new URL('query.ts', base), 'utf8')
 const config = fs.readFileSync(new URL('config.ts', base), 'utf8')
+const sections = fs.readFileSync(new URL('composables/useCoverageOverviewSections.ts', base), 'utf8')
 
 test('module search and status filter stay side by side in two fluid columns', () => {
   const css = source.match(/\.mango-coverage-overview__filters\s*\{([^}]+)\}/)?.[1]
@@ -51,7 +52,7 @@ test('analysis pie includes excluded interfaces without changing the completion 
 })
 
 test('module scan pie uses project-level scan summary', () => {
-  assert.match(source, /props.data\?\.project_inventory_summary/)
+  assert.match(source, /const projectScanSummary = inventory/)
   assert.match(source, /value: projectScanSummary.value\?\.inventoried_count/)
   assert.match(source, /完整接口清单上传生效即完成<\/p>/)
   assert.doesNotMatch(source, /不随左侧模块变化|按所选项目、产品或模块范围统计|排除接口不计入，暂缓单列|；暂不处理单列/)
@@ -213,7 +214,7 @@ test('overview reuses global sections, spacing and typography without nested mod
 })
 
 test('module progress uses a bounded native-scroll table and global actions', () => {
-  assert.match(source, /<a-table[\s\S]*?:data="visibleModules"/)
+  assert.match(source, /<a-table[\s\S]*?:data="modules"/)
   assert.match(source, /:columns="overviewModuleColumns"/)
   assert.match(source, /完成率 \{\{ rate\(record.automation_rate\) \}\}/)
   assert.match(source, /:pagination="false"/)
@@ -251,11 +252,11 @@ test('module progress uses a bounded native-scroll table and global actions', ()
 test('module pagination reuses global footer and page-size state', () => {
   assert.match(source, /<TableFooter/)
   assert.doesNotMatch(source, /<a-pagination|page\.value/)
-  assert.match(source, /usePagination\(/)
-  assert.match(source, /paginationLoading/)
-  assert.match(source, /pagination\.page \* pagination\.pageSize/)
-  assert.match(source, /pagination\.setTotalSize\(rows\.length\)/)
-  assert.match(source, /pagination\.page = 1/)
+  assert.match(sections, /usePagination\(loadModules, modulesLoading\)/)
+  assert.match(sections, /page: pagination.page, pageSize: pagination.pageSize/)
+  assert.match(sections, /pagination\.setTotalSize\(response.data.count\)/)
+  assert.match(sections, /pagination\.page = 1/)
+  assert.doesNotMatch(source,/filtered.value.slice/)
 })
 
 test('overview owns a bounded keyboard-accessible vertical scroll region', () => {
@@ -273,18 +274,17 @@ test('overview loads individual charts, module table and gap list without a pare
         /<MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin"/g
       ) || []
     ).length,
-    4
+    3
   )
-  assert.match(source, /:columns="overviewModuleColumns"\s*:loading="loading"/)
+  assert.match(source, /:columns="overviewModuleColumns"\s*:loading="modulesLoading"/)
+  assert.match(source, /<MangoPanelSpin :loading="inventoryLoading"/)
   assert.match(
     source,
     /<MangoPanelSpin :loading="loading" class="mango-coverage-overview__gaps-spin"/
   )
-  assert.match(source, /v-else-if="data \|\| loading"/)
-  assert.match(source, /v-if="!loading && !data\?\.modules.length"/)
-  assert.match(source, /v-if="error && !data"/)
+  assert.doesNotMatch(source, /v-else-if="data \|\| loading"|v-if="error && !data"/)
   assert.doesNotMatch(source, /覆盖概览刷新失败，当前保留上次结果/)
-  assert.match(source, /<template v-if="error && !data"><\/template>/)
+  assert.match(index, /:scope="query\('overview'\)"/)
 })
 
 test('same-scope refresh retains results, changed scopes clear them, and stale requests stay ignored', async () => {
@@ -369,7 +369,7 @@ test('global layout leaves nested Arco vertical tables to their own scroll conta
 
 test('header wheel scrolls the table while horizontal and zoom gestures stay native', () => {
   const start = source.indexOf('  function handleModuleTableWheel(')
-  const end = source.indexOf('  const paginationLoading =', start)
+  const end = source.indexOf('  const scanChart =', start)
   const js = ts.transpileModule(source.slice(start, end), {
     compilerOptions: { target: ts.ScriptTarget.ES2020 },
   }).outputText

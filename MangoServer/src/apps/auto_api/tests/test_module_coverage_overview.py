@@ -56,6 +56,72 @@ def case(identity, interface_id, module_id, **kwargs):
 
 
 class ModuleCoverageOverviewTests(SimpleTestCase):
+    def test_split_summary_matches_combined_overview_and_does_not_return_module_rows(self):
+        inputs = dict(interfaces=[interface(1, 1)], cases=[case(1, 1, 1)], scans=[scan(1, 1)])
+        combined = self.overview([module(1)], **inputs)
+        summary = self.overview([module(1)], section="summary", **inputs)
+        self.assertEqual(summary, {key: combined[key] for key in (
+            "summary", "interface_gaps", "interface_gap_count")})
+
+    def test_inventory_reads_no_interface_or_case_payloads(self):
+        interfaces, cases = queryset(), queryset()
+        interfaces.__iter__.side_effect = AssertionError("inventory must not load interfaces")
+        cases.__iter__.side_effect = AssertionError("inventory must not load cases")
+        interfaces.none.return_value = queryset()
+        cases.none.return_value = queryset()
+        with patch.object(ModuleCoverageService, "case_coverage_assessment") as assess:
+            result = ModuleCoverageService.overview(
+                modules=queryset([module(1)]), interfaces=interfaces, cases=cases,
+                scans=queryset([scan(1, 1)]), section="inventory")
+        assess.assert_not_called()
+        self.assertEqual(result, {"project_inventory_summary": {
+            "leaf_count": 1, "inventoried_count": 1, "uninventoried_count": 0, "inventory_rate": 100}})
+
+    def test_module_page_scopes_heavy_queries_before_loading_and_retains_ancestor_scan(self):
+        root = module(1, level=1)
+        branch = module(2, root, level=2)
+        leaves = [module(identity, branch) for identity in range(3, 33)]
+        interfaces, cases = queryset(), queryset()
+        result = ModuleCoverageService.overview(
+            modules=queryset([root, branch, *leaves]), interfaces=interfaces, cases=cases,
+            scans=queryset([scan(1, 1, include_descendants=True)]), section="modules", page=2, page_size=10)
+        self.assertEqual([row["id"] for row in result["items"]], list(range(13, 23)))
+        self.assertEqual(result["count"], 30)
+        self.assertEqual((result["page"], result["page_size"]), (2, 10))
+        interfaces.filter.assert_any_call(module_id__in=set(range(13, 23)))
+        cases.filter.assert_any_call(module_id__in=set(range(13, 23)))
+        self.assertTrue(all(row["inventory_completed"] for row in result["items"]))
+
+    def test_module_search_and_status_are_filtered_before_pagination(self):
+        modules = [module(index) for index in range(1, 26)]
+        result = self.overview(modules, scans=[scan(1, 1)], section="modules",
+                               progress="scan", page=2, page_size=10)
+        self.assertEqual(result["count"], 24)
+        self.assertEqual([row["id"] for row in result["items"]], list(range(12, 22)))
+        search = self.overview(modules, section="modules", keyword="模块2", page_size=2)
+        self.assertEqual(search["count"], 7)
+        self.assertEqual([row["id"] for row in search["items"]], [2, 20])
+        empty = self.overview(modules, section="modules", page=99)
+        self.assertEqual(empty["items"], [])
+        self.assertEqual(empty["count"], 25)
+
+    def test_same_scenario_is_assessed_once_without_changing_automation_scan_semantics(self):
+        asset = case(1, 1, 1)
+        asset.current_snapshot.scan.status = "completed_with_gaps"
+        with patch.object(ModuleCoverageService, "case_coverage_assessment", return_value={"status": "valid"}) as assess:
+            result = ModuleCoverageService.overview(
+                modules=queryset([module(1)]), interfaces=queryset([interface(1, 1)]),
+                cases=queryset([asset]), scans=queryset())
+        assess.assert_called_once()
+        self.assertEqual(result["summary"]["completed_count"], 1)
+        self.assertEqual(result["summary"]["analyzed_interface_count"], 0)
+
+    def test_section_query_rejects_unknown_sections_and_invalid_pages(self):
+        from src.apps.auto_api.api.serializers.module_coverage_common import ModuleCoverageOverviewQuery
+        for params in ({"section": "unknown"}, {"page": 0}, {"pageSize": 101}, {"progress": "unknown"}):
+            with self.subTest(params=params):
+                self.assertFalse(ModuleCoverageOverviewQuery(data=params).is_valid())
+
     def test_only_third_level_rows_preserve_parent_filters_and_legacy_totals(self):
         root = module(1, level=1)
         branch = module(2, root, level=2)

@@ -39,7 +39,8 @@ class ReportProgressSelector:
 
     @staticmethod
     def snapshots(report_ids):
-        terminal = [TaskEnum.SUCCESS.value, TaskEnum.FAIL.value, TaskEnum.WARNING.value, TaskEnum.STOPPED.value]
+        terminal = [TaskEnum.SUCCESS.value, TaskEnum.FAIL.value, TaskEnum.WARNING.value, TaskEnum.STOPPED.value,
+                    TaskEnum.INFRASTRUCTURE_BLOCKED.value]
         return list(TestSuiteDetails.objects.filter(test_suite_id__in=report_ids,
             type=TestCaseTypeEnum.API.value).order_by().values('test_suite_id').annotate(
                 terminal_count=Count('id', filter=Q(status__in=terminal)),
