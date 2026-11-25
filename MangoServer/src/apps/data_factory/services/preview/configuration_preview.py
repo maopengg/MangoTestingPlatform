@@ -5,6 +5,7 @@ from src.apps.data_factory.enums import DataFactoryGeneratorTypeEnum
 from src.apps.data_factory.services.execution.generator import DataFactoryValueGenerator
 from src.apps.data_factory.services.execution.runner import DataFactoryRunner
 from src.apps.data_factory.services.execution.type_cast import DataFactoryTypeCast
+from src.apps.data_factory.formatters import preview_cleanup_rules
 
 
 class DataFactoryConfigurationPreviewService:
@@ -98,6 +99,8 @@ class DataFactoryConfigurationPreviewService:
             'template': {'id': template.id, 'name': template.name, 'alias': alias},
             'entity': {'id': entity.id, 'name': entity.name, 'table_name': entity.table_name},
             'payload': DataFactoryTypeCast.to_jsonable(payload),
+            'resource_cleanup_preview': preview_cleanup_rules(getattr(template, 'cleanup_resources', []) or [],
+                getattr(entity, 'primary_key', None), payload),
             'output': DataFactoryRunner.build_output(getattr(template, 'output_config', []) or [], payload),
             'fields': field_items, 'missing_fields': missing, 'dependencies': dependencies,
             'items': items, 'dependency_tree': tree,

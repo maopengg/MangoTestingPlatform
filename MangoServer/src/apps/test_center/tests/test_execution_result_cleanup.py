@@ -71,6 +71,16 @@ class ExecutionResultCleanupTests(SimpleTestCase):
             result = ExecutionResultService.cleanup_expired_storage_files(60)
         self.assertTrue(result['storage_scan_failed'])
 
+    def test_sweep_accepts_generated_gzip_without_deleting_other_archives(self):
+        old = timezone.now() - timedelta(days=100)
+        prefix = f'platform/test/result/{old:%Y/%m/%d}/api_case_1/'
+        eligible = prefix + 'a' * 32 + '.json.gz'
+        files = [(eligible, old), (prefix + 'b' * 32 + '.zip', old), (prefix + 'upload.json.gz', old)]
+        with patch('src.apps.test_center.services.results.execution_result.iter_current_storage_files', return_value=iter(files)), \
+             patch('src.apps.test_center.services.results.execution_result.delete_current_storage_file') as delete:
+            self.assertEqual(ExecutionResultService.cleanup_expired_storage_files(60)['deleted_file_count'], 1)
+        delete.assert_called_once_with(eligible)
+
     def test_object_listing_is_scoped_to_exact_environment_prefix(self):
         storage = object.__new__(MangoMinioMediaStorage)
         storage.location = 'platform/test'

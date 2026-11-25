@@ -501,6 +501,8 @@ class ApiTestCaseParameterMixin:
 
     @classmethod
     def update_test_case(cls, case_id: int, status: int):
+        if status in (TaskEnum.STAY_BEGIN.value, TaskEnum.PROCEED.value):
+            return
         ApiCase.objects.filter(id=case_id).update(status=status)
 
     def update_test_case_detailed_parameter(self, parameter_id, result_data: ApiCaseStepResult):

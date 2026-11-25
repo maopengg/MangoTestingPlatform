@@ -1,4 +1,4 @@
 interface:
   display_name: "根据代码创建 API 自动化用例"
-  short_description: "按真实测试边界扫描代码链路并梳理 API 自动化 Case"
-  default_prompt: "使用 $mango-code-driven-api-case-builder 扫描 Python 或 Java 后端的全部对外 HTTP 接口，沿字段、枚举、策略或注册表分派解析到具体处理器，并审计不同 Case 是否被错误折叠为同一覆盖子图；通过 MCP 将每个接口的一份 Mermaid 全景图及其 Case 覆盖路径上传到模块覆盖资产，多次扫描按稳定 source_key 补充、更新或归档覆盖记录并保留已有 ApiCase 绑定，使用当前状态区分待创建、已完成和暂不处理，再将待创建场景交给平台 Case Builder 实施。"
+  short_description: "由 AI 核实路由注册与业务链路，工具可选，按两阶段完成 API 自动化"
+  default_prompt: "使用 $mango-code-driven-api-case-builder，由 AI 识别项目实际框架及路由注册方式，固定扫描器仅作可选辅助；先按模块盘点全部 HTTP 接口、交叉对账并上传，再逐接口完成业务全景图、场景和获准自动化验证及覆盖回读，保留源码证据、未解范围和已有合法绑定。"

@@ -62,7 +62,7 @@ test('overview module search and progress selections request server pages and re
   globalThis.window = { removeEventListener() {} }
   const pagination = reactive({ page: 3, pageSize: 20, total: 0, setTotalSize(total) { this.total = total } })
   const requests=[]
-  const state = harness('CoverageOverview', 'keyword,gapFilter,modules,pagination,searchModules', {
+  const state = harness('CoverageOverview', 'keyword,progressFilters,modules,pagination,searchModules', {
     base,
     props: { loading: true, error: false, scope:{project_product:3} },
     api:{getCoverageInventory:()=>new Promise(()=>{}),getCoverageModuleProgress:async params=>{
@@ -76,10 +76,12 @@ test('overview module search and progress selections request server pages and re
   state.keyword.value = '订单'; await state.searchModules(); await flush()
   assert.equal(requests.at(-1).keyword,'订单'); assert.equal(pagination.page, 1)
   assert.equal(pagination.total,41)
-  pagination.page = 2; state.keyword.value = ''; state.gapFilter.value = 'scan'; await flush()
-  assert.equal(requests.at(-1).progress,'scan'); assert.equal(pagination.page, 1)
-  state.gapFilter.value = 'all'; await flush()
-  assert.equal(requests.at(-1).progress,'all')
+  pagination.page = 2; state.keyword.value = ''; state.progressFilters.inventory_progress = ['scan']; await flush()
+  await new Promise(resolve=>setTimeout(resolve,550));await flush()
+  assert.equal(requests.at(-1).inventory_progress,'scan'); assert.equal(pagination.page, 1)
+  state.progressFilters.inventory_progress = []; await flush()
+  await new Promise(resolve=>setTimeout(resolve,550));await flush()
+  assert.equal(requests.at(-1).inventory_progress,undefined)
   assert.equal(state.modules.value.length,1)
 })
 function panel(name, bindings, api = {}, options = {}) {

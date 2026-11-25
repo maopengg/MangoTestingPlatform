@@ -1,7 +1,7 @@
 import { historyId, historyObject, historyText } from '../business/execution-history'
 
 const scalar = (value: unknown): number | string | null => typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value)) ? value : null
-const status = (value: unknown) => typeof value === 'number' && Number.isInteger(value) ? value : null
+const status = (value: unknown) => typeof value === 'number' && Number.isInteger(value) ? (value === 6 ? 0 : value) : null
 const counter = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null
 
 export function apiReport(value: unknown) {
@@ -14,6 +14,9 @@ export function apiReport(value: unknown) {
     is_recovery: row?.is_recovery === true,
     recovery_errors: Array.isArray(recoveryErrors) ? recoveryErrors.filter((item): item is string => typeof item === 'string') : [],
     error_message: historyText(row?.error_message), result_mode: historyText(row?.result_mode),
+    failure_category: historyText(row?.failure_category), protocol_status: historyText(row?.protocol_status),
+    posterior_skipped_reason: historyText(row?.posterior_skipped_reason),
+    assertion_skipped_reason: historyText(row?.assertion_skipped_reason),
     snapshot_updated_at: scalar(row?.snapshot_updated_at),
     snapshot_retry: { current: counter(retry?.current), max: counter(retry?.max) },
     snapshot_progress: { done: counter(progress?.done), total: counter(progress?.total) },
@@ -33,4 +36,12 @@ export function apiReport(value: unknown) {
       request_body: response?.request_body, request_file: response?.request_file,
     },
   }
+}
+
+export function responseCorrelationIds(headers: unknown): Array<{ name: string; value: string }> {
+  const allowed = new Set(['x-request-id', 'x-trace-id', 'x-log-id', 'xlog'])
+  return Object.entries(historyObject(headers) || {}).flatMap(([key, raw]) => {
+    const name = key.toLowerCase(), value = historyText(raw).trim()
+    return allowed.has(name) && /^[A-Za-z0-9._:-]{1,128}$/.test(value) ? [{ name, value }] : []
+  })
 }

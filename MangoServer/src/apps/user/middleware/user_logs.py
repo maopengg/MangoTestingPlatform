@@ -31,6 +31,10 @@ class UserLogsMiddleWare(MiddlewareMixin):
     }
     SENSITIVE_FIELD_SUFFIXES = ('_password', '_token', '_api_key', '_authorization', '_cookie', '_secret')
     SENSITIVE_VALUE_MASK = '***'
+    CONTENT_SEARCH_PATHS = {
+        '/api/system/execution/result/search',
+        '/api/system/sql-execution/search',
+    }
 
     SKIP_LOG_PATHS = {
         '/api/system/socket/current/actuator/status',
@@ -88,6 +92,8 @@ class UserLogsMiddleWare(MiddlewareMixin):
                         data[key] = value
             else:
                 data = {}
+        if getattr(request, 'path', '') in self.CONTENT_SEARCH_PATHS and 'keyword' in data:
+            data['keyword'] = self.SENSITIVE_VALUE_MASK
         return self._redact_sensitive(data)
 
     def _capture_response_data(self, response: Response) -> str:

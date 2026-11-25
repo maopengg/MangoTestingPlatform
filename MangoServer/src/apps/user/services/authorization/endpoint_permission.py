@@ -54,15 +54,19 @@ class EndpointPermissionService:
     def decision(permissions, endpoint_id, fixed_allowed=False, *, super_admin=False):
         if endpoint_id not in configurable_endpoint_ids():
             return fixed_allowed
+        if super_admin:
+            return True
         effect = permissions.get(endpoint_id)
         if effect == Effect.DENY:
             return False
-        return effect == Effect.ALLOW or super_admin
+        return effect == Effect.ALLOW
 
     @classmethod
     def allows(cls, user, endpoint_id, fixed_allowed=False, *, super_admin=False):
         if endpoint_id not in configurable_endpoint_ids():
             return fixed_allowed
+        if super_admin:
+            return True
         return cls.decision(cls.for_user(user, endpoint_id), endpoint_id, fixed_allowed, super_admin=super_admin)
 
     @staticmethod

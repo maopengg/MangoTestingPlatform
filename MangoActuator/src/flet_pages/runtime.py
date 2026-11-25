@@ -89,7 +89,9 @@ class AsyncRuntimeBridge:
 
         try:
             self.submit(shutdown()).result(timeout=timeout)
-        except Exception:
+        except Exception as error:
+            from src.services.system_error_reporter import ActuatorSystemErrorReporter
+            ActuatorSystemErrorReporter.schedule(error, 'desktop:runtime-stop')
             pass
         self.loop.call_soon_threadsafe(self.loop.stop)
         if self._thread:

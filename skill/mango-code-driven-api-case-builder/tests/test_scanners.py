@@ -10,6 +10,8 @@ import sys
 import tempfile
 import textwrap
 import unittest
+import subprocess
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -193,11 +195,95 @@ class FastApiIndexTest(unittest.TestCase):
         self.assertEqual(manifest["status"], "incomplete")
 
 
+class SpringRuntimeTest(unittest.TestCase):
+    def test_path_stub_is_not_a_working_jdk(self):
+        with patch.object(scan_springboot_ast.subprocess, "run", return_value=subprocess.CompletedProcess([], 1, "No runtime")):
+            with self.assertRaisesRegex(scan_springboot_ast.ScannerError, "preflight failed"):
+                scan_springboot_ast.check_runtime("/existing-jdk")
+
+    def test_jre_without_compiler_module_is_rejected(self):
+        responses = [subprocess.CompletedProcess([], 0, "java 17"),
+                     subprocess.CompletedProcess([], 0, "javac 17"),
+                     subprocess.CompletedProcess([], 1, "")]
+        with patch.object(scan_springboot_ast.subprocess, "run", side_effect=responses):
+            with self.assertRaisesRegex(scan_springboot_ast.ScannerError, "jdk.compiler"):
+                scan_springboot_ast.check_runtime("/existing-jdk")
+
+    def test_runtime_check_needs_no_source_or_output(self):
+        with patch.object(scan_springboot_ast, "check_runtime", return_value={"java": "existing"}) as probe, \
+                patch("builtins.print"), patch.object(scan_springboot_ast, "execute") as scan:
+            self.assertEqual(scan_springboot_ast.main(["--check-runtime", "--java-home", "/existing-jdk"]), 0)
+            probe.assert_called_once_with("/existing-jdk")
+            scan.assert_not_called()
+
+
 @unittest.skipUnless(
     shutil.which("java") and shutil.which("javac"),
     "a JDK is required for Spring scanner regression tests",
 )
 class SpringIndexTest(unittest.TestCase):
+    def test_feign_is_not_server_and_same_handler_aliases_are_merged(self):
+        _, inventory, manifest, code = self._scan({
+            "Client.java": '''
+                import org.springframework.cloud.openfeign.FeignClient;
+                import org.springframework.web.bind.annotation.*;
+                @FeignClient(name="organization")
+                interface Client { @GetMapping("/organization") Object query(); }
+            ''',
+            "Server.java": '''
+                import org.springframework.web.bind.annotation.*;
+                @RestController @RequestMapping("/rules")
+                class Server { @GetMapping({"", "/"}) Object query() { return null; } }
+            ''',
+        })
+        self.assertEqual(code, 0)
+        self.assertEqual(manifest["inventory_quality"], "complete")
+        self.assertEqual(len(inventory["endpoints"]), 1)
+        endpoint = inventory["endpoints"][0]
+        self.assertEqual(endpoint["path"], "/rules")
+        self.assertEqual(endpoint["declared_paths"], ["/rules", "/rules/"])
+        self.assertTrue(endpoint["upload_eligible"])
+
+    def test_source_defined_controller_stereotype_is_supported(self):
+        _, inventory, _, code = self._scan({"Business.java": '''
+            import org.springframework.web.bind.annotation.*;
+            @RestController @interface BusinessController {}
+            @BusinessController class Business {
+                @GetMapping("/business") void query() {}
+            }
+        '''})
+        self.assertEqual(code, 0)
+        self.assertEqual(len(inventory["endpoints"]), 1)
+
+    def test_unconfirmed_registration_does_not_hide_independent_routes(self):
+        _, inventory, manifest, code = self._scan({"Routes.java": '''
+            import org.springframework.web.bind.annotation.*;
+            interface InheritedApi { @GetMapping("/inherited") void query(); }
+            @RestController class Server implements InheritedApi {
+                public void query() {}
+                @GetMapping("/known") void known() {}
+            }
+        '''})
+        self.assertEqual(code, 2)
+        self.assertEqual(manifest["inventory_quality"], "partial")
+        self.assertEqual([x["path"] for x in inventory["endpoints"]], ["/known"])
+        self.assertTrue(inventory["endpoints"][0]["upload_eligible"])
+        self.assertIn("SPRING_SERVER_REGISTRATION_UNRESOLVED", {x["code"] for x in manifest["blocking_reasons"]})
+
+    def test_parse_error_output_remains_candidate_only(self):
+        _, inventory, manifest, code = self._scan({"Broken.java": '''
+            import org.springframework.web.bind.annotation.*;
+            @RestController class Broken {
+                @GetMapping("/known") void known() {}
+                void broken( {
+            }
+        '''}, "--allow-parse-errors")
+        self.assertEqual(code, 0)
+        self.assertFalse(manifest["analysis_ready"])
+        self.assertEqual(manifest["inventory_quality"], "candidate")
+        self.assertTrue(inventory["endpoints"])
+        self.assertTrue(all(not x["upload_eligible"] for x in inventory["endpoints"]))
+
     def _scan(self, files: dict[str, str], *extra_args: str):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
@@ -400,7 +486,7 @@ class SpringIndexTest(unittest.TestCase):
         self.assertEqual(dynamic_exit, 2)
         self.assertFalse(dynamic_manifest["analysis_ready"])
 
-        _evidence, _inventory, duplicate_manifest, duplicate_exit = self._scan(
+        _evidence, duplicate_inventory, duplicate_manifest, duplicate_exit = self._scan(
             {
                 "DuplicateController.java": """
                     import org.springframework.web.bind.annotation.*;
@@ -414,6 +500,7 @@ class SpringIndexTest(unittest.TestCase):
             "--allow-unresolved-routes",
         )
         self.assertEqual(duplicate_exit, 2)
+        self.assertTrue(all(not x["upload_eligible"] for x in duplicate_inventory["endpoints"]))
         self.assertIn(
             "DUPLICATE_ROUTE_REGISTRATION",
             {item["code"] for item in duplicate_manifest["blocking_reasons"]},

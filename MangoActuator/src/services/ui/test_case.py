@@ -4,6 +4,7 @@
 # @Time   : 2023/5/4 14:33
 # @Author : 毛鹏
 
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import os
 import shutil
 import traceback
@@ -140,6 +141,7 @@ class TestCase:
                     f'原因：{upload_result.error_message or "未知上传错误"}'
                 )
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/test_case:_save_record_video')
             log.warning(f'保存UI录屏文件失败，类型：{type(error)}，失败详情：{error}')
 
     @async_error_handle()
@@ -162,6 +164,7 @@ class TestCase:
             await self.send_case_result(f'用例前置数据库操作失败：{error.msg}')
             raise error
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/test_case:case_main')
             log.error(f'步骤初始化失败，类型：{error}，错误详情：{traceback.format_exc()}')
             self.case_result.status = StatusEnum.FAIL.value
             self.case_result.error_message = str(error)
@@ -199,6 +202,7 @@ class TestCase:
                     self.set_page_steps(page_steps.page_step_result_model, error.msg)
                 break
             except Exception as error:
+                await ActuatorSystemErrorReporter.report(error, 'services/ui/test_case:case_main')
                 log.error(f'测试用例失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
                 self.set_page_steps(page_steps.page_step_result_model,
                                     f'执行用例发生未知错误，请联系管理员检查测试用例数据，未知异常：{error}')
@@ -216,7 +220,8 @@ class TestCase:
             await self.send_case_result(
                 f'用例【{self.case_model.name}】后置数据库操作失败：{error.msg}'
             )
-        except Exception:
+        except Exception as _unexpected_error:
+            await ActuatorSystemErrorReporter.report(_unexpected_error, 'services/ui/test_case:case_main')
             await self.send_case_result(
                 f'用例【{self.case_model.name}】后置处理失败了，如果是因为开启视频录制则忽略，开启视频录制需要安装：playwright install ffmpeg，或者请联系管理员来解决!')
 
@@ -292,6 +297,7 @@ class TestCase:
             if self.base_data.locator_engine:
                 self.base_data.locator_engine.set_test_env(self.case_model.test_env)
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/test_case:refresh_runtime_config')
             log.warning(f'刷新UI运行配置失败，将继续使用当前执行器配置，错误：{error}')
 
     def _apply_ai_runtime_config(self, ai_config):

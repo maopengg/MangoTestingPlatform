@@ -7,6 +7,7 @@ from src.apps.data_factory.exceptions import DataFactoryError
 from src.apps.data_factory.schemas.cleanup_resource import CleanupResourceState, EsCleanupRule, EsCleanupSnapshot
 from src.apps.data_factory.services.cleanup.cleanup_lineage import CleanupLineageService as Lineage
 from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as Resources
+from src.apps.data_factory.services.datasource.elasticsearch import ElasticsearchDatasourceService as ES
 from src.apps.data_factory.services.execution.execution_snapshot import DATA_FACTORY_INSERT_SNAPSHOT_KEY
 
 
@@ -125,20 +126,20 @@ class CleanupLineageTests(SimpleTestCase):
     def test_partial_document_delete_keeps_original_version_and_requires_later_absence_verification(self):
         self.snapshot.lineage_rows = self.rows()
         document = self.document()
-        with patch.object(Resources, 'document', side_effect=[document, {'result': 'deleted'}]) as request:
+        with patch.object(ES, 'document', side_effect=[document, {'result': 'deleted'}]) as request:
             self.assertFalse(Resources.sample(self.snapshot, SimpleNamespace(), allow_delete=True))
             self.assertEqual(request.call_args.kwargs['expected'], document)
             self.assertTrue(request.call_args.kwargs['delete'])
             self.assertIn('rounds.roundId', request.call_args_list[0].kwargs['tenant_path'])
         # 删除响应并非零残留；异步写回混入非本轮ID后，仍然拒绝继续删除。
-        with patch.object(Resources, 'document', return_value=self.document((2001, 9999))):
+        with patch.object(ES, 'document', return_value=self.document((2001, 9999))):
             with self.assertRaises(DataFactoryError):
                 Resources.sample(self.snapshot, SimpleNamespace(), allow_delete=True)
 
     def test_historical_rule_has_no_implicit_lineage_upgrade(self):
         legacy = self.snapshot.model_copy(deep=True)
         legacy.rule.tenant_lineage = None
-        with patch.object(Resources, 'document', return_value=self.document()) as request:
+        with patch.object(ES, 'document', return_value=self.document()) as request:
             with self.assertRaises(DataFactoryError):
                 Resources.sample(legacy, SimpleNamespace(), allow_delete=True)
             self.assertEqual(request.call_count, 1)

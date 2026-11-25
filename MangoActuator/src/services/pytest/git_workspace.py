@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import hashlib
 import io
 import os
@@ -95,7 +96,8 @@ class PytestGitWorkspace:
         try:
             with open(marker, "r", encoding="utf-8") as file:
                 current = file.read().strip()
-        except Exception:
+        except Exception as _unexpected_error:
+            ActuatorSystemErrorReporter.schedule(_unexpected_error, 'services/pytest/git_workspace:_is_prepared')
             return False
         return current == commit_hash
 
@@ -122,7 +124,8 @@ class PytestGitWorkspace:
                     if member_path != base_dir and not member_path.startswith(f'{base_dir}{os.sep}'):
                         raise ValueError(f'Pytest 仓库压缩包包含越界路径：{member.filename}')
                 archive_file.extractall(tmp_dir)
-        except Exception:
+        except Exception as _unexpected_error:
+            ActuatorSystemErrorReporter.schedule(_unexpected_error, 'services/pytest/git_workspace:_extract_archive')
             shutil.rmtree(tmp_dir, ignore_errors=True)
             raise
         entries = [item for item in os.listdir(tmp_dir) if not item.startswith("__MACOSX")]

@@ -1,3 +1,4 @@
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import asyncio
 import json
 import os
@@ -39,6 +40,7 @@ class PerfRunner:
         except asyncio.CancelledError:
             raise
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/perf/runner:run')
             if not self._result_reported:
                 try:
                     await HTTP.perf.result(self.request.run_node_id, self.connection_id, {
@@ -47,6 +49,7 @@ class PerfRunner:
                     })
                     self._result_reported = True
                 except Exception as report_error:
+                    await ActuatorSystemErrorReporter.report(report_error, 'services/perf/runner:run')
                     log.error(f"性能节点失败结果回传失败，将由服务端超时恢复: {report_error}")
             raise
         finally:
@@ -117,12 +120,14 @@ class PerfRunner:
                     try:
                         await HTTP.perf.heartbeat(self.request.run_node_id, self.connection_id, {"engine_pid": None})
                     except Exception as heartbeat_error:
+                        await ActuatorSystemErrorReporter.report(heartbeat_error, 'services/perf/runner:_upload_capture')
                         log.warning(f"性能请求记录上传期间心跳失败：{type(heartbeat_error).__name__}")
             upload = await upload_task
             if upload.success:
                 return {**result, "status": "uploaded", "path": upload.path}
             return {**result, "status": "upload_failed", "message": upload.error_message or "上传失败"}
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/perf/runner:_upload_capture')
             log.warning(f"性能请求记录上传失败：{type(error).__name__}")
             return {**result, "status": "upload_failed", "message": "对象存储上传失败"}
 
@@ -188,6 +193,7 @@ class PerfRunner:
             try:
                 await HTTP.perf.metrics(self.request.run_node_id, self.connection_id, row["payload"])
             except Exception as error:
+                await ActuatorSystemErrorReporter.report(error, 'services/perf/runner:_flush_outbox')
                 PerfMetricOutbox.mark_failed(row["id"], row["retry_count"], error)
                 break
             PerfMetricOutbox.delete(row["id"])
@@ -202,6 +208,7 @@ class PerfRunner:
                 "run_node_id": self.request.run_node_id, "samples": samples,
             })
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/perf/runner:_flush_errors')
             log.warning(f"性能错误样本暂未上报，将在本次运行内重试: {error}")
             return
         del self._pending_errors[:len(samples)]

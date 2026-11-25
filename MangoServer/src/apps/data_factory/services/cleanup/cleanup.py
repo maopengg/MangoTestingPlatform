@@ -35,6 +35,9 @@ from src.apps.data_factory.services.sql.factory_sql_execution import DataFactory
 from src.apps.data_factory.services.execution.type_cast import DataFactoryTypeCast
 from src.apps.data_factory.services.cleanup.cleanup_persistence import CleanupPersistenceService
 from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
+from src.apps.data_factory.enums.cleanup_history import ResourceCleanupEventEnum as CleanupEvent
+from src.apps.data_factory.services.cleanup.cleanup_history import ResourceCleanupHistoryService as History
+from src.apps.data_factory.enums.audit import DatasourceAuditStageEnum
 
 
 # -*- coding: utf-8 -*-
@@ -43,6 +46,55 @@ from src.apps.data_factory.services.governance.infrastructure import DatasourceI
 
 
 class DataFactoryCleanup:
+    @staticmethod
+    def cleanup_is_verified(items):
+        """仅以持久化清理证据判断完成，不以报告是否存在或顶层状态推断残留。"""
+        from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as Resources
+        if not items or any(item.cleanup_status != DataFactoryCleanupStatusEnum.SUCCESS.value for item in items):
+            return False
+        for item in items:
+            try:
+                state = Resources.state(item)
+                if not state.sql_cleaned or state.unknown_permits or Resources.pending_compensations(state):
+                    return False
+                if any(not any(Resources.current_result(state, result)
+                        and result.index == snapshot.index and result.document_id == snapshot.document_id
+                        for result in state.results) for snapshot in state.snapshots):
+                    return False
+                uncertain = {value.request_id for value in state.uncertain_requests}
+                if uncertain:
+                    from src.apps.data_factory.models import SqlExecutionRecord
+                    records = dict(SqlExecutionRecord.objects.filter(request_id__in=uncertain).values_list(
+                        'request_id', 'source_detail'))
+                    if set(records) != uncertain or any(
+                            detail.get('outcome_unknown') is not False and
+                            (detail.get('outcome_resolution') or {}).get('basis') != 'owned_resource_verified'
+                            for detail in records.values()):
+                        return False
+            except DataFactoryError:
+                return False
+        return True
+
+    @classmethod
+    @transaction.atomic
+    def reconcile_verified_cleanup(cls, execution):
+        current = CleanupPersistenceService.lock_execution(execution.id)
+        items = list(DataFactoryExecutionItem.objects.select_for_update().filter(execution_id=execution.id))
+        if not cls.cleanup_is_verified(items):
+            return False
+        if current.cleanup_status != DataFactoryCleanupStatusEnum.SUCCESS.value:
+            previous = current.cleanup_status
+            current.cleanup_status = DataFactoryCleanupStatusEnum.SUCCESS.value
+            current.cleanup_time = max((item.cleanup_time for item in items if item.cleanup_time), default=current.cleanup_time)
+            cls.clear_resolved_cleanup_error(current)
+            CleanupPersistenceService.save(current, ['cleanup_status', 'cleanup_time', 'error_message', 'update_time'])
+            log.system.warning('event=data_factory_verified_cleanup_reconciled execution_id=%s previous_status=%s items=%s '
+                'basis=persisted_item_verification business_status_unchanged=%s', current.id, previous, len(items), current.status)
+            transaction.on_commit(lambda: cls.sync_workbench_todo(current))
+        execution.cleanup_status = current.cleanup_status
+        execution.cleanup_time = current.cleanup_time
+        return True
+
     @staticmethod
     def clear_resolved_cleanup_error(execution):
         # 创建本身失败时必须保留原失败；仅清理成功不代表造数/业务成功。
@@ -199,6 +251,7 @@ class DataFactoryCleanup:
     ) -> None:
         cleanup_time = timezone.now()
         if mark_pending_items:
+            History.fail_pending(execution.id, error)
             CleanupPersistenceService.write(lambda: DataFactoryExecutionItem.objects.filter(
                 execution=execution,
                 cleanup_status__in=[
@@ -267,13 +320,9 @@ class DataFactoryCleanup:
             .filter(execution=execution)
             .order_by('cleanup_order', '-id')
         )
-        items = all_items
-        if not force_cleanup:
-            items = [
-                item
-                for item in items
-                if item.cleanup_status != DataFactoryCleanupStatusEnum.SUCCESS.value
-            ]
+        # 强制清理仅覆盖保留策略，不能重放已经核验成功的资源。
+        items = [item for item in all_items
+                 if item.cleanup_status != DataFactoryCleanupStatusEnum.SUCCESS.value]
         if not items:
             execution.cleanup_time = timezone.now()
             execution.cleanup_status = (
@@ -301,17 +350,26 @@ class DataFactoryCleanup:
         fail = 0
         for item in items:
             if (
-                    item.cleanup_strategy == DataFactoryCleanupStrategyEnum.NONE.value
+                    item.cleanup_strategy in (DataFactoryCleanupStrategyEnum.NONE.value,
+                                              DataFactoryCleanupStrategyEnum.MANUAL.value)
                     and not force_cleanup
             ):
                 skipped_items.append(item)
                 continue
             try:
                 from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService
+                if (item.cleanup_resources or {}).get('snapshots'):
+                    History.append(CleanupEvent.STARTED, item=item, operator_id=created_by,
+                        message=(getattr(item, 'cleanup_error', '') or ''),
+                        snapshot_digest=History.digest(item.cleanup_resources['snapshots']))
                 resource_state = DataFactoryCleanupResourceService.validate_snapshot(item)
                 if resource_state.sql_cleaned:
                     resource_only_items.append(item)
                     continue
+                from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditService
+                with SqlExecutionAuditService.source(DataFactorySqlExecutionService.build_source_context(
+                        execution=execution, item=item, stage=DatasourceAuditStageEnum.EXTERNAL_CLEANUP.value)):
+                    DataFactoryCleanupResourceService.validate_before_sql(item, resource_state)
                 cls.validate_cleanup_item(
                     item,
                     recover_missing_primary=force_cleanup,
@@ -383,12 +441,23 @@ class DataFactoryCleanup:
 
         skipped = 0
         for item in skipped_items:
-            cls.mark_skipped(item)
+            if item.cleanup_strategy == DataFactoryCleanupStrategyEnum.MANUAL.value:
+                cls.mark_pending_manual(item)
+            else:
+                cls.mark_skipped(item)
         skipped = len(skipped_items)
 
         execution.cleanup_time = timezone.now()
         if fail:
             execution.cleanup_status = DataFactoryCleanupStatusEnum.FAIL.value
+            summary = '\n'.join(dict.fromkeys(value['error'] for value in errors if value.get('error')))
+            if summary:
+                previous = getattr(execution, 'error_message', None)
+                if getattr(execution, 'status', None) != DataFactoryExecutionStatusEnum.SUCCESS.value and previous:
+                    if summary not in previous:
+                        execution.error_message = previous + '\n' + summary
+                else:
+                    execution.error_message = summary
         elif pending:
             execution.cleanup_status = DataFactoryCleanupStatusEnum.NOT_CLEANED.value
             execution.cleanup_time = None
@@ -867,6 +936,7 @@ class DataFactoryCleanup:
 
     @staticmethod
     def mark_success(item: DataFactoryExecutionItem):
+        previous = item.cleanup_status
         item.cleanup_status = DataFactoryCleanupStatusEnum.SUCCESS.value
         item.cleanup_time = timezone.now()
         item.cleanup_error = None
@@ -878,6 +948,14 @@ class DataFactoryCleanup:
             'cleanup_sql_params',
             'update_time',
         ])
+        state = item.cleanup_resources or {}
+        if previous != DataFactoryCleanupStatusEnum.SUCCESS.value and state.get('snapshots'):
+            History.append(CleanupEvent.SUCCEEDED, item=item,
+                sql_verified=state.get('sql_cleaned', False), es_verified=all(
+                    any(result.get('success') and result.get('index') == snapshot.get('index')
+                        and result.get('document_id') == snapshot.get('document_id')
+                        for result in state.get('results', [])) for snapshot in state['snapshots']),
+                snapshot_digest=History.digest(state['snapshots']))
 
     @staticmethod
     def mark_failed(item: DataFactoryExecutionItem, error: str):
@@ -885,6 +963,11 @@ class DataFactoryCleanup:
         item.cleanup_error = error
         item.cleanup_time = timezone.now()
         CleanupPersistenceService.save(item, ['cleanup_status', 'cleanup_error', 'cleanup_time', 'update_time'])
+        state = item.cleanup_resources or {}
+        if state.get('snapshots'):
+            History.append(CleanupEvent.FAILED, item=item, message=error,
+                sql_verified=state.get('sql_cleaned', False),
+                snapshot_digest=History.digest(state['snapshots']))
 
     @staticmethod
     def mark_pending_manual(item: DataFactoryExecutionItem):

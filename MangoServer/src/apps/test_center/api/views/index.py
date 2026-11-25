@@ -67,7 +67,7 @@ class IndexViews(ViewSet):
     INDEX_OVERVIEW_CACHE_ACTIONS = frozenset({
         'case_result_week_sum_v2',
         'case_sum_v2',
-        'case_run_sum_v2',
+        'case_run_sum_v3',
         'activity_level_v3',
         'statistics_v4',
         'project_quality_v1',
@@ -340,7 +340,7 @@ class IndexViews(ViewSet):
 
             return self._cached_success(
                 request,
-                'case_run_sum_v2',
+                'case_run_sum_v3',
                 RESPONSE_MSG_0094,
                 build_data,
             )

@@ -25,6 +25,12 @@ from src.apps.test_center.services.reporting.api_counting import ApiReportCounti
 class TestSuiteRetryService:
     @staticmethod
     def ensure_infrastructure_reviewed(detail, *, confirmed=False):
+        from src.apps.test_center.services.reporting.test_suite.recovery import ReportRecoveryService
+        control = ReportRecoveryService.read(detail.summary_data)
+        if control:
+            if not ReportRecoveryService.resources_ready(detail, control):
+                raise TestCenterError(TEST_REPORT_INFRASTRUCTURE_RESOURCES_UNREADY)
+            return
         from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService
         if (getattr(detail, 'status', None) == TaskEnum.INFRASTRUCTURE_BLOCKED.value
                 or TestSuiteInfrastructureService.is_blocked(detail.summary_data)):

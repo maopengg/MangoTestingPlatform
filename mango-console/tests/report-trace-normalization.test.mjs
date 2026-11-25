@@ -144,6 +144,16 @@ test('节点解析拒绝重复、缺失父节点和循环关系，保留 false/n
   for (const summary of [false, null, 0]) assert.equal(h.data.parseReportTrace(response('example', [node(0, { summary })]), {}).nodes[0].summary, summary)
 })
 
+test('报告链路保留自动恢复阶段，不把它当作新的终态', t => {
+  const h = setup(); t.after(h.close)
+  const value = response()
+  value.data.trace.status = 3
+  value.data.trace.execution_phase = 'automatic_recovery'
+  const parsed = h.data.parseReportTrace(value, {})
+  assert.equal(parsed.trace.status, 3)
+  assert.equal(parsed.trace.execution_phase, 'automatic_recovery')
+})
+
 test('嵌套重试默认展开所选失败节点祖先，收起时选中父节点', async t => {
   const h = setup(() => Promise.resolve(response('example', [node(0, { step_type: 'retry_round' }), node(1, { parent_step_id: 0, step_type: 'retry_round' }), node(2, { parent_step_id: 1, status: 0 })]))); t.after(h.close)
   await h.open({ result_id: 1 })

@@ -9,7 +9,7 @@
         @blur="emit('search')"
         @clear="emit('search')"
       />
-      <a-select
+      <MangoSearchSelect
         v-else-if="selectOptions(item)"
         v-model="item.value"
         :field-names="fieldNames"
@@ -28,6 +28,7 @@
 </template>
 
 <script lang="ts" setup>
+  import MangoSearchSelect from '@/components/business/MangoSearchSelect.vue'
   const props = defineProps<{
     items: any[]
     fieldNames: Record<string, string>

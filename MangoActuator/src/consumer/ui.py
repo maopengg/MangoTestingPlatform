@@ -3,6 +3,7 @@
 # @Description:
 # @Time   : 2023/5/10 11:43
 # @Author : 毛鹏
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import asyncio
 import weakref
 
@@ -52,6 +53,7 @@ class UI:
             ExecutionActivity.finish(activity_id, success, getattr(result, 'error_message', '') if result else '')
             return result
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'consumer/ui:u_page_step')
             ExecutionActivity.finish(activity_id, False, str(error))
             raise
 

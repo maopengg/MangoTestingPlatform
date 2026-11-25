@@ -40,6 +40,8 @@ urlpatterns = [
         FileDataViews.as_view({"get": "artifact_download_url"}),
     ),
     path("execution/result/list", ExecutionResultViews.as_view({"get": "get_list"})),
+    path("execution/result/search", ExecutionResultViews.as_view({"post": "search_start", "get": "search_status"})),
+    path("execution/result/search/cancel", ExecutionResultViews.as_view({"post": "search_cancel"})),
     path("execution/result/detail", ExecutionResultViews.as_view({"get": "get_detail"})),
     path("execution/result/content", ExecutionResultViews.as_view({"get": "get_content"})),
     path("execution/result/latest", ExecutionResultViews.as_view({"get": "get_latest"})),

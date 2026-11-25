@@ -33,6 +33,7 @@
               </span>
               <a-tag v-if="item.latest" color="arcoblue" size="small">最近</a-tag>
             </span>
+            <small v-if="item.context">{{ item.context }}</small>
             <span class="mango-execution-history-list__item-meta">
               <small>{{ item.time || '-' }}</small>
               <small v-if="item.actor" class="mango-execution-history-list__actor">
@@ -41,6 +42,7 @@
             </span>
           </button>
         </template>
+        <slot name="more" />
       </div>
     </mango-panel-spin>
   </section>

@@ -5,13 +5,14 @@ from datetime import datetime, time, timedelta
 from hashlib import sha256
 
 from django.core.cache import cache
-from django.db.models import Count, Q
+from django.db.models import Count, F, Q
 from django.db.models.functions import TruncWeek
 from django.utils import timezone
 from mangotools.enums import TaskEnum
 
 from src.apps.system.services.configuration.system_config import SystemConfigService
 from src.apps.test_center.models import TestSuite
+from src.apps.test_center.selectors.report_conclusion import ReportConclusionSelector
 from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.responses.model_crud import get_request_project_id, get_request_project_product_id
 
@@ -20,7 +21,7 @@ class TestSuiteReportOverviewService:
     """Build report-list charts with the same filters and data scope as the list."""
 
     WEEK_COUNT = 12
-    CACHE_PREFIX = 'system:test-suite:report-overview:v1'
+    CACHE_PREFIX = 'system:test-suite:report-overview:v2'
     COMPLETED_STATUSES = (
         TaskEnum.FAIL.value,
         TaskEnum.SUCCESS.value,
@@ -44,9 +45,11 @@ class TestSuiteReportOverviewService:
     def _build_overview(cls, request) -> dict:
         queryset = cls._filtered_queryset(request)
         distribution_map = {
-            row['status']: row['value']
-            for row in queryset.values('status').annotate(value=Count('id'))
+            row['display_status']: row['value']
+            for row in queryset.values('display_status').annotate(value=Count('id'))
         }
+        distribution_map[TaskEnum.FAIL.value] = (distribution_map.get(TaskEnum.FAIL.value, 0)
+                                                + distribution_map.pop(TaskEnum.INFRASTRUCTURE_BLOCKED.value, 0))
         distribution = [
             {
                 'status': status,
@@ -60,7 +63,6 @@ class TestSuiteReportOverviewService:
                 TaskEnum.PROCEED.value,
                 TaskEnum.STAY_BEGIN.value,
                 TaskEnum.STOPPED.value,
-                TaskEnum.INFRASTRUCTURE_BLOCKED.value,
             )
         ]
         trend = cls._weekly_trend(queryset)
@@ -133,7 +135,6 @@ class TestSuiteReportOverviewService:
             'id': params.get('id'),
             'project_product_id': params.get('project_product'),
             'module_id': params.get('module'),
-            'status': params.get('status'),
             'tasks_id': params.get('tasks_id'),
             'user_id': params.get('user'),
             'test_env': params.get('test_env'),
@@ -146,7 +147,6 @@ class TestSuiteReportOverviewService:
                 queryset = queryset.filter(**{field: value})
 
         for query_key, field in {
-            'status__in': 'status__in',
             'user__in': 'user_id__in',
             'test_env__in': 'test_env__in',
             'execution_scope__in': 'execution_scope__in',
@@ -199,7 +199,11 @@ class TestSuiteReportOverviewService:
         ):
             allowed_ids = ProjectProductScopeService.project_product_ids_for_user(user)
             queryset = queryset.filter(project_product_id__in=allowed_ids) if allowed_ids else queryset.none()
-        return queryset
+        if params.get('status') not in (None, ''):
+            queryset = ReportConclusionSelector.filter_status(queryset, [str(params['status'])])
+        if params.get('status__in') not in (None, ''):
+            queryset = ReportConclusionSelector.filter_status(queryset, str(params['status__in']).split(','))
+        return ReportConclusionSelector.with_conclusion(queryset).annotate(display_status=F('_report_filter_conclusion'))
 
     @classmethod
     def _weekly_trend(cls, queryset) -> list[dict]:
@@ -220,10 +224,10 @@ class TestSuiteReportOverviewService:
             total=Count('id'),
             batch_count=Count('id', filter=Q(tasks__isnull=True)),
             scheduled_count=Count('id', filter=Q(tasks__isnull=False)),
-            success_count=Count('id', filter=Q(status=TaskEnum.SUCCESS.value)),
-            fail_count=Count('id', filter=Q(status=TaskEnum.FAIL.value)),
-            warning_count=Count('id', filter=Q(status=TaskEnum.WARNING.value)),
-            completed_count=Count('id', filter=Q(status__in=cls.COMPLETED_STATUSES)),
+            success_count=Count('id', filter=Q(display_status=TaskEnum.SUCCESS.value)),
+            fail_count=Count('id', filter=Q(display_status=TaskEnum.FAIL.value)),
+            warning_count=Count('id', filter=Q(display_status=TaskEnum.WARNING.value)),
+            completed_count=Count('id', filter=Q(display_status__in=cls.COMPLETED_STATUSES)),
         ).order_by('week')
         rows_by_week = {
             row['week'].date() if hasattr(row['week'], 'date') else row['week']: row

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>用例版本与结果 · 只读样式验证</title></head>
+<body><div id="app"></div>
+<script type="module">
+  import { createApp, ref } from 'vue/dist/vue.esm-bundler.js'
+  import Arco from '@arco-design/web-vue'
+  import {createPinia} from 'pinia'
+  import {useEnum} from '../../src/store/modules/get-enum'
+  import request from '../../src/api/axios.config'
+  import CaseVersionResultPopover from '../../src/views/apitest/case/components/CaseVersionResultPopover.vue'
+  import CaseResultTitle from '../../src/views/apitest/case/components/CaseResultTitle.vue'
+  import '@arco-design/web-vue/dist/arco.css'
+  import '../../src/styles/index.css'
+  import MangoTableActions from '../../src/components/table/MangoTableActions.vue'
+  import source from '../../src/views/apitest/case/index.vue?raw'
+  import { applyDisplayDensity } from '../../src/hooks/useDisplayDensity'
+  applyDisplayDensity('auto')
+  const status = source.match(/<template v-else-if="item.key === 'status'" #cell="\{ record \}">([\s\S]*?)<\/template>/)[1]
+  const rows = [
+    { id: 1, name: '已发布版本结果与编辑态失败隔离', publication_status: 'published', published_version_label: 'V1', list_result: { status: 1, trace_id: 'example-trace-1', state: 'executed' } },
+    { id: 2, name: '预发布修订的最近一次完整执行', publication_status: 'prepublished', prepublished_revision_no: 3, list_result: { status: 0, trace_id: 'example-trace-2', state: 'executed' } },
+    { id: 3, name: '当前编辑态正在自动恢复', publication_status: 'unpublished', list_result: { status: 3, trace_id: 'example-trace-3', state: 'executed', phase: 'automatic_recovery' } },
+    { id: 4, name: '编辑配置变更后仍展示最近执行结果', publication_status: 'unpublished', list_result: { status: 1, trace_id: 'example-trace-4', state: 'executed' } },
+    { id: 5, name: '对应发布版本尚未执行', publication_status: 'published', published_version_label: 'V2', list_result: { status: null, trace_id: null, state: 'not_run' } },
+  ]
+  const pinia=createPinia()
+  const enums=useEnum(pinia)
+  enums.task_status=[{key:0,title:'失败'},{key:1,title:'通过'},{key:2,title:'待测试'},{key:3,title:'进行中'}]
+  enums.environment_type=[{key:0,title:'测试环境'},{key:1,title:'开发环境'},{key:2,title:'生产环境'}]
+  request.defaults.adapter=async config=>{
+    if(!config.url.endsWith('/api/case/results/versions')) throw Error('Only version results are mocked')
+    const items=[{publication_status:'unpublished',label:'未发布（编辑态）',status:0,test_env:0,started_at:'2026-11-18T09:55:50.529131'},
+      {publication_status:'unpublished',label:'未发布（编辑态）',status:1,test_env:1,started_at:'2026-11-18T09:54:50.529131'},
+      {publication_status:'prepublished',label:'预发布 r1',status:1,test_env:1,started_at:'2026-11-18T09:54:50.529131'},
+      {publication_status:'published',label:'已发布 V1',status:1,test_env:2,started_at:'2026-11-18T09:53:50.529131'}]
+    return {data:{code:200,data:config.params.id===4?items.slice(0,1):items},status:200,statusText:'OK',headers:{},config}
+  }
+  createApp({ template: `<main class="mango-list-execution-preview">
+    <h2>测试用例</h2><p>只读演示，不连接业务接口、不执行 Case。</p>
+    <a-table :data="rows" :pagination="false" :scroll="{ x: 1200 }">
+      <template #columns>
+        <a-table-column title="ID" data-index="id" :width="70" />
+        <a-table-column title="用例名称" data-index="name" :width="400" />
+        <a-table-column title="结果" :width="100"><template #title><CaseResultTitle/></template><template #cell="{ record }">${status}</template></a-table-column>
+        <a-table-column title="发布状态" :width="180"><template #cell="{record}">{{ listExecutionLabel(record).replace(/^执行/, '') }}</template></a-table-column>
+        <a-table-column title="操作" :width="160" fixed="right"><template #cell="{record}">
+          <MangoTableActions :actions="[{label:'执行', tooltip:listExecutionLabel(record), onClick:()=>notice='演示：'+listExecutionLabel(record)}, {label:'步骤',onClick:()=>notice='演示步骤'}]" />
+        </template></a-table-column>
+      </template>
+    </a-table><p>{{notice}}</p>
+  </main>`, setup() {
+    const notice = ref('')
+    const listExecutionLabel = row => row.publication_status === 'published' ? '执行已发布 '+row.published_version_label : row.publication_status === 'prepublished' ? '执行预发布 r'+row.prepublished_revision_no : '执行当前编辑态'
+    return { rows, notice, userStore:{selected_environment:0}, listExecutionLabel, listResultHint: listExecutionLabel,
+      showExecutionTrace: () => notice.value='演示：打开对应版本执行记录',
+      enumStore: { report_execution_phase: { automatic_recovery: {title:'自动恢复中'} }, status_colors: ['red','green','gray','gray','orange','gray'], task_status: [{title:'失败'},{title:'通过'},{title:'待开始'},{title:'进行中'},{title:'告警'},{title:'已停止'}] } }
+  }}).use(Arco).use(pinia).component('MangoTableActions',MangoTableActions)
+    .component('CaseResultTitle',CaseResultTitle).component('CaseVersionResultPopover',CaseVersionResultPopover).mount('#app')
+</script>
+<style>
+  .mango-list-execution-preview { margin: var(--m-page-gap); padding: var(--m-card-padding); }
+</style>
+</body></html>

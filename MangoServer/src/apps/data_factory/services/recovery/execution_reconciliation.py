@@ -10,7 +10,6 @@ from src.apps.data_factory.enums import DataFactoryExecutionStatusEnum, DataFact
 from src.apps.data_factory.models import DataFactoryExecution, DataFactoryExecutionItem
 from src.apps.data_factory.schemas.cleanup_resource import FactoryExecutionOwner, FactoryExecutionReconciliation
 from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
-from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService
 from src.common.logging import log
 
 
@@ -53,30 +52,7 @@ class DataFactoryExecutionReconciliation:
 
     @staticmethod
     def fully_verified(items):
-        if not items:
-            return False
-        for item in items:
-            if item.cleanup_status != DataFactoryCleanupStatusEnum.SUCCESS.value:
-                return False
-            state = DataFactoryCleanupResourceService.state(item)
-            if state.unknown_permits:
-                return False
-            if state.snapshots and (not state.sql_cleaned or
-                    any(not any(result.success and result.index == snapshot.index
-                                and result.document_id == snapshot.document_id for result in state.results)
-                        for snapshot in state.snapshots)):
-                return False
-            uncertain = {value.request_id for value in state.uncertain_requests}
-            if uncertain:
-                from src.apps.data_factory.models import SqlExecutionRecord
-                records = dict(SqlExecutionRecord.objects.filter(request_id__in=uncertain).values_list(
-                    'request_id', 'source_detail'))
-                if set(records) != uncertain or any(
-                        details.get('outcome_unknown') is not False and
-                        (details.get('outcome_resolution') or {}).get('basis') != 'owned_resource_verified'
-                        for details in records.values()):
-                    return False
-        return True
+        return DataFactoryCleanup.cleanup_is_verified(items)
 
     @staticmethod
     def save_evidence(execution, reason):
@@ -132,6 +108,36 @@ class DataFactoryExecutionReconciliation:
         return True
 
     @classmethod
+    def reconcile_failed_cleanup(cls, execution):
+        from src.apps.task_center.services.execution.executor_task import ExecutorTaskService
+        with transaction.atomic():
+            current = DataFactoryExecution.objects.select_for_update(skip_locked=True).filter(
+                id=execution.id, update_time=execution.update_time,
+                status=DataFactoryExecutionStatusEnum.SUCCESS.value,
+                cleanup_status=DataFactoryCleanupStatusEnum.FAIL.value).first()
+            if current is None:
+                return False
+            def verify():
+                items = list(DataFactoryExecutionItem.objects.select_for_update().filter(execution_id=current.id))
+                if not cls.fully_verified(items):
+                    return False
+                if not cls.save_evidence(current, 'all_registered_resources_verified_cleaned_after_finalization_failure'):
+                    return False
+                current.cleanup_time = max((item.cleanup_time for item in items if item.cleanup_time),
+                                           default=current.cleanup_time)
+                return True
+
+            if not ExecutorTaskService.reconcile_verified_cleanup_task(current.id, verify):
+                return False
+            current.cleanup_status = DataFactoryCleanupStatusEnum.SUCCESS.value
+            DataFactoryCleanup.clear_resolved_cleanup_error(current)
+            current.save(update_fields=['cleanup_status', 'cleanup_time', 'error_message', 'context', 'update_time'])
+            transaction.on_commit(lambda: DataFactoryCleanup.sync_workbench_todo(current))
+        log.system.info('event=data_factory_execution_reconciled execution_id=%s reason=verified_finalization_recovered',
+                        execution.id)
+        return True
+
+    @classmethod
     def reconcile(cls):
         stale = timezone.now() - timedelta(minutes=30)
         empty = DataFactoryExecution.objects.filter(
@@ -141,9 +147,13 @@ class DataFactoryExecutionReconciliation:
             status=DataFactoryExecutionStatusEnum.SUCCESS.value,
             cleanup_status=DataFactoryCleanupStatusEnum.SUCCESS.value,
             error_message__isnull=False).exclude(error_message='').order_by('id')[:cls.BATCH_SIZE]
-        counts = {'empty_execution_closed': 0, 'cleanup_error_resolved': 0, 'execution_review_required': 0}
+        from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
+        verified_failures = DataFactoryQuerySelector.verified_cleanup_failure_candidates(cls.BATCH_SIZE)
+        counts = {'empty_execution_closed': 0, 'cleanup_error_resolved': 0, 'execution_review_required': 0,
+                  'cleanup_finalization_recovered': 0}
         for candidates, handler, key in ((empty, cls.reconcile_empty, 'empty_execution_closed'),
-                                          (cleaned, cls.reconcile_cleaned, 'cleanup_error_resolved')):
+                                          (cleaned, cls.reconcile_cleaned, 'cleanup_error_resolved'),
+                                          (verified_failures, cls.reconcile_failed_cleanup, 'cleanup_finalization_recovered')):
             for execution in candidates:
                 try:
                     changed = handler(execution)

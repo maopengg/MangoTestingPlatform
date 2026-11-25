@@ -25,6 +25,9 @@ from src.apps.auto_api.api.serializers.api_case import (
     ApiCaseConfigurationSummaryQuery,
     ApiCaseConfigurationDetailQuery,
     ApiCaseConfigurationFilterQuery,
+    ApiCaseListExecutionQuery,
+    ApiCaseListResultQuery,
+    ApiCaseVersionResultsQuery,
 )
 from src.apps.auto_api.api.serializers.api_case_mutation import ApiCaseSerializers
 from src.apps.auto_api.api.serializers.api_case_presentation import ApiCaseSerializersC
@@ -39,6 +42,7 @@ from src.apps.auto_api.exceptions import (
 from src.apps.auto_api.models import ApiCase, ApiCaseRelease, ApiCaseRevision
 from src.apps.auto_api.selectors.querysets import ApiQuerySelector
 from src.apps.auto_api.selectors.case_configuration import ApiCaseConfigurationSelector
+from src.apps.auto_api.selectors.case_list_execution import ApiCaseListExecutionSelector
 from src.apps.auto_api.schemas.case_schema import (
     ApiEnvironmentKeyValueItem,
     validate_int_list,
@@ -101,17 +105,7 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
         value = value_list[0]
         if value in [None, '', 'null', 'undefined']:
             return {}
-        if key.endswith('__isnull'):
-            return {key: str(value).lower() == 'true'}
-        if key in cls.not_matching_str or key in [
-            'level',
-            'scenario_layer',
-            'scenario_type',
-        ]:
-            return {key: value}
-        if 'id' not in key:
-            return {f'{key}__contains': value}
-        return {key: value}
+        return cls().parse_model_query_filter(key, value_list)
 
     serializer = ApiCaseSerializers
     page_permission_key = 'api.case'
@@ -231,6 +225,11 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
     def get(self, request: Request):
         """获取API 用例列表或指定记录"""
         query_dict = {}
+        displayed_results = request.query_params.get('result_scope') == 'displayed_version'
+        # 列表结果取展示版本跨环境最近一次；右上角环境只控制新执行。
+        result_env = None
+        result_values = self.parse_in_filter_values(
+            request.query_params.getlist('status__in') + request.query_params.getlist('status'))
         configuration_filter = ApiCaseConfigurationFilterQuery(data={
             'execution_configuration': self.parse_in_filter_values(
                 request.query_params.getlist('execution_configuration__in')
@@ -263,6 +262,8 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
         ]
 
         for key, value_list in dict(request.query_params.lists()).items():
+            if key in ('result_scope', 'list_test_env') or (displayed_results and key in ('status', 'status__in')):
+                continue
             if key in [
                 'scenario_tags',
                 'scenario_tags[]',
@@ -317,6 +318,11 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
             queryset, configuration_filter.validated_data['execution_configuration'],
             user=getattr(request.user, 'user_obj', None),
         )
+        if displayed_results:
+            list_query = ApiCaseListResultQuery(data=request.query_params)
+            list_query.is_valid(raise_exception=True)
+            if result_values:
+                queryset = ApiCaseListExecutionSelector.filter_queryset_by_results(queryset, result_values)
         paging = request.query_params.get("pageSize") and request.query_params.get("page")
         if paging:
             data_list, count = self.paging_list(
@@ -325,13 +331,17 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
                 queryset,
                 self.get_serializer_class()
             )
-            self.enrich_publication_state(data_list, self.get_operator_id(request))
+            self.enrich_publication_state(data_list, self.get_operator_id(request), precomputed=displayed_results)
+            if displayed_results:
+                self.enrich_list_results(data_list, result_env)
             return ResponseData.success(RESPONSE_MSG_0001, data_list, count)
 
         serializer = self.get_serializer_class()
         queryset = serializer.setup_eager_loading(queryset)
         data_list = serializer(instance=queryset, many=True).data
-        self.enrich_publication_state(data_list, self.get_operator_id(request))
+        self.enrich_publication_state(data_list, self.get_operator_id(request), precomputed=displayed_results)
+        if displayed_results:
+            self.enrich_list_results(data_list, result_env)
         return ResponseData.success(
             RESPONSE_MSG_0001,
             data_list,
@@ -339,7 +349,13 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
         )
 
     @staticmethod
-    def enrich_publication_state(data_list, operator_id=None):
+    def enrich_list_results(data_list, test_env):
+        rows = ApiCaseListExecutionSelector.collect([item['id'] for item in data_list], test_env)
+        for item in data_list:
+            item['list_result'] = rows.get(item['id'])
+
+    @staticmethod
+    def enrich_publication_state(data_list, operator_id=None, *, precomputed=False):
         """补充 API 用例的发布状态"""
         project_product_ids = {
             item.get('project_product', {}).get('id')
@@ -353,8 +369,12 @@ class ApiCaseCRUD(ApiUpdateUserCRUDMixin, ModelCRUD):
             case_id = item.get('id') if isinstance(item, dict) else None
             if not case_id:
                 continue
-            state = ApiCaseRevisionService.get_publication_state(case_id)
-            item.update(state.to_dict())
+            if not precomputed:
+                state = ApiCaseRevisionService.get_publication_state(case_id)
+                item.update(state.to_dict())
+            elif item.get('publication_status') == 'published':
+                # 发布后的编辑变更仍沿用原精确比较，不能用最近修订编号猜测并隐藏提交入口。
+                item['has_unpublished_changes'] = ApiCaseRevisionService.get_publication_state(case_id).has_unpublished_changes
             project_product = item.get('project_product') or {}
             project_product_id = project_product.get('id') if isinstance(project_product, dict) else None
             item['is_product_owner'] = project_product_id in owned_ids
@@ -421,6 +441,17 @@ class ApiCaseViews(ViewSet):
     model = ApiCase
     serializer_class = ApiCaseSerializers
 
+    @error_response('api')
+    def version_results(self, request: Request):
+        query = ApiCaseVersionResultsQuery(data=request.query_params)
+        query.is_valid(raise_exception=True)
+        values = query.validated_data
+        items = ApiCaseListExecutionSelector.version_results(
+            values['id'], None, user=getattr(request.user, 'user_obj', None))
+        if items is None:
+            return ResponseData.fail(RESPONSE_MSG_0158)
+        return ResponseData.success(RESPONSE_MSG_0001, items)
+
     @action(methods=['get'], detail=False)
     @error_response('api')
     def configuration_summary(self, request: Request):
@@ -474,18 +505,22 @@ class ApiCaseViews(ViewSet):
         revision_id = request.query_params.get('revision_id')
         release_id = request.query_params.get('release_id')
         version_kwargs = {}
-        if revision_id is not None:
-            version_kwargs['revision_id'] = int(revision_id)
-            version_kwargs['release_id'] = int(release_id) if release_id is not None else None
         test_env = validate_test_environment(request.query_params.get('test_env'))
-        api_case_run = TestCase(
-            user_id=request.user.get('id'),
-            test_env=test_env,
-            case_id=request.query_params.get('case_id'),
-            **version_kwargs,
-        )
+        if request.query_params.get('version_token') is not None:
+            query = ApiCaseListExecutionQuery(data=request.query_params)
+            query.is_valid(raise_exception=True)
+            from src.apps.auto_api.services.execution.cases.list_execution import ApiCaseListExecutionService
+            api_case_run, revision_id, release_id = ApiCaseListExecutionService.prepare(
+                **query.validated_data, user_id=request.user.get('id'))
+        else:
+            if revision_id is not None:
+                version_kwargs['revision_id'] = int(revision_id)
+                version_kwargs['release_id'] = int(release_id) if release_id is not None else None
+            api_case_run = TestCase(
+                user_id=request.user.get('id'), test_env=test_env,
+                case_id=request.query_params.get('case_id'), **version_kwargs)
         test_result: ApiCaseExecutionResult = api_case_run.test_case(
-            request.query_params.get('case_sort')
+            None if request.query_params.get('version_token') is not None else request.query_params.get('case_sort')
         )
         execution_result = ExecutionResultService.save_result(
             source_type=ExecutionResultService.SOURCE_PAGE,

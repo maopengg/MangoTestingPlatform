@@ -18,6 +18,8 @@ export function resolveApiCaseSearchOptions(
     'case_people',
     'update_user',
   ])
+  if (item.key === 'status') return options.map((option: any) =>
+    String(option.key) === '2' ? { ...option, title: '待测试' } : option)
   if (item.key !== 'execution_configuration') return options
   const selected = new Set(Array.isArray(item.value) ? item.value.map(String) : [])
   return options.map((option: any) => {

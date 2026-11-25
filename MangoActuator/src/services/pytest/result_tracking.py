@@ -10,6 +10,24 @@ class CompletionTracker:
     def __init__(self):
         self.completed = set()
         self.collection_failed = False
+        self.error_count = 0
+
+    def report_system_error(self, error, operation):
+        path = os.environ.get('MANGO_PYTEST_SYSTEM_ERROR_FILE')
+        if not path or self.error_count >= 25:
+            return False
+        try:
+            from mangoautomation.reporting import error_payload
+            payload = error_payload(error, operation)
+            with open(path, 'a', encoding='utf-8') as stream:
+                stream.write(json.dumps(payload, ensure_ascii=False) + '\n')
+            self.error_count += 1
+            return True
+        except Exception:
+            return False
+
+    def pytest_internalerror(self, excrepr, excinfo):
+        self.report_system_error(excinfo.value, 'pytest:internalerror')
 
     def pytest_collectreport(self, report):
         if report.failed:
@@ -38,4 +56,10 @@ class CompletionTracker:
 
 
 def pytest_configure(config):
-    config.pluginmanager.register(CompletionTracker(), 'mango-completion-tracker')
+    tracker = CompletionTracker()
+    config.pluginmanager.register(tracker, 'mango-completion-tracker')
+    try:
+        from mangoautomation.reporting import configure_error_callback
+        configure_error_callback(tracker.report_system_error)
+    except ImportError:
+        pass  # 被测仓库可以没有安装 UI 自动化库，完成度插件仍须独立运行。

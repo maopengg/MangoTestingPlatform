@@ -1,3 +1,4 @@
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import time
 from dataclasses import dataclass, asdict
 from datetime import datetime
@@ -119,7 +120,8 @@ class WebContextRegistry:
             if hasattr(base_data, attr):
                 try:
                     delattr(base_data, attr)
-                except Exception:
+                except Exception as _unexpected_error:
+                    ActuatorSystemErrorReporter.schedule(_unexpected_error, 'services/runtime/session/web_registry:unregister_base')
                     pass
 
     @classmethod
@@ -158,11 +160,13 @@ class WebContextRegistry:
         if browser:
             try:
                 browser_connected = browser.is_connected()
-            except Exception:
+            except Exception as _unexpected_error:
+                ActuatorSystemErrorReporter.schedule(_unexpected_error, 'services/runtime/session/web_registry:snapshot')
                 browser_connected = False
             try:
                 browser_context_count = len(getattr(browser, "contexts", []) or [])
-            except Exception:
+            except Exception as _unexpected_error:
+                ActuatorSystemErrorReporter.schedule(_unexpected_error, 'services/runtime/session/web_registry:snapshot')
                 browser_context_count = 0
         leases = [lease.to_dict() for lease in cls._leases_by_context.values()]
         return {
@@ -199,6 +203,7 @@ class WebContextRegistry:
                 await context.close()
                 closed_count += 1
             except Exception as error:
+                await ActuatorSystemErrorReporter.report(error, 'services/runtime/session/web_registry:close_idle')
                 log.warning(f"[Web会话] 关闭闲置Context失败：lease={lease.lease_id}，错误={error}")
             finally:
                 cls.unregister(context=context, reason=f"idle>{idle_seconds}s")
@@ -210,7 +215,8 @@ class WebContextRegistry:
             return False
         try:
             return not page.is_closed()
-        except Exception:
+        except Exception as _unexpected_error:
+            ActuatorSystemErrorReporter.schedule(_unexpected_error, 'services/runtime/session/web_registry:is_page_available')
             return False
 
     @staticmethod
@@ -234,11 +240,13 @@ class WebContextRegistry:
     def _attach_close_hooks(cls, context: Any, page: Any) -> None:
         try:
             page.on("close", lambda: cls.unregister(page=page, reason="page-close-event"))
-        except Exception:
+        except Exception as _unexpected_error:
+            ActuatorSystemErrorReporter.schedule(_unexpected_error, 'services/runtime/session/web_registry:_attach_close_hooks')
             pass
         try:
             context.on("close", lambda: cls.unregister(context=context, reason="context-close-event"))
-        except Exception:
+        except Exception as _unexpected_error:
+            ActuatorSystemErrorReporter.schedule(_unexpected_error, 'services/runtime/session/web_registry:_attach_close_hooks')
             pass
 
     @classmethod

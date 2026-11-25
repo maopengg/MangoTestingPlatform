@@ -327,7 +327,7 @@ export const tableColumns = useTableColumn([
     title: '结果',
     key: 'status',
     dataIndex: 'status',
-    width: 70,
+    width: 100,
   },
   {
     title: '测试层级',

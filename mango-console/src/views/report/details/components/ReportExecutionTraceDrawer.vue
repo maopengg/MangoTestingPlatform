@@ -8,7 +8,8 @@
       <div v-else class="mango-trace-panel">
         <div class="mango-trace-summary">
           <div><span>Trace ID</span><strong :title="trace.trace_id">{{ trace.trace_id }}</strong></div>
-          <div><span>状态</span><a-tag :color="statusColor(trace.status)" size="small">{{ traceStatusText(trace.status) }}</a-tag></div>
+          <div><span>状态</span><a-tag :color="statusColor(trace.status)" size="small">{{ trace.status === 3 && trace.execution_phase === 'automatic_recovery'
+            ? enumStore.report_execution_phase[trace.execution_phase]?.title || '自动恢复中' : traceStatusText(trace.status) }}</a-tag></div>
           <div><span>耗时</span><strong>{{ trace.duration_ms ?? '-' }} ms</strong></div>
           <div><span>触发时间</span><strong>{{ trace.started_at || '-' }}</strong></div>
           <div><span>完成时间</span><strong>{{ trace.finished_at || '-' }}</strong></div>

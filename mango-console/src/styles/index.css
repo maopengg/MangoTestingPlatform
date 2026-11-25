@@ -2574,6 +2574,32 @@ body {
   font-size: var(--m-font-body);
 }
 
+:is(.mango-table-header__filters, .mango-project-navigation-workbench__search, .mango-search-select) .arco-select-view-multiple .arco-select-view-inner {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+:is(.mango-table-header__filters, .mango-project-navigation-workbench__search, .mango-search-select) .arco-select-view-multiple .arco-select-view-tag {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+:is(.mango-table-header__filters, .mango-project-navigation-workbench__search, .mango-search-select) .arco-select-view-multiple .arco-select-view-tag + .arco-select-view-tag {
+  flex: none;
+}
+
+:is(.mango-table-header__filters, .mango-project-navigation-workbench__search, .mango-search-select) .arco-select-view-multiple .arco-tag-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:is(.mango-table-header__filters, .mango-project-navigation-workbench__search, .mango-search-select) .arco-select-view-multiple .arco-select-view-input {
+  flex: 1 1 12px;
+  min-width: 0;
+  width: 0;
+}
+
 .arco-form-item {
   margin-bottom: 18px;
 }

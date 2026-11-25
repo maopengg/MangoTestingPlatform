@@ -27,6 +27,7 @@ from src.tools import project_dir
 from src.tools.json_tools import json_dumps
 from src.tools.log_collector import log
 from src.tools.send_global_msg import send_global_msg
+from src.services.system_error_reporter import ActuatorSystemErrorReporter, report_unexpected
 
 
 class TestCase:
@@ -52,6 +53,7 @@ class TestCase:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         return False
 
+    @report_unexpected
     async def test_case(self) -> list[dict]:
         log.debug(
             '开始执行pytest用例：'
@@ -166,6 +168,8 @@ class TestCase:
         shutil.copyfile(Path(__file__).with_name('result_tracking.py'),
                         Path(allure_results_dir) / 'mango_pytest_completion.py')
         env['MANGO_PYTEST_COMPLETION_FILE'] = str(completion_path.resolve())
+        system_error_path = Path(allure_results_dir) / 'mango-system-errors.jsonl'
+        env['MANGO_PYTEST_SYSTEM_ERROR_FILE'] = str(system_error_path.resolve())
         env['PYTHONPATH'] = os.pathsep.join(filter(None, [str(Path(allure_results_dir).resolve()), env.get('PYTHONPATH')]))
 
         pytest_cmd = [
@@ -197,6 +201,7 @@ class TestCase:
             env=env,
             cwd=kwargs.get('work_dir'),
         )
+        return_code = None
         try:
             timeout_seconds = 3600
             stdout, stderr = await asyncio.wait_for(
@@ -204,6 +209,7 @@ class TestCase:
                 timeout=timeout_seconds,
             )
             stdout_text = stdout.decode('utf-8', errors='ignore')
+            return_code = self.process.returncode
             stderr_text = stderr.decode('utf-8', errors='ignore')
             kwargs.get('log').debug(f"pytest标准输出：\n{stdout_text}")
             kwargs.get('log').debug(f"pytest标准错误：\n{stderr_text}")
@@ -230,7 +236,41 @@ class TestCase:
             raise
         finally:
             self.process = None
+            await self.report_subprocess_errors(system_error_path)
+            if return_code is not None and return_code not in (0, 1, 2, 4, 5):
+                await ActuatorSystemErrorReporter.report(
+                    RuntimeError(f'Pytest 框架内部异常或子进程异常退出（退出码 {return_code}）'),
+                    f'pytest:subprocess:case:{self.case_model.id}')
             self.delete_allure_results(allure_results_dir)
+
+    async def report_subprocess_errors(self, path):
+        if not path.is_file():
+            return
+        try:
+            from mangoautomation.reporting import redact
+            with path.open(encoding='utf-8') as stream:
+                for index in range(25):
+                    line = stream.readline(100001)
+                    if not line:
+                        break
+                    if len(line) > 100000:
+                        raise ValueError('Pytest 异常回传超过单条大小限制')
+                    payload = json.loads(line)
+                    if not isinstance(payload, dict):
+                        raise TypeError('Pytest 异常回传格式错误')
+                    # 子进程只写本地受限文件，不持有新的平台上报凭据。
+                    from src.storage.sqlite.system_error_outbox import SystemErrorOutbox
+                    import hashlib
+                    sanitized = {'operation': redact(f'pytest:case:{self.case_model.id}:' + str(payload.get('operation', 'unknown')))[:255],
+                                 'exception_type': redact(payload.get('exception_type', 'RuntimeError'))[:128],
+                                 'message': redact(payload.get('message', ''))[:500],
+                                 'traceback': redact(payload.get('traceback', ''))[:50000]}
+                    scope = ActuatorSystemErrorReporter._scope()
+                    fingerprint = hashlib.sha256((scope + repr(sanitized)).encode()).hexdigest()
+                    SystemErrorOutbox.put(fingerprint, scope, sanitized)
+            await ActuatorSystemErrorReporter.flush_pending()
+        except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, f'pytest:error-file:case:{self.case_model.id}')
 
     def read_completion(self, path: Path, report_data: list[dict], return_code: int):
         try:

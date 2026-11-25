@@ -173,6 +173,15 @@ public final class SpringBootAstScanner {
                 SourceContext source = new SourceContext(relativePath, unit, positions);
                 new CustomConstraintCollector(state, source).scan(unit, null);
             }
+            boolean changed;
+            do {
+                changed = false;
+                for (Map.Entry<String, Set<String>> entry : state.controllerMetaAnnotations.entrySet()) {
+                    if (!Collections.disjoint(entry.getValue(), state.controllerStereotypes)) {
+                        changed |= state.controllerStereotypes.add(entry.getKey());
+                    }
+                }
+            } while (changed);
 
             for (CompilationUnitTree unit : units) {
                 String relativePath = relativePath(config.root, unit.getSourceFile().toUri());
@@ -654,6 +663,7 @@ public final class SpringBootAstScanner {
         final List<MappingProvenance> mappingProvenance;
         final Set<String> referencedTypes;
         final List<Map<String, Object>> modelFields = new ArrayList<>();
+        final Set<String> declaredPaths = new TreeSet<>();
 
         Endpoint(String method, String path, boolean pathStatic, SourceContext source,
                  String symbol, MethodTree methodTree, List<ParameterInfo> parameters,
@@ -686,6 +696,7 @@ public final class SpringBootAstScanner {
             result.put("framework", "spring-boot");
             result.put("method", method);
             result.put("path", path);
+            result.put("declared_paths", new ArrayList<>(declaredPaths));
             result.put("path_is_static", pathStatic);
             result.put("relative_path", relativePath);
             result.put("symbol", symbol);
@@ -814,6 +825,8 @@ public final class SpringBootAstScanner {
         final List<EnumInfo> enums = new ArrayList<>();
         final List<Map<String, Object>> warnings = new ArrayList<>();
         final Map<String, CustomConstraintDefinition> customConstraints = new LinkedHashMap<>();
+        final Set<String> controllerStereotypes = new TreeSet<>();
+        final Map<String, Set<String>> controllerMetaAnnotations = new LinkedHashMap<>();
         final Set<String> parsedFiles = new TreeSet<>();
         final Map<String, Integer> evidenceCollisions = new HashMap<>();
         final Map<String, Integer> logicalSequences = new HashMap<>();
@@ -1092,7 +1105,17 @@ public final class SpringBootAstScanner {
         public Void visitClass(ClassTree node, Void unused) {
             classNames.addLast(node.getSimpleName().toString());
             if (node.getKind() == Tree.Kind.ANNOTATION_TYPE) {
+                String nested = String.join(".", classNames);
+                String annotationName = source.packageName.isEmpty() ? nested : source.packageName + "." + nested;
+                Set<String> metaTypes = new TreeSet<>();
+                state.controllerMetaAnnotations.put(annotationName, metaTypes);
                 for (AnnotationTree annotation : node.getModifiers().getAnnotations()) {
+                    metaTypes.addAll(source.annotationQualifiedCandidates(annotation));
+                    String metaName = simpleName(annotation.getAnnotationType().toString());
+                    if (("Controller".equals(metaName) && source.hasAnnotationSource(annotation, "org.springframework.stereotype"))
+                            || ("RestController".equals(metaName) && source.hasAnnotationSource(annotation, "org.springframework.web.bind.annotation"))) {
+                        state.controllerStereotypes.add(annotationName);
+                    }
                     if (!"Constraint".equals(
                             simpleName(annotation.getAnnotationType().toString()))) {
                         continue;
@@ -1119,6 +1142,8 @@ public final class SpringBootAstScanner {
         private final Deque<RouteContext> routeContexts = new ArrayDeque<>();
         private final Deque<List<AnnotationInfo>> routeActivationContexts = new ArrayDeque<>();
         private final Deque<Boolean> provenanceBlockedContexts = new ArrayDeque<>();
+        private final Deque<Boolean> serverContexts = new ArrayDeque<>();
+        private final Deque<Boolean> clientContexts = new ArrayDeque<>();
 
         UnitCollector(State state, SourceContext source) {
             this.state = state;
@@ -1126,6 +1151,8 @@ public final class SpringBootAstScanner {
             this.routeContexts.push(RouteContext.root());
             this.routeActivationContexts.push(Collections.emptyList());
             this.provenanceBlockedContexts.push(false);
+            this.serverContexts.push(false);
+            this.clientContexts.push(false);
         }
 
         @Override
@@ -1133,6 +1160,21 @@ public final class SpringBootAstScanner {
             String className = node.getSimpleName().toString();
             classNames.addLast(className);
             String classSymbol = classSymbol();
+            boolean server = false;
+            boolean client = false;
+            for (AnnotationTree annotation : node.getModifiers().getAnnotations()) {
+                String name = simpleName(annotation.getAnnotationType().toString());
+                server |= ("Controller".equals(name) && source.hasAnnotationSource(
+                        annotation, "org.springframework.stereotype"))
+                        || ("RestController".equals(name) && source.hasAnnotationSource(
+                        annotation, "org.springframework.web.bind.annotation"));
+                server |= !Collections.disjoint(source.annotationQualifiedCandidates(annotation),
+                        state.controllerStereotypes);
+                client |= "FeignClient".equals(name) && source.hasAnnotationSource(
+                        annotation, "org.springframework.cloud.openfeign", "org.springframework.cloud.netflix.feign");
+            }
+            serverContexts.push(server);
+            clientContexts.push(client);
             List<AnnotationSourceIssue> classIssues = annotationProvenanceIssues(
                     node.getModifiers(), classSymbol);
             int endpointStart = state.endpoints.size();
@@ -1178,6 +1220,8 @@ public final class SpringBootAstScanner {
             routeActivationContexts.pop();
             routeContexts.pop();
             provenanceBlockedContexts.pop();
+            serverContexts.pop();
+            clientContexts.pop();
             classNames.removeLast();
             return result;
         }
@@ -1200,7 +1244,14 @@ public final class SpringBootAstScanner {
                     routeActivationContexts.peek());
             routeActivations.addAll(routeActivationAnnotations(node.getModifiers(), source));
 
-            if (!methodMappings.isEmpty() && provenanceBlocked) {
+            if (!methodMappings.isEmpty() && clientContexts.peek() && !serverContexts.peek()) {
+                state.addWarning("SPRING_CLIENT_DECLARATION_SKIPPED",
+                        "Feign client mapping is not a server endpoint", source.relativePath, symbol);
+            } else if (!methodMappings.isEmpty() && !serverContexts.peek() && !provenanceBlocked) {
+                state.addWarning("SPRING_SERVER_REGISTRATION_UNRESOLVED",
+                        "mapping has no confirmed server registration; inspect composed controller annotations, inheritance or runtime registration",
+                        source.relativePath, symbol);
+            } else if (!methodMappings.isEmpty() && provenanceBlocked) {
                 // A same-named annotation without proven framework provenance
                 // makes the endpoint contract unsafe to infer.
             } else if (!methodMappings.isEmpty() && !routeActivations.isEmpty()) {
@@ -1211,6 +1262,7 @@ public final class SpringBootAstScanner {
             } else if (!methodMappings.isEmpty()) {
                 RouteContext resolved = applyMappings(
                         routeContexts.peek(), methodMappings, source, symbol, state, "method");
+                Map<String, Endpoint> methodEndpoints = new LinkedHashMap<>();
                 for (RouteVariant variant : resolved.variants) {
                     RoutePath routePath = variant.path;
                     String normalizedPath = normalizeRoutePath(routePath.value);
@@ -1227,8 +1279,16 @@ public final class SpringBootAstScanner {
                     Set<String> methods = variant.methods.isEmpty()
                             ? Collections.singleton("ANY") : variant.methods;
                     for (String method : methods) {
+                        String identity = method + "\u0000" + normalizedPath;
+                        Endpoint existing = methodEndpoints.get(identity);
+                        if (existing != null) {
+                            existing.declaredPaths.add(routePath.value);
+                            continue;
+                        }
                         Endpoint endpoint = new Endpoint(method, normalizedPath, routePath.isStatic,
                                 source, symbol, node, parameters, variant.provenance);
+                        endpoint.declaredPaths.add(routePath.value);
+                        methodEndpoints.put(identity, endpoint);
                         state.addEndpoint(endpoint, source, node);
                         endpointIds.add(endpoint.routeId);
                         linkedEndpoints.add(endpoint);

@@ -29,7 +29,7 @@
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'case_people'">
-                <a-select
+                <MangoSearchSelect
                   v-model="item.value"
                   :multiple="item.multiple"
                   :max-tag-count="item.multiple ? 1 : undefined"
@@ -44,7 +44,7 @@
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'update_user'">
-                <a-select
+                <MangoSearchSelect
                   v-model="item.value"
                   :multiple="item.multiple"
                   :max-tag-count="item.multiple ? 1 : undefined"
@@ -59,7 +59,7 @@
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'status'">
-                <a-select
+                <MangoSearchSelect
                   v-model="item.value"
                   :multiple="item.multiple"
                   :max-tag-count="item.multiple ? 1 : undefined"
@@ -74,7 +74,7 @@
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'level'">
-                <a-select
+                <MangoSearchSelect
                   v-model="item.value"
                   :multiple="item.multiple"
                   :max-tag-count="item.multiple ? 1 : undefined"
@@ -89,7 +89,7 @@
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'scenario_layer'">
-                <a-select
+                <MangoSearchSelect
                   v-model="item.value"
                   :multiple="item.multiple"
                   :max-tag-count="item.multiple ? 1 : undefined"
@@ -104,7 +104,7 @@
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'scenario_type'">
-                <a-select
+                <MangoSearchSelect
                   v-model="item.value"
                   :multiple="item.multiple"
                   :max-tag-count="item.multiple ? 1 : undefined"
@@ -119,7 +119,7 @@
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'scenario_tags'">
-                <a-select
+                <MangoSearchSelect
                   v-model="item.value"
                   :field-names="fieldNames"
                   :loading="enumsLoading"
@@ -261,6 +261,7 @@
   <UiCaseTaskBindingModal ref="taskBindingRef" @saved="saved()" />
 </template>
 <script setup lang="ts">
+  import MangoSearchSelect from '@/components/business/MangoSearchSelect.vue'
 import { reportLoadError } from '@/utils/load-error'
 
   import { computed, onMounted, ref } from 'vue'

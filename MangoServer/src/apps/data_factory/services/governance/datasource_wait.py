@@ -7,6 +7,7 @@ import threading
 _wait_pulse = ContextVar('datasource_wait_pulse', default=None)
 _wait_elapsed = ContextVar('datasource_wait_elapsed', default=0.0)
 _connection_holds = ContextVar('datasource_connection_holds', default=())
+_wait_intervals = ContextVar('datasource_wait_intervals', default=None)
 
 
 class DatasourceWaitService:
@@ -28,6 +29,22 @@ class DatasourceWaitService:
     @staticmethod
     def elapsed():
         return _wait_elapsed.get()
+
+    @staticmethod
+    @contextmanager
+    def intervals():
+        values = []
+        token = _wait_intervals.set(values)
+        try:
+            yield values
+        finally:
+            _wait_intervals.reset(token)
+
+    @staticmethod
+    def record_interval(started, finished):
+        values = _wait_intervals.get()
+        if values is not None:
+            values.append((started, finished))
 
     @staticmethod
     def hold_connection():
@@ -69,6 +86,7 @@ class DatasourceWaitService:
             # 控制库行锁/网络耗时也不是被测 SQL 耗时；嵌套退避已累计的部分不重复计算。
             nested = max(0, _wait_elapsed.get() - waited)
             _wait_elapsed.set(_wait_elapsed.get() + max(0, monotonic() - started - nested))
+            DatasourceWaitService.record_interval(started, monotonic())
 
     @staticmethod
     def pause(seconds=0.1, *, ready=None):
@@ -90,6 +108,7 @@ class DatasourceWaitService:
                        on_resume=lambda: resumed.__setitem__(0, max(0, monotonic() - due)))
         finally:
             elapsed = monotonic() - started
+            DatasourceWaitService.record_interval(started, monotonic())
             nested_wait = max(0, _wait_elapsed.get() - wait_before)
             _wait_elapsed.set(_wait_elapsed.get() + max(0, elapsed - nested_wait))
             own_time = max(0, elapsed - sum(Timing.delta(timing_before).values()) / 1000)

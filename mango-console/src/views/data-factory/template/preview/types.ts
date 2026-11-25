@@ -138,6 +138,7 @@ export interface PreviewNode {
   children?: PreviewNode[]
 }
 export interface PreviewResult {
+  resource_cleanup_preview?: JsonValue[]
   dependency_tree?: PreviewNode | null
   post_insert_updates?: PostUpdateResult[]
   can_debug_run?: boolean

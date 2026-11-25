@@ -1,4 +1,5 @@
 import copy
+from src.apps.data_factory.formatters import preview_cleanup_rules
 
 from mangotools.enums import StatusEnum
 
@@ -41,6 +42,7 @@ from src.apps.data_factory.services.assets.entity import DataFactoryEntityServic
 from src.apps.data_factory.services.execution.generator import DataFactoryValueGenerator
 from src.apps.data_factory.services.execution.runtime_cache import DataFactoryRuntimeCache
 from src.apps.data_factory.services.execution.type_cast import DataFactoryTypeCast
+from src.apps.data_factory.services.execution.execution_metadata import DataFactoryExecutionMetadata
 
 
 # -*- coding: utf-8 -*-
@@ -195,14 +197,14 @@ class DataFactoryRunnerPreviewMixin:
 
     @staticmethod
     def get_template_items(template: DataFactoryTemplate) -> list[DataFactoryTemplateItem]:
-        return list(
+        return DataFactoryExecutionMetadata.scene_value(template.id, 'items', lambda: list(
             template.items.select_related(
                 'child_template',
                 'child_template__entity',
                 'child_template__entity__datasource_alias',
                 'child_template__project_product',
             ).order_by('sort', 'id')
-        )
+        ))
 
     @staticmethod
     def get_item_override(item: DataFactoryTemplateItem, item_overrides: dict | None) -> dict:
@@ -239,19 +241,20 @@ class DataFactoryRunnerPreviewMixin:
         if not node_rules:
             return prepared
 
-        scene_items = cls.get_template_items(template)
-        item_positions = {scene_item.id: index for index, scene_item in enumerate(scene_items)}
+        item_positions, nodes = DataFactoryExecutionMetadata.scene_value(template.id, 'reference_plan', lambda: (
+            {scene_item.id: index for index, scene_item in enumerate(cls.get_template_items(template))},
+            cls.build_scene_node_registry(template),
+        ))
         current_position = item_positions.get(item.id)
         if current_position is None:
             raise DataFactoryError(DATA_FACTORY_RUNNER_PARTS_PREVIEW_SCENARIO_TEMPLATE_RELATION_INVALID,
                                    value=(item.id, template.name))
 
-        nodes = cls.build_scene_node_registry(template)
         if root_alias:
-            nodes[0]["alias"] = root_alias
+            nodes = [{**nodes[0], 'alias': root_alias}, *nodes[1:]]
         target_fields = {
             field.name: field
-            for field in item.child_template.entity.datafactoryfield_set.all().order_by('sort', 'id')
+            for field in DataFactoryExecutionMetadata.fields(item.child_template.entity)
         }
         for field_name, rule in node_rules:
             config = rule["generator_config"]
@@ -261,7 +264,7 @@ class DataFactoryRunnerPreviewMixin:
                 raise DataFactoryError(DATA_FACTORY_RUNNER_PARTS_PREVIEW_FIELD_NODE_RELATION_EXECUTION_INVALID,
                                        value=(item.name or item.id, field_name))
             source_field_name = config.get("source_field") or "id"
-            source_field = source["entity"].datafactoryfield_set.filter(name=source_field_name).first()
+            source_field = DataFactoryExecutionMetadata.field(source['entity'], source_field_name)
             if not source_field:
                 raise DataFactoryError(DATA_FACTORY_RUNNER_PARTS_PREVIEW_FIELD_NODE_NOT_FOUND,
                                        value=(config['source_node'], source_field_name))
@@ -512,6 +515,8 @@ class DataFactoryRunnerPreviewMixin:
                 "host": database.host,
                 "port": database.port,
             },
+            "resource_cleanup_preview": preview_cleanup_rules(
+                getattr(template, 'cleanup_resources', []) or [], entity.primary_key, payload),
             "payload": payload,
             "output": output,
             "fields": field_items,

@@ -159,7 +159,6 @@
         </a-table-column>
       </template>
     </a-table>
-    <TableFooter :pagination="pagination" :show-refresh="false" />
   </div>
 
   <a-modal
@@ -388,7 +387,7 @@ onMounted(() => { mounted = true; document.addEventListener('visibilitychange', 
 onActivated(() => { active = true; if (paused) void resume() })
 onDeactivated(() => { active = false; paused = true; invalidate() })
 onBeforeUnmount(() => { disposed = true; invalidate(true); document.removeEventListener('visibilitychange', visibilityChanged) })
-defineExpose({ applyFilters, load, openCreate })
+defineExpose({ applyFilters, load, openCreate, pagination })
 </script>
 
 <style scoped>

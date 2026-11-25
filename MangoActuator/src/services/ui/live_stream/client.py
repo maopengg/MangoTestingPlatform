@@ -1,3 +1,4 @@
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import asyncio
 import json
 from contextlib import suppress
@@ -165,6 +166,7 @@ class UiLiveStreamClient:
                 "message": f"实时控制执行超时，操作已放弃：{event_type}",
             }
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/live_stream/client:_execute_control_event')
             payload = {
                 "type": "control_ack",
                 "sequence": event.get("sequence"),

@@ -4,7 +4,7 @@ import { resolveApiCaseSearchOptions } from '../../../../src/views/apitest/case/
 
 const users = [{ key: 1, title: '张三' }]
 const enumStore = {
-  task_status: [{ key: 1, title: '已完成' }],
+  task_status: [{ key: 1, title: '已完成' }, { key: 2, title: '待开始' }],
   case_level: [{ key: 2, title: 'P2' }],
   api_case_scenario_type: [{ key: 3, title: '功能' }],
 }
@@ -21,9 +21,9 @@ test('负责人和更新人始终使用用户列表', () => {
 })
 
 test('空 optionItems 不覆盖枚举选项', () => {
-  assert.equal(
+  assert.deepEqual(
     resolveApiCaseSearchOptions({ key: 'status', optionItems: [] }, users, enumStore),
-    enumStore.task_status
+    [{ key: 1, title: '已完成' }, { key: 2, title: '待测试' }]
   )
   assert.equal(
     resolveApiCaseSearchOptions({ key: 'level', optionItems: [] }, users, enumStore),

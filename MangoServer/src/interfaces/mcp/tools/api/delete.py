@@ -138,7 +138,8 @@ def register_delete_tools(mcp):
     ) -> dict:
         """确认后删除 API case。
 
-        必须先调用 preview_delete_api_case_impact。确认后只删除 API case 以及页面不可单独删除的版本数据；
+        必须先调用 preview_delete_api_case_impact。确认后删除 API case、版本数据及已清理并验证的附属资源台账，不再次删除被测数据；
+        已结束回调及对应投递记录也随 Case 删除；尚未完成清理的资源或等待中的回调会阻止删除。
         如果仍有步骤、场景或定时任务绑定，删除会被阻止，需要用户先手动删除页面可见的关联数据。
         """
         error = validate_dangerous_action_confirmation("delete_api_case", case_id, preview_token, confirm_text)
@@ -149,7 +150,7 @@ def register_delete_tools(mcp):
                 before = _api_case_delete_impact(case_id)
                 if not before.get("can_delete"):
                     return fail(
-                        "API case 存在页面可见的关联数据，请先手动删除步骤、场景或解除定时任务绑定后再删除。",
+                        "；".join(before.get("blockers") or ["API case 仍有关联数据，请先处理后再删除。"]),
                         "DELETE_API_CASE_BLOCKED",
                         before,
                     )

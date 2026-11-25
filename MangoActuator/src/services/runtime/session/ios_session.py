@@ -1,3 +1,4 @@
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import asyncio
 from dataclasses import dataclass, field
 
@@ -44,7 +45,8 @@ class IOSDevicePool:
             async with lease.connect_lock:
                 driver = await asyncio.to_thread(lease.runtime.connect)
             base_data.bind_ios(lease.runtime, driver, capabilities.get('appium:bundleId'))
-        except Exception:
+        except Exception as _unexpected_error:
+            await ActuatorSystemErrorReporter.report(_unexpected_error, 'services/runtime/session/ios_session:acquire')
             if acquired_here and lease.lock.locked() and lease.owner == owner:
                 lease.owner = ''
                 lease.lock.release()

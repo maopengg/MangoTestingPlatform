@@ -187,7 +187,7 @@ class ResultWriteTransactionTests(SimpleTestCase):
         )
         return SimpleNamespace(
             id=3, test_suite=2, type=case_type, status=1, error_message=None,
-            result_data=execution, model_dump_json=lambda: '{}',
+            result_data=execution, model_dump_json=lambda: '{}', attempt=None,
         )
 
     def test_callback_retries_database_only_and_commits_state_with_result(self):

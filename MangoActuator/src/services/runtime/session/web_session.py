@@ -6,6 +6,7 @@ from src.tools import project_dir
 from src.tools.log_collector import log
 from src.tools.set_config import SetConfig
 from src.services.runtime.session.web_registry import WebContextRegistry
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 
 
 class WebSessionManager:
@@ -43,6 +44,7 @@ class WebSessionManager:
             static_cache_enabled=bool(SetConfig.get_web_static_cache_enabled()),  # type: ignore
             static_cache_path=SetConfig.get_web_static_cache_path(),  # type: ignore
             log=log,
+            system_error_callback=ActuatorSystemErrorReporter.report,
         )
 
     @classmethod

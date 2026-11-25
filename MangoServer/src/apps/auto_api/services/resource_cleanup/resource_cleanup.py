@@ -8,6 +8,7 @@ from time import monotonic
 from uuid import uuid4
 
 from django.utils import timezone
+from django.db import transaction
 from pydantic import ValidationError
 
 from src.apps.auto_api.enums.resource_cleanup import ApiResourceCleanupStatus as State
@@ -19,14 +20,17 @@ from src.apps.auto_api.schemas.resource_cleanup import (
     ApiResourceChildMapping, ApiResourceChildCorrection,
     ApiResourceMutationAttempt, ApiResourceVersionTransition,
     ApiResourceRejectionRecovery, ApiResourceRejectionEvidence,
+    ApiResourceRecoveryEvidence,
 )
 from src.apps.auto_api.services.resource_cleanup.resource_cleanup_io import ApiResourceCleanupIO as IO
-from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as ES
+from src.apps.data_factory.services.datasource.elasticsearch import ElasticsearchDatasourceService as ES
 from src.apps.data_factory.services.datasource.data_source_error import DataSourceErrorService
 from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditService
 from src.apps.data_factory.enums.audit import DatasourceAuditSourceEnum, DatasourceAuditStageEnum
 from src.common.database.mysql_lock import acquire_mysql_lock, release_mysql_lock
 from src.common.exceptions import MangoServerError
+from src.apps.data_factory.enums.cleanup_history import ResourceCleanupEventEnum as CleanupEvent
+from src.apps.data_factory.services.cleanup.cleanup_history import ResourceCleanupHistoryService as History
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +48,20 @@ def resource_scalar(value):
 
 
 class ApiResourceCleanupService:
+    @staticmethod
+    @transaction.atomic
+    def delete_cleaned_case_records(case_id):
+        """在 Case 删除事务内回收附属台账，不发起任何被测数据删除。"""
+        from src.apps.auto_api.models import ApiCase
+        ApiCase.objects.select_for_update().get(id=case_id)
+        records = ApiCaseExecutionResource.objects.select_for_update().filter(case_id=case_id).order_by('id')
+        unfinished = sum(status != State.CLEANED.value for status in records.values_list('status', flat=True))
+        if unfinished:
+            raise AutoApiError(API_RESOURCE_CLEANUP_FAILED, value=(
+                f'该用例仍有 {unfinished} 条资源记录尚未清理并验证，暂不能删除用例。'
+                '请先核查资源清理结果，完成清理后再删除用例',))
+        records.filter(status=State.CLEANED.value).delete()
+
     @staticmethod
     def validate_config(rules, product_id=None, case_id=None):
         try:
@@ -91,14 +109,18 @@ class ApiResourceCleanupService:
                 'project_product_id': record.case.project_product_id, 'test_env': record.test_env}
 
     @staticmethod
-    def persist(record, proof, **changes):
-        query = ApiCaseExecutionResource.objects.filter(id=record.id)
-        if record.cleanup_token:
-            query = query.filter(cleanup_token=record.cleanup_token)
-        changes.update(proof=proof.model_dump(mode='json'), update_time=timezone.now())
+    @transaction.atomic
+    def persist(record, proof, _history_entry=None, **changes):
+        query = ApiCaseExecutionResource.objects.filter(id=record.id).filter(cleanup_token=record.cleanup_token)
+        current = query.select_for_update().only('proof').first()
+        if current is None:
+            IO.fail(f'资源 {record.id} 的清理持有者已变化，当前操作已停止')
+        merged = History.merge(current.proof, proof.model_dump(mode='json'), _history_entry)
+        changes.update(proof=merged, update_time=timezone.now())
         if query.update(**changes) != 1:
             IO.fail(f'资源 {record.id} 的清理持有者已变化，当前操作已停止')
         record.proof = changes['proof']
+        proof.cleanup_history = ApiResourceProof.model_validate(merged).cleanup_history
         for key, value in changes.items():
             setattr(record, key, value)
 
@@ -192,11 +214,14 @@ class ApiResourceCleanupService:
         from src.apps.task_center.services.execution.cooperative_executor import cooperative_sleep
         pause = pause or cooperative_sleep
         clock = clock or monotonic
+        operator_id = operator_id or getattr(record, 'cleanup_operator_id', None) or getattr(record.trace, 'user_id', None)
         with cls.claim(record) as claimed:
             if not claimed:
                 return
             rule = ApiResourceCleanupRule.model_validate(record.rule)
             proof = ApiResourceProof.model_validate(record.proof)
+            History.append(CleanupEvent.STARTED, resource=record, operator_id=operator_id,
+                message=(getattr(record, 'error_message', '') or ''), snapshot_digest=History.digest(record.rule))
             try:
                 cls.check(record)
                 if rejection_recovery is not None:
@@ -209,6 +234,12 @@ class ApiResourceCleanupService:
                     cls.correct_children(record, rule, proof, child_mapping, operator_id)
                 if proof.child_corrections:
                     rule = cls.children_rule(rule, proof.child_corrections)
+                if identity_mapping is not None or child_mapping or rejection_recovery is not None:
+                    recovery = ApiResourceRecoveryEvidence(identity_mapping=identity_mapping,
+                        child_mapping=child_mapping or [], rejection_recovery=rejection_recovery)
+                    History.append(CleanupEvent.COMPENSATION_AUTHORIZED, resource=record, operator_id=operator_id,
+                        api_recovery=recovery, snapshot_digest=History.digest(record.rule),
+                        authorization_digest=History.digest(recovery.model_dump(mode='json')))
                 if not proof.request_sent:
                     cls.persist(record, proof, status=State.CLEANED.value, error_message='')
                     return
@@ -254,6 +285,11 @@ class ApiResourceCleanupService:
                     message = f'资源 {record.id} 清理未完成，关联编号 {reference}，请核查审计后重试原资源清理'
                 cls.persist(record, proof, status=State.FAILED.value, error_message=message)
                 raise AutoApiError(API_RESOURCE_CLEANUP_FAILED, value=(message,)) from error
+            finally:
+                History.append(CleanupEvent.SUCCEEDED if record.status == State.CLEANED.value else CleanupEvent.FAILED,
+                    resource=record, operator_id=operator_id, message=(record.error_message or ''),
+                    sql_verified=proof.sql_cleaned, es_verified=proof.es_verified if proof.root else None,
+                    snapshot_digest=History.digest(record.rule))
 
     @classmethod
     def observe_rejection(cls, record, rule, proof, sql, *, clock, pause):

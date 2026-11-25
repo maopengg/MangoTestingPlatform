@@ -142,6 +142,7 @@ class SocketConsumer(UI, API, Perf, Tools, Pytest):
         try:
             result = task.result()
         except Exception as error:
+            ActuatorSystemErrorReporter.schedule(error, 'consumer/__init__:handle_task_result')
             traceback.print_exc()
             log.error(f"反射任务执行出现异常：{error}")
 

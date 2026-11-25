@@ -4,6 +4,7 @@
       <div v-if="description" class="mango-json-edit-drawer__tip">
         {{ description }}
       </div>
+      <slot name="before-editor" />
       <MangoJsonEditor
         v-model="localValue"
         :placeholder="placeholder"
@@ -12,8 +13,18 @@
     </div>
     <template #footer>
       <div class="mango-json-edit-drawer__footer">
-        <a-button size="small" @click="handleCancel" data-testid="qa-components-editors-mangojsoneditdrawer-button-取消">取消</a-button>
-        <a-button size="small" type="primary" :loading="props.saving" @click="handleSave" data-testid="qa-components-editors-mangojsoneditdrawer-button-保存"
+        <a-button
+          size="small"
+          @click="handleCancel"
+          data-testid="qa-components-editors-mangojsoneditdrawer-button-取消"
+          >取消</a-button
+        >
+        <a-button
+          size="small"
+          type="primary"
+          :loading="props.saving"
+          @click="handleSave"
+          data-testid="qa-components-editors-mangojsoneditdrawer-button-保存"
           >保存</a-button
         >
       </div>

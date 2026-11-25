@@ -137,6 +137,9 @@
                 <template v-if="item.key === 'execution_configuration'" #title>
                   <CaseExecutionConfigurationTitle />
                 </template>
+                <template v-else-if="item.key === 'status'" #title>
+                  <CaseResultTitle />
+                </template>
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
@@ -183,9 +186,24 @@
                   </a-tag>
                 </template>
                 <template v-else-if="item.key === 'status'" #cell="{ record }">
-                  <a-tag :color="enumStore.status_colors[record.status]" size="small"
-                    >{{ enumStore.task_status[record.status]?.title || '-' }}
-                  </a-tag>
+                  <CaseVersionResultPopover :case-id="record.id"
+                    :version-token="record.list_result?.version_token">
+                    <a-button v-if="record.list_result?.trace_id" type="text" size="mini"
+                      :aria-label="listResultHint(record)"
+                      @click="showExecutionTrace({ trace_id: record.list_result.trace_id })">
+                      <a-tag :color="enumStore.status_colors[record.list_result.status ?? 2]" size="small">
+                        {{ record.list_result.status === 3 && record.list_result.phase === 'automatic_recovery'
+                          ? enumStore.report_execution_phase[record.list_result.phase]?.title || '自动恢复中'
+                          : record.list_result.status === 2 ? '待测试'
+                          : enumStore.task_status[record.list_result.status ?? 2]?.title || '-' }}
+                      </a-tag>
+                    </a-button>
+                    <a-tag v-else-if="record.list_result?.status != null"
+                      :color="enumStore.status_colors[record.list_result.status]" size="small">
+                      {{ record.list_result.status === 2 ? '待测试' : enumStore.task_status[record.list_result.status]?.title || '-' }}
+                    </a-tag>
+                    <a-tag v-else :color="enumStore.status_colors[2]" size="small">待测试</a-tag>
+                  </CaseVersionResultPopover>
                 </template>
                 <template v-else-if="item.key === 'execution_configuration'" #cell="{ record }">
                   <a-spin v-if="configurationLoading && !configurationSummaries[record.id]" />
@@ -244,8 +262,9 @@
                     :actions="[
                       {
                         label: '执行',
+                        tooltip: listExecutionLabel(record),
                         loading: caseRunning,
-                        disabled: batchPublicationAction !== null,
+                        disabled: batchPublicationAction !== null || caseRunning,
                         onClick: () => caseRun(record),
                       },
                       { label: '步骤', onClick: () => onStep(record) },
@@ -334,11 +353,14 @@
 </template>
 
 <script lang="ts" setup>
-  import { usePagePolling, isPendingExecution } from '@/hooks/use-page-polling'
+  import { usePagePolling } from '@/hooks/use-page-polling'
   import CasePublicationReviewModal from '@/components/business/CasePublicationReviewModal.vue'
   import ApiCaseConfigurationDrawer from './components/ApiCaseConfigurationDrawer.vue'
   import CaseExecutionConfigurationTags from '@/components/display/CaseExecutionConfigurationTags.vue'
   import CaseExecutionConfigurationTitle from '@/components/display/CaseExecutionConfigurationTitle.vue'
+  import CaseResultTitle from './components/CaseResultTitle.vue'
+  import CaseVersionResultPopover from './components/CaseVersionResultPopover.vue'
+  import { formatCaseResultTime } from './result-presentation'
   import { useCaseConfigurationSummary } from './composables/useCaseConfigurationSummary'
 
   import { usePagination, useRowKey, useTable } from '@/hooks/table'
@@ -559,6 +581,7 @@
       delete value.scenario_tags
     }
     value['page'] = pagination.page
+    value.result_scope = 'displayed_version'
     value['pageSize'] = pagination.pageSize
     if (projectProductId && bool_) {
       value['project_product'] = projectProductId
@@ -571,7 +594,8 @@
           void loadConfigurationSummaries((res.data || []).map((row: any) => Number(row.id)))
         pagination.setTotalSize(res.totalSize)
         const hasRunningItem =
-          res.data && Array.isArray(res.data) && res.data.some(isPendingExecution)
+          res.data && Array.isArray(res.data) && res.data.some((row: CaseListRow) =>
+            row.list_result?.is_active === true)
 
         if (hasRunningItem) pagePolling.start()
         else pagePolling.stop()
@@ -701,7 +725,12 @@
     }, 30000)
 
     try {
-      const res = await getApiCaseRun(param.id, userStore.selected_environment, null)
+      const token = param.list_result?.version_token
+      if (!token) {
+        Message.info('请刷新列表后执行')
+        return
+      }
+      const res = await getApiCaseRun(param.id, userStore.selected_environment, null, undefined, undefined, token)
       if (runNoticeTimer !== null) {
         clearTimeout(runNoticeTimer)
         runNoticeTimer = null
@@ -717,8 +746,28 @@
       }
       caseRunning.value = false
     } finally {
+      if (runNoticeTimer !== null) {
+        clearTimeout(runNoticeTimer)
+        runNoticeTimer = null
+      }
       caseRunning.value = false
     }
+  }
+
+  function listExecutionLabel(record: CaseListRow) {
+    if (record.publication_status === 'published') return `执行已发布 ${record.published_version_label || ''}`
+    if (record.publication_status === 'prepublished') return `执行预发布 r${record.prepublished_revision_no}`
+    return '执行当前编辑态'
+  }
+
+  function listResultHint(record: CaseListRow) {
+    const result = record.list_result
+    if (!result) return '悬停查看各版本最近一次执行结果'
+    const version = listExecutionLabel(record).replace(/^执行/, '')
+    if (!result.trace_id && result.status != null) return `${version}已排队，等待开始执行`
+    return result.started_at ? `${version} · ${formatCaseResultTime(result.started_at)} · 点击查看执行详情`
+      : result.state === 'needs_validation' ? '编辑配置已变更或历史结果无法匹配，请重新验证'
+      : `${version}尚无匹配的执行结果`
   }
 
   function hasPublishedCaseVersion(record: CaseListRow) {

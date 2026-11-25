@@ -271,10 +271,14 @@ class InlineResourceWindowTests(SimpleTestCase):
                 patch.object(DataFactoryCleanup, 'mark_execution_failed') as failure, \
                 patch.object(DataFactoryCleanup, 'sync_workbench_todo'), \
                 patch.object(Tasks, 'finish_cleanup_step', return_value=True) as finish, \
+                patch('src.apps.data_factory.services.cleanup.cleanup_schedule.transaction.atomic', side_effect=lambda: nullcontext()), \
+                patch('src.apps.data_factory.services.cleanup.cleanup_schedule.transaction.on_commit'), \
+                patch.object(CleanupPersistenceService, 'lock_execution', return_value=execution), \
                 patch('src.apps.data_factory.services.cleanup.cleanup_schedule.DataFactoryExecution.objects') as executions, \
                 patch('src.apps.data_factory.services.cleanup.cleanup_schedule.DataFactoryExecutionItem.objects') as items:
             executions.get.return_value = execution
             items.select_related.return_value.filter.return_value.order_by.return_value = [item]
+            items.select_for_update.return_value.filter.return_value = [item]
             Schedule.run_inline(lease)
         sql.assert_called_once_with(7, force_cleanup=True, allow_missing=True, defer_resources=True)
         self.assertEqual(samples, [1800000000, 1800000002, 1800000003, 1800000004])
@@ -288,12 +292,13 @@ class InterruptedExecutionRoutingTests(SimpleTestCase):
     @patch.object(DataFactoryExecutionRecovery, 'recover_inline_cleanup', return_value=0)
     @patch.object(DataFactoryExecutionRecovery, 'reconcile_manual_cleanup_states', return_value={'pending': 0, 'resolved': 0})
     @patch('src.apps.data_factory.services.recovery.execution_recovery.DataFactoryExecution.objects')
-    @patch.object(DataFactoryCleanup, 'mark_execution_failed')
+    @patch.object(DataFactoryExecutionRecovery, 'fail_unverified_cleanup', return_value=True)
     @patch.object(Schedule, 'enqueue')
     def test_no_report_orphan_creates_failure_responsibility_not_scheduler_work(self, enqueue, failure, executions, manual, expired):
         execution = SimpleNamespace(id=7, status=1, context={}, project_product_id=4)
-        executions.filter.return_value.filter.return_value.distinct.return_value.order_by.return_value.__getitem__.return_value = [execution]
-        result = DataFactoryExecutionRecovery.recover()
+        executions.filter.return_value.exclude.return_value.filter.return_value.distinct.return_value.order_by.return_value.__getitem__.return_value = [execution]
+        with patch.object(DataFactoryCleanup, 'reconcile_verified_cleanup', return_value=False):
+            result = DataFactoryExecutionRecovery.recover()
         self.assertEqual(result['data_factory_recovery_failed_count'], 1)
         failure.assert_called_once()
         enqueue.assert_not_called()

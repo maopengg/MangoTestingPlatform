@@ -20,6 +20,7 @@ from src.tools import project_dir
 from src.tools.execution_activity import ExecutionActivity
 from src.tools.log_collector import log
 from src.tools.send_global_msg import global_msg_queue
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 from src.tools.set_config import SetConfig
 from src.tools.url import is_valid_url, platform_ws_url
 from .config import config_view
@@ -415,7 +416,8 @@ class FletActuatorApplication:
             for callback, args in self.bridge.drain_callbacks():
                 try:
                     callback(*args)
-                except Exception:
+                except Exception as error:
+                    await ActuatorSystemErrorReporter.report(error, 'flet:desktop-event')
                     log.error("桌面事件处理失败", exc_info=True)
             dirty_logs = False
             for _ in range(200):
@@ -498,7 +500,8 @@ def run_flet_application():
     def start_page(page):
         try:
             FletActuatorApplication(page)
-        except Exception:
+        except Exception as error:
+            ActuatorSystemErrorReporter.schedule(error, 'flet:page-initialization')
             log.exception("执行器桌面页面初始化失败")
             page.window.visible = True
             page.update()
@@ -511,6 +514,8 @@ def run_flet_application():
             loop.default_exception_handler(context)
 
         asyncio.get_running_loop().set_exception_handler(report_loop_error)
+        ActuatorSystemErrorReporter.install_exception_hooks()
+        ActuatorSystemErrorReporter.install_loop_exception_handler(asyncio.get_running_loop())
         log.info("正在启动执行器桌面客户端")
         await ft.app_async(target=start_page, view=ft.AppView.FLET_APP)
 

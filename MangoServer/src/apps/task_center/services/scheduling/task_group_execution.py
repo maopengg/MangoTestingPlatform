@@ -344,8 +344,8 @@ class ScheduledTaskGroupExecutionService:
         )
         blocked_reports = [fire for fire in report_fires
                            if fire.test_suite.status == TaskEnum.INFRASTRUCTURE_BLOCKED.value]
-        if blocked_reports and not batch_failed_task_count:
-            execution.status = TaskEnum.INFRASTRUCTURE_BLOCKED.value
+        if blocked_reports:
+            execution.status = TaskEnum.FAIL.value
         execution.finished_at = execution.finished_at or timezone.now()
 
         suite_ids = [fire.test_suite_id for fire in report_fires]
@@ -360,8 +360,6 @@ class ScheduledTaskGroupExecutionService:
             and execution.notice_group_id
         )
         if execution.fail_notice == StatusEnum.SUCCESS.value and failed_task_count == 0:
-            should_notice = False
-        if blocked_reports and not failed_task_count:
             should_notice = False
         if not should_notice:
             execution.notice_status = TestSuiteNoticeEnum.EXPIRED.value
@@ -456,7 +454,8 @@ class ScheduledTaskGroupExecutionService:
                 failed_task_count += 1
                 result = '失败'
             elif fire.test_suite.status == TaskEnum.INFRASTRUCTURE_BLOCKED.value or summary.get('blocked'):
-                result = '平台受阻'
+                failed_task_count += 1
+                result = '失败'
             elif fire_warning:
                 warning_task_count += 1
                 result = '告警'
@@ -528,7 +527,7 @@ class ScheduledTaskGroupExecutionService:
     def _fire_failed(cls, fire: ScheduleFire) -> bool:
         # 报告重试后以当前结果为准，不能沿用首次执行留下的失败触发状态。
         if fire.test_suite_id:
-            return fire.test_suite.status in (TaskEnum.FAIL.value, TaskEnum.STOPPED.value)
+            return fire.test_suite.status in (TaskEnum.FAIL.value, TaskEnum.STOPPED.value, TaskEnum.INFRASTRUCTURE_BLOCKED.value)
         if fire.status in cls.TERMINAL_FIRE_STATUSES:
             return True
         return False

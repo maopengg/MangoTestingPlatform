@@ -10,6 +10,7 @@ class DatasourceAuditSourceEnum(BaseEnum):
 
 
 class DatasourceAuditStageEnum(BaseEnum):
+    ES_PREFLIGHT = ('es_preflight', '关联ES目标预检（未创建）')
     EXTERNAL_CLEANUP = ('external_cleanup', '关联资源清理与回查')
     CONNECT = ('connect', '连接建立')
     NETWORK_PROBE = ('network_probe', '网络探测')

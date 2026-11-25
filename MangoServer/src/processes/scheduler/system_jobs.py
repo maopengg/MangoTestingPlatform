@@ -96,6 +96,15 @@ class SchedulerSystemJobService:
 
     @classmethod
     @async_task_db_connection()
+    def recover_api_report_executions(cls):
+        from src.apps.test_center.services.reporting.test_suite.recovery import ReportRecoveryService
+        from src.apps.auto_api.services.execution_trace.report_reconciliation import ApiReportTraceReconciliationService
+
+        return {'recovered_count': ReportRecoveryService.process_due(limit=100),
+                'trace_reconciled_count': ApiReportTraceReconciliationService.reconcile(limit=100)}
+
+    @classmethod
+    @async_task_db_connection()
     def cleanup_realtime_data(cls):
         from src.apps.system.services.socket_link.connection_service import SocketConnectionService
 

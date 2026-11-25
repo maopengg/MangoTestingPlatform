@@ -28,6 +28,29 @@ from src.common.database.mysql_lock import acquire_mysql_lock, release_mysql_loc
 
 class ApiCallbackService:
     @staticmethod
+    def _delete_completed_records(records, parent_name):
+        from src.apps.auto_api.selectors.callback import ApiCallbackSelector
+        from src.apps.auto_api.exceptions.definitions import API_CALLBACK_DELETE_IN_PROGRESS
+        list(records.select_for_update().order_by('id').values_list('id', flat=True))
+        completed = ApiCallbackSelector.completed_condition()
+        if records.exclude(completed).exists():
+            raise AutoApiError(API_CALLBACK_DELETE_IN_PROGRESS, value=(parent_name,))
+        records.filter(completed).delete()
+
+    @classmethod
+    @transaction.atomic
+    def delete_completed_case_records(cls, case_id):
+        from src.apps.auto_api.models import ApiCase
+        ApiCase.objects.select_for_update().get(id=case_id)
+        cls._delete_completed_records(ApiCaseCallbackRun.objects.filter(case_id=case_id), '该用例')
+
+    @classmethod
+    @transaction.atomic
+    def delete_completed_mock_records(cls, mock_id):
+        ApiMockConfig.objects.select_for_update().get(id=mock_id)
+        cls._delete_completed_records(ApiCaseCallbackRun.objects.filter(mock_config_id=mock_id), '该Mock接口')
+
+    @staticmethod
     def cleared_context():
         return Func(F('mock_snapshot'), Value('$._assertion_context'), function='JSON_REMOVE', output_field=JSONField())
 

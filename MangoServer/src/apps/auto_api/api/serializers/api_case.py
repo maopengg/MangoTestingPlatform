@@ -56,6 +56,21 @@ class ApiCaseConfigurationSummaryQuery(serializers.Serializer):
     case_ids = serializers.ListField(child=serializers.IntegerField(min_value=1), max_length=200)
 
 
+class ApiCaseListExecutionQuery(serializers.Serializer):
+    case_id = serializers.IntegerField(min_value=1)
+    test_env = serializers.IntegerField()
+    version_token = serializers.RegexField(r'^(unpublished:[a-f0-9]{64}|(?:prepublished|published):[1-9][0-9]*)$')
+
+
+class ApiCaseListResultQuery(serializers.Serializer):
+    page = serializers.IntegerField(min_value=1, default=1)
+    pageSize = serializers.IntegerField(min_value=1, max_value=1000, default=20)
+
+
+class ApiCaseVersionResultsQuery(serializers.Serializer):
+    id = serializers.IntegerField(min_value=1)
+
+
 class ApiCaseConfigurationFilterQuery(serializers.Serializer):
     execution_configuration = serializers.ListField(
         child=serializers.ChoiceField(choices=ApiCaseConfigurationFilterEnum.choices()),

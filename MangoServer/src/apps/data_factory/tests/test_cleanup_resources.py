@@ -17,6 +17,8 @@ from src.apps.data_factory.exceptions import (
 from src.apps.data_factory.schemas.cleanup_resource import CleanupResourceState, EsCleanupRule, EsCleanupSnapshot
 from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
 from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as Resources
+from src.apps.data_factory.services.datasource.elasticsearch import ElasticsearchDatasourceService as ES
+from src.apps.data_factory.services.datasource.data_source_error import DataSourceErrorService
 from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditService as Audit, SqlExecutionAuditHandle
 from src.apps.test_center.enums.data_source import DataSourceTypeEnum
 
@@ -28,10 +30,13 @@ def owned_document(tenant='7'):
 
 class CleanupResourceTests(SimpleTestCase):
     def setUp(self):
+        history = patch("src.apps.data_factory.services.cleanup.cleanup_history.ResourceCleanupHistoryService.append")
+        history.start()
+        self.addCleanup(history.stop)
         persistence = patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionAuditService.confirm_resource_requests')
         persistence.start()
         self.addCleanup(persistence.stop)
-        resolver = patch.object(Resources, 'resolve_index', side_effect=lambda target, name: (name, 'AUTO_INDEX_UUID'))
+        resolver = patch.object(ES, 'resolve_index', side_effect=lambda target, name: (name, 'AUTO_INDEX_UUID'))
         resolver.start()
         self.addCleanup(resolver.stop)
         self.rule = EsCleanupRule(datasource_alias_id=8, index_template='example_template_{tenant}',
@@ -74,7 +79,7 @@ class CleanupResourceTests(SimpleTestCase):
 
     @patch.object(Resources, 'resolve_binding')
     @patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve')
-    @patch.object(Resources, 'document', return_value=None)
+    @patch.object(ES, 'document', return_value=None)
     def test_tenant_only_template_freezes_exact_index_and_keeps_baseline_guard(self, document, target, binding):
         binding.return_value = self.binding
         self.template.cleanup_resources = [{**self.rule.model_dump(mode='json'), 'index_template': '{tenant}'}]
@@ -165,7 +170,7 @@ class CleanupResourceTests(SimpleTestCase):
 
     @patch.object(Resources, 'resolve_binding')
     @patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve')
-    @patch.object(Resources, 'document', return_value=None)
+    @patch.object(ES, 'document', return_value=None)
     def test_business_id_mapping_is_separate_from_sql_primary_key(self, document, target, binding):
         binding.return_value = self.binding
         self.entity.primary_key = '_id'
@@ -187,7 +192,7 @@ class CleanupResourceTests(SimpleTestCase):
             Resources.validate_snapshot(self.item)
 
     @patch.object(Resources, 'resolve_binding')
-    @patch.object(Resources, 'document')
+    @patch.object(ES, 'document')
     def test_explicit_mapping_missing_value_never_falls_back_to_sql_primary(self, document, binding):
         self.entity.primary_key = '_id'
         self.template.cleanup_resources = [{**self.rule.model_dump(mode='json'), 'document_id_field': 'id'}]
@@ -223,7 +228,7 @@ class CleanupResourceTests(SimpleTestCase):
 
     @patch.object(Resources, 'resolve_binding')
     @patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve')
-    @patch.object(Resources, 'document')
+    @patch.object(ES, 'document')
     def test_capture_uses_real_id_and_rejects_existing_document(self, document, target, binding):
         binding.return_value = self.binding
         self.template.cleanup_resources = [self.rule.model_dump(mode='json')]
@@ -297,7 +302,7 @@ class CleanupResourceTests(SimpleTestCase):
         clock = clock if clock is not None else [0]
         with patch.object(Resources, 'resolve_binding', return_value=self.binding), \
                 patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve'), \
-                patch.object(Resources, 'document', side_effect=responses) as document, \
+                patch.object(ES, 'document', side_effect=responses) as document, \
                 patch('src.apps.data_factory.services.cleanup.cleanup_resource.sleep', side_effect=lambda duration: clock.__setitem__(0, clock[0] + duration)), \
                 patch('src.apps.data_factory.services.cleanup.cleanup_resource.monotonic', side_effect=lambda: clock[0]):
             if expect_failure:
@@ -320,6 +325,36 @@ class CleanupResourceTests(SimpleTestCase):
         calls = self.run_checks([None, None, None, None, owned_document(), {'result': 'deleted'}, None, None], expect_failure=True)
         # 窗口尾部只有一次消失不能证明稳定；第二轮重试继续验证。
         self.assertEqual(sum(bool(call.kwargs.get('delete')) for call in calls), 1)
+
+    @staticmethod
+    def version_conflict():
+        raw = HTTPError('https://example.com/example/_doc/1001', 409, 'conflict', {},
+            io.BytesIO(json.dumps({'error': {'type': 'version_conflict_engine_exception'}}).encode()))
+        try:
+            DataSourceErrorService.raise_elasticsearch_http_error(SimpleNamespace(), raw)
+        except DataFactoryError as error:
+            return error
+
+    def test_version_conflict_rereads_owner_and_uses_new_compare_and_delete_version(self):
+        new_document = {**owned_document(), '_seq_no': 1}
+        calls = self.run_checks([owned_document(), self.version_conflict(), new_document,
+                                {'result': 'deleted'}] + [None] * 6)
+        deletes = [call for call in calls if call.kwargs.get('delete')]
+        self.assertEqual([call.kwargs['expected']['_seq_no'] for call in deletes], [0, 1])
+        self.assertTrue(self.item.cleanup_resources['results'][0]['success'])
+
+    def test_version_conflict_followed_by_foreign_tenant_never_deletes_new_version(self):
+        calls = self.run_checks([owned_document(), self.version_conflict(), owned_document('8')],
+                               expect_failure=True)
+        self.assertEqual(sum(bool(call.kwargs.get('delete')) for call in calls), 1)
+
+    def test_repeated_conflicts_exhaust_revalidation_budget(self):
+        responses = []
+        for version in range(4):
+            responses += [{**owned_document(), '_seq_no': version}, self.version_conflict()]
+        calls = self.run_checks(responses, expect_failure=True)
+        self.assertLessEqual(sum(bool(call.kwargs.get('delete')) for call in calls), 4)
+        self.assertFalse(self.item.cleanup_resources['results'][0]['success'])
 
     def test_wrong_tenant_fails_without_sending_delete(self):
         calls = self.run_checks([owned_document('8')], expect_failure=True)
@@ -390,8 +425,8 @@ class CleanupResourceTests(SimpleTestCase):
     def test_alias_retarget_or_recreated_index_blocks_before_document_read(self):
         self.snapshot.requested_index = self.snapshot.index
         self.snapshot.index_uuid = 'AUTO_ORIGINAL'
-        with patch.object(Resources, 'resolve_index', return_value=(self.snapshot.index, 'AUTO_RECREATED')), \
-                patch.object(Resources, 'document') as document:
+        with patch.object(ES, 'resolve_index', return_value=(self.snapshot.index, 'AUTO_RECREATED')), \
+                patch.object(ES, 'document') as document:
             with self.assertRaises(DataFactoryError) as raised:
                 Resources.sample(self.snapshot, Mock(), allow_delete=True)
         self.assertEqual(raised.exception.code, 34181)
@@ -399,11 +434,11 @@ class CleanupResourceTests(SimpleTestCase):
 
     @patch.object(Resources, 'resolve_binding')
     @patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve')
-    @patch.object(Resources, 'document', return_value=None)
+    @patch.object(ES, 'document', return_value=None)
     def test_capture_freezes_alias_target_and_keeps_original_rule(self, document, target, binding):
         binding.return_value = self.binding
         self.template.cleanup_resources = [self.rule.model_dump(mode='json')]
-        with patch.object(Resources, 'resolve_index', return_value=('example_template_7_new', 'AUTO_UUID')):
+        with patch.object(ES, 'resolve_index', return_value=('example_template_7_new', 'AUTO_UUID')):
             raw = Resources.capture(self.template, self.entity, self.item.data, SimpleNamespace(environment=0))
         self.item.cleanup_resources = raw
         state = Resources.validate_snapshot(self.item)
@@ -434,7 +469,7 @@ class CleanupResourceTests(SimpleTestCase):
 
         with patch.object(Resources, 'resolve_binding', return_value=self.binding), \
                 patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve', return_value=target), \
-                patch('src.apps.data_factory.services.cleanup.cleanup_resource.open_elasticsearch_request', side_effect=open_request), \
+                patch('src.apps.data_factory.services.datasource.elasticsearch.open_elasticsearch_request', side_effect=open_request), \
                 patch('src.apps.data_factory.services.cleanup.cleanup_resource.sleep', side_effect=lambda duration: clock.__setitem__(0, clock[0] + duration)), \
                 patch('src.apps.data_factory.services.cleanup.cleanup_resource.monotonic', side_effect=lambda: clock[0]), \
                 patch.object(Audit, 'start', side_effect=lambda **kwargs: SqlExecutionAuditHandle(
@@ -493,7 +528,7 @@ class CleanupResourceTests(SimpleTestCase):
         clock = iter(range(100))
         with patch.object(Resources, 'resolve_binding', return_value=self.binding), \
                 patch('src.apps.data_factory.services.cleanup.cleanup_resource.DatasourceTargetService.resolve'), \
-                patch.object(Resources, 'document', return_value=owned_document()) as document, \
+                patch.object(ES, 'document', return_value=owned_document()) as document, \
                 patch('src.apps.data_factory.services.cleanup.cleanup_resource.sleep'), \
                 patch('src.apps.data_factory.services.cleanup.cleanup_resource.monotonic', side_effect=lambda: next(clock)):
             with self.assertRaises(DataFactoryError):
@@ -502,12 +537,12 @@ class CleanupResourceTests(SimpleTestCase):
         self.assertFalse(self.item.cleanup_resources['results'][0]['success'])
         self.assertTrue(all(not call.kwargs.get('delete') for call in document.call_args_list))
 
-    @patch('src.apps.data_factory.services.cleanup.cleanup_resource.open_elasticsearch_request')
+    @patch('src.apps.data_factory.services.datasource.elasticsearch.open_elasticsearch_request')
     def test_conditional_delete_has_no_free_query_and_no_unconditional_fallback(self, open_request):
         target = SimpleNamespace(extra_config={}, host='es.example.com', port=9200, user='', password='')
         response = open_request.return_value.__enter__.return_value
         response.read.return_value = json.dumps({'_id': '1001', '_index': 'example_template_7', 'result': 'deleted'}).encode()
-        Resources.request_document(target, 'example_template_7', '1001', delete=True, timeout=2, expected=owned_document())
+        ES.request_document(target, 'example_template_7', '1001', delete=True, timeout=2, expected=owned_document())
         request = open_request.call_args.args[0]
         self.assertEqual(request.method, 'DELETE')
         self.assertIn('if_seq_no=0&if_primary_term=1', request.full_url)
@@ -515,15 +550,15 @@ class CleanupResourceTests(SimpleTestCase):
         self.assertNotIn('refresh=wait_for', request.full_url)
         self.assertNotIn('_delete_by_query', request.full_url)
         with self.assertRaises(DataFactoryError):
-            Resources.request_document(target, 'example_template_7', '1001', delete=True, timeout=2, expected={})
+            ES.request_document(target, 'example_template_7', '1001', delete=True, timeout=2, expected={})
         self.assertEqual(open_request.call_count, 1)
 
-    @patch('src.apps.data_factory.services.cleanup.cleanup_resource.open_elasticsearch_request')
+    @patch('src.apps.data_factory.services.datasource.elasticsearch.open_elasticsearch_request')
     def test_search_visible_check_is_exact_document_get_without_forcing_refresh(self, open_request):
         target = SimpleNamespace(extra_config={}, host='es.example.com', port=9200, user='', password='')
         response = open_request.return_value.__enter__.return_value
         response.read.return_value = json.dumps(owned_document()).encode()
-        Resources.request_document(target, 'example_template_7', '1001', delete=False, timeout=5,
+        ES.request_document(target, 'example_template_7', '1001', delete=False, timeout=5,
                                    tenant_path='tenant_id', realtime=False)
         request = open_request.call_args.args[0]
         self.assertEqual(request.method, 'GET')
@@ -540,15 +575,15 @@ class CleanupResourceTests(SimpleTestCase):
             self.assertEqual(result.exception.code, 34183)
             self.assertTrue(Audit.is_timeout(result.exception))
 
-    @patch('src.apps.data_factory.services.cleanup.cleanup_resource.open_elasticsearch_request')
+    @patch('src.apps.data_factory.services.datasource.elasticsearch.open_elasticsearch_request')
     def test_missing_index_is_not_mistaken_for_missing_document(self, open_request):
         target = SimpleNamespace(extra_config={}, host='es.example.com', port=9200, user='', password='')
         open_request.side_effect = HTTPError('https://es.example.com', 404, '', {}, io.BytesIO(b'{"error":{"type":"index_not_found_exception"}}'))
         with self.assertRaises(DataFactoryError):
-            Resources.request_document(target, 'example_template_7', '1001', delete=False, timeout=2)
+            ES.request_document(target, 'example_template_7', '1001', delete=False, timeout=2)
         body = json.dumps({'_index': 'example_template_7', '_id': '1001', 'found': False}).encode()
         open_request.side_effect = HTTPError('https://es.example.com', 404, '', {}, io.BytesIO(body))
-        self.assertIsNone(Resources.request_document(target, 'example_template_7', '1001', delete=False, timeout=2))
+        self.assertIsNone(ES.request_document(target, 'example_template_7', '1001', delete=False, timeout=2))
 
     @patch.object(Audit, 'start')
     @patch.object(Audit, 'finish_success')
@@ -561,11 +596,30 @@ class CleanupResourceTests(SimpleTestCase):
 
     @patch('src.apps.data_factory.services.cleanup.cleanup.DataFactoryExecutionItem.objects')
     @patch('src.apps.data_factory.services.cleanup.cleanup.DataFactoryExecution.objects')
+    def test_pre_sql_failure_sets_execution_summary_and_preserves_creation_error(self, executions, items):
+        executions.get.return_value = self.execution
+        items.select_related.return_value.filter.return_value.order_by.return_value = [self.item]
+        error = DataFactoryError(DATA_FACTORY_ES_CLEANUP_TIMEOUT)
+        with patch.object(Resources, 'validate_snapshot', side_effect=error), \
+                patch('src.apps.data_factory.services.cleanup.cleanup.transaction.on_commit'), \
+                patch.object(DataFactoryCleanup, 'mark_failed'):
+            for status, previous in ((1, None), (2, 'AUTO creation failed')):
+                self.execution.status = status
+                self.execution.error_message = previous
+                result = DataFactoryCleanup.cleanup_execution(5, defer_resources=True)
+                self.assertEqual(result['fail'], 1)
+                self.assertIn(str(error), self.execution.error_message)
+                if previous:
+                    self.assertIn(previous, self.execution.error_message)
+
+    @patch('src.apps.data_factory.services.cleanup.cleanup.DataFactoryExecutionItem.objects')
+    @patch('src.apps.data_factory.services.cleanup.cleanup.DataFactoryExecution.objects')
     def test_resource_failure_stays_failed_and_retry_does_not_delete_sql_again(self, executions, items):
         self.item.cleanup_resources['sql_cleaned'] = False
         executions.get.return_value = self.execution
         items.select_related.return_value.filter.return_value.order_by.return_value = [self.item]
         with patch.object(Resources, 'validate_snapshot', side_effect=lambda item: Resources.state(item)), \
+                patch.object(Resources, 'validate_before_sql'), \
                 patch.object(DataFactoryCleanup, 'validate_cleanup_item'), \
                 patch('src.apps.data_factory.services.cleanup.cleanup.DatasourceTargetService.from_snapshot', return_value=SimpleNamespace(cache_key='target')), \
                 patch.object(DataFactoryCleanup, 'cleanup_items_in_database_transaction') as delete_sql, \

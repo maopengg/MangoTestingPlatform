@@ -1,7 +1,8 @@
 import logging
 import uuid
+import threading
 from collections.abc import Callable
-from contextlib import ExitStack
+from contextlib import ExitStack, contextmanager
 from time import perf_counter
 
 from src.apps.data_factory.exceptions import (
@@ -30,6 +31,15 @@ logger = logging.getLogger(__name__)
 
 
 class DataFactoryRunnerPersistenceMixin:
+    @staticmethod
+    @contextmanager
+    def measure_insert_stage(timings, name):
+        started = perf_counter()
+        try:
+            yield
+        finally:
+            timings[name] = round((perf_counter() - started) * 1000, 2)
+
     @classmethod
     @DataFactorySqlExecutionService.source_for('create')
     def insert(
@@ -53,10 +63,12 @@ class DataFactoryRunnerPersistenceMixin:
         preparation_started = perf_counter()
         wait_started = DatasourceWaitService.elapsed()
         timing_started = DatasourceTimingService.snapshot()
+        stages = {}
+        succeeded = False
         engine, managed_by_worker = DataFactoryDatasource.get_worker_engine(database)
         audit_handle = None
         try:
-            with engine.connect() as connection:
+            with cls.measure_insert_stage(stages, 'initial_metadata'), engine.connect() as connection:
                 table, generated_column_kinds = DataFactoryExecutionMetadata.resolve(
                     entity, database, engine, connection=connection)
                 primary_columns = list(table.primary_key.columns)
@@ -64,24 +76,29 @@ class DataFactoryRunnerPersistenceMixin:
                 if len(actual_primary_keys) != 1 or entity.primary_key != actual_primary_keys[0]:
                     actual_text = "、".join(actual_primary_keys) or "未发现主键"
                     raise DataFactoryError(DATA_FACTORY_CONFIG_INVALID, value=(
-                        getattr(entity, "name", entity.table_name),
-                        f"配置清理主键 {entity.primary_key or '未配置'} 与真实主键 {actual_text} 不一致",
+                        f"数据模型 {getattr(entity, 'name', entity.table_name)}（表 {entity.table_name}）："
+                        f"配置清理主键 {entity.primary_key or '未配置'} 与真实主键 {actual_text} 不一致；"
+                        "已阻止写入，请同步模型表结构并修正主键配置后重试",
                     ))
             # 资源预检可能等待另一种数据源；不能持有 SQL 连接等待 ES/Redis，
             # 否则多个 Case 可相互耗尽连接。结构读取结束后先归还连接。
             if prepare_resources is not None:
-                prepare_resources()
+                with cls.measure_insert_stage(stages, 'resource_preflight'):
+                    prepare_resources()
             with ExitStack() as transaction_scope:
                 connection = transaction_scope.enter_context(engine.connect())
                 if prepare_payload is not None or prepare_resources is not None:
                     # 预检可能等待很久；重新读实时 DDL，由执行级签名拒绝期间的结构漂移。
-                    table, generated_column_kinds = DataFactoryExecutionMetadata.resolve(
-                        entity, database, engine, connection=connection)
+                    with cls.measure_insert_stage(stages, 'metadata_revalidation'):
+                        table, generated_column_kinds = DataFactoryExecutionMetadata.resolve(
+                            entity, database, engine, connection=connection)
                     if [column.name for column in table.primary_key.columns] != [entity.primary_key]:
                         raise DataFactoryError(DATA_FACTORY_CONFIG_INVALID,
-                            value=(entity.name, '资源预检后真实主键与模型不一致，已阻止写入'))
+                        value=(f'数据模型 {entity.name}（表 {entity.table_name}）：资源预检后真实主键与模型不一致，'
+                               '已阻止写入，请同步模型表结构并修正主键配置后重试',))
                 if prepare_payload is not None:
-                    payload = prepare_payload()
+                    with cls.measure_insert_stage(stages, 'payload_generation'):
+                        payload = prepare_payload()
                 statement = insert(table).values(**payload)
                 insert_sql, insert_sql_params = cls.compile_insert_sql(statement, engine.dialect)
                 # 结构读取可能触发 SQLAlchemy autobegin；只读准备完成后结束它，
@@ -97,26 +114,29 @@ class DataFactoryRunnerPersistenceMixin:
                 }))
 
                 def execute_insert():
-                    result = connection.execute(statement)
+                    with cls.measure_insert_stage(stages, 'insert_statement'):
+                        result = connection.execute(statement)
                     created = dict(payload)
                     payload_fields = set(payload)
-                    cls.merge_generated_values(
-                        connection=connection,
-                        table=table,
-                        result=result,
-                        created=created,
-                        payload_fields=payload_fields,
-                        unique_key=str(getattr(entity, "unique_key", "") or ""),
-                        select=select,
-                        generated_column_kinds=generated_column_kinds,
-                    )
+                    with cls.measure_insert_stage(stages, 'generated_values_readback'):
+                        cls.merge_generated_values(
+                            connection=connection,
+                            table=table,
+                            result=result,
+                            created=created,
+                            payload_fields=payload_fields,
+                            unique_key=str(getattr(entity, "unique_key", "") or ""),
+                            select=select,
+                            generated_column_kinds=generated_column_kinds,
+                        )
                     insert_result = {
                         "created": created,
                         "insert_sql": insert_sql,
                         "insert_sql_params": insert_sql_params,
                     }
                     if before_commit:
-                        insert_result["execution_item"] = before_commit(insert_result)
+                        with cls.measure_insert_stage(stages, 'ownership_and_item_persistence'):
+                            insert_result["execution_item"] = before_commit(insert_result)
                     return insert_result, {
                         'columns': [],
                         'rows': [],
@@ -139,7 +159,8 @@ class DataFactoryRunnerPersistenceMixin:
                     insert_result["sql_execution_id"] = audit_handle.record.id
                 else:
                     insert_result, _audit_result = execute_insert()
-                return insert_result
+            succeeded = True
+            return insert_result
         except DataFactoryError as error:
             if audit_handle is not None:
                 DataFactorySqlExecutionService.mark_rolled_back([audit_handle], error)
@@ -158,6 +179,14 @@ class DataFactoryRunnerPersistenceMixin:
         finally:
             if not managed_by_worker:
                 engine.dispose()
+            elapsed_ms = (perf_counter() - preparation_started) * 1000
+            stages['other_including_audit_and_commit'] = round(max(0, elapsed_ms - sum(stages.values())), 2)
+            write_log = logger.warning if elapsed_ms >= 1000 else logger.debug
+            write_log('event=factory_insert_finished execution_id=%s entity_id=%s database_id=%s '
+                      'sql_execution_id=%s thread_id=%s success=%s elapsed_ms=%.2f wait_ms=%.2f stages_ms=%s',
+                      getattr(execution, 'id', None), getattr(entity, 'id', None), getattr(database, 'id', None),
+                      getattr(getattr(audit_handle, 'record', None), 'id', None), threading.get_ident(), succeeded,
+                      elapsed_ms, max(0, DatasourceWaitService.elapsed() - wait_started) * 1000, stages)
 
     @staticmethod
     def merge_generated_values(

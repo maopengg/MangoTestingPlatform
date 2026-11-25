@@ -84,3 +84,22 @@ test('公共报告 tab extra 使用当前选中原始结果，不沿用上一次
     assert.match(template, /<template #extra>[\s\S]*?:loading="copying"[\s\S]*?@click="copyCurl"[\s\S]*?复制 cURL/)
   } finally { h.close() }
 })
+
+test('协议失败保留跳过原因，关联 ID 只读取明确白名单且不泄露凭据', () => {
+  const filename = path.resolve('src/components/reports/ApiTestReport.vue')
+  const h = harness('ApiTestReport', 'resultData,correlationIds', { filename, props: { resultData: {
+    status: 0, failure_category: 'protocol_call_failed', protocol_status: 'HTTP 500',
+    posterior_skipped_reason: '已跳过响应后置处理和业务断言。',
+    assertion_skipped_reason: '已跳过响应后置处理和业务断言。',
+    response: { code: 500, json: null, headers: { 'X-Request-ID': 'request-example',
+      'xlog': 'log-example', Authorization: 'example-secret', 'Set-Cookie': 'example-session',
+      'x-trace-id': { secret: 'not-an-id' }, 'x-log-id': 'invalid\nvalue' } },
+  } } })
+  assert.deepEqual(h.correlationIds.value, [
+    { name: 'x-request-id', value: 'request-example' }, { name: 'xlog', value: 'log-example' },
+  ])
+  assert.equal(h.resultData.value.failure_category, 'protocol_call_failed')
+  assert.equal(h.resultData.value.protocol_status, 'HTTP 500')
+  assert.equal(h.resultData.value.posterior_skipped_reason, '已跳过响应后置处理和业务断言。')
+  h.close()
+})

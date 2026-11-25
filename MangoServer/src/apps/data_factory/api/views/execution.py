@@ -10,6 +10,7 @@ from src.apps.data_factory.api.serializers.execution import (
     DataFactoryExecutionBatchCleanupSerializer,
     DataFactoryExecutionSerializer,
     DataFactoryExecutionSerializerC,
+    DataFactoryCleanupHistoryQuerySerializer,
 )
 from src.apps.data_factory.models import DataFactoryExecution, DataFactoryExecutionItem
 from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
@@ -55,10 +56,15 @@ class DataFactoryExecutionViews(ViewSet):
             source_type='data_factory',
             source_detail__execution_id=execution.id,
         ).order_by('create_time', 'id')
+        from src.apps.data_factory.selectors.cleanup_history import ResourceCleanupHistorySelector
+        query = DataFactoryCleanupHistoryQuerySerializer(data=request.query_params)
+        query.is_valid(raise_exception=True)
         return ResponseData.success(RESPONSE_MSG_0001, {
             "execution": DataFactoryExecutionSerializerC(execution).data,
             "items": DataFactoryExecutionItemSerializerC(items, many=True).data,
             "context": execution.context,
+            "cleanup_history": ResourceCleanupHistorySelector.for_execution(execution.id,
+                page=query.validated_data['history_page'], page_size=query.validated_data['history_page_size']),
             "sql_executions": [
                 DataFactoryExecutionItemSerializer.serialize_sql_execution(record)
                 for record in sql_records
@@ -76,6 +82,14 @@ class DataFactoryExecutionViews(ViewSet):
     @error_response('system')
     def cleanup(self, request: Request):
         """清理数据工厂执行产生的数据"""
+        if request.data.get('compensation') is not None:
+            from src.apps.data_factory.api.serializers.execution import DataFactoryCompensationSerializer
+            from src.apps.data_factory.services.cleanup.cleanup_compensation import FactoryCleanupCompensationService
+            serializer = DataFactoryCompensationSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            data = dict(serializer.validated_data)
+            result = FactoryCleanupCompensationService.confirm(user=request.user, **data)
+            return ResponseData.success(RESPONSE_MSG_0001, result)
         result = DataFactoryCleanup.cleanup_execution_on_demand(
             request.data.get('execution_id')
         )

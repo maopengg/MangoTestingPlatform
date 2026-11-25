@@ -114,6 +114,8 @@ def register_execution_result_tools(mcp):
         1. run_api_case / run_api_info 返回 execution_result_id 后，直接查询这一次执行的完整响应、断言、缓存和 trace_id。
         2. list_execution_results 只返回摘要时，用该工具按 id 展开。
         3. 结果已写入静态资源文件且超过内联阈值时，本工具返回 result_too_large=True 和 download_url；未超过阈值时直接返回 result_data。
+        新结果以 gzip 无损存储，result_size 为实际存储字节；result_data 已由服务端自动解压，仍为原 JSON。
+        内联阈值按解压后大小判断；大文件返回 result_compression=gzip 时，download_url 指向 gzip 文件。
         """
         result_id_value, error = _normalize_int(result_id, "result_id")
         if error:

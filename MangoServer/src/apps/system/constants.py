@@ -10,4 +10,5 @@ RUNTIME_KV_POLICIES = {
     'executor_state': {'ttl': 90, 'persistent': False, 'sensitive': False, 'max_bytes': 65536},
     'actuator_config': {'ttl': 60, 'persistent': False, 'sensitive': True, 'max_bytes': 65536},
     'mcp_confirmation': {'ttl': 600, 'persistent': False, 'sensitive': True, 'max_bytes': 8192},
+    'execution_search': {'ttl': 86400, 'persistent': False, 'sensitive': True, 'max_bytes': 262144},
 }

@@ -166,11 +166,19 @@ export interface ScenarioPatch {
 export interface CaseTrace {
   trace_id: string
   status: number
+  execution_phase?: string | null
   duration_ms?: number
   started_at?: string
   finished_at?: string
   source_type: number
   worker_name?: string
+  test_env?: number | null
+  test_suite_id?: number | string | null
+  summary?: {
+    execution_source?: string
+    version_label?: string | null
+    case_revision_no?: number | null
+  }
 }
 export interface CaseTraceNode {
   id: string | number
@@ -188,6 +196,9 @@ export interface CaseTraceNode {
 export interface CaseExecutionSummary {
   id: string | number
   create_time?: string
+  revision_id?: number | null
+  release_id?: number | null
+  trace_id?: string | null
   test_env?: number | null
   test_env_name?: string
   status?: number

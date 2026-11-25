@@ -19,6 +19,7 @@ from src.apps.task_center.services.scheduling.task_group_execution import (
 from src.common.decorators.retry import async_task_db_connection
 from src.common.decorators.system_error import system_error_guard
 from src.common.logging import log
+from src.common.logging.diagnostics import safe_exception_diagnostics
 from src.processes.scheduler.system_jobs import SchedulerSystemJobService
 
 
@@ -50,6 +51,7 @@ class ScheduleRunner:
         self.cleanup_retire_events = []
         self.cleanup_thread_limit = 0
         self.datasource_recovery_thread = None
+        self.maintenance_thread = None
 
     @system_error_guard(
         source=SystemErrorEventSource.SCHEDULER,
@@ -65,13 +67,14 @@ class ScheduleRunner:
             self.start_dispatch_consumer()
         self.start_cleanup_consumers()
         self.start_datasource_recovery()
+        self.start_maintenance_consumer()
         try:
             while self.running and not self.stop_event.is_set():
                 if not self.cleanup_only:
                     self.ensure_dispatch_consumer()
                 self.start_cleanup_consumers()
                 self.start_datasource_recovery()
-                self.recover_inline_cleanup()
+                self.start_maintenance_consumer()
                 ServiceHeartbeatService.beat_if_due(
                     self,
                     RuntimeServiceName.SCHEDULER,
@@ -88,6 +91,8 @@ class ScheduleRunner:
                         'datasource_maintenance_healthy': self.datasource_maintenance_healthy(),
                         'datasource_recovery_alive': bool(self.datasource_recovery_thread
                                                          and self.datasource_recovery_thread.is_alive()),
+                        'maintenance_consumer_alive': bool(self.maintenance_thread
+                                                           and self.maintenance_thread.is_alive()),
                     },
                 )
                 if not self.cleanup_only:
@@ -106,6 +111,38 @@ class ScheduleRunner:
         )
         self.dispatch_consumer_thread.start()
 
+    def start_maintenance_consumer(self):
+        if self.stop_event.is_set() or (self.maintenance_thread and self.maintenance_thread.is_alive()):
+            return
+        # 只保留一个串行维护消费者，不积压内存队列，也不因下一次扫描重复启动长任务。
+        self.maintenance_thread = threading.Thread(
+            target=self.consume_maintenance, name=f'scheduler-maintenance-{self.node_name}', daemon=True,
+        )
+        self.maintenance_thread.start()
+
+    def consume_maintenance(self):
+        from django.db import close_old_connections, connections
+        try:
+            while not self.stop_event.is_set():
+                close_old_connections()
+                try:
+                    self.recover_inline_cleanup()
+                    if not self.cleanup_only and not self.stop_event.is_set():
+                        now = timezone.now().replace(second=0, microsecond=0)
+                        for offset in range(self.lookback_minutes):
+                            if self.stop_event.is_set():
+                                break
+                            self.run_due_system_jobs(now - timedelta(minutes=offset))
+                except Exception as error:
+                    code, frames = safe_exception_diagnostics(error)
+                    log.system.error('调度维护循环失败：node=%s type=%s database_code=%s traceback=%s',
+                                     self.node_name, type(error).__name__, code, frames)
+                finally:
+                    close_old_connections()
+                self.stop_event.wait(min(self.poll_interval, 10) if self.cleanup_only else self.poll_interval)
+        finally:
+            connections.close_all()
+
     def start_datasource_recovery(self):
         from src.apps.data_factory.services.recovery.mysql_session_recovery import MysqlSessionRecoveryService
         if self.stop_event.is_set() or (self.datasource_recovery_thread and self.datasource_recovery_thread.is_alive()):
@@ -120,8 +157,10 @@ class ScheduleRunner:
         try:
             # 仅核查失联同步执行并记录失败责任，不执行删除，也不触发定时业务任务。
             DataFactoryExecutionRecovery.recover_inline_cleanup()
-        except Exception:
-            log.system.exception('同步清理失联责任核查失败，执行控制记录仍保留')
+        except Exception as error:
+            code, frames = safe_exception_diagnostics(error)
+            log.system.error('同步清理失联责任核查失败，执行控制记录仍保留：type=%s database_code=%s traceback=%s',
+                             type(error).__name__, code, frames)
 
     def start_cleanup_consumers(self):
         from django.db import close_old_connections
@@ -133,7 +172,10 @@ class ScheduleRunner:
             while not self.stop_event.is_set() and not retire.is_set():
                 try:
                     close_old_connections()
-                    worked = DataFactoryCleanupScheduleService.run_next()
+                    # 多消费者时保留一个观察通道，长 SQL 批次不能占满所有采样执行位。
+                    # 单消费者仍走原混合路径，不让 SQL 清理失去领取者。
+                    worked = DataFactoryCleanupScheduleService.run_next(
+                        observations_only=self.cleanup_thread_limit > 1 and index == 0)
                     self.cleanup_activity[index] = monotonic()
                     self.stop_event.wait(0.1 if worked else 1)
                 except Exception:
@@ -196,6 +238,9 @@ class ScheduleRunner:
 
     def stop(self):
         self.request_stop()
+        maintenance = getattr(self, 'maintenance_thread', None)
+        if maintenance is not None and maintenance.is_alive() and maintenance is not threading.current_thread():
+            maintenance.join()
         recovery = getattr(self, 'datasource_recovery_thread', None)
         if recovery is not None and recovery.is_alive() and recovery is not threading.current_thread():
             recovery.join()
@@ -220,7 +265,6 @@ class ScheduleRunner:
         for offset in range(self.lookback_minutes):
             planned_at = now - timedelta(minutes=offset)
             self.create_due_time_task_fires(planned_at)
-            self.run_due_system_jobs(planned_at)
         self.dispatch_wakeup_event.set()
 
     def create_due_time_task_fires(self, planned_at: datetime):
@@ -309,6 +353,8 @@ class ScheduleRunner:
             SchedulerSystemJobService.recover_perf_runs,
         ))
         for job_name, cron, fire_creator, handler in jobs:
+            if self.stop_event.is_set():
+                break
             if not self.is_due(cron, planned_at):
                 continue
             fire, created = fire_creator(job_name=job_name, planned_at=planned_at, node_name=self.node_name)
@@ -327,7 +373,12 @@ class ScheduleRunner:
                     extra_data=result if isinstance(result, dict) else None,
                 )
             except Exception as error:
-                ScheduleFireService.mark_failed(fire.id, str(error), self.node_name)
+                code, frames = safe_exception_diagnostics(error)
+                log.system.error('系统维护任务失败：job=%s fire=%s type=%s database_code=%s traceback=%s',
+                                 job_name, fire.id, type(error).__name__, code, frames)
+                ScheduleFireService.mark_failed(
+                    fire.id, f'系统维护任务失败：{job_name}，异常类型 {type(error).__name__}，错误码 {code}', self.node_name,
+                )
 
     @staticmethod
     def refresh_api_auth(timing_strategy_id: int):

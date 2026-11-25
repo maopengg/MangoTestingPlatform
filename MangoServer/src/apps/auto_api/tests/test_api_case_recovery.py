@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -36,6 +37,7 @@ class ApiCaseRecoveryTests(SimpleTestCase):
         runtime.test_setup.test_data.get_all.return_value = {'original': 'package2'} if cache is None else cache
         runtime.test_setup.test_data.get_data_factory_all.return_value = {}
         runtime.trace_recorder = Mock()
+        runtime.trace_recorder.execution_scope.return_value = nullcontext()
         runtime.save_case_detailed_runtime_state = Mock()
         runtime.build_step_execution_context = Mock(return_value={})
         runtime.get_case_detailed_name = lambda step: str(step.id)
@@ -88,6 +90,66 @@ class ApiCaseRecoveryTests(SimpleTestCase):
         self.assertEqual(runtime.order, [1, 3])
         self.assertEqual(runtime.api_case_result.main_status, 0)
         self.assertEqual(runtime.api_case_result.recovery_status, 1)
+
+    def test_http_failure_and_retry_exhaustion_still_run_final_recovery(self):
+        from src.apps.auto_api.enums import ApiBodyTypeEnum, ApiProtocolTypeEnum, MethodEnum
+        from src.apps.auto_api.enums.assertion import ApiDefaultAssertionCheck
+        from src.apps.auto_api.schemas.execution import ApiExecutionResponse
+        from src.apps.auto_api.services.execution.cases.test_case_parts.parameter import ApiTestCaseParameterMixin
+
+        path = 'src.apps.auto_api.services.execution.cases.test_case_parts.parameter'
+        for retries in (1, 2):
+            for frozen in (False, True):
+                with self.subTest(retries=retries, frozen=frozen):
+                    main, skipped, recovery = self.step(1), self.step(2), self.step(3, True)
+                    runtime = self.runtime([main, skipped, recovery])
+                    api = SimpleNamespace(id=7, project_product_id=1, name='测试请求', method=MethodEnum.POST.value,
+                                          protocol_type=ApiProtocolTypeEnum.HTTP.value,
+                                          body_type=ApiBodyTypeEnum.NONE.value, url='https://example.com/action')
+                    for step in (main, skipped, recovery):
+                        step.api_info, step.api_info_id = api, api.id
+                    parameters = {step.id: SimpleNamespace(
+                        id=step.id, name=f'场景{step.id}', error_retry=retries if step.id == 1 else 1,
+                        retry_interval=0, params=None, body_config=None, sse_config=None, allow_failure=False,
+                        front_sql=[], front_func=None, posterior_sql=[], posterior_func=None,
+                        posterior_file={}, posterior_response=[], posterior_response_text=[],
+                        ass_jsonpath=[], ass_general=[], ass_json_all={}, ass_text_all=None, ass_schema=None,
+                    ) for step in (main, skipped, recovery)}
+                    runtime.revision_aggregate = Mock() if frozen else None
+                    runtime.is_step_debug = False
+                    runtime.test_env, runtime.user_id = 0, 1
+                    runtime.api_case = SimpleNamespace(callback_checks=[], front_public=[], front_auth_config=[])
+                    runtime.api_case_result.callback_results = []
+                    runtime.current_step_execution_context = None
+                    runtime.build_step_execution_context.return_value = None
+                    runtime.trace_recorder.start_step.side_effect = lambda *args, **kwargs: SimpleNamespace(id=1, status=3)
+                    runtime.get_parameters_for_step = Mock(side_effect=lambda step: [parameters[step.id]])
+                    runtime.resolve_protocol_expectation = Mock(return_value=([], False))
+                    runtime.has_user_configured_assertions = Mock(return_value=True)
+                    runtime.resolve_scenario_result_name = lambda parameter, step: parameter.name
+                    runtime.update_test_case_detailed_parameter = Mock()
+                    runtime.test_setup.api_request.side_effect = [
+                        *[ApiExecutionResponse(code=500, headers={}, time=0.1, json=None) for _ in range(retries)],
+                        ApiExecutionResponse(code=200, headers={}, time=0.1, json={}),
+                    ]
+                    runtime.detailed_parameter = ApiTestCaseParameterMixin.detailed_parameter.__get__(runtime)
+                    with patch(path + '.ParameterDataFactory') as factory, patch(path + '.CaseParameter') as scenario, \
+                            patch(path + '.ApiCaseStepService.resolve_step_api_runtime', return_value=api), \
+                            patch(path + '.ProtocolCallOutcomeService.default_checks', return_value=frozenset(ApiDefaultAssertionCheck)):
+                        factory.return_value.runner.execution_ids = []
+                        scenario.return_value.headers.return_value = {}
+                        scenario.return_value.front_main.side_effect = lambda request: request
+                        scenario.return_value.posterior_main.side_effect = lambda response: response
+                        scenario.return_value.ass_main.return_value = ([], StatusEnum.SUCCESS.value, None)
+                        result = runtime.case_detailed(847, None)
+                    self.assertEqual(result[0], StatusEnum.FAIL.value)
+                    self.assertEqual(runtime.api_case_result.main_status, StatusEnum.FAIL.value)
+                    self.assertEqual(runtime.api_case_result.recovery_status, StatusEnum.SUCCESS.value)
+                    self.assertEqual([item.id for item in runtime.api_case_result.steps], [1] * retries + [3])
+                    self.assertTrue(runtime.api_case_result.steps[-1].is_recovery)
+                    scenario.return_value.posterior_main.assert_called_once()
+                    scenario.return_value.ass_main.assert_called_once()
+                    self.assertEqual(factory.return_value.cleanup.call_count, retries + 1)
 
     def test_unexpected_exception_still_runs_recovery_and_propagates(self):
         runtime = self.runtime([self.step(1), self.step(2, True)], {1: RuntimeError('failure')})
@@ -227,6 +289,69 @@ class ApiCaseRecoveryTests(SimpleTestCase):
         self.assertEqual(result.recovery_status, 1)
         runtime.test_setup.close_db_connections.assert_called_once()
 
+    @patch('src.apps.data_factory.services.governance.infrastructure.DatasourceInfrastructureService.log_reference',
+           return_value='safe-reference')
+    def test_database_failure_and_failed_status_writes_do_not_skip_recovery(self, record_error):
+        from django.db import InterfaceError
+        from src.apps.test_center.enums.reporting import ReportRecoveryCauseEnum
+
+        runtime = self.lifecycle_runtime([self.step(1), self.step(2, True)])
+        runtime.test_setup.init_test_object.side_effect = InterfaceError(0, 'secret SQL')
+        runtime.update_test_case.side_effect = InterfaceError(0, 'secret SQL')
+        runtime.update_test_case_detailed_unfinished.side_effect = InterfaceError(0, 'secret SQL')
+        runtime.run_resource_cleanup = Mock()
+        result = runtime._test_case()
+        self.assertEqual(runtime.order, [2])
+        self.assertEqual(result.status, StatusEnum.FAIL.value)
+        self.assertEqual(result.main_status, StatusEnum.FAIL.value)
+        self.assertTrue(result.infrastructure_blocked)
+        self.assertEqual(runtime.report_recovery_cause, ReportRecoveryCauseEnum.RESULT_UNAVAILABLE)
+        from src.apps.test_center.enums.reporting import ReportRecoveryActionEnum
+        from src.apps.test_center.services.reporting.test_suite.recovery import ReportRecoveryService
+        self.assertEqual(ReportRecoveryService.decide(runtime.report_recovery_cause, []),
+                         ReportRecoveryActionEnum.RECOVER)
+        self.assertNotIn('secret SQL', result.error_message)
+        runtime.case_base.case_front_main.assert_not_called()
+        runtime.case_base.case_posterior_main.assert_called_once()
+        runtime.run_resource_cleanup.assert_called()
+        for name in ('close_mcp_sessions', 'close_grpc_channels', 'close_db_connections'):
+            getattr(runtime.test_setup, name).assert_called_once()
+        self.assertTrue(record_error.called)
+
+    @patch('src.apps.data_factory.services.governance.infrastructure.DatasourceInfrastructureService.log_reference',
+           return_value='safe-reference')
+    def test_business_failure_with_failed_trace_and_status_still_attempts_recovery(self, _):
+        from django.db import InterfaceError
+        from src.apps.auto_api.exceptions import API_CASE_STEP_DEBUG_BUSY
+
+        runtime = self.lifecycle_runtime([self.step(1), self.step(2, True)])
+        runtime.case_base.case_front_main.side_effect = AutoApiError(API_CASE_STEP_DEBUG_BUSY)
+        runtime.trace_recorder.fail_trace.side_effect = InterfaceError(0, '')
+        runtime.update_test_case.side_effect = InterfaceError(0, '')
+        result = runtime._test_case()
+        self.assertEqual(runtime.order, [2])
+        self.assertTrue(result.infrastructure_blocked)
+        runtime.test_setup.close_db_connections.assert_called_once()
+
+    @patch('src.apps.data_factory.services.governance.infrastructure.DatasourceInfrastructureService.log_reference',
+           return_value='safe-reference')
+    def test_recovery_lookup_failure_still_attempts_cleanup_and_closes_every_connection(self, _):
+        from django.db import InterfaceError
+
+        runtime = self.lifecycle_runtime([self.step(1), self.step(2, True)])
+        runtime.test_setup.init_test_object.side_effect = InterfaceError(0, '')
+        runtime.get_case_detailed_queryset.side_effect = InterfaceError(0, '')
+        runtime.run_resource_cleanup = Mock(side_effect=RuntimeError('secret cleanup'))
+        runtime.test_setup.close_mcp_sessions.side_effect = RuntimeError('secret connection')
+        with self.assertRaises(InterfaceError):
+            runtime._test_case()
+        runtime.run_resource_cleanup.assert_called_once()
+        runtime.test_setup.close_mcp_sessions.assert_called_once()
+        runtime.test_setup.close_grpc_channels.assert_called_once()
+        runtime.test_setup.close_db_connections.assert_called_once()
+        self.assertTrue(runtime.api_case_result.infrastructure_blocked)
+        self.assertNotIn('secret', runtime.api_case_result.error_message)
+
     def test_exception_in_main_keeps_original_error_and_recovery_error(self):
         runtime = self.lifecycle_runtime([self.step(1), self.step(2, True)], {
             1: RuntimeError('main failure'), 2: (0, '恢复失败'),
@@ -236,6 +361,25 @@ class ApiCaseRecoveryTests(SimpleTestCase):
         self.assertIn('平台内部异常', result.error_message)
         self.assertNotIn('main failure', result.error_message)
         self.assertIn('恢复失败', result.error_message)
+
+    def test_report_block_receives_original_failure_and_recovery_evidence(self):
+        runtime = self.lifecycle_runtime([self.step(1), self.step(2, True)], {
+            1: RuntimeError('private internal detail'), 2: (0, '恢复失败'),
+        })
+        runtime.test_suite_details = 77
+        runtime.api_case_result.model_dump = lambda: {'steps': [], 'recovery_errors': ['恢复失败']}
+        with patch('src.apps.data_factory.services.cleanup.cleanup_schedule.DataFactoryCleanupScheduleService.current_owner',
+                   return_value={'parent_attempt': 1}), \
+                patch('src.apps.test_center.services.reporting.test_suite.infrastructure.TestSuiteInfrastructureService.block',
+                      return_value=True) as block, \
+                patch('src.apps.data_factory.services.governance.infrastructure.DatasourceInfrastructureService.log_reference',
+                      return_value='safe-reference'):
+            result = runtime.test_case()
+        reason = block.call_args.kwargs['interruption_reason']
+        self.assertIn('safe-reference', reason)
+        self.assertIn('恢复失败', reason)
+        self.assertNotIn('private internal detail', reason)
+        self.assertEqual(result.error_message, reason)
 
     def test_stopped_report_only_saves_evidence_without_changing_status(self):
         suite = SimpleNamespace(status=TaskEnum.STOPPED.value, retained_summary=None)

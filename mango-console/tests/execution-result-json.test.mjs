@@ -2,6 +2,9 @@ import assert from 'node:assert/strict'
 import path from 'node:path'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { createServer } from 'node:http'
+import { once } from 'node:events'
+import { gzipSync } from 'node:zlib'
 import * as vue from 'vue'
 import ts from 'typescript'
 import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
@@ -133,6 +136,31 @@ test('large results use authenticated same-origin content, never the storage URL
   assert.deepEqual(calls[0].options.params, { id: 1 })
   headers = {}
   await assert.rejects(api.getExecutionResultDetailResolved(1), /完整结果文件读取失败/)
+})
+
+test('HTTP gzip is transparently decoded before the unchanged JSON result resolver', async t => {
+  const payload = [{status:1,response:{json:{message:'中文',items:Array(1000).fill('example')}}}]
+  const raw = Buffer.from(JSON.stringify(payload))
+  const compressed = gzipSync(raw)
+  const server = createServer((req, res) => {
+    const legacy = req.url.includes('id=2')
+    res.setHeader('Content-Type', 'application/json')
+    res.setHeader('Content-Disposition', 'inline; filename="result.json"')
+    if (!legacy) res.setHeader('Content-Encoding', 'gzip')
+    res.end(legacy ? raw : compressed)
+  })
+  server.listen(0, '127.0.0.1'); await once(server, 'listening')
+  t.after(() => { server.closeAllConnections(); server.close() })
+  const api = loadApi({
+    '@/api/http': {get: async () => detail(1, null, {result_too_large:true,result_compression:'gzip'})},
+    '@/api/axios.config': {default: {get: async (_url, options) => {
+      assert.equal(options.responseType, 'json')
+      const response = await fetch(`http://127.0.0.1:${server.address().port}/content?id=${options.params.id}`)
+      return {headers:Object.fromEntries(response.headers),data:await response.json()}
+    }}},
+  })
+  assert.deepEqual((await api.getExecutionResultDetailResolved(1)).data.result_data, payload)
+  assert.ok(compressed.length < raw.length / 10)
 })
 
 test('result drawer template compiles and operations use a compact fixed column', () => {

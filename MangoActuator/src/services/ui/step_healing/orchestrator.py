@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import asyncio
 import re
 import time
@@ -98,6 +99,7 @@ class PageStepHealingOrchestrator:
             await self._report(outcome)
             return outcome
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/step_healing/orchestrator:recover')
             log.warning(
                 f'页面步骤自愈未成功：trace_id={trace_id}，'
                 f'异常类型={type(error).__name__}，原因={error}',
@@ -424,6 +426,7 @@ class PageStepHealingOrchestrator:
         try:
             queue_id = StepHealReportOutbox.upsert(outcome.trace_id, payload)
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/step_healing/orchestrator:_report')
             log.error(f'页面步骤自愈记录写入本地重试队列失败：trace_id={outcome.trace_id}，原因={error}')
         try:
             await HTTP.ui_page_step.save_heal_report(payload)
@@ -433,6 +436,7 @@ class PageStepHealingOrchestrator:
                 f'页面步骤自愈记录已上报：trace_id={outcome.trace_id}，status={outcome.status}',
             )
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/step_healing/orchestrator:_report')
             if queue_id is not None:
                 StepHealReportOutbox.mark_failed(queue_id, 0, error)
             log.warning(

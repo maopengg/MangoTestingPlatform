@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import json
 import socket
+from copy import copy
 
 import minio
 import urllib3
@@ -68,7 +69,8 @@ class FileDataCRUD(ModelCRUD):
             try:
                 if self.model.objects.filter(name=request.data.get('name')):
                     return ResponseData.fail(RESPONSE_MSG_0022)
-                data = request.data.copy()
+                # QueryDict.copy() 会深拷贝磁盘上传文件；保留文件句柄和多值表单语义。
+                data = copy(request.data)
                 data['type'] = 0
                 uploaded_file = request.FILES.get('test_file')
                 if uploaded_file:

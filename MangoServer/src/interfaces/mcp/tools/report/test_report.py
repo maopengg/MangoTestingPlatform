@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import Counter, defaultdict
+from collections import defaultdict
 from typing import Annotated, Any
 
 from django.db.models import Count, Sum
@@ -8,6 +8,7 @@ from mangotools.enums import TaskEnum
 from pydantic import Field, StrictBool
 
 from src.apps.system.enums import TestSuiteNoticeEnum
+from src.apps.system.services.catalog.enum_catalog import EnumCatalogService
 from src.apps.task_center.services.selection.api_concurrency import ApiConcurrencyService
 from src.apps.test_center.enums import TestCaseTypeEnum, ReportFailureReasonEnum
 from src.apps.test_center.enums.environment import EnvironmentEnum
@@ -46,6 +47,11 @@ def _test_report_queryset_for_user():
 
 def _enum_options(enum_cls) -> list[dict]:
     return [{"value": key, "label": value} for key, value in enum_cls.obj().items()]
+
+
+def _report_status_options() -> list[dict]:
+    return [{"value": item['key'], "label": item['title']}
+            for item in EnumCatalogService.task_status_options()]
 
 
 def _format_report(item: TestSuite) -> dict:
@@ -103,15 +109,7 @@ def _paged_details(
 
 def _status_counts(queryset) -> dict:
     from src.apps.test_center.selectors.infrastructure import ReportInfrastructureSelector
-    counts = Counter(dict(queryset.values_list("status").annotate(count=Count("id"))))
-    return {
-        "fail": ReportInfrastructureSelector.filter_status(queryset, TaskEnum.FAIL.value).count(),
-        "success": counts.get(TaskEnum.SUCCESS.value, 0),
-        "stay_begin": counts.get(TaskEnum.STAY_BEGIN.value, 0),
-        "proceed": counts.get(TaskEnum.PROCEED.value, 0),
-        "stopped": counts.get(TaskEnum.STOPPED.value, 0),
-        "blocked": ReportInfrastructureSelector.filter_status(queryset, TaskEnum.INFRASTRUCTURE_BLOCKED.value).count(),
-    }
+    return ReportInfrastructureSelector.status_counts(queryset)
 
 
 def _case_type_title(value: int | None) -> str | None:
@@ -123,7 +121,7 @@ def _case_type_title(value: int | None) -> str | None:
 def _status_title(value: int | None) -> str | None:
     if value is None:
         return None
-    return TaskEnum.get_value(value)
+    return TaskEnum.get_value(TestSuiteSummaryService.public_status(value))
 
 
 def _extract_failure_records(detail: dict) -> list[dict]:
@@ -240,7 +238,7 @@ def register_test_report_tools(mcp):
             {
                 "enums": {
                     "type": _enum_options(TestCaseTypeEnum),
-                    "status": _enum_options(TaskEnum),
+                    "status": _report_status_options(),
                     "test_env": _enum_options(EnvironmentEnum),
                     "is_notice": _enum_options(TestSuiteNoticeEnum),
                     "failure_reason": _enum_options(ReportFailureReasonEnum),
@@ -483,7 +481,7 @@ def register_test_report_tools(mcp):
 
     @mcp.tool()
     def retry_test_report_case(test_suite_detail_id: int, confirm_infrastructure_retry: bool = False) -> dict:
-        """重试单个报告明细。平台受阻可能已产生写入，须用户确认数据及清理安全后传 confirm_infrastructure_retry=true；无需填写排查记录。"""
+        """重试单个报告明细。新版临时中断由平台自动恢复；手工重试仍校验原资源安全。confirm_infrastructure_retry 仅用于历史受阻记录确认，不绕过清理校验。"""
         item = TestCenterQuerySelector.test_suite_details().filter(id=test_suite_detail_id).first()
         if not item:
             return fail("测试报告详情不存在", "TEST_REPORT_DETAIL_NOT_FOUND")
@@ -507,7 +505,7 @@ def register_test_report_tools(mcp):
         test_env 和 api_concurrency_limit 再次调用。两项不传时保留报告当前值。
         注意：用户没有明确要求重试整份报告时，不允许调用本工具；
         应优先引导使用 retry_test_report_case 对单个失败 case 进行重试。
-        平台受阻可能已有写入；须用户核查数据与清理后传 confirm_infrastructure_retry=true。
+        新版执行由恢复策略自动处理；历史受阻记录须核查后传 confirm_infrastructure_retry=true，不绕过资源校验。
         """
         report = TestCenterQuerySelector.test_suite().filter(id=test_suite_id).first()
         if not report:

@@ -1,4 +1,5 @@
 from src.apps.auto_api.models import ApiCaseExecutionStep, ApiCaseExecutionTrace
+from src.apps.auto_api.selectors.case_list_execution import ApiCaseListExecutionSelector
 
 
 class ApiCaseExecutionTraceBuilder:
@@ -11,16 +12,17 @@ class ApiCaseExecutionTraceBuilder:
             include_list: bool = False,
     ) -> dict:
         trace = None
+        queryset = ApiCaseListExecutionSelector.with_trace_status(ApiCaseExecutionTrace.objects.all())
         traces = ApiCaseExecutionTrace.objects.none()
         if trace_id:
-            trace = ApiCaseExecutionTrace.objects.filter(trace_id=trace_id).first()
+            trace = queryset.filter(trace_id=trace_id).first()
         elif test_suite_detail_id:
-            traces = ApiCaseExecutionTrace.objects.filter(
+            traces = queryset.filter(
                 test_suite_detail_id=test_suite_detail_id,
             ).order_by('-create_time')
             trace = traces.first()
         elif case_id:
-            traces = ApiCaseExecutionTrace.objects.filter(
+            traces = queryset.filter(
                 case_id=case_id,
             ).order_by('-create_time')
             trace = traces.first()
@@ -41,6 +43,7 @@ class ApiCaseExecutionTraceBuilder:
 
     @classmethod
     def serialize_trace(cls, trace: ApiCaseExecutionTrace, include_summary: bool = True) -> dict:
+        finished_at = trace.finished_at or getattr(trace, 'report_finished_at', None)
         data = {
             'id': trace.id,
             'trace_id': trace.trace_id,
@@ -51,10 +54,11 @@ class ApiCaseExecutionTraceBuilder:
             'case_name': trace.case_name,
             'user_id': trace.user_id,
             'test_env': trace.test_env,
-            'status': trace.status,
+            'status': getattr(trace, 'display_status', trace.status),
+            'execution_phase': getattr(trace, 'report_phase', None),
             'worker_name': trace.worker_name,
             'started_at': trace.started_at.strftime('%Y-%m-%d %H:%M:%S') if trace.started_at else None,
-            'finished_at': trace.finished_at.strftime('%Y-%m-%d %H:%M:%S') if trace.finished_at else None,
+            'finished_at': finished_at.strftime('%Y-%m-%d %H:%M:%S') if finished_at else None,
             'duration_ms': trace.duration_ms,
             'error_message': trace.error_message,
             'create_time': trace.create_time.strftime('%Y-%m-%d %H:%M:%S') if trace.create_time else None,

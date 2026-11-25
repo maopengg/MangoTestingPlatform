@@ -7,6 +7,7 @@ from mangotools.enums import StatusEnum
 
 from src.apps.data_factory.exceptions import DataFactoryError
 from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as Resources
+from src.apps.data_factory.services.datasource.elasticsearch import ElasticsearchDatasourceService as ES
 from src.apps.data_factory.services.schema.schema_monitor import DataFactorySchemaMonitorService as Monitor
 from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditService as Audit
 
@@ -19,8 +20,8 @@ class CleanupIndexResolutionTests(SimpleTestCase):
         response.__exit__ = Mock(return_value=False)
         response.read.return_value = json.dumps(payload).encode()
         with patch.object(Audit, 'call', side_effect=lambda target, operation, callback, **kwargs: callback()) as audit, \
-                patch('src.apps.data_factory.services.cleanup.cleanup_resource.open_elasticsearch_request', return_value=response) as http:
-            result = Resources.resolve_index(target, name)
+                patch('src.apps.data_factory.services.datasource.elasticsearch.open_elasticsearch_request', return_value=response) as http:
+            result = ES.resolve_index(target, name)
         self.assertEqual(audit.call_args.args[1]['operation'], 'resolve_cleanup_index')
         self.assertIn('/example_alias?filter_path=', http.call_args.args[0].full_url)
         return result

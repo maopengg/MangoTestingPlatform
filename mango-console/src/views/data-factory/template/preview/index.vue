@@ -69,11 +69,6 @@
     </template>
 
     <template #default>
-      
-      
-      
-      
-      
       <mango-panel-spin
         :loading="initialPageLoading"
         class="mango-preview-spin mango-workbench-scroll-x mango-scene-config-workbench-scroll"
@@ -261,11 +256,20 @@
     :placeholder="cleanupResourceExample"
     :saving="cleanupResourceSaving"
     @save="saveCleanupResources"
-  />
+  >
+    <template #before-editor>
+      <a-collapse>
+        <a-collapse-item key="cleanup-preview" header="最近一次清理映射预览（示例，未校验环境）">
+          <JsonDisplay :data="previewResult.resource_cleanup_preview || []" />
+        </a-collapse-item>
+      </a-collapse>
+    </template>
+  </MangoJsonEditDrawer>
 </template>
 
 <script lang="ts" setup>
-import { reportLoadError } from '@/utils/load-error'
+  import { reportLoadError } from '@/utils/load-error'
+  import JsonDisplay from '@/components/display/JsonDisplay.vue'
 
   import DataFactoryDependencyPreview from '@/components/DataFactory/DataFactoryDependencyPreview.vue'
   import EntityRulesDialog from './components/EntityRulesDialog.vue'
@@ -554,7 +558,8 @@ import { reportLoadError } from '@/utils/load-error'
     try {
       await enumStore.getEnum()
     } catch (loadFailure0) {
-      if (request === enumsRequest && isCurrent(context)) (reportLoadError(loadFailure0, "加载失败，请重试", false), enumError.value = true)
+      if (request === enumsRequest && isCurrent(context))
+        reportLoadError(loadFailure0, '加载失败，请重试', false), (enumError.value = true)
     } finally {
       if (request === enumsRequest) enumLoading.value = false
     }
@@ -611,7 +616,8 @@ import { reportLoadError } from '@/utils/load-error'
       resetTemplateForm(record)
       return true
     } catch (loadFailure1) {
-      if (request === templateRequest && isCurrent(context)) (reportLoadError(loadFailure1, "加载失败，请重试", false), templateError.value = true)
+      if (request === templateRequest && isCurrent(context))
+        reportLoadError(loadFailure1, '加载失败，请重试', false), (templateError.value = true)
       return false
     } finally {
       if (request === templateRequest) templateLoading.value = false
@@ -653,7 +659,8 @@ import { reportLoadError } from '@/utils/load-error'
       fieldRows.value = response.data || []
       await preloadDependencyTemplateOptions()
     } catch (loadFailure2) {
-      if (request === fieldRequest && isCurrent(context)) (reportLoadError(loadFailure2, "加载失败，请重试", false), fieldsError.value = true)
+      if (request === fieldRequest && isCurrent(context))
+        reportLoadError(loadFailure2, '加载失败，请重试', false), (fieldsError.value = true)
     } finally {
       if (request === fieldRequest) fieldLoading.value = false
     }
@@ -683,7 +690,8 @@ import { reportLoadError } from '@/utils/load-error'
         }
       }
     } catch (loadFailure3) {
-      if (request === previewRequest && isCurrent(context)) (reportLoadError(loadFailure3, "加载失败，请重试", false), previewError.value = true)
+      if (request === previewRequest && isCurrent(context))
+        reportLoadError(loadFailure3, '加载失败，请重试', false), (previewError.value = true)
     } finally {
       if (request === previewRequest) {
         previewLoading.value = false
@@ -875,7 +883,8 @@ import { reportLoadError } from '@/utils/load-error'
         })),
       }
     } catch (loadFailure4) {
-      if (isCurrent(context)) (reportLoadError(loadFailure4, "加载失败，请重试", false), dependencyError.value = true)
+      if (isCurrent(context))
+        reportLoadError(loadFailure4, '加载失败，请重试', false), (dependencyError.value = true)
     }
   }
 
@@ -929,7 +938,8 @@ import { reportLoadError } from '@/utils/load-error'
       })
       .catch((loadFailure5) => {
         if (requestId !== sceneOptionsRequest || !isCurrent(context)) return
-        void (reportLoadError(loadFailure5, "加载失败，请重试", false), sceneOptionsFailed.value = true)
+        void (reportLoadError(loadFailure5, '加载失败，请重试', false),
+        (sceneOptionsFailed.value = true))
       })
       .finally(() => {
         if (requestId === sceneOptionsRequest) sceneOptionsLoading.value = false
@@ -1122,7 +1132,8 @@ import { reportLoadError } from '@/utils/load-error'
       if (request === itemFieldsRequest && isCurrent(context))
         itemFieldsMap.value = Object.fromEntries(entries)
     } catch (loadFailure6) {
-      if (request === itemFieldsRequest && isCurrent(context)) (reportLoadError(loadFailure6, "加载失败，请重试", false), fieldsError.value = true)
+      if (request === itemFieldsRequest && isCurrent(context))
+        reportLoadError(loadFailure6, '加载失败，请重试', false), (fieldsError.value = true)
     } finally {
       if (request === itemFieldsRequest) sceneItemFieldsLoading.value = false
     }

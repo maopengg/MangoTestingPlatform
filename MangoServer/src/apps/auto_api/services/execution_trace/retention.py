@@ -7,6 +7,9 @@ from src.apps.auto_api.enums.execution_trace import ApiCaseTraceStatus
 from src.apps.auto_api.models import ApiCaseExecutionTrace, ApiCaseExecutionStep
 from src.apps.auto_api.models.resource_cleanup import ApiCaseExecutionResource
 from src.apps.auto_api.models.callback import ApiCaseCallbackRun
+from src.apps.auto_api.models.mock import ApiMockRequestLog
+from src.apps.auto_api.enums.resource_cleanup import ApiResourceCleanupStatus
+from src.apps.auto_api.selectors.callback import ApiCallbackSelector
 
 
 class ApiTraceRetentionService:
@@ -16,8 +19,11 @@ class ApiTraceRetentionService:
 
     @staticmethod
     def eligible(cutoff):
-        owned = ApiCaseExecutionResource.objects.filter(trace_id=OuterRef('pk'))
-        callbacks = ApiCaseCallbackRun.objects.filter(trace_id=OuterRef('pk'))
+        # 完成的附属证据也须超过保留期；未完成或近期更新的证据不能被历史回收带走。
+        owned = ApiCaseExecutionResource.objects.filter(trace_id=OuterRef('pk')).exclude(
+            status=ApiResourceCleanupStatus.CLEANED.value, update_time__lt=cutoff)
+        callbacks = ApiCaseCallbackRun.objects.filter(trace_id=OuterRef('pk')).exclude(
+            ApiCallbackSelector.completed_condition(), finished_at__lt=cutoff)
         return ApiCaseExecutionTrace.objects.filter(
             create_time__lt=cutoff, finished_at__isnull=False,
             status__in=[ApiCaseTraceStatus.SUCCESS, ApiCaseTraceStatus.FAIL, ApiCaseTraceStatus.SKIP],
@@ -32,6 +38,20 @@ class ApiTraceRetentionService:
             trace = cls.eligible(cutoff).select_for_update(skip_locked=True).order_by('id').first()
             if trace is None:
                 return 0
+            resources = list(ApiCaseExecutionResource.objects.select_for_update().filter(trace=trace,
+                status=ApiResourceCleanupStatus.CLEANED.value, update_time__lt=cutoff).order_by('id').values_list(
+                    'id', flat=True)[:cls.CHILD_BATCH_SIZE])
+            if resources:
+                return ApiCaseExecutionResource.objects.filter(pk__in=resources).delete()[0]
+            callbacks = ApiCaseCallbackRun.objects.select_for_update().filter(trace=trace).filter(
+                ApiCallbackSelector.completed_condition(), finished_at__lt=cutoff)
+            deliveries = list(ApiMockRequestLog.objects.filter(callback_run__in=callbacks).order_by('id').values_list(
+                'id', flat=True)[:cls.CHILD_BATCH_SIZE])
+            if deliveries:
+                return ApiMockRequestLog.objects.filter(pk__in=deliveries).delete()[0]
+            callback_ids = list(callbacks.order_by('id').values_list('id', flat=True)[:cls.CHILD_BATCH_SIZE])
+            if callback_ids:
+                return ApiCaseCallbackRun.objects.filter(pk__in=callback_ids).delete()[0]
             children = list(ApiCaseExecutionStep.objects.filter(trace_id=trace.id).order_by('id').values_list(
                 'id', flat=True)[:cls.CHILD_BATCH_SIZE])
             if children:

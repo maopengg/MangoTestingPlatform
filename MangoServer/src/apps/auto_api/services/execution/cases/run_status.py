@@ -63,7 +63,6 @@ class ApiCaseRunStatusService:
     @classmethod
     def reset_single_run(cls, case_id: int, case_sort: int | None):
         step_ids = cls.scoped_step_ids(case_id, case_sort)
-        ApiCase.objects.filter(id=case_id).update(status=TaskEnum.STAY_BEGIN.value)
         ApiCaseDetailed.objects.filter(id__in=step_ids).update(
             status=TaskEnum.STAY_BEGIN.value,
             error_message=None,
@@ -71,10 +70,6 @@ class ApiCaseRunStatusService:
         ApiCaseDetailedParameter.objects.filter(case_detailed_id__in=step_ids).update(
             status=TaskEnum.STAY_BEGIN.value,
         )
-
-    @staticmethod
-    def mark_case_running(case_id: int):
-        ApiCase.objects.filter(id=case_id).update(status=TaskEnum.PROCEED.value)
 
     @staticmethod
     def mark_step_running(step_id: int):

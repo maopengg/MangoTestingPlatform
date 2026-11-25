@@ -10,7 +10,6 @@
       }
     "
   >
-    
     <MangoPanelSpin :loading="detailLoading">
       <a-tabs v-if="detail" v-model:active-key="activeTab">
         <a-tab-pane
@@ -266,9 +265,12 @@
           title="错误"
           data-testid="qa-views-data-factory-execution-tab-pane-错误"
         >
-          <a-alert data-feedback-kind="execution-result" v-if="detail.execution?.error_message" type="error">{{
-            detail.execution.error_message
-          }}</a-alert>
+          <a-alert
+            data-feedback-kind="execution-result"
+            v-if="detail.execution?.error_message"
+            type="error"
+            >{{ detail.execution.error_message }}</a-alert
+          >
           <div v-else class="mango-empty-state mango-execution-empty">暂无错误</div>
         </a-tab-pane>
         <a-tab-pane key="resources" title="关联资源清理">
@@ -278,14 +280,52 @@
             row-key="key"
             :data="cleanupResourceRows"
             :pagination="false"
-            :scroll="{ x: 1340, y: 450 }"
+            :scroll="{ x: 1770, y: 450 }"
+          >
+            <template #compensation="{ record }">
+              <MangoTableActions
+                :actions="[{ key: 'compensate', label: '精确补偿', danger: true,
+                disabled: record.status === '已确认消失',
+                onClick: () => compensationRef?.open(detail!.execution.id, record) }]"
+              />
+            </template>
+          </a-table>
+        </a-tab-pane>
+        <a-tab-pane key="cleanup-history" title="清理与恢复历史">
+          <a-table
+            class="mango-native-scroll-table"
+            :columns="cleanupHistoryColumns"
+            :data="detail.cleanup_history?.items || []"
+            :loading="historyLoading"
+            :pagination="false"
+            :scroll="{ x: 950, y: 450 }"
+            row-key="id"
+          >
+            <template #kind="{ record }">{{
+              record.kind_label || record.kind
+            }}</template>
+            <template #evidence="{ record }">
+              <span>{{ record.evidence.message || '-' }}</span>
+              <div
+                >SQL：{{ verificationLabel(record.evidence.sql_verified) }}；ES：{{
+                  verificationLabel(record.evidence.es_verified)
+                }}</div
+              >
+            </template>
+          </a-table>
+          <a-pagination
+            :current="historyPage"
+            :page-size="10"
+            :total="detail.cleanup_history?.count || 0"
+            @change="changeHistoryPage"
           />
         </a-tab-pane>
       </a-tabs> </MangoPanelSpin
   ></BaseSidePanel>
+  <CleanupCompensationDrawer ref="compensationRef" @completed="load()" />
 </template>
 <script setup lang="ts">
-import { reportLoadError } from '@/utils/load-error'
+  import { reportLoadError } from '@/utils/load-error'
 
   import { computed, ref, shallowRef } from 'vue'
   import { Message } from '@arco-design/web-vue'
@@ -294,7 +334,13 @@ import { reportLoadError } from '@/utils/load-error'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
   import MangoPanelSpin from '@/components/feedback/MangoPanelSpin.vue'
   import JsonDisplay from '@/components/display/JsonDisplay.vue'
-  import { executionItemColumns, cleanupResourceColumns } from '../config'
+  import MangoTableActions from '@/components/table/MangoTableActions.vue'
+  import CleanupCompensationDrawer from './CleanupCompensationDrawer.vue'
+  import {
+    executionItemColumns,
+    cleanupResourceColumns,
+    cleanupHistoryColumns,
+  } from '../config'
   import {
     enumTitle,
     stringifyCellValue,
@@ -316,6 +362,11 @@ import { reportLoadError } from '@/utils/load-error'
     loadError = ref(false),
     activeTab = ref('source'),
     copying = ref(false)
+  const historyPage = ref(1),
+    historyLoading = ref(false)
+  const compensationRef = ref<InstanceType<typeof CleanupCompensationDrawer> | null>(null)
+  const verificationLabel = (value?: boolean) =>
+    value === true ? '已验证' : value === false ? '未验证完成' : '未核定'
   const cleanupResourceRows = computed(() => cleanupResources(detail.value))
   let id: number | null = null,
     request = 0
@@ -337,24 +388,40 @@ import { reportLoadError } from '@/utils/load-error'
     detailLoading.value = false
     loadError.value = false
     activeTab.value = 'source'
+    historyPage.value = 1
+    historyLoading.value = false
+    compensationRef.value?.close()
   }
   function refreshFor(value: number) {
     if (visible.value && id === value) void load()
   }
-  async function load() {
+  function changeHistoryPage(page: number) {
+    if (historyLoading.value || detailLoading.value) return
+    historyPage.value = page
+    void load(true)
+  }
+  async function load(historyOnly = false) {
     if (!visible.value || id === null || !scope.isActive()) return
     const current = ++request,
       version = scope.snapshot(),
       snapshot = id
-    detailLoading.value = true
+    if (historyOnly) historyLoading.value = true
+    else detailLoading.value = true
     loadError.value = false
     try {
-      const response = await getDataFactoryExecutionDetail({ execution_id: snapshot })
+      const response = await getDataFactoryExecutionDetail({
+        execution_id: snapshot,
+        history_page: historyPage.value,
+      })
       if (current === request && scope.current(version)) detail.value = response.data || null
     } catch (loadFailure0) {
-      if (current === request && scope.current(version)) (reportLoadError(loadFailure0, "加载失败，请重试", false), loadError.value = true)
+      if (current === request && scope.current(version))
+        reportLoadError(loadFailure0, '加载失败，请重试', false), (loadError.value = true)
     } finally {
-      if (current === request) detailLoading.value = false
+      if (current === request) {
+        detailLoading.value = false
+        historyLoading.value = false
+      }
     }
   }
   function fallbackCopy(text: string) {

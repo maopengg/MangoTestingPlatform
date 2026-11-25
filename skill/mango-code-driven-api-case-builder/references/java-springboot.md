@@ -1,8 +1,10 @@
 # Java Spring Boot 与 Bean Validation 扫描
 
-用 `scripts/scan_springboot_ast.py` 调内置 `SpringBootAstScanner.java` 的 JDK Compiler Tree API，须JDK。只是确定性接口/源码索引，不替代AI追踪，不生成完成链。不以正则证明路由/分支，`rg`仅导航。
+由 AI 从启动配置、组件注册、映射声明及处理器核实 Spring 路由，按入口 Skill 的证据与双向对账规则完成清单；无需 JDK 也可直接追踪源码。`scripts/scan_springboot_ast.py` 是可选辅助，内部调用 JDK Compiler Tree API；不以正则命中或脚本结果单独证明完整性。
 
-适配限Java Spring MVC注解与Jakarta/Javax校验。JAX-RS、WebFlux `RouterFunction`、Kotlin特有、生成或其他不支持路由记Gap，不套MVC假设。
+仅选择上述工具时先运行 `python3 scripts/scan_springboot_ast.py --check-runtime`，可用 `--java-home <已有JDK目录>` 或 `JAVA_HOME` 指定已有运行时。检查实际进程及编译模块，不只看 PATH；缺依赖改由 AI 核实源码，不自动安装/下载，不启动或构建被测应用。最终清单是否可上传取决于注册证据，不取决于是否运行该工具。
+
+工具适配限 Java Spring MVC 注解与 Jakarta/Javax 校验。JAX-RS、WebFlux `RouterFunction`、生成或自定义注册由 AI 追实际入口及绑定关系，不套 MVC 假设；仅未解析部分记 Gap，不因超出工具支持范围直接判不可扫描。
 
 ## 路由清单
 
@@ -13,7 +15,11 @@
 
 读 `value`/`path` 数组和 `RequestMapping.method`，合类/方法路径，不折叠版本。
 
-未解常量、同名自定义注解、组合/元映射、`@Profile`/`@Conditional*`、继承、反射、生成源码、动态注册，直到修订匹配OpenAPI/Actuator/运行路由解析前为Gap。
+映射注解本身不证明服务端入口：确认官方 Controller/RestController 或本次源码中可追溯至它们的组合注解；Feign 客户端声明不计服务端接口。无注册证据的接口/类映射记 `SPRING_SERVER_REGISTRATION_UNRESOLVED`，继承、外部组合注解或动态注册未解时不静默漏算，也不凭类名认定入口。
+
+同一源码处理方法、相同 Method/规范路径的重复别名合并，`declared_paths` 保留原路径；不同方法的规范身份冲突仍阻塞对应接口。合并不证明所有部署版本的尾斜杠匹配行为相同，需验证的实际路径按部署契约保留，不能跨方法消除冲突。清单质量及局部上传遵循入口 Skill，探索性参数仅影响退出码，不提升完整性。
+
+常量、组合/元映射、继承及自定义注册先由 AI 追项目内定义、注册与调用方；脚本未解析不代表代码无法核实。`@Profile`/`@Conditional*` 等另核目标条件，必要时用已有同修订 OpenAPI/Actuator/运行路由交叉核对；证据仍不足才为对应 Gap，不冒称运行已启用。
 
 清单与分析质量分开。仅影响路由是否存在或Method/path的不确定才阻清单。绑定来源、`@Valid`级联、校验组、自定义validator、响应语义保留已证路由，入其 `analysis_gaps`。仅这些警告时产物成功退出且 `status=completed_with_gaps`，不证明调用链/Case完成。
 
@@ -40,6 +46,6 @@
 
 只追业务实现、动态分派、自写 advice/拦截、业务 SQL/Mapper XML、事务和异常处理；业务目标未解记 Gap，不凭方法名猜。底层代理、框架 AOP、生成 Mapper、SDK 内部按入口 Skill 止于依赖边界，不下载或反编译依赖包；缺其源码不单独构成 Gap，必要业务结果未知仍须注明。
 
-不机械将索引变图/Case/断言；仅定位映射、绑定、框架约束、枚举、显式响应状态、源码位置，AI查分支/调用/语义/跨文件后再设计。成功退出、`analysis_ready`、兼容 `case_generation_eligible` 只表示索引可用。
+使用工具时不机械将索引变图/Case/断言；AI 核实其输出并补查分支、调用、语义及跨文件目标后再设计。成功退出、`analysis_ready`、兼容 `case_generation_eligible` 只表示索引可用，不是必须具备的扫描验收字段。
 
 AST不证明产品正确、链完成或运行覆盖。有匹配修订OpenAPI/Actuator/运行数据则核对，否则 `静态接口清单`；只有同修订源码分支JaCoCo证据才称 `运行时分支已命中`。

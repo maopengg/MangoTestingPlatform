@@ -33,6 +33,8 @@ FILE_UPLOAD_USAGE = {
 
 def _api_case_delete_impact(case_id: int) -> dict:
     from src.apps.data_factory.enums import DataFactoryCaseSourceTypeEnum
+    from src.apps.auto_api.selectors.resource_cleanup import ApiResourceCleanupSelector
+    from src.apps.auto_api.selectors.callback import ApiCallbackSelector
 
     case = ApiQuerySelector.api_case().select_related("project_product", "module", "case_people").get(id=case_id)
     step_ids = list(ApiQuerySelector.api_case_detailed().filter(case_id=case_id).values_list("id", flat=True))
@@ -55,12 +57,18 @@ def _api_case_delete_impact(case_id: int) -> dict:
     ).count()
     release_count = ApiQuerySelector.api_case_release().filter(api_case_id=case_id).count()
     revision_count = ApiQuerySelector.api_case_revision().filter(api_case_id=case_id).count()
-    can_delete = not step_ids and task_detail_count == 0
+    resources = ApiResourceCleanupSelector.case_deletion_summary(case_id)
+    callbacks = ApiCallbackSelector.case_deletion_summary(case_id)
+    can_delete = not step_ids and task_detail_count == 0 and resources['unfinished'] == 0 and callbacks['unfinished'] == 0
     blockers = []
     if step_ids:
         blockers.append("该 API case 下存在接口步骤。请先删除页面可见的步骤和场景后，再删除 API case。")
     if task_detail_count:
         blockers.append("该 API case 已被定时任务绑定。请先解除定时任务绑定后，再删除 API case。")
+    if resources['unfinished']:
+        blockers.append(f"该 API case 有 {resources['unfinished']} 条资源记录尚未清理并验证，请先核查清理结果，完成清理后再删除用例。")
+    if callbacks['unfinished']:
+        blockers.append('该 API case 仍有回调验证尚未结束，请等待结束或先停止对应执行后再删除。')
     return {
         "case": {
             "id": case.id,
@@ -79,6 +87,8 @@ def _api_case_delete_impact(case_id: int) -> dict:
             "api_case_releases": release_count if can_delete else 0,
             "api_case_revisions": revision_count if can_delete else 0,
             "case_data_factory_configs": case_factory_count if can_delete else 0,
+            "cleaned_resource_records": resources['cleaned'] if can_delete else 0,
+            "completed_callback_records": callbacks['completed'] if can_delete else 0,
         },
         "references": {
             "api_case_step_count": len(step_ids),
@@ -86,9 +96,11 @@ def _api_case_delete_impact(case_id: int) -> dict:
             "scenario_data_factory_config_count": scenario_factory_count,
             "task_detail_count": task_detail_count,
             "historical_report_detail_count": report_detail_count,
+            "unfinished_resource_record_count": resources['unfinished'],
+            "unfinished_callback_record_count": callbacks['unfinished'],
         },
         "blockers": blockers,
-        "risk": "确认后删除 API case 及页面不可单独删除的版本数据。页面可见的步骤、场景和定时任务绑定需要用户先手动删除；历史测试报告明细按 case_id 保存，不会随 case 删除自动删除。",
+        "risk": "确认后删除 API case、版本数据、已清理并验证的资源台账及已结束回调和对应投递记录，不会再次删除被测系统数据。未完成清理或等待中的回调会阻止删除；步骤、场景和定时任务绑定需先处理。历史测试报告明细按 case_id 保留。",
     }
 
 

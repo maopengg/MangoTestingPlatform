@@ -102,6 +102,7 @@ class SchedulerReadinessTests(SimpleTestCase):
         runner = ScheduleRunner(cleanup_only=True)
         beat.side_effect = lambda *args, **kwargs: runner.stop_event.set()
         with patch.object(runner, 'start_datasource_recovery') as session_recovery, \
+                patch.object(runner, 'start_maintenance_consumer') as maintenance, \
                 patch('src.apps.data_factory.services.governance.datasource_governor.DatasourceGovernorService.policy'):
             runner.run_forever()
         session_recovery.assert_called()
@@ -109,5 +110,6 @@ class SchedulerReadinessTests(SimpleTestCase):
         dispatch.assert_not_called()
         ensure.assert_not_called()
         tick.assert_not_called()
-        recovery.assert_called_once()
+        recovery.assert_not_called()
+        maintenance.assert_called()
         self.assertTrue(beat.call_args.kwargs['metadata']['cleanup_only'])

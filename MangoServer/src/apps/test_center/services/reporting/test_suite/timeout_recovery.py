@@ -5,6 +5,7 @@ from django.utils import timezone
 from mangotools.enums import TaskEnum
 
 from src.apps.test_center.enums import TestCaseTypeEnum
+from src.apps.test_center.enums.reporting import ReportRecoveryCauseEnum
 from src.apps.test_center.models import TestSuiteDetails
 from src.apps.test_center.services.results.execution_result import ExecutionResultService
 from src.apps.test_center.services.reporting.api_counting import ApiReportCountingService
@@ -37,6 +38,7 @@ class TestSuiteTimeoutRecoveryService:
         if (detail.type == TestCaseTypeEnum.API.value and detail.status == TaskEnum.PROCEED.value
                 and detail.push_time and timezone.now() - detail.push_time > timedelta(minutes=timeout_minutes)):
             TestSuiteInfrastructureService.block(detail.id, max(1, int(detail.retry or 0)), [],
+                cause=ReportRecoveryCauseEnum.EXECUTION_TIMEOUT,
                 interruption_reason=f'执行超过 {timeout_minutes} 分钟未完成。请核查执行进展及数据清理状态')
             return False
         if not cls.can_reset(detail, timeout_minutes, max_attempts):
@@ -91,6 +93,7 @@ class TestSuiteTimeoutRecoveryService:
         if (detail.type == TestCaseTypeEnum.API.value and detail.status == TaskEnum.PROCEED.value
                 and detail.push_time and timezone.now() - detail.push_time > timedelta(minutes=timeout_minutes)):
             TestSuiteInfrastructureService.block(detail.id, max(1, int(detail.retry or 0)), [],
+                cause=ReportRecoveryCauseEnum.EXECUTION_TIMEOUT,
                 interruption_reason=f'执行超过 {timeout_minutes} 分钟未完成。请核查执行进展及数据清理状态')
             return False
         if not cls.can_terminate(detail, timeout_minutes, max_attempts):

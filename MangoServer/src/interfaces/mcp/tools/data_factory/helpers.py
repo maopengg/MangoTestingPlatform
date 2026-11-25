@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from src.apps.data_factory.formatters import cleanup_diagnostics
 
 from src.apps.auto_api.selectors.querysets import ApiQuerySelector
 from src.apps.data_factory.enums import (
@@ -15,9 +16,11 @@ from src.apps.data_factory.models import (
     DataFactoryTemplateItem,
 )
 from src.apps.data_factory.selectors.querysets import DataFactoryQuerySelector
+from src.apps.data_factory.selectors.execution_audit import ExecutionAuditSelector
 from src.apps.data_factory.services.preview.preview import DataFactoryPreviewService
 from src.common.exceptions import MangoServerError
 from src.common.exceptions.normalization import normalize_expected_exception
+from src.common.database.read_retry import read_with_connection_recovery
 from src.interfaces.mcp.common import (
     current_user,
     fail,
@@ -233,6 +236,11 @@ def _execution_summary(item: DataFactoryExecution) -> dict:
 
 
 def _execution_detail(execution_id: int) -> dict:
+    # 只包围只读详情，不重试清理、确认凭据创建或业务造数。
+    return read_with_connection_recovery(lambda: _read_execution_detail(execution_id))
+
+
+def _read_execution_detail(execution_id: int) -> dict:
     from src.apps.data_factory.services.execution.execution_snapshot import get_insert_snapshot
 
     execution = DataFactoryQuerySelector.data_factory_execution().select_related("template", "project_product",
@@ -240,10 +248,7 @@ def _execution_detail(execution_id: int) -> dict:
     items = []
     sql_records_by_item = {}
     sql_executions = []
-    for sql_record in DataFactoryQuerySelector.sql_execution_record().filter(
-            source_type='data_factory',
-            source_detail__execution_id=execution_id,
-    ).order_by('create_time', 'id'):
+    for sql_record in ExecutionAuditSelector.factory_records(execution_id):
         item_id = (sql_record.source_detail or {}).get('execution_item_id')
         record_payload = {
             'id': sql_record.id,
@@ -290,7 +295,9 @@ def _execution_detail(execution_id: int) -> dict:
                 "cleanup_status": item.cleanup_status,
                 "cleanup_error": item.cleanup_error,
                 "sql_executions": sql_records_by_item.get(item.id, []),
-                "cleanup_resources": item.cleanup_resources,
+                "cleanup_resources": {key: value for key, value in (item.cleanup_resources or {}).items()
+                                      if key != 'cleanup_history'},
+                "cleanup_diagnostics": cleanup_diagnostics(item.cleanup_resources),
             }
         )
     cache_keys = []

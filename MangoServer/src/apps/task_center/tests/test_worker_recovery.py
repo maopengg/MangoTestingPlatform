@@ -11,6 +11,7 @@ from src.apps.system.services.runtime_center.process_identity import RuntimeProc
 from src.apps.task_center.services.execution.claim import ApiTaskClaimService
 from src.apps.task_center.services.execution.worker_recovery import ApiWorkerRecoveryService as Recovery
 from src.apps.test_center.enums import TestCaseTypeEnum
+from src.apps.test_center.enums.reporting import ReportRecoveryCauseEnum
 from src.apps.test_center.models import Project, ProjectProduct, TestSuite, TestSuiteDetails
 from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService as Results
 from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService as Infrastructure
@@ -207,6 +208,7 @@ class ProcessIdentityTests(SimpleTestCase):
                 self.health.reset_mock()
                 self.assertEqual(Recovery.recover(), 1)
                 block.assert_called_once_with(7, 2, [], expected_push_time=row['push_time'],
+                    cause=ReportRecoveryCauseEnum.WORKER_REPLACED,
                     interruption_reason='执行进程已重启或被替换，本次执行未完成。请核查已发送请求及数据清理状态')
                 if remaining:
                     self.health.assert_not_called()

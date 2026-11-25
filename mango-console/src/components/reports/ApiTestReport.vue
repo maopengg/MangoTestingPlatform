@@ -23,6 +23,14 @@
       </div>
     </div>
 
+    <div v-if="correlationIds.length" class="mango-api-report__correlation">
+      <span v-for="item in correlationIds" :key="item.name">{{ item.name }}：{{ item.value }}</span>
+    </div>
+    <a-alert v-if="resultData.posterior_skipped_reason || resultData.assertion_skipped_reason" type="warning">
+      {{ resultData.posterior_skipped_reason || resultData.assertion_skipped_reason }}
+      <span v-if="resultData.protocol_status"> 协议状态：{{ resultData.protocol_status }}</span>
+    </a-alert>
+
     <a-space v-if="resultData?.recovery_status !== undefined && resultData?.recovery_status !== null" wrap>
       <span>主流程：{{ resultData.main_status === 1 ? '成功' : resultData.main_status === 5 ? '已停止' : '未通过' }}</span>
       <span>最终恢复：{{ resultData.recovery_status === 1 ? '成功' : '失败' }}</span>
@@ -218,7 +226,7 @@
   import { computed, ref, watch } from 'vue'
   import AssertionResult from '@/components/feedback/AssertionResult.vue'
   import { useScenarioCurl } from '@/hooks/useScenarioCurl'
-  import { apiReport } from './api-report'
+  import { apiReport, responseCorrelationIds } from './api-report'
 
   type EvidenceSection = {
     key: string
@@ -232,6 +240,7 @@
 
   const props = withDefaults(defineProps<{ resultData: unknown; contained?: boolean }>(), { contained: false })
   const resultData = computed(() => apiReport(props.resultData))
+  const correlationIds = computed(() => responseCorrelationIds(resultData.value.response.headers))
   const { copying, copyScenarioCurl } = useScenarioCurl()
   const copyCurl = () => copyScenarioCurl({ result_data: props.resultData })
 
@@ -444,6 +453,15 @@
 </script>
 
 <style scoped lang="less">
+  .mango-api-report__correlation {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--m-page-gap);
+    color: var(--m-text-2);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
   .mango-api-report {
     display: flex;
     flex-direction: column;

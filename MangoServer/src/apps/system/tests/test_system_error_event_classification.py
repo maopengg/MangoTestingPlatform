@@ -20,6 +20,17 @@ from src.common.decorators.system_error import system_error_guard
 
 
 class SystemErrorEventClassificationTests(SimpleTestCase):
+    def test_non_retryable_report_failure_is_explicitly_registered_with_safe_attempt_context(self):
+        from src.apps.test_center.enums.reporting import ReportRecoveryCauseEnum
+        with patch.object(SystemErrorEventService, 'record') as record:
+            SystemErrorEventService.record_report_recovery_failure(suite_id=2, detail_id=7, attempt=3,
+                cause=ReportRecoveryCauseEnum.CODE_BUG, reason='execution_code_bug', codes=[34193])
+        self.assertEqual(record.call_args.kwargs['exception_type'], 'ReportRecoveryFailure')
+        self.assertEqual(record.call_args.kwargs['request_path'], 'report/2/detail/7/attempt/3')
+        payload = json.loads(record.call_args.kwargs['trace'])
+        self.assertEqual(payload['issue_codes'], [34193])
+        self.assertEqual(set(payload), {'report_id', 'detail_id', 'attempt', 'cause', 'reason', 'issue_codes'})
+
     def test_health_status_requires_explicit_recovery_evidence(self):
         states = [
             ({'active': False, 'resolved_at': 1794548254.0}, 'success', '已恢复'),

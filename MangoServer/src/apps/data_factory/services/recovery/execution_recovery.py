@@ -13,6 +13,7 @@ from src.apps.data_factory.enums import (
 from src.apps.data_factory.models import DataFactoryExecution, DataFactoryExecutionItem
 from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
 from src.apps.data_factory.services.cleanup.cleanup_schedule import DataFactoryCleanupScheduleService
+from src.apps.data_factory.services.cleanup.cleanup_persistence import CleanupPersistenceService
 from src.apps.system.enums.executor import ExecutorTaskStatusEnum
 from src.apps.task_center.services.execution.executor_task import ExecutorTaskService
 from src.apps.data_factory.constants import CLEANUP_REPORT_CONTEXT_KEY
@@ -27,16 +28,29 @@ class DataFactoryExecutionRecovery:
     BATCH_SIZE = 100
     LEGACY_OVERDUE_ERROR = '执行数据超过 24 小时仍未清理，请核对后执行清理'
 
+    @classmethod
+    @transaction.atomic
+    def fail_unverified_cleanup(cls, execution, message):
+        # 与正常清理使用同一执行锁，复核和失败保存之间不允许成功结果被旧巡检覆盖。
+        current = CleanupPersistenceService.lock_execution(execution.id)
+        if DataFactoryCleanup.reconcile_verified_cleanup(current):
+            return False
+        DataFactoryCleanup.mark_execution_failed(current, message)
+        return True
+
     @staticmethod
     def report_execution_ended(owner, execution):
         from mangotools.enums import TaskEnum
         from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
         from src.apps.test_center.enums import TestCaseTypeEnum
         detail = TestCenterQuerySelector.test_suite_details().filter(
-            id=owner['parent_case_detail_id'], retry=owner['parent_attempt']).only('id', 'status', 'type').first()
-        if detail is None or detail.status not in {
+            id=owner['parent_case_detail_id'], retry=owner['parent_attempt']).only('id', 'status', 'type', 'summary_data').first()
+        from src.apps.test_center.services.reporting.test_suite.recovery import ReportRecoveryService
+        control = ReportRecoveryService.read(detail.summary_data) if detail else None
+        recovering_ended = bool(control and control.owner_ended and control.attempt == owner['parent_attempt'])
+        if detail is None or (not recovering_ended and detail.status not in {
                 TaskEnum.SUCCESS.value, TaskEnum.FAIL.value, TaskEnum.WARNING.value, TaskEnum.STOPPED.value,
-                TaskEnum.INFRASTRUCTURE_BLOCKED.value}:
+                TaskEnum.INFRASTRUCTURE_BLOCKED.value}):
             return False
         if detail.type == TestCaseTypeEnum.API.value:
             from src.apps.auto_api.selectors.querysets import ApiQuerySelector
@@ -57,10 +71,12 @@ class DataFactoryExecutionRecovery:
     @transaction.atomic
     def recover_inline_cleanup(cls):
         interrupted = ExecutorTaskService.expire_inline_cleanup_tasks()
+        failed = 0
         for execution in DataFactoryExecution.objects.filter(id__in=interrupted):
-            DataFactoryCleanup.mark_execution_failed(
-                execution, '同步清理进程失联或阶段超时，结果需核查；请在执行记录核对后补清')
-        return len(interrupted)
+            if cls.fail_unverified_cleanup(
+                    execution, '同步清理进程失联或阶段超时，结果需核查；请在执行记录核对后补清'):
+                failed += 1
+        return failed
 
     @classmethod
     def recover(cls) -> dict:
@@ -71,6 +87,8 @@ class DataFactoryExecutionRecovery:
 
         automatic_candidates = DataFactoryExecution.objects.filter(
             datafactoryexecutionitem__isnull=False,
+        ).exclude(
+            cleanup_status=DataFactoryCleanupStatusEnum.SUCCESS.value,
         ).filter(
             Q(
                 status=DataFactoryExecutionStatusEnum.PROCEED.value,
@@ -96,16 +114,37 @@ class DataFactoryExecutionRecovery:
         deferred = 0
         for execution in automatic_candidates:
             try:
+                if DataFactoryCleanup.reconcile_verified_cleanup(execution):
+                    recovered += 1
+                    continue
                 saved_owner = (execution.context or {}).get(CLEANUP_REPORT_CONTEXT_KEY)
                 if not saved_owner:
+                    from src.apps.data_factory.enums import DataFactoryExecutionSourceEnum
+                    from src.apps.data_factory.services.recovery.execution_reconciliation import DataFactoryExecutionReconciliation
+                    if (getattr(execution, 'source_type', None) == DataFactoryExecutionSourceEnum.TEMPLATE_DEBUG.value
+                            and execution.status == DataFactoryExecutionStatusEnum.SUCCESS.value):
+                        if not DataFactoryExecutionReconciliation.owner_ended(execution):
+                            deferred += 1
+                            log.system.warning('event=data_factory_debug_recovery_waiting_owner execution_id=%s '
+                                               'action=verify_original_owner_before_handoff', execution.id)
+                            continue
+                        task = DataFactoryCleanupScheduleService.enqueue_debug_recovery(execution.id)
+                        if task.status == ExecutorTaskStatusEnum.FAILED.value:
+                            failed += 1
+                        elif task.status == ExecutorTaskStatusEnum.SUCCESS.value:
+                            recovered += 1
+                        else:
+                            queued += 1
+                        continue
                     if execution.status == DataFactoryExecutionStatusEnum.PROCEED.value:
                         deferred += 1
                         log.system.warning('event=data_factory_recovery_unconfirmed_owner execution_id=%s '
                             'action=verify_original_execution_before_cleanup', execution.id)
                         continue
-                    DataFactoryCleanup.mark_execution_failed(
+                    marked = cls.fail_unverified_cleanup(
                         execution, '执行已中断或自动清理未完成，请核对执行记录后补清；无正式报告不会转入调度队列')
-                    failed += 1
+                    failed += int(marked)
+                    recovered += int(not marked)
                     continue
                 owner = CleanupReportOwner.model_validate(saved_owner, strict=True).model_dump()
                 DataFactoryCleanupScheduleService.validate_report_owner(owner, execution)
@@ -132,9 +171,11 @@ class DataFactoryExecutionRecovery:
                 else:
                     queued += 1
             except Exception as error:
-                failed += 1
                 error_message = f'数据工厂清理补偿异常：{error}'
-                DataFactoryCleanup.mark_execution_failed(execution, error_message)
+                if not cls.fail_unverified_cleanup(execution, error_message):
+                    recovered += 1
+                    continue
+                failed += 1
                 log.system.error(
                     f'{error_message}，execution_id={execution.id}'
                 )

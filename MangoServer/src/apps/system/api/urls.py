@@ -21,6 +21,8 @@ urlpatterns = [
     path('', include('src.apps.task_center.api.urls')),
     path('sql-execution', SqlExecutionRecordViews.as_view({'get': 'list_items'})),
     path('sql-execution/options', SqlExecutionRecordViews.as_view({'get': 'options'})),
+    path('sql-execution/search', SqlExecutionRecordViews.as_view({'post': 'search_start', 'get': 'search_status'})),
+    path('sql-execution/search/cancel', SqlExecutionRecordViews.as_view({'post': 'search_cancel'})),
     path("variable/random/list", SystemViews.as_view({'get': 'common_variable'})),
     path("variable/value", SystemViews.as_view({'get': 'random_data'})),
     path("assertion/list", SystemViews.as_view({'get': 'assertion_list'})),

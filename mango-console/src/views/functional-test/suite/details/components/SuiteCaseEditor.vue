@@ -75,8 +75,7 @@
         ></a-grid-item>
         <a-grid-item :span="2"
           ><a-alert type="info" class="mango-suite-case-editor__tip"
-            >层级建议：接口/组件级约 70%，模块级约 20%，端到端约
-            10%。验证类型用于区分正常、异常、边界、权限、数据和流程；执行场景统一使用回归、发布验证、冒烟、稳定性监测、数据校验、效果评测、生产巡检和生产回归。</a-alert
+            >测试层级按验证范围选择：单个接口或组件选接口/组件级，模块内协作选模块级，跨模块完整链路选端到端。</a-alert
           ></a-grid-item
         >
         <a-grid-item :span="2"

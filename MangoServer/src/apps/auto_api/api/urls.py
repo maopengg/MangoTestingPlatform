@@ -98,6 +98,7 @@ urlpatterns = [
     path("case/step/debug", ApiCaseViews.as_view({'post': 'api_debug_case_step'})),
     path("case/batch", ApiCaseViews.as_view({'post': 'api_test_case_batch'})),
     path("case/execution/options", ApiCaseViews.as_view({'get': 'execution_options'})),
+    path("case/results/versions", ApiCaseViews.as_view({'get': 'version_results'})),
     path("case/configuration/summary", ApiCaseViews.as_view({'get': 'configuration_summary'})),
     path("case/configuration/details", ApiCaseViews.as_view({'get': 'configuration_details'})),
     path("case/revision",

@@ -9,6 +9,9 @@ from src.apps.data_factory.services.recovery.execution_reconciliation import Dat
 from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as Resources
 from src.apps.data_factory.services.cleanup.cleanup_schedule import DataFactoryCleanupScheduleService as Schedule
 from src.apps.data_factory.constants import EXECUTION_OWNER_CONTEXT_KEY, EXECUTION_RECONCILIATION_CONTEXT_KEY
+from src.apps.data_factory.schemas.cleanup_resource import (
+    CleanupResourceState, EsCleanupSnapshot, EsCleanupRule, EsCleanupCheckResult,
+)
 
 
 class ExecutionStateReconciliationTests(SimpleTestCase):
@@ -16,13 +19,16 @@ class ExecutionStateReconciliationTests(SimpleTestCase):
         self.execution = SimpleNamespace(id=17, status=1, cleanup_status=1, update_time=timezone.now(),
             create_time=timezone.now(), context={}, error_message='AUTO old cleanup error', save=Mock())
         self.item = SimpleNamespace(cleanup_status=1)
-        self.state = SimpleNamespace(snapshots=[], results=[], unknown_permits=[], uncertain_requests=[], sql_cleaned=False)
+        self.state = CleanupResourceState(sql_cleaned=True)
 
     def test_only_full_owned_verification_allows_error_convergence(self):
-        snapshot = SimpleNamespace(index='example', document_id='1')
+        snapshot = EsCleanupSnapshot(rule=EsCleanupRule(datasource_alias_id=1, index_template='example'),
+            binding_id=1, connection_id=1, connection_version='AUTO_VERSION', environment=0,
+            index='example', document_id='1', tenant='7', baseline_absent=True)
         self.state.snapshots = [snapshot]
         self.state.sql_cleaned = True
-        self.state.results = [SimpleNamespace(success=True, index='example', document_id='1')]
+        self.state.results = [EsCleanupCheckResult(snapshot_index=0, success=True, index='example', document_id='1',
+            checked_at=timezone.now().isoformat(), attempts=2)]
         with patch.object(Resources, 'state', return_value=self.state):
             self.assertTrue(Reconcile.fully_verified([self.item]))
             self.assertFalse(Reconcile.fully_verified([]))

@@ -1,12 +1,12 @@
 # Python FastAPI 与 Pydantic 扫描
 
-使用 `scripts/scan_fastapi_ast.py`，它是 Python AST 确定性接口/源码索引器，不替代 AI 追踪或生成完成业务链。发现后仅用 `rg` 导航。
+由 AI 从应用创建、router 注册/挂载和处理器核实路由，按入口 Skill 保留证据并双向对账。`scripts/scan_fastapi_ast.py` 为可选 Python AST 辅助索引器，不是扫描前提，不替代 AI 对注册关系及完整性的核查。
 
-适配仅限 FastAPI/Starlette 路由与 Pydantic；Flask、Django、Sanic、生成路由或不支持构造记越界 Gap，不套 FastAPI 假设。
+本参考及工具针对 FastAPI/Starlette 与 Pydantic；Django/DRF 转其参考，Flask、Sanic 等由 AI 按实际注册追踪，不套 FastAPI 假设；仅证据未解才记 Gap，不因没有适配脚本判为越界。
 
 ## 路由清单
 
-仅静态确认的 `FastAPI`、`Starlette`、`APIRouter` 实例识别 HTTP 装饰器：
+AI 先确认 `FastAPI`、`Starlette`、`APIRouter` 实例来源及注册关系，再核查 HTTP 装饰器：
 
 - `get`、`post`、`put`、`patch`、`delete`、`options`、`head`；
 - `api_route(..., methods=[...])`；
@@ -15,7 +15,7 @@
 
 FastAPI/Starlette/Pydantic 符号须证明官方导入来源。同名本地、歧义/条件导入、重新绑定、未解决项目转导出不算框架证据。
 
-动态路径/方法、条件/嵌套路由注册、程序化修改、未解 `include_router`、挂载、反射、生成和monkey patch记清单Gap，不凭装饰器拼写猜路由。
+路径/方法常量、条件/嵌套注册、`include_router`、挂载及程序化修改须跨文件追实际值和调用；工具不支持的构造继续由 AI 核实，仍未解的反射、生成或 monkey patch 才记对应清单 Gap，不凭装饰器拼写猜路由。
 
 ## 请求契约入口
 
@@ -30,7 +30,7 @@ FastAPI/Starlette/Pydantic 符号须证明官方导入来源。同名本地、�
 
 ## 调用切片
 
-索引后由AI而非脚本按需追：请求schema/依赖 → handler → 应用服务 → 领域校验/状态机 → repository/租户过滤 → 外部/异步 → 异常响应映射 → 副作用/清理。
+由 AI 按需追：请求schema/依赖 → handler → 应用服务 → 领域校验/状态机 → repository/租户过滤 → 外部/异步 → 异常响应映射 → 副作用/清理；不要求先运行索引脚本。
 
 业务触发、结果、权威对照、数据和清理准确才停止；跨文件业务函数、registry、领域/仓储及业务异常映射须追，未解业务分派/注入目标记 Gap。框架、第三方包、ORM/驱动内部按入口 Skill 止于依赖边界，不遍历安装包或下载/逆向依赖；缺底层源码不单独构成 Gap，未知业务结果不猜。
 

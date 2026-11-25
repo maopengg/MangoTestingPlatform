@@ -8,6 +8,11 @@ _cleanup_lease = ContextVar('data_factory_cleanup_lease', default=None)
 
 class CleanupPersistenceService:
     @staticmethod
+    def lock_execution(execution_id):
+        from src.apps.data_factory.models import DataFactoryExecution
+        return DataFactoryExecution.objects.select_for_update().get(id=execution_id)
+
+    @staticmethod
     @contextmanager
     def lease(lease):
         token = _cleanup_lease.set(lease)
@@ -33,4 +38,8 @@ class CleanupPersistenceService:
 
     @classmethod
     def save(cls, instance, fields=None):
+        from src.apps.data_factory.models import DataFactoryExecutionItem
+        if isinstance(instance, DataFactoryExecutionItem) and (fields is None or 'cleanup_resources' in fields):
+            from src.apps.data_factory.services.cleanup.cleanup_history import ResourceCleanupHistoryService
+            return cls.write(lambda: ResourceCleanupHistoryService.save_factory_state(instance, fields))
         cls.write(lambda: instance.save(update_fields=fields) if fields else instance.save())

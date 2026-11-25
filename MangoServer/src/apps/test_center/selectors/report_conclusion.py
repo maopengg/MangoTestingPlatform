@@ -32,7 +32,7 @@ class ReportConclusionSelector:
         known_statuses = [item.value for item in TaskEnum]
         flags = {
             '_active': missing & Q(status__in=(TaskEnum.STAY_BEGIN.value, TaskEnum.PROCEED.value)),
-            '_failure': (Q(_blocked=True, _fail__gt=0)
+            '_failure': (Q(_blocked=True)
                          | Q(_blocked=False, _fail__gt=0, _success__lt=F('_size'))
                          | (missing & (Q(status=TaskEnum.FAIL.value) | ~Q(status__in=known_statuses)))),
             '_infrastructure': Q(_blocked=True, _fail__lt=F('_size')),
@@ -53,19 +53,22 @@ class ReportConclusionSelector:
             When(_active=1, then=Value(TaskEnum.PROCEED.value)),
             When(_excluded=1, _included=0, then=Value(TaskEnum.SUCCESS.value)),
             When(_raw_status=TaskEnum.STOPPED.value, then=Value(TaskEnum.STOPPED.value)),
-            When(_raw_status=TaskEnum.FAIL.value, _excluded=0, _infrastructure=0,
+            When(_raw_status__in=(TaskEnum.FAIL.value, TaskEnum.INFRASTRUCTURE_BLOCKED.value), _excluded=0, _infrastructure=0,
                  then=Value(TaskEnum.FAIL.value)),
             When(_failure=1, then=Value(TaskEnum.FAIL.value)),
-            When(_infrastructure=1, then=Value(TaskEnum.INFRASTRUCTURE_BLOCKED.value)),
+            When(_infrastructure=1, then=Value(TaskEnum.FAIL.value)),
             When(_warn=1, then=Value(TaskEnum.WARNING.value)),
             When(_stopped=1, then=Value(TaskEnum.STOPPED.value)),
             When(_passed=1, then=Value(TaskEnum.SUCCESS.value)),
+            When(_raw_status=TaskEnum.INFRASTRUCTURE_BLOCKED.value, then=Value(TaskEnum.FAIL.value)),
             default=F('_raw_status'), output_field=IntegerField(),
         )).values('_conclusion')[:1]
         return queryset.alias(_report_filter_conclusion=Case(
-            When(Q(retained_summary__isnull=False) & ~Q(retained_summary={}), then=F('status')),
+            When(Q(retained_summary__isnull=False) & ~Q(retained_summary={}), then=Case(
+                When(status=TaskEnum.INFRASTRUCTURE_BLOCKED.value, then=Value(TaskEnum.FAIL.value)), default=F('status'), output_field=IntegerField())),
             When(status__in=(TaskEnum.STAY_BEGIN.value, TaskEnum.PROCEED.value), then=F('status')),
-            default=Coalesce(Subquery(grouped, output_field=IntegerField()), F('status')),
+            default=Coalesce(Subquery(grouped, output_field=IntegerField()), Case(
+                When(status=TaskEnum.INFRASTRUCTURE_BLOCKED.value, then=Value(TaskEnum.FAIL.value)), default=F('status'), output_field=IntegerField())),
             output_field=IntegerField(),
         ))
 

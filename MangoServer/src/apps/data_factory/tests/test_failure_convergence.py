@@ -14,6 +14,7 @@ from src.apps.data_factory.services.governance.infrastructure import DatasourceI
 from src.apps.data_factory.services.execution.parts.persistence import DataFactoryRunnerPersistenceMixin as Persistence
 from src.apps.data_factory.services.recovery.execution_recovery import DataFactoryExecutionRecovery as Recovery
 from src.apps.data_factory.services.cleanup.cleanup_schedule import DataFactoryCleanupScheduleService as Schedule
+from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
 
 
 class FailureConvergenceTests(SimpleTestCase):
@@ -70,11 +71,12 @@ class FailureConvergenceTests(SimpleTestCase):
             context={CLEANUP_REPORT_CONTEXT_KEY: {'parent_case_detail_id': 12, 'parent_attempt': 1}})
         with patch.object(Recovery, 'recover_inline_cleanup', return_value=0), \
                 patch.object(Recovery, 'reconcile_manual_cleanup_states', return_value={'pending': 0, 'resolved': 0}), \
+                patch.object(DataFactoryCleanup, 'reconcile_verified_cleanup', return_value=False), \
                 patch('src.apps.data_factory.services.recovery.execution_recovery.DataFactoryExecution.objects') as objects, \
                 patch.object(Schedule, 'validate_report_owner'), \
                 patch.object(Recovery, 'report_execution_ended', return_value=False), \
                 patch.object(Schedule, 'enqueue') as enqueue:
-            objects.filter.return_value.filter.return_value.distinct.return_value.order_by.return_value.__getitem__.return_value = [execution]
+            objects.filter.return_value.exclude.return_value.filter.return_value.distinct.return_value.order_by.return_value.__getitem__.return_value = [execution]
             result = Recovery.recover()
         self.assertEqual(result['data_factory_recovery_deferred_count'], 1)
         self.assertEqual(execution.status, 3)
@@ -87,7 +89,7 @@ class FailureConvergenceTests(SimpleTestCase):
         from src.apps.test_center.enums import TestCaseTypeEnum
         from src.apps.auto_api.selectors.querysets import ApiQuerySelector
         now = timezone.now()
-        detail = SimpleNamespace(id=12, status=1, type=TestCaseTypeEnum.API.value)
+        detail = SimpleNamespace(id=12, status=1, type=TestCaseTypeEnum.API.value, summary_data={})
         trace = SimpleNamespace(started_at=now - timedelta(seconds=5), finished_at=None,
                                 worker_name='AUTO_WORKER', summary={})
         owner = {'parent_case_detail_id': 12, 'parent_attempt': 1}
@@ -108,7 +110,7 @@ class FailureConvergenceTests(SimpleTestCase):
         from src.apps.data_factory.exceptions import DATA_FACTORY_CONFIG_INVALID
         with patch.object(DataFactoryDatasource, 'get_worker_engine', return_value=(self.engine, True)), \
                 patch.object(DataFactoryExecutionMetadata, 'resolve', side_effect=[
-                    (self.table, {}), DataFactoryError(DATA_FACTORY_CONFIG_INVALID, value=('fixture', 'DDL changed'))]):
+                    (self.table, {}), DataFactoryError(DATA_FACTORY_CONFIG_INVALID, value=('fixture：DDL changed',))]):
             with self.assertRaises(DataFactoryError):
                 Persistence.insert(self.entity, self.database, {}, prepare_payload=lambda: {'id': 1})
         with self.engine.connect() as connection:

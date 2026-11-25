@@ -124,9 +124,6 @@ class ApiTestCaseLifecycleMixin:
             data_factory_configs=case_data_factory_configs,
         )
 
-        if self.update_case_status:
-            self.api_case.status = TaskEnum.PROCEED.value
-            self.update_test_case(self.case_id, TaskEnum.PROCEED.value)
         self.api_case_result = ApiCaseExecutionResult(
             id=case_id,
             name=self.api_case.name,
@@ -142,6 +139,8 @@ class ApiTestCaseLifecycleMixin:
             config_checksum=(self.revision_selection.checksum if self.revision_selection else None),
         )
         self.trace_recorder.update_metadata(self.api_case.name, {
+            'execution_source': 'editing' if self.revision_selection is None else 'revision',
+            'editing_fingerprint': self.editing_fingerprint() if self.revision_selection is None else None,
             'project_product_id': self.api_case.project_product_id,
             'project_product_name': self.api_case.project_product.name,
             'case_revision_id': self.api_case_result.case_revision_id,
@@ -172,6 +171,10 @@ class ApiTestCaseLifecycleMixin:
                                                      list(self.get_case_detailed_queryset(self.api_case.id, None)))
             self.resource_cleanup_manager = ApiResourceExecutionManager(self.api_case, trace, self.test_setup, rules)
             self.test_setup.resource_cleanup_manager = self.resource_cleanup_manager
+
+    def editing_fingerprint(self):
+        from src.apps.auto_api.selectors.case_list_execution import ApiCaseListExecutionSelector
+        return ApiCaseListExecutionSelector.editing_fingerprints([self.case_id]).get(self.case_id)
 
     def get_trace_source_type(self) -> int:
         if self.trace_source_type is not None:

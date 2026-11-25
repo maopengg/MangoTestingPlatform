@@ -21,6 +21,7 @@ from src.interfaces.mcp.common import (
 from ..helper_parts.case_result import (
     _api_case_step_result_items,
     _case_tree,
+    _displayed_case_result,
 )
 from ..helper_parts.execution import (
     _selected_env,
@@ -46,11 +47,17 @@ def register_case_execution_tools(mcp):
 
     @mcp.tool()
     def get_api_case_resource_cleanup_results(case_id: int, trace_id: str | None = None, resource_id: int | None = None,
-                                             page: int = 1, page_size: int = 10) -> dict:
+                                             page: int = 1, page_size: int = 10,
+                                             history_page: int = 1, history_page_size: int = 10) -> dict:
         """分页查询API资源清理台账；resource_id可读取单项冻结规则和所有权证据，不返回凭据或业务响应正文。"""
         from src.apps.auto_api.selectors.resource_cleanup import ApiResourceCleanupSelector
-        return ok(ApiResourceCleanupSelector.results(user=current_user(), case_id=case_id, trace_id=trace_id, resource_id=resource_id,
-                                                     page=page, page_size=page_size))
+        result = ApiResourceCleanupSelector.results(user=current_user(), case_id=case_id, trace_id=trace_id, resource_id=resource_id,
+                                                     page=page, page_size=page_size)
+        if resource_id is not None and result['items']:
+            from src.apps.data_factory.selectors.cleanup_history import ResourceCleanupHistorySelector
+            result['cleanup_history'] = ResourceCleanupHistorySelector.for_api_resource(resource_id,
+                page=history_page, page_size=history_page_size)
+        return ok(result)
 
     @mcp.tool()
     def cleanup_api_case_resources(case_id: int, resource_id: int, preview: bool = True,
@@ -236,7 +243,14 @@ def register_case_execution_tools(mcp):
 
     @mcp.tool()
     def get_api_case_run_result(case_id: int) -> dict:
-        """查询 API case 最近一次执行结果，包括步骤和场景 result_data。"""
+        """查询当前展示版本跨环境最新完整执行结果，与页面列表一致。
+
+        版本优先级：当前预发布→当前已发布→编辑态。list_result 给出状态、精确修订、Trace、实际环境和开始时间。
+        编辑态结果不按请求头或配置指纹过滤，表示最近一次编辑态执行结论，不代表后续修改已重测。
+        execution_result 为该 Trace 的完整结果（含冻结执行步骤），缺失时为空，不借用其他版本或旧执行。
+        steps 是当前编辑配置的树，仅其中 result_data 来自同一 Trace；不要以编辑配置判断已发布修订内容。
+        无匹配结果表示待测试，不等于通过。查询历史结果请用 get_api_case_execution_trace 的精确 trace_id。
+        """
         return ok(_case_tree(case_id, include_result_data=True))
 
     @mcp.tool()
@@ -268,7 +282,10 @@ def register_case_execution_tools(mcp):
             sample_limit: int = 5,
             export_full: bool = False,
     ) -> dict:
-        """精确查询 API case 最近一次执行结果中的某一步/某场景。
+        """查询当前展示版本跨环境最新完整执行中的某一步/某场景，不回退其他版本。
+
+        版本优先级为当前预发布→当前已发布→编辑态；list_result 标明精确修订、Trace、环境和开始时间。
+        步骤和场景按当前编辑配置筛选；旧修订已删除步骤请查询精确 Trace 或 get_api_case_run_result.execution_result。
 
         json_path 支持点路径或简单 JSONPath，例如 response.json.data.result、$.response.json.data.result、response.sse_events[0]。
         返回会包含命中值类型、count、sample 和是否截断；适合统计大响应，不需要拉取完整 case tree。
@@ -308,7 +325,11 @@ def register_case_execution_tools(mcp):
 
     @mcp.tool()
     def analyze_api_case_failure(case_id: int, step_id: int | None = None, scenario_id: int | None = None) -> dict:
-        """基于最近一次执行结果分析 API case 失败原因。"""
+        """基于页面当前展示版本的跨环境最新完整执行分析失败，不借用其他版本结果。
+
+        版本优先级：当前预发布→当前已发布→编辑态。无结果不是通过；list_result 返回精确修订和 Trace 依据。
+        """
+        list_result, execution_result = _displayed_case_result(case_id)
         parameters = ApiQuerySelector.api_case_detailed_parameter().filter(case_detailed__case_id=case_id)
         if step_id is not None:
             parameters = parameters.filter(case_detailed_id=step_id)
@@ -318,14 +339,11 @@ def register_case_execution_tools(mcp):
         suggestions = []
         failure_type = "unknown"
         for parameter in parameters:
-            result_data = ExecutionResultService.latest_api_case_parameter_result(
-                case_id=case_id,
-                parameter_id=parameter.id,
-            )
+            result_data = ExecutionResultService.find_api_case_parameter_result(execution_result, parameter.id)
             error_message = result_data.get("error_message") or ""
             response = result_data.get("response") or {}
             request = result_data.get("request") or {}
-            status = parameter.status
+            status = result_data.get('status')
             if status == 1 and not error_message:
                 continue
             if error_message:
@@ -341,8 +359,9 @@ def register_case_execution_tools(mcp):
         if not evidence:
             return ok(
                 {
-                    "summary": "未发现失败场景，最近一次结果可能为成功或尚未执行",
+                    "summary": "当前展示版本未发现可分析的失败证据；无结果不代表通过",
                     "failure_type": "none",
+                    "list_result": list_result,
                     "evidence": [],
                     "suggestions": [],
                 }
@@ -351,6 +370,7 @@ def register_case_execution_tools(mcp):
             {
                 "summary": evidence[0],
                 "failure_type": failure_type,
+                "list_result": list_result,
                 "evidence": evidence,
                 "suggestions": list(dict.fromkeys(suggestions)),
             }

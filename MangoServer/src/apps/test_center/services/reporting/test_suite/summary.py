@@ -8,6 +8,20 @@ from src.apps.test_center.services.reporting.test_suite.detail_result import Tes
 class TestSuiteSummaryService:
 
     @staticmethod
+    def public_status(status):
+        return TaskEnum.FAIL.value if status == TaskEnum.INFRASTRUCTURE_BLOCKED.value else status
+
+    @staticmethod
+    def public_counts(counts):
+        result = dict(counts)
+        for prefix in ('', 'api_', 'ui_', 'pytest_'):
+            key = f'{prefix}blocked'
+            if result.get(key):
+                result[f'{prefix}fail'] = result.get(f'{prefix}fail', 0) + result[key]
+                result[key] = 0
+        return result
+
+    @staticmethod
     def _excluded(row):
         return bool(row.get('is_excluded', False) if isinstance(row, dict) else getattr(row, 'is_excluded', False))
 
@@ -27,6 +41,7 @@ class TestSuiteSummaryService:
 
     @staticmethod
     def conclusion_status(status, counts, total):
+        status = TestSuiteSummaryService.public_status(status)
         if status in (TaskEnum.STAY_BEGIN.value, TaskEnum.PROCEED.value):
             return status
         if counts.get('proceed') or counts.get('stay_begin'):
@@ -40,7 +55,7 @@ class TestSuiteSummaryService:
         if counts.get('fail'):
             return TaskEnum.FAIL.value
         if counts.get('blocked'):
-            return TaskEnum.INFRASTRUCTURE_BLOCKED.value
+            return TaskEnum.FAIL.value
         if counts.get('warning'):
             return TaskEnum.WARNING.value
         if counts.get('stopped'):
@@ -90,10 +105,8 @@ class TestSuiteSummaryService:
             blocked = (getter('status') == TaskEnum.INFRASTRUCTURE_BLOCKED.value
                        or TestSuiteInfrastructureService.is_blocked(getter('summary_data', {})))
             if blocked:
-                # 局部步骤通过不能代替完整执行结论；已确认的业务失败仍保留。
-                failed = min(max(int(getter('fail', 0) or 0), 0), case_sum)
-                result['fail'] += failed
-                result['blocked'] += max(case_sum - failed, 1 if not failed else 0)
+                # 历史受阻值仍可读取，但未完成执行统一计为失败，原快照不改写。
+                result['fail'] += case_sum
                 continue
             success = max(int(getter('success', 0) or 0), 0)
             fail = max(int(getter('fail', 0) or 0), 0)
@@ -112,7 +125,7 @@ class TestSuiteSummaryService:
 
     @staticmethod
     def completed_execution_count(counts: dict) -> int:
-        # 平台受阻已终结，不能继续计入运行中，也不能冒充通过或业务失败。
+        # 历史 blocked 字段只为旧快照兼容，新增统计不再产生此分类。
         return sum(counts[key] for key in ('success', 'fail', 'warning', 'stopped', 'blocked'))
 
     @classmethod
@@ -196,7 +209,7 @@ class TestSuiteSummaryService:
         if not details:
             snapshot = TestSuite.objects.filter(id=test_suite_id).values_list('retained_summary', flat=True).first()
             if snapshot:
-                return snapshot['counter_data']
+                return cls.public_counts(snapshot['counter_data'])
         rows = []
         for detail in details:
             row = {

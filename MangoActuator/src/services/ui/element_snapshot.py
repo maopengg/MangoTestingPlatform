@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import asyncio
 import hashlib
 from typing import Any
@@ -40,6 +41,7 @@ class UiElementSnapshotReporter:
                 name=f'ui-element-snapshot-{cls._element_id(element_model)}',
             )
         except Exception as error:
+            ActuatorSystemErrorReporter.schedule(error, 'services/ui/element_snapshot:schedule_success_snapshot')
             log.warning(f'UI元素基线后台任务创建失败，不影响执行，元素：{element_model.name}，错误：{error}')
             return
         cls._background_tasks.add(task)
@@ -55,6 +57,7 @@ class UiElementSnapshotReporter:
         try:
             error = task.exception()
         except Exception as error:
+            ActuatorSystemErrorReporter.schedule(error, 'services/ui/element_snapshot:_finish_background_task')
             log.warning(f'UI元素基线后台任务状态获取失败，不影响执行，错误：{error}')
             return
         if error:
@@ -93,6 +96,7 @@ class UiElementSnapshotReporter:
                 locator_engine['persisted_locator_version'] = response.get('locator_version')
             element_result.locator_engine = locator_engine
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/element_snapshot:report_runtime_result')
             log.warning(f'UI元素运行信息回写失败，不影响执行，元素：{element_model.name}，错误：{error}')
 
     @classmethod
@@ -132,6 +136,7 @@ class UiElementSnapshotReporter:
             }
             await cls._report_success_heal_record(page, page_steps_model, element_model, element_result)
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/element_snapshot:report_ambiguous_success_heal_record')
             log.warning(f'UI元素定位不唯一修复建议生成失败，不影响执行，元素：{element_model.name}，错误：{error}')
 
     @classmethod
@@ -201,6 +206,7 @@ class UiElementSnapshotReporter:
             payload['locator_hash'] = cls._hash(f"{payload.get('exp')}|{payload.get('loc')}|{payload.get('sub')}")
             await HTTP.ui_element.save_snapshot(payload)
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/element_snapshot:report_success_snapshot')
             log.warning(f'UI元素基线快照采集失败，不影响执行，元素：{element_model.name}，错误：{error}')
         await cls._report_success_heal_record(page, page_steps_model, element_model, element_result)
 
@@ -269,6 +275,7 @@ class UiElementSnapshotReporter:
                     'trigger': engine_attempt.get('trigger') or {},
                 }
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/element_snapshot:report_failed_heal_record')
             log.warning(f'UI元素失败修复记录回传失败，不影响执行，元素：{element_model.name}，错误：{error}')
 
     @classmethod
@@ -359,6 +366,7 @@ class UiElementSnapshotReporter:
                     'auto_applied': data.get('auto_applied', False),
                 }
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/element_snapshot:_report_success_heal_record')
             log.warning(f'UI元素成功自愈记录回传失败，不影响执行，元素：{element_model.name}，错误：{error}')
 
     @staticmethod
@@ -454,7 +462,8 @@ class UiElementSnapshotReporter:
                     'exp': ElementExpEnum.LOCATOR.value,
                     'loc': loc,
                 })
-            except Exception:
+            except Exception as _unexpected_error:
+                await ActuatorSystemErrorReporter.report(_unexpected_error, 'services/ui/element_snapshot:_locator_from_result')
                 locator = page.locator(str(loc))
         return locator.nth(result_element.sub - 1) if result_element.sub else locator.first
 
@@ -481,7 +490,8 @@ class UiElementSnapshotReporter:
             return {}
         try:
             return locator_engine.get_last_attempt(element_id) or {}
-        except Exception:
+        except Exception as _unexpected_error:
+            ActuatorSystemErrorReporter.schedule(_unexpected_error, 'services/ui/element_snapshot:_get_engine_attempt')
             return {}
 
     @classmethod

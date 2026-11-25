@@ -43,6 +43,8 @@ export interface CoverageModuleOverview extends CoverageOverviewCounts {
   is_leaf: boolean
   scan_completed: boolean
   inventory_completed: boolean
+  inventory_status: 'completed' | 'review' | 'pending'
+  inventory_reason: string
   inventory_scan_ids: number[]
   latest_scan_id: number | null
   applied_scan_id: number | null
@@ -50,7 +52,7 @@ export interface CoverageModuleOverview extends CoverageOverviewCounts {
 }
 
 export interface CoverageOverview {
-  project_inventory_summary: { leaf_count: number; inventoried_count: number; uninventoried_count: number; inventory_rate: number | null }
+  project_inventory_summary: { leaf_count: number; inventoried_count: number; uninventoried_count: number; inventory_review_count?: number; inventory_rate: number | null }
   project_scan_summary?: { leaf_count: number; scanned_count: number; unscanned_count: number }
   summary: CoverageOverviewCounts & {
     module_count: number

@@ -21,6 +21,12 @@ class ToolRegistry:
 
 
 class ApiCaseMcpErrorTests(SimpleTestCase):
+    def setUp(self):
+        patcher = patch('src.interfaces.mcp.tools.api.helper_parts.case_result._displayed_case_result',
+            return_value=({'status': None, 'trace_id': None}, {}))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def test_case_tree_reports_actual_product_owner_permissions(self):
         helper = 'src.interfaces.mcp.tools.api.helper_parts.case_result'
         for user_id, is_owner, has_owner in ((4, True, True), (5, False, True), (4, False, False)):

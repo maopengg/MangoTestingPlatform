@@ -87,3 +87,16 @@ class DataFactoryExecutionBatchCleanupSerializer(serializers.Serializer):
 
     def validate_execution_ids(self, value):
         return list(dict.fromkeys(value))
+
+
+class DataFactoryCleanupHistoryQuerySerializer(serializers.Serializer):
+    history_page = serializers.IntegerField(min_value=1, default=1)
+    history_page_size = serializers.IntegerField(min_value=1, max_value=50, default=10)
+
+
+class DataFactoryCompensationSerializer(serializers.Serializer):
+    execution_id = serializers.IntegerField(min_value=1)
+    compensation = serializers.DictField()
+    preview = serializers.BooleanField(default=True)
+    preview_token = serializers.CharField(required=False, allow_blank=True, max_length=256)
+    confirm_text = serializers.CharField(required=False, allow_blank=True, max_length=256)

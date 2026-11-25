@@ -10,7 +10,7 @@ DATA_FACTORY_PROJECT_PRODUCT_ENTITY_INVALID = ErrorDefinition(code=34002, messag
 DATA_FACTORY_MODULE_ENTITY_INVALID = ErrorDefinition(code=34003, message='实体不属于当前模块')
 DATA_FACTORY_ENTITY_NAME_TEMPLATE_DUPLICATED = ErrorDefinition(code=34004, message='当前实体下已存在模板名称：{}')
 DATA_FACTORY_FIELD_INVALID = ErrorDefinition(code=34005, message='字段覆盖规则格式错误：{}')
-DATA_FACTORY_CONFIG_INVALID = ErrorDefinition(code=34006, message='输出配置格式错误：{}')
+DATA_FACTORY_CONFIG_INVALID = ErrorDefinition(code=34006, message='数据工厂配置校验失败：{}')
 DATA_FACTORY_FIELD_DEPENDENCY_ENTITY_REQUIRED = ErrorDefinition(
     code=34195, message='字段“{}”的依赖配置不完整：缺少依赖实体 ID（dependency_entity_id），请选择依赖实体后保存',
 )

@@ -19,7 +19,7 @@ WORKDIR /app
 
 FROM core_runtime AS standard
 COPY requirements/linux.txt requirements/pytest.txt requirements/linux-local.txt ./requirements/
-COPY local_packages/mangotools-2.0.9-py3-none-any.whl local_packages/mangoautomation-2.1.0-py3-none-any.whl ./local_packages/
+COPY local_packages/mangotools-2.0.10-py3-none-any.whl local_packages/mangoautomation-2.1.0-py3-none-any.whl ./local_packages/
 RUN python -m pip install --break-system-packages --no-cache-dir \
     -r requirements/linux.txt \
     -r requirements/pytest.txt \

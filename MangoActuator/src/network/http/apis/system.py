@@ -3,6 +3,7 @@
 # @Description: 系统级接口 —— 登录 / 注册 / 文件上传下载
 # @Time   : 2023-08-28 21:23
 # @Author : 毛鹏
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import asyncio
 import os.path
 import traceback
@@ -109,6 +110,7 @@ class SystemApi(BaseApi):
         try:
             config_values = await self.get_config_values(config_keys)
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'network/http/apis/system:refresh_runtime_config')
             log.error(f'批量获取系统配置失败，将回退单项获取，错误：{error}')
             config_values = {}
 
@@ -118,6 +120,7 @@ class SystemApi(BaseApi):
             try:
                 value = await self.get_config_value(key)
             except Exception as error:
+                await ActuatorSystemErrorReporter.report(error, 'network/http/apis/system:get_value')
                 log.error(f'获取系统配置失败，key={key}，错误：{error}')
                 return default
             return default if value is None else value
@@ -263,6 +266,7 @@ class SystemApi(BaseApi):
         except ToolsError:
             raise
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'network/http/apis/system:download_file_by_id')
             raise ToolsError(*ERROR_MSG_0003) from error
 
     async def download_file_by_id_isolated(self, file_id: int | str) -> str:
@@ -315,6 +319,7 @@ class SystemApi(BaseApi):
                 )
             response = HttpApiResponse(**resp) if isinstance(resp, dict) else resp
         except Exception as e:
+            await ActuatorSystemErrorReporter.report(e, 'network/http/apis/system:upload_file')
             if isinstance(e, HttpApiError) and e.status_code in {401, 403}:
                 if retry < 2 and await self._refresh_upload_auth():
                     return await self.upload_file(
@@ -385,6 +390,7 @@ class SystemApi(BaseApi):
             self.client = get_client()
             return True
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'network/http/apis/system:_refresh_upload_auth')
             log.error(f'上传文件重新登录异常：{type(error).__name__}')
             return False
 
@@ -483,6 +489,7 @@ class SystemApi(BaseApi):
                     api_base_url = auth_base_url
                     break
                 except Exception as error:
+                    await ActuatorSystemErrorReporter.report(error, 'network/http/apis/system:login')
                     last_error = error
             if response is None:
                 raise last_error
@@ -502,6 +509,7 @@ class SystemApi(BaseApi):
                 return await self.login(username, password, retry + 1, is_retry)
             return response
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'network/http/apis/system:login')
             if settings.IS_OPEN and retry < 100:
                 await asyncio.sleep(3)
                 log.info(f'开始登录重试：{retry}，{error}')
@@ -523,7 +531,9 @@ class SystemApi(BaseApi):
                     )
                     return HttpApiResponse(**resp) if isinstance(resp, dict) else resp
                 except Exception as error:
+                    await ActuatorSystemErrorReporter.report(error, 'network/http/apis/system:user_register')
                     last_error = error
             raise last_error
         except Exception as e:
+            await ActuatorSystemErrorReporter.report(e, 'network/http/apis/system:user_register')
             return HttpApiResponse(code=-300, msg=str(e))

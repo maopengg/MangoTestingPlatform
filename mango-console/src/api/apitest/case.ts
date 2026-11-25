@@ -28,6 +28,23 @@ export function getApiCaseConfigurationSummary(caseIds: number[]) {
   })
 }
 
+export interface ApiCaseVersionResult {
+  publication_status: 'unpublished' | 'prepublished' | 'published'
+  label: string
+  status: number | null
+  test_env: number | null
+  phase?: string | null
+  started_at: string | null
+  trace_id: string | null
+}
+
+export function getApiCaseVersionResults(id: number) {
+  return get<ApiCaseVersionResult[]>({
+    url: '/api/case/results/versions',
+    data: () => ({ id }),
+  })
+}
+
 export function getApiCaseConfigurationDetails(id: number, page: number, pageSize: number) {
   return get({
     url: '/api/case/configuration/details',
@@ -84,7 +101,8 @@ export function getApiCaseRun(
   test_env: number | string,
   caseSort: number | string | null,
   revisionId?: number,
-  releaseId?: number | null
+  releaseId?: number | null,
+  versionToken?: string
 ) {
   return get({
     url: '/api/case/test',
@@ -95,6 +113,7 @@ export function getApiCaseRun(
         case_sort: caseSort,
         revision_id: revisionId,
         release_id: releaseId,
+        version_token: versionToken,
       }
     },
   })

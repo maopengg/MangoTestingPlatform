@@ -13,7 +13,7 @@ from src.apps.auto_api.schemas.resource_cleanup import (
 )
 from src.apps.auto_api.services.resource_cleanup.resource_cleanup import ApiResourceCleanupService as Service, ApiResourceExecutionManager as Manager, ApiResourceCleanupRetryService as Retry
 from src.apps.auto_api.services.resource_cleanup.resource_cleanup_io import ApiResourceCleanupIO as IO
-from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as ES
+from src.apps.data_factory.services.datasource.elasticsearch import ElasticsearchDatasourceService as ES
 from src.apps.data_factory.services.governance.datasource_governor import DatasourceGovernorService as Governor
 
 
@@ -169,6 +169,9 @@ class ApiResourceRuleTests(SimpleTestCase):
 
 class ApiResourceObservationTests(SimpleTestCase):
     def setUp(self):
+        history = patch("src.apps.data_factory.services.cleanup.cleanup_history.ResourceCleanupHistoryService.append")
+        history.start()
+        self.addCleanup(history.stop)
         self.rule = ApiResourceCleanupRule.model_validate(rule_data())
         self.proof = proof_data()
         self.record = SimpleNamespace(id=1, cleanup_token='f' * 32)
@@ -286,6 +289,9 @@ class ApiResourceObservationTests(SimpleTestCase):
 
 class ApiResourceLifecycleTests(SimpleTestCase):
     def setUp(self):
+        history = patch("src.apps.data_factory.services.cleanup.cleanup_history.ResourceCleanupHistoryService.append")
+        history.start()
+        self.addCleanup(history.stop)
         self.rule = ApiResourceCleanupRule.model_validate(rule_data())
         self.proof = proof_data()
         self.record = SimpleNamespace(id=5, case_id=1, step_id=10, parameter_id=30, test_env=0,

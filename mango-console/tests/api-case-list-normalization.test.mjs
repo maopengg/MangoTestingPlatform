@@ -208,11 +208,11 @@ test('batch submission validates frozen rows despite refreshed list and rejects 
 test('single execution notice cannot unlock another write while the original request is pending', async () => {
   const pending=deferred(),running=ref(false),requests=[],timers=[],cleared=[]
   const run=method('caseRun',{userStore:{selected_environment:0},Message:{success(){},error(){},info(){}},caseRunning:running,pageVersion:1,pageActive:ref(true),runNoticeTimer:null,setTimeout:fn=>{timers.push(fn);return 1},clearTimeout:id=>cleared.push(id),document:{visibilityState:'visible'},getApiCaseRun:(...args)=>{requests.push(args);return pending.promise},doRefresh(){}},path.join(base,'index.vue'))
-  const current=run(row())
+  const current=run({...row(),list_result:{version_token:'published:101'}})
   timers[0]()
   assert.equal(running.value,true)
   await run(row(2))
-  assert.deepEqual(requests,[[1,0,null]])
+  assert.deepEqual(requests,[[1,0,null,undefined,undefined,'published:101']])
   pending.resolve({msg:'ok'});await current
   assert.equal(running.value,false)
   assert.deepEqual(cleared,[1])

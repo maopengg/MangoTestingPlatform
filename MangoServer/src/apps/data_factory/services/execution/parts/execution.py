@@ -103,7 +103,7 @@ class DataFactoryRunnerExecutionMixin:
                 execution.cleanup_status = cls.resolve_execution_cleanup_status(execution)
                 execution.save()
                 cls.sync_execution_cleanup_todo(execution)
-                return {
+                result = {
                     "execution_id": execution.id,
                     "execution_no": execution.execution_no,
                     "context": execution.context,
@@ -119,6 +119,23 @@ class DataFactoryRunnerExecutionMixin:
                 execution.save()
                 cls.cleanup_failed_execution(execution, error)
                 raise
+
+            # 调试入口没有 Case 后置负责接棒；自动策略必须在返回前走正式同步清理。
+            # 放在创建异常处理之外，清理失败不冒充创建失败，也不再次发送清理请求。
+            if execution.cleanup_status == DataFactoryCleanupStatusEnum.NOT_CLEANED.value:
+                try:
+                    DataFactoryCleanupScheduleService.execute(execution, force_cleanup=False)
+                except Exception:
+                    from src.common.logging import log
+                    try:
+                        DataFactoryCleanupScheduleService.record_wait_failure(execution.id)
+                    except Exception as persistence_error:
+                        log.system.error('独立调试清理失败状态保存未完成，execution_id=%s exception_type=%s',
+                                         execution.id, type(persistence_error).__name__)
+                    raise
+                execution.refresh_from_db(fields=['cleanup_status'])
+            result['cleanup_status'] = execution.cleanup_status
+            return result
 
     @classmethod
     @DataFactoryExecutionMetadata.scope()
@@ -335,7 +352,7 @@ class DataFactoryRunnerExecutionMixin:
         DataFactoryDatasourceResolver.require_binding_permission(binding, write=True)
         database = DatasourceTargetService.resolve(binding, schema_name=entity.schema_name)
 
-        fields = list(entity.datafactoryfield_set.all().order_by('sort', 'id'))
+        fields = DataFactoryExecutionMetadata.fields(entity)
         merged_overrides = {**(template.field_overrides or {}), **overrides}
         fields = cls.build_effective_fields(fields, merged_overrides)
         cls.resolve_dependencies(fields, execution, context, test_object_id, visiting, test_data)

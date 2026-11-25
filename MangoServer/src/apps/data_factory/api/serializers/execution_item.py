@@ -10,6 +10,7 @@ from src.apps.data_factory.models import DataFactoryExecutionItem, SqlExecutionR
 from src.apps.data_factory.services.execution.execution_snapshot import get_insert_snapshot
 from src.apps.test_center.formatters.related import format_data_source
 from src.common.validators.serializer_fields import RelatedObjectField
+from src.apps.data_factory.formatters import cleanup_diagnostics
 
 
 class DataFactoryExecutionItemListSerializer(serializers.ListSerializer):
@@ -27,6 +28,17 @@ class DataFactoryExecutionItemListSerializer(serializers.ListSerializer):
 
 
 class DataFactoryExecutionItemSerializer(serializers.ModelSerializer):
+    cleanup_resources = serializers.SerializerMethodField(read_only=True)
+
+    @staticmethod
+    def get_cleanup_resources(obj):
+        return {key: value for key, value in (obj.cleanup_resources or {}).items() if key != 'cleanup_history'}
+
+    cleanup_diagnostics = serializers.SerializerMethodField(read_only=True)
+
+    @staticmethod
+    def get_cleanup_diagnostics(obj):
+        return cleanup_diagnostics(obj.cleanup_resources)
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     cleanup_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
@@ -123,6 +135,15 @@ class DataFactoryExecutionItemSerializer(serializers.ModelSerializer):
 
 
 class DataFactoryExecutionItemSerializerC(serializers.ModelSerializer):
+    cleanup_resources = serializers.SerializerMethodField(read_only=True)
+
+    @staticmethod
+    def get_cleanup_resources(obj):
+        return DataFactoryExecutionItemSerializer.get_cleanup_resources(obj)
+
+    cleanup_diagnostics = serializers.SerializerMethodField(read_only=True)
+
+    get_cleanup_diagnostics = staticmethod(DataFactoryExecutionItemSerializer.get_cleanup_diagnostics)
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     cleanup_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)

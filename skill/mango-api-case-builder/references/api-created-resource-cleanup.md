@@ -12,14 +12,14 @@ Schema 和真实工具均支持时才能使用。缺参或返回不支持，记�
 
 每种资源列明：创建方、触发步骤、数据源、租户/创建人来源、精确标识、关联关系、异步副作用及清理方式。工厂资源与 API 资源分别登记，不伪造工厂执行记录。
 
-以项目为例，下列是不同标识，不能互相替代：
+以下标识用途不同，应分别从目标契约确认：
 
 | 作用 | SQL/响应来源 | 清理用途 |
 | --- | --- | --- |
-| 自增主键 | `project._id`，数据库生成 | 锁定 SQL 根行；禁止预填或随机生成 |
-| 业务 ID | `project.id` / 响应 `data.projectId` | 关联 SQL 子表及 ES 项目身份 |
-| ES 文档 ID | `project.group_id` / 响应 `data.groupId` | 精确定位 ES `_id`，不是 SQL `_id` |
-| 项目业务版本 | SQL `version` / 响应 `data.projectVersion` | 与 ES 项目元素内版本比对 |
+| 自增主键 | 目标表自增字段，由数据库生成 | 锁定 SQL 根行；禁止预填或随机生成 |
+| 业务 ID | 业务唯一字段及对应响应路径 | 关联 SQL 子表及 ES 业务身份 |
+| ES 文档 ID | 文档标识字段及对应响应路径 | 精确定位 ES `_id`，不是 SQL `_id` |
+| 业务版本 | 根行版本及对应响应路径 | 与 ES 中的业务版本比对 |
 | ES 并发版本 | ES `_seq_no`、`_primary_term` | 平台条件删除，不能由 Case 编造 |
 
 实际表、字段、响应路径和 ES 映射必须从目标环境 schema、匹配运行版本的写入/同步代码及获准精确观测确认。示例不是其他产品的默认规则。共享前置只读复用，不加入清理目标。
@@ -33,34 +33,32 @@ Schema 和真实工具均支持时才能使用。缺参或返回不支持，记�
 ```json
 [
   {
-    "key": "project_seed",
+    "key": "record_seed",
     "trigger_step_key": "step-101",
     "api_info_id": 201,
     "sql_datasource_alias_id": 1,
     "es_datasource_alias_id": 2,
-    "table": "project",
+    "table": "example_record",
     "primary_key": "_id",
     "business_id_field": "id",
-    "document_id_field": "group_id",
+    "document_id_field": "document_id",
     "version_field": "version",
     "tenant_field": "tenant_id",
-    "creator_field": "create_employee_id",
+    "creator_field": "creator_id",
     "unique_field": "name",
-    "request_unique_path": "basicInfo.name",
+    "request_unique_path": "name",
     "tenant_cache_key": "current_tenant_id",
-    "creator_cache_key": "current_employee_id",
-    "response_id_path": "data.projectId",
-    "response_document_id_path": "data.groupId",
-    "response_version_path": "data.projectVersion",
-    "index_template": "example_project_{tenant}",
+    "creator_cache_key": "current_creator_id",
+    "response_id_path": "data.recordId",
+    "response_document_id_path": "data.documentId",
+    "response_version_path": "data.recordVersion",
+    "index_template": "example_record_{tenant}",
     "es_tenant_path": "tenantId",
-    "es_business_id_path": "projects[].projectId",
-    "es_document_id_path": "groupId",
-    "es_version_path": "projects[].projectVersion",
+    "es_business_id_path": "records[].recordId",
+    "es_document_id_path": "documentId",
+    "es_version_path": "records[].recordVersion",
     "children": [
-      {"table": "project_contract_relation", "foreign_key": "project_id", "root_field": "id", "tenant_field": "tenant_id", "max_rows": 1000},
-      {"table": "field_value", "foreign_key": "business_id", "root_field": "id", "tenant_field": "tenant_id", "max_rows": 1000},
-      {"table": "project_member", "foreign_key": "project_id", "root_field": "id", "tenant_field": "tenant_id", "max_rows": 1000}
+      {"table": "example_record_child", "foreign_key": "record_id", "root_field": "id", "tenant_field": "tenant_id", "max_rows": 1000}
     ],
     "observation_seconds": 15,
     "poll_seconds": 1
@@ -68,18 +66,18 @@ Schema 和真实工具均支持时才能使用。缺参或返回不支持，记�
 ]
 ```
 
-请求体对应字段使用 `${{api_resource_project_seed}}`，例如 `body_config` 中 `basicInfo.name` 引用该表达式。平台在触发步骤前提供本轮 `AUTO_...` 名称；不要自己固定名称，不为了复制名称额外写前置函数。缓存键、请求路径要与真实请求体及身份上下文一致，不能把示例名字当现成变量。
+请求体对应字段使用 `${{api_resource_record_seed}}`，例如 `body_config` 中 `name` 引用该表达式。平台在触发步骤前提供本轮 `AUTO_...` 名称；不要自己固定名称，不为了复制名称额外写前置函数。缓存键、请求路径要与真实请求体及身份上下文一致，不能把示例名字当现成变量。
 
-`children` 按删除顺序排列，均以精确根身份加租户定位；核实真实外键、业务引用和行数上限，不能仅凭表名列三张表就认为完整。上限按真实场景评估，不能遇到超限就无依据扩大。已移除表应根据真实结构迁移 Case 配置，例如确认 `project_field_value` 已迁为 `field_value.business_id` 后再修正，不能对所有产品无条件替换。
+`children` 按删除顺序排列，均以精确根身份加租户定位；核实真实外键、业务引用和行数上限，不能凭表名推断关联已列全。上限按真实场景评估，不能遇到超限就无依据扩大。表结构变更后，核实真实关联再更新对应 Case 的清理规则。
 
 更新 `resource_cleanup` 是完整列表替换：先回读原列表，保留其他合法规则，不只提交本次新增项；不传表示保留，`[]` 会清空配置。保存后回读 Case，核对步骤、规则、请求唯一名称及原业务断言全部保留。
 
 ### ES 数组的边界
 
-- 对象路径用 `owner.id`，数组身份用 `projects[].projectId`，不是 `projects.projectId` 或 `projects[0].projectId`。
-- 当前仅支持首段的一层数组；业务 ID 与业务版本必须在同一数组，如 `projects[].projectVersion`。
-- 整份文档删除要求数组恰好包含一个本轮对象。数组空、多元素、夹带其他项目、身份/版本不匹配均拒绝；不能写成“找到一个匹配元素即可删整文档”。共享多项目文档需要其他已验证的安全能力，不能关闭归属校验绕过。
-- `sourceVersion` 不自动等于项目版本；按实际同步代码选择对应字段。平台仍验证精确索引 UUID、文档 ID、租户、业务身份/版本及条件删除版本。
+- 对象路径用 `owner.id`，数组身份用 `records[].recordId`，不是 `records.recordId` 或 `records[0].recordId`。
+- 当前仅支持首段的一层数组；业务 ID 与业务版本必须在同一数组，如 `records[].recordVersion`。
+- 整份文档删除要求数组恰好包含一个本轮对象。数组空、多元素、夹带其他对象、身份/版本不匹配均拒绝；不能写成“找到一个匹配元素即可删整文档”。共享多对象文档需要其他已验证的安全能力，不能关闭归属校验绕过。
+- `sourceVersion` 不自动等于业务版本；按实际同步代码选择对应字段。平台仍验证精确索引 UUID、文档 ID、租户、业务身份/版本及条件删除版本。
 
 ## 4. 负向创建与重复名称怎么写
 
@@ -91,7 +89,7 @@ Schema 和真实工具均支持时才能使用。缺参或返回不支持，记�
 - 明确拒绝且没有任何创建标识：平台在完整观察窗口核查没有本轮新增 SQL。没有产生资源时，不宣称对一个未知 ES 文档做过回查；结合业务写入契约判断是否仍有未覆盖副作用。
 - 超时、5xx、部分标识或拒绝后发现新增行：保留待核查/清理失败证据，不能伪装成“没有创建”，不重复发送创建请求碰运气。
 
-重复名称测试需要两个独立步骤和两条规则：先建 `project_seed`；第二规则使用新 `key=project_duplicate`、真实第二步骤 ID，并配置 `"name_source_key": "project_seed"`。第二请求名称引用 `${{api_resource_project_duplicate}}`，平台复用同执行前序资源名称；两个规则的目标数据源、根表、身份字段和租户来源保持一致。第二请求意外成功时单独登记，按逆序清理两个项目；不接管其他执行或共享同名行，不把“创建被允许”改成业务通过。
+重复名称测试需要两个独立步骤和两条规则：先建 `record_seed`；第二规则使用新 `key=record_duplicate`、真实第二步骤 ID，并配置 `"name_source_key": "record_seed"`。第二请求名称引用 `${{api_resource_record_duplicate}}`，平台复用同执行前序资源名称；两个规则的目标数据源、根表、身份字段和租户来源保持一致。第二请求意外成功时单独登记，按逆序清理本轮创建的两条记录；不接管其他执行或共享同名行，不把“创建被允许”改成业务通过。
 
 ## 5. 执行、清理与验收
 

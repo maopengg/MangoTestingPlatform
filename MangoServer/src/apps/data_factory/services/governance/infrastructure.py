@@ -93,12 +93,37 @@ class DatasourceInfrastructureService:
         import uuid
         import traceback
         from src.common.logging import log
+        from django.conf import settings
+        from src.apps.data_factory.services.datasource.data_source_error import DataSourceErrorService
         reference = uuid.uuid4().hex
         frames = '\n'.join(f'{frame.filename}:{frame.lineno} {frame.name}'
                            for frame in traceback.extract_tb(error.__traceback__))
         # 未知驱动异常可能把SQL参数或凭据放进异常正文，只记录类型和真实调用位置。
-        log.system.error('event=datasource_internal_error reference=%s stage=%s exception_type=%s traceback=%s',
-                         reference, stage, type(error).__name__, frames)
+        service = settings.MANGO_SERVICE_NAME
+        number = DataSourceErrorService.server_error_number(error)
+        sqlstate = None
+        current, seen = error, set()
+        while isinstance(current, BaseException) and id(current) not in seen:
+            seen.add(id(current))
+            state = getattr(current, 'sqlstate', None) or getattr(current, 'pgcode', None)
+            if isinstance(state, str) and len(state) == 5 and state.isascii() and state.isalnum():
+                sqlstate = state
+                break
+            current = getattr(current, 'orig', None) or current.__cause__
+        safe_trace = f'driver_error_number={number} sqlstate={sqlstate}\n{frames}'
+        log.system.error('event=datasource_internal_error reference=%s service=%s stage=%s '
+                         'exception_type=%s driver_error_number=%s sqlstate=%s traceback=%s',
+                         reference, service, stage, type(error).__name__, number, sqlstate, frames)
+        from src.apps.system.services.runtime_center.system_error_event import SystemErrorEventService
+        from src.common.enums.system_error import SystemErrorEventSource
+        try:
+            source = next((key for key, name in SystemErrorEventService.SOURCE_SERVICE_MAP.items()
+                           if name == service), SystemErrorEventSource.HTTP)
+            SystemErrorEventService.record(service_name=service, source=source,
+                request_path=f'execution/{stage}', exception_type=type(error).__name__,
+                message=f'执行内部异常，关联编号 {reference}', trace=safe_trace)
+        except Exception:
+            log.system.warning('执行内部异常登记失败：reference=%s', reference)
         return reference
 
     @staticmethod

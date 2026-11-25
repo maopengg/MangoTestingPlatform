@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import ts from 'typescript'
 import { parse } from '@vue/compiler-sfc'
+import { computed } from 'vue'
 
 const source = readFileSync(new URL('../../../../../src/views/apitest/case/details/index.vue', import.meta.url), 'utf8')
 const script = parse(source).descriptor.scriptSetup.content
@@ -65,7 +66,7 @@ test('case execution still uses the selected execution environment', async () =>
     clearAssertionVerifyResults: noop,
     startCaseRunLoadingLimit: noop,
     stopCaseRunLoadingLimit: noop,
-    syncCaseRunRefreshByRows: noop,
+    refreshCaseRunStatusByStep: async () => false,
     caseSteps: { value: [] },
     requests: { capture: () => () => true },
     saveStepDebugContextId: noop,
@@ -78,4 +79,32 @@ test('case execution still uses the selected execution environment', async () =>
   })
   await run(null)
   assert.deepEqual(calls, [[2014, 3, null, 4205, 3549]])
+})
+
+test('result caption names its frozen revision and actual start, not its later save time', () => {
+  const label = loadFunction('latestScenarioExecutionLabel', {
+    computed,
+    latestExecutionResultData: { test_time: '2026-11-18 17:00:45' },
+    selectedExecutionResultSummary: { value: { revision_id: 12457, test_env: 0,
+      test_env_name: '测试环境', create_time: '2026-11-18 17:01:00' } },
+    selectedRuntimeResultOutdated: { value: false },
+    getLatestScenarioTestTime: () => '', formatEnvironmentText: () => '测试环境',
+  })
+  assert.equal(label.value, '修订 #12457 · 执行开始：2026-11-18 17:00:45 · 测试环境')
+})
+
+test('missing result body still retains the exact result ID and Trace for diagnosis', async () => {
+  const summary = { value: null }, trace = { value: '' }
+  let cleared = false
+  const refresh = loadFunction('refreshSelectedRuntimeResult', {
+    nextExecutionResultLoadToken: () => 1, isCurrentExecutionResultLoad: () => true,
+    getLatestCaseExecutionResult: async () => ({ summary: { id: 44, trace_id: 'trace-example' }, resultData: null }),
+    selectedExecutionResultSummary: summary, lastTraceId: trace,
+    clearDisplayedRuntimeResults: () => { cleared = true },
+    applyLatestExecutionResultToSnapshot: () => assert.fail('must not reuse stale result data'),
+  })
+  await refresh(true)
+  assert.deepEqual(summary.value, { id: 44, trace_id: 'trace-example' })
+  assert.equal(trace.value, 'trace-example')
+  assert.equal(cleared, true)
 })

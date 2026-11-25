@@ -18,8 +18,8 @@ class CleanupScheduleTests(SimpleTestCase):
     def setUp(self):
         self.lease = SimpleNamespace(task_id=3, payload={'execution_id': 7, 'parent_case_detail_id': 17,
                                                        'parent_attempt': 1}, progress={}, generation=0, recovered=False)
-        self.execution = SimpleNamespace(cleanup_status=0, cleanup_time=None, save=Mock())
-        self.item = SimpleNamespace(id=8, cleanup_status=0)
+        self.execution = SimpleNamespace(id=7, cleanup_status=0, cleanup_time=None, save=Mock())
+        self.item = SimpleNamespace(id=8, cleanup_status=0, cleanup_resources={'sql_cleaned': True})
         patches = [
             patch.object(Tasks, 'claim_cleanup_task', return_value=self.lease),
             patch.object(Tasks, 'finish_cleanup_step', return_value=True),
@@ -44,6 +44,15 @@ class CleanupScheduleTests(SimpleTestCase):
         self.mocks[-2].get.return_value = self.execution
         self.mocks[-2].filter.return_value.first.return_value = self.execution
         self.mocks[-1].select_related.return_value.filter.return_value.order_by.return_value = [self.item]
+        self.mocks[-1].select_for_update.return_value.filter.return_value = [self.item]
+        self.mocks[5].side_effect = lambda item: setattr(item, 'cleanup_status', 1)
+        for guard in (
+            patch('src.apps.data_factory.services.cleanup.cleanup_schedule.transaction.atomic', side_effect=lambda: nullcontext()),
+            patch('src.apps.data_factory.services.cleanup.cleanup_schedule.transaction.on_commit'),
+            patch.object(CleanupPersistenceService, 'lock_execution', return_value=self.execution),
+        ):
+            guard.start()
+            self.addCleanup(guard.stop)
         audit_guard = patch('src.apps.data_factory.services.sql.sql_execution_audit.SqlExecutionAuditService.confirm_resource_requests')
         audit_guard.start()
         self.addCleanup(audit_guard.stop)
@@ -98,6 +107,32 @@ class CleanupScheduleTests(SimpleTestCase):
             Infrastructure.capture(error, result_unknown=True)
             Schedule.verify_complete(7, require_full_cleanup=True)
             self.assertFalse(Infrastructure.current())
+
+    def test_parent_rejects_old_success_without_matching_compensation_verification(self):
+        from src.apps.data_factory.schemas.cleanup_resource import (
+            CleanupResourceState, EsCleanupCheckResult, EsCleanupSnapshot, EsCleanupRule, EsCleanupCompensation,
+        )
+        from src.apps.data_factory.services.cleanup.cleanup_history import ResourceCleanupHistoryService as History
+        snapshot = EsCleanupSnapshot(rule=EsCleanupRule(datasource_alias_id=1, index_template='example'),
+            binding_id=2, connection_id=3, connection_version='AUTO_VERSION', environment=0,
+            index='example', document_id='1', tenant='7', baseline_absent=True)
+        grant = EsCleanupCompensation(snapshot_index=0, snapshot_digest=History.digest(snapshot.model_dump(mode='json')),
+            operator_id=1, authorized_at=timezone.now().isoformat(), reason='AUTO exact recovery', seq_no=7, primary_term=2)
+        state = CleanupResourceState(sql_cleaned=True, snapshots=[snapshot], compensations=[grant],
+            results=[EsCleanupCheckResult(snapshot_index=0, index='example', document_id='1',
+                success=True, checked_at=timezone.now().isoformat(), attempts=10)])
+        self.item.cleanup_resources = state.model_dump(mode='json')
+        self.execution.cleanup_status = self.item.cleanup_status = 1
+        self.mocks[-1].filter.return_value.exclude.return_value.exists.return_value = False
+        self.mocks[-1].filter.return_value.__iter__.side_effect = lambda: iter([self.item])
+        with patch.object(Resources, 'resolve_verified') as resolve:
+            with self.assertRaises(DataFactoryError):
+                Schedule.verify_complete(7, require_full_cleanup=True)
+            resolve.assert_not_called()
+            state.results[0].compensation_digest = Resources.compensation_digest(state, 0)
+            self.item.cleanup_resources = state.model_dump(mode='json')
+            Schedule.verify_complete(7, require_full_cleanup=True)
+            resolve.assert_called_once()
 
     def test_scheduler_queue_gap_never_consumes_active_cleanup_budget(self):
         self.lease.progress = {'sql_done': True, 'started_at': timezone.now().timestamp() - 3600,
@@ -171,6 +206,24 @@ class CleanupScheduleTests(SimpleTestCase):
         self.assertLess(progress['active_seconds'], 1)
         self.mocks[5].assert_not_called()
         self.assertNotIn('success', self.mocks[1].call_args.kwargs)
+
+    def test_large_sql_phase_does_not_consume_es_observation_processing_budget(self):
+        clock = [0.0]
+        def cleanup(*args, **kwargs):
+            clock[0] += 295
+            return {'fail': 0}
+        def observe(*args, **kwargs):
+            clock[0] += 20
+            return None
+        self.mocks[4].side_effect = cleanup
+        self.mocks[8].side_effect = observe
+        with patch('src.apps.data_factory.services.cleanup.cleanup_schedule.monotonic', side_effect=lambda: clock[0]):
+            Schedule.run_next()
+        progress = self.mocks[1].call_args.args[1]
+        self.assertAlmostEqual(progress['sql_seconds'], 295)
+        self.assertAlmostEqual(progress['es_seconds'], 20)
+        self.assertAlmostEqual(progress['active_seconds'], 315)
+        self.assertTrue(self.mocks[1].call_args.kwargs['success'])
 
     def test_report_wait_does_not_fail_due_to_queue_delay_or_lose_owner_context(self):
         from src.apps.data_factory.services.cleanup.cleanup_schedule import _case_cleanup_owner, _parent_wait_pulse

@@ -368,7 +368,7 @@ def register_template_tools(mcp):
             "cache_prefix": preview_data.get("cache_prefix"),
             "cache_keys": preview_data.get("cache_keys"),
             "can_execute": preview_data.get("can_debug_run"),
-            "risk": "确认后会真实向数据库写入数据，并生成数据工厂执行记录；如场景模板存在关联模板或依赖实体，也会按配置创建数据。",
+            "risk": "确认后会真实写入数据并生成执行记录，关联模板和依赖实体同样按配置创建。自动清理策略在本次调试返回前完成清理；需要返回后继续使用的数据，应明确选择手动清理并负责后续补清，不清理策略不会自动删除。",
         }
         if not preview_data.get("can_debug_run"):
             return fail(
@@ -392,7 +392,12 @@ def register_template_tools(mcp):
             preview_token: str | None = None,
             confirm_text: str | None = None,
     ) -> dict:
-        """真实执行数据工厂场景模板，会落库并生成执行记录。必须先调用 preview_run_data_factory_template_impact。"""
+        """真实执行场景模板，必须先调用 preview_run_data_factory_template_impact。
+
+        自动清理策略在调试返回前完成正式清理，并返回 cleanup_status；清理失败不会返回整体成功。
+        需要返回后继续使用的数据，应明确配置手动清理并在使用后补清；不清理策略保持不自动删除。
+        Case 前置造数应使用 Case 原生工厂绑定，由该 Case 负责执行结束后的清理，不能用独立调试替代。
+        """
         env = _selected_test_env(user_id, test_env)
         target_id = _data_factory_template_run_target(template_id, overrides, context, test_object_id, env, user_id)
         confirm_error = validate_dangerous_action_confirmation(

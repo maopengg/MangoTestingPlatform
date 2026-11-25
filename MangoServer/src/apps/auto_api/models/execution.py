@@ -21,7 +21,7 @@ class ApiCaseExecutionTrace(models.Model):
     worker_name = models.CharField(verbose_name="执行节点", max_length=128, null=True, blank=True)
     started_at = models.DateTimeField(verbose_name="开始时间", null=True, blank=True)
     finished_at = models.DateTimeField(verbose_name="结束时间", null=True, blank=True)
-    duration_ms = models.IntegerField(verbose_name="总耗时毫秒", default=0)
+    duration_ms = models.BigIntegerField(verbose_name="总耗时毫秒", default=0)
     error_message = models.TextField(verbose_name="错误摘要", null=True, blank=True)
     summary = models.JSONField(verbose_name="执行摘要", default=dict, blank=True)
 
@@ -45,7 +45,7 @@ class ApiCaseExecutionStep(models.Model):
     sort = models.IntegerField(verbose_name="排序", default=0)
     started_at = models.DateTimeField(verbose_name="开始时间", null=True, blank=True)
     finished_at = models.DateTimeField(verbose_name="结束时间", null=True, blank=True)
-    duration_ms = models.IntegerField(verbose_name="耗时毫秒", default=0)
+    duration_ms = models.BigIntegerField(verbose_name="耗时毫秒", default=0)
     input_summary = models.JSONField(verbose_name="输入摘要", default=dict, blank=True)
     output_summary = models.JSONField(verbose_name="输出摘要", default=dict, blank=True)
     error_message = models.TextField(verbose_name="错误摘要", null=True, blank=True)

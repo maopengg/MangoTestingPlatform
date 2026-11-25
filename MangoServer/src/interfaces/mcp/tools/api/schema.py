@@ -266,11 +266,11 @@ def register_schema_tools(mcp):
                         "default": 0,
                         "enum_source": "ApiCaseScenarioLayerEnum",
                         "enum": ApiCaseScenarioLayerEnum.obj(),
-                        "description": "测试层级：0=接口/组件级（单个接口或组件）、1=模块级（同一模块内多个接口、组件协作）、2=端到端（跨多个模块的完整业务链路）。值不变。",
+                        "description": "测试层级：0=接口/组件级（单个接口或组件）、1=模块级（同一模块内多个接口、组件协作）、2=端到端（跨多个模块的完整业务链路）。按实际验证范围选择。",
                         "coverage_distribution": {
-                            "0_api_component": "接口/组件级，建议约 70%。用于单个接口或单个组件的契约、参数、边界、异常、权限等局部能力校验。",
-                            "1_Integration": "模块级，建议约 20%。用于同一模块内多个接口、组件的协作验证。",
-                            "2_E2E": "端到端，建议约 10%。用于跨多个模块的完整业务链路验证。",
+                            "0_api_component": "接口/组件级。用于单个接口或单个组件的局部能力校验。",
+                            "1_Integration": "模块级。用于同一模块内多个接口或组件的协作验证。",
+                            "2_E2E": "端到端。用于跨多个模块的完整业务链路验证。",
                         },
                     },
                     "scenario_type": {
@@ -698,9 +698,9 @@ def register_schema_tools(mcp):
                 "scenario_layer_usage": {
                     "required": "创建 API case 时必须选择 scenario_layer。未传时 MCP 默认 0=接口/组件级。",
                     "coverage_distribution": {
-                        "接口/组件级": "约 70%。单个接口或组件的局部能力校验。",
-                        "模块级": "约 20%。同一模块内多个接口、组件协作验证。",
-                        "端到端": "约 10%。跨多个模块的完整业务链路验证。",
+                        "接口/组件级": "单个接口或组件的局部能力校验。",
+                        "模块级": "同一模块内多个接口或组件的协作验证。",
+                        "端到端": "跨多个模块的完整业务链路验证。",
                     },
                     "recommended_combinations": {
                         "普通接口或组件用例": {"scenario_layer": 0, "scenario_tags": []},

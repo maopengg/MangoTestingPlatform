@@ -4,6 +4,7 @@
 # @Time   : 2024-04-26 10:53
 # @Author : 毛鹏
 
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import asyncio
 import json
 import time
@@ -63,6 +64,7 @@ class CaseFlow:
                     try:
                         case_model = CaseModel(**json.loads(queue_item['payload']))
                     except Exception as error:
+                        await ActuatorSystemErrorReporter.report(error, 'services/ui/case_flow:process_tasks')
                         UiCaseConcurrency.release()
                         ExecutionCaseQueue.mark_error(queue_item['id'], error)
                         ExecutionCaseQueue.delete(queue_item['id'])
@@ -79,6 +81,7 @@ class CaseFlow:
             except asyncio.CancelledError:
                 raise
             except Exception as error:
+                await ActuatorSystemErrorReporter.report(error, 'services/ui/case_flow:process_tasks')
                 log.error(
                     f'UI用例调度循环异常，调度器继续运行，类型：{type(error)}，'
                     f'失败详情：{error}，失败明细：{traceback.format_exc()}'
@@ -166,6 +169,7 @@ class CaseFlow:
                 log.warning('HTTP拉取UI任务本轮没有新增入队，停止本轮拉取')
             return True
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/case_flow:pull_case_task_by_http')
             if cls._is_http_pull_not_found(error):
                 cls._http_pull_disabled = True
                 log.warning('HTTP拉取UI任务接口不存在，本次执行器进程将直接回退WebSocket拉取任务')
@@ -185,6 +189,7 @@ class CaseFlow:
                     func_args=TaskPullRequest(type=TestCaseTypeEnum.UI, username=SetConfig.get_username())
                 )
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/case_flow:get_case_task_by_websocket')
             log.error(f'get_case_task失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
 
     @classmethod
@@ -205,6 +210,7 @@ class CaseFlow:
                 success = bool(obj.case_result.status)
                 error_message = obj.case_result.error_message or ""
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/case_flow:execute_task')
             error_message = str(error)
             ExecutionCaseQueue.mark_error(queue_id, error)
             log.error(f'执行UI测试用例任务异常，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
@@ -306,7 +312,10 @@ class CaseFlow:
     def refill_trigger(cls, queue_limit: int):
         try:
             parallel_size = max(1, int(SetConfig.get_web_parallel() or 5))  # type: ignore
-        except Exception:
+        except (TypeError, ValueError):
+            parallel_size = 5
+        except Exception as _unexpected_error:
+            ActuatorSystemErrorReporter.schedule(_unexpected_error, 'services/ui/case_flow:refill_trigger')
             parallel_size = 5
         return max(parallel_size, int(queue_limit * 0.5))
 

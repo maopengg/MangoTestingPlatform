@@ -6,6 +6,13 @@ from src.exceptions import UiError
 from src.services.system_error_reporter import ActuatorSystemErrorReporter
 
 
+@pytest.fixture(autouse=True)
+def isolate_outbox():
+    ActuatorSystemErrorReporter._recent.clear()
+    with patch('src.services.system_error_reporter.SystemErrorOutbox'):
+        yield
+
+
 @pytest.mark.asyncio
 async def test_report_sends_sanitized_error_to_server():
     error = RuntimeError('runtime failed')
@@ -24,7 +31,7 @@ async def test_report_sends_sanitized_error_to_server():
         operation='runtime:test',
         exception_type='RuntimeError',
         message='runtime failed',
-        traceback_text='traceback text',
+        traceback_text='RuntimeError: runtime failed',
     )
 
 
@@ -49,4 +56,4 @@ async def test_report_failure_does_not_replace_original_flow():
     ):
         result = await ActuatorSystemErrorReporter.report(RuntimeError('failed'), 'runtime:test')
 
-    assert result is False
+    assert result is True  # 已保存在本地发件箱，后台继续补传。

@@ -91,10 +91,14 @@ class ExecutorTaskService:
     @classmethod
     @transaction.atomic
     def create_cleanup_task(cls, execution_id, *, created_by=None, owner=None, controlled_retry=False,
-                            force_cleanup=True, allow_missing=True, mode=None):
+                            force_cleanup=True, allow_missing=True, mode=None, recovery_owner=None):
         from src.apps.data_factory.schemas.cleanup_resource import CleanupTaskPayload
+        from src.apps.data_factory.services.cleanup.cleanup_persistence import CleanupPersistenceService
+        # 与历史补偿授权使用同一归属锁，避免授权落库时出现新清理持有者。
+        CleanupPersistenceService.lock_execution(execution_id)
         payload = CleanupTaskPayload(execution_id=execution_id, force_cleanup=force_cleanup,
                                      allow_missing=allow_missing, **({'mode': mode} if mode is not None else {}),
+                                     **({'recovery_owner': recovery_owner} if recovery_owner is not None else {}),
                                      **(owner or {})).model_dump(mode='json', exclude_none=True)
         previous = ExecutorTask.objects.select_for_update().filter(
             task_type=ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value, business_id=execution_id,
@@ -118,17 +122,21 @@ class ExecutorTaskService:
         return task
 
     @classmethod
-    def claim_cleanup_task(cls):
+    def claim_cleanup_task(cls, *, observations_only=False):
         from src.apps.task_center.schemas.server_task import ServerTaskLease
         from src.apps.data_factory.enums.cleanup import DataFactoryCleanupModeEnum
         now = timezone.now()
         with transaction.atomic():
-            task = ExecutorTask.objects.select_for_update(skip_locked=True).filter(
+            candidates = ExecutorTask.objects.select_for_update(skip_locked=True).filter(
                 task_type=ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value,
             ).filter((Q(status=ExecutorTaskStatusEnum.PENDING.value, available_at__lte=now)
                      | Q(status=ExecutorTaskStatusEnum.RUNNING.value, lease_expires_at__lte=now))
-                     & (Q(payload__mode__isnull=True) | ~Q(payload__mode=DataFactoryCleanupModeEnum.SYNCHRONOUS.value))).order_by(
-                F('progress_data__sql_done').desc(nulls_last=True), 'available_at', 'id').first()
+                     & (Q(payload__mode__isnull=True) | ~Q(payload__mode=DataFactoryCleanupModeEnum.SYNCHRONOUS.value)))
+            if observations_only:
+                candidates = candidates.filter(progress_data__sql_done=True)
+            ordering = (['available_at', 'id'] if observations_only else
+                        [F('progress_data__sql_done').desc(nulls_last=True), 'available_at', 'id'])
+            task = candidates.order_by(*ordering).first()
             if task is None:
                 return None
             recovered = task.status == ExecutorTaskStatusEnum.RUNNING.value
@@ -210,6 +218,43 @@ class ExecutorTaskService:
                 task.lease_expires_at = now + timedelta(seconds=60)
                 task.save(update_fields=['lease_expires_at', 'update_time'])
             return True, callback()
+
+    @classmethod
+    def reconcile_verified_cleanup_task(cls, execution_id, verify):
+        """调用方已锁定执行；先锁任务，再由业务回调锁明细、核验证据，不接管活跃租约。"""
+        from src.apps.data_factory.schemas.cleanup_resource import CleanupTaskProgress, FactoryExecutionReconciliation
+        from pydantic import ValidationError
+        task = ExecutorTask.objects.select_for_update().filter(
+            task_type=ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value,
+            business_id=execution_id).order_by('-id').first()
+        if task is not None and task.status not in (ExecutorTaskStatusEnum.SUCCESS.value, ExecutorTaskStatusEnum.FAILED.value):
+            return False
+        if not verify():
+            return False
+        if task is None or task.status == ExecutorTaskStatusEnum.SUCCESS.value:
+            return True
+        try:
+            progress = CleanupTaskProgress.model_validate(task.progress_data or {}, strict=True)
+            progress.reconciliation = FactoryExecutionReconciliation(
+                checked_at=timezone.now().isoformat(), reason='all_registered_resources_verified_cleaned',
+                previous_error=task.error_message or None)
+        except ValidationError:
+            return False
+        task.progress_data = progress.model_dump(mode='json', exclude_none=True)
+        task.status = ExecutorTaskStatusEnum.SUCCESS.value
+        task.error_message = None
+        task.lease_expires_at = None
+        # finished_at 保留实际原任务结束时间；对账时间单独保存在 progress。
+        task.save(update_fields=['progress_data', 'status', 'error_message', 'lease_expires_at', 'update_time'])
+        return True
+
+    @staticmethod
+    def cleanup_success_matches_lease(lease, execution_id):
+        return ExecutorTask.objects.select_for_update().filter(
+            id=lease.task_id, task_type=ExecutorTaskTypeEnum.DATA_FACTORY_CLEANUP.value,
+            business_id=execution_id, status=ExecutorTaskStatusEnum.SUCCESS.value,
+            progress_data__claim_token=lease.token, progress_data__generation=lease.generation,
+        ).exists()
 
     @classmethod
     @transaction.atomic

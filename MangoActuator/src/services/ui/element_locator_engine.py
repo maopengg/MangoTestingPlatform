@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from mangoautomation.element_healing import WebElementHealingHarness
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 
 from .element_healing import (
     PlatformEventSink,
@@ -22,4 +23,5 @@ class UiElementLocatorEngine(WebElementHealingHarness):
             vision_model_client=PlatformVisionModelClient(),
             runtime_config=PlatformRuntimeConfig(),
             logger=logger,
+            system_error_callback=ActuatorSystemErrorReporter.report,
         )

@@ -185,6 +185,7 @@ class ModuleCoverageCaseViews(ViewSet):
             module_ids=[int(item) for item in selected.split(",") if item.strip()] if selected else None,
             section=params["section"], page=params["page"], page_size=params["pageSize"],
             keyword=params["keyword"], progress=params["progress"],
+            module_filters=params["module_filters"],
         ))
 
     @action(methods=["put"], detail=False)

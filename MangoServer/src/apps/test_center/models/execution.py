@@ -177,6 +177,8 @@ class ExecutionResult(models.Model):
         db_table = 'execution_result'
         ordering = ['-create_time']
         indexes = [
+            models.Index(fields=['test_env', 'create_time', 'id'], name='idx_exec_env_time_id'),
+            models.Index(fields=['create_time', 'id'], name='idx_exec_time_id'),
             models.Index(
                 fields=['target_type', 'target_id', 'revision_id', 'test_env', 'is_latest'],
                 name='idx_exec_result_target_latest',

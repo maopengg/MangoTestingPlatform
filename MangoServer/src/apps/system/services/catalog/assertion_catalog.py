@@ -57,16 +57,19 @@ class AssertionCatalogService:
             CacheDataKey2Enum.SELECT_VALUE.value
         )
         source_tree = stored_tree if isinstance(stored_tree, list) else []
+        current_groups = {
+            item.get("value"): item for item in assertion_func_info if isinstance(item, dict)
+        }
         groups = [
-            cls._normalize_group(item)
+            cls._normalize_group(current_groups.get(item.get("value"), item))
             for item in source_tree
             if isinstance(item, dict) and item.get("value") not in cls.OPERATION_GROUPS
         ]
         groups = [item for item in groups if item and item.get("children")]
 
         known_values = {item.get("value") for item in groups}
-        for item in assertion_func_info:
-            if not isinstance(item, dict) or item.get("value") in known_values:
+        for value, item in current_groups.items():
+            if value in known_values:
                 continue
             normalized = cls._normalize_group(item)
             if normalized and normalized.get("children"):

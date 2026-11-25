@@ -6,6 +6,8 @@ from src.apps.data_factory.enums.cleanup_resource import EsCleanupModeEnum
 from src.apps.data_factory.enums.cleanup import DataFactoryCleanupModeEnum
 from src.apps.data_factory.schemas.performance import DatasourceInfrastructureIssue
 from src.common.schemas import StrictSchema
+from src.apps.data_factory.schemas.elasticsearch import EsIndexTemplate
+from src.apps.data_factory.schemas.cleanup_history import CleanupHistoryEntry
 
 
 class EsCleanupLineageRule(StrictSchema):
@@ -37,8 +39,7 @@ class EsCleanupRule(StrictSchema):
         default=None, max_length=128, pattern=r'^[A-Za-z_][A-Za-z0-9_]*$',
         description='ES文档ID取自本次落库记录的哪个字段；不传/null使用数据库主键。显式指定后缺值必须失败，不回退主键。',
     )
-    index_template: str = Field(
-        min_length=1, max_length=200, pattern=r'^(?:\{tenant\}|[a-z0-9][a-z0-9_-]*(?:\{tenant\})?)$',
+    index_template: EsIndexTemplate = Field(
         description='精确索引名称，支持固定名称、example_{tenant}或单独{tenant}；最多一个末尾租户占位符，禁止通配符、多索引及路径。渲染后仍校验实际索引和资源归属。',
     )
     tenant_field: str = Field(default='tenant_id', max_length=128, pattern=r'^[A-Za-z_][A-Za-z0-9_]*$')
@@ -86,6 +87,7 @@ class EsCleanupCheckResult(StrictSchema):
     checked_at: str
     attempts: int = Field(ge=0)
     error: str = ''
+    compensation_digest: str | None = Field(default=None, pattern=r'^[a-f0-9]{64}$')
 
 
 class EsCleanupCheckpoint(StrictSchema):
@@ -100,6 +102,13 @@ class EsCleanupCheckpoint(StrictSchema):
     final_count: int = Field(default=0, ge=0)
     attempts: int = Field(default=0, ge=0)
     interval: float = Field(default=1, ge=1, le=5)
+    last_probe_seconds: float = Field(default=0, ge=0)
+    processing_seconds: float = Field(default=0, ge=0)
+    restart_count: int = Field(default=0, ge=0)
+    version_conflicts: int = Field(default=0, ge=0)
+    late_recoveries: int = Field(default=0, ge=0, le=2)
+    late_recovery_pending: bool = False
+    compensation_digest: str | None = Field(default=None, pattern=r'^[a-f0-9]{64}$')
 
 
 class EsUnknownPermit(StrictSchema):
@@ -115,7 +124,27 @@ class EsUncertainRequest(StrictSchema):
     document_id: str
 
 
+class EsCleanupCompensation(StrictSchema):
+    snapshot_index: int = Field(ge=0, le=4)
+    snapshot_digest: str = Field(pattern=r'^[a-f0-9]{64}$')
+    operator_id: int = Field(gt=0)
+    authorized_at: str
+    reason: str = Field(min_length=1, max_length=500)
+    tenant_lineage: EsCleanupLineageRule | None = None
+    lineage_rows: list[EsCleanupLineageRow] = Field(default_factory=list, max_length=100)
+    seq_no: int = Field(ge=0)
+    primary_term: int = Field(ge=1)
+
+    @field_validator('reason')
+    @classmethod
+    def meaningful_reason(cls, value):
+        if not value.strip():
+            raise ValueError('补偿原因不能为空')
+        return value.strip()
+
+
 class CleanupResourceState(StrictSchema):
+    cleanup_history: list['CleanupHistoryEntry'] = Field(default_factory=list)
     version: int = Field(default=1, ge=1, le=1)
     snapshots: list[EsCleanupSnapshot] = Field(default_factory=list, max_length=5)
     sql_cleaned: bool = False
@@ -123,6 +152,15 @@ class CleanupResourceState(StrictSchema):
     checkpoints: list[EsCleanupCheckpoint] = Field(default_factory=list, max_length=5)
     unknown_permits: list[EsUnknownPermit] = Field(default_factory=list, max_length=64)
     uncertain_requests: list[EsUncertainRequest] = Field(default_factory=list, max_length=64)
+    compensations: list[EsCleanupCompensation] = Field(default_factory=list, max_length=5)
+
+
+class FactoryExecutionOwner(StrictSchema):
+    process_token: str = Field(min_length=1, max_length=64)
+    process_started_at: str = Field(min_length=1, max_length=64)
+    worker_name: str = Field(min_length=1, max_length=128)
+    trace_id: int | None = Field(default=None, ge=1)
+    trace_key: str | None = Field(default=None, max_length=64)
 
 
 class CleanupTaskPayload(StrictSchema):
@@ -132,6 +170,7 @@ class CleanupTaskPayload(StrictSchema):
     allow_missing: bool = True
     parent_case_detail_id: int | None = Field(default=None, ge=1)
     parent_attempt: int | None = Field(default=None, ge=1)
+    recovery_owner: FactoryExecutionOwner | None = None
 
     @field_validator('mode', mode='before')
     @classmethod
@@ -144,14 +183,6 @@ class CleanupReportOwner(StrictSchema):
     parent_attempt: int = Field(ge=1)
 
 
-class FactoryExecutionOwner(StrictSchema):
-    process_token: str = Field(min_length=1, max_length=64)
-    process_started_at: str = Field(min_length=1, max_length=64)
-    worker_name: str = Field(min_length=1, max_length=128)
-    trace_id: int | None = Field(default=None, ge=1)
-    trace_key: str | None = Field(default=None, max_length=64)
-
-
 class FactoryExecutionReconciliation(StrictSchema):
     checked_at: str
     reason: str
@@ -162,7 +193,10 @@ class CleanupTaskProgress(StrictSchema):
     started_at: float | None = None
     sql_done: bool = False
     active_seconds: float = Field(default=0, ge=0)
+    sql_seconds: float = Field(default=0, ge=0)
+    es_seconds: float = Field(default=0, ge=0)
     verification_failed: bool = False
     generation: int = Field(default=0, ge=0)
     claim_token: str | None = Field(default=None, max_length=32)
     infrastructure_issues: list[DatasourceInfrastructureIssue] = Field(default_factory=list)
+    reconciliation: FactoryExecutionReconciliation | None = None

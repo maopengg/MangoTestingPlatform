@@ -48,11 +48,11 @@ class TaskGroupRecentResultTests(SimpleTestCase):
                       SimpleNamespace(group_execution_id=68, test_suite_id=None,
                                       status=ScheduleFireStatusEnum.SKIPPED.value)]
 
-    def test_platform_blocked_is_not_shown_as_business_failure(self):
+    def test_legacy_platform_block_is_counted_as_failed_execution(self):
         self.suite.status = TaskEnum.INFRASTRUCTURE_BLOCKED.value
         rows = {101: [{'status': 6, 'case_sum': 10, 'success': 0, 'fail': 0, 'warning': 0}]}
         result = TaskGroupRecentResultService.summarize(self.execution, self.fires, rows)
-        self.assertEqual((result['status'], result['status_key'], result['blocked'], result['fail']), (6, 'blocked', 10, 0))
+        self.assertEqual((result['status'], result['status_key'], result['blocked'], result['fail']), (0, 'fail', 0, 10))
 
     def test_current_results_replace_previous_failure_without_counting_generation_failure(self):
         rows = {101: [{'status': TaskEnum.SUCCESS.value, 'case_sum': 10, 'success': 10, 'fail': 0, 'warning': 0}]}

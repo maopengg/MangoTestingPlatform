@@ -8,6 +8,36 @@ from src.common.exceptions import RESOURCE_ACCESS_DENIED
 
 class ApiResourceCleanupSelector:
     @staticmethod
+    def case_deletion_summary(case_id):
+        from django.db.models import Count, Q
+        from src.apps.auto_api.enums.resource_cleanup import ApiResourceCleanupStatus
+        return ApiCaseExecutionResource.objects.filter(case_id=case_id).aggregate(
+            cleaned=Count('id', filter=Q(status=ApiResourceCleanupStatus.CLEANED.value)),
+            unfinished=Count('id', filter=~Q(status=ApiResourceCleanupStatus.CLEANED.value)))
+
+    @staticmethod
+    def cleanup_history(resource_id):
+        return ApiCaseExecutionResource.objects.filter(id=resource_id).values_list('proof__cleanup_history', flat=True).first() or []
+
+    @staticmethod
+    def pending_for_attempt(detail_id, started_at):
+        from src.apps.auto_api.enums.resource_cleanup import ApiResourceCleanupStatus
+        if not started_at:
+            return []
+        return list(ApiCaseExecutionResource.objects.filter(trace__test_suite_detail_id=detail_id,
+            trace__started_at__gte=started_at).exclude(status__in=[ApiResourceCleanupStatus.PREPARED.value,
+                ApiResourceCleanupStatus.CLEANED.value]).select_related('trace').order_by('id')[:50])
+
+    @staticmethod
+    def has_unfinished_for_attempt(detail_id, started_at):
+        from src.apps.auto_api.enums.resource_cleanup import ApiResourceCleanupStatus
+        rows = ApiCaseExecutionResource.objects.filter(trace__test_suite_detail_id=detail_id)
+        if started_at:
+            rows = rows.filter(trace__started_at__gte=started_at)
+        return rows.exclude(status__in=[ApiResourceCleanupStatus.PREPARED.value,
+                                       ApiResourceCleanupStatus.CLEANED.value]).exists()
+
+    @staticmethod
     def has_unfinished_for_report(suite_id):
         from src.apps.auto_api.enums.resource_cleanup import ApiResourceCleanupStatus
         return ApiCaseExecutionResource.objects.filter(trace__test_suite_id=suite_id).exclude(
@@ -46,7 +76,8 @@ class ApiResourceCleanupSelector:
         if resource_id:
             query = query.filter(id=resource_id)
         return {'count': query.count(), 'page': page, 'page_size': page_size,
-                'items': [{**cls.summary(row), **({'rule': row.rule, 'snapshot': row.proof} if resource_id else {})}
+                'items': [{**cls.summary(row), **({'rule': row.rule, 'snapshot': {
+                    key: value for key, value in row.proof.items() if key != 'cleanup_history'}} if resource_id else {})}
                           for row in query.order_by('-id')[(page - 1) * page_size:page * page_size]]}
 
     @classmethod

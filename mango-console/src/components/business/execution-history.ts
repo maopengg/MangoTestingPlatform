@@ -8,6 +8,7 @@ export interface ExecutionHistoryItem {
   latest?: boolean
   sourceText?: string
   sourceColor?: string
+  context?: string
 }
 
 export type HistoryId = number | string
@@ -30,6 +31,11 @@ export interface HistoryRecord {
   source_type_name: string
   target_type: string
   target_id: HistoryId | null
+  revision_id: HistoryId | null | undefined
+  release_id: HistoryId | null
+  test_env: HistoryId | null
+  test_env_name: string
+  trace_id: string | null
 }
 
 export interface HistoryDetail extends HistoryRecord {
@@ -88,7 +94,22 @@ function record(value: unknown): HistoryRecord {
     test_suite_id: historyId(row.test_suite_id), test_suite: historyId(row.test_suite),
     source_type: historyText(row.source_type), source_type_name: historyText(row.source_type_name),
     target_type: historyText(row.target_type), target_id: historyId(row.target_id),
+    revision_id: row.revision_id === undefined ? undefined : historyId(row.revision_id),
+    release_id: historyId(row.release_id), test_env: historyId(row.test_env),
+    test_env_name: historyText(row.test_env_name), trace_id: historyText(row.trace_id) || null,
   }
+}
+
+export function historyVersionText(item: HistoryRecord): string {
+  if (item.target_type !== 'api_case') return ''
+  if (item.revision_id === undefined) return '版本未记录'
+  if (item.revision_id === null) return '编辑态'
+  return `修订 #${item.revision_id}${item.release_id !== null ? ` · 发布 #${item.release_id}` : ''}`
+}
+
+export function historyEnvironmentText(item: HistoryRecord): string {
+  return item.test_env_name && item.test_env_name !== '-'
+    ? item.test_env_name : item.test_env !== null ? `环境 #${item.test_env}` : '环境未记录'
 }
 
 export function historyResponse(value: unknown): unknown {

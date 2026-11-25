@@ -7,6 +7,9 @@
         @search="onSearch"
         @reset-search="onResetSearch"
       >
+        <template #header-extra>
+          <a-button size="small" @click="contentSearch?.open()">执行内容检索</a-button>
+        </template>
         <template #search-content>
           <a-form :model="{}" layout="inline" @keyup.enter="onSearch">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
@@ -154,6 +157,7 @@
     </template>
   </TableBody>
   <ExecutionResultJsonDrawer ref="resultDrawer" :context-key="identity()" />
+  <ExecutionContentSearchDrawer ref="contentSearch" kind="automation" :on-open="openSearchHit" />
 </template>
 
 <script lang="ts" setup>
@@ -178,8 +182,12 @@ import { reportLoadError } from '@/utils/load-error'
   import TableTabs from '@/components/table/TableTabs.vue'
   import MangoTableActions from '@/components/table/MangoTableActions.vue'
   import ExecutionResultJsonDrawer from './components/ExecutionResultJsonDrawer.vue'
+  import ExecutionContentSearchDrawer from '@/components/reports/ExecutionContentSearchDrawer.vue'
+  import type { ContentSearchHit } from '@/api/system/execution_content_search'
 
   const resultDrawer = ref<InstanceType<typeof ExecutionResultJsonDrawer> | null>(null)
+  const contentSearch = ref<InstanceType<typeof ExecutionContentSearchDrawer> | null>(null)
+  function openSearchHit(hit: ContentSearchHit) { return resultDrawer.value?.open(hit.record_id) }
 
   const route = useRoute(), pagePath = route.path, user = useUserStore(), permission = usePermissionStore(), enumStore = useEnum()
   const conditionItems = createConditionItems(), rows = ref<ExecutionAdminRow[]>([]), config = ref<ExecutionAdminConfig | null>(null)

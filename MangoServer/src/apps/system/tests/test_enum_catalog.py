@@ -17,6 +17,18 @@ from src.apps.test_center.enums.environment import EnvironmentEnum
 
 
 class EnumCatalogTests(SimpleTestCase):
+    def test_content_search_enums_are_explicitly_registered(self):
+        from src.apps.test_center.enums.content_search import ContentSearchKindEnum, ContentSearchStatusEnum
+        catalog = EnumCatalogService.catalog()
+        self.assertEqual(catalog['execution_content_search_kind'], ContentSearchKindEnum.get_option())
+        self.assertEqual(catalog['execution_content_search_status'], ContentSearchStatusEnum.get_option())
+
+    def test_legacy_blocked_status_is_not_a_new_report_result_option(self):
+        from mangotools.enums import TaskEnum
+        values = EnumCatalogService.catalog()['task_status']
+        self.assertEqual([item['key'] for item in values], list(range(6)))
+        self.assertEqual(TaskEnum.INFRASTRUCTURE_BLOCKED.value, 6)
+
     def test_public_variable_labels_use_number_prefixes_without_changing_values(self):
         expected = [
             {'key': 0, 'title': '① 自定义'},

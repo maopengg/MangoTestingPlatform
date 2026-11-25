@@ -1,3 +1,4 @@
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import asyncio
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
@@ -43,7 +44,8 @@ class UiRuntimeRegistry:
             return False
         try:
             return not page.is_closed()
-        except Exception:
+        except Exception as _unexpected_error:
+            ActuatorSystemErrorReporter.schedule(_unexpected_error, 'services/ui/live_stream/runtime_registry:_is_page_available')
             return False
 
     @classmethod

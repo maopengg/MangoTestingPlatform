@@ -5,7 +5,10 @@ type EnumOption = { key: number | string; title: string }
 type StateValueType = EnumOption[]
 
 const ENUM_KEYS = [
+  'execution_content_search_kind',
+  'execution_content_search_status',
   'module_coverage_policy',
+  'module_coverage_inventory_status',
   'api_default_assertion_check',
   'api_transient_retry_condition',
   'api_callback_status',
@@ -37,6 +40,7 @@ const ENUM_KEYS = [
   'api_parameter_type',
   'api_case_scenario_layer',
   'api_case_scenario_type',
+  'api_case_list_result_state',
   'api_case_configuration_filter',
   'api_case_scenario_tag',
   'product_type',

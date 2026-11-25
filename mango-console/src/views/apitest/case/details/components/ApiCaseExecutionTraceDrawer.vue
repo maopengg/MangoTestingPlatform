@@ -11,8 +11,27 @@
           <div>
             <span>状态</span>
             <a-tag :color="statusColor(state.trace.status)" size="small">
-              {{ statusText(state.trace.status) }}
+              {{ state.trace.status === 3 && state.trace.execution_phase === 'automatic_recovery'
+                ? enumStore.report_execution_phase[state.trace.execution_phase]?.title || '自动恢复中'
+                : enumStore.task_status?.[state.trace.status]?.title || statusText(state.trace.status) }}
             </a-tag>
+          </div>
+          <div>
+            <span>执行版本</span>
+            <strong>{{ state.trace.summary?.execution_source === 'editing' ? '当前编辑态'
+              : state.trace.summary?.version_label || (state.trace.summary?.case_revision_no
+                ? `修订 r${state.trace.summary.case_revision_no}` : '历史记录未标注版本') }}</strong>
+          </div>
+          <div>
+            <span>执行环境</span>
+            <strong>{{ state.trace.test_env == null ? '历史记录未标注环境'
+              : enumStore.environment_type?.[state.trace.test_env]?.title || state.trace.test_env }}</strong>
+          </div>
+          <div v-if="state.trace.test_suite_id">
+            <span>执行报告</span>
+            <router-link :to="{ path: '/report/system/details', query: { id: state.trace.test_suite_id } }">
+              {{ state.trace.test_suite_id }}
+            </router-link>
           </div>
           <div>
             <span>耗时</span>
@@ -205,6 +224,7 @@
   }
 
   function statusText(status: number) {
+    if (Number(status) === 6) return '平台受阻'
     if (Number(status) === 1) return '通过'
     if (Number(status) === 0) return '失败'
     if (Number(status) === 3) return '进行中'

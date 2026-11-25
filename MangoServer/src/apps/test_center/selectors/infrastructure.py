@@ -1,4 +1,4 @@
-from django.db.models import Q, Max, F
+from django.db.models import Q, Max, F, Case, When, Value, IntegerField, Count
 from mangotools.enums import TaskEnum
 
 from src.apps.test_center.models import TestSuite, TestSuiteDetails
@@ -6,6 +6,18 @@ from src.apps.test_center.enums.reporting import ReportExecutionPhaseEnum
 
 
 class ReportInfrastructureSelector:
+    @staticmethod
+    def status_counts(queryset):
+        legacy = Q(summary_data__meta__execution_control__phase=ReportExecutionPhaseEnum.INFRASTRUCTURE_BLOCKED.value)
+        rows = queryset.annotate(display_status=Case(
+            When(Q(status=TaskEnum.INFRASTRUCTURE_BLOCKED.value) | legacy, then=Value(TaskEnum.FAIL.value)),
+            default=F('status'), output_field=IntegerField(),
+        )).values('display_status').annotate(total=Count('id'))
+        counts = {row['display_status']: row['total'] for row in rows}
+        return {**{key: counts.get(status.value, 0) for key, status in (
+            ('fail', TaskEnum.FAIL), ('success', TaskEnum.SUCCESS), ('stay_begin', TaskEnum.STAY_BEGIN),
+            ('proceed', TaskEnum.PROCEED), ('stopped', TaskEnum.STOPPED), ('warning', TaskEnum.WARNING))}, 'blocked': 0}
+
     @staticmethod
     def detail_ids(suite_id):
         return TestSuiteDetails.objects.filter(test_suite_id=suite_id).values('id')
@@ -18,7 +30,7 @@ class ReportInfrastructureSelector:
         if str(status) == str(TaskEnum.INFRASTRUCTURE_BLOCKED.value):
             return queryset.filter(Q(status=TaskEnum.INFRASTRUCTURE_BLOCKED.value) | legacy)
         if str(status) == str(TaskEnum.FAIL.value):
-            return queryset.filter(status=TaskEnum.FAIL.value).exclude(legacy)
+            return queryset.filter(Q(status__in=(TaskEnum.FAIL.value, TaskEnum.INFRASTRUCTURE_BLOCKED.value)) | legacy)
         return queryset.filter(status=status)
 
     @staticmethod

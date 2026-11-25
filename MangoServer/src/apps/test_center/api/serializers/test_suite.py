@@ -42,6 +42,7 @@ class TestSuiteSerializers(serializers.ModelSerializer):
 
 
 class TestSuiteSerializersC(serializers.ModelSerializer):
+    status = serializers.SerializerMethodField()
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
@@ -58,13 +59,17 @@ class TestSuiteSerializersC(serializers.ModelSerializer):
         read_only_fields = ('diagnostic_file_path', 'report_retention_policy', 'retained_summary', 'report_retained')
 
     @staticmethod
+    def get_status(obj):
+        return TestSuiteSummaryService.public_status(obj.status)
+
+    @staticmethod
     def get_automation_types(obj):
         return sorted({row.type for row in getattr(obj, '_execution_summary_rows', [])})
 
     @staticmethod
     def get_execution_summary(obj):
         if obj.retained_summary:
-            return obj.retained_summary['execution_summary']
+            return TestSuiteSummaryService.public_counts(obj.retained_summary['execution_summary'])
         return TestSuiteSummaryService.effective_summary_from_rows(
             getattr(obj, '_execution_summary_rows', []),
         )
@@ -72,7 +77,7 @@ class TestSuiteSerializersC(serializers.ModelSerializer):
     @staticmethod
     def get_report_conclusion(obj):
         if obj.retained_summary:
-            return obj.status
+            return TestSuiteSummaryService.public_status(obj.status)
         rows = getattr(obj, '_execution_summary_rows', None)
         if rows is None:
             rows = obj.testsuitedetails_set.all()

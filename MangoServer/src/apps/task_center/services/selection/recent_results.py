@@ -85,7 +85,7 @@ class TaskRecentResultService:
                 details_by_suite.get(suite['id'], [])
             )
             if suite.get('retained_summary'):
-                counts = suite['retained_summary']['execution_summary']
+                counts = TestSuiteSummaryService.public_counts(suite['retained_summary']['execution_summary'])
             total = counts['total']
             status = cls._result_status(suite['status'], counts, total)
             create_time = suite['create_time']
@@ -130,13 +130,13 @@ class TaskRecentResultService:
         if counts['fail'] > 0:
             return TaskEnum.FAIL.value
         if counts.get('blocked'):
-            return TaskEnum.INFRASTRUCTURE_BLOCKED.value
+            return TaskEnum.FAIL.value
         if counts['warning'] > 0:
             return TaskEnum.WARNING.value
         if counts['success'] > 0:
             return TaskEnum.SUCCESS.value
         if suite_status in cls.STATUS_KEYS:
-            return suite_status
+            return TestSuiteSummaryService.public_status(suite_status)
         return TaskEnum.STAY_BEGIN.value
 
     @staticmethod

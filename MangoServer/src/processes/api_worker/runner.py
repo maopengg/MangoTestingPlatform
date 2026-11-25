@@ -121,15 +121,26 @@ class ApiWorkerRunner:
         settled = 0
         for future in done:
             case_model = futures[future]
+            code_bug = False
+            result_expected = False
             try:
                 future.result()
             except Exception as error:
+                from src.common.exceptions import MangoServerError
+                from src.apps.test_center.exceptions import ExecutionResultStorageError
+                from src.apps.test_center.services.reporting.test_suite.recovery import ReportRecoveryService
+                code_bug = ReportRecoveryService.is_confirmed_code_bug(error)
+                result_expected = not code_bug and (isinstance(error, ExecutionResultStorageError)
+                                                   or not isinstance(error, MangoServerError))
                 if not getattr(future, '_mango_error_logged', False):
                     log.api.error('event=api_worker_execution_incomplete detail_id=%s exception_type=%s',
                                   case_model.test_suite_details, type(error).__name__)
                     future._mango_error_logged = True
             try:
-                ApiWorkerRecoveryService.finish_unreported(case_model.test_suite_details, case_model.attempt)
+                recovery_options = {'code_bug': code_bug}
+                if result_expected:
+                    recovery_options['result_expected'] = True
+                ApiWorkerRecoveryService.finish_unreported(case_model.test_suite_details, case_model.attempt, **recovery_options)
             except DatabaseError:
                 # 保留完成凭据，下轮仅重试结果收口，不再次执行 Case。
                 connection.close()

@@ -78,7 +78,42 @@ class UpdateTestSuite:
             test_suite_detail = TestSuiteDetails.objects.select_for_update().get(
                 id=data.id, test_suite_id=data.test_suite,
             )
+            if data.type == TestCaseTypeEnum.API:
+                meta = (test_suite_detail.summary_data or {}).get('meta', {}) if isinstance(test_suite_detail.summary_data, dict) else {}
+                if ((data.attempt is not None and data.attempt != test_suite_detail.retry)
+                        or (meta.get('recovery_history') and data.attempt is None)):
+                    return None
             from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService
+            from src.apps.test_center.services.reporting.test_suite.recovery import ReportRecoveryService
+            from src.apps.test_center.enums.reporting import ReportExecutionPhaseEnum
+            control = ReportRecoveryService.read(test_suite_detail.summary_data)
+            if control is not None:
+                if (data.type == TestCaseTypeEnum.API and data.attempt == control.attempt
+                        and control.phase == ReportExecutionPhaseEnum.AUTOMATIC_RECOVERY
+                        and test_suite_detail.status == TaskEnum.PROCEED.value
+                        and data.status in (TaskEnum.FAIL.value, TaskEnum.SUCCESS.value, TaskEnum.WARNING.value)
+                        and data.result_data.execution_finalized is True):
+                    # 同轮次结果只作恢复证据；不发布终态、不覆盖新轮次、不提前发送通知。
+                    if control.result_id is None:
+                        saved = ExecutionResultService.save_result(
+                            source_type=ExecutionResultService.SOURCE_REPORT,
+                            target_type=ExecutionResultService.TARGET_API_CASE,
+                            target_id=test_suite_detail.case_id,
+                            test_env=test_suite_detail.test_env,
+                            revision_id=test_suite_detail.api_case_revision_id,
+                            release_id=test_suite_detail.api_case_release_id,
+                            test_suite_id=data.test_suite, test_suite_detail_id=data.id,
+                            status=data.status, error_message=data.error_message,
+                            trace_id=data.result_data.trace_id, result_data=result_data,
+                            prepared_result_payload=prepared,
+                        )
+                        control.result_id = saved.id
+                    control.result_expected = True
+                    control.checks += 1
+                    ReportRecoveryService.put(test_suite_detail, control)
+                    test_suite_detail.save(update_fields=['summary_data', 'update_time'])
+                    return test_suite_detail
+                return None
             if TestSuiteInfrastructureService.is_blocked(test_suite_detail.summary_data):
                 return None
             if TestSuiteTimeoutRecoveryService.is_timeout_terminated(test_suite_detail):
@@ -135,7 +170,7 @@ class UpdateTestSuite:
                 final_status = StatusEnum.SUCCESS.value
             if final_status != StatusEnum.FAIL.value and TestSuiteDetails.objects.filter(
                     test_suite=data.test_suite, status=TaskEnum.INFRASTRUCTURE_BLOCKED.value).exists():
-                final_status = TaskEnum.INFRASTRUCTURE_BLOCKED.value
+                final_status = TaskEnum.FAIL.value
             if cls.update_test_suite(data.test_suite, final_status):
                 cls.send_test_result(data.test_suite, data.error_message)
         return True

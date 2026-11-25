@@ -756,6 +756,70 @@ class WorkbenchTodoService:
             ).filter(execution_id=execution.id).order_by('id')
         )
 
+    @staticmethod
+    def cleanup_notice_fields(execution, items):
+        from src.apps.data_factory.exceptions import (
+            DataFactoryError, DATA_FACTORY_CLEANUP_TIMEOUT, DATA_FACTORY_ES_CLEANUP_TIMEOUT,
+            DATA_FACTORY_ES_CLEANUP_OWNERSHIP_INVALID, DATA_FACTORY_ES_CLEANUP_TARGET_CHANGED,
+        )
+        from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
+        from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as Resources
+        counts = {'verified_count': 0, 'sql_cleaned_count': 0, 'es_unverified_count': 0,
+                  'sql_unverified_count': 0, 'finalization_unverified_count': 0, 'retained_count': 0,
+                  'total_count': len(items),
+                  'failed_count': sum(item.cleanup_status == DataFactoryCleanupStatusEnum.FAIL.value for item in items),
+                  'success_count': sum(item.cleanup_status == DataFactoryCleanupStatusEnum.SUCCESS.value for item in items),
+                  'skipped_count': sum(item.cleanup_status == DataFactoryCleanupStatusEnum.SKIPPED.value for item in items)}
+        for item in items:
+            try:
+                state = Resources.state(item)
+            except DataFactoryError:
+                state = None
+            if state is not None and state.sql_cleaned:
+                counts['sql_cleaned_count'] += 1
+            if DataFactoryCleanup.cleanup_is_verified([item]):
+                counts['verified_count'] += 1
+            elif item.cleanup_status in (DataFactoryCleanupStatusEnum.SKIPPED.value,
+                                         DataFactoryCleanupStatusEnum.PENDING_MANUAL.value):
+                counts['retained_count'] += 1
+            elif state is None or not state.sql_cleaned:
+                counts['sql_unverified_count'] += 1
+            elif state.snapshots:
+                counts['es_unverified_count'] += 1
+            else:
+                counts['finalization_unverified_count'] += 1
+        counts['unverified_count'] = len(items) - counts['verified_count'] - counts['retained_count']
+        if items:
+            parts = [f"共 {len(items)} 项：已确认完整清理 {counts['verified_count']} 项，"
+                     f"尚未确认完成 {counts['unverified_count']} 项"]
+            labels = [('es_unverified_count', 'SQL已记录清理完成、ES清理/验证未确认'),
+                      ('sql_unverified_count', 'SQL清理未确认'),
+                      ('finalization_unverified_count', '其他清理收尾未确认')]
+            breakdown = [f'{label} {counts[key]} 项' for key, label in labels if counts[key]]
+            if breakdown:
+                parts.append('其中' + '，'.join(breakdown))
+            parts.append(f"保留/跳过 {counts['retained_count']} 项")
+            summary = '；'.join(parts) + '。'
+        else:
+            summary = '执行级清理异常：没有可验证的资源明细。'
+        if not items or (counts['unverified_count'] and not any(
+                item.cleanup_status == DataFactoryCleanupStatusEnum.FAIL.value for item in items)):
+            summary += '执行级清理异常，尚未取得全部资源的合格清理证明，不能认定为零残留。'
+        reasons = '\n'.join([getattr(execution, 'error_message', None) or '',
+                             *(getattr(item, 'cleanup_error', None) or '' for item in items)])
+        # 邮件只使用可信类别，不转发可能包含 SQL、参数或凭据的原始异常正文。
+        for definition, reason in (
+            (DATA_FACTORY_CLEANUP_TIMEOUT, '平台清理处理超时，完整观察或回查尚未完成'),
+            (DATA_FACTORY_ES_CLEANUP_OWNERSHIP_INVALID, '关联ES归属证明不足或不匹配，平台已拒绝不安全删除'),
+            (DATA_FACTORY_ES_CLEANUP_TARGET_CHANGED, '清理目标或绑定已变化，平台已停止删除'),
+            (DATA_FACTORY_ES_CLEANUP_TIMEOUT, 'ES观察窗口内未取得完整缺失验证'),
+        ):
+            if definition.message in reasons:
+                summary += f'原因：{reason}。'
+                break
+        summary += '未确认不等于当前仍有残留；请查看原执行核查后仅重试清理，不要重跑Case。'
+        return summary, counts
+
     @classmethod
     def record_data_factory_cleanup_failure(cls, execution: DataFactoryExecution):
         from src.apps.data_factory.services.execution.execution_snapshot import get_insert_snapshot
@@ -764,18 +828,14 @@ class WorkbenchTodoService:
             return None
         occurred_at = execution.cleanup_time or execution.update_time or timezone.now()
         items = cls._cleanup_items(execution)
+        from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
+        if DataFactoryCleanup.cleanup_is_verified(items):
+            return None
         failed_items = [
             item for item in items
             if item.cleanup_status == DataFactoryCleanupStatusEnum.FAIL.value
         ]
-        success_count = sum(
-            item.cleanup_status == DataFactoryCleanupStatusEnum.SUCCESS.value
-            for item in items
-        )
-        skipped_count = sum(
-            item.cleanup_status == DataFactoryCleanupStatusEnum.SKIPPED.value
-            for item in items
-        )
+        notice_summary, notice_counts = cls.cleanup_notice_fields(execution, items)
         errors = []
         for item in failed_items[:10]:
             binding = getattr(item, 'datasource_binding', None)
@@ -820,27 +880,30 @@ class WorkbenchTodoService:
             'module_id': execution.module_id,
             'severity': WorkbenchTodoSeverityEnum.DANGER.value,
             'title': f'数据工厂清理失败：{execution.execution_no}',
-            'summary': (
-                f'清理失败 {len(failed_items)} 项、成功 {success_count} 项、'
-                f'跳过 {skipped_count} 项，请检查失败明细后重试。'
-            ),
+            'summary': notice_summary,
             'due_at': occurred_at,
             'occurred_at': occurred_at,
             'details': {
                 'source_name': '数据工厂执行记录',
                 'execution_no': execution.execution_no,
                 'template_name': execution.template.name if execution.template_id else None,
-                'failed_count': len(failed_items),
-                'success_count': success_count,
-                'skipped_count': skipped_count,
-                'total_count': len(items),
+                **notice_counts,
                 'errors': errors,
+                'execution_error': getattr(execution, 'error_message', None),
             },
         })
 
     @classmethod
     @transaction.atomic
     def _upsert_cleanup_failure(cls, event_key: str, defaults: dict):
+        from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
+        current = DataFactoryExecution.objects.select_for_update().filter(id=defaults['source_id']).first()
+        if current is None or current.cleanup_status != DataFactoryCleanupStatusEnum.FAIL.value:
+            return None
+        current_key = (f'data-factory:execution:{current.id}:cleanup-failed:'
+                       f'{cls._timestamp_key(current.cleanup_time or current.update_time)}')
+        if current_key != event_key or DataFactoryCleanup.cleanup_is_verified(cls._cleanup_items(current)):
+            return None
         # 与发送端串行更新通知标记，避免巡检覆盖已发送状态后重复通知。
         existing = WorkbenchTodo.objects.select_for_update().filter(event_key=event_key).first()
         if existing and (existing.details or {}).get('cleanup_notification_sent_at'):
@@ -861,18 +924,24 @@ class WorkbenchTodoService:
         # 不使用巡检开始时的执行快照；发送前重新确认，恢复及正在重试均不报旧失败。
         execution = DataFactoryExecution.objects.filter(
             id=todo.source_id, cleanup_status=DataFactoryCleanupStatusEnum.FAIL.value,
-        ).only('id', 'cleanup_time', 'update_time').first()
+        ).only('id', 'cleanup_time', 'update_time', 'error_message').first()
         if execution is None:
+            return False
+        from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
+        items = cls._cleanup_items(execution)
+        if DataFactoryCleanup.cleanup_is_verified(items):
             return False
         occurred_at = execution.cleanup_time or execution.update_time
         if todo.event_key != (
             f'data-factory:execution:{execution.id}:cleanup-failed:{cls._timestamp_key(occurred_at)}'
         ):
             return False
+        todo.summary, notice_counts = cls.cleanup_notice_fields(execution, items)
+        todo.details = {**(todo.details or {}), **notice_counts}
         if not cls._notify_owner(todo):
             return False
         todo.details = {**(todo.details or {}), 'cleanup_notification_sent_at': timezone.now().isoformat()}
-        todo.save(update_fields=['details', 'update_time'])
+        todo.save(update_fields=['summary', 'details', 'update_time'])
         return True
 
     @classmethod
@@ -901,7 +970,43 @@ class WorkbenchTodoService:
         )
 
     @classmethod
+    @transaction.atomic
+    def reconcile_cleanup_todo(cls, todo_id: int, execution_id: int) -> int:
+        # 只结算本轮开始前已有的待办，并在原执行锁内重新核对；不能用旧的全量快照
+        # 对新事件做反向差集，否则巡检期间刚产生的失败会被当成“已恢复”。
+        execution = DataFactoryExecution.objects.select_for_update().filter(id=execution_id).first()
+        if execution is None:
+            return 0
+        todo = WorkbenchTodo.objects.select_for_update().filter(
+            id=todo_id, source_id=execution_id,
+            source_type=WorkbenchTodoSourceTypeEnum.DATA_FACTORY_EXECUTION.value,
+            status=WorkbenchTodoStatusEnum.PENDING.value,
+        ).first()
+        if todo is None:
+            return 0
+        if todo.event_type == WorkbenchTodoEventTypeEnum.DATA_FACTORY_CLEANUP_FAILED.value:
+            from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
+            current_key = (f'data-factory:execution:{execution.id}:cleanup-failed:'
+                           f'{cls._timestamp_key(execution.cleanup_time or execution.update_time)}')
+            if not DataFactoryCleanup.cleanup_is_verified(cls._cleanup_items(execution)):
+                replacement_exists = (execution.cleanup_status == DataFactoryCleanupStatusEnum.FAIL.value
+                    and todo.event_key != current_key and WorkbenchTodo.objects.filter(
+                        source_type=WorkbenchTodoSourceTypeEnum.DATA_FACTORY_EXECUTION.value,
+                        source_id=execution.id, event_key=current_key,
+                        status=WorkbenchTodoStatusEnum.PENDING.value).exists())
+                if not replacement_exists:
+                    return 0
+        return cls._resolve_queryset(WorkbenchTodo.objects.filter(id=todo.id),
+            '系统重新核对原执行：该提醒已被后续状态或完整清理证明替代；不代表业务用例通过。')
+
+    @classmethod
     def reconcile_data_factory_cleanup_todos(cls) -> dict:
+        existing_todos = list(WorkbenchTodo.objects.filter(
+            source_type=WorkbenchTodoSourceTypeEnum.DATA_FACTORY_EXECUTION.value,
+            event_type__in=[WorkbenchTodoEventTypeEnum.DATA_FACTORY_CLEANUP_REQUIRED.value,
+                           WorkbenchTodoEventTypeEnum.DATA_FACTORY_CLEANUP_FAILED.value],
+            status=WorkbenchTodoStatusEnum.PENDING.value,
+        ).values_list('id', 'source_id'))
         cleanup_executions = DataFactoryExecution.objects.select_related(
             'template',
             'project_product',
@@ -919,29 +1024,17 @@ class WorkbenchTodoService:
                 to_attr='workbench_cleanup_items',
             ),
         )
-        active_event_keys = set()
         notification_ids = []
         created_count = 0
         for execution in cleanup_executions:
             todo = cls.record_data_factory_cleanup_failure(execution)
             if todo:
-                active_event_keys.add(todo.event_key)
                 created_count += 1
                 notification_ids.append(todo.id)
 
-        stale_todos = WorkbenchTodo.objects.filter(
-            source_type=WorkbenchTodoSourceTypeEnum.DATA_FACTORY_EXECUTION.value,
-            event_type__in=[
-                WorkbenchTodoEventTypeEnum.DATA_FACTORY_CLEANUP_REQUIRED.value,
-                WorkbenchTodoEventTypeEnum.DATA_FACTORY_CLEANUP_FAILED.value,
-            ],
-        )
-        if active_event_keys:
-            stale_todos = stale_todos.exclude(event_key__in=active_event_keys)
-        resolved_count = cls._resolve_queryset(
-            stale_todos,
-            '系统自动检测：该执行已不满足清理失败待办条件；待手动清理请在执行记录中处理。',
-        )
+        active_ids = set(notification_ids)
+        resolved_count = sum(cls.reconcile_cleanup_todo(todo_id, execution_id)
+                             for todo_id, execution_id in existing_todos if todo_id not in active_ids)
         for todo_id in notification_ids:
             cls._notify_cleanup_failure_if_due(todo_id)
         return {

@@ -1,7 +1,7 @@
 import base64
 from datetime import timezone as datetime_timezone
 from django.utils import timezone
-from django.db.models import F
+from django.db.models import F, Q, Count
 
 from src.apps.auto_api.models import ApiCaseCallbackRun, ApiMockRequestLog
 from src.apps.auto_api.selectors.case_configuration import ApiCaseConfigurationSelector
@@ -11,6 +11,19 @@ from src.common.exceptions import RESOURCE_ACCESS_DENIED
 
 
 class ApiCallbackSelector:
+    @staticmethod
+    def completed_condition():
+        from src.apps.auto_api.enums.callback import CallbackRunStatus
+        return Q(status__in=[CallbackRunStatus.PASSED.value, CallbackRunStatus.FAILED.value,
+            CallbackRunStatus.TIMEOUT.value, CallbackRunStatus.CANCELLED.value],
+            finished_at__isnull=False, active_key__isnull=True)
+
+    @classmethod
+    def case_deletion_summary(cls, case_id):
+        completed = cls.completed_condition()
+        return ApiCaseCallbackRun.objects.filter(case_id=case_id).aggregate(
+            completed=Count('id', filter=completed), unfinished=Count('id', filter=~completed))
+
     @staticmethod
     def timestamp(value):
         if value is None:

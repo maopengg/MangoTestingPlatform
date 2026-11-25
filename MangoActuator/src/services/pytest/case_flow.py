@@ -4,6 +4,7 @@
 # @Time   : 2025-08-27 10:19
 # @Author : 毛鹏
 
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import asyncio
 import json
 import time
@@ -50,6 +51,7 @@ class PytestCaseFlow:
                     try:
                         case_model = PytestExecutionCommand(**json.loads(queue_item['payload']))
                     except Exception as error:
+                        await ActuatorSystemErrorReporter.report(error, 'services/pytest/case_flow:process_tasks')
                         ExecutionCaseQueue.mark_error(queue_item['id'], error)
                         ExecutionCaseQueue.delete(queue_item['id'])
                         log.error(
@@ -64,6 +66,7 @@ class PytestCaseFlow:
             except asyncio.CancelledError:
                 raise
             except Exception as error:
+                await ActuatorSystemErrorReporter.report(error, 'services/pytest/case_flow:process_tasks')
                 log.error(
                     f'Pytest用例调度循环异常，调度器继续运行，类型：{type(error)}，'
                     f'失败详情：{error}，失败明细：{traceback.format_exc()}'
@@ -147,6 +150,7 @@ class PytestCaseFlow:
                 log.warning('HTTP拉取Pytest任务本轮没有新增入队，停止本轮拉取')
             return True
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/pytest/case_flow:pull_case_task_by_http')
             TaskPullFailureReporter.report('Pytest', error)
             return False
 
@@ -164,6 +168,7 @@ class PytestCaseFlow:
                 success = bool(obj.case_result.status)
                 ExecutionActivity.update(activity_id, progress_current=1)
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/pytest/case_flow:execute_task')
             error_message = str(error)
             ExecutionCaseQueue.mark_error(queue_id, error)
             log.error(f'执行Pytest用例任务异常，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
@@ -178,6 +183,7 @@ class PytestCaseFlow:
             try:
                 await case_runner.send_case_result()
             except Exception as report_error:
+                await ActuatorSystemErrorReporter.report(report_error, 'services/pytest/case_flow:execute_task')
                 log.error(f'Pytest异常结果回传失败：case_id={case_model.id}，详情：{report_error}')
         finally:
             ExecutionActivity.finish(activity_id, success, error_message)
@@ -248,7 +254,10 @@ class PytestCaseFlow:
         try:
             from src.tools.set_config import SetConfig
             return max(1, int(SetConfig.get_pytest_parallel() or 5))  # type: ignore
+        except (TypeError, ValueError):
+            return 5
         except Exception as error:
+            ActuatorSystemErrorReporter.schedule(error, 'services/pytest/case_flow:parallel_limit')
             log.warning(f'读取Pytest并行数失败，使用默认值5，详情：{error}')
             return 5
 

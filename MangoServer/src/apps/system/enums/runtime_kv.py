@@ -9,6 +9,7 @@ class RuntimeKVNamespaceEnum(BaseEnum):
     EXECUTOR_STATE = ('executor_state', '执行器连接临时状态')
     ACTUATOR_CONFIG = ('actuator_config', '执行器配置请求结果')
     MCP_CONFIRMATION = ('mcp_confirmation', 'MCP 危险操作确认')
+    EXECUTION_SEARCH = ('execution_search', '执行内容检索任务')
 
 
 class RuntimeKVValueTypeEnum(BaseEnum):

@@ -16,7 +16,7 @@ from src.apps.auto_api.schemas.resource_cleanup import ApiResourceProof, ApiReso
 from src.apps.auto_api.services.resource_cleanup.resource_cleanup import ApiResourceExecutionManager as Manager, ApiResourceCleanupService as Service
 from src.apps.auto_api.services.resource_cleanup.resource_cleanup_io import ApiResourceCleanupIO as IO
 from src.apps.auto_api.tests.test_resource_cleanup import rule_data, proof_data, document
-from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as ES
+from src.apps.data_factory.services.datasource.elasticsearch import ElasticsearchDatasourceService as ES
 
 
 class ResourceLedgerDatabaseTests(unittest.TestCase):

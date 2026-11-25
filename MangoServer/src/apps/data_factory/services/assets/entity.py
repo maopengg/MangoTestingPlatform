@@ -123,7 +123,8 @@ class DataFactoryEntityService:
         if instance:
             duplicate = duplicate.exclude(id=instance.id)
         if duplicate.exists():
-            raise DataFactoryError(DATA_FACTORY_CONFIG_INVALID, value=(table_name,))
+            raise DataFactoryError(DATA_FACTORY_CONFIG_INVALID,
+                value=(f'表 {table_name} 在当前逻辑数据源及Schema下已存在模型，请编辑已有模型，不要重复创建',))
 
     @classmethod
     @transaction.atomic

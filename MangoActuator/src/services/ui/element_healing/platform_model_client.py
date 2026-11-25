@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import json
 import re
 import uuid
@@ -67,6 +68,7 @@ class PlatformModelClient:
                 response_format=response_format,
             )
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/element_healing/platform_model_client:complete_async')
             self._debug_response(request_id, error=error)
             raise
         self._debug_response(request_id, content=content)
@@ -84,6 +86,7 @@ class PlatformModelClient:
                 response_format=response_format,
             )
         except Exception as error:
+            ActuatorSystemErrorReporter.schedule(error, 'services/ui/element_healing/platform_model_client:complete_sync')
             self._debug_response(request_id, error=error)
             raise
         self._debug_response(request_id, content=content)

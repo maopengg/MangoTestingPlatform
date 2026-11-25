@@ -3,6 +3,7 @@
 # @Description:
 # @Time   : 2023/5/4 14:34
 # @Author : 毛鹏
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import asyncio
 import copy
 import inspect
@@ -272,6 +273,7 @@ class PageSteps:
                 self.page_step_result_model.status = StatusEnum.FAIL.value
                 self.page_step_result_model.error_message = error.msg
             except Exception as error:
+                await ActuatorSystemErrorReporter.report(error, 'services/ui/page_steps:steps_main')
                 log.error(f'步骤发生未知失败-2，类型：{error}，详情：{traceback.format_exc()}')
                 self.page_step_result_model.status = StatusEnum.FAIL.value
                 self.page_step_result_model.error_message = str(error)
@@ -702,7 +704,10 @@ class PageSteps:
             send_global_msg(f'UI-强制等待：{seconds:g} 秒')
             await asyncio.sleep(seconds)
             result.status = StatusEnum.SUCCESS.value
+        except (TypeError, ValueError) as error:
+            result.error_message = str(error)
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/page_steps:_execute_force_wait_element')
             result.error_message = str(error)
         result.stop_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         result.duration_ms = round((time.perf_counter() - started_at) * 1000, 2)
@@ -736,6 +741,7 @@ class PageSteps:
             element_result.picture_path = file_path
             element_result.picture_name = file_name
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/page_steps:_capture_step_screenshot')
             log.warning(
                 f'WEB步骤截图失败，不影响执行，元素：{element_model.name or element_model.ope_key}，'
                 f'类型：{type(error)}，详情：{error}'
@@ -830,6 +836,7 @@ class PageSteps:
             self._last_progress_push_count = current_count
             self._last_progress_push_time = datetime.now()
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/page_steps:_send_progress')
             log.warning(
                 f'UI步骤实时结果推送失败，不影响执行，步骤ID：{self.page_steps_model.id}，'
                 f'元素数量：{current_count}，失败详情：{error}'
@@ -867,6 +874,7 @@ class PageSteps:
                 connection_id=connection_id,
             )
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/page_steps:_persist_executor_task_progress')
             # 进度写入失败不能中断浏览器操作；心跳工作器仍会发现租约异常并终止任务。
             log.warning(
                 f'执行器任务进度保存失败，不影响当前节点执行：task_id={task_id}，error={error}'
@@ -898,6 +906,7 @@ class PageSteps:
                 user=self.progress_user,
             )
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/page_steps:_send_node_progress')
             log.warning(
                 f'UI步骤节点进度推送失败，不影响执行，步骤ID：{self.page_steps_model.id}，'
                 f'失败详情：{error}'

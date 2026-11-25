@@ -347,6 +347,33 @@ class SqlExecutionConfigTests(SimpleTestCase):
 
 
 class AssertionCatalogServiceTests(SimpleTestCase):
+    @patch('src.apps.system.services.catalog.assertion_catalog.CacheDataValue.get_cache_value')
+    def test_catalog_uses_current_file_methods_with_older_actuator_cache(self, get_cache_value):
+        get_cache_value.return_value = [
+            {
+                'value': '文件断言',
+                'children': [{'value': 'Excel断言', 'children': [{'value': 'assert_excel_row_data'}]}],
+            },
+            {
+                'value': '文件视觉识别',
+                'children': [{'value': 'PDF断言', 'children': [{'value': 'assert_pdf_visual_match'}]}],
+            },
+        ]
+
+        methods = {
+            group['value']: {
+                method['value'] for subgroup in group['children'] for method in subgroup['children']
+            }
+            for group in AssertionCatalogService.catalog()
+        }
+
+        self.assertTrue({
+            'assert_excel_row_data', 'assert_docx_artifact_valid', 'assert_docx_structure_match',
+        }.issubset(methods['文件断言']))
+        self.assertTrue({
+            'assert_pdf_visual_match', 'assert_image_artifact_valid', 'assert_image_visual_match',
+        }.issubset(methods['文件视觉识别']))
+
     @patch('src.apps.system.services.catalog.assertion_catalog.assertion_func_info', [])
     @patch('src.apps.system.services.catalog.assertion_catalog.CacheDataValue.get_cache_value')
     def test_catalog_separates_ui_scopes(self, get_cache_value):

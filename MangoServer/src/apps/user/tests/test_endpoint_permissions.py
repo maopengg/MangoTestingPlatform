@@ -125,17 +125,55 @@ class EndpointAuthorizationTests(SimpleTestCase):
             if rule['permission_key']:
                 self.assertIn(mcp_endpoint_id(item.name), configurable_endpoint_ids())
 
-    def test_http_and_mcp_are_independent_and_denial_precedes_admin(self):
+    def test_http_and_mcp_are_independent_and_super_admin_bypasses_role(self):
         for admin in (False, True):
-            for effect, expected in ((Effect.DENY, False), (Effect.ALLOW, True)):
+            for effect in (Effect.DENY, Effect.ALLOW):
                 with self.subTest(admin=admin, effect=effect), \
                         patch.object(Endpoint, 'for_user', return_value={self.http_id: effect}), \
                         patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=admin), \
                         patch.object(PermissionMenuService, 'permission_keys_for_user', return_value=set()), \
                         patch('src.apps.user.services.authorization.model_crud_scope.ModelCrudDataScopePolicy.has_request_permission', return_value=True):
-                    self.assertEqual(self.http(), expected)
+                    self.assertEqual(self.http(), admin or effect == Effect.ALLOW)
                     error = permission_error(self.user, 'get_api_case_detail_full', {})
                     self.assertEqual(error is None, admin)
+
+    def test_super_admin_endpoint_decision_ignores_denial_without_reading_role(self):
+        for endpoint in (self.http_id, self.mcp_id):
+            with self.subTest(endpoint=endpoint), \
+                    patch.object(Endpoint, 'for_user', side_effect=AssertionError('不得读取超管角色授权')):
+                self.assertTrue(Endpoint.allows(self.user, endpoint, super_admin=True))
+                self.assertTrue(Endpoint.decision({endpoint: Effect.DENY}, endpoint, super_admin=True))
+        self.assertFalse(Endpoint.decision({}, 'unregistered', super_admin=True))
+
+    def test_super_admin_product_edit_skips_role_and_department_scope(self):
+        from src.apps.test_center.api.views.project_product import ProjectProductCRUD
+        from src.apps.user.services.authorization.model_crud_scope import ModelCrudDataScopePolicy
+
+        request = SimpleNamespace(method='PUT', path='/api/system/product', data={'id': 17}, query_params=QueryDict(),
+                                  user=SimpleNamespace(user_obj=self.user))
+        with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=True), \
+                patch.object(Endpoint, 'for_user', side_effect=AssertionError('不得读取超管角色授权')), \
+                patch.object(ProjectProductScopeService, 'project_product_ids_for_user',
+                             side_effect=AssertionError('不得查询超管部门范围')), \
+                patch.object(ProjectProductCRUD, 'has_request_data_scope_permission',
+                             side_effect=AssertionError('不得限制超管接口数据范围')):
+            self.assertTrue(MenuActionPermission().has_permission(request, ProjectProductCRUD()))
+            model = ProjectProductCRUD.model
+            queryset = model.objects.all()
+            self.assertIs(ModelCrudDataScopePolicy.filter_queryset(model, request, queryset, set()), queryset)
+            self.assertTrue(ModelCrudDataScopePolicy.has_request_permission(model, request, set()))
+            self.assertTrue(ModelCrudDataScopePolicy.has_data_permission(model, request, {'id': 17}, set()))
+            self.assertTrue(ModelCrudDataScopePolicy.has_instance_permission(model, request, model(id=17), set()))
+
+    def test_super_admin_mcp_call_and_discovery_ignore_denial_and_scope(self):
+        access = SimpleNamespace(claims={'is_super_admin': True,
+                                        'endpoint_permissions': {self.mcp_id: Effect.DENY}}, scopes=[])
+        with patch.object(PermissionMenuService, 'is_effective_super_admin', return_value=True), \
+                patch.object(Endpoint, 'for_user', side_effect=AssertionError('不得读取超管角色授权')), \
+                patch('src.interfaces.mcp.authentication.resolve_project_product_ids',
+                      side_effect=AssertionError('不得限制超管产品范围')):
+            self.assertTrue(MangoAuthorizationMiddleware._visible(access, 'get_api_case_detail_full'))
+            self.assertIsNone(permission_error(self.user, 'get_api_case_detail_full', {'case_id': 1}))
 
     def test_http_allow_cannot_bypass_data_scope(self):
         with patch.object(Endpoint, 'for_user', return_value={self.http_id: Effect.ALLOW}), \

@@ -661,7 +661,7 @@ class ScheduleFireConsumerTests(SimpleTestCase):
             runner.tick()
 
         self.assertEqual(create_fires.call_count, 2)
-        self.assertEqual(run_system_jobs.call_count, 2)
+        run_system_jobs.assert_not_called()
         self.assertTrue(runner.dispatch_wakeup_event.is_set())
 
     @patch(

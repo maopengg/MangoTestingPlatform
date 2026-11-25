@@ -18,6 +18,9 @@ SQL_CONTEXT = IO.sql
 
 class HistoricalRejectionTests(SimpleTestCase):
     def setUp(self):
+        history = patch("src.apps.data_factory.services.cleanup.cleanup_history.ResourceCleanupHistoryService.append")
+        history.start()
+        self.addCleanup(history.stop)
         self.rule = ApiResourceCleanupRule.model_validate(rule_data())
         self.proof = proof_data()
         self.proof.root = {}
@@ -119,6 +122,9 @@ class HistoricalRejectionTests(SimpleTestCase):
 
 class VersionEvidenceTests(SimpleTestCase):
     def setUp(self):
+        history = patch("src.apps.data_factory.services.cleanup.cleanup_history.ResourceCleanupHistoryService.append")
+        history.start()
+        self.addCleanup(history.stop)
         self.update = {'trigger_step_key': 'step-11', 'api_info_id': 21, 'request_id_in_url': True,
                        'response_id_path': 'data.id', 'response_version_path': 'data.version',
                        'success_response': {'success': True}}
@@ -170,7 +176,7 @@ class VersionEvidenceTests(SimpleTestCase):
         self.persist.assert_not_called()
 
     def test_es_lag_accepts_only_owned_history_and_never_deletes_old_version(self):
-        from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as ES
+        from src.apps.data_factory.services.datasource.elasticsearch import ElasticsearchDatasourceService as ES
         attempt = self.attempt()
         self.find.return_value = {**self.proof.root, 'version': '3'}
         self.manager.after_response(attempt, SimpleNamespace(code=200,

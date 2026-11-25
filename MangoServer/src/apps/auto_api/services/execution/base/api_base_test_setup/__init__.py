@@ -3,6 +3,7 @@
 # @Description:
 # @Time   : 2025-07-04 17:18
 # @Author : 毛鹏
+import hashlib
 import traceback
 from contextlib import nullcontext
 from urllib.parse import urlparse, urljoin
@@ -36,6 +37,7 @@ from src.apps.auto_api.services.execution.base.api_base_test_setup.public_base i
 from src.apps.auto_api.services.protocols.outcome import ProtocolCallOutcomeService
 from src.common.exceptions import MangoServerError
 from src.common.logging import log
+from src.common.logging.diagnostics import safe_exception_diagnostics
 from src.common.responses.json_response import ensure_jsonpath_source, extract_jsonpath_value
 
 
@@ -317,7 +319,6 @@ class APIBaseTestSetup(PublicBase):
 
     def analytic_func(self, func_str, func_name='func'):
         func_str = self.test_data.replace(func_str)
-        log.api.debug(f'执行API接口-5->后置函数:{func_str}')
         try:
             global_namespace = {}
             exec(func_str, global_namespace)
@@ -328,12 +329,11 @@ class APIBaseTestSetup(PublicBase):
         except AutoApiError:
             raise
         except SyntaxError as error:
+            self.log_custom_function_error(error, func_str)
             detail = f'第{error.lineno or "未知"}行语法错误：{error.msg}'
             raise AutoApiError(API_CUSTOM_FUNCTION_PARSE_FAILED, value=(detail,)) from error
         except Exception as error:
-            log.api.warning(f'函数字符串：{func_str}')
-            log.api.error(
-                f'自定义函数执行失败，函数字符串：{func_str}，失败类型：{error}，失败明细：{traceback.format_exc()}')
+            self.log_custom_function_error(error, func_str)
             detail = f'{type(error).__name__}: {str(error) or "未提供错误信息"}'
             raise AutoApiError(API_CUSTOM_FUNCTION_PARSE_FAILED, value=(detail,)) from error
 
@@ -347,7 +347,19 @@ class APIBaseTestSetup(PublicBase):
         except MangoToolsError as error:
             raise AutoApiError(error_msg, value=(error.msg,)) from error
         except Exception as error:
-            log.api.error(
-                f'自定义函数执行失败，函数字符串：{func_str}，失败类型：{error}，失败明细：{traceback.format_exc()}')
+            self.log_custom_function_error(error, func_str)
             detail = f'{type(error).__name__}: {str(error) or "未提供错误信息"}'
             raise AutoApiError(error_msg, value=(detail,)) from error
+
+    def log_custom_function_error(self, error, script):
+        number, frames = safe_exception_diagnostics(error)
+        trace = getattr(getattr(self, 'trace_recorder', None), 'trace', None)
+        identifiers = [getattr(self, 'current_api_info_id', None), getattr(trace, 'id', None),
+                       getattr(trace, 'case_id', None)]
+        identifiers = [value if type(value) is int else None for value in identifiers]
+        digest = hashlib.sha256(script.encode('utf-8')).hexdigest() if isinstance(script, str) else None
+        # 不记录脚本、异常正文或源码行；用户代码与异常参数均可能含凭据。
+        log.api.error('event=api_custom_function_error api_info_id=%s trace_id=%s case_id=%s '
+                      'script_sha256=%s exception_type=%s syntax_line=%s driver_error_number=%s diagnostics=%s',
+                      *identifiers, digest, type(error).__name__,
+                      error.lineno if isinstance(error, SyntaxError) else None, number, frames)

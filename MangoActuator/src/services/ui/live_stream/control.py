@@ -1,3 +1,4 @@
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import time
 import asyncio
 
@@ -182,7 +183,8 @@ class RemoteControlExecutor:
         await UiRuntimeRegistry.set_active_page(self.runtime_state, page)
         try:
             await page.bring_to_front()
-        except Exception:
+        except Exception as _unexpected_error:
+            await ActuatorSystemErrorReporter.report(_unexpected_error, 'services/ui/live_stream/control:_switch_page')
             pass
         return await self._list_pages()
 
@@ -203,7 +205,8 @@ class RemoteControlExecutor:
             if next_page:
                 try:
                     await next_page.bring_to_front()
-                except Exception:
+                except Exception as _unexpected_error:
+                    await ActuatorSystemErrorReporter.report(_unexpected_error, 'services/ui/live_stream/control:_close_page')
                     pass
         return await self._list_pages()
 
@@ -232,7 +235,8 @@ class RemoteControlExecutor:
     async def _page_payload(self, page, index: int) -> dict:
         try:
             title = await page.title()
-        except Exception:
+        except Exception as _unexpected_error:
+            await ActuatorSystemErrorReporter.report(_unexpected_error, 'services/ui/live_stream/control:_page_payload')
             title = ""
         return {
             "page_id": str(id(page)),
@@ -256,12 +260,14 @@ class RemoteControlExecutor:
             for button in tuple(self.pressed_buttons):
                 try:
                     await page.mouse.up(button=button)
-                except Exception:
+                except Exception as _unexpected_error:
+                    await ActuatorSystemErrorReporter.report(_unexpected_error, 'services/ui/live_stream/control:release_all')
                     pass
             for key in tuple(self.pressed_keys):
                 try:
                     await page.keyboard.up(key)
-                except Exception:
+                except Exception as _unexpected_error:
+                    await ActuatorSystemErrorReporter.report(_unexpected_error, 'services/ui/live_stream/control:release_all')
                     pass
             self.pressed_buttons.clear()
             self.pressed_keys.clear()
@@ -288,7 +294,8 @@ class RemoteControlExecutor:
                 "width": max(1, int(size.get("width") or 1280)),
                 "height": max(1, int(size.get("height") or 720)),
             }
-        except Exception:
+        except Exception as _unexpected_error:
+            await ActuatorSystemErrorReporter.report(_unexpected_error, 'services/ui/live_stream/control:_viewport_size')
             return {"width": 1280, "height": 720}
 
     def _button(self, event: dict) -> str:

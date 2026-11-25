@@ -9,6 +9,7 @@ from src.apps.auto_api.models import (
     ApiInfoRelease,
 )
 from src.apps.auto_api.selectors.querysets import ApiQuerySelector
+from src.apps.auto_api.selectors.case_list_execution import ApiCaseListExecutionSelector
 from src.apps.auto_api.services.api_case.mutation_io import (
     ApiCaseMutationService,
 )
@@ -52,8 +53,19 @@ def register_case_crud_tools(mcp):
             scenario_tags: list[str] | None = None,
             page: int = 1,
             page_size: int = 10,
+            result_statuses: list[int] | None = None,
     ) -> dict:
-        """搜索 API case。"""
+        """分页搜索 API Case，结果口径与页面列表一致。
+
+        每个 Case 优先查询当前预发布修订，无预发布则查询当前已发布修订，两者都没有才查询编辑态。
+        status/list_result 为该版本跨环境最近一次已完成的完整执行结果，test_env 是结果实际环境；不跟随执行环境。
+        新执行排队、进行中或自动恢复中不覆盖已有结论；is_active 独立表示仍有执行活动，不代表该结果正在执行。
+        编辑态按执行来源查询，不按请求头、配置指纹过滤；修改配置不会清除已有结果，但该结论不代表修改后已重测。
+        固定修订不借用其他修订结果；调试或部分执行不计入。无匹配记录时 status=null，表示待测试。
+        result_statuses 可多选筛选：0失败、1通过、2待测试（无已完成记录）、4告警、5已停止；3进行中不属于完成结果。
+        list_result 包含 revision_id、version_token、trace_id、test_env、started_at；以这些依据判断当前版本，
+        不得把历史通过当作当前版本通过。详情正文用 get_api_case_run_result，历史按精确 trace_id 查询。
+        """
         queryset = ApiQuerySelector.api_case().select_related("project_product", "module", "case_people").all()
         if project_product_id is not None:
             queryset = queryset.filter(project_product_id=project_product_id)
@@ -74,10 +86,15 @@ def register_case_crud_tools(mcp):
             queryset = queryset.filter(tag_query)
         if keyword:
             queryset = queryset.filter(name__contains=keyword)
+        if result_statuses:
+            queryset = ApiCaseListExecutionSelector.filter_queryset_by_results(
+                queryset, [str(value) for value in result_statuses])
         count = queryset.count()
         offset = max(page - 1, 0) * page_size
+        cases = list(queryset.order_by("-id")[offset: offset + page_size])
+        results = ApiCaseListExecutionSelector.collect([item.id for item in cases])
         items = []
-        for item in queryset.order_by("-id")[offset: offset + page_size]:
+        for item in cases:
             case_config = ApiExecutableSnapshotService.current_case_config(
                 item.id,
                 item.project_product_id,
@@ -96,7 +113,8 @@ def register_case_crud_tools(mcp):
                 "scenario_description": item.scenario_description,
                 "front_public": case_config.get("front_public", []),
                 "front_auth_config": case_config.get("front_auth_config", []),
-                "status": item.status,
+                "status": results[item.id]['status'],
+                "list_result": results[item.id],
                 **_api_case_version_summary(item.id),
             })
         return ok({"items": items, "count": count, "page": page, "page_size": page_size})
@@ -386,7 +404,13 @@ def register_case_crud_tools(mcp):
 
     @mcp.tool()
     def get_api_case_detail_full(case_id: int, include_result_data: bool = True) -> dict:
-        """查询完整 API case 树：case、steps、api_info、parameters。"""
+        """查询当前编辑配置树（case、steps、api_info、parameters）及页面当前版本结果。
+
+        list_result/status 按当前预发布→当前已发布→编辑态，取跨环境最新已完成的完整执行，绝不回退其他版本。
+        include_result_data=True 时 execution_result 为该 Trace 的完整执行正文；steps 内结果仅取同一 Trace。
+        configuration_scope=editing 表示配置树是编辑态，不代表已发布修订配置；核验执行内容以 execution_result 为准。
+        无匹配结果或正文缺失不代表通过；历史执行请按精确 trace_id 查询。
+        """
         try:
             return ok(_case_tree(case_id, include_result_data))
         except MangoServerError as error:

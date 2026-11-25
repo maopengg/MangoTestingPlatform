@@ -2,6 +2,10 @@
 
 from src.common.exceptions.definitions import ErrorDefinition
 
+API_CASE_LIST_VERSION_CHANGED = ErrorDefinition(code=31235, message='用例版本或编辑配置已更新，请刷新列表后执行')
+API_CASE_LIST_ALREADY_RUNNING = ErrorDefinition(code=31236, message='该版本在当前环境已有执行中的任务，请勿重复提交')
+API_CASE_LIST_TRACE_UNAVAILABLE = ErrorDefinition(code=31237, message='执行记录创建失败，本次尚未发送请求，请稍后重试')
+
 API_CASE_POSTERIOR_CLEANUP_FAILED = ErrorDefinition(code=31223, message='用例后置清理未全部完成：{}')
 API_CASE_POSTERIOR_SQL_CONFIG_INVALID = ErrorDefinition(code=31224, message='用例后置数据库操作配置无效：第{}项必须是对象')
 
@@ -484,3 +488,4 @@ MODULE_COVERAGE_CASE_REVISION_MISMATCH = ErrorDefinition(code=31230, message='AP
 MODULE_COVERAGE_CASE_TARGET_MISMATCH = ErrorDefinition(code=31231, message='API Case {} 的修订 {} 中未找到目标接口 {}，请选择包含该接口的正确修订')
 API_RESOURCE_CONFIG_INVALID = ErrorDefinition(code=31232, message='API执行资源清理配置无效：{}')
 API_RESOURCE_CLEANUP_FAILED = ErrorDefinition(code=31233, message='API执行资源清理未完成：{}。请按资源台账核查并重试清理，不要重跑创建请求')
+API_CALLBACK_DELETE_IN_PROGRESS = ErrorDefinition(code=31238, message='{}仍有关联的回调验证尚未结束，暂不能删除。请等待验证结束，或先停止对应执行后重试。')

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import asyncio
 import json
 import os
@@ -125,7 +126,8 @@ class WebSocketClient:
             from src.network.http import auth_manager
             if auth_manager.token:
                 extra_headers["Authorization"] = auth_manager.token
-        except Exception:
+        except Exception as _unexpected_error:
+            await ActuatorSystemErrorReporter.report(_unexpected_error, 'network/web_socket/websocket_client:client_run')
             pass
         server_url = f"{websocket_base_url}{SocketEnum.CLIENT_PATH.value}?{urlencode(query_params)}"
 
@@ -176,6 +178,7 @@ class WebSocketClient:
                             cls._connection_state = ConnectionState.DISCONNECTED
 
             except Exception as e:
+                await ActuatorSystemErrorReporter.report(e, 'network/web_socket/websocket_client:client_run')
                 retry += 1
                 async with cls._state_lock:
                     cls._connection_state = ConnectionState.DISCONNECTED
@@ -226,6 +229,7 @@ class WebSocketClient:
                 consecutive_failures = 0
                 await asyncio.sleep(15)
             except Exception as e:
+                await ActuatorSystemErrorReporter.report(e, 'network/web_socket/websocket_client:_heartbeat')
                 consecutive_failures += 1
                 error_message = str(e).strip() or type(e).__name__
                 log.warning(
@@ -294,6 +298,7 @@ class WebSocketClient:
             return True
 
         except Exception as e:
+            await ActuatorSystemErrorReporter.report(e, 'network/web_socket/websocket_client:client_hands')
             log.error(f"握手过程异常: {e}")
             log.debug(traceback.format_exc())
             return False
@@ -314,6 +319,7 @@ class WebSocketClient:
                     cls._connection_state = ConnectionState.DISCONNECTED
                 break
             except Exception as e:
+                await ActuatorSystemErrorReporter.report(e, 'network/web_socket/websocket_client:client_recv')
                 log.error(f"接收异常: {e}")
                 async with cls._state_lock:
                     cls._connection_state = ConnectionState.DISCONNECTED
@@ -343,6 +349,7 @@ class WebSocketClient:
         try:
             data_json = cls._build_socket_json(msg, code, func_name, func_args, is_notice, user, message_id)
         except Exception as e:
+            await ActuatorSystemErrorReporter.report(e, 'network/web_socket/websocket_client:_send_direct')
             log.error(f"序列化失败: {e}, traceback: {traceback.format_exc()}")
             raise
 
@@ -383,7 +390,8 @@ class WebSocketClient:
                     f"直接发送成功: func_name={data.get('func_name')}，"
                     f"code={out.get('code')}，msg={str(out.get('msg') or '')[:120]}"
                 )
-            except Exception:
+            except Exception as _unexpected_error:
+                await ActuatorSystemErrorReporter.report(_unexpected_error, 'network/web_socket/websocket_client:_send_json_direct')
                 log.debug("直接发送成功")
 
     # ==========================
@@ -409,6 +417,7 @@ class WebSocketClient:
                         await cls._send_direct(**message_data)
                         log.info(f"队列消息发送成功: {message_data.get('msg', '')[:50]}")
                     except Exception as e:
+                        await ActuatorSystemErrorReporter.report(e, 'network/web_socket/websocket_client:_process_message_queue')
                         log.error(f"队列消息发送失败: {e}")
                         # 重新放回队列（放到队首）
                         cls._message_queue.appendleft(message_data)
@@ -420,6 +429,7 @@ class WebSocketClient:
                 log.info("消息队列处理器已停止")
                 break
             except Exception as e:
+                await ActuatorSystemErrorReporter.report(e, 'network/web_socket/websocket_client:_process_message_queue')
                 log.error(f"消息队列处理异常: {e}")
                 await asyncio.sleep(1)
 
@@ -442,12 +452,14 @@ class WebSocketClient:
                             f"可靠消息重试发送成功，queue_id={row['id']}，func_name={row.get('message_type')}"
                         )
                     except Exception as error:
+                        await ActuatorSystemErrorReporter.report(error, 'network/web_socket/websocket_client:_process_reliable_queue')
                         WebSocketReliableQueue.mark_failed(row['id'], row['retry_count'], error)
                         break
             except asyncio.CancelledError:
                 log.info("可靠消息队列处理器已停止")
                 break
             except Exception as error:
+                await ActuatorSystemErrorReporter.report(error, 'network/web_socket/websocket_client:_process_reliable_queue')
                 log.error(f"可靠消息队列处理异常: {error}")
             await asyncio.sleep(WebSocketReliableQueue.retry_interval)
 
@@ -456,6 +468,7 @@ class WebSocketClient:
         try:
             data_json = cls._build_socket_json(**message_data)
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'network/web_socket/websocket_client:_reliable_send')
             log.error(f"可靠消息序列化失败: {error}, traceback: {traceback.format_exc()}")
             raise
 
@@ -480,6 +493,7 @@ class WebSocketClient:
             async with cls._state_lock:
                 cls._connection_state = ConnectionState.DISCONNECTED
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'network/web_socket/websocket_client:_reliable_send')
             log.error(f"可靠消息发送异常，保留SQLite记录，queue_id={queue_id}，失败详情：{error}")
             log.debug(traceback.format_exc())
             WebSocketReliableQueue.mark_failed(queue_id, 0, error)
@@ -543,6 +557,7 @@ class WebSocketClient:
                     data_json = json_dumps(data_json)
                     log.debug(f'DEBUG-队列消息内容：{data_json}')
                 except Exception as e:
+                    await ActuatorSystemErrorReporter.report(e, 'network/web_socket/websocket_client:async_send')
                     log.error(f"DEBUG模式序列化失败: {e}")
             return
 
@@ -555,6 +570,7 @@ class WebSocketClient:
             async with cls._state_lock:
                 cls._connection_state = ConnectionState.DISCONNECTED
         except Exception as e:
+            await ActuatorSystemErrorReporter.report(e, 'network/web_socket/websocket_client:async_send')
             log.error(f"发送异常: {e}，消息加入队列")
             log.debug(traceback.format_exc())
             cls._message_queue.append(message_data)
@@ -592,6 +608,7 @@ class WebSocketClient:
                         f.write(json_dumps(socket_data.data, indent=2))
             return socket_data
 
-        except Exception:
+        except Exception as _unexpected_error:
+            ActuatorSystemErrorReporter.schedule(_unexpected_error, 'network/web_socket/websocket_client:__output_method')
             log.error(f"数据解析失败：{recv_json}， {traceback.format_exc()}")
             return None

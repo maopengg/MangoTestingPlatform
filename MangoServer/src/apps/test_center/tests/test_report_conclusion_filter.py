@@ -85,7 +85,7 @@ class ReportConclusionFilterTests(SimpleTestCase):
             retained = {'version': 1} if identity % 17 == 0 else {} if identity % 19 == 0 else None
             self.insert(identity, raw_status, rows, retained)
             counts = Summary.effective_summary_from_rows(rows)
-            conclusion = raw_status if retained else Summary.conclusion_status(raw_status, counts, counts['total'])
+            conclusion = Summary.public_status(raw_status) if retained else Summary.conclusion_status(raw_status, counts, counts['total'])
             expected.append((identity, conclusion))
         queryset = Selector.with_conclusion(TestSuite.objects.all()).annotate(
             calculated=F('_report_filter_conclusion')).order_by('id').values_list('id', 'calculated')

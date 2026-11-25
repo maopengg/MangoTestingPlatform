@@ -4,15 +4,18 @@ from django.conf import settings
 from django.http import FileResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
+from django.utils.cache import patch_vary_headers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.apps.auto_api.models import ApiCase
 from src.apps.test_center.models import ExecutionResult
+from src.apps.test_center.enums.content_search import ContentSearchKindEnum
 from src.apps.test_center.services.diagnostics.api_case_diagnosis import ApiCaseDiagnosisService
 from src.apps.test_center.services.diagnostics.assertion_diagnosis import AssertionDiagnosisService
 from src.apps.test_center.services.results.execution_result import ExecutionResultService
+from src.apps.test_center.services.results.result_file import ExecutionResultFileService
 from src.apps.user.services.authorization.permission import PermissionMenuService, ProjectProductScopeService
 from src.common.decorators.error_response import error_response
 from src.common.responses import (
@@ -25,6 +28,30 @@ from src.common.responses import (
 
 
 class ExecutionResultViews(ViewSet):
+
+    @action(methods=['post'], detail=False)
+    @error_response('test_center')
+    def search_start(self, request):
+        """按项目产品、被测环境和单日检索自动化执行内容"""
+        from src.apps.test_center.services.results.content_search import ExecutionContentSearchService
+        return ResponseData.success(RESPONSE_MSG_0001, ExecutionContentSearchService.start(
+            request.user.user_obj, ContentSearchKindEnum.AUTOMATION.value, request.data))
+
+    @action(methods=['get'], detail=False)
+    @error_response('test_center')
+    def search_status(self, request):
+        """查看自动化执行内容检索进度及分页命中记录"""
+        from src.apps.test_center.services.results.content_search import ExecutionContentSearchService
+        return ResponseData.success(RESPONSE_MSG_0001, ExecutionContentSearchService.get(
+            request.user.user_obj, ContentSearchKindEnum.AUTOMATION.value, request.query_params.get('task_id'), request.query_params.get('page', 1)))
+
+    @action(methods=['post'], detail=False)
+    @error_response('test_center')
+    def search_cancel(self, request):
+        """取消本人发起的自动化执行内容检索"""
+        from src.apps.test_center.services.results.content_search import ExecutionContentSearchService
+        return ResponseData.success(RESPONSE_MSG_0001, ExecutionContentSearchService.cancel(
+            request.user.user_obj, ContentSearchKindEnum.AUTOMATION.value, request.data.get('task_id')))
 
     @staticmethod
     def _visible_results(request):
@@ -125,7 +152,7 @@ class ExecutionResultViews(ViewSet):
             return ResponseData.fail(RESPONSE_MSG_0003)
         return ResponseData.success(
             RESPONSE_MSG_0001,
-            ExecutionResultService.result_detail(int(result_id), queryset=self._visible_results(request)),
+            ExecutionResultService.result_detail(int(result_id), queryset=self._visible_results(request), prefer_file=True),
         )
 
     @action(methods=['get'], detail=False)
@@ -139,8 +166,15 @@ class ExecutionResultViews(ViewSet):
                                                                          queryset=self._visible_results(request))
         if result_file is None:
             return ResponseData.fail(RESPONSE_MSG_0003)
+        result_file, encoding = ExecutionResultFileService.transport(result_file, request.headers.get('Accept-Encoding'))
         response = FileResponse(result_file, content_type='application/json')
+        if encoding:
+            response['Content-Encoding'] = encoding
+        if file_name.endswith('.gz'):
+            file_name = file_name[:-3]
         response['Content-Disposition'] = f'inline; filename="{file_name}"'
+        response['Cache-Control'] = 'private, no-store'
+        patch_vary_headers(response, ['Accept-Encoding'])
         return response
 
     @action(methods=['get'], detail=False)
@@ -152,7 +186,7 @@ class ExecutionResultViews(ViewSet):
             return ResponseData.fail(RESPONSE_MSG_0003)
         return ResponseData.success(
             RESPONSE_MSG_0001,
-            ExecutionResultService.latest_result_detail(filters, queryset=self._visible_results(request)),
+            ExecutionResultService.latest_result_detail(filters, queryset=self._visible_results(request), prefer_file=True),
         )
 
     @staticmethod

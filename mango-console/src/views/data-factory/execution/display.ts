@@ -106,13 +106,26 @@ export function cleanupResources(detail: ExecutionDetail | null) {
       )
       return {
         key: `${item.id}:${index}`,
+        item_id: item.id,
+        snapshot_index: index,
+        tenant_lineage: snapshot.rule?.tenant_lineage,
         alias: item.alias,
+        mode: snapshot.rule?.mode === 'delete_and_verify' ? '精确删除并验证' : '仅验证，不删除',
+        document_id_field:
+          snapshot.rule?.document_id_field || item.storage_snapshot?.primary_key || '-',
         index: snapshot.index,
         document_id: snapshot.document_id,
         sql_status: state.sql_cleaned ? '已清理' : '未清理',
-        status: !result ? '待检查' : result.success ? '已确认消失' : '失败',
+        status: !result
+          ? item.cleanup_status === 2
+            ? '未确认清理'
+            : '待检查'
+          : result.success
+          ? '已确认消失'
+          : '失败',
         checked_at: result?.checked_at || '-',
-        error: result?.error || (!result ? '数据库清理后将回查ES' : '-'),
+        error:
+          result?.error || item.cleanup_error || (!result ? '尚未完成ES验证，不代表零残留' : '-'),
       }
     })
   })

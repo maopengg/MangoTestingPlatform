@@ -7,243 +7,258 @@
       tabindex="0"
     >
       <div class="mango-coverage-overview__layout">
-          <div
-            class="mango-workbench-scroll-x mango-coverage-overview__charts-scroll"
-            role="region"
-            aria-label="覆盖统计图表，可横向滚动"
-            tabindex="0"
-          >
-            <div class="mango-coverage-overview__charts">
-              <section class="mango-section-card mango-coverage-overview__panel">
-                <header class="mango-section-title"
-                  ><div class="mango-section-title__main"
-                    ><h2>① 模块接口扫描进度</h2
-                    ><p>完整接口清单上传生效即完成</p></div
-                  ></header
-                >
-                <MangoPanelSpin :loading="inventoryLoading" class="mango-coverage-overview__chart-spin">
-                  <div ref="scanChart" class="mango-coverage-overview__chart"></div>
-                </MangoPanelSpin>
-              </section>
-              <section class="mango-section-card mango-coverage-overview__panel">
-                <header class="mango-section-title"
-                  ><div class="mango-section-title__main"
-                    ><h2>② 接口分析进度</h2
-                    ><p>业务全景图和场景分析</p></div
-                  ></header
-                >
-                <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
-                  <div
-                    v-if="loading || data?.summary.interface_count"
-                    ref="entryChart"
-                    class="mango-coverage-overview__chart"
-                    role="img"
-                    :aria-label="entryDescription"
-                  ></div>
-                  <div v-if="!loading && !data?.summary.interface_count" class="mango-empty-state mango-coverage-overview__chart-empty"
-                    >暂无已发现接口</div
-                  >
-                </MangoPanelSpin>
-              </section>
-              <section class="mango-section-card mango-coverage-overview__panel">
-                <header class="mango-section-title"
-                  ><div class="mango-section-title__main"
-                    ><h2>③ 用例自动化进度</h2><p>有效自动化场景完成情况</p></div
-                  ></header
-                >
-                <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
-                  <div
-                    v-if="loading || statusTotal"
-                    ref="statusChart"
-                    class="mango-coverage-overview__chart"
-                    role="img"
-                    :aria-label="statusDescription"
-                  ></div>
-                  <div v-else class="mango-empty-state mango-coverage-overview__chart-empty"
-                    >暂无自动化场景</div
-                  >
-                </MangoPanelSpin>
-              </section>
-              <section class="mango-section-card mango-coverage-overview__panel">
-                <header class="mango-section-title"
-                  ><div class="mango-section-title__main"
-                    ><h2>④ 接口覆盖率</h2><p>分析完成且全部目标场景有效完成才算覆盖</p
-                    ><p v-if="data?.summary.excluded_interface_count"
-                      >已排除 {{ data.summary.excluded_interface_count }} 个接口，不计入分母</p
-                    ></div
-                  ></header
-                >
-                <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
-                  <div
-                    v-if="loading || data?.summary.interface_count"
-                    ref="coverageChart"
-                    class="mango-coverage-overview__chart"
-                    role="img"
-                    :aria-label="coverageDescription"
-                  ></div>
-                  <div v-else class="mango-empty-state mango-coverage-overview__chart-empty"
-                    >暂无已发现接口</div
-                  >
-                </MangoPanelSpin>
-              </section>
-            </div>
-          </div>
-          <section class="mango-section-card mango-coverage-overview__panel">
-            <header class="mango-section-title mango-coverage-overview__toolbar">
-              <div class="mango-section-title__main"
-                ><h2>模块进度</h2
-                ><p>{{
-                  modulesLoading
-                    ? '正在加载模块进度…'
-                    : `当前 ${pagination.pageCount} 个模块，点击分析或自动化进度查看明细`
-                }}</p></div
+        <div
+          class="mango-workbench-scroll-x mango-coverage-overview__charts-scroll"
+          role="region"
+          aria-label="覆盖统计图表，可横向滚动"
+          tabindex="0"
+        >
+          <div class="mango-coverage-overview__charts">
+            <section class="mango-section-card mango-coverage-overview__panel">
+              <header class="mango-section-title"
+                ><div class="mango-section-title__main"
+                  ><h2>① 模块接口扫描进度</h2><p>完整清单盘点；版本变化单列复核</p></div
+                ></header
               >
-              <div class="mango-section-actions mango-coverage-overview__filters">
-                <a-input
-                  v-model="keyword"
-                  class="mango-coverage-overview__search"
-                  placeholder="搜索模块路径"
-                  allow-clear
-                  size="small"
-                  @blur="scheduleSearch"
-                  @mouseleave="scheduleSearch"
-                  @clear="scheduleSearch"
-                  @press-enter="searchModules"
-                />
+              <MangoPanelSpin
+                :loading="inventoryLoading"
+                class="mango-coverage-overview__chart-spin"
+              >
+                <div ref="scanChart" class="mango-coverage-overview__chart"></div>
+              </MangoPanelSpin>
+            </section>
+            <section class="mango-section-card mango-coverage-overview__panel">
+              <header class="mango-section-title"
+                ><div class="mango-section-title__main"
+                  ><h2>② 接口分析进度</h2><p>业务全景图和场景分析</p></div
+                ></header
+              >
+              <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
+                <div
+                  v-if="loading || data?.summary.interface_count"
+                  ref="entryChart"
+                  class="mango-coverage-overview__chart"
+                  role="img"
+                  :aria-label="entryDescription"
+                ></div>
+                <div
+                  v-if="!loading && !data?.summary.interface_count"
+                  class="mango-empty-state mango-coverage-overview__chart-empty"
+                  >暂无已发现接口</div
+                >
+              </MangoPanelSpin>
+            </section>
+            <section class="mango-section-card mango-coverage-overview__panel">
+              <header class="mango-section-title"
+                ><div class="mango-section-title__main"
+                  ><h2>③ 用例自动化进度</h2><p>有效自动化场景完成情况</p></div
+                ></header
+              >
+              <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
+                <div
+                  v-if="loading || statusTotal"
+                  ref="statusChart"
+                  class="mango-coverage-overview__chart"
+                  role="img"
+                  :aria-label="statusDescription"
+                ></div>
+                <div v-else class="mango-empty-state mango-coverage-overview__chart-empty"
+                  >暂无自动化场景</div
+                >
+              </MangoPanelSpin>
+            </section>
+            <section class="mango-section-card mango-coverage-overview__panel">
+              <header class="mango-section-title"
+                ><div class="mango-section-title__main"
+                  ><h2>④ 接口覆盖率</h2><p>分析完成且全部目标场景有效完成才算覆盖</p
+                  ><p v-if="data?.summary.excluded_interface_count"
+                    >已排除 {{ data.summary.excluded_interface_count }} 个接口，不计入分母</p
+                  ></div
+                ></header
+              >
+              <MangoPanelSpin :loading="loading" class="mango-coverage-overview__chart-spin">
+                <div
+                  v-if="loading || data?.summary.interface_count"
+                  ref="coverageChart"
+                  class="mango-coverage-overview__chart"
+                  role="img"
+                  :aria-label="coverageDescription"
+                ></div>
+                <div v-else class="mango-empty-state mango-coverage-overview__chart-empty"
+                  >暂无已发现接口</div
+                >
+              </MangoPanelSpin>
+            </section>
+          </div>
+        </div>
+        <section class="mango-section-card mango-coverage-overview__panel">
+          <header class="mango-section-title mango-coverage-overview__toolbar">
+            <div class="mango-section-title__main"
+              ><h2>模块进度</h2
+              ><p>{{
+                modulesLoading
+                  ? '正在加载模块进度…'
+                  : `当前 ${pagination.pageCount} 个模块，点击分析或自动化进度查看明细`
+              }}</p></div
+            >
+            <div class="mango-section-actions mango-coverage-overview__filters">
+              <a-input
+                v-model="keyword"
+                class="mango-coverage-overview__search"
+                placeholder="搜索模块路径"
+                allow-clear
+                size="small"
+                @blur="scheduleSearch"
+                @mouseleave="scheduleSearch"
+                @clear="scheduleSearch"
+                @press-enter="searchModules"
+              />
+              <label
+                v-for="group in overviewFilterGroups"
+                :key="group.key"
+                class="mango-coverage-overview__filter-field"
+              >
+                <span>{{ group.label }}</span>
                 <a-select
-                  v-model="gapFilter"
-                  :options="overviewFilters"
+                  v-model="progressFilters[group.key]"
+                  :options="group.options"
+                  multiple
+                  allow-clear
+                  :max-tag-count="1"
+                  placeholder="全部"
                   class="mango-coverage-overview__filter"
                   size="small"
-                  aria-label="模块进度筛选"
+                  :aria-label="group.label"
                 />
-              </div>
-            </header>
-            <div
-              ref="moduleTableRegion"
-              class="mango-coverage-overview__table"
-              @wheel="handleModuleTableWheel"
-            >
-              <StickyHorizontalTable :scroll-x="overviewModuleScrollX">
-                <a-table
-                  class="mango-native-scroll-table"
-                  :data="modules"
-                  :columns="overviewModuleColumns"
-                  :loading="modulesLoading"
-                  :bordered="false"
-                  :pagination="false"
-                  :scroll="{ x: overviewModuleScrollX, y: overviewModuleScrollY }"
-                  row-key="id"
-                  size="small"
-                >
-                  <template #scan="{ record }">{{ scanLabel(record) }}</template>
-                  <template #entry="{ record }">
-                    <button
-                      class="mango-coverage-overview__progress"
-                      :aria-label="`查看${record.name}的接口分析明细`"
-                      @click="drill(record, 'interfaces')"
-                    >
-                      <span
-                        ><b>{{ rate(record.analysis_rate) }}</b
-                        ><small
-                          >{{ record.analyzed_interface_count }} /
-                          {{ record.interface_count }}</small
-                        ></span
-                      >
-                      <a-progress
-                        :percent="(record.analysis_rate || 0) / 100"
-                        color="var(--m-chart-1)"
-                        :show-text="false"
-                        size="small"
-                      />
-                    </button>
-                  </template>
-                  <template #automation="{ record }">
-                    <button
-                      class="mango-coverage-overview__progress"
-                      :aria-label="`查看${record.name}的自动化场景明细`"
-                      @click="drill(record, 'cases')"
-                    >
-                      <span
-                        ><b>完成率 {{ rate(record.automation_rate) }}</b
-                        ><small
-                          >{{ record.completed_count }} / {{ record.target_count }}</small
-                        ></span
-                      >
-                      <a-progress
-                        :percent="(record.automation_rate || 0) / 100"
-                        color="var(--m-chart-2)"
-                        :show-text="false"
-                        size="small"
-                      />
-                    </button>
-                  </template>
-                  <template #project_product="{ record }"
-                    >{{ record.project_name }} / {{ record.product_name }}</template
-                  >
-                  <template #actions="{ record }">
-                    <MangoTableActions
-                      :actions="[{ label: '扫描记录', onClick: () => drill(record, 'scans') }]"
-                    />
-                  </template>
-                  <template #empty
-                    ><div class="mango-empty-state">{{
-                      modulesLoading ? '正在加载模块进度…' : '当前条件没有模块。'
-                    }}</div></template
-                  >
-                </a-table>
-              </StickyHorizontalTable>
+              </label>
             </div>
-            <TableFooter
-              compact-pages
-              v-if="pagination.pageCount"
-              :pagination="pagination"
-              :show-refresh="false"
-            />
-          </section>
-          <section class="mango-section-card mango-coverage-overview__panel">
-            <header class="mango-section-title"
-              ><div class="mango-section-title__main"
-                ><h2>待完成接口</h2
-                ><p
-                  >共 {{ data?.interface_gap_count ?? '—' }} 个，展示前 20
-                  个；点击模块进度可查看全部明细</p
-                ></div
-              ></header
-            >
-            <MangoPanelSpin :loading="loading" class="mango-coverage-overview__gaps-spin">
-              <div v-if="!data?.interface_gaps.length" class="mango-empty-state">{{
-                loading
-                  ? '正在加载待完成接口…'
-                  : '已发现接口暂无录入或自动化缺口，未扫描模块仍需扫描确认。'
-              }}</div>
-              <div
-                v-for="item in data?.interface_gaps || []"
-                :key="item.id"
-                class="mango-coverage-overview__gap"
+          </header>
+          <div
+            ref="moduleTableRegion"
+            class="mango-coverage-overview__table"
+            @wheel="handleModuleTableWheel"
+          >
+            <StickyHorizontalTable :scroll-x="overviewModuleScrollX">
+              <a-table
+                class="mango-native-scroll-table"
+                :data="modules"
+                :columns="overviewModuleColumns"
+                :loading="modulesLoading"
+                :bordered="false"
+                :pagination="false"
+                :scroll="{ x: overviewModuleScrollX, y: overviewModuleScrollY }"
+                row-key="id"
+                size="small"
               >
-                <div
-                  ><strong>{{ item.name }}</strong
-                  ><small>{{ item.module_path }} · {{ item.method }} {{ item.url }}</small></div
+                <template #scan="{ record }">
+                  <a-tooltip :content="record.inventory_reason || scanLabel(record)">
+                    <span>{{ scanLabel(record) }}</span>
+                  </a-tooltip>
+                </template>
+                <template #entry="{ record }">
+                  <button
+                    class="mango-coverage-overview__progress"
+                    :aria-label="`查看${record.name}的接口分析明细`"
+                    @click="drill(record, 'interfaces')"
+                  >
+                    <span
+                      ><b>{{ rate(record.analysis_rate) }}</b
+                      ><small
+                        >{{ record.analyzed_interface_count }} / {{ record.interface_count }}</small
+                      ></span
+                    >
+                    <a-progress
+                      :percent="(record.analysis_rate || 0) / 100"
+                      color="var(--m-chart-1)"
+                      :show-text="false"
+                      size="small"
+                    />
+                  </button>
+                </template>
+                <template #automation="{ record }">
+                  <button
+                    class="mango-coverage-overview__progress"
+                    :aria-label="`查看${record.name}的自动化场景明细`"
+                    @click="drill(record, 'cases')"
+                  >
+                    <span
+                      ><b>完成率 {{ rate(record.automation_rate) }}</b
+                      ><small>{{ record.completed_count }} / {{ record.target_count }}</small></span
+                    >
+                    <a-progress
+                      :percent="(record.automation_rate || 0) / 100"
+                      color="var(--m-chart-2)"
+                      :show-text="false"
+                      size="small"
+                    />
+                  </button>
+                </template>
+                <template #project_product="{ record }"
+                  >{{ record.project_name }} / {{ record.product_name }}</template
                 >
-                <span>{{ !item.bound ? '接口尚未正确录入' : '接口已录入' }}</span>
-                <span
-                  >{{
-                    item.target_count
-                      ? `自动化 ${item.completed_count}/${item.target_count}`
-                      : item.deferred_count
-                      ? `暂不处理 ${item.deferred_count} 个场景`
-                      : '尚无自动化场景'
-                  }}{{
-                    item.target_count && item.deferred_count
-                      ? ` · 暂不处理 ${item.deferred_count}`
-                      : ''
-                  }}</span
+                <template #actions="{ record }">
+                  <MangoTableActions
+                    :actions="[{ label: '扫描记录', onClick: () => drill(record, 'scans') }]"
+                  />
+                </template>
+                <template #empty
+                  ><div class="mango-empty-state">{{
+                    modulesLoading ? '正在加载模块进度…' : '当前条件没有模块。'
+                  }}</div></template
                 >
-                <a-link @click="emit('interface', item.id)">查看场景</a-link>
-              </div>
-            </MangoPanelSpin>
-          </section>
+              </a-table>
+            </StickyHorizontalTable>
+          </div>
+          <TableFooter
+            compact-pages
+            v-if="pagination.pageCount"
+            :pagination="pagination"
+            :show-refresh="false"
+          />
+        </section>
+        <section class="mango-section-card mango-coverage-overview__panel">
+          <header class="mango-section-title"
+            ><div class="mango-section-title__main"
+              ><h2>待完成接口</h2
+              ><p
+                >共 {{ data?.interface_gap_count ?? '—' }} 个，展示前 20
+                个；点击模块进度可查看全部明细</p
+              ></div
+            ></header
+          >
+          <MangoPanelSpin :loading="loading" class="mango-coverage-overview__gaps-spin">
+            <div v-if="!data?.interface_gaps.length" class="mango-empty-state">{{
+              loading
+                ? '正在加载待完成接口…'
+                : '已发现接口暂无录入或自动化缺口，未扫描模块仍需扫描确认。'
+            }}</div>
+            <div
+              v-for="item in data?.interface_gaps || []"
+              :key="item.id"
+              class="mango-coverage-overview__gap"
+            >
+              <div
+                ><strong>{{ item.name }}</strong
+                ><small>{{ item.module_path }} · {{ item.method }} {{ item.url }}</small></div
+              >
+              <span>{{ !item.bound ? '接口尚未正确录入' : '接口已录入' }}</span>
+              <span
+                >{{
+                  item.target_count
+                    ? `自动化 ${item.completed_count}/${item.target_count}`
+                    : item.deferred_count
+                    ? `暂不处理 ${item.deferred_count} 个场景`
+                    : '尚无自动化场景'
+                }}{{
+                  item.target_count && item.deferred_count
+                    ? ` · 暂不处理 ${item.deferred_count}`
+                    : ''
+                }}</span
+              >
+              <a-link @click="emit('interface', item.id)">查看场景</a-link>
+            </div>
+          </MangoPanelSpin>
+        </section>
       </div>
     </div>
   </div>
@@ -269,13 +284,16 @@
   import MangoTableActions from '@/components/table/MangoTableActions.vue'
   import StickyHorizontalTable from '@/components/table/StickyHorizontalTable.vue'
   import { useCoverageOverviewSections } from '../composables/useCoverageOverviewSections'
-  import type { CoverageOverviewStatistics, CoverageModuleOverview } from '@/api/apitest/module-coverage'
+  import type {
+    CoverageOverviewStatistics,
+    CoverageModuleOverview,
+  } from '@/api/apitest/module-coverage'
   import type { CoverageTab } from '../types'
   import {
     getAutomationStatusData,
     getInterfaceCoverageData,
     getInterfaceAnalysisData,
-    overviewFilters,
+    overviewFilterGroups,
     overviewModuleColumns,
     overviewModuleScrollX,
     overviewModuleScrollY,
@@ -283,8 +301,13 @@
 
   use([TitleComponent])
 
-  const props = defineProps<{ data?: CoverageOverviewStatistics; loading: boolean; error: boolean;
-    scope: Record<string, unknown>; refreshKey?: number }>()
+  const props = defineProps<{
+    data?: CoverageOverviewStatistics
+    loading: boolean
+    error: boolean
+    scope: Record<string, unknown>
+    refreshKey?: number
+  }>()
   const emit = defineEmits<{
     (event: 'retry'): void
     (
@@ -295,8 +318,20 @@
     ): void
     (event: 'interface', id: number): void
   }>()
-  const { inventory, inventoryLoading, modules, modulesLoading, pagination, keyword, gapFilter,
-    scheduleSearch, searchModules } = useCoverageOverviewSections(() => props.scope, () => props.refreshKey)
+  const {
+    inventory,
+    inventoryLoading,
+    modules,
+    modulesLoading,
+    pagination,
+    keyword,
+    progressFilters,
+    scheduleSearch,
+    searchModules,
+  } = useCoverageOverviewSections(
+    () => props.scope,
+    () => props.refreshKey
+  )
   const moduleTableRegion = ref<HTMLElement>()
   function handleModuleTableWheel(event: WheelEvent) {
     if (event.ctrlKey || !event.cancelable || Math.abs(event.deltaY) <= Math.abs(event.deltaX))
@@ -342,18 +377,20 @@
   let chartElements: HTMLElement[] = []
   const rate = (value: number | null | undefined) => (value == null ? '—' : `${value.toFixed(2)}%`)
   function scanLabel(row: CoverageModuleOverview) {
+    if (row.inventory_status === 'review') return `版本待复核 · 盘点基线 #${row.inventory_scan_ids.join('、#')}`
     if (row.inventory_completed) return `接口清单已生效 #${row.inventory_scan_ids.join('、#')}`
-    return row.latest_scan_id ? `接口盘点未完成 · 最近 #${row.latest_scan_id}` : '未盘点'
+    return row.latest_scan_id ? `未盘点 · 尚无完整清单 · 最近 #${row.latest_scan_id}` : '未盘点'
   }
   function drill(row: CoverageModuleOverview, tab: CoverageTab) {
-    const analysis = entryData.value.find((item) => item.filter === gapFilter.value)
     const query: Record<string, string[]> = {}
-    if (tab === 'interfaces' && analysis) query.analysis_statuses = [analysis.status]
-    if (
-      tab === 'interfaces' &&
-      ['covered', 'partial', 'uncovered', 'deferred'].includes(gapFilter.value)
-    )
-      query.coverage_statuses = [gapFilter.value]
+    if (tab === 'interfaces') {
+      const selected = entryData.value.filter((item) =>
+        progressFilters.analysis_progress.includes(item.filter)
+      )
+      if (selected.length) query.analysis_statuses = selected.map((item) => item.status)
+      if (progressFilters.coverage_progress.length)
+        query.coverage_statuses = [...progressFilters.coverage_progress]
+    }
     emit('drill', row, tab, query)
   }
   const token = (name: string) =>
@@ -383,9 +420,13 @@
         subtextStyle: { color: token('--m-muted'), fontSize: 11 },
       },
       legend: {
-        show: true, bottom: 0, left: 'center', itemWidth: 9, itemHeight: 7,
+        show: true,
+        bottom: 0,
+        left: 'center',
+        itemWidth: 9,
+        itemHeight: 7,
         textStyle: { color: text, fontSize: 11 },
-        data: rows.map(item => item.name),
+        data: rows.map((item) => item.name),
         selectedMode: false,
       },
     }
@@ -419,7 +460,8 @@
   }
   function render() {
     if (disposed || suspended) return
-    if (![scanChart.value, entryChart.value, coverageChart.value, statusChart.value].some(Boolean)) return
+    if (![scanChart.value, entryChart.value, coverageChart.value, statusChart.value].some(Boolean))
+      return
     if (scanChart.value && !inventory.value) useEcharts(scanChart.value).clear()
     const text = token('--m-text-2')
     const tooltip = {
@@ -435,6 +477,7 @@
       const chart = useEcharts(scanChart.value)
       const rows = [
         { name: '已盘点', value: projectScanSummary.value?.inventoried_count || 0 },
+        { name: '版本待复核', value: projectScanSummary.value?.inventory_review_count || 0 },
         { name: '未盘点', value: projectScanSummary.value?.uninventoried_count || 0 },
       ]
       chart.setOption(
@@ -442,13 +485,17 @@
           ...donutStyle(scanChart.value, rows, '模块总数'),
           animation: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
           animationDuration: 280,
-          color: [token('--m-success'), token('--m-chart-5')],
+          color: [token('--m-success'), token('--m-chart-1'), token('--m-chart-5')],
           tooltip,
           series: [
             {
               ...donutSeries(scanChart.value, rows),
               data: [
-                ...rows.map(item => ({ ...item, label: { show: item.value > 0 }, labelLine: { show: item.value > 0 } })),
+                ...rows.map((item) => ({
+                  ...item,
+                  label: { show: item.value > 0 },
+                  labelLine: { show: item.value > 0 },
+                })),
               ],
             },
           ],
@@ -457,7 +504,7 @@
       )
       chart.off('click')
       chart.on('click', (event: { dataIndex: number }) => {
-        gapFilter.value = event.dataIndex === 1 ? 'scan' : 'all'
+        progressFilters.inventory_progress = [['inventoried', 'inventory_review', 'scan'][event.dataIndex]]
       })
     }
     if (entryChart.value && props.data && !props.error) {
@@ -477,29 +524,38 @@
             token('--m-warning'),
             token('--m-danger'),
             token('--m-primary'),
-            token('--m-chart-5'),
+            token('--m-chart-3'),
             token('--m-muted'),
           ],
           tooltip: {
             ...tooltip,
             formatter: (item: { name: string; value: number }) =>
-              `${item.name}：${item.value.toLocaleString('zh-CN')} 个接口\n分析完成率 = 已分析 / 未排除接口`,
+              `${item.name}：${item.value.toLocaleString(
+                'zh-CN'
+              )} 个接口\n分析完成率 = 已分析 / 未排除接口`,
           },
-          series: [{
-            ...donutSeries(entryChart.value, entryData.value),
-            label: {
-              ...donutSeries(entryChart.value, entryData.value).label,
-              formatter: (item: { name: string; value: number }) =>
-                `${item.name}\n${item.value.toLocaleString('zh-CN')} 个`,
+          series: [
+            {
+              ...donutSeries(entryChart.value, entryData.value),
+              label: {
+                ...donutSeries(entryChart.value, entryData.value).label,
+                formatter: (item: { name: string; value: number }) =>
+                  `${item.name}\n${item.value.toLocaleString('zh-CN')} 个`,
+              },
+              data: entryData.value.map((item) => ({
+                ...item,
+                label: { show: item.value > 0 },
+                labelLine: { show: item.value > 0 },
+              })),
             },
-            data: entryData.value.map(item => ({ ...item, label: { show: item.value > 0 }, labelLine: { show: item.value > 0 } })),
-          }],
+          ],
         },
         true
       )
       chart.off('click')
       chart.on('click', (event: { dataIndex: number }) => {
-        gapFilter.value = entryData.value[event.dataIndex]?.filter || 'all'
+        const filter = entryData.value[event.dataIndex]?.filter
+        progressFilters.analysis_progress = filter ? [filter] : []
       })
     }
     if (coverageChart.value && props.data && !props.error) {
@@ -529,11 +585,13 @@
       )
       chart.off('click')
       chart.on('click', (event: { dataIndex: number }) => {
-        gapFilter.value = ['covered', 'partial', 'uncovered', 'deferred'][event.dataIndex] || 'all'
+        const filter = ['covered', 'partial', 'uncovered', 'deferred'][event.dataIndex]
+        progressFilters.coverage_progress = filter ? [filter] : []
       })
     }
     if (statusChart.value && props.data && !props.error) {
-      useEcharts(statusChart.value).setOption(
+      const chart = useEcharts(statusChart.value)
+      chart.setOption(
         {
           ...donutStyle(statusChart.value, statusData.value, '场景总数'),
           animation: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
@@ -547,12 +605,21 @@
           series: [
             {
               ...donutSeries(statusChart.value, statusData.value),
-              data: statusData.value.map(item => ({ ...item, label: { show: item.value > 0 }, labelLine: { show: item.value > 0 } })),
+              data: statusData.value.map((item) => ({
+                ...item,
+                label: { show: item.value > 0 },
+                labelLine: { show: item.value > 0 },
+              })),
             },
           ],
         },
         true
       )
+      chart.off('click')
+      chart.on('click', (event: { dataIndex: number }) => {
+        const filter = ['automation_completed', 'case', 'automation_deferred'][event.dataIndex]
+        progressFilters.automation_progress = filter ? [filter] : []
+      })
     }
   }
   function resize() {
@@ -588,7 +655,10 @@
       if (element) observer?.observe(element)
     render()
   }
-  watch(() => [props.data, props.error, props.loading, inventory.value, inventoryLoading.value], update)
+  watch(
+    () => [props.data, props.error, props.loading, inventory.value, inventoryLoading.value],
+    update
+  )
   function attach() {
     window.addEventListener('mango-theme-change', render)
     window.addEventListener('mango-density-change', resize)
@@ -691,8 +761,8 @@
   }
   .mango-coverage-overview__filters {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    flex: 0 1 440px;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    flex: 1 1 100%;
     min-width: 0;
     gap: var(--m-page-gap);
   }
@@ -703,6 +773,13 @@
   .mango-coverage-overview__filter {
     width: 100%;
     min-width: 0;
+  }
+  .mango-coverage-overview__filter-field {
+    display: grid;
+    grid-template-columns: 70px minmax(0, 1fr);
+    align-items: center;
+    color: var(--m-text-2);
+    font-size: 12px;
   }
   .mango-coverage-overview__table {
     display: flex;

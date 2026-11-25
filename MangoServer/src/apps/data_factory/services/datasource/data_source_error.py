@@ -48,10 +48,12 @@ class DataSourceErrorService:
                    1406: '写入内容超过字段长度，请检查生成规则或用例参数',
                    1451: '记录仍被外键引用，无法删除，请检查关联数据清理顺序',
                    1452: '写入引用的父记录不存在，请检查前置数据和关联字段',
+                   1525: '日期或字段值不合法，请检查用例SQL中的比较值、格式及字段类型',
                    2003: '无法连接数据库，请检查数据源地址、端口和网络',
                    2006: '数据库连接已断开，请核查原操作结果，勿直接重放写入',
                    2013: '数据库操作过程中连接中断，请核查原操作结果，勿直接重放写入',
-                   3024: '查询超过数据库执行时间限制，请检查查询范围和索引'}
+                   3024: '查询超过数据库执行时间限制，请检查查询范围和索引',
+                   3141: 'JSON函数参数不是合法JSON，请检查用例SQL中的JSON输入、空字符串及字段内容，修正后重试'}
         seen = set()
         while isinstance(error, BaseException) and id(error) not in seen:
             seen.add(id(error))
@@ -112,7 +114,7 @@ class DataSourceErrorService:
                     1044, 1045, 1049, 1050, 1051, 1052, 1054, 1060, 1061, 1062, 1064,
                     1091, 1109, 1110, 1136, 1142, 1143, 1146, 1149, 1193, 1205, 1213, 1227,
                     1222, 1241, 1242, 1264, 1265, 1292, 1304, 1305, 1364, 1366,
-                    1406, 1451, 1452, 1582, 1690, 3024, 3065, 3140, 3141, 3143,
+                    1406, 1451, 1452, 1525, 1582, 1690, 3024, 3065, 3140, 3141, 3143,
                 }
             if isinstance(sqlstate, str) and len(sqlstate) == 5:
                 if sqlstate.startswith('08') or sqlstate in ('40003', '08007'):
@@ -147,7 +149,11 @@ class DataSourceErrorService:
         if database.db_type == DataSourceTypeEnum.MYSQL.value and not database.database_name and 'no database selected' in normalized:
             from src.apps.data_factory.exceptions import DATA_SOURCE_DEFAULT_DATABASE_REQUIRED
             raise DataFactoryError(DATA_SOURCE_DEFAULT_DATABASE_REQUIRED) from error
-        if isinstance(error, sqlalchemy_error.IntegrityError):
+        if (database.db_type == DataSourceTypeEnum.MYSQL.value
+                and cls.server_error_number(error) == 3141 and cls.confirmed_rejection(error)):
+            message = DATA_SOURCE_SQL_PARAMETER_INVALID
+            detail = cls.audit_reason(error)
+        elif isinstance(error, sqlalchemy_error.IntegrityError):
             message = DATA_SOURCE_SQL_DATABASE_INVALID_CODE_SQL_DATABASE_INVALID
         elif isinstance(error, sqlalchemy_error.DataError):
             message = DATA_SOURCE_SQL_PARAMETER_INVALID
@@ -240,7 +246,21 @@ class DataSourceErrorService:
         else:
             message = DATA_SOURCE_REQUEST_FAILED
             values = (status, detail)
-        raise DataFactoryError(message, value=values) from error
+        failure = DataFactoryError(message, value=values)
+        failure._elasticsearch_http_status = status
+        failure._elasticsearch_error_type = error_type
+        raise failure from error
+
+    @classmethod
+    def is_elasticsearch_version_conflict(cls, error):
+        chain = list(cls.execution_error_chain(error))
+        if any(getattr(value, '_datasource_audit_failure_code', None)
+               or getattr(value, '_datasource_outcome_unknown', False)
+               or getattr(value, '_datasource_unknown_permit', None) for value in chain):
+            return False
+        return any(getattr(value, '_elasticsearch_http_status', None) == 409
+                   and getattr(value, '_elasticsearch_error_type', None) == 'version_conflict_engine_exception'
+                   for value in chain)
 
     @classmethod
     def raise_elasticsearch_transport_error(cls, database, error: Exception, *, timeout=None) -> None:

@@ -12,6 +12,7 @@ from rest_framework.viewsets import ViewSet
 from src.apps.data_factory.selectors.execution_audit import ExecutionAuditSelector
 from src.apps.system.api.serializers.sql_execution import SqlExecutionRecordSerializer
 from src.apps.test_center.enums.environment import EnvironmentEnum
+from src.apps.test_center.enums.content_search import ContentSearchKindEnum
 from src.apps.test_center.enums.data_source import DataSourceTypeEnum
 from src.apps.data_factory.enums.audit import DatasourceAuditSourceEnum, DatasourceAuditStageEnum
 from src.common.decorators.error_response import error_response
@@ -20,6 +21,30 @@ from src.common.responses.response_msg import RESPONSE_MSG_0001, RESPONSE_MSG_00
 
 
 class SqlExecutionRecordViews(ViewSet):
+
+    @action(methods=['post'], detail=False)
+    @error_response('test_center')
+    def search_start(self, request):
+        """按项目产品、被测环境和单日检索数据源执行内容"""
+        from src.apps.test_center.services.results.content_search import ExecutionContentSearchService
+        return ResponseData.success(RESPONSE_MSG_0001, ExecutionContentSearchService.start(
+            self._user(request), ContentSearchKindEnum.DATASOURCE.value, request.data))
+
+    @action(methods=['get'], detail=False)
+    @error_response('test_center')
+    def search_status(self, request):
+        """查看数据源执行内容检索进度及分页命中记录"""
+        from src.apps.test_center.services.results.content_search import ExecutionContentSearchService
+        return ResponseData.success(RESPONSE_MSG_0001, ExecutionContentSearchService.get(
+            self._user(request), ContentSearchKindEnum.DATASOURCE.value, request.query_params.get('task_id'), request.query_params.get('page', 1)))
+
+    @action(methods=['post'], detail=False)
+    @error_response('test_center')
+    def search_cancel(self, request):
+        """取消本人发起的数据源执行内容检索"""
+        from src.apps.test_center.services.results.content_search import ExecutionContentSearchService
+        return ResponseData.success(RESPONSE_MSG_0001, ExecutionContentSearchService.cancel(
+            self._user(request), ContentSearchKindEnum.DATASOURCE.value, request.data.get('task_id')))
 
     @staticmethod
     def _user(request: Request):

@@ -532,7 +532,10 @@ def register_module_coverage_tools(mcp):
         - project_scan_summary：全部三级模块的已完整扫描/未完整扫描数量、scan_completion_rate；
           与其余概览指标一样随 module_id 限定模块及后代，纯接口盘点不算完整链路扫描。
         - project_inventory_summary：①模块接口盘点进度，inventoried_count/leaf_count与inventory_rate；
-          完整模块清单生效即完成，包含inventory_only，不要求图或Case；modules.inventory_completed用于阶段一验收。
+          完整模块清单生效且各仓库/分支版本匹配为已盘点，包含inventory_only，不要求图或Case；
+          inventory_review_count为已有完整基线但后续生效版本不同，非从未盘点，不计完成分子；
+          uninventoried_count为缺少完整基线。modules.inventory_status为completed/review/pending，
+          inventory_reason说明原因，inventory_scan_ids保留原基线；复核完整清单后重新上传生效即可，勿重建Case或绑定。
         - summary.analysis_rate：②接口业务图和场景分析进度；analyzed_interface_count、pending_analysis_count、
           analysis_review_count、analysis_gap_count、deferred_analysis_count分别为已分析/待分析/版本待复核/分析不完整/暂缓，排除项不进分母；版本待复核不等于未扫描。
         - summary.binding_rate：接口录入比例；bound_count/interface_count 为正确绑定 ApiInfo 数/接口数。

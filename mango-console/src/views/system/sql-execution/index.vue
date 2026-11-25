@@ -7,6 +7,9 @@
         @search="onSearch"
         @reset-search="onResetSearch"
       >
+        <template #header-extra>
+          <a-button size="small" @click="contentSearch?.open()">执行内容检索</a-button>
+        </template>
         <template #search-content>
           <a-form :model="conditionItems" layout="inline" @keyup.enter="onSearch">
             <a-form-item v-for="item in conditionItems" :key="item.key" :label="item.label">
@@ -173,6 +176,7 @@
       </section>
     </div>
   </BaseSidePanel>
+  <ExecutionContentSearchDrawer ref="contentSearch" kind="datasource" :on-open="openSearchHit" />
 </template>
 
 <script lang="ts" setup>
@@ -188,6 +192,8 @@ import { reportLoadError } from '@/utils/load-error'
   import { getSqlExecutionList, getSqlExecutionOptions } from '@/api/system/sql_execution'
   import type { SqlExecutionQuery } from '@/api/system/sql_execution'
   import BaseSidePanel from '@/components/overlays/BaseSidePanel.vue'
+  import ExecutionContentSearchDrawer from '@/components/reports/ExecutionContentSearchDrawer.vue'
+  import type { ContentSearchHit } from '@/api/system/execution_content_search'
   import JsonDisplay from '@/components/display/JsonDisplay.vue'
   import MangoTableActions from '@/components/table/MangoTableActions.vue'
   import { useEnum } from '@/store/modules/get-enum'
@@ -206,6 +212,16 @@ import { reportLoadError } from '@/utils/load-error'
   const listError = ref(''), optionsError = ref('')
   const options = ref<AuditOptions>(emptyAuditOptions())
   const detailVisible = ref(false), selectedRecord = ref<SqlExecutionRecord | null>(null)
+  const contentSearch = ref<InstanceType<typeof ExecutionContentSearchDrawer> | null>(null)
+  async function openSearchHit(hit: ContentSearchHit) {
+    const context = identity()
+    const response = await getSqlExecutionList({ id: hit.record_id, page: 1, pageSize: 1 })
+    if (context !== identity()) return
+    const parsed = parseExecutionList(response)
+    const record = parsed.rows.find(row => String(row.id) === String(hit.record_id))
+    if (record) openDetail(record)
+    else Message.warning('执行记录已删除或不可访问')
+  }
   const rowKey = useRowKey('id')
   const pagination = usePagination(doRefresh, listLoading)
   const listRequests = useLatestRequest(), optionRequests = useLatestRequest()

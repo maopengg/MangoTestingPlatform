@@ -8,7 +8,7 @@ from src.apps.auto_api.exceptions import AutoApiError, API_RESOURCE_CLEANUP_FAIL
 from src.apps.auto_api.schemas.resource_cleanup import ApiResourceTargetSnapshot
 from src.apps.data_factory.services.datasource.datasource import DataFactoryDatasource, DataFactoryDatasourceResolver
 from src.apps.data_factory.services.datasource.datasource_target import DatasourceTargetService
-from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService
+from src.apps.data_factory.services.datasource.elasticsearch import ElasticsearchDatasourceService
 from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditService
 from src.apps.test_center.enums.data_source import DataSourceTypeEnum
 from src.apps.test_center.enums.environment import EnvironmentEnum
@@ -175,7 +175,7 @@ class ApiResourceCleanupIO:
     def document(target, rule, proof, *, realtime=True):
         paths = ','.join(path.replace('[]', '') for path in (rule.es_tenant_path, rule.es_business_id_path,
                           rule.es_document_id_path, rule.es_version_path))
-        return DataFactoryCleanupResourceService.document(target, proof.index,
+        return ElasticsearchDatasourceService.document(target, proof.index,
             proof.root[rule.document_id_field], tenant_path=paths, realtime=realtime)
 
     @classmethod

@@ -112,7 +112,7 @@ class ReportSnapshotService:
             if config.failed_cases_only and row.status != TaskEnum.FAIL.value and not row.fail:
                 continue
             case = {'id': row.case_id, 'name': row.case_name or f'Case {row.case_id}', 'type': TestCaseTypeEnum.get_value(row.type), 'case_type': row.type,
-                    'status': TaskEnum.get_value(row.status), 'excluded': row.is_excluded, 'error': row.error_message or '',
+                    'status': TaskEnum.get_value(TestSuiteSummaryService.public_status(row.status)), 'excluded': row.is_excluded, 'error': row.error_message or '',
                     'reason': ReportFailureReasonEnum.get_value(row.failure_reason) or '', 'description': row.failure_description,
                     'duration': durations.get(row.id), 'payload': None, 'images': []}
             if row.status == TaskEnum.FAIL.value or row.fail:

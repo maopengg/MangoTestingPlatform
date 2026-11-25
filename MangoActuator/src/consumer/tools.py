@@ -3,6 +3,7 @@
 # @Description:
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import asyncio
 
 from src.models.system_model import CmdTestModel
@@ -148,6 +149,7 @@ class Tools:
             status = True
             message = '执行器配置保存成功'
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'consumer/tools:t_update_actuator_config')
             config = cls._collect_actuator_config()
             status = False
             message = f'执行器配置保存失败：{error}'

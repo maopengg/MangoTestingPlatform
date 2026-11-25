@@ -68,6 +68,12 @@ class ModuleCoverageResolutionStatus(models.TextChoices):
     GAP = "gap", "未解析Gap"
 
 
+class ModuleCoverageInventoryStatus(models.TextChoices):
+    COMPLETED = "completed", "已盘点"
+    REVIEW = "review", "版本待复核"
+    PENDING = "pending", "未盘点"
+
+
 class ModuleCoverageAnalysisStatus(models.TextChoices):
     COMPLETED = "completed", "已分析"
     PENDING = "pending", "待分析"

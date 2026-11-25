@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import json
 from typing import Any
 
@@ -49,11 +50,13 @@ class UiAuthCacheApplier:
             if self.base_data.page and not self.base_data.page.is_closed():
                 await self.base_data.page.close()
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/auth_cache:_reopen_web_page')
             log.warning(f'重建浏览器Page前关闭旧Page失败，类型：{type(error)}，失败详情：{error}')
         try:
             if self.base_data.context:
                 await self.base_data.context.close()
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/auth_cache:_reopen_web_page')
             log.warning(f'重建浏览器Page前关闭旧Context失败，类型：{type(error)}，失败详情：{error}')
         self.base_data.context = None
         self.base_data.page = None

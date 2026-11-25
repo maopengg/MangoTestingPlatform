@@ -13,6 +13,12 @@ class ApiCaseReleaseStatusEnum(BaseEnum):
     RETIRED = 'retired', '已归档'
 
 
+class ApiCaseListResultStateEnum(BaseEnum):
+    EXECUTED = 'executed', '已执行'
+    NOT_RUN = 'not_run', '未执行'
+    NEEDS_VALIDATION = 'needs_validation', '待验证'
+
+
 class ApiCaseConfigurationFilterEnum(BaseEnum):
     HAS_SQL = 'has_sql', '有 SQL'
     NO_SQL = 'no_sql', '无 SQL'

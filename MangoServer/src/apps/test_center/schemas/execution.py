@@ -15,6 +15,7 @@ class TestSuiteDetailResultSchema(StrictSchema):
     type: TestCaseTypeEnum
     test_suite: int
     status: int
+    attempt: int | None = None
     error_message: str | None = None
     result_data: UiCaseExecutionResult | ApiCaseExecutionResult | list[dict[str, Any]] | PytestExecutionResult
 

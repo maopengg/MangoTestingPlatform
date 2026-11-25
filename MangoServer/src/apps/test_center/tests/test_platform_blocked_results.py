@@ -51,7 +51,7 @@ class PlatformBlockedResultsTests(SimpleTestCase):
             Infrastructure.close_interrupted_trace(SimpleNamespace(type=2))
         interrupt.assert_not_called()
 
-    def test_known_interruption_reason_is_saved_without_marking_business_failure(self):
+    def test_known_interruption_reason_is_saved_while_automatic_recovery_is_pending(self):
         detail = SimpleNamespace(id=7, retry=2, status=TaskEnum.PROCEED.value,
             push_time=timezone.now(), summary_data=None, success=0, fail=0, warning=0, save=Mock())
         suite = SimpleNamespace(id=1, status=TaskEnum.PROCEED.value)
@@ -69,8 +69,9 @@ class PlatformBlockedResultsTests(SimpleTestCase):
         self.assertTrue(accepted)
         self.assertIn(reason, detail.error_message)
         self.assertEqual(detail.failure_description, reason)
-        self.assertEqual((detail.status, detail.fail), (TaskEnum.INFRASTRUCTURE_BLOCKED.value, 0))
-        self.assertTrue(detail.summary_data['meta']['execution_control']['requires_review'])
+        self.assertEqual((detail.status, detail.fail), (TaskEnum.PROCEED.value, 0))
+        self.assertEqual(detail.summary_data['meta']['execution_control']['phase'], 'automatic_recovery')
+        self.assertNotIn('requires_review', detail.summary_data['meta']['execution_control'])
 
     def row(self, status=6, **changes):
         return {'status': status, 'type': 1, 'case_sum': 1, 'success': 0, 'fail': 0,
@@ -81,29 +82,29 @@ class PlatformBlockedResultsTests(SimpleTestCase):
             TaskEnum.PROCEED.value, TaskEnum.WARNING.value, TaskEnum.STOPPED.value], list(range(6)))
         self.assertEqual(TaskEnum.INFRASTRUCTURE_BLOCKED.value, 6)
 
-    def test_all_380_blocked_are_not_business_failures(self):
+    def test_all_380_legacy_blocks_are_failed_executions_without_rewriting_evidence(self):
         counts = Summary.effective_summary_from_rows([self.row() for _ in range(380)])
-        self.assertEqual((counts['total'], counts['blocked'], counts['fail']), (380, 380, 0))
-        self.assertEqual(Summary.conclusion_status(6, counts, 380), 6)
+        self.assertEqual((counts['total'], counts['blocked'], counts['fail']), (380, 0, 380))
+        self.assertEqual(Summary.conclusion_status(6, counts, 380), 0)
 
     def test_legacy_phase_has_same_counts_without_rewriting_database(self):
         counts = Summary.effective_summary_from_rows([self.row(0, summary_data={
             'meta': {'execution_control': {'phase': 'infrastructure_blocked'}}})])
-        self.assertEqual((counts['blocked'], counts['fail']), (1, 0))
-        self.assertEqual(Summary.conclusion_status(0, counts, 1), 6)
+        self.assertEqual((counts['blocked'], counts['fail']), (0, 1))
+        self.assertEqual(Summary.conclusion_status(0, counts, 1), 0)
 
     def test_mixed_report_preserves_real_business_failure(self):
         counts = Summary.effective_summary_from_rows([self.row(), self.row(0, fail=1), self.row(1, success=1)])
-        self.assertEqual((counts['blocked'], counts['fail'], counts['success']), (1, 1, 1))
+        self.assertEqual((counts['blocked'], counts['fail'], counts['success']), (0, 2, 1))
         self.assertEqual(Summary.conclusion_status(6, counts, 3), 0)
 
     def test_blocked_is_terminal_but_not_passed(self):
         counters = Summary.counter_data_from_rows([self.row()])
-        self.assertEqual((counters['api_in_progress_case_sum'], counters['api_success'], counters['blocked']), (1, 0, 1))
+        self.assertEqual((counters['api_in_progress_case_sum'], counters['api_success'], counters['blocked']), (1, 0, 0))
 
     def test_successful_steps_do_not_turn_incomplete_result_into_pass(self):
         counts = Summary.effective_summary_from_rows([self.row(success=1)])
-        self.assertEqual((counts['blocked'], counts['success'], counts['total']), (1, 0, 1))
+        self.assertEqual((counts['blocked'], counts['success'], counts['total']), (0, 0, 1))
 
     def test_excluded_blocks_do_not_pollute_effective_counts(self):
         counts = Summary.effective_summary_from_rows([self.row(is_excluded=True), self.row(1, success=1)])

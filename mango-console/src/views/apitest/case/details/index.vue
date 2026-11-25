@@ -673,7 +673,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { isPendingExecution, type PollingContext } from '@/hooks/use-page-polling'
+  import type { PollingContext } from '@/hooks/use-page-polling'
   import { useApiCaseAutoSave } from './composables/useApiCaseAutoSave'
   import {
     computed,
@@ -936,7 +936,6 @@
     debugRunningStepId,
     debugRequestPending,
     lastTraceId,
-    caseRunRefreshActive,
     startCaseRunRefresh,
     stopCaseRunRefresh,
     startCaseRunLoadingLimit,
@@ -1036,25 +1035,28 @@
       scenarios.value.some((item: any) => item.runtime_result_outdated)
   )
   const latestScenarioExecutionLabel = computed(() => {
-    const testTime =
-      selectedExecutionResultSummary.value?.create_time || getLatestScenarioTestTime()
+    const testTime = latestExecutionResultData?.test_time || getLatestScenarioTestTime()
+      || selectedExecutionResultSummary.value?.create_time
     if (!testTime) return ''
     const environment = selectedExecutionResultSummary.value
       ? selectedExecutionResultSummary.value.test_env_name ||
         formatEnvironmentText(selectedExecutionResultSummary.value.test_env)
       : ''
     const outdatedText = selectedRuntimeResultOutdated.value ? ' · 执行后配置已变更' : ''
-    return `最近执行：${testTime}${
+    const summary = selectedExecutionResultSummary.value
+    const version = summary?.revision_id != null ? `修订 #${summary.revision_id}` : '编辑态'
+    const timeLabel = latestExecutionResultData?.test_time || getLatestScenarioTestTime() ? '执行开始' : '结果保存'
+    return `${version} · ${timeLabel}：${testTime}${
       environment && environment !== '-' ? ` · ${environment}` : ''
     }${outdatedText}`
   })
+  const caseRuntimeRunning = ref(false)
   const caseExecutionActive = computed(
     () =>
       caseRequestPending.value ||
       debugRequestPending.value ||
       scenarioHeaderSavingCount.value > 0 ||
-      caseRunRefreshActive.value ||
-      hasRunningCaseStep(caseSteps.value)
+      caseRuntimeRunning.value
   )
   const dataFactoryConfigCache = reactive(new Map<string, number>())
   const parameterCacheByStep = new Map<string, ApiCaseScenario[]>()
@@ -2322,6 +2324,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       const res = await getApiCaseDetailed(caseId)
       if (!isCurrent() || caseVersionPayloadActive.value) return
       const rows = Array.isArray(res.data) ? res.data.map(normalizeCaseDetailRow) : []
+      syncCaseRunRefreshByRows(rows)
       caseSteps.value = rows
       const selectedId = selectedStep.value?.id
       const nextStep =
@@ -2332,7 +2335,6 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
         scenarios.value = []
         invalidateParameterLoad()
       }
-      if (isCurrent()) syncCaseRunRefreshByRows(rows)
     } catch {
       // 公共请求层展示错误，保留已加载数据。
     } finally {
@@ -2499,10 +2501,15 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     try {
       const latest = await getLatestCaseExecutionResult()
       if (!isCurrentExecutionResultLoad(loadToken) || (context && !context.isCurrent())) return
-      if (!latest?.resultData) return
+      if (!latest) {
+        clearDisplayedRuntimeResults()
+        return
+      }
+      if (!latest.resultData) clearDisplayedRuntimeResults()
       selectedExecutionResultSummary.value = latest.summary
+      lastTraceId.value = latest.summary?.trace_id || latest.resultData?.trace_id || ''
+      if (!latest.resultData) return
       latestExecutionResultData = latest.resultData
-      lastTraceId.value = latest.resultData?.trace_id || ''
       applyLatestExecutionResultToSnapshot(latest.resultData)
     } catch (error) {
       console.log(error)
@@ -2567,12 +2574,15 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
     }
   }
 
-  function hasRunningCaseStep(rows: any[]) {
-    return rows.some(isPendingExecution)
+  function hasRunningCaseStep(rows: { status?: unknown }[]) {
+    // 步骤的“待开始”也是未执行配置的默认值，不能作为执行占用依据。
+    return rows.some((row) => Number(row.status) === 3)
   }
 
-  function syncCaseRunRefreshByRows(rows: any[]) {
-    if (hasRunningCaseStep(rows)) {
+  function syncCaseRunRefreshByRows(rows: { status?: unknown }[]) {
+    // 只在读取实时步骤接口后更新；展示历史结果会改写表格行的 status。
+    caseRuntimeRunning.value = hasRunningCaseStep(rows)
+    if (caseRuntimeRunning.value) {
       startCaseRunRefresh()
     } else if (!caseRequestPending.value && !debugRequestPending.value) {
       stopCaseRunRefresh()
@@ -2597,12 +2607,13 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       .then(async (res) => {
         if (!isCurrent() || (context && !context.isCurrent())) return false
         const rows = Array.isArray(res.data) ? res.data : []
-        mergeCaseStepRows(rows)
+        syncCaseRunRefreshByRows(rows)
+        const running = caseRuntimeRunning.value
+        if (!caseVersionPayloadActive.value) mergeCaseStepRows(rows)
         if (isRuntimeResultTab()) {
           await refreshSelectedRuntimeResult(true, context)
         }
-        if (context && !context.isCurrent()) return false
-        const running = hasRunningCaseStep(rows)
+        if (!isCurrent() || (context && !context.isCurrent())) return false
         if (running || caseRequestPending.value || debugRequestPending.value) {
           startCaseRunRefresh()
         } else {
@@ -3316,7 +3327,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
       stopCaseRunLoadingLimit()
       if (!isCurrent()) return
       await refreshCaseDetailAfterRun()
-      syncCaseRunRefreshByRows(caseSteps.value)
+      if (isCurrent()) await refreshCaseRunStatusByStep()
     }
   }
 
@@ -3520,6 +3531,7 @@ removeFrontSql(item.ass_general, index, 'ass_general', item.id)
 
   function invalidatePageContext() {
     pageActive = false
+    caseRuntimeRunning.value = false
     caseConfigLoadingCount = 0
     sortingSteps.value = false
     requests.invalidate()

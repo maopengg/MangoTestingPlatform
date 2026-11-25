@@ -169,7 +169,7 @@ class CaseParameter:
             result_count = len(self.ass_result)
             try:
                 assertion_task()
-            except (AutoApiError, AutoApiError, MangoToolsError) as error:
+            except (MangoServerError, MangoToolsError) as error:
                 failure_messages.append(error.msg)
                 if len(self.ass_result) == result_count:
                     self.__append_assertion_error(title, source_type, error.msg)
@@ -584,7 +584,7 @@ class CaseParameter:
                     default_source_type=default_source_type,
                     continue_on_failure=continue_on_failure,
                 )
-            except AutoApiError as error:
+            except (MangoServerError, MangoToolsError) as error:
                 if not continue_on_failure:
                     raise
                 failure_messages.append(error.msg)
@@ -593,7 +593,7 @@ class CaseParameter:
             result_count = len(self.ass_result)
             try:
                 self.__ass_(mango_assertion, build_ass_dict(i, raw_i, index), API_ASSERTION_FAILED)
-            except AutoApiError as error:
+            except (MangoServerError, MangoToolsError) as error:
                 if not continue_on_failure:
                     raise
                 failure_messages.append(error.msg)
@@ -613,7 +613,7 @@ class CaseParameter:
                     default_source_type=default_source_type,
                     continue_on_failure=continue_on_failure,
                 )
-            except AutoApiError as error:
+            except (MangoServerError, MangoToolsError) as error:
                 if not continue_on_failure:
                     raise
                 failure_messages.append(error.msg)
@@ -646,7 +646,7 @@ class CaseParameter:
                     group_logic=group_logic,
                 )
                 passed_count += 1
-            except AutoApiError as error:
+            except (MangoServerError, MangoToolsError) as error:
                 if continue_on_failure and len(self.ass_result) == result_count:
                     source_type = str(i.get('assertion_type') or default_source_type).lower()
                     title = '响应字段断言' if source_type != 'general' else '通用断言'
@@ -733,7 +733,7 @@ class CaseParameter:
                     test_data=self.test_data,
                 )
                 self.__ass_(mango_assertion, ass_dict, API_ASSERTION_FAILED)
-            except (AutoApiError, AutoApiError, MangoToolsError) as error:
+            except (MangoServerError, MangoToolsError) as error:
                 if not continue_on_failure:
                     raise
                 failure_messages.append(error.msg)

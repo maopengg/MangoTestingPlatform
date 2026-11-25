@@ -3,6 +3,7 @@
 # @Description:
 # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import asyncio
 import os
 import time
@@ -149,6 +150,7 @@ class TestPageSteps:
                     user=data.send_user,
                 )
             except Exception as error:
+                await ActuatorSystemErrorReporter.report(error, 'services/ui/test_page_steps:page_steps_mian')
                 log.error(f'步骤测试失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
                 await self.send_steps_result(
                     300,
@@ -381,6 +383,7 @@ class TestPageSteps:
                 f'检测ID：{data.check_id}，超时：{self.ELEMENT_CHECK_TIMEOUT_SECONDS}s'
             )
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/test_page_steps:_check_element')
             result.status = StatusEnum.FAIL.value
             result.check_status = 'invalid'
             result.error_message = str(error)
@@ -470,11 +473,13 @@ class TestPageSteps:
                             ('visible', 'is_visible'), ('enabled', 'is_enabled'), ('editable', 'is_editable')):
                         try:
                             row[key] = await getattr(target, method_name)(timeout=500)
-                        except Exception:
+                        except Exception as _unexpected_error:
+                            await ActuatorSystemErrorReporter.report(_unexpected_error, 'services/ui/test_page_steps:_inspect_locator_groups')
                             row[key] = None
                     try:
                         row['bounding_box'] = await target.bounding_box(timeout=500)
-                    except Exception:
+                    except Exception as _unexpected_error:
+                        await ActuatorSystemErrorReporter.report(_unexpected_error, 'services/ui/test_page_steps:_inspect_locator_groups')
                         row['bounding_box'] = None
                 if row['status'] == 'valid':
                     actionability_error = self._locator_group_actionability_error(
@@ -494,9 +499,11 @@ class TestPageSteps:
                         row['highlighted_count'] = count
                         has_highlighted = True
                     except Exception as highlight_error:
+                        await ActuatorSystemErrorReporter.report(highlight_error, 'services/ui/test_page_steps:_inspect_locator_groups')
                         row['highlighted'] = False
                         row['highlight_error'] = str(highlight_error)[:200]
             except Exception as error:
+                await ActuatorSystemErrorReporter.report(error, 'services/ui/test_page_steps:_inspect_locator_groups')
                 row['error_message'] = getattr(error, 'msg', None) or str(error)
             row['duration_ms'] = max(0, int((time.perf_counter() - started_at) * 1000))
             rows.append(row)
@@ -825,6 +832,7 @@ class TestPageSteps:
             try:
                 await locator.first.scroll_into_view_if_needed(timeout=3000)
             except Exception as scroll_error:
+                await ActuatorSystemErrorReporter.report(scroll_error, 'services/ui/test_page_steps:_capture_deep_check_screenshot')
                 log.debug(
                     f'深度检测截图前滚动元素失败，继续截取当前视口，元素：{element_model.name}，'
                     f'错误类型：{type(scroll_error).__name__}'
@@ -844,6 +852,7 @@ class TestPageSteps:
                 'screenshot_groups': [int(row.get('group')) for row in passed_groups],
             }
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/test_page_steps:_capture_deep_check_screenshot')
             error_text = self._deep_check_screenshot_error_text(error)
             selected_result.locator_engine = {
                 **(selected_result.locator_engine or {}),
@@ -868,6 +877,7 @@ class TestPageSteps:
                 )
                 return
             except Exception as error:
+                await ActuatorSystemErrorReporter.report(error, 'services/ui/test_page_steps:_take_deep_check_screenshot')
                 last_error = error
                 if (
                         attempt >= self.DEEP_CHECK_SCREENSHOT_ATTEMPTS
@@ -921,6 +931,7 @@ class TestPageSteps:
             target = locator[0] if isinstance(locator, list) else locator
             return await WebElementInspector().suggest_from_locator(target, limit=7)
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/test_page_steps:_anchor_locator_suggestions')
             log.debug(f'深度检测读取锚点DOM定位候选失败，将回退AI自愈：{error}')
             return []
 
@@ -996,7 +1007,8 @@ class TestPageSteps:
                 editable=await self._optional_locator_state(target, 'is_editable'),
                 bounding_box=await self._optional_locator_state(target, 'bounding_box'),
             )
-        except Exception:
+        except Exception as _unexpected_error:
+            await ActuatorSystemErrorReporter.report(_unexpected_error, 'services/ui/test_page_steps:_runtime_element_for_locator')
             return None
 
     async def _locator_items_same_target(
@@ -1029,7 +1041,8 @@ class TestPageSteps:
                 '(candidate, anchor) => candidate === anchor',
                 anchor_handle,
             ))
-        except Exception:
+        except Exception as _unexpected_error:
+            await ActuatorSystemErrorReporter.report(_unexpected_error, 'services/ui/test_page_steps:_locator_items_same_target')
             return False
 
     @staticmethod
@@ -1038,7 +1051,8 @@ class TestPageSteps:
             return None
         try:
             return await getattr(locator, method_name)(timeout=500)
-        except Exception:
+        except Exception as _unexpected_error:
+            await ActuatorSystemErrorReporter.report(_unexpected_error, 'services/ui/test_page_steps:_optional_locator_state')
             return None
 
     @staticmethod
@@ -1101,6 +1115,7 @@ class TestPageSteps:
             if self.base_data.locator_engine:
                 self.base_data.locator_engine.set_test_env(getattr(data, 'test_env', None))
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/test_page_steps:refresh_runtime_config')
             log.warning(f'刷新UI运行配置失败，将继续使用当前执行器配置，错误：{error}')
 
     def _apply_ai_runtime_config(self, ai_config):
@@ -1142,6 +1157,7 @@ class TestPageSteps:
             if is_executor_task():
                 raise
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/test_page_steps:new_web_obj')
             log.error(f'创建浏览器失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
             await AutomationSessionManager.close_page_context(self.base_data, '创建浏览器异常')
             await self.send_steps_result(
@@ -1168,6 +1184,7 @@ class TestPageSteps:
                 await auth_base_data.page.goto(data.url, wait_until='domcontentloaded')
             await self.send_steps_result(200, '浏览器已打开，请完成登录后点击“我已完成登录”', TipsTypeEnum.SUCCESS)
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/test_page_steps:start_auto_auth')
             log.error(f'自动授权打开浏览器失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
             await self._close_auth_session(session_key)
             await self.send_steps_result(300, f'自动授权打开浏览器失败：{error}', TipsTypeEnum.ERROR)
@@ -1185,6 +1202,7 @@ class TestPageSteps:
             await self._close_auth_session(session_key)
             return {'config_id': data.config_id, 'cache_data': cache_data}
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/test_page_steps:capture_auto_auth')
             log.error(f'自动授权提取失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
             await self.send_steps_result(300, f'自动授权提取失败：{error}', TipsTypeEnum.ERROR)
             raise

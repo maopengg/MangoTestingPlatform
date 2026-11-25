@@ -59,6 +59,7 @@ ROUTE_INVENTORY_BLOCKING_CODES = {
     "SPRING_MAPPING_ANNOTATION_SOURCE_UNRESOLVED",
     "SPRING_CONTROLLER_ANNOTATION_SOURCE_UNRESOLVED",
     "SPRING_ACTIVATION_ANNOTATION_SOURCE_UNRESOLVED",
+    "SPRING_SERVER_REGISTRATION_UNRESOLVED",
 }
 
 INTERFACE_ANALYSIS_GAP_CODES = {
@@ -91,14 +92,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--root",
-        required=True,
         help="Java project or source-tree root",
     )
     parser.add_argument(
         "--output-dir",
-        required=True,
         help="directory for the three scan artifacts",
     )
+    parser.add_argument("--java-home", help="use an existing JDK directory; does not install software")
+    parser.add_argument("--check-runtime", action="store_true", help="validate Java, javac and jdk.compiler without scanning or uploading")
     parser.add_argument(
         "--route-prefix",
         help="only retain statically resolved routes beginning with this prefix, e.g. /v3",
@@ -200,15 +201,37 @@ def executable_or_error(name: str) -> str:
 
 
 def command_version(command: str, argument: str) -> str:
-    process = subprocess.run(
-        [command, argument],
-        check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        encoding="utf-8",
-    )
+    try:
+        process = subprocess.run(
+            [command, argument], check=False, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT, text=True, encoding="utf-8", timeout=15,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise ScannerError(f"JDK preflight failed for {command}: {type(exc).__name__}") from exc
+    if process.returncode != 0 or not process.stdout.strip():
+        raise ScannerError(f"JDK preflight failed for {command}; an existing runnable full JDK is required (no automatic installation)")
     return process.stdout.strip()
+
+
+def check_runtime(java_home: str | None = None) -> dict[str, str]:
+    home = java_home or os.environ.get("JAVA_HOME")
+    if home:
+        bin_dir = Path(home).expanduser().resolve() / "bin"
+        java, javac = str(bin_dir / "java"), str(bin_dir / "javac")
+    else:
+        java, javac = executable_or_error("java"), executable_or_error("javac")
+    versions = {"java": java, "javac": javac,
+                "java_version": command_version(java, "-version"),
+                "javac_version": command_version(javac, "-version")}
+    # Version stubs and a JRE on PATH are insufficient for the Compiler Tree API.
+    try:
+        module = subprocess.run([java, "--describe-module", "jdk.compiler"],
+                                capture_output=True, text=True, timeout=15)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise ScannerError("JDK preflight could not verify jdk.compiler") from exc
+    if module.returncode != 0 or not module.stdout.startswith("jdk.compiler@"):
+        raise ScannerError("JDK preflight requires the jdk.compiler module; no automatic installation")
+    return versions
 
 
 def compile_scanner(javac: str, source: Path, classes_dir: Path) -> None:
@@ -552,8 +575,8 @@ def execute(args: argparse.Namespace) -> int:
     ensure_bounded_scan_root(root, label="--root")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    javac = executable_or_error("javac")
-    java = executable_or_error("java")
+    runtime = check_runtime(getattr(args, "java_home", None))
+    javac, java = runtime["javac"], runtime["java"]
     scanner_source = Path(__file__).with_name("SpringBootAstScanner.java")
     if not scanner_source.is_file():
         raise ScannerError(f"Java scanner source is missing: {scanner_source}")
@@ -791,6 +814,8 @@ def execute(args: argparse.Namespace) -> int:
     for duplicates in registrations.values():
         if len(duplicates) < 2:
             continue
+        for endpoint in duplicates:
+            endpoint["registration_conflict"] = True
         first = duplicates[0]
         blocking_reasons.append(
             {
@@ -830,6 +855,10 @@ def execute(args: argparse.Namespace) -> int:
         )
     )
     analysis_ready = not blocking_reasons
+    candidate_only = bool(diagnostic_counts.get("ERROR", 0) or protocol_warnings)
+    inventory_quality = "candidate" if candidate_only else "partial" if blocking_reasons else "complete"
+    for endpoint in endpoints:
+        endpoint["upload_eligible"] = not candidate_only and not endpoint.get("registration_conflict", False)
     if not analysis_ready:
         scan_status = "incomplete"
     elif interface_analysis_gaps:
@@ -837,6 +866,7 @@ def execute(args: argparse.Namespace) -> int:
     else:
         scan_status = "completed"
     endpoint_inventory = {
+        "inventory_quality": inventory_quality,
         "schema_version": SCHEMA_VERSION,
         "tool": "scan_springboot_ast",
         "tool_version": TOOL_VERSION,
@@ -873,6 +903,7 @@ def execute(args: argparse.Namespace) -> int:
         "endpoints": endpoints,
     }
     manifest = {
+        "inventory_quality": inventory_quality,
         "schema_version": SCHEMA_VERSION,
         "tool": "scan_springboot_ast",
         "tool_version": TOOL_VERSION,
@@ -907,12 +938,7 @@ def execute(args: argparse.Namespace) -> int:
             "route_prefix": args.route_prefix,
             "default_excluded_parts": sorted(DEFAULT_EXCLUDED_PARTS),
         },
-        "jdk": {
-            "javac": javac,
-            "javac_version": command_version(javac, "-version"),
-            "java": java,
-            "java_version": command_version(java, "-version"),
-        },
+        "jdk": runtime,
         "files": {
             "discovered": [path.relative_to(root).as_posix() for path in sources],
             "skipped": skipped,
@@ -992,6 +1018,15 @@ def execute(args: argparse.Namespace) -> int:
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.check_runtime:
+        try:
+            print(json.dumps(check_runtime(args.java_home), ensure_ascii=False))
+            return 0
+        except ScannerError as exc:
+            print(f"scan_springboot_ast: error: {exc}", file=sys.stderr)
+            return 2
+    if not args.root or not args.output_dir:
+        parser.error("--root and --output-dir are required unless --check-runtime is used")
     output_dir = Path(args.output_dir).expanduser().resolve()
     root = Path(args.root).expanduser().resolve()
     include = parse_patterns(args.include)

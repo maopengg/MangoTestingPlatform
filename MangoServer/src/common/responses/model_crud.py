@@ -13,6 +13,7 @@ from django.db import models, router, transaction
 from django.db.models.query import QuerySet
 from django.utils.module_loading import import_string
 from minio.error import S3Error
+from rest_framework.exceptions import ErrorDetail, ValidationError
 from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
 
@@ -174,6 +175,27 @@ class ModelCRUD(GenericAPIView):
     def parse_in_filter_values(values) -> list[str]:
         return [item.strip() for value in values for item in str(value).split(',') if item.strip()]
 
+    def parse_model_query_filter(self, key: str, values: list) -> dict:
+        """保留显式 lookup/transform，仅对普通文本字段自动模糊匹配。"""
+        if not values:
+            return {}
+        if key.endswith('__in'):
+            return {key: self.parse_in_filter_values(values)}
+        if key.endswith('__range'):
+            bounds = self.parse_in_filter_values(values)
+            if len(bounds) != 2:
+                raise ValidationError({key: [ErrorDetail('范围查询需要两个边界值。', code='invalid')]})
+            return {key: bounds}
+        value = values[0]
+        if value in (None, '', 'null', 'undefined'):
+            return {}
+        if key.endswith('__isnull'):
+            return {key: str(value).lower() == 'true'}
+        if (isinstance(value, str) and key not in self.not_matching_str and 'id' not in key
+                and not self.has_explicit_lookup_or_transform(key) and self.supports_contains_search(key)):
+            return {f'{key}__contains': value}
+        return {key: value}
+
     def has_explicit_lookup_or_transform(self, key: str) -> bool:
         parts = key.split('__')
         model = self.model
@@ -257,23 +279,7 @@ class ModelCRUD(GenericAPIView):
                 if k == 'test_envs':
                     query_dict[k] = v
                     continue
-                if k.endswith('__in'):
-                    query_dict[k] = self.parse_in_filter_values(v)
-                    continue
-                if k.endswith('__isnull'):
-                    query_dict[k] = str(v[0]).lower() == 'true'
-                    continue
-                if (
-                        k and
-                        isinstance(v[0], str) and
-                        k not in self.not_matching_str and
-                        'id' not in k and
-                        not self.has_explicit_lookup_or_transform(k) and
-                        self.supports_contains_search(k)
-                ):
-                    query_dict[f'{k}__contains'] = v[0]
-                else:
-                    query_dict[k] = v[0]
+                query_dict.update(self.parse_model_query_filter(k, v))
             project_id = get_request_project_id(request)
             project_product_id = get_request_project_product_id(request)
             policy = import_string(settings.MODEL_CRUD_DATA_SCOPE_POLICY)

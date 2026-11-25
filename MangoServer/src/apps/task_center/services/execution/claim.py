@@ -16,6 +16,7 @@ from src.apps.task_center.schemas.execution import ApiWorkerClaimOwner, Executio
 from src.apps.task_center.services.selection.api_case_binding import ApiCaseTaskBindingService
 from src.apps.task_center.services.selection.api_concurrency import ApiConcurrencyService
 from src.apps.test_center.enums import TestCaseTypeEnum
+from src.apps.test_center.enums.reporting import ReportRecoveryCauseEnum
 from src.apps.test_center.enums.reporting import ReportExecutionPhaseEnum
 from src.apps.test_center.models import TestSuite, TestSuiteDetails
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
@@ -70,7 +71,8 @@ class ApiTaskClaimService:
     def not_blocked_condition():
         key = 'summary_data__meta__execution_control__phase'
         return Q(summary_data__isnull=True) | Q(**{f'{key}__isnull': True}) | ~Q(**{
-            key: ReportExecutionPhaseEnum.INFRASTRUCTURE_BLOCKED.value})
+            f'{key}__in': [ReportExecutionPhaseEnum.INFRASTRUCTURE_BLOCKED.value,
+                          ReportExecutionPhaseEnum.AUTOMATIC_RECOVERY.value]})
 
     @staticmethod
     def eligible_condition(timeout_at):
@@ -229,6 +231,7 @@ class ApiTaskClaimService:
                 if detail.status == TaskEnum.PROCEED.value:
                     from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService
                     TestSuiteInfrastructureService.block(detail.id, int(detail.retry or 0), [],
+                        cause=ReportRecoveryCauseEnum.LEASE_EXPIRED,
                         interruption_reason='执行租约已超时，平台未收到完整结果。请核查执行进展及数据清理状态')
                     continue
                 detail.test_suite = test_suite

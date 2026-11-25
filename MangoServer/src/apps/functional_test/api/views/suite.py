@@ -58,10 +58,7 @@ class ManualTestSuiteCRUD(ModelCRUD):
                 except (TypeError, ValueError):
                     query_dict["module_id__in"] = []
                 continue
-            if key and isinstance(value, str) and key not in self.not_matching_str and "id" not in key:
-                query_dict[f"{key}__contains"] = value
-            else:
-                query_dict[key] = value
+            query_dict.update(self.parse_model_query_filter(key, values))
         queryset = self.model.objects.none() if self.has_invalid_integer_filter(
             query_dict) else self.model.objects.filter(**query_dict)
         queryset = self.filter_queryset_by_data_scope(request, queryset)

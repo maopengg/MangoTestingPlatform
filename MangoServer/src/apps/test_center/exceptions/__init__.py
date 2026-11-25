@@ -8,6 +8,17 @@ class TestCenterError(MangoServerError):
     pass
 
 
+class ExecutionResultStorageError(TestCenterError):
+    """结果存储边界故障，不表示原业务请求未执行。"""
+
+
+class ReportResultRecoveryPending(Exception):
+    """原结果存在或预期已生成，但当前不可恢复；禁止据此重放业务。"""
+
+
+EXECUTION_RESULT_STORAGE_UNAVAILABLE = ErrorDefinition(code=40110, message='执行结果暂时无法保存，请检查平台文件存储；原请求可能已执行，请勿重复提交')
+
+
 PRODUCT_MODULE_COVERAGE_DELETE_PROTECTED = ErrorDefinition(
     code=40050, message='模块存在覆盖扫描、接口快照或覆盖用例，不能删除；请先迁移或清理相关覆盖资产。',
 )
@@ -91,6 +102,9 @@ TEST_CENTER_PRODUCT_MODULE_MODULE_NOT_ALLOWED_CODE_MODULE_NOT_ALLOWED = ErrorDef
                                                                                         message='模块不能移动到自身后代下')
 EXECUTION_ARTIFACT_PATH_REQUIRED = ErrorDefinition(code=40018, message='执行产物路径不能为空')
 EXECUTION_ARTIFACT_PATH_INVALID = ErrorDefinition(code=40019, message='执行产物路径不合法')
+EXECUTION_SEARCH_INVALID = ErrorDefinition(code=40111, message='请选择最近30天内的单个搜索日期并填写1至200字的关键词；项目产品、被测环境如填写则须有效')
+EXECUTION_SEARCH_DENIED = ErrorDefinition(code=40112, message='检索任务不存在、已过期或无权访问，请重新检索')
+EXECUTION_SEARCH_BUSY = ErrorDefinition(code=40113, message='已有内容检索正在进行，请稍后重试')
 
 DATA_SOURCE_DISCOVERY_NOT_FOUND = ErrorDefinition(code=40027, message='数据源配置不存在或已删除')
 REPORT_ARTIFACT_INVALID = ErrorDefinition(code=40040, message='报告不存在或无权导出离线 HTML')

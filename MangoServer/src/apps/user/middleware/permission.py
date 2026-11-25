@@ -39,6 +39,8 @@ class MenuActionPermission(BasePermission):
         if not permission_key:
             raise UserError(USER_HTTP_PERMISSION_POLICY_MISSING)
         super_admin = PermissionMenuService.is_effective_super_admin(user)
+        if super_admin:
+            return True
         if self._is_own_user_info_request(request, user):
             return 'index.home:read' in PermissionMenuService.permission_keys_for_user(user)
         if self._is_public_cache_data_key_value_request(request):

@@ -47,7 +47,12 @@ export interface SqlRecord {
   result_preview?: string
 }
 export interface CleanupSnapshot {
-  rule?: { datasource_alias_id?: number }
+  rule?: {
+    datasource_alias_id?: number
+    mode?: string
+    document_id_field?: string
+    tenant_lineage?: JsonValue
+  }
   index?: string
   document_id?: string
 }
@@ -63,6 +68,7 @@ export interface ExecutionItem {
   id: number
   alias: string
   cleanup_status: number
+  cleanup_error?: string
   cleanup_order?: number
   primary_value?: JsonValue
   data?: JsonValue
@@ -84,6 +90,20 @@ export interface ExecutionDetail {
   items?: ExecutionItem[]
   context?: JsonValue
   sql_executions?: SqlRecord[]
+  cleanup_history?: {
+    items: Array<{
+      id: string
+      create_time: string
+      factory_item_id: number
+      operator_id?: number
+      kind: string
+      kind_label?: string
+      evidence: { message?: string; sql_verified?: boolean; es_verified?: boolean }
+    }>
+    count: number
+    page: number
+    page_size: number
+  }
 }
 export interface CleanupResponse {
   fail?: number

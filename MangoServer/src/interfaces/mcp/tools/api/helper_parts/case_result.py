@@ -14,6 +14,7 @@ from django.utils import timezone
 
 from src.apps.auto_api.formatters import format_api_case
 from src.apps.auto_api.selectors.querysets import ApiQuerySelector
+from src.apps.auto_api.selectors.case_list_execution import ApiCaseListExecutionSelector
 from src.apps.auto_api.services.api_case.step import ApiCaseStepService
 from src.apps.auto_api.services.api_info.runtime import ApiInfoRuntimeService
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
@@ -69,6 +70,9 @@ def _case_tree(case_id: int, include_result_data: bool = True) -> dict:
 
     case = ApiCaseQueryService.get_instance(case_id)
     case_data = format_api_case(case)
+    list_result, execution_result = _displayed_case_result(case_id, include_result_data)
+    case_data['status'] = list_result['status']
+    case_data['list_result'] = list_result
     case_data.update(_api_case_version_summary(case_id))
     case_data.update(
         is_product_owner=TestCenterQuerySelector.is_project_product_owner(
@@ -88,13 +92,14 @@ def _case_tree(case_id: int, include_result_data: bool = True) -> dict:
         for parameter in ApiQuerySelector.api_case_detailed_parameter().filter(case_detailed_id=detail.id).order_by(
                 "id"):
             parameter_data = model_to_dict(parameter)
+            parameter_data['status'] = None
             if include_result_data:
-                parameter_data["result_data"] = ExecutionResultService.latest_api_case_parameter_result(
-                    case_id=case_id,
-                    parameter_id=parameter.id,
-                ) or None
+                parameter_data["result_data"] = ExecutionResultService.find_api_case_parameter_result(
+                    execution_result, parameter.id) or None
+                parameter_data['status'] = (parameter_data['result_data'] or {}).get('status')
             parameters.append(parameter_data)
         detail_data = model_to_dict(detail)
+        detail_data['status'] = None
         api_info_data = model_to_dict(api_info)
         api_info_data.update(ApiInfoRuntimeService.capture_runtime_payload(api_info))
         detail_data.update(_api_info_revision_summary(detail.pinned_api_info_revision))
@@ -105,7 +110,17 @@ def _case_tree(case_id: int, include_result_data: bool = True) -> dict:
                 "parameters": parameters,
             }
         )
-    return {"case": case_data, "steps": steps}
+    return {"case": case_data, "steps": steps, "configuration_scope": "editing",
+            "list_result": list_result, "execution_result": execution_result if include_result_data else None}
+
+
+def _displayed_case_result(case_id: int, include_result_data: bool = True):
+    from src.apps.auto_api.services.api_case.query import ApiCaseQueryService
+    ApiCaseQueryService.get_instance(case_id)
+    result = ApiCaseListExecutionSelector.collect([case_id])[case_id]
+    record = ApiCaseListExecutionSelector.result_record(case_id, result) if include_result_data else None
+    payload = ExecutionResultService.load_result_data(record) if record is not None else {}
+    return result, payload if isinstance(payload, dict) else {}
 
 
 def _api_case_result_value_summary(value: Any, sample_limit: int = 5) -> dict:
@@ -253,6 +268,7 @@ def _api_case_step_result_items(
         sample_limit: int = 5,
         export_full: bool = False,
 ) -> dict:
+    list_result, execution_result = _displayed_case_result(case_id)
     queryset = ApiQuerySelector.api_case_detailed_parameter().select_related(
         "case_detailed",
         "case_detailed__api_info",
@@ -268,10 +284,7 @@ def _api_case_step_result_items(
     items = []
     matched_count = queryset.count()
     for parameter in queryset[:50]:
-        result_data = ExecutionResultService.latest_api_case_parameter_result(
-            case_id=case_id,
-            parameter_id=parameter.id,
-        )
+        result_data = ExecutionResultService.find_api_case_parameter_result(execution_result, parameter.id)
         value = result_data
         path_found = True
         path_error = None
@@ -292,7 +305,7 @@ def _api_case_step_result_items(
             "step_name": parameter.case_detailed.api_info.name if parameter.case_detailed and parameter.case_detailed.api_info else None,
             "scenario_id": parameter.id,
             "scenario_name": parameter.name,
-            "status": parameter.status,
+            "status": result_data.get('status'),
             "has_result_data": bool(result_data),
             "json_path": json_path,
             "path_found": path_found,
@@ -304,6 +317,7 @@ def _api_case_step_result_items(
         })
     return {
         "case_id": case_id,
+        "list_result": list_result,
         "matched_count": matched_count,
         "returned_count": len(items),
         "items": items,

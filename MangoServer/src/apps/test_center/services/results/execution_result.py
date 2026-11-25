@@ -19,6 +19,7 @@ from mangotools.enums import TaskEnum
 from src.apps.test_center.enums.environment import EnvironmentEnum
 from src.apps.test_center.models import ExecutionResult, TestSuite, TestSuiteDetails
 from src.apps.test_center.selectors.execution_result import ExecutionResultAccessSelector
+from src.apps.test_center.services.results.result_file import ExecutionResultFileService
 from src.common.logging import log
 from src.common.storage import build_public_file_url, delete_current_storage_file, iter_current_storage_files
 
@@ -168,7 +169,8 @@ class ExecutionResultService:
             test_suite_id: int | None = None,
             test_suite_detail_id: int | None = None,
     ) -> dict:
-        result_size = cls.calc_result_size(result_data)
+        raw = json.dumps(result_data, ensure_ascii=False, default=str, separators=(',', ':')).encode('utf-8')
+        result_size = len(raw) if result_data is not None else 0
         result_checksum = cls.calc_result_checksum(result_data)
         if not getattr(settings, 'RESULT_DATA_TO_FILE', True) or result_data is None:
             return {
@@ -178,18 +180,20 @@ class ExecutionResultService:
                 'result_size': result_size,
                 'result_checksum': result_checksum,
             }
+        compressed = ExecutionResultFileService.encode(raw)
         object_key, file_name = cls.save_result_file(
             result_data,
             target_type=target_type,
             target_id=target_id,
             test_suite_id=test_suite_id,
             test_suite_detail_id=test_suite_detail_id,
+            compressed=compressed,
         )
         return {
             'result_data': None,
             'result_object_key': object_key,
             'result_file_name': file_name,
-            'result_size': result_size,
+            'result_size': len(compressed),
             'result_checksum': result_checksum,
         }
 
@@ -202,21 +206,27 @@ class ExecutionResultService:
             target_id: int,
             test_suite_id: int | None = None,
             test_suite_detail_id: int | None = None,
+            compressed: bytes | None = None,
     ) -> tuple[str, str]:
         now = timezone.now()
         prefix = str(getattr(settings, 'RESULT_DATA_FILE_PREFIX', 'result') or 'result').strip('/\\') or 'result'
         scope = f'{target_type}_{target_id}'
         if test_suite_id and test_suite_detail_id:
             scope = f'report_{test_suite_id}/detail_{test_suite_detail_id}'
-        file_name = f'{uuid.uuid4().hex}.json'
+        file_name = f'{uuid.uuid4().hex}.json.gz'
         object_key = posixpath.join(
             prefix,
             now.strftime('%Y/%m/%d'),
             scope,
             file_name,
         )
-        payload = json.dumps(result_data, ensure_ascii=False, default=str, separators=(',', ':')).encode('utf-8')
-        saved_name = default_storage.save(object_key, ContentFile(payload))
+        payload = compressed if compressed is not None else ExecutionResultFileService.encode(
+            json.dumps(result_data, ensure_ascii=False, default=str, separators=(',', ':')).encode('utf-8'))
+        try:
+            saved_name = default_storage.save(object_key, ContentFile(payload))
+        except Exception as error:
+            from src.apps.test_center.exceptions import ExecutionResultStorageError, EXECUTION_RESULT_STORAGE_UNAVAILABLE
+            raise ExecutionResultStorageError(EXECUTION_RESULT_STORAGE_UNAVAILABLE) from error
         return saved_name.replace('\\', '/'), file_name
 
     @staticmethod
@@ -372,10 +382,10 @@ class ExecutionResultService:
         }
 
     @classmethod
-    def result_detail(cls, result_id: int, *, queryset=None) -> dict | None:
+    def result_detail(cls, result_id: int, *, queryset=None, prefer_file=False) -> dict | None:
         queryset = ExecutionResult.objects.all() if queryset is None else queryset
         item = queryset.filter(id=result_id).select_related('trigger_user').defer(None).first()
-        return cls.serialize_detail(item) if item else None
+        return cls.serialize_detail(item, prefer_file=prefer_file) if item else None
 
     @staticmethod
     def open_result_file(result_id: int, *, queryset=None):
@@ -401,13 +411,13 @@ class ExecutionResultService:
             return None, None
 
     @classmethod
-    def latest_result_detail(cls, filters: dict, *, queryset=None) -> dict | None:
+    def latest_result_detail(cls, filters: dict, *, queryset=None, prefer_file=False) -> dict | None:
         queryset = ExecutionResult.objects.all() if queryset is None else queryset
         item = queryset.filter(**filters).select_related('trigger_user').defer(None).order_by(
             '-create_time',
             '-id',
         ).first()
-        return cls.serialize_detail(item) if item else None
+        return cls.serialize_detail(item, prefer_file=prefer_file) if item else None
 
     @classmethod
     def latest_result_data(
@@ -508,14 +518,29 @@ class ExecutionResultService:
         }
 
     @classmethod
-    def serialize_detail(cls, item: ExecutionResult) -> dict:
+    def serialize_detail(cls, item: ExecutionResult, *, prefer_file=False) -> dict:
         data = cls.serialize_summary(item)
-        if cls.should_return_download_url(item):
+        compressed = bool(item.result_object_key and item.result_object_key.endswith('.gz'))
+        download = cls.should_return_download_url(item) or (prefer_file and compressed and not item.result_cleaned)
+        payload = None
+        if not download and compressed and not item.result_cleaned:
+            limit = int(getattr(settings, 'RESULT_DATA_DETAIL_INLINE_MAX_SIZE', 5 * 1024 * 1024) or 0)
+            raw = cls.read_result_file(item, limit=limit if limit > 0 else None)
+            try:
+                download = raw is not None and limit > 0 and len(raw) > limit
+                if not download and raw is not None:
+                    payload = json.loads(raw)
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                payload = None
+        elif not download:
+            payload = cls.load_result_data(item)
+        data['result_compression'] = 'gzip' if compressed else None
+        if download:
             data['result_data'] = None
             data['result_too_large'] = True
             data['download_url'] = cls.result_download_url(item)
         else:
-            data['result_data'] = cls.load_result_data(item)
+            data['result_data'] = payload
             data['result_too_large'] = False
             data['download_url'] = None
         if item.target_type == cls.TARGET_PYTEST_CASE:
@@ -534,16 +559,20 @@ class ExecutionResultService:
             return item.result_data
         if not item.result_object_key:
             return None
-        try:
-            with default_storage.open(item.result_object_key, 'rb') as file:
-                content = file.read()
-        except Exception:
-            return None
+        content = cls.read_result_file(item)
         if not content:
             return None
         try:
             return json.loads(content.decode('utf-8'))
         except (UnicodeDecodeError, json.JSONDecodeError):
+            return None
+
+    @staticmethod
+    def read_result_file(item, *, limit=None):
+        try:
+            return ExecutionResultFileService.read(default_storage.open(item.result_object_key, 'rb'), limit=limit)
+        except Exception:
+            # 与历史结果读取保持一致：缺失、损坏、存储不可用均不伪造有效正文。
             return None
 
     @classmethod
@@ -696,7 +725,7 @@ class ExecutionResultService:
         pattern = re.compile(
             rf'^{re.escape(prefix)}/(\d{{4}}/\d{{2}}/\d{{2}})/'
             r'(?:report_\d+/detail_\d+|(?:api_info|api_case|ui_page_step|ui_case|pytest_case)_\d+)'
-            r'/[0-9a-f]{32}\.json$'
+            r'/[0-9a-f]{32}\.json(?:\.gz)?$'
         )
         deleted = failed = 0
         scan_failed = False

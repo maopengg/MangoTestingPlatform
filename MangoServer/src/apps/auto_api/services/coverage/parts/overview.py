@@ -19,6 +19,7 @@ from src.apps.auto_api.enums.module_coverage import (
     ModuleCoverageAnalysisStatus,
     ModuleCoveragePolicy,
     ModuleCoverageInterfaceCoverageStatus,
+    ModuleCoverageInventoryStatus,
 )
 
 
@@ -78,7 +79,7 @@ class ModuleCoverageOverviewMixin:
             "modules": overview["modules"],
             "definitions": {
                 "module_scan": "所选范围内的三级模块；仅已生效的完整链路扫描计为完成，随模块筛选变化",
-                "module_inventory": "第一阶段：完整模块接口清单已生效；包含纯盘点，零接口模块须有完整盘点证据；多仓库分别核实",
+                "module_inventory": "第一阶段：完整模块接口清单生效且各仓库最新生效版本与基线一致为已盘点；已有完整基线但版本变化为版本待复核，不等于从未盘点；缺少任一仓库完整基线为未盘点。inventory_review_count单列待复核，不计已盘点分子；零接口也须完整清单证据",
                 "interface_analysis": "第二阶段：当前生效业务图和场景分析完整且修订匹配才算已分析；版本差异单列analysis_review_count，实际分析不完整列analysis_gap_count；排除项不计分母，暂缓单列；ApiInfo绑定不是分析完成",
                 "interface_entry": "bound_count / interface_count；已正确绑定 ApiInfo 的当前有效接口；排除接口不计入",
                 "interface_coverage": "covered_interface_count / interface_count；当前分析完成且全部目标场景有效完成才算覆盖；分析未完成但已有成果计为部分覆盖，保留Case和绑定；排除接口及其场景不计入",
@@ -143,7 +144,9 @@ class ModuleCoverageOverviewMixin:
 
     @classmethod
     def overview(cls, *, modules, interfaces, cases, scans, repository_key=None, branch=None, module_ids=None,
-                 section="all", page=1, page_size=20, keyword="", progress="all"):
+                 section="all", page=1, page_size=20, keyword="", progress="all", module_filters=None):
+        module_filters = module_filters or {}
+        has_progress_filters = progress != 'all' or any(module_filters.values())
         # 全部数据按权限裁剪后批量读取，不能按每个模块重复查询。
         module_rows = list(modules.select_related("parent__parent", "project_product__project").order_by("id"))
         module_map = {item.id: item for item in module_rows}
@@ -157,7 +160,7 @@ class ModuleCoverageOverviewMixin:
         page_size = min(100, max(1, int(page_size)))
         if section == "modules":
             # 默认列表先分页再读取场景/接口重载荷；状态筛选需要先核验候选模块，不能只筛当前页。
-            candidates = candidates[(page - 1) * page_size:page * page_size] if progress == "all" else candidates
+            candidates = candidates[(page - 1) * page_size:page * page_size] if not has_progress_filters else candidates
             selected = {item.id for item in candidates}
         if section != "all":
             interfaces = interfaces.filter(module_id__in=selected)
@@ -284,7 +287,8 @@ class ModuleCoverageOverviewMixin:
                 descendants[parent_id].add(item.id)
         rows = []
         project_scan_summary = {"leaf_count": 0, "scanned_count": 0, "unscanned_count": 0}
-        project_inventory_summary = {"leaf_count": 0, "inventoried_count": 0, "uninventoried_count": 0}
+        project_inventory_summary = {"leaf_count": 0, "inventoried_count": 0, "uninventoried_count": 0,
+                                     "inventory_review_count": 0}
         for module in module_rows:
             if module.id not in selected or module.level != 3:
                 continue
@@ -304,6 +308,7 @@ class ModuleCoverageOverviewMixin:
             for scan in relevant:
                 source_groups[(scan.repository_key, scan.branch)].append(scan)
             inventory_scans = []
+            inventory_review = False
             for source_scans in source_groups.values():
                 baseline = next((scan for scan in source_scans
                                  if scan.status == ModuleCoverageScanStatus.COMPLETED
@@ -311,14 +316,24 @@ class ModuleCoverageOverviewMixin:
                                  and scan.scope_type == ModuleCoverageScanScope.MODULE), None)
                 latest_applied = next((scan for scan in source_scans
                                        if scan.status == ModuleCoverageScanStatus.COMPLETED), None)
-                if baseline and latest_applied and baseline.commit_sha == latest_applied.commit_sha:
+                if baseline:
                     inventory_scans.append(baseline)
-            inventoried = bool(source_groups) and len(inventory_scans) == len(source_groups)
+                    inventory_review |= bool(latest_applied and baseline.commit_sha != latest_applied.commit_sha)
+            has_baselines = bool(source_groups) and len(inventory_scans) == len(source_groups)
+            inventory_status = (ModuleCoverageInventoryStatus.PENDING if not has_baselines else
+                                ModuleCoverageInventoryStatus.REVIEW if inventory_review else
+                                ModuleCoverageInventoryStatus.COMPLETED)
+            inventoried = inventory_status == ModuleCoverageInventoryStatus.COMPLETED
             if len(descendants[module.id]) == 1:
                 project_scan_summary["leaf_count"] += 1
                 project_scan_summary["scanned_count" if applied else "unscanned_count"] += 1
                 project_inventory_summary["leaf_count"] += 1
-                project_inventory_summary["inventoried_count" if inventoried else "uninventoried_count"] += 1
+                inventory_count_key = {
+                    ModuleCoverageInventoryStatus.COMPLETED: "inventoried_count",
+                    ModuleCoverageInventoryStatus.REVIEW: "inventory_review_count",
+                    ModuleCoverageInventoryStatus.PENDING: "uninventoried_count",
+                }[inventory_status]
+                project_inventory_summary[inventory_count_key] += 1
             scope = descendants[module.id] & selected
             totals = {key: sum(direct[item][key] for item in scope) for key in direct[module.id]}
             rows.append({"id": module.id, "parent_id": module.parent_id,
@@ -329,6 +344,11 @@ class ModuleCoverageOverviewMixin:
                          "is_leaf": len(descendants[module.id]) == 1,
                          "scan_completed": applied is not None,
                          "inventory_completed": inventoried,
+                         "inventory_status": inventory_status,
+                         "inventory_reason": ("完整接口清单已生效" if inventoried else
+                            "已有完整盘点基线，后续生效扫描版本不同；请复核完整清单并重新生效，不需重建Case或绑定"
+                            if inventory_status == ModuleCoverageInventoryStatus.REVIEW else
+                            "尚缺完整模块接口清单；各仓库/分支均需完整盘点基线"),
                          "inventory_scan_ids": [scan.id for scan in inventory_scans],
                          "latest_scan_id": relevant[0].id if relevant else None,
                          "latest_scan_status": relevant[0].status if relevant else None,
@@ -353,7 +373,8 @@ class ModuleCoverageOverviewMixin:
                 "leaf_count": len(leaves), "scanned_count": sum(row["scan_completed"] for row in leaves),
                 "unscanned_count": sum(not row["scan_completed"] for row in leaves),
                 "inventoried_count": sum(row["inventory_completed"] for row in leaves),
-                "uninventoried_count": sum(not row["inventory_completed"] for row in leaves),
+                "uninventoried_count": sum(row["inventory_status"] == ModuleCoverageInventoryStatus.PENDING for row in leaves),
+                "inventory_review_count": sum(row["inventory_status"] == ModuleCoverageInventoryStatus.REVIEW for row in leaves),
                 "analysis_rate": cls.overview_rate(totals["analyzed_interface_count"], totals["interface_count"]),
                 "binding_rate": cls.overview_rate(totals["bound_count"], totals["interface_count"]),
                 "interface_coverage_rate": cls.overview_rate(
@@ -368,8 +389,10 @@ class ModuleCoverageOverviewMixin:
         if section == "summary":
             return {key: result[key] for key in ("summary", "interface_gaps", "interface_gap_count")}
         if section == "modules":
-            if progress != "all":
-                rows = [row for row in rows if cls.overview_module_matches(row, progress)]
+            if has_progress_filters:
+                rows = [row for row in rows if (progress == 'all' or cls.overview_module_matches(row, progress))
+                        and all(not values or any(cls.overview_module_matches(row, value) for value in values)
+                                for values in module_filters.values())]
                 module_count = len(rows)
                 rows = rows[(page - 1) * page_size:page * page_size]
             return {"items": rows, "count": module_count, "page": page, "page_size": page_size}
@@ -377,8 +400,12 @@ class ModuleCoverageOverviewMixin:
 
     @staticmethod
     def overview_module_matches(row, progress):
+        if progress == 'inventoried':
+            return row['inventory_completed'] and row['is_leaf']
         if progress == "scan":
-            return not row["inventory_completed"] and row["is_leaf"]
+            return row["inventory_status"] == ModuleCoverageInventoryStatus.PENDING and row['is_leaf']
+        if progress == "inventory_review":
+            return row["inventory_status"] == ModuleCoverageInventoryStatus.REVIEW and row['is_leaf']
         field = {
             "entry": "pending_analysis_count", "analysis_completed": "analyzed_interface_count",
             "analysis_gap": "analysis_gap_count", "analysis_review": "analysis_review_count",
@@ -386,6 +413,7 @@ class ModuleCoverageOverviewMixin:
             "covered": "covered_interface_count", "partial": "partial_interface_count",
             "uncovered": "uncovered_interface_count", "deferred": "deferred_interface_count",
             "case": "incomplete_interface_count",
+            "automation_completed": "completed_count", "automation_deferred": "deferred_count",
         }.get(progress)
         return bool(field and row[field] > 0)
 

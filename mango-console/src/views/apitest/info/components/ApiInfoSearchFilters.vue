@@ -17,7 +17,7 @@
         :auto-clear="false"
         @change="emit('search')"
       />
-      <a-select
+      <MangoSearchSelect
         v-else-if="item.type === 'select'"
         v-model="item.value"
         :multiple="item.multiple"
@@ -35,6 +35,7 @@
   </a-form>
 </template>
 <script lang="ts" setup>
+  import MangoSearchSelect from '@/components/business/MangoSearchSelect.vue'
   import type { FormItem } from '@/types/components'
   import type { UserOption } from '../types'
   import type { useEnum } from '@/store/modules/get-enum'

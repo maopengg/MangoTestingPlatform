@@ -164,7 +164,11 @@ class ApiCase(models.Model):
         from src.apps.data_factory.models import DataFactoryCaseConfig
         from src.apps.data_factory.enums import DataFactoryCaseSourceTypeEnum
         from src.apps.auto_api.services.api_case.version import ApiCaseRevisionService
+        from src.apps.auto_api.services.resource_cleanup.resource_cleanup import ApiResourceCleanupService
+        from src.apps.auto_api.services.callbacks.callback import ApiCallbackService
         with transaction.atomic():
+            ApiResourceCleanupService.delete_cleaned_case_records(self.id)
+            ApiCallbackService.delete_completed_case_records(self.id)
             DataFactoryCaseConfig.objects.filter(
                 source_type=DataFactoryCaseSourceTypeEnum.API_CASE.value,
                 source_id=self.id,

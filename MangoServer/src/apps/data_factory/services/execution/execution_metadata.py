@@ -4,6 +4,7 @@ import re
 import json
 from contextlib import contextmanager, nullcontext
 from contextvars import ContextVar
+from copy import deepcopy
 
 from sqlalchemy import MetaData, Table, text
 
@@ -12,6 +13,8 @@ from src.apps.data_factory.services.schema.discover import DataFactoryDiscover
 
 
 _execution_tables = ContextVar('data_factory_execution_tables', default=None)
+_execution_fields = ContextVar('data_factory_execution_fields', default=None)
+_execution_scenes = ContextVar('data_factory_execution_scenes', default=None)
 
 
 class DataFactoryExecutionMetadata:
@@ -64,10 +67,41 @@ class DataFactoryExecutionMetadata:
     @contextmanager
     def scope():
         token = _execution_tables.set({})
+        fields_token = _execution_fields.set({})
+        scenes_token = _execution_scenes.set({})
         try:
             yield
         finally:
+            _execution_scenes.reset(scenes_token)
+            _execution_fields.reset(fields_token)
             _execution_tables.reset(token)
+
+    @staticmethod
+    def scene_value(template_id, kind, load):
+        scenes = _execution_scenes.get()
+        if scenes is None:
+            return load()
+        key = (template_id, kind)
+        if key not in scenes:
+            scenes[key] = load()
+        return scenes[key]
+
+    @classmethod
+    def field(cls, entity, name):
+        if _execution_fields.get() is None:
+            return entity.datafactoryfield_set.filter(name=name).first()
+        return next((field for field in cls.fields(entity) if field.name == name), None)
+
+    @staticmethod
+    def fields(entity):
+        """同次执行使用一致的字段规则；不缓存被测库的实时 DDL、权限和生成值。"""
+        fields = _execution_fields.get()
+        if fields is None:
+            return list(entity.datafactoryfield_set.all().order_by('sort', 'id'))
+        key = entity.pk
+        if key not in fields:
+            fields[key] = list(entity.datafactoryfield_set.all().order_by('sort', 'id'))
+        return deepcopy(fields[key])
 
     @staticmethod
     def definition_signature(ddl):
@@ -90,14 +124,14 @@ class DataFactoryExecutionMetadata:
         if cached is not None:
             if cached[0] != signature:
                 raise DataFactoryError(DATA_FACTORY_CONFIG_INVALID,
-                    value=(entity.table_name, '同次执行中表结构已变化，已阻止继续写入，请重新同步并核查已创建数据'))
+                    value=(f'表 {entity.table_name}：同次执行中表结构已变化，已阻止继续写入，请重新同步并核查已创建数据',))
             return cached[1], dict(cached[2])
         table = Table(entity.table_name, MetaData(), schema=schema, autoload_with=connection or engine)
         with (nullcontext(connection) if connection is not None else engine.connect()) as reader:
             current, kinds = cls.read_definition(reader, dialect, entity.table_name, schema)
         if current != signature:
             raise DataFactoryError(DATA_FACTORY_CONFIG_INVALID,
-                value=(entity.table_name, '读取期间表结构已变化，已阻止写入，请重新同步表结构'))
+                value=(f'表 {entity.table_name}：读取期间表结构已变化，已阻止写入，请重新同步表结构',))
         if tables is not None:
             tables[key] = signature, table, kinds
         return table, dict(kinds)
@@ -111,5 +145,5 @@ class DataFactoryExecutionMetadata:
             {'table_name': table_name, 'schema_name': schema or ''}).scalar_one_or_none()
         if not definition:
             raise DataFactoryError(DATA_FACTORY_CONFIG_INVALID,
-                value=(table_name, '未读取到有效表结构，已阻止写入，请检查表及数据库绑定'))
+                value=(f'表 {table_name}：未读取到有效表结构，已阻止写入，请检查表及数据库绑定',))
         return json.dumps(definition, sort_keys=True, ensure_ascii=False), {}

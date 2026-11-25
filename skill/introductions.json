@@ -14,7 +14,7 @@
   "mango-code-driven-api-case-builder": {
     "title": "根据代码创建 API 自动化用例",
     "category": "代码分析",
-    "description": "扫描 Spring Boot、FastAPI 等服务端代码，识别接口契约与业务分支，并沿字段、枚举、策略或注册表分派解析到具体处理器；为每个接口生成一张必传且可回读校验的 Mermaid 接口全景图，由各 Case 通过节点和分支 ID 选择覆盖子图并审计异常的同图碰撞；通过稳定 source_key 将多次扫描的新增、修改、归档和已有 ApiCase 绑定同步到测试平台模块覆盖基线，也支持飞书/Excel 评审台账。",
+    "description": "由 AI 识别 Spring、FastAPI、Django/DRF 等后端的实际路由注册方式，固定扫描器仅作可选辅助；先按模块盘点接口、核对注册证据并上传，再逐接口分析业务全景图与场景，完成获准的自动化验证和覆盖回读；按稳定身份同步模块覆盖，保留既有绑定及未解范围。",
     "mcp_enabled": true
   },
   "mango-data-factory-builder": {

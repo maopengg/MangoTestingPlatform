@@ -11,6 +11,7 @@ from src.apps.system.services.runtime_center.heartbeat import ServiceHeartbeatSe
 from src.apps.test_center.enums import TestCaseTypeEnum
 from src.apps.test_center.selectors.querysets import TestCenterQuerySelector
 from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService
+from src.apps.test_center.enums.reporting import ReportRecoveryCauseEnum
 
 
 class ApiWorkerRecoveryService:
@@ -18,13 +19,18 @@ class ApiWorkerRecoveryService:
     REPLACEMENT_GRACE_SECONDS = 60
 
     @staticmethod
-    def finish_unreported(detail_id, attempt):
+    def finish_unreported(detail_id, attempt, *, code_bug=False, result_expected=False):
         detail = TestCenterQuerySelector.test_suite_details().filter(id=detail_id, retry=attempt,
             status=TaskEnum.PROCEED.value).first()
         if detail is None or TestSuiteInfrastructureService.is_blocked(detail.summary_data):
             return False
+        from src.apps.test_center.services.reporting.test_suite.recovery import ReportRecoveryService
+        if ReportRecoveryService.read(detail.summary_data) is not None:
+            return ReportRecoveryService.note_owner_ended(detail.id, attempt, code_bug=code_bug, result_expected=result_expected)
         return TestSuiteInfrastructureService.block(
             detail.id, attempt, [], expected_push_time=detail.push_time,
+            cause=(ReportRecoveryCauseEnum.CODE_BUG if code_bug else ReportRecoveryCauseEnum.RESULT_UNAVAILABLE
+                   if result_expected else ReportRecoveryCauseEnum.TASK_UNREPORTED),
             interruption_reason='执行任务已结束，但未保存完整结果。请核查执行日志及数据清理状态',
         )
 
@@ -99,6 +105,7 @@ class ApiWorkerRecoveryService:
             if heartbeat and cls.replacement_confirmed(owner, heartbeat, detail['push_time'], now):
                 blocked = TestSuiteInfrastructureService.block(
                     detail['id'], int(detail['retry'] or 0), [], expected_push_time=detail['push_time'],
+                    cause=ReportRecoveryCauseEnum.WORKER_REPLACED,
                     interruption_reason='执行进程已重启或被替换，本次执行未完成。请核查已发送请求及数据清理状态')
                 recovered += bool(blocked)
                 if blocked:

@@ -9,7 +9,7 @@
         @blur="emit('search')"
         @clear="emit('search')"
       />
-      <a-select
+      <MangoSearchSelect
         v-else-if="item.type === 'select'"
         v-model="item.value"
         :field-names="fieldNames"
@@ -34,6 +34,7 @@
 </template>
 
 <script lang="ts" setup>
+  import MangoSearchSelect from '@/components/business/MangoSearchSelect.vue'
   import { ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { resolveApiCaseSearchOptions } from '../api-case-search-filter-options'

@@ -7,6 +7,7 @@
       :class="{ 'mango-table-action-btn--danger': action.danger }"
       :disabled="action.disabled"
       :loading="action.loading"
+      :title="action.tooltip"
       size="mini"
       :status="action.danger ? 'danger' : undefined"
       type="text"
@@ -40,6 +41,7 @@
 
   type MangoTableAction = {
     label: string
+    tooltip?: string
     onClick?: () => void
     danger?: boolean
     loading?: boolean

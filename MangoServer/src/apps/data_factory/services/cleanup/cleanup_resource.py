@@ -1,15 +1,13 @@
-import base64
-import json
 import re
-import ssl
 import uuid
+import logging
 from time import monotonic, sleep
-from urllib import error as urllib_error, parse, request
 
 from django.utils import timezone
 from pydantic import ValidationError
 
 from src.apps.data_factory.enums.cleanup_resource import EsCleanupModeEnum
+from src.apps.data_factory.constants import ES_CLEANUP_VERSION_CONFLICT_RETRIES, ES_CLEANUP_LATE_ARRIVAL_RECOVERIES
 from src.apps.data_factory.enums.audit import DatasourceAuditStageEnum
 from src.apps.data_factory.exceptions import (
     DataFactoryError, DATA_FACTORY_ES_CLEANUP_CONFIG_INVALID, DATA_FACTORY_ES_CLEANUP_OWNERSHIP_INVALID,
@@ -23,14 +21,52 @@ from src.apps.data_factory.schemas.cleanup_resource import CleanupResourceState,
 from src.apps.data_factory.services.datasource.data_source_error import DataSourceErrorService
 from src.apps.data_factory.services.datasource.datasource import DataFactoryDatasourceResolver
 from src.apps.data_factory.services.datasource.datasource_target import DatasourceTargetService
-from src.apps.data_factory.services.protocols.elasticsearch_http import open_elasticsearch_request
+from src.apps.data_factory.services.datasource.elasticsearch import ElasticsearchDatasourceService as ES
 from src.apps.data_factory.services.sql.sql_execution_audit import SqlExecutionAuditService
 from src.apps.data_factory.services.cleanup.cleanup_persistence import CleanupPersistenceService
 from src.apps.test_center.enums.data_source import DataSourceTypeEnum
 from src.apps.test_center.enums.environment import EnvironmentEnum
 
+logger = logging.getLogger(__name__)
+
 
 class DataFactoryCleanupResourceService:
+    @staticmethod
+    def can_recover_late_arrival(snapshot, state, expected_version, recoveries):
+        # 固定版本的人工补偿不能自动刷新授权；未知请求先走原结果核查。
+        return (snapshot.rule.mode == EsCleanupModeEnum.DELETE_AND_VERIFY
+                and snapshot.baseline_absent and bool(snapshot.requested_index and snapshot.index_uuid)
+                and expected_version is None and recoveries < ES_CLEANUP_LATE_ARRIVAL_RECOVERIES
+                and not state.unknown_permits and not state.uncertain_requests)
+
+    @staticmethod
+    def source_paths(snapshot):
+        paths = snapshot.rule.tenant_path
+        if snapshot.rule.tenant_lineage is not None:
+            reference = snapshot.rule.tenant_lineage
+            paths += ',' + reference.collection_path + '.' + reference.document_id_path
+        return paths
+
+    @classmethod
+    def effective_snapshot(cls, item, state, index):
+        from src.apps.data_factory.services.cleanup.cleanup_history import ResourceCleanupHistoryService
+        from src.apps.data_factory.services.cleanup.cleanup_lineage import CleanupLineageService
+        original = state.snapshots[index]
+        grants = [value for value in state.compensations if value.snapshot_index == index]
+        if not grants:
+            return original, None
+        if len(grants) != 1 or grants[0].snapshot_digest != ResourceCleanupHistoryService.digest(original.model_dump(mode='json')):
+            raise cls.resource_error(DATA_FACTORY_ES_CLEANUP_OWNERSHIP_INVALID, item=item,
+                snapshot=original, reason='补偿授权与原冻结快照不一致，禁止删除')
+        grant = grants[0]
+        effective = original.model_copy(deep=True)
+        effective.rule.mode = EsCleanupModeEnum.DELETE_AND_VERIFY
+        effective.rule.tenant_lineage = grant.tenant_lineage
+        effective.lineage_rows = grant.lineage_rows
+        if grant.tenant_lineage is not None and CleanupLineageService.rows(item, effective) != grant.lineage_rows:
+            CleanupLineageService.reject()
+        return effective, (grant.seq_no, grant.primary_term)
+
     @staticmethod
     def resource_error(definition, *, item=None, snapshot=None, reason=None):
         from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
@@ -67,13 +103,36 @@ class DataFactoryCleanupResourceService:
             if execution is not None:
                 from src.apps.data_factory.services.sql.factory_sql_execution import DataFactorySqlExecutionService
                 context = {**context, **DataFactorySqlExecutionService.build_source_context(
-                    execution=execution, template=template, stage=DatasourceAuditStageEnum.TEST_CONNECTION.value)}
+                    execution=execution, template=template, stage=DatasourceAuditStageEnum.ES_PREFLIGHT.value)}
             with SqlExecutionAuditService.source({**context,
                                                  'project_product_id': template.project_product_id,
                                                  'test_env': binding.environment,
-                                                 'source_stage': DatasourceAuditStageEnum.TEST_CONNECTION.value}):
-                physical_index, _ = cls.resolve_index(target, index)
-                cls.document(target, physical_index, 'AUTO_PREFLIGHT_' + uuid.uuid4().hex)
+                                                 'source_stage': DatasourceAuditStageEnum.ES_PREFLIGHT.value}):
+                try:
+                    physical_index, _ = ES.resolve_index(target, index)
+                    ES.document(target, physical_index, 'AUTO_PREFLIGHT_' + uuid.uuid4().hex)
+                except DataFactoryError as error:
+                    error.msg += (f'。阶段：关联ES目标预检，尚未执行本节点INSERT；模板ID：{template.id}，'
+                                  f'环境：{binding.environment}，逻辑数据源：{rule.datasource_alias_id}，'
+                                  f'索引表达式：{rule.index_template}，解析索引：{index}。请核对索引配置及业务初始化，不要自动创建空索引')
+                    raise
+
+    @classmethod
+    def validate_before_sql(cls, item, state):
+        """在不可逆 SQL 删除前核验当前可见文档；后续仍需重新核验异步变化。"""
+        for index in range(len(state.snapshots)):
+            snapshot, _ = cls.effective_snapshot(item, state, index)
+            binding = cls.resolve_binding(snapshot.rule, item.execution.project_product_id, snapshot.environment)
+            target = DatasourceTargetService.resolve(binding)
+            if snapshot.index_uuid and ES.resolve_index(target, snapshot.requested_index or snapshot.index) != (
+                    snapshot.index, snapshot.index_uuid):
+                raise cls.resource_error(DATA_FACTORY_ES_CLEANUP_TARGET_CHANGED, item=item, snapshot=snapshot)
+            for realtime in (True, False):
+                CleanupPersistenceService.check()
+                document = ES.document(target, snapshot.index, snapshot.document_id,
+                    tenant_path=cls.source_paths(snapshot), realtime=realtime)
+                if document is not None:
+                    cls.check_owner(document, snapshot)
 
     @staticmethod
     def normalize(rules, *, entity=None, project_product_id=None):
@@ -127,7 +186,9 @@ class DataFactoryCleanupResourceService:
             if (type(document_id) not in (str, int) or str(document_id) == '0'
                     or not re.fullmatch(r'[A-Za-z0-9_-]{1,256}', str(document_id))):
                 raise DataFactoryError(DATA_FACTORY_ES_CLEANUP_CONFIG_INVALID,
-                                       value=(f'本次落库记录的ES文档ID来源字段 {document_id_field} 缺值或不合法，禁止回退主键',))
+                    value=(f'本次落库记录的ES文档ID来源字段 {document_id_field} 缺值或不合法，禁止回退主键；'
+                           '位置：INSERT后、提交前的资源快照校验。请检查字段生成规则及本节点事务回滚审计；'
+                           '其他已创建项仍需按执行记录清理，这不是ES文档创建失败',))
             if type(row_primary_value) not in (str, int) or str(row_primary_value) in ('', '0') or len(str(row_primary_value)) > 256:
                 raise DataFactoryError(DATA_FACTORY_ES_CLEANUP_CONFIG_INVALID, value=('缺少本次数据库行的真实主键，无法冻结ES归属',))
             es_binding = cls.resolve_binding(rule, template.project_product_id, binding.environment)
@@ -136,9 +197,9 @@ class DataFactoryCleanupResourceService:
                 raise DataFactoryError(DATA_FACTORY_ES_CLEANUP_CONFIG_INVALID, value=('渲染后的ES索引必须是255字符以内的小写精确名称',))
             target = DatasourceTargetService.resolve(es_binding)
             requested_index = index
-            index, index_uuid = cls.resolve_index(target, requested_index)
+            index, index_uuid = ES.resolve_index(target, requested_index)
             # 此时 SQL 尚未提交。已有文档不是本次 SQL 产生的，绝不接管其所有权。
-            if cls.document(target, index, str(document_id), tenant_path=rule.tenant_path) is not None:
+            if ES.document(target, index, str(document_id), tenant_path=rule.tenant_path) is not None:
                 raise cls.resource_error(DATA_FACTORY_ES_CLEANUP_BASELINE_EXISTS,
                     reason=f'模板ID：{template.id}，索引：{index}，文档ID：{document_id}')
             state.snapshots.append(EsCleanupSnapshot(
@@ -171,7 +232,7 @@ class DataFactoryCleanupResourceService:
             raise DataFactoryError(DATA_FACTORY_ES_CLEANUP_CONFIG_INVALID, value=('执行清理快照损坏，禁止猜测目标',)) from error
 
     @classmethod
-    def validate_snapshot(cls, item):
+    def validate_snapshot(cls, item, *, persist_lineage=True):
         state = cls.state(item)
         current_rules = getattr(getattr(item, 'template', None), 'cleanup_resources', [])
         if not state.snapshots and isinstance(current_rules, list) and current_rules:
@@ -215,7 +276,7 @@ class DataFactoryCleanupResourceService:
                 if not snapshot.lineage_rows and rows:
                     snapshot.lineage_rows = rows
                     changed = True
-        if changed:
+        if changed and persist_lineage:
             item.cleanup_resources = state.model_dump(mode='json')
             CleanupPersistenceService.save(item, ['cleanup_resources', 'update_time'])
         return state
@@ -241,8 +302,12 @@ class DataFactoryCleanupResourceService:
         context = DataFactorySqlExecutionService.build_source_context(
             execution=item.execution, item=item, stage=DatasourceAuditStageEnum.EXTERNAL_CLEANUP.value,
         )
-        for snapshot in state.snapshots:
+        for index, original in enumerate(state.snapshots):
+            snapshot, expected_version = cls.effective_snapshot(item, state, index)
             attempts = 0
+            version_conflicts = 0
+            late_recoveries = 0
+            recovery_pending = False
             try:
                 binding = cls.resolve_binding(snapshot.rule, item.execution.project_product_id, snapshot.environment)
                 target = DatasourceTargetService.resolve(binding)
@@ -252,20 +317,43 @@ class DataFactoryCleanupResourceService:
                     while True:
                         final_check = monotonic() >= deadline
                         attempts += 1
-                        missing = cls.sample(snapshot, target, allow_delete=monotonic() < deadline,
-                                             unknown_permits=state.unknown_permits,
-                                             uncertain_requests=state.uncertain_requests)
+                        try:
+                            missing = cls.sample(snapshot, target, allow_delete=monotonic() < deadline,
+                                                 unknown_permits=state.unknown_permits,
+                                                 uncertain_requests=state.uncertain_requests, expected_version=expected_version)
+                        except DataFactoryError as error:
+                            if not DataSourceErrorService.is_elasticsearch_version_conflict(error):
+                                raise
+                            version_conflicts += 1
+                            if (expected_version is not None or final_check
+                                    or version_conflicts > ES_CLEANUP_VERSION_CONFLICT_RETRIES):
+                                raise
+                            # 下一次完整重读索引、归属和当前版本；409 不是缺失证据。
+                            missing = False
+                        if recovery_pending:
+                            # 恢复轮的精确采样/条件删除完成后，再开始完整观察窗口。
+                            deadline = monotonic() + snapshot.rule.timeout_seconds
+                            absent = 0
+                            final_check = False
+                            recovery_pending = False
                         absent = absent + 1 if missing else 0
                         if final_check:
                             # 完整窗口后再做终检，给予正常 I/O 预算，不缩到 0.1 秒制造超时。
                             if missing and absent >= 2:
                                 break
+                            if not missing and cls.can_recover_late_arrival(
+                                    snapshot, state, expected_version, late_recoveries):
+                                late_recoveries += 1
+                                recovery_pending = True
+                                deadline = monotonic() + snapshot.rule.timeout_seconds
+                                continue
                             raise cls.resource_error(DATA_FACTORY_ES_CLEANUP_TIMEOUT, item=item, snapshot=snapshot,
                                 reason=f'观察窗口 {snapshot.rule.timeout_seconds} 秒，已回查 {attempts} 次；' +
                                 ('最终回查文档仍存在，请检查删除同步或清理操作后重试' if not missing else
                                  '最终回查文档不存在，但尚未取得连续两次缺失验证，请查看回查明细后重试'))
                         sleep(min(snapshot.rule.poll_seconds, max(0, deadline - monotonic())))
-                result = EsCleanupCheckResult(index=snapshot.index, document_id=snapshot.document_id,
+                result = EsCleanupCheckResult(snapshot_index=index, compensation_digest=cls.compensation_digest(state, index),
+                                              index=snapshot.index, document_id=snapshot.document_id,
                                               success=True, checked_at=timezone.now().isoformat(), attempts=attempts)
             except Exception as error:
                 cls.remember_uncertainty(snapshot, error, state.unknown_permits, state.uncertain_requests)
@@ -280,7 +368,8 @@ class DataFactoryCleanupResourceService:
                     message = DatasourceInfrastructureService.internal_cleanup_error(
                         error, 'es_cleanup_verify', execution_id=item.execution.id, execution_item_id=item.id).msg
                 failures.append(message)
-                result = EsCleanupCheckResult(index=snapshot.index, document_id=snapshot.document_id,
+                result = EsCleanupCheckResult(snapshot_index=index, compensation_digest=cls.compensation_digest(state, index),
+                                              index=snapshot.index, document_id=snapshot.document_id,
                                               success=False, checked_at=timezone.now().isoformat(),
                                               attempts=attempts, error=message)
             state.results.append(result)
@@ -307,20 +396,18 @@ class DataFactoryCleanupResourceService:
                     index=snapshot.index, document_id=snapshot.document_id))
 
     @classmethod
-    def sample(cls, snapshot, target, *, allow_delete, unknown_permits=None, uncertain_requests=None):
+    def sample(cls, snapshot, target, *, allow_delete, unknown_permits=None, uncertain_requests=None, expected_version=None):
+        CleanupPersistenceService.check()
         if snapshot.requested_index is not None:
-            physical, index_uuid = cls.resolve_index(target, snapshot.requested_index)
+            physical, index_uuid = ES.resolve_index(target, snapshot.requested_index)
             if physical != snapshot.index or index_uuid != snapshot.index_uuid:
                 raise cls.resource_error(DATA_FACTORY_ES_CLEANUP_TARGET_CHANGED, snapshot=snapshot,
                                          reason='索引别名指向或索引UUID已变化，禁止使用新索引清理历史数据')
-        tenant_path = snapshot.rule.tenant_path
-        if snapshot.rule.tenant_lineage is not None:
-            reference = snapshot.rule.tenant_lineage
-            tenant_path += ',' + reference.collection_path + '.' + reference.document_id_path
-        doc = cls.document(target, snapshot.index, snapshot.document_id,
+        tenant_path = cls.source_paths(snapshot)
+        doc = ES.document(target, snapshot.index, snapshot.document_id,
                            tenant_path=tenant_path, timeout=5)
         if doc is None:
-            visible = cls.document(target, snapshot.index, snapshot.document_id,
+            visible = ES.document(target, snapshot.index, snapshot.document_id,
                                    tenant_path=tenant_path, timeout=5, realtime=False)
             if visible is not None:
                 cls.check_owner(visible, snapshot)
@@ -335,8 +422,12 @@ class DataFactoryCleanupResourceService:
             return visible is None
         cls.check_owner(doc, snapshot)
         if allow_delete and snapshot.rule.mode == EsCleanupModeEnum.DELETE_AND_VERIFY:
+            if expected_version is not None and (doc.get('_seq_no'), doc.get('_primary_term')) != expected_version:
+                raise cls.resource_error(DATA_FACTORY_ES_CLEANUP_OWNERSHIP_INVALID, snapshot=snapshot,
+                    reason='ES文档版本与补偿预览不一致，请重新核查并授权；平台未发送删除')
             try:
-                cls.document(target, snapshot.index, snapshot.document_id, delete=True, expected=doc, timeout=5)
+                CleanupPersistenceService.check()
+                ES.document(target, snapshot.index, snapshot.document_id, delete=True, expected=doc, timeout=5)
             except (DataFactoryError, TimeoutError) as error:
                 permit = DataSourceErrorService.unknown_operation_permit(error)
                 if (isinstance(error, DataFactoryError)
@@ -361,12 +452,37 @@ class DataFactoryCleanupResourceService:
         return min((check.next_check_at for check in pending), default=None)
 
     @staticmethod
-    def pending_observations(state):
-        completed = {result.snapshot_index for result in state.results if result.success}
+    def compensation_digest(state, index):
+        from src.apps.data_factory.services.cleanup.cleanup_history import ResourceCleanupHistoryService
+        grants = [value for value in state.compensations if value.snapshot_index == index]
+        if len(grants) > 1:
+            raise DataFactoryError(DATA_FACTORY_ES_CLEANUP_CONFIG_INVALID, value=('同一资源存在重复补偿授权，禁止猜测执行目标',))
+        return ResourceCleanupHistoryService.digest(grants[0].model_dump(mode='json')) if grants else None
+
+    @classmethod
+    def current_result(cls, state, result):
+        if not result.success:
+            return False
+        if result.snapshot_index is None:
+            return not any(state.snapshots[grant.snapshot_index].index == result.index
+                and state.snapshots[grant.snapshot_index].document_id == result.document_id for grant in state.compensations)
+        index = result.snapshot_index
+        return (index < len(state.snapshots) and result.index == state.snapshots[index].index
+                and result.document_id == state.snapshots[index].document_id
+                and result.compensation_digest == cls.compensation_digest(state, index))
+
+    @classmethod
+    def pending_compensations(cls, state):
+        completed = {result.snapshot_index for result in state.results if cls.current_result(state, result)}
+        return {grant.snapshot_index for grant in state.compensations} - completed
+
+    @classmethod
+    def pending_observations(cls, state):
+        completed = {result.snapshot_index for result in state.results if cls.current_result(state, result)}
         return [check for check in state.checkpoints if check.snapshot_index not in completed]
 
-    @staticmethod
-    def prepare_observation(state, *, generation, task_id, now):
+    @classmethod
+    def prepare_observation(cls, state, *, generation, task_id, now):
         from src.apps.data_factory.schemas.cleanup_resource import EsCleanupCheckpoint
         if not state.snapshots:
             return False
@@ -377,12 +493,27 @@ class DataFactoryCleanupResourceService:
                 or len({result.snapshot_index for result in state.results}) != len(state.results)
                 or any(result.snapshot_index not in range(len(state.snapshots)) for result in state.results)
                 or any(check.generation != generation or check.task_id != task_id for check in state.checkpoints)
+                or any(check.compensation_digest != cls.compensation_digest(state, check.snapshot_index)
+                       for check in state.checkpoints)
                 or any(result.snapshot_index is None for result in state.results)):
-            state.results = []
+            # 已完成完整观察且持久化的资源不因另一个资源的恢复而重复清理。
+            valid_results = [result for result in state.results if cls.current_result(state, result)
+                and result.snapshot_index is not None
+                and result.snapshot_index in range(len(state.snapshots))
+                and result.index == state.snapshots[result.snapshot_index].index
+                and result.document_id == state.snapshots[result.snapshot_index].document_id]
+            unique = {result.snapshot_index: result for result in valid_results}
+            state.results = list(unique.values())
+            previous = {check.snapshot_index: check for check in state.checkpoints
+                        if check.task_id == task_id
+                        and check.compensation_digest == cls.compensation_digest(state, check.snapshot_index)}
             state.checkpoints = [EsCleanupCheckpoint(
                 snapshot_index=index, generation=generation, task_id=task_id, started_at=now,
                 deadline=now + snapshot.rule.timeout_seconds, next_check_at=now,
                 interval=snapshot.rule.poll_seconds,
+                compensation_digest=cls.compensation_digest(state, index),
+                late_recoveries=previous[index].late_recoveries if index in previous else 0,
+                late_recovery_pending=previous[index].late_recovery_pending if index in previous else False,
             ) for index, snapshot in enumerate(state.snapshots)]
             return True
         return False
@@ -403,13 +534,18 @@ class DataFactoryCleanupResourceService:
             return None
         check = min(pending, key=lambda value: (value.next_check_at, value.snapshot_index))
         index = check.snapshot_index
-        snapshot = state.snapshots[index]
+        snapshot, expected_version = cls.effective_snapshot(item, state, index)
         if now < check.next_check_at:
             return check.next_check_at
         if check.last_checked_at is None or now - check.last_checked_at > check.interval * 2 + 1:
             # 调度中断的空白时间不能代替实际观察。
             check.started_at, check.deadline = now, now + snapshot.rule.timeout_seconds
             check.absent_count = check.final_count = 0
+            if check.last_checked_at is not None:
+                check.restart_count += 1
+                logger.warning('es_cleanup_observation_restart execution=%s item=%s task=%s generation=%s gap=%.3f interval=%.3f restarts=%s',
+                    getattr(item.execution, 'id', None), getattr(item, 'id', None), task_id, generation, now - check.last_checked_at,
+                    check.interval, check.restart_count)
         binding = cls.resolve_binding(snapshot.rule, item.execution.project_product_id, snapshot.environment)
         target = DatasourceTargetService.resolve(binding)
         context = DataFactorySqlExecutionService.build_source_context(
@@ -418,29 +554,62 @@ class DataFactoryCleanupResourceService:
         wait_started = DatasourceWaitService.elapsed()
         try:
             with SqlExecutionAuditService.source(context):
-                missing = cls.sample(snapshot, target, allow_delete=now < check.deadline,
-                                     unknown_permits=state.unknown_permits,
-                                     uncertain_requests=state.uncertain_requests)
+                try:
+                    missing = cls.sample(snapshot, target, allow_delete=now < check.deadline,
+                                         unknown_permits=state.unknown_permits,
+                                         uncertain_requests=state.uncertain_requests, expected_version=expected_version)
+                except DataFactoryError as error:
+                    if not DataSourceErrorService.is_elasticsearch_version_conflict(error):
+                        raise
+                    check.version_conflicts += 1
+                    if (expected_version is not None or now >= check.deadline
+                            or check.version_conflicts > ES_CLEANUP_VERSION_CONFLICT_RETRIES):
+                        raise
+                    logger.warning('es_cleanup_version_conflict execution=%s item=%s task=%s snapshot=%s conflicts=%s; revalidating next sample',
+                        getattr(item.execution, 'id', None), getattr(item, 'id', None), task_id, index, check.version_conflicts)
+                    missing = False
             sampled_at = clock().timestamp()
             waited = max(0, DatasourceWaitService.elapsed() - wait_started)
-            if check.last_checked_at is None or sampled_at - check.last_checked_at > check.interval * 2 + 1:
-                # 首次实际采样/排队后长间断从真实观察开始，不能用等待凑满窗口。
+            check.last_probe_seconds = max(0, sampled_at - now)
+            check.processing_seconds += max(0, check.last_probe_seconds - waited)
+            if check.last_checked_at is None or check.late_recovery_pending:
+                # 首次配对回查完成才开始完整窗口。采样自身的请求耗时不是调度中断，
+                # 否则连续慢 GET 会每轮清零，文档已消失也永远无法完成。
                 check.started_at, check.deadline = sampled_at, sampled_at + snapshot.rule.timeout_seconds
                 check.absent_count = check.final_count = 0
+                check.late_recovery_pending = False
             elif waited:
                 check.started_at += waited
                 check.deadline += waited
             now = sampled_at
+            logger.debug('es_cleanup_sample execution=%s item=%s task=%s generation=%s snapshot=%s probe_seconds=%.3f wait_seconds=%.3f deadline=%.3f missing=%s attempts=%s',
+                getattr(item.execution, 'id', None), getattr(item, 'id', None), task_id, generation, index, check.last_probe_seconds,
+                waited, check.deadline, missing, check.attempts + 1)
             check.attempts += 1
             check.absent_count = check.absent_count + 1 if missing else 0
             if now >= check.deadline:
                 if not missing:
+                    if cls.can_recover_late_arrival(snapshot, state, expected_version, check.late_recoveries):
+                        check.late_recoveries += 1
+                        check.late_recovery_pending = True
+                        check.absent_count = check.final_count = 0
+                        check.started_at, check.deadline = now, now + snapshot.rule.timeout_seconds
+                        check.last_checked_at = now
+                        check.next_check_at = now
+                        item.cleanup_resources = state.model_dump(mode='json')
+                        CleanupPersistenceService.save(item, ['cleanup_resources', 'update_time'])
+                        logger.warning('es_cleanup_late_arrival_recovery execution=%s item=%s task=%s '
+                            'snapshot=%s recovery=%s action=revalidate_exact_target_and_restart_full_window',
+                            getattr(item.execution, 'id', None), getattr(item, 'id', None), task_id,
+                            index, check.late_recoveries)
+                        return now
                     raise cls.resource_error(DATA_FACTORY_ES_CLEANUP_TIMEOUT, item=item, snapshot=snapshot,
                         reason=f'观察窗口 {snapshot.rule.timeout_seconds} 秒，已回查 {check.attempts} 次，最终回查文档仍存在。请检查删除同步或清理操作后重试')
                 check.final_count += 1
             if check.final_count >= 2 and check.absent_count >= 2:
                 state.results.append(EsCleanupCheckResult(
                     snapshot_index=index, index=snapshot.index, document_id=snapshot.document_id, success=True,
+                    compensation_digest=check.compensation_digest,
                     checked_at=clock().isoformat(), attempts=check.attempts))
         except Exception as error:
             cls.remember_uncertainty(snapshot, error, state.unknown_permits, state.uncertain_requests)
@@ -460,11 +629,11 @@ class DataFactoryCleanupResourceService:
         cls.resolve_verified(state)
         return min((value.next_check_at for value in cls.pending_observations(state)), default=None)
 
-    @staticmethod
-    def resolve_verified(state):
+    @classmethod
+    def resolve_verified(cls, state):
         from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
         owned = {(snapshot.index, snapshot.document_id) for snapshot in state.snapshots if snapshot.baseline_absent}
-        completed = {(result.index, result.document_id) for result in state.results if result.success} & owned
+        completed = {(result.index, result.document_id) for result in state.results if cls.current_result(state, result)} & owned
         unknown = {(permit.index, permit.document_id) for permit in state.unknown_permits}
         if state.sql_cleaned:
             verified = [value.request_id for value in state.uncertain_requests
@@ -472,49 +641,6 @@ class DataFactoryCleanupResourceService:
             SqlExecutionAuditService.confirm_resource_requests(verified)
             DatasourceInfrastructureService.resolve_verified_requests(verified)
 
-    @classmethod
-    def resolve_index(cls, target, name):
-        """只解析一个精确索引/别名，冻结物理索引和UUID；拒绝多目标、过滤及路由别名。"""
-        def read():
-            options = target.extra_config or {}
-            scheme = options.get('scheme', 'http')
-            prefix = str(options.get('path_prefix', '') or '').strip('/')
-            url = f'{scheme}://{target.host}:{target.port}' + (f'/{prefix}' if prefix else '')
-            url += '/' + parse.quote(name, safe='') + '?filter_path=*.settings.index.uuid,*.aliases'
-            headers = {'Accept': 'application/json'}
-            if target.user or target.password:
-                headers['Authorization'] = 'Basic ' + base64.b64encode(f'{target.user}:{target.password}'.encode()).decode()
-            tls = ssl._create_unverified_context() if scheme == 'https' and not options.get('verify_certs', True) else None
-            try:
-                with open_elasticsearch_request(request.Request(url, headers=headers), timeout=5,
-                                                target=target, context=tls) as response:
-                    body = response.read(1_048_577)
-                if len(body) > 1_048_576:
-                    raise DataFactoryError(DATA_FACTORY_ES_CLEANUP_CONFIG_INVALID, value=('索引元数据响应过大',))
-                result = json.loads(body)
-            except urllib_error.HTTPError as error:
-                DataSourceErrorService.raise_elasticsearch_http_error(target, error)
-            except (urllib_error.URLError, OSError, ValueError) as error:
-                DataSourceErrorService.raise_elasticsearch_transport_error(target, error, timeout=5)
-            if not isinstance(result, dict) or len(result) != 1:
-                raise DataFactoryError(DATA_FACTORY_ES_CLEANUP_CONFIG_INVALID, value=('索引或别名必须唯一指向一个物理索引',))
-            physical, metadata = next(iter(result.items()))
-            if not re.fullmatch(r'[a-z0-9][a-z0-9_-]{0,254}', physical) or not isinstance(metadata, dict):
-                raise DataFactoryError(DATA_FACTORY_ES_CLEANUP_CONFIG_INVALID, value=('物理索引元数据格式不合法',))
-            aliases = metadata.get('aliases', {})
-            settings = metadata.get('settings')
-            index_settings = settings.get('index') if isinstance(settings, dict) else None
-            index_uuid = index_settings.get('uuid') if isinstance(index_settings, dict) else None
-            if (not isinstance(index_uuid, str) or not 1 <= len(index_uuid) <= 128
-                    or not isinstance(aliases, dict) or (physical != name and name not in aliases)
-                    or (physical != name and (not isinstance(aliases[name], dict)
-                        or any(key in aliases[name] for key in ('filter', 'routing', 'index_routing', 'search_routing'))))):
-                raise DataFactoryError(DATA_FACTORY_ES_CLEANUP_CONFIG_INVALID,
-                                       value=('无法确认索引UUID，或别名带有过滤/路由约束，禁止猜测清理目标',))
-            return physical, index_uuid
-        CleanupPersistenceService.check()
-        return SqlExecutionAuditService.call(target, {'operation': 'resolve_cleanup_index', 'index': name}, read,
-                                              stage=DatasourceAuditStageEnum.EXTERNAL_CLEANUP.value)
 
     @staticmethod
     def check_owner(document, snapshot):
@@ -540,72 +666,3 @@ class DataFactoryCleanupResourceService:
                 snapshot=snapshot, reason=(f'ES租户路径 {snapshot.rule.tenant_path} 缺失，且没有有效的冻结子记录归属证明；'
                     '请核查实际同步结构并配置同执行的关联证明，禁止仅凭文档ID删除'
                     if not tenant_present else 'ES实际返回的文档ID或租户字段与本次执行快照不一致'))
-
-    @classmethod
-    def document(cls, target, index, document_id, *, delete=False, timeout=5, expected=None, tenant_path=None,
-                 realtime=True):
-        CleanupPersistenceService.check()
-        operation = 'delete_document' if delete else 'get_document'
-        return SqlExecutionAuditService.call(
-            target, {'operation': operation, 'index': index, 'document_id': document_id,
-                     'realtime': realtime if not delete else None,
-                     'if_seq_no': (expected or {}).get('_seq_no') if delete else None,
-                     'if_primary_term': (expected or {}).get('_primary_term') if delete else None},
-            lambda: cls.request_document(target, index, document_id, delete=delete, timeout=timeout,
-                                         expected=expected, tenant_path=tenant_path, realtime=realtime),
-            stage=DatasourceAuditStageEnum.EXTERNAL_CLEANUP.value,
-            result_summary=lambda result: {
-                'result': result, 'row_count': int(not delete and result is not None),
-                'affected_rows': int(delete and isinstance(result, dict) and result.get('result') == 'deleted'),
-            },
-        )
-
-    @staticmethod
-    def request_document(target, index, document_id, *, delete, timeout, expected=None, tenant_path=None,
-                         realtime=True):
-        options = target.extra_config or {}
-        scheme = options.get('scheme', 'http')
-        prefix = str(options.get('path_prefix', '') or '').strip('/')
-        url = f'{scheme}://{target.host}:{target.port}' + (f'/{prefix}' if prefix else '')
-        url += '/' + parse.quote(index, safe='') + '/_doc/' + parse.quote(document_id, safe='')
-        if delete:
-            sequence = (expected or {}).get('_seq_no')
-            term = (expected or {}).get('_primary_term')
-            if type(sequence) is not int or sequence < 0 or type(term) is not int or term < 1:
-                raise DataFactoryCleanupResourceService.resource_error(DATA_FACTORY_ES_CLEANUP_OWNERSHIP_INVALID,
-                    reason='ES文档缺少有效的_seq_no或_primary_term版本，无法安全执行条件删除。请检查文档回查结果')
-            # 删除响应不等待刷新；sample 同时核对实时和非实时视图，完整观察窗口仍必须完成。
-            url += f'?refresh=false&if_seq_no={sequence}&if_primary_term={term}'
-        else:
-            # 回查仅获取租户字段和文档版本，不读取无关业务正文或凭据。
-            url += '?_source_includes=' + parse.quote(tenant_path, safe='') if tenant_path else '?_source=false'
-            if not realtime:
-                url += '&realtime=false'
-        headers = {'Accept': 'application/json'}
-        if target.user or target.password:
-            credentials = base64.b64encode(f'{target.user}:{target.password}'.encode()).decode()
-            headers['Authorization'] = f'Basic {credentials}'
-        tls = ssl._create_unverified_context() if scheme == 'https' and not options.get('verify_certs', True) else None
-        try:
-            with open_elasticsearch_request(request.Request(url, headers=headers, method='DELETE' if delete else 'GET'),
-                                            timeout=timeout, target=target, context=tls) as response:
-                body = response.read(1_048_577)
-            if len(body) > 1_048_576:
-                raise DataFactoryError(DATA_FACTORY_ES_CLEANUP_CONFIG_INVALID, value=(f'ES清理响应超过1048576字节，已读取至少 {len(body)} 字节；请管理员检查清理回查返回字段',))
-            result = json.loads(body)
-            if not isinstance(result, dict) or result.get('_id') != document_id or result.get('_index') != index:
-                raise DataFactoryCleanupResourceService.resource_error(DATA_FACTORY_ES_CLEANUP_OWNERSHIP_INVALID,
-                    reason='ES响应结构、文档ID或索引与本次精确请求不一致。请检查ES响应和执行快照')
-            return None if not delete and result.get('found') is False else result
-        except urllib_error.HTTPError as error:
-            if error.code == 404:
-                try:
-                    missing = json.loads(error.read(1_048_577))
-                except (ValueError, OSError):
-                    missing = {}
-                if (missing.get('_id') == document_id and missing.get('_index') == index
-                        and (missing.get('found') is False or missing.get('result') == 'not_found')):
-                    return None
-            DataSourceErrorService.raise_elasticsearch_http_error(target, error)
-        except (urllib_error.URLError, OSError, ValueError) as error:
-            DataSourceErrorService.raise_elasticsearch_transport_error(target, error, timeout=timeout)

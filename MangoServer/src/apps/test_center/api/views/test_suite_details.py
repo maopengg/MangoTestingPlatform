@@ -65,10 +65,7 @@ class TestSuiteDetailsCRUD(ModelCRUD):
         """获取测试报告明细列表或指定记录"""
         query_dict = {}
         for k, v in dict(request.query_params.lists()).items():
-            if k and isinstance(v[0], str) and k not in self.not_matching_str and 'id' not in k:
-                query_dict[f'{k}__contains'] = v[0]
-            else:
-                query_dict[k] = v[0]
+            query_dict.update(self.parse_model_query_filter(k, v))
         del query_dict['pageSize']
         del query_dict['page']
         requested_status = query_dict.pop('status', None)

@@ -71,15 +71,7 @@ class UiCaseCRUD(ModelCRUD):
                 if values:
                     query_dict[key] = values
                 continue
-            value = value_list[0]
-            if value in [None, '', 'null', 'undefined']:
-                continue
-            if key in self.not_matching_str or key in ['level', 'scenario_layer', 'scenario_type']:
-                query_dict[key] = value
-            elif 'id' not in key:
-                query_dict[f'{key}__contains'] = value
-            else:
-                query_dict[key] = value
+            query_dict.update(self.parse_model_query_filter(key, value_list))
 
         project_id = get_request_project_id(request)
         project_product_id = get_request_project_product_id(request)

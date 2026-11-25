@@ -447,13 +447,13 @@ class CallbackPersistenceTests(unittest.TestCase):
         with self.assertRaises(AutoApiError):
             self.register()
 
-    def test_download_returns_exact_bytes_and_requires_export(self):
+    def test_download_returns_exact_bytes_and_requires_mock_read_and_product_scope(self):
         from src.apps.auto_api.selectors.callback import ApiCallbackSelector
         ids = self.register()
         self.deliver()
         delivery = ApiMockRequestLog.objects.get(callback_run_id=ids[0])
         with patch('src.apps.auto_api.selectors.callback.PermissionMenuService.permission_keys_for_user',
-                   return_value={'api.case:read', 'api.mock:read'}):
+                   return_value={'api.case:read'}):
             with self.assertRaises(AutoApiError):
                 ApiCallbackSelector.download(user=SimpleNamespace(id=1), case_id=1,
                                              run_id=ids[0], delivery_id=delivery.id)
@@ -464,6 +464,13 @@ class CallbackPersistenceTests(unittest.TestCase):
             raw = ApiCallbackSelector.download(user=SimpleNamespace(id=1), case_id=1,
                                                run_id=ids[0], delivery_id=delivery.id)
         self.assertEqual(hashlib.sha256(raw).hexdigest(), delivery.callback_evidence['body_sha256'])
+        with patch('src.apps.auto_api.selectors.callback.PermissionMenuService.permission_keys_for_user',
+                   return_value={'api.mock:read'}), patch(
+                    'src.apps.auto_api.selectors.callback.ProjectProductScopeService.has_project_product',
+                    return_value=False):
+            with self.assertRaises(AutoApiError):
+                ApiCallbackSelector.download(user=SimpleNamespace(id=1), case_id=1,
+                    run_id=ids[0], delivery_id=delivery.id)
 
     def test_encrypted_callback_signature_and_original_plaintext_are_preserved(self):
         from src.apps.auto_api.tests.test_mock_runtime import MockRuntimeServiceTests
@@ -517,7 +524,8 @@ class CallbackPersistenceTests(unittest.TestCase):
                 target_type='api_case', target_id=1,
             )
         with storage.open(key, 'rb') as stream:
-            archive = json.loads(stream.read())
+            from src.apps.test_center.services.results.result_file import ExecutionResultFileService
+            archive = json.loads(ExecutionResultFileService.read(stream))
         result = archive['callback_results'][0]
         assertion = ApiAssertionResult.model_validate(archive['steps'][0]['ass'][2])
         self.assertEqual(assertion.callback.check_key, 'compact')

@@ -202,6 +202,33 @@ class LatePayloadTests(SimpleTestCase):
         with self.engine.connect() as connection:
             self.assertEqual(connection.execute(select(self.table)).all(), [])
 
+    def test_stage_log_distinguishes_execution_from_ownership_persistence_and_logs_rollback(self):
+        log_path = 'src.apps.data_factory.services.execution.parts.persistence.logger'
+        with patch('src.apps.data_factory.services.execution.parts.persistence.DataFactoryDatasource.get_worker_engine',
+                   return_value=(self.engine, True)), patch(log_path) as log:
+            DataFactoryRunner.insert(self.entity, self.target, {},
+                prepare_resources=lambda: None, prepare_payload=lambda: {'name': 'AUTO_SAFE'},
+                before_commit=lambda result: 7)
+            summary = next(call for call in log.debug.call_args_list
+                           if call.args[0].startswith('event=factory_insert_finished'))
+            self.assertTrue(summary.args[6])
+            stages = summary.args[-1]
+            self.assertEqual(set(stages), {'initial_metadata', 'resource_preflight', 'metadata_revalidation',
+                'payload_generation', 'insert_statement', 'generated_values_readback',
+                'ownership_and_item_persistence', 'other_including_audit_and_commit'})
+            self.assertTrue(all(value >= 0 for value in stages.values()))
+            log.reset_mock()
+            with self.assertRaises(DataFactoryError):
+                DataFactoryRunner.insert(self.entity, self.target, {'name': 'AUTO_ROLLBACK'},
+                    before_commit=Mock(side_effect=RuntimeError('AUTO_ITEM_UNAVAILABLE')))
+            summary = next(call for call in log.debug.call_args_list
+                           if call.args[0].startswith('event=factory_insert_finished'))
+            self.assertFalse(summary.args[6])
+            self.assertIn('ownership_and_item_persistence', summary.args[-1])
+        with self.engine.connect() as connection:
+            self.assertEqual(connection.execute(select(self.table.c.name)).scalars().all(), ['AUTO_SAFE'])
+        self.assertEqual(self.engine.pool.checkedout(), 0)
+
     def test_pre_admission_wait_is_recorded_without_inflating_sql_duration(self):
         handle = SqlExecutionAuditHandle(SimpleNamespace(source_detail={}), 0,
                                         wait_started=10)

@@ -31,11 +31,51 @@ from src.apps.auto_api.services.execution_trace.recorder import trace_lifecycle
 class ApiTestCaseExecutionMixin:
     @trace_lifecycle(ApiCaseTraceStepType.CASE_START.value)
     def test_case(self, case_sort: int | None = None, parametrize: dict | list | None = None) -> ApiCaseExecutionResult:
+        if case_sort is not None:
+            self.trace_recorder.update_metadata(self.api_case.name, {'partial_execution': True})
         from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
         with DatasourceInfrastructureService.scope():
             return self._test_case(case_sort, parametrize)
 
     def _test_case(self, case_sort=None, parametrize=None):
+        self._case_resources_finalized = False
+        try:
+            return self._execute_test_case(case_sort, parametrize)
+        finally:
+            if not self._case_resources_finalized:
+                self._finalize_case_resources(self.api_case_result.status == TaskEnum.STOPPED.value)
+
+    def _execution_failure_action(self, action, stage):
+        """状态和诊断回写失败不能中断恢复；不重试原业务请求或失败的写操作。"""
+        try:
+            action()
+        except Exception as error:
+            from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
+            from src.apps.test_center.enums.reporting import ReportRecoveryCauseEnum
+            self.report_recovery_cause = getattr(self, 'report_recovery_cause', None) or ReportRecoveryCauseEnum.RESULT_UNAVAILABLE
+            self.api_case_result.infrastructure_blocked = True
+            self.api_case_result.execution_finalized = False
+            if self.api_case_result.status != TaskEnum.STOPPED.value:
+                self.api_case_result.status = StatusEnum.FAIL.value
+            reference = DatasourceInfrastructureService.log_reference(error, stage)
+            self.api_case_result.error_message = '；'.join(filter(None, [
+                self.api_case_result.error_message,
+                f'平台执行收口异常，结果或清理状态尚未确认，关联编号 {reference}；请复核后再重试',
+            ]))
+
+    def _finalize_case_resources(self, report_stopped):
+        # 各类连接彼此独立，清理或关闭失败也必须继续释放其余连接。
+        try:
+            if not getattr(self, '_resource_cleanup_finished', False):
+                self._execution_failure_action(self.run_resource_cleanup, 'api_case_resource_finalizer')
+            if report_stopped:
+                self._execution_failure_action(self.case_base.case_data_factory.cleanup, 'api_case_stopped_cleanup')
+            for name in ('close_mcp_sessions', 'close_grpc_channels', 'close_db_connections'):
+                self._execution_failure_action(getattr(self.test_setup, name), f'api_case_{name}')
+        finally:
+            self._case_resources_finalized = True
+
+    def _execute_test_case(self, case_sort=None, parametrize=None):
         log.api.info(f'开始执行用例ID：{self.case_id}')
         res = None
         report_stopped = False
@@ -127,7 +167,7 @@ class ApiTestCaseExecutionMixin:
             report_stopped = True
             self.api_case_result.status = TaskEnum.STOPPED.value
             self.api_case_result.main_status = TaskEnum.STOPPED.value
-            self.trace_recorder.fail_trace('用户手动停止')
+            self._execution_failure_action(lambda: self.trace_recorder.fail_trace('用户手动停止'), 'api_case_stop_trace')
             log.api.info(
                 f'API测试报告任务已停止：test_suite={self.test_suite}, '
                 f'detail={self.test_suite_details}'
@@ -135,23 +175,37 @@ class ApiTestCaseExecutionMixin:
         except (MangoToolsError, MangoServerError) as e:
             from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
             DatasourceInfrastructureService.capture(e)
-            self.trace_recorder.fail_trace(e.msg)
-            if not DatasourceInfrastructureService.current():
-                self.update_test_case(self.case_id, TaskEnum.FAIL.value)
-            traceback.print_exc()
+            self.api_case_result.status = StatusEnum.FAIL.value
             self.api_case_result.error_message = e.msg
+            self._execution_failure_action(lambda: self.trace_recorder.fail_trace(e.msg), 'api_case_failure_trace')
+            if not DatasourceInfrastructureService.current():
+                self._execution_failure_action(
+                    lambda: self.update_test_case(self.case_id, TaskEnum.FAIL.value), 'api_case_failure_status')
+            traceback.print_exc()
             if not DatasourceInfrastructureService.current():
                 self.api_case.status = StatusEnum.FAIL.value
-                self.update_test_case_detailed_unfinished(self.case_id, case_sort, e.msg)
+                self._execution_failure_action(
+                    lambda: self.update_test_case_detailed_unfinished(self.case_id, case_sort, e.msg),
+                    'api_case_failure_details')
         except Exception as error:
-            self.update_test_case(self.case_id, TaskEnum.FAIL.value)
+            from django.db import DatabaseError, InterfaceError
+            from src.apps.test_center.enums.reporting import ReportRecoveryCauseEnum
+            database_unavailable = isinstance(error, (DatabaseError, InterfaceError))
+            self.report_recovery_cause = (ReportRecoveryCauseEnum.RESULT_UNAVAILABLE if database_unavailable
+                                          else ReportRecoveryCauseEnum.CODE_BUG)
+            self.api_case_result.status = StatusEnum.FAIL.value
             from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
             reference = DatasourceInfrastructureService.log_reference(error, 'api_case_execution')
-            self.api_case_result.error_message = f'用例 {self.case_id} 执行过程中发生平台内部异常，关联编号 {reference}。请管理员检查系统异常日志；后置清理仍须完成并验证'
-            self.trace_recorder.fail_trace(self.api_case_result.error_message)
+            reason = '平台控制数据库访问异常' if database_unavailable else '平台内部异常'
+            self.api_case_result.error_message = f'用例 {self.case_id} 执行过程中发生{reason}，关联编号 {reference}。请管理员检查系统异常日志；后置清理仍须完成并验证'
+            self._execution_failure_action(
+                lambda: self.trace_recorder.fail_trace(self.api_case_result.error_message), 'api_case_failure_trace')
             self.api_case.status = StatusEnum.FAIL.value
-            self.update_test_case(self.case_id, StatusEnum.FAIL.value)
-            self.update_test_case_detailed_unfinished(self.case_id, case_sort, self.api_case_result.error_message)
+            self._execution_failure_action(
+                lambda: self.update_test_case(self.case_id, StatusEnum.FAIL.value), 'api_case_failure_status')
+            self._execution_failure_action(
+                lambda: self.update_test_case_detailed_unfinished(self.case_id, case_sort, self.api_case_result.error_message),
+                'api_case_failure_details')
         try:
             callback_rules = getattr(self.api_case, 'callback_checks', [])
             if isinstance(callback_rules, list) and callback_rules:
@@ -194,12 +248,20 @@ class ApiTestCaseExecutionMixin:
             self.run_resource_cleanup()
             from src.apps.data_factory.services.governance.infrastructure import DatasourceInfrastructureService
             issues = DatasourceInfrastructureService.current()
-            if issues:
+            if issues or getattr(self, 'report_recovery_cause', None):
                 self.api_case_result.infrastructure_blocked = True
-                self.api_case_result.status = TaskEnum.INFRASTRUCTURE_BLOCKED.value
-                self.api_case_result.error_message = DatasourceInfrastructureService.summary(issues)
-                self.trace_recorder.fail_trace(self.api_case_result.error_message,
-                                               summary={'infrastructure_blocked': True})
+                self.api_case_result.status = TaskEnum.FAIL.value
+                if issues:
+                    infrastructure_message = DatasourceInfrastructureService.summary(issues)
+                    existing_message = self.api_case_result.error_message
+                    self.api_case_result.error_message = '；'.join(filter(None, [
+                        existing_message,
+                        infrastructure_message if infrastructure_message not in (existing_message or '') else None,
+                    ]))
+                self._execution_failure_action(
+                    lambda: self.trace_recorder.fail_trace(self.api_case_result.error_message,
+                                                           summary={'infrastructure_blocked': True}),
+                    'api_case_blocked_trace')
                 if self.test_suite_details:
                     from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService
                     from src.apps.data_factory.services.cleanup.cleanup_schedule import DataFactoryCleanupScheduleService
@@ -207,10 +269,13 @@ class ApiTestCaseExecutionMixin:
                     if owner:
                         accepted = TestSuiteInfrastructureService.block(
                             self.test_suite_details, owner['parent_attempt'], issues,
+                            cause=getattr(self, 'report_recovery_cause', None),
+                            interruption_reason=self.api_case_result.error_message,
                             snapshot=self.api_case_result.model_dump())
                         if not accepted:
                             return self.api_case_result
-                self.update_test_case(self.case_id, TaskEnum.FAIL.value)
+                self._execution_failure_action(
+                    lambda: self.update_test_case(self.case_id, TaskEnum.FAIL.value), 'api_case_blocked_status')
                 return self.api_case_result
             self.api_case_result.execution_finalized = True
             report_step = self.trace_recorder.start_step(
@@ -224,17 +289,17 @@ class ApiTestCaseExecutionMixin:
             )
             self.update_test_case(self.case_id, self.api_case_result.status)
             if self.test_suite and self.test_suite_details:
+                from src.apps.data_factory.services.cleanup.cleanup_schedule import DataFactoryCleanupScheduleService
                 UpdateTestSuite.update_test_suite_details(TestSuiteDetailResultSchema(
                     id=self.test_suite_details,
                     type=TestCaseTypeEnum.API,
                     test_suite=self.test_suite,
                     status=self.api_case_result.status,
+                    attempt=(DataFactoryCleanupScheduleService.current_owner() or {}).get('parent_attempt'),
                     error_message=self.api_case_result.error_message,
                     result_data=self.api_case_result
                 ))
             self.trace_recorder.finish_step(report_step)
-            self.test_setup.close_mcp_sessions()
-            self.test_setup.close_grpc_channels()
             if self.api_case_result.status == StatusEnum.SUCCESS.value:
                 self.trace_recorder.finish_trace({
                     'status': self.api_case_result.status,
@@ -248,19 +313,7 @@ class ApiTestCaseExecutionMixin:
             log.api.debug(f'用例测试完成：{self.api_case_result.model_dump_json()}')
             return self.api_case_result
         finally:
-            if not getattr(self, '_resource_cleanup_finished', False):
-                self.run_resource_cleanup()
-            if report_stopped:
-                try:
-                    self.case_base.case_data_factory.cleanup()
-                except Exception as cleanup_error:
-                    log.api.error(
-                        f'API测试报告停止后的数据工厂清理失败：case={self.case_id}, '
-                        f'test_suite={self.test_suite}, error={cleanup_error}'
-                    )
-            self.test_setup.close_mcp_sessions()
-            self.test_setup.close_grpc_channels()
-            self.test_setup.close_db_connections()
+            self._finalize_case_resources(report_stopped)
 
     def run_resource_cleanup(self):
         manager = getattr(self, 'resource_cleanup_manager', None)

@@ -25,6 +25,17 @@ export interface ApiCaseVersionListRow extends ApiCasePublicationReadModel {
   name: string
   status?: number
   update_time?: string
+  list_result?: {
+    status: number | null
+    phase?: string | null
+    state: 'executed' | 'not_run' | 'needs_validation'
+    trace_id: string | null
+    revision_id: number | null
+    test_env: number | null
+    started_at: string | null
+    version_token: string
+    is_active?: boolean
+  }
   project_product?: {
     id: number
     name: string

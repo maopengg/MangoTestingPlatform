@@ -4,6 +4,8 @@ from typing import Annotated
 from pydantic import Field, StringConstraints, field_validator, model_validator
 
 from src.common.schemas import StrictSchema
+from src.apps.data_factory.schemas.elasticsearch import EsIndexTemplate
+from src.apps.data_factory.schemas.cleanup_history import CleanupHistoryEntry
 
 
 ResourceIdentifier = Annotated[str, StringConstraints(min_length=1, max_length=64,
@@ -110,6 +112,12 @@ class ApiResourceRejectionEvidence(StrictSchema):
     rejection_response: dict[str, bool]
 
 
+class ApiResourceRecoveryEvidence(StrictSchema):
+    identity_mapping: ApiResourceEsIdentityMapping | None = None
+    child_mapping: list[ApiResourceChildMapping] = Field(default_factory=list, max_length=10)
+    rejection_recovery: ApiResourceRejectionRecovery | None = None
+
+
 class ApiResourceCleanupRule(StrictSchema):
     key: ResourceIdentifier
     trigger_step_key: str = Field(pattern=r'^step-[1-9][0-9]*$')
@@ -132,7 +140,7 @@ class ApiResourceCleanupRule(StrictSchema):
     response_id_path: ResourcePath = 'data.projectId'
     response_document_id_path: ResourcePath = 'data.groupId'
     response_version_path: ResourcePath = 'data.projectVersion'
-    index_template: str = Field(pattern=r'^[a-z0-9][a-z0-9_-]*\{tenant\}$', max_length=200)
+    index_template: EsIndexTemplate = Field(description='精确索引：固定名称、example_{tenant}或{tenant}。不自动建索引，不允许通配或多索引。')
     es_tenant_path: ResourcePath = 'tenantId'
     es_business_id_path: ResourceEsPath = 'projectId'
     es_document_id_path: ResourcePath = 'groupId'
@@ -204,6 +212,7 @@ class ApiResourceTargetSnapshot(StrictSchema):
 
 
 class ApiResourceProof(StrictSchema):
+    cleanup_history: list[CleanupHistoryEntry] = Field(default_factory=list)
     version: int = Field(default=1, ge=1, le=1)
     unique_name: str
     tenant: str

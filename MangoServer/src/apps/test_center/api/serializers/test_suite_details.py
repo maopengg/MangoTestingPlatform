@@ -38,9 +38,10 @@ class TestSuiteDetailsSerializersC(serializers.ModelSerializer):
     def get_status(obj):
         from mangotools.enums import TaskEnum
         from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService
-        if (obj.status == TaskEnum.FAIL.value and TestSuiteInfrastructureService.is_blocked(obj.summary_data)):
-            return TaskEnum.INFRASTRUCTURE_BLOCKED.value
-        return obj.status
+        if TestSuiteInfrastructureService.is_blocked(obj.summary_data):
+            return TaskEnum.FAIL.value
+        from src.apps.test_center.services.reporting.test_suite.summary import TestSuiteSummaryService
+        return TestSuiteSummaryService.public_status(obj.status)
 
     @staticmethod
     def setup_eager_loading(queryset):

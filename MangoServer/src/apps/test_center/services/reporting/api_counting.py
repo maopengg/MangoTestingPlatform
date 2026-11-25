@@ -20,7 +20,7 @@ class ApiReportCountingService:
         meta = summary.get('meta') if isinstance(summary, dict) else None
         if isinstance(meta, dict) and 'api_count_by_scenario' in meta:
             return {'children': None, 'meta': {key: meta[key] for key in
-                    ('api_count_by_scenario', 'api_scene_count') if key in meta}}
+                    ('api_count_by_scenario', 'api_scene_count', 'recovery_history') if key in meta}}
         return None
 
     @classmethod

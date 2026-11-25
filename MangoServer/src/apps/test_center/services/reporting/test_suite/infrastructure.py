@@ -6,7 +6,6 @@ from mangotools.enums import TaskEnum
 from src.apps.test_center.enums.case import ReportFailureReasonEnum
 from src.apps.test_center.enums.reporting import ReportExecutionPhaseEnum
 from src.apps.test_center.models import TestSuite, TestSuiteDetails
-from src.apps.test_center.schemas.infrastructure import ReportInfrastructureBlock
 from src.apps.test_center.services.reporting.test_suite.detail_result import TestSuiteExecutionResultService
 
 
@@ -35,7 +34,7 @@ class TestSuiteInfrastructureService:
 
     @classmethod
     @transaction.atomic
-    def block(cls, detail_id, attempt, issues, *, snapshot=None, expected_push_time=None, interruption_reason=None):
+    def block(cls, detail_id, attempt, issues, *, snapshot=None, expected_push_time=None, interruption_reason=None, cause=None):
         suite_id = TestSuiteDetails.objects.filter(id=detail_id).values_list('test_suite_id', flat=True).get()
         suite = TestSuite.objects.select_for_update().get(id=suite_id)
         detail = TestSuiteDetails.objects.select_for_update().get(id=detail_id, test_suite_id=suite_id)
@@ -43,8 +42,12 @@ class TestSuiteInfrastructureService:
                 or suite.status == TaskEnum.STOPPED.value
                 or (expected_push_time is not None and detail.push_time != expected_push_time)):
             return False
-        control = ReportInfrastructureBlock(attempt=attempt, observed_at=timezone.now().isoformat(), issues=issues)
-        detail.status = TaskEnum.INFRASTRUCTURE_BLOCKED.value
+        from src.apps.test_center.enums.reporting import ReportRecoveryCauseEnum
+        from src.apps.test_center.services.reporting.test_suite.recovery import ReportRecoveryService
+        if ReportRecoveryService.read(detail.summary_data) is not None:
+            return False
+        cause = cause or (ReportRecoveryCauseEnum.DATASOURCE if issues else ReportRecoveryCauseEnum.TASK_UNREPORTED)
+        detail.status = TaskEnum.PROCEED.value
         if snapshot is not None:
             try:
                 with transaction.atomic():
@@ -53,8 +56,7 @@ class TestSuiteInfrastructureService:
                 from src.common.logging import log
                 log.system.exception('平台受阻快照保存失败，保留受阻控制记录：detail=%s', detail.id)
         children, meta = TestSuiteExecutionResultService.unpack_summary_data(detail.summary_data)
-        detail.summary_data = {'children': children or [], 'meta': {**(meta or {}),
-            'execution_control': control.model_dump(mode='json')}}
+        detail.summary_data = {'children': children or [], 'meta': meta or {}}
         reasons = list(dict.fromkeys(issue.message for issue in issues))
         if interruption_reason:
             reasons.insert(0, interruption_reason)
@@ -62,15 +64,12 @@ class TestSuiteInfrastructureService:
         detail.failure_reason = (ReportFailureReasonEnum.PLATFORM.value if not issues or any(
             issue.origin == ReportFailureReasonEnum.PLATFORM for issue in issues) else ReportFailureReasonEnum.ENVIRONMENT.value)
         detail.failure_description = '；'.join(reasons) or detail.error_message
-        detail.status = TaskEnum.INFRASTRUCTURE_BLOCKED.value
-        detail.save(update_fields=['status', 'summary_data', 'error_message', 'success', 'fail', 'warning',
-                                   'failure_reason', 'failure_description', 'update_time'])
-        cls.close_interrupted_trace(detail)
-        cls._finish_suite(suite)
-        transaction.on_commit(lambda: cls.sync_todos(suite.id))
+        control = ReportRecoveryService.begin_locked(suite, detail, issues, cause)
+        if control.owner_ended:
+            cls.close_interrupted_trace(detail)
         from src.common.logging import log
-        log.system.warning('event=report_infrastructure_blocked detail_id=%s attempt=%s issue_codes=%s',
-                           detail.id, attempt, [issue.code for issue in issues])
+        log.system.warning('event=report_execution_recovery detail_id=%s attempt=%s cause=%s action=%s',
+                           detail.id, attempt, cause.value, control.action.value)
         return True
 
     @staticmethod
@@ -86,8 +85,32 @@ class TestSuiteInfrastructureService:
                 dispatched_at = None
             ApiCaseExecutionTraceRecorder.interrupt_report_attempt(
                 detail.id, dispatched_at or detail.push_time, detail.error_message,
-                detail.summary_data['meta']['execution_control'],
+                (meta or {}).get('execution_control') or {'attempt': detail.retry},
             )
+
+    @classmethod
+    @transaction.atomic
+    def reconcile_trace(cls, detail_id):
+        suite_id = TestSuiteDetails.objects.filter(id=detail_id).values_list('test_suite_id', flat=True).first()
+        suite = TestSuite.objects.select_for_update().filter(id=suite_id).first()
+        detail = TestSuiteDetails.objects.select_for_update().filter(id=detail_id).first()
+        if suite is None or detail is None:
+            return False
+        from src.apps.test_center.services.reporting.test_suite.recovery import ReportRecoveryService
+        control = ReportRecoveryService.read(detail.summary_data)
+        _, meta = TestSuiteExecutionResultService.unpack_summary_data(detail.summary_data)
+        raw = (meta or {}).get('execution_control') or {}
+        if control is None and raw.get('version') == 2:
+            return False
+        if control is not None:
+            if control.attempt != detail.retry or not control.owner_ended:
+                return False
+        elif not cls.is_blocked(detail.summary_data) and detail.status not in (
+                TaskEnum.FAIL.value, TaskEnum.SUCCESS.value, TaskEnum.WARNING.value,
+                TaskEnum.STOPPED.value, TaskEnum.INFRASTRUCTURE_BLOCKED.value):
+            return False
+        cls.close_interrupted_trace(detail)
+        return True
 
     @staticmethod
     def _finish_suite(suite):
@@ -97,9 +120,12 @@ class TestSuiteInfrastructureService:
         statuses = set(TestSuiteDetails.objects.filter(test_suite_id=suite.id).values_list('status', flat=True))
         if statuses.intersection((TaskEnum.STAY_BEGIN.value, TaskEnum.PROCEED.value)):
             return
-        suite.status = (TaskEnum.FAIL.value if TaskEnum.FAIL.value in statuses or TestSuiteDetails.objects.filter(
-                            test_suite_id=suite.id, is_excluded=False, fail__gt=0).exists()
-                        else TaskEnum.INFRASTRUCTURE_BLOCKED.value)
+        from src.apps.test_center.services.reporting.test_suite.summary import TestSuiteSummaryService
+        counts = TestSuiteSummaryService.effective_summary_from_rows(TestSuiteDetails.objects.filter(test_suite_id=suite.id))
+        suite.status = TestSuiteSummaryService.conclusion_status(suite.status, counts, counts['total'])
+        if suite.status in (TaskEnum.STAY_BEGIN.value, TaskEnum.PROCEED.value, TaskEnum.INFRASTRUCTURE_BLOCKED.value):
+            suite.status = (TaskEnum.FAIL.value if counts.get('fail') else TaskEnum.WARNING.value
+                            if counts.get('warning') else TaskEnum.STOPPED.value if counts.get('stopped') else TaskEnum.SUCCESS.value)
         suite.save(update_fields=['status', 'update_time'])
         transaction.on_commit(lambda: TestSuiteInfrastructureService.finish_notice(suite.id))
 

@@ -1,3 +1,4 @@
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import asyncio
 import hashlib
 import json
@@ -124,6 +125,7 @@ class UiLiveWorkspaceManager:
                 await cls._notify_status(command, "ready")
                 send_global_msg(f"UI实时工作区已打开：{runtime_data.name}")
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/live_workspace:start')
             await cls._notify_status(command, "failed", str(error) or type(error).__name__)
             raise
 
@@ -150,6 +152,7 @@ class UiLiveWorkspaceManager:
                 reliable=True,
             )
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/live_workspace:_notify_status')
             log.warning(
                 f"UI实时工作区状态回传失败：workspace={command.get('workspace_id') or '-'}，"
                 f"status={status}，error={type(error).__name__}"
@@ -319,6 +322,7 @@ class UiLiveWorkspaceManager:
                 reliable=True,
             )
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/ui/live_workspace:_notify_closed')
             log.warning(
                 f"UI实时工作区关闭状态回传失败：workspace={state.workspace_id}，"
                 f"error={type(error).__name__}"

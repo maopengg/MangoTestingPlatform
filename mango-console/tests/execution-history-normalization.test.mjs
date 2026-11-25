@@ -22,7 +22,7 @@ function setup(options = {}) {
     getSystemTestSuiteDetailsResultOptionsShare: (...args) => { calls.options.push(args); return options.options ? options.options(...args) : Promise.resolve(response([row()])) },
     getSystemTestSuiteDetailsResultShare: (...args) => { calls.share.push(args); return options.share ? options.share(...args) : Promise.resolve(response({ children: [{ parameter_id: 0, status: 0, response: { data: false } }] })) },
   }
-  const h = harness('ExecutionResultHistoryDrawer', 'records,selectedId,selectedDetail,loading,detailLoading,listFailed,detailFailed,historyItems,stepOptions,selectedStepKey,selectedScenarioKey,selectedTreeKey,selectedApiResult,showResultNavigator,selectedErrorMessage,loadList,selectResult,retryDetail,updateVisible,openExecutionTrace,selectTreeNode,statusColor,statusText', {
+  const h = harness('ExecutionResultHistoryDrawer', 'records,selectedId,selectedDetail,loading,detailLoading,listFailed,detailFailed,historyItems,stepOptions,selectedStepKey,selectedScenarioKey,selectedTreeKey,selectedApiResult,showResultNavigator,selectedErrorMessage,loadList,loadMore,hasMore,loadingMore,moreFailed,selectResult,retryDetail,updateVisible,openExecutionTrace,selectTreeNode,statusColor,statusText', {
     base, filename: path.join(base, 'ExecutionResultHistoryDrawer.vue'), api,
     props: { visible: false, title: '执行历史', caseId: undefined, query: { target_type: 'pytest_case', target_id: 10 }, ...options.props },
     modules: {
@@ -305,6 +305,56 @@ test('history drawer and shared list scripts/templates compile', () => {
     const script = compileScript(descriptor, { id: name })
     assert.deepEqual(compileTemplate({ source: descriptor.template.content, filename, id: name, compilerOptions: { bindingMetadata: script.bindings } }).errors, [])
   }
+})
+
+test('history preserves frozen revision, environment zero and Trace without using update time as execution time', async () => {
+  const saved = { ...row(1, 10, 'api_case'), revision_id: 12457, release_id: null,
+    test_env: 0, test_env_name: '测试环境', trace_id: 'failed-trace',
+    create_time: '2026-11-18 17:01:00', update_time: '2026-11-18 18:30:00' }
+  const h = setup({ props: { caseId: 10 }, list: async () => response([saved]),
+    detail: async () => response({ ...saved, result_data: { test_time: '2026-11-18 17:00:45',
+      config_checksum: 'same-frozen-config', steps: [{ id: 1, parameter_id: 2, status: 0 }] } }) })
+  h.open(); await settle()
+  assert.equal(h.historyItems.value[0].context, '修订 #12457 · 测试环境')
+  assert.equal(h.historyItems.value[0].time, '结果保存：2026-11-18 17:01:00')
+  assert.equal(h.selectedDetail.value.test_env, 0)
+  assert.equal(h.selectedDetail.value.trace_id, 'failed-trace')
+  const { historyVersionText, historyEnvironmentText, historyRecords } = h.load('execution-history.ts')
+  assert.equal(historyVersionText(historyRecords(response([{ ...saved, revision_id: null }]))[0]), '编辑态')
+  assert.equal(historyVersionText(historyRecords(response([{ ...saved, revision_id: undefined }]))[0]), '版本未记录')
+  assert.equal(historyEnvironmentText(historyRecords(response([{ ...saved, test_env_name: '' }]))[0]), '环境 #0')
+  h.dispose()
+})
+
+test('older failures remain selectable after loading more than twenty executions', async () => {
+  const list = Array.from({ length: 21 }, (_, index) => row(21 - index))
+  const h = setup({ list: async query => ({ ...response(query.page === 1 ? list.slice(0, 20) : list.slice(20)), totalSize: 21 }) })
+  h.open(); await settle()
+  assert.equal(h.hasMore.value, true)
+  assert.equal(h.selectedId.value, 21)
+  await h.loadMore()
+  assert.equal(h.records.value.length, 21)
+  assert.equal(h.hasMore.value, false)
+  assert.equal(h.selectedId.value, 21)
+  await h.selectResult(1)
+  assert.equal(h.selectedId.value, 1)
+  assert.equal(h.selectedDetail.value.status, 0)
+  h.dispose()
+})
+
+test('late older-history response cannot leak across a changed revision', async () => {
+  const pending = deferred()
+  const h = setup({ list: async query => query.page === 1
+    ? { ...response(Array.from({ length: 20 }, (_, index) => row(index + 1))), totalSize: 21 }
+    : pending.promise })
+  h.open(); await settle()
+  const job = h.loadMore()
+  h.updateVisible(false)
+  pending.resolve({ ...response([row(21)]), totalSize: 21 })
+  await job
+  assert.deepEqual(h.records.value, [])
+  assert.equal(h.loadingMore.value, false)
+  h.dispose()
 })
 
 test('closed drawer does not issue enum or result reads', async () => {

@@ -7,6 +7,7 @@ from mangotools.enums import NoticeEnum
 from mangotools.enums import StatusEnum
 from mangotools.enums import TaskEnum
 from src.apps.test_center.enums.report_delivery import ReportSourceEnum
+from src.apps.test_center.enums.content_search import ContentSearchKindEnum, ContentSearchStatusEnum
 from src.apps.auto_api.enums.callback import (
     CallbackRunStatus, CallbackSource, CallbackCheckType, CallbackEventMode,
     CallbackDeliveryPolicy, CallbackResponseMode,
@@ -14,9 +15,10 @@ from src.apps.auto_api.enums.callback import (
 from src.apps.auto_api.enums.retry import ApiTransientRetryCondition
 from src.apps.auto_api.enums.resource_cleanup import ApiResourceCleanupStatus
 from src.apps.auto_api.enums.assertion import ApiDefaultAssertionCheck
+from src.apps.auto_api.enums.case import ApiCaseListResultStateEnum
 from src.apps.data_factory.enums.audit import DatasourceAuditSourceEnum, DatasourceAuditStageEnum
 from src.apps.data_factory.enums.cleanup_resource import EsCleanupModeEnum
-from src.apps.auto_api.enums.module_coverage import ModuleCoverageInterfaceCoverageStatus, ModuleCoveragePolicy, ModuleCoverageAnalysisStatus
+from src.apps.auto_api.enums.module_coverage import ModuleCoverageInterfaceCoverageStatus, ModuleCoveragePolicy, ModuleCoverageAnalysisStatus, ModuleCoverageInventoryStatus
 
 from src.common.enums.variable_tags import VariableTagOperationEnum
 from src.apps.auto_api.enums import (
@@ -105,14 +107,23 @@ from src.apps.test_center.enums.reporting import ReportExecutionPhaseEnum
 
 
 class EnumCatalogService:
+    @staticmethod
+    def task_status_options():
+        return [item for item in TaskEnum.get_option() if item['key'] != TaskEnum.INFRASTRUCTURE_BLOCKED.value]
+
     @classmethod
     def catalog(cls) -> dict[str, Any]:
         enum_data = {
+            'execution_content_search_kind': ContentSearchKindEnum.get_option(),
+            'execution_content_search_status': ContentSearchStatusEnum.get_option(),
             'module_coverage_policy': [
                 {'key': value, 'title': title} for value, title in ModuleCoveragePolicy.choices
             ],
             'module_coverage_analysis_status': [
                 {'key': item.value, 'title': item.label} for item in ModuleCoverageAnalysisStatus
+            ],
+            'module_coverage_inventory_status': [
+                {'key': item.value, 'title': item.label} for item in ModuleCoverageInventoryStatus
             ],
             'module_coverage_interface_coverage_status': [
                 {'key': value, 'title': title} for value, title in ModuleCoverageInterfaceCoverageStatus.choices
@@ -190,7 +201,8 @@ class EnumCatalogService:
             'evaluation_workflow_scope': EvaluationWorkflowScopeEnum.get_option(),
             'evaluation_workflow_action': EvaluationWorkflowActionEnum.get_option(),
             'evaluation_turn_kind': EvaluationTurnKindEnum.get_option(),
-            'task_status': TaskEnum.get_option(),
+            'task_status': cls.task_status_options(),
+            'api_case_list_result_state': ApiCaseListResultStateEnum.get_option(),
             'environment_type': EnvironmentEnum.get_option(),
             'environment_type_defaults': [
                 {'key': key, 'title': title} for key, title in EnvironmentEnum.default_obj().items()

@@ -326,7 +326,7 @@ class AutomationEffectivenessQualityMixin:
                 'name': TaskEnum.get_value(status.value),
                 'value': counts[status_keys[status.value]],
             }
-            for status in TaskEnum
+            for status in TaskEnum if status != TaskEnum.INFRASTRUCTURE_BLOCKED
         ]
 
     @classmethod

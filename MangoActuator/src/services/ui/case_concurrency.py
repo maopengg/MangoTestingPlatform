@@ -1,3 +1,4 @@
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import threading
 
 from src.tools.set_config import SetConfig
@@ -13,7 +14,10 @@ class UiCaseConcurrency:
     def capacity(cls) -> int:
         try:
             return max(1, int(SetConfig.get_web_parallel() or 5))  # type: ignore
-        except Exception:
+        except (TypeError, ValueError):
+            return 5
+        except Exception as _unexpected_error:
+            ActuatorSystemErrorReporter.schedule(_unexpected_error, 'services/ui/case_concurrency:capacity')
             return 5
 
     @classmethod

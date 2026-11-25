@@ -45,6 +45,14 @@ class SystemJobService:
             handler=SchedulerSystemJobService.repair_test_suite_status,
         ),
         SystemJobDefinition(
+            key='recover_api_report_executions',
+            name='API 报告执行自动恢复',
+            description='每分钟最多检查 100 条新版恢复记录；恢复原结果和清理责任，安全后按原重试预算重新入队，并补偿失败的系统异常登记。',
+            cron='* * * * *',
+            source_type=ScheduleFireSourceTypeEnum.SYSTEM_JOB.value,
+            handler=SchedulerSystemJobService.recover_api_report_executions,
+        ),
+        SystemJobDefinition(
             key='send_pending_test_suite_notice',
             name='测试报告通知补偿',
             description='每 3 分钟发送未发送的测试报告通知。',

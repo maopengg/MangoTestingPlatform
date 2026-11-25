@@ -135,9 +135,10 @@ class DatasourceDiagnosticTests(SimpleTestCase):
 
     def test_es_snapshot_failure_still_does_not_delete_any_document(self):
         from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as Resources
+        from src.apps.data_factory.services.datasource.elasticsearch import ElasticsearchDatasourceService as ES
         snapshot = SimpleNamespace(index='example', document_id='1001', tenant='7', connection_id=10,
                                    rule=SimpleNamespace(tenant_path='tenant_id'))
-        with patch.object(Resources, 'document') as delete, self.assertRaises(DataFactoryError) as caught:
+        with patch.object(ES, 'document') as delete, self.assertRaises(DataFactoryError) as caught:
             Resources.check_owner({'_id': '1001', '_source': {'tenant_id': '8'}}, snapshot)
         self.assertEqual(caught.exception.code, DATA_FACTORY_ES_CLEANUP_OWNERSHIP_INVALID.code)
         self.assertIn('文档ID或租户字段', caught.exception.msg)

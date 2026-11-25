@@ -14,6 +14,24 @@ from src.apps.data_factory.models import (
 
 class DataFactoryQuerySelector:
     @staticmethod
+    def cleanup_observation_items(execution_id):
+        return DataFactoryExecutionItem.objects.select_related(
+            'execution', 'template__entity', 'database', 'datasource_binding',
+        ).filter(execution_id=execution_id).order_by('cleanup_order', '-id')
+
+    @staticmethod
+    def verified_cleanup_failure_candidates(limit):
+        from django.db.models import Exists, OuterRef
+        from src.apps.data_factory.enums import DataFactoryCleanupStatusEnum, DataFactoryExecutionStatusEnum
+        items = DataFactoryExecutionItem.objects.filter(execution_id=OuterRef('pk'))
+        return DataFactoryExecution.objects.filter(
+            status=DataFactoryExecutionStatusEnum.SUCCESS.value,
+            cleanup_status=DataFactoryCleanupStatusEnum.FAIL.value,
+        ).alias(has_items=Exists(items), has_unfinished_items=Exists(items.exclude(
+            cleanup_status=DataFactoryCleanupStatusEnum.SUCCESS.value)),
+        ).filter(has_items=True, has_unfinished_items=False).order_by('update_time', 'id')[:limit]
+
+    @staticmethod
     def has_unfinished_cleanup_for_details(detail_ids, product_id):
         from django.db.models.fields.json import KeyTransform
         from src.apps.data_factory.constants import CLEANUP_REPORT_CONTEXT_KEY

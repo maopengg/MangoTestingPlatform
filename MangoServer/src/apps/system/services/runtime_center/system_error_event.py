@@ -3,9 +3,11 @@ import json
 import os
 import re
 import traceback as traceback_module
+import uuid
 from datetime import timedelta
 
 from django.db import IntegrityError, transaction
+from django.db import connection
 from django.db.models import F, Q
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
@@ -14,12 +16,24 @@ from src.apps.monitoring.models import SystemErrorEvent
 from src.common.enums.system_error import SystemErrorEventSource
 from src.common.exceptions.normalization import normalize_expected_exception
 from src.common.logging import log
+from src.common.logging.diagnostics import safe_exception_diagnostics
+from src.common.database.read_retry import is_connection_lost
 
 
 class SystemErrorEventService:
     DEFAULT_RETENTION_DAYS = 30
     DEFAULT_LIMIT = 10
     MESSAGE_MAX_LENGTH = 500
+
+    @classmethod
+    def record_report_recovery_failure(cls, *, suite_id, detail_id, attempt, cause, reason, codes):
+        """平台执行失败显式上报，不借通用预期异常过滤；调用方用轮次行锁去重。"""
+        cls.record(service_name='api-worker', source=SystemErrorEventSource.API_WORKER,
+                   request_path=f'report/{int(suite_id)}/detail/{int(detail_id)}/attempt/{int(attempt)}',
+                   exception_type='ReportRecoveryFailure', message='测试执行失败，自动恢复已停止',
+                   trace=json.dumps({'report_id': int(suite_id), 'detail_id': int(detail_id),
+                                     'attempt': int(attempt), 'cause': cause.value, 'reason': reason,
+                                     'issue_codes': [int(code) for code in codes]}, ensure_ascii=False))
 
     SOURCE_SERVICE_MAP = {
         SystemErrorEventSource.HTTP: 'core-api',
@@ -85,7 +99,7 @@ class SystemErrorEventService:
         try:
             trace_text = trace or traceback_module.format_exc()
             path = cls.resolve_request_path(request, request_path)
-            cls.record(
+            cls.record_with_recovery(error,
                 service_name=service_name or cls.resolve_service_name(source),
                 source=source,
                 request_path=path,
@@ -94,7 +108,41 @@ class SystemErrorEventService:
                 trace=trace_text,
             )
         except Exception as record_error:
-            log.system.warning(f'系统异常事件记录失败：{record_error}')
+            cls.log_record_failure(error, record_error)
+
+    @staticmethod
+    def log_record_failure(error, record_error):
+        original_code, original_frames = safe_exception_diagnostics(error)
+        write_code, write_frames = safe_exception_diagnostics(record_error)
+        log.system.error('event=system_error_record_failed reference=%s original_type=%s '
+                         'original_driver_number=%s original_diagnostics=%s recording_type=%s '
+                         'recording_driver_number=%s recording_diagnostics=%s',
+                         uuid.uuid4().hex, type(error).__name__, original_code, original_frames,
+                         type(record_error).__name__, write_code, write_frames)
+
+    @classmethod
+    def record_with_recovery(cls, error, **payload):
+        try:
+            cls.record(**payload)
+        except Exception as record_error:
+            # 先保存原始定位证据；数据库持续不可用时仍能从服务 error.log 找到首因。
+            cls.log_record_failure(error, record_error)
+            if connection.in_atomic_block or not is_connection_lost(record_error):
+                return
+            try:
+                connection.close()
+                # 写入可能已提交但回执丢失。按既有指纹补齐，不再次增加出现次数。
+                now = timezone.now()
+                payload['message'] = cls.truncate(payload['message'], cls.MESSAGE_MAX_LENGTH)
+                fingerprint = cls.build_fingerprint(payload['service_name'], payload['source'],
+                    payload['request_path'], payload['exception_type'], payload['message'])
+                defaults = {key: value for key, value in payload.items() if key != 'trace'}
+                defaults.update(traceback=payload.get('trace'), last_seen_at=now)
+                item, created = SystemErrorEvent.objects.get_or_create(fingerprint=fingerprint, defaults=defaults)
+                if not created:
+                    SystemErrorEvent.objects.filter(pk=item.pk).update(**defaults, update_time=now)
+            except Exception as retry_error:
+                cls.log_record_failure(error, retry_error)
 
     @classmethod
     def record_validation(cls, error, source, request=None, request_path=None, service_name=None):
@@ -134,7 +182,7 @@ class SystemErrorEventService:
             return
         summary = '；'.join(f'{field}: {code}（{labels[code]}）' for field, code in sorted(items))
         try:
-            cls.record(
+            cls.record_with_recovery(error,
                 service_name=service_name or cls.resolve_service_name(source), source=source,
                 request_path=cls.resolve_request_path(request, request_path),
                 exception_type='RequestValidationError', message=f'接口校验失败，待排查：{summary}',

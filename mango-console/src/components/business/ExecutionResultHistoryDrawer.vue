@@ -36,7 +36,13 @@
         :error-text="listFailed ? '加载执行记录失败' : ''"
         @select="selectResult"
         @retry="loadList"
-      />
+      >
+        <template #more>
+          <a-button v-if="hasMore" long size="small" :loading="loadingMore" @click="loadMore">
+            {{ moreFailed ? '加载失败，点击重试' : '加载更早记录' }}
+          </a-button>
+        </template>
+      </ExecutionHistoryList>
       <div v-if="showResultNavigator" class="execution-result-history__navigation">
         <section class="execution-result-history__selector">
           <div class="execution-result-history__head">
@@ -89,6 +95,14 @@
         </section>
       </div>
       <section class="execution-result-history__detail">
+        <div v-if="selectedDetail" class="mango-execution-result-evidence">
+          <span>结果 #{{ selectedDetail.id }} · {{ historyVersionText(selectedDetail) }} · {{ historyEnvironmentText(selectedDetail) }}</span>
+          <span v-if="historyObject(selectedDetail.result_data)?.test_time">执行开始：{{ historyObject(selectedDetail.result_data)?.test_time }}</span>
+          <span v-else>结果保存：{{ selectedDetail.create_time || '时间未记录' }}</span>
+          <span v-if="selectedDetail.trace_id">Trace：{{ selectedDetail.trace_id }}</span>
+          <span v-if="historyObject(selectedDetail.result_data)?.config_checksum">配置校验值：{{ historyObject(selectedDetail.result_data)?.config_checksum }}</span>
+          <a-button v-if="selectedDetail.trace_id" size="small" @click="openExecutionTrace">查看本次执行链路</a-button>
+        </div>
         <mango-panel-spin :loading="detailLoading" class="execution-result-history__spin">
           <template v-if="detailFailed"></template>
           <template v-else>
@@ -134,7 +148,7 @@ import { reportLoadError } from '@/utils/load-error'
   import { useEnum } from '@/store/modules/get-enum'
   import ApiTestReport from '@/components/reports/ApiTestReport.vue'
   import ExecutionHistoryList from '@/components/business/ExecutionHistoryList.vue'
-  import { historyDetail, historyId, historyObject, historyRecords, historySteps, historyText, reportHistoryDetail } from './execution-history'
+  import { historyDetail, historyEnvironmentText, historyId, historyObject, historyRecords, historySteps, historyText, historyVersionText, reportHistoryDetail } from './execution-history'
   import type { ExecutionHistoryItem, HistoryDetail, HistoryRecord, HistoryStep as StepOption } from './execution-history'
 
   const props = defineProps<{
@@ -165,6 +179,7 @@ import { reportLoadError } from '@/utils/load-error'
   const selectedTreeKey = ref('')
   const expandedStepKeys = ref<string[]>([])
   const loading = ref(false)
+  const loadingMore = ref(false), moreFailed = ref(false), hasMore = ref(false), historyPage = ref(1)
   const detailLoading = ref(false)
   const listFailed = ref(false), detailFailed = ref(false)
   let contextVersion = 0, listRequestToken = 0
@@ -246,7 +261,8 @@ import { reportLoadError } from '@/utils/load-error'
       title: displayResultLabel(item),
       statusText: item.status_name || item.status_text || '未知',
       statusColor: statusColor(item.status, item.status_text),
-      time: item.update_time || item.create_time || item.trigger_time || '-',
+      time: item.trigger_time ? `执行开始：${item.trigger_time}` : `结果保存：${item.create_time || '时间未记录'}`,
+      context: [historyVersionText(item), historyEnvironmentText(item)].filter(Boolean).join(' · '),
       actor: item.trigger_user_name || '-',
       latest: item.is_case_latest ?? item.is_latest ?? index === 0,
       sourceText: resultSourceText(item),
@@ -314,6 +330,8 @@ import { reportLoadError } from '@/utils/load-error'
     listJob = null
     detailJob = null
     loading.value = false
+    loadingMore.value = moreFailed.value = hasMore.value = false
+    historyPage.value = 1
     detailLoading.value = false
     listFailed.value = false
     detailFailed.value = false
@@ -342,6 +360,8 @@ import { reportLoadError } from '@/utils/load-error'
     listFailed.value = false
     if (detailId === null && !query) return Promise.resolve()
     loading.value = true
+    loadingMore.value = moreFailed.value = hasMore.value = false
+    historyPage.value = 1
     const current = () => available() && scope === contextVersion && token === listRequestToken
     const job = Promise.resolve().then(async () => {
       try {
@@ -355,6 +375,7 @@ import { reportLoadError } from '@/utils/load-error'
           : await getExecutionResultList({ ...query!, page: 1, pageSize: 20 })
         if (!current()) return
         records.value = historyRecords(res, detailId !== null ? undefined : query!)
+        hasMore.value = detailId === null && records.value.length < Number(res.totalSize || 0)
         const next = records.value.find(item => previousId !== null && String(item.id) === String(previousId)) || records.value[0]
         // 左侧记录完成后立即解除其 loading，详情有独立的请求状态。
         if (next) void selectResult(next.id, String(next.id) === String(previousId) ? previousScenarioKey : '')
@@ -369,6 +390,29 @@ import { reportLoadError } from '@/utils/load-error'
     })
     listJob = job
     return job
+  }
+
+  async function loadMore() {
+    if (!available() || loading.value || loadingMore.value || !hasMore.value || detailMode.value) return
+    const scope = contextVersion, token = listRequestToken, page = historyPage.value + 1
+    const query = effectiveQuery.value
+    if (!query) return
+    const current = () => available() && scope === contextVersion && token === listRequestToken
+    loadingMore.value = true
+    moreFailed.value = false
+    try {
+      const res = await getExecutionResultList({ ...query, page, pageSize: 20 })
+      if (!current()) return
+      const items = historyRecords(res, query)
+      const ids = new Set(records.value.map(item => String(item.id)))
+      records.value = [...records.value, ...items.filter(item => !ids.has(String(item.id)))]
+      historyPage.value = page
+      hasMore.value = items.length > 0 && page * 20 < Number(res.totalSize || 0)
+    } catch (error) {
+      if (current()) { moreFailed.value = true; reportLoadError(error, '加载更早记录失败，请重试', false) }
+    } finally {
+      if (current()) loadingMore.value = false
+    }
   }
 
   function selectResult(id: number | string, restoreScenarioKey = ''): Promise<void> {
@@ -526,6 +570,21 @@ import { reportLoadError } from '@/utils/load-error'
 </script>
 
 <style scoped>
+  .mango-execution-result-evidence {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: 4px;
+    padding: var(--m-page-gap);
+    border-bottom: 1px solid var(--m-border);
+    color: var(--m-text-2);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .mango-execution-result-evidence .arco-btn {
+    align-self: flex-start;
+  }
   :deep(.execution-result-history-drawer .arco-drawer-header) {
     height: auto;
     min-height: 64px;

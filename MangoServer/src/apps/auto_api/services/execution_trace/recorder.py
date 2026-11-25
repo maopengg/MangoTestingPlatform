@@ -45,6 +45,8 @@ class ApiCaseExecutionTraceRecorder:
     summary生命周期字段：execution_owner={process_token, process_started_at}；
     review_required为布尔；interrupted_stage为Trace阶段；exception_type仅保存类名。
     对账额外保存reconciled_at（ISO时间）、execution_result_id（精确结果ID或null）。
+    结果查询使用case_revision_id与execution_source；editing_fingerprint仅供执行配置并发校验；
+    partial_execution标识仅执行部分步骤，不作为完整Case的验证结果。
     """
 
     SUMMARY_TEXT_LIMIT = 1000
@@ -58,17 +60,22 @@ class ApiCaseExecutionTraceRecorder:
     def interrupt_report_attempt(detail_id, pushed_at, message, control):
         now = timezone.now()
         traces = ApiCaseExecutionTrace.objects.filter(
-            test_suite_detail_id=detail_id, status=ApiCaseTraceStatus.PROCEED,
+            test_suite_detail_id=detail_id,
         )
         if pushed_at is not None:
             traces = traces.filter(started_at__gte=pushed_at)
+        from django.db.models import Q
+        traces = traces.filter(Q(summary__report_attempt=control['attempt']) | Q(summary__report_attempt__isnull=True))
         for trace in traces:
+            ended = trace.finished_at or now
             for step in ApiCaseExecutionStep.objects.filter(trace=trace, status=ApiCaseTraceStatus.PROCEED):
                 step.status = ApiCaseTraceStatus.FAIL
-                step.finished_at = now
-                step.duration_ms = max(0, int((now - (step.started_at or now)).total_seconds() * 1000))
+                step.finished_at = ended
+                step.duration_ms = max(0, int((ended - (step.started_at or ended)).total_seconds() * 1000))
                 step.error_message = message
                 step.save(update_fields=['status', 'finished_at', 'duration_ms', 'error_message', 'update_time'])
+            if trace.status != ApiCaseTraceStatus.PROCEED:
+                continue
             trace.status = ApiCaseTraceStatus.FAIL
             trace.finished_at = now
             trace.duration_ms = max(0, int((now - (trace.started_at or now)).total_seconds() * 1000))
@@ -119,6 +126,9 @@ class ApiCaseExecutionTraceRecorder:
     def create_trace(self, context: ApiCaseExecutionContext) -> ApiCaseExecutionTrace | None:
         try:
             from src.apps.system.services.runtime_center.process_identity import RuntimeProcessIdentity
+            from src.apps.data_factory.services.cleanup.cleanup_schedule import DataFactoryCleanupScheduleService
+            owner = DataFactoryCleanupScheduleService.current_owner()
+            report_summary = {'report_attempt': owner['parent_attempt']} if owner and context.test_suite_detail_id else {}
             now = timezone.now()
             self._start_time = time.time()
             self.trace = ApiCaseExecutionTrace.objects.create(
@@ -133,7 +143,8 @@ class ApiCaseExecutionTraceRecorder:
                 status=ApiCaseTraceStatus.PROCEED,
                 worker_name=context.worker_name or os.getenv('HOSTNAME') or socket.gethostname(),
                 started_at=now,
-                summary={**self._safe_summary(context.summary), 'execution_owner': RuntimeProcessIdentity.current()},
+                summary={**self._safe_summary(context.summary), **report_summary,
+                         'execution_owner': RuntimeProcessIdentity.current()},
             )
             return self.trace
         except Exception as error:

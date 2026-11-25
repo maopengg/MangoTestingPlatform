@@ -20,6 +20,8 @@ from .tools.log_collector import log
 
 async def process(parent, is_login=False, retry=0):
     try:
+        ActuatorSystemErrorReporter.install_exception_hooks()
+        ActuatorSystemErrorReporter.install_loop_exception_handler(asyncio.get_running_loop())
         WebSocketClient.parent = parent
         SocketConsumer.parent = parent
         CaseFlow.parent = parent
@@ -37,14 +39,17 @@ async def process(parent, is_login=False, retry=0):
         try:
             await HTTP.system.refresh_runtime_config()
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'startup:refresh-runtime-config')
             log.warning(f'启动时刷新执行器运行配置失败，将使用默认值并后台重试：{error}')
         RuntimeSupervisor.start_task('websocket_client', WebSocketClient.client_run)
         RuntimeSupervisor.start_task('socket_consumer', SocketConsumer.process_tasks)
         RuntimeSupervisor.start_task('executor_task_worker', ExecutorTaskWorker.run)
+        RuntimeSupervisor.start_task('system_error_outbox', ActuatorSystemErrorReporter.run)
         RuntimeSupervisor.start_task('ui_case_flow', CaseFlow.process_tasks)
         RuntimeSupervisor.start_task('pytest_case_flow', PytestCaseFlow.process_tasks)
         retry = 0
     except Exception as error:
+        await ActuatorSystemErrorReporter.report(error, 'startup:process')
         await RuntimeSupervisor.stop()
         if socket_conn.websocket:
             socket_conn.websocket = None
@@ -64,14 +69,17 @@ async def process(parent, is_login=False, retry=0):
 
 async def test_process(parent):
     try:
+        ActuatorSystemErrorReporter.install_loop_exception_handler(asyncio.get_running_loop())
         SocketConsumer.parent = parent
         CaseFlow.parent = parent
         PytestCaseFlow.parent = parent
         RuntimeSupervisor.start_task('socket_consumer', SocketConsumer.process_tasks)
         RuntimeSupervisor.start_task('executor_task_worker', ExecutorTaskWorker.run)
+        RuntimeSupervisor.start_task('system_error_outbox', ActuatorSystemErrorReporter.run)
         RuntimeSupervisor.start_task('ui_case_flow', CaseFlow.process_tasks)
         RuntimeSupervisor.start_task('pytest_case_flow', PytestCaseFlow.process_tasks)
     except Exception as error:
+        await ActuatorSystemErrorReporter.report(error, 'startup:test-process')
         await RuntimeSupervisor.stop()
         if socket_conn.websocket:
             socket_conn.websocket = None

@@ -19,6 +19,18 @@ from src.apps.user.services.audit.user_logs import UserLogService, _UserLogDispa
 
 
 class UserLogQueueTests(SimpleTestCase):
+    def test_content_search_keyword_is_not_copied_into_operation_logs(self):
+        middleware = UserLogsMiddleWare(lambda request: None)
+        for path in middleware.CONTENT_SEARCH_PATHS:
+            with self.subTest(path=path):
+                payload = {'keyword': 'example-business-value', 'project_product_id': 2}
+                request = SimpleNamespace(method='POST', path=path)
+                response = SimpleNamespace(renderer_context={'request': SimpleNamespace(data=payload)})
+                captured = middleware._capture_request_data(request, response)
+                self.assertEqual(captured['keyword'], '***')
+                self.assertEqual(captured['project_product_id'], 2)
+                self.assertEqual(payload['keyword'], 'example-business-value')
+
     def setUp(self):
         cleanup = patch.object(user_logs, 'close_old_connections')
         self.connections = cleanup.start()

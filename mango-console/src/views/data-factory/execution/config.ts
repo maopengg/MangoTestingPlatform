@@ -10,11 +10,29 @@ export const cleanupResourceColumns = [
   { title: '执行明细', dataIndex: 'alias', width: 160, ellipsis: true, tooltip: true },
   { title: 'ES索引', dataIndex: 'index', width: 240, ellipsis: true, tooltip: true },
   { title: '文档ID', dataIndex: 'document_id', width: 190, ellipsis: true, tooltip: true },
+  {
+    title: 'ID来源字段',
+    dataIndex: 'document_id_field',
+    width: 130,
+    ellipsis: true,
+    tooltip: true,
+  },
+  { title: '清理方式', dataIndex: 'mode', width: 160 },
   { title: '数据库清理', dataIndex: 'sql_status', width: 120 },
   { title: 'ES回查', dataIndex: 'status', width: 120 },
   { title: '检查时间', dataIndex: 'checked_at', width: 200, ellipsis: true, tooltip: true },
   { title: '说明', dataIndex: 'error', width: 310, ellipsis: true, tooltip: true },
+  { title: '操作', slotName: 'compensation', width: 120, fixed: 'right' as const },
 ]
+
+export const cleanupHistoryColumns = [
+  { title: '时间', dataIndex: 'create_time', width: 190 },
+  { title: '明细ID', dataIndex: 'factory_item_id', width: 100 },
+  { title: '事件', slotName: 'kind', width: 160 },
+  { title: '操作人ID', dataIndex: 'operator_id', width: 100 },
+  { title: '原因及验证', slotName: 'evidence', width: 400 },
+]
+
 
 export function createConditionItems() {
   const fields: Array<Omit<FormItem, 'disabled'>> = [

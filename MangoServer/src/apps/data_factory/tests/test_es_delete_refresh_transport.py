@@ -11,6 +11,7 @@ from urllib.request import urlopen
 from django.test import SimpleTestCase
 
 from src.apps.data_factory.services.cleanup.cleanup_resource import DataFactoryCleanupResourceService as Resources
+from src.apps.data_factory.services.datasource.elasticsearch import ElasticsearchDatasourceService as ES
 
 
 class EsDeleteRefreshTransportTests(SimpleTestCase):
@@ -44,9 +45,9 @@ class EsDeleteRefreshTransportTests(SimpleTestCase):
         thread.start()
         target = SimpleNamespace(extra_config={}, host='127.0.0.1', port=server.server_port, user='', password='')
         try:
-            with patch('src.apps.data_factory.services.cleanup.cleanup_resource.open_elasticsearch_request',
+            with patch('src.apps.data_factory.services.datasource.elasticsearch.open_elasticsearch_request',
                        side_effect=lambda req, **kw: urlopen(req, timeout=0.5)), ThreadPoolExecutor(max_workers=10) as pool:
-                results = list(pool.map(lambda i: Resources.request_document(target, 'example_index', str(i),
+                results = list(pool.map(lambda i: ES.request_document(target, 'example_index', str(i),
                     delete=True, timeout=0.5, expected={'_seq_no': i, '_primary_term': 1}), range(20)))
             self.assertEqual(len(results), 20)
             self.assertEqual(len(requests), 20)

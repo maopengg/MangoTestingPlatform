@@ -439,6 +439,7 @@
         />
         <template #footer>
           <TableFooter v-if="activeTab === 'tasks'" :pagination="pagination" />
+          <TableFooter v-else-if="taskGroupRef" :pagination="taskGroupRef.pagination" />
         </template>
       </ProjectProductNavigationWorkbench>
     </template>

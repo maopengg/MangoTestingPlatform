@@ -168,6 +168,7 @@ class SqlExecutionRecord(models.Model):
         db_table = "sql_execution_record"
         ordering = ["-create_time", "-id"]
         indexes = [
+            models.Index(fields=['project_product', 'test_env', 'create_time', 'id'], name='idx_sql_product_env_time'),
             models.Index(fields=["datasource_type", "create_time"], name="idx_sql_type_time"),
             models.Index(fields=["is_slow", "create_time"], name="idx_sql_slow_time"),
             models.Index(fields=["source_type", "source_id", "create_time"], name="idx_sql_source_time"),

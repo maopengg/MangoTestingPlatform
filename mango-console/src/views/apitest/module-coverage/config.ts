@@ -502,11 +502,13 @@ export function ownershipTagColor(value?: string) {
 export const overviewFilters = [
   { value: 'all', label: '全部模块' },
   { value: 'scan', label: '接口未盘点' },
+  { value: 'inventory_review', label: '盘点版本待复核' },
   { value: 'entry', label: '接口待分析' },
   { value: 'analysis_completed', label: '含已分析接口' },
   { value: 'analysis_gap', label: '含分析不完整' },
   { value: 'analysis_review', label: '含版本待复核' },
   { value: 'analysis_deferred', label: '含暂缓接口' },
+  { value: 'analysis_excluded', label: '含已排除接口' },
   { value: 'covered', label: '含已覆盖接口' },
   { value: 'partial', label: '含部分覆盖接口' },
   { value: 'uncovered', label: '含未覆盖接口' },
@@ -514,18 +516,63 @@ export const overviewFilters = [
   { value: 'case', label: '自动化未完成' },
 ]
 
+export const overviewFilterGroups: Array<{
+  key: string
+  label: string
+  options: Array<{ value: string; label: string }>
+}> = [
+  {
+    key: 'inventory_progress',
+    label: '接口盘点',
+    options: [
+      { value: 'inventoried', label: '已盘点' },
+      { value: 'inventory_review', label: '版本待复核' },
+      { value: 'scan', label: '未盘点' },
+    ],
+  },
+  {
+    key: 'analysis_progress',
+    label: '接口分析',
+    options: overviewFilters.filter((item) =>
+      [
+        'entry',
+        'analysis_completed',
+        'analysis_gap',
+        'analysis_review',
+        'analysis_deferred',
+        'analysis_excluded',
+      ].includes(item.value)
+    ),
+  },
+  {
+    key: 'coverage_progress',
+    label: '接口覆盖',
+    options: overviewFilters.filter((item) =>
+      ['covered', 'partial', 'uncovered', 'deferred'].includes(item.value)
+    ),
+  },
+  {
+    key: 'automation_progress',
+    label: '自动化场景',
+    options: [
+      { value: 'automation_completed', label: '含已完成场景' },
+      { value: 'case', label: '自动化未完成' },
+      { value: 'automation_deferred', label: '含暂不处理场景' },
+    ],
+  },
+]
+
 export const overviewModuleColumns: TableColumnData[] = [
   { title: 'ID', dataIndex: 'id', width: 72, align: 'center' },
-  { title: '名称', dataIndex: 'name', width: 160, ellipsis: true, tooltip: true },
+  { title: '模块名称', dataIndex: 'full_path', width: 240, ellipsis: true, tooltip: true },
   { title: '接口盘点', slotName: 'scan', width: 240, ellipsis: true, tooltip: true },
   { title: '接口分析', slotName: 'entry', width: 180 },
   { title: '自动化场景', slotName: 'automation', width: 180 },
   { title: '暂不处理场景', dataIndex: 'deferred_count', width: 120, align: 'center' },
   { title: '项目/产品', slotName: 'project_product', width: 180, ellipsis: true, tooltip: true },
-  { title: '模块', dataIndex: 'full_path', width: 240, ellipsis: true, tooltip: true },
   { title: '操作', slotName: 'actions', width: 160, fixed: 'right', align: 'center' },
 ]
-export const overviewModuleScrollX = 1532
+export const overviewModuleScrollX = 1372
 export const overviewModuleScrollY = 400
 
 export function getInterfaceAnalysisData(summary: {
@@ -544,8 +591,18 @@ export function getInterfaceAnalysisData(summary: {
       filter: 'analysis_completed',
     },
     { name: '待分析', value: summary.pending_analysis_count, status: 'pending', filter: 'entry' },
-    { name: '分析不完整', value: summary.analysis_gap_count, status: 'gap', filter: 'analysis_gap' },
-    { name: '版本待复核', value: summary.analysis_review_count || 0, status: 'review', filter: 'analysis_review' },
+    {
+      name: '分析不完整',
+      value: summary.analysis_gap_count,
+      status: 'gap',
+      filter: 'analysis_gap',
+    },
+    {
+      name: '版本待复核',
+      value: summary.analysis_review_count || 0,
+      status: 'review',
+      filter: 'analysis_review',
+    },
     {
       name: '暂缓分析',
       value: summary.deferred_analysis_count,

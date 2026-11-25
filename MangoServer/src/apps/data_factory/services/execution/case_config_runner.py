@@ -12,8 +12,9 @@ from src.apps.data_factory.exceptions import (
     DATA_FACTORY_CASE_AUTO_CLEANUP_FAILED,
     DataFactoryError,
 )
-from src.apps.data_factory.models import DataFactoryCaseConfig
+from src.apps.data_factory.models import DataFactoryCaseConfig, DataFactoryExecution
 from src.apps.data_factory.services.cleanup.cleanup import DataFactoryCleanup
+from src.apps.data_factory.services.cleanup.cleanup_schedule import DataFactoryCleanupScheduleService
 from src.apps.data_factory.services.execution.runner import DataFactoryRunner
 
 
@@ -120,6 +121,7 @@ class DataFactoryCaseConfigRunner:
         return DataFactoryCaseConfig(**values)
 
     def cleanup(self):
+        self.start_cleanup_observations()
         failures = []
         for execution_id in self.auto_cleanup_execution_ids:
             try:
@@ -156,6 +158,29 @@ class DataFactoryCaseConfigRunner:
                 for item in failures
             )
             raise DataFactoryError(DATA_FACTORY_CASE_AUTO_CLEANUP_FAILED, value=(summary,))
+
+    def start_cleanup_observations(self):
+        owner = DataFactoryCleanupScheduleService.current_owner()
+        if owner is None:
+            # 无报告执行仍走同步清理，不借用 scheduler 或创建后台清理线程。
+            return
+        for execution_id in self.auto_cleanup_execution_ids:
+            try:
+                execution = DataFactoryExecution.objects.get(id=execution_id)
+                DataFactoryCleanupScheduleService.validate_report_owner(owner, execution)
+                task = DataFactoryCleanupScheduleService.enqueue(
+                    execution_id, created_by=self.user_id, force_cleanup=True, allow_missing=True)
+                # 保持原执行间 SQL 清理顺序，仅让已持久化 sql_done 的 ES 观察重叠。
+                # 后续 cleanup_execution 复用原任务，逐项等待完整终态及再次验证。
+                DataFactoryCleanupScheduleService.wait(task.id, sql_only=True)
+            except Exception as error:
+                from src.apps.auto_api.exceptions import TestSuiteStopped
+                if isinstance(error, TestSuiteStopped):
+                    raise
+                # 不在准备阶段重试删除；统一收尾路径保留失败证据并汇总所有执行。
+                self.logger.warning(f'工厂清理阶段交接未完成，execution_id:{execution_id}，错误:{error}')
+                # 无法确认前一 SQL 阶段终态时，不得提前调度后续执行。
+                break
 
     def replace_value(self, value):
         if isinstance(value, str):

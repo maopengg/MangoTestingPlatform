@@ -210,6 +210,9 @@ class TestSuiteExecutionResultService:
     @classmethod
     def count_normalized_api_result(cls, detail: TestSuiteDetails):
         counter = {'success': 0, 'fail': 0, 'warning': 0}
+        from src.apps.test_center.services.reporting.test_suite.recovery import ReportRecoveryService
+        if ReportRecoveryService.read(getattr(detail, 'summary_data', None)) is not None:
+            return cls.count_by_detail_fields(detail)
         from src.apps.test_center.services.reporting.test_suite.infrastructure import TestSuiteInfrastructureService
         if TestSuiteInfrastructureService.is_blocked(getattr(detail, 'summary_data', None)):
             return counter
@@ -513,7 +516,7 @@ class TestSuiteExecutionResultService:
         _, previous_meta = cls.unpack_summary_data(detail.summary_data)
         meta = dict(summary_meta or {})
         for key in ('execution_control', 'termination', 'worker_owner', 'resource_wait', 'dispatch_started_at',
-                    'api_count_by_scenario', 'api_scene_count'):
+                    'api_count_by_scenario', 'api_scene_count', 'recovery_history'):
             if isinstance(previous_meta, dict) and key in previous_meta:
                 meta[key] = previous_meta[key]
         if getattr(detail, 'type', None) == TestCaseTypeEnum.API.value:
@@ -868,7 +871,7 @@ class TestSuiteExecutionResultService:
         payload.result_data = result_payload['result_data']
         payload.result_object_key = result_payload['result_object_key']
         payload.result_file_name = result_payload['result_file_name']
-        payload.result_size = result_size if result_size is not None else result_payload['result_size']
+        payload.result_size = result_payload['result_size']
         payload.result_checksum = result_payload['result_checksum']
         payload.result_cleaned = False
         payload.result_cleaned_at = None

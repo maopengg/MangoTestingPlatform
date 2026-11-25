@@ -49,6 +49,7 @@ class ExecutorTaskWorker:
             try:
                 await HTTP.actuator_tasks.draining(False)
             except Exception as error:
+                await ActuatorSystemErrorReporter.report(error, 'services/executor_task_worker:run')
                 # 启动阶段 WebSocket 连接可能尚未登记完成，不能因此终止轮询工作线程。
                 log.warning(f'执行器启动时取消 draining 失败，将继续领取任务：{error}')
             while True:
@@ -62,6 +63,7 @@ class ExecutorTaskWorker:
                         try:
                             await HTTP.system.refresh_runtime_config()
                         except Exception as error:
+                            await ActuatorSystemErrorReporter.report(error, 'services/executor_task_worker:run')
                             log.warning(f'刷新执行器运行配置失败，继续使用当前值：{error}')
 
                     await cls._flush_result_outbox()
@@ -115,6 +117,7 @@ class ExecutorTaskWorker:
                         UiCaseConcurrency.release(reserved_ui_cases)
                     raise
                 except Exception as error:
+                    await ActuatorSystemErrorReporter.report(error, 'services/executor_task_worker:run')
                     if reserved_ui_cases:
                         UiCaseConcurrency.release(reserved_ui_cases)
                     registration_reconnecting = await cls._recover_stale_registration(error)
@@ -132,6 +135,7 @@ class ExecutorTaskWorker:
             try:
                 await HTTP.actuator_tasks.draining(True)
             except Exception as error:
+                await ActuatorSystemErrorReporter.report(error, 'services/executor_task_worker:run')
                 log.warning(f'执行器退出时上报 draining 失败，将由租约回收兜底：{error}')
             await cls._drain_running_tasks()
 
@@ -163,6 +167,7 @@ class ExecutorTaskWorker:
                 StepHealReportOutbox.delete(row['id'])
                 log.info(f'页面步骤自愈记录补传成功：trace_id={row["trace_id"]}')
             except Exception as error:
+                await ActuatorSystemErrorReporter.report(error, 'services/executor_task_worker:_flush_step_heal_report_outbox')
                 StepHealReportOutbox.mark_failed(row['id'], row['retry_count'], error)
                 log.debug(f'页面步骤自愈记录补传失败：trace_id={row["trace_id"]}，原因={error}')
                 break
@@ -325,6 +330,7 @@ class ExecutorTaskWorker:
                     attempt,
                 )
             except Exception as report_error:
+                await ActuatorSystemErrorReporter.report(report_error, 'services/executor_task_worker:_execute')
                 log.error(format_executor_task_log(
                     '执行器退出时保存中断结果失败', error=report_error,
                 ))
@@ -351,6 +357,7 @@ class ExecutorTaskWorker:
                     attempt,
                 )
             except Exception as report_error:
+                await ActuatorSystemErrorReporter.report(report_error, 'services/executor_task_worker:_execute')
                 log.error(format_executor_task_log(
                     '执行器任务异常结果回传失败', error=report_error,
                 ))
@@ -448,6 +455,7 @@ class ExecutorTaskWorker:
         try:
             ExecutorTaskResultOutbox.upsert(task_id, payload)
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/executor_task_worker:_submit_result')
             log.error(task_log(
                 '任务最终结果写入本地重试队列失败', error=error,
             ))
@@ -465,9 +473,11 @@ class ExecutorTaskWorker:
                 attempt=payload['attempt'],
             )
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/executor_task_worker:_submit_result')
             try:
                 ExecutorTaskResultOutbox.upsert(task_id, payload, error)
             except Exception as save_error:
+                await ActuatorSystemErrorReporter.report(save_error, 'services/executor_task_worker:_submit_result')
                 log.error(task_log(
                     '任务最终结果发送及本地保存均失败',
                     send_error=error,
@@ -481,6 +491,7 @@ class ExecutorTaskWorker:
         try:
             ExecutorTaskResultOutbox.delete_by_task_id(task_id)
         except Exception as error:
+            await ActuatorSystemErrorReporter.report(error, 'services/executor_task_worker:_submit_result')
             log.error(task_log(
                 '服务端已确认任务结果，但清理本地重试记录失败', error=error,
             ))
@@ -515,6 +526,7 @@ class ExecutorTaskWorker:
                     attempt=int(payload.get('attempt') or 0),
                 )
             except Exception as error:
+                await ActuatorSystemErrorReporter.report(error, 'services/executor_task_worker:_flush_result_outbox')
                 if cls._is_terminal_result_rejection(error):
                     ExecutorTaskResultOutbox.delete(row['id'])
                     log.error(

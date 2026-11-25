@@ -8,6 +8,7 @@ export interface ReportTraceQuery {
 export interface ReportTrace {
   trace_id: string
   status: number | null
+  execution_phase?: string
   duration_ms: number | null
   source_type: number | null
   started_at: string
@@ -65,7 +66,7 @@ export function parseReportTrace(response: unknown, query: ReportTraceQuery) {
     throw new Error('执行链路记录不匹配')
   }
   const trace: ReportTrace = {
-    trace_id: text(raw.trace_id), status: number(raw.status), duration_ms: number(raw.duration_ms),
+    trace_id: text(raw.trace_id), status: number(raw.status), execution_phase: text(raw.execution_phase), duration_ms: number(raw.duration_ms),
     source_type: number(raw.source_type), started_at: text(raw.started_at),
     finished_at: text(raw.finished_at), worker_name: text(raw.worker_name),
   }

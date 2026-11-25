@@ -56,6 +56,33 @@ def case(identity, interface_id, module_id, **kwargs):
 
 
 class ModuleCoverageOverviewTests(SimpleTestCase):
+    def test_progress_dimensions_use_union_within_and_intersection_between_before_pagination(self):
+        rows = [module(index) for index in range(1, 5)]
+        filters = {'inventory_progress': ['inventoried'], 'analysis_progress': ['entry', 'analysis_completed']}
+        result = self.overview(rows, interfaces=[interface(1, 1), interface(2, 2), interface(3, 3)],
+                               scans=[scan(1, 1), scan(2, 2)], section='modules',
+                               module_filters=filters, page=2, page_size=1)
+        self.assertEqual(result['count'], 2)
+        self.assertEqual([row['id'] for row in result['items']], [2])
+        filters['automation_progress'] = ['automation_completed']
+        empty = self.overview(rows, interfaces=[interface(1, 1)], scans=[scan(1, 1)],
+                              section='modules', module_filters=filters)
+        self.assertEqual(empty['count'], 0)
+        self.assertEqual(empty['items'], [])
+
+    def test_progress_query_parses_and_validates_each_dimension(self):
+        from src.apps.auto_api.api.serializers.module_coverage_common import ModuleCoverageOverviewQuery
+        query = ModuleCoverageOverviewQuery(data={
+            'analysis_progress': 'analysis_deferred, analysis_excluded',
+            'coverage_progress': 'covered,partial',
+        })
+        self.assertTrue(query.is_valid(), query.errors)
+        self.assertEqual(query.validated_data['module_filters'], {
+            'inventory_progress': [], 'analysis_progress': ['analysis_deferred', 'analysis_excluded'],
+            'coverage_progress': ['covered', 'partial'], 'automation_progress': [],
+        })
+        self.assertFalse(ModuleCoverageOverviewQuery(data={'coverage_progress': 'analysis_excluded'}).is_valid())
+
     def test_split_summary_matches_combined_overview_and_does_not_return_module_rows(self):
         inputs = dict(interfaces=[interface(1, 1)], cases=[case(1, 1, 1)], scans=[scan(1, 1)])
         combined = self.overview([module(1)], **inputs)
@@ -75,7 +102,42 @@ class ModuleCoverageOverviewTests(SimpleTestCase):
                 scans=queryset([scan(1, 1)]), section="inventory")
         assess.assert_not_called()
         self.assertEqual(result, {"project_inventory_summary": {
-            "leaf_count": 1, "inventoried_count": 1, "uninventoried_count": 0, "inventory_rate": 100}})
+            "leaf_count": 1, "inventoried_count": 1, "uninventoried_count": 0,
+            "inventory_review_count": 0, "inventory_rate": 100}})
+
+    def test_inventory_version_review_preserves_baseline_and_does_not_become_never_inventoried(self):
+        inputs = dict(scans=[scan(1, 1), scan(2, 1, scope_type='interface', commit_sha='b' * 40)])
+        result = self.overview([module(1), module(2)], **inputs)
+        row = result['modules'][0]
+        self.assertEqual(row['inventory_status'], 'review')
+        self.assertFalse(row['inventory_completed'])
+        self.assertEqual(row['inventory_scan_ids'], [1])
+        self.assertIn('已有完整盘点基线', row['inventory_reason'])
+        summary = result['project_inventory_summary']
+        self.assertEqual((summary['inventory_review_count'], summary['uninventoried_count']), (1, 1))
+        for progress, expected in [('inventory_review', [1]), ('scan', [2])]:
+            filtered = self.overview([module(1), module(2)], section='modules',
+                                     module_filters={'inventory_progress': [progress]}, **inputs)
+            self.assertEqual([item['id'] for item in filtered['items']], expected)
+        renewed = self.overview([module(1)], scans=[*inputs['scans'], scan(3, 1, commit_sha='b' * 40)])
+        self.assertEqual(renewed['modules'][0]['inventory_status'], 'completed')
+        self.assertEqual(renewed['modules'][0]['inventory_scan_ids'], [3])
+
+    def test_inventory_ignores_unapplied_versions_but_requires_every_repository_baseline(self):
+        baseline = scan(1, 1)
+        uploading = scan(2, 1, commit_sha='b' * 40, status='uploading')
+        result = self.overview([module(1)], scans=[baseline, uploading])
+        self.assertEqual(result['modules'][0]['inventory_status'], 'completed')
+        other = scan(3, 1, repository_key='other', scope_type='interface')
+        result = self.overview([module(1)], scans=[baseline, other])
+        self.assertEqual(result['modules'][0]['inventory_status'], 'pending')
+        self.assertEqual(result['modules'][0]['inventory_scan_ids'], [1])
+
+    def test_inventory_review_filter_is_accepted_by_http(self):
+        from src.apps.auto_api.api.serializers.module_coverage_common import ModuleCoverageOverviewQuery
+        query = ModuleCoverageOverviewQuery(data={'inventory_progress': 'inventory_review'})
+        self.assertTrue(query.is_valid(), query.errors)
+        self.assertEqual(query.validated_data['module_filters']['inventory_progress'], ['inventory_review'])
 
     def test_module_page_scopes_heavy_queries_before_loading_and_retains_ancestor_scan(self):
         root = module(1, level=1)

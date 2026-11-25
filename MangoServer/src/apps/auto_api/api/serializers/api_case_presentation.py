@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from src.apps.auto_api.models import ApiCase
-from src.apps.auto_api.services.api_case.snapshot import ApiExecutableSnapshotService
+from src.apps.auto_api.schemas.config_fields import API_CASE_CONFIG_FIELDS
 from src.apps.test_center.formatters.related import format_product_module
 from src.apps.test_center.formatters.related import format_project_product
 from src.apps.test_center.services.project.product_module import ProductModuleService
@@ -23,6 +23,7 @@ class ApiCaseSerializersC(serializers.ModelSerializer):
     published_revision_id = serializers.IntegerField(read_only=True, allow_null=True)
     published_version_label = serializers.CharField(read_only=True, allow_null=True)
     prepublished_revision_no = serializers.IntegerField(read_only=True, allow_null=True)
+    prepublished_revision_id = serializers.IntegerField(read_only=True, allow_null=True)
     is_product_owner = serializers.BooleanField(read_only=True, default=False)
     has_product_owner = serializers.BooleanField(read_only=True, default=False)
     publication_status = serializers.CharField(read_only=True)
@@ -51,10 +52,7 @@ class ApiCaseSerializersC(serializers.ModelSerializer):
     def _case_config(instance):
         config = getattr(instance, '_api_case_config', None)
         if config is None:
-            config = ApiExecutableSnapshotService.current_case_config(
-                instance.id,
-                instance.project_product_id,
-            )
+            config = {field: getattr(instance, field) for field in API_CASE_CONFIG_FIELDS}
             instance._api_case_config = config
         return config
 

@@ -1,3 +1,4 @@
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import importlib.metadata
 import json
 import os
@@ -332,6 +333,7 @@ class CapabilityRegistry:
         try:
             status = probes[definition.code](definition)
         except Exception as error:
+            ActuatorSystemErrorReporter.schedule(error, 'services/capabilities/registry:_probe')
             status = cls._status_unavailable(definition, "CAPABILITY_PROBE_FAILED", str(error))
         status.enabled = True
         status.checked_at = checked_at

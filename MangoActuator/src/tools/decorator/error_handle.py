@@ -7,6 +7,7 @@ import traceback
 
 from mangotools.enums import ClientTypeEnum
 from src.tools.log_collector import log
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 
 
 def async_error_handle(is_error=False):
@@ -15,6 +16,7 @@ def async_error_handle(is_error=False):
             try:
                 return await func(*args, **kwargs)
             except Exception as error:
+                await ActuatorSystemErrorReporter.report(error, f'decorator:{func.__qualname__}')
                 trace = traceback.format_exc()
                 log.error(trace)
                 from src.tools.executor_task_context import is_executor_task
@@ -43,6 +45,7 @@ def sync_error_handle(is_error=False):
             try:
                 return func(*args, **kwargs)
             except Exception as error:
+                ActuatorSystemErrorReporter.schedule(error, f'decorator:{func.__qualname__}')
                 trace = traceback.format_exc()
                 log.error(trace)
                 from src.tools.executor_task_context import is_executor_task

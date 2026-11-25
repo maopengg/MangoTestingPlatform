@@ -37,7 +37,9 @@
           ['订单管理/订单详情', 'AI能力/智能问答', '系统设置/角色管理'][i % 3] + `/${i + 1}`,
         is_leaf: true,
         scan_completed: i > 3,
-        inventory_completed: i > 1,
+        inventory_completed: i > 11,
+        inventory_status: i > 11 ? 'completed' : i > 1 ? 'review' : 'pending',
+        inventory_reason: i > 11 ? '完整接口清单已生效' : i > 1 ? '已有完整盘点基线，版本待复核' : '尚无完整接口清单',
         inventory_scan_ids: i > 1 ? [100 + i] : [],
         analyzed_interface_count: i < 4 ? 0 : 6,
         pending_analysis_count: i < 4 ? 0 : 2,
@@ -62,7 +64,7 @@
         automation_rate: i < 4 ? null : 50,
       }))
       const data = {
-        project_inventory_summary: { leaf_count: 38, inventoried_count: 36, uninventoried_count: 2, inventory_rate: 94.74 },
+        project_inventory_summary: { leaf_count: 38, inventoried_count: 26, inventory_review_count: 10, uninventoried_count: 2, inventory_rate: 68.42 },
         modules,
         summary: {
           module_count: 38,
@@ -115,12 +117,15 @@
       }
       const pinia = createPinia()
       request.defaults.adapter = async config => {
-        const { section, page = 1, pageSize = 20, keyword = '', progress = 'all' } = config.params
+        const { section, page = 1, pageSize = 20, keyword = '', progress = 'all', inventory_progress = '' } = config.params
         let result
         if (section === 'inventory') result = { project_inventory_summary: data.project_inventory_summary }
         else if (section === 'modules') {
+          const selected = inventory_progress.split(',').filter(Boolean)
+          const filters = { completed: 'inventoried', review: 'inventory_review', pending: 'scan' }
           const rows = data.modules.filter(row => row.full_path.includes(keyword)
-            && (progress !== 'scan' || !row.inventory_completed))
+            && (progress !== 'scan' || row.inventory_status === 'pending')
+            && (!selected.length || selected.includes(filters[row.inventory_status])))
           result = { items: rows.slice((page - 1) * pageSize, page * pageSize), count: rows.length, page, page_size: pageSize }
         } else throw new Error('Unexpected preview request')
         return { data: { code: 200, data: result }, status: 200, statusText: 'OK', headers: {}, config }

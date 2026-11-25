@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 
 from src.apps.test_center.models import ProjectProduct
@@ -41,6 +41,12 @@ class ApiMockConfig(models.Model):
         default=dict, blank=True,
         help_text="固定结构：assertions、rules、default_response",
     )
+
+    def delete(self, *args, **kwargs):
+        from src.apps.auto_api.services.callbacks.callback import ApiCallbackService
+        with transaction.atomic():
+            ApiCallbackService.delete_completed_mock_records(self.id)
+            return super().delete(*args, **kwargs)
 
     class Meta:
         db_table = "api_mock_config"

@@ -1,3 +1,4 @@
+from src.services.system_error_reporter import ActuatorSystemErrorReporter
 import asyncio
 import base64
 from contextlib import suppress
@@ -40,6 +41,7 @@ class RuntimeFrameCapture:
             except asyncio.CancelledError:
                 raise
             except Exception as error:
+                await ActuatorSystemErrorReporter.report(error, 'services/ui/live_stream/capture:run')
                 log.warning(f"CDP实时画面不可用，降级为截图采集：{error}")
                 await self._capture_screenshots(page)
 

@@ -77,10 +77,15 @@ class CooperativeCaseExecutor:
                         self.resume(child, future, suspended)
                     else:
                         entry[3] = now + signal.interval
+            if suspended:
+                # greenlet 不能抢占同步驱动/用户函数，也不能跨线程恢复。
+                # 同一线程不得再接手另一个 Case，否则其长同步操作会饿死已就绪的原 Case。
+                # 其他空闲线程仍可领取任务；总执行容量仍由 max_workers 控制。
+                delay = min(max(0, entry[3] - time.monotonic()) for entry in suspended)
+                time.sleep(min(0.1, delay))
+                continue
             try:
-                # 有挂起任务时按最近探测时间醒来，不能每轮额外固定等待 100ms。
-                delay = min((max(0, entry[3] - time.monotonic()) for entry in suspended), default=0.1)
-                future, callback, args, kwargs = self.queue.get(timeout=min(0.1, delay))
+                future, callback, args, kwargs = self.queue.get(timeout=0.1)
             except queue.Empty:
                 continue
             if not future.set_running_or_notify_cancel():
